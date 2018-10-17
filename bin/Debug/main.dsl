@@ -17,8 +17,14 @@ script(main)
 	var(3) = makestring(var(2),var(2),var(2));
 	echo("makestring:{0}", var(3));
 	echo("press any key ...");
+	process("cmd", "/c dir"){
+		nowait(true);
+		newwindow(true);
+		windowstyle("Normal");		
+	};
+	echo("press any key ...");
 	command{
-		unix{:cat buildclient.dsl:};
+		unix{:cat copy.dsl:};
 	}command{
 		unix{:grep command:};
 	};

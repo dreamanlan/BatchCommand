@@ -412,6 +412,26 @@ namespace BatchCommand
                                 cmd.m_NoWait = exp;
                             } else if (type == "useshellexecute") {
                                 cmd.m_UseShellExecute = exp;
+                            } else if (type == "verb") {
+                                cmd.m_Verb = exp;
+                            } else if (type == "domain") {
+                                cmd.m_Domain = exp;
+                            } else if (type == "user") {
+                                cmd.m_UserName = exp;
+                            } else if (type == "password") {
+                                cmd.m_Password = exp;
+                            } else if (type == "passwordincleartext") {
+                                cmd.m_PasswordInClearText = exp;
+                            } else if (type == "loadprofile") {
+                                cmd.m_LoadUserProfile = exp;
+                            } else if (type == "windowstyle") {
+                                cmd.m_WindowStyle = exp;
+                            } else if (type == "newwindow") {
+                                cmd.m_NewWindow = exp;
+                            } else if (type == "errordialog") {
+                                cmd.m_ErrorDialog = exp;
+                            } else if (type == "workingdirectory") {
+                                cmd.m_WorkingDirectory = exp;
                             } else if (type == "encoding") {
                                 cmd.m_Encoding = exp;
                             } else {
@@ -449,16 +469,50 @@ namespace BatchCommand
                 fileName = cfg.m_FileName.Calc() as string;
             }
             string args = string.Empty;
-            if (null != args) {
+            if (null != cfg.m_Argments) {
                 args = cfg.m_Argments.Calc() as string;
             }
             bool noWait = false;
             if (null != cfg.m_NoWait) {
                 noWait = (bool)Convert.ChangeType(cfg.m_NoWait.Calc(), typeof(bool));
             }
-            bool useShellExecute = false;
+            BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
             if (null != cfg.m_UseShellExecute) {
-                useShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+                option.UseShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+            }
+            if (null != cfg.m_Verb) {
+                option.Verb = cfg.m_Verb.Calc() as string;
+            }
+            if (null != cfg.m_Domain) {
+                option.Domain = cfg.m_Domain.Calc() as string;
+            }
+            if (null != cfg.m_UserName) {
+                option.UserName = cfg.m_UserName.Calc() as string;
+            }
+            if (null != cfg.m_Password) {
+                option.Password = cfg.m_Password.Calc() as string;
+            }
+            if (null != cfg.m_PasswordInClearText) {
+                option.PasswordInClearText = cfg.m_PasswordInClearText.Calc() as string;
+            }
+            if (null != cfg.m_LoadUserProfile) {
+                option.LoadUserProfile = (bool)Convert.ChangeType(cfg.m_LoadUserProfile.Calc(), typeof(bool));
+            }
+            if (null != cfg.m_WindowStyle) {
+                var str = cfg.m_WindowStyle.Calc() as string;
+                ProcessWindowStyle style;
+                if (Enum.TryParse(str, out style)) {
+                    option.WindowStyle = style;
+                }
+            }
+            if (null != cfg.m_NewWindow) {
+                option.NewWindow = (bool)Convert.ChangeType(cfg.m_NewWindow.Calc(), typeof(bool));
+            }
+            if (null != cfg.m_ErrorDialog) {
+                option.ErrorDialog = (bool)Convert.ChangeType(cfg.m_ErrorDialog.Calc(), typeof(bool));
+            }
+            if (null != cfg.m_WorkingDirectory) {
+                option.WorkingDirectory = cfg.m_WorkingDirectory.Calc() as string;
             }
             Encoding encoding = null;
             if (null != cfg.m_Encoding) {
@@ -529,7 +583,7 @@ namespace BatchCommand
                 errorBuilder = new StringBuilder();
             }
 
-            int exitCode = BatchScript.NewProcess(noWait, fileName, args, useShellExecute, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+            int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
 
             if (null != outputBuilder && null != output) {
                 var file = output as string;
@@ -573,9 +627,43 @@ namespace BatchCommand
                 if (null != cfg.m_NoWait) {
                     noWait = (bool)Convert.ChangeType(cfg.m_NoWait.Calc(), typeof(bool));
                 }
-                bool useShellExecute = false;
+                BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
                 if (null != cfg.m_UseShellExecute) {
-                    useShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+                    option.UseShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+                }
+                if (null != cfg.m_Verb) {
+                    option.Verb = cfg.m_Verb.Calc() as string;
+                }
+                if (null != cfg.m_Domain) {
+                    option.Domain = cfg.m_Domain.Calc() as string;
+                }
+                if (null != cfg.m_UserName) {
+                    option.UserName = cfg.m_UserName.Calc() as string;
+                }
+                if (null != cfg.m_Password) {
+                    option.Password = cfg.m_Password.Calc() as string;
+                }
+                if (null != cfg.m_PasswordInClearText) {
+                    option.PasswordInClearText = cfg.m_PasswordInClearText.Calc() as string;
+                }
+                if (null != cfg.m_LoadUserProfile) {
+                    option.LoadUserProfile = (bool)Convert.ChangeType(cfg.m_LoadUserProfile.Calc(), typeof(bool));
+                }
+                if (null != cfg.m_WindowStyle) {
+                    var str = cfg.m_WindowStyle.Calc() as string;
+                    ProcessWindowStyle style;
+                    if (Enum.TryParse(str, out style)) {
+                        option.WindowStyle = style;
+                    }
+                }
+                if (null != cfg.m_NewWindow) {
+                    option.NewWindow = (bool)Convert.ChangeType(cfg.m_NewWindow.Calc(), typeof(bool));
+                }
+                if (null != cfg.m_ErrorDialog) {
+                    option.ErrorDialog = (bool)Convert.ChangeType(cfg.m_ErrorDialog.Calc(), typeof(bool));
+                }
+                if (null != cfg.m_WorkingDirectory) {
+                    option.WorkingDirectory = cfg.m_WorkingDirectory.Calc() as string;
                 }
                 Encoding encoding = null;
                 if (null != cfg.m_Encoding) {
@@ -657,7 +745,7 @@ namespace BatchCommand
                     fileName = Environment.ExpandEnvironmentVariables(fileName);
                     args = Environment.ExpandEnvironmentVariables(args);
 
-                    exitCode = BatchScript.NewProcess(noWait, fileName, args, useShellExecute, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+                    exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
                     if (null!=outputBuilder && null != output) {
                         var file = output as string;
                         if (null != file) {
@@ -697,6 +785,16 @@ namespace BatchCommand
 
             internal IExpression m_NoWait = null;
             internal IExpression m_UseShellExecute = null;
+            internal IExpression m_Verb = null;
+            internal IExpression m_Domain = null;
+            internal IExpression m_UserName = null;
+            internal IExpression m_Password = null;
+            internal IExpression m_PasswordInClearText = null;
+            internal IExpression m_LoadUserProfile = null;
+            internal IExpression m_WindowStyle = null;
+            internal IExpression m_NewWindow = null;
+            internal IExpression m_ErrorDialog = null;
+            internal IExpression m_WorkingDirectory = null;
             internal IExpression m_Encoding = null;
             internal IExpression m_Input = null;
             internal IExpression m_Output = null;
@@ -1339,10 +1437,10 @@ namespace BatchCommand
                 return Encoding.UTF8;
             }
         }
-        internal static int NewProcess(bool noWait, string fileName, string args, bool useShellExecute, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
+        internal static int NewProcess(bool noWait, string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
         {
             if (noWait) {
-                var task = Task.Run<int>(() => NewProcessTask(fileName, args, useShellExecute, istream, ostream, input, output, error, encoding));
+                var task = Task.Run<int>(() => NewProcessTask(fileName, args, option, istream, ostream, input, output, error, encoding));
                 s_Tasks.Add(task);
                 while (task.Status == TaskStatus.Created || task.Status == TaskStatus.WaitingForActivation || task.Status == TaskStatus.WaitingToRun) {
                     Console.WriteLine("wait {0}[{1}] start", Path.GetFileName(fileName), task.Status);
@@ -1350,18 +1448,41 @@ namespace BatchCommand
                 }
                 return 0;
             } else {
-                return NewProcessTask(fileName, args, useShellExecute, istream, ostream, input, output, error, encoding);
+                return NewProcessTask(fileName, args, option, istream, ostream, input, output, error, encoding);
             }
         }
-        private static int NewProcessTask(string fileName, string args, bool useShellExecute, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
+        private static int NewProcessTask(string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
         {
             //考虑到跨平台兼容性，不使用特定进程环境变量
             try {
                 var psi = new ProcessStartInfo();
                 psi.FileName = fileName;
                 psi.Arguments = args;
-                psi.UseShellExecute = useShellExecute;
-                psi.WorkingDirectory = Environment.CurrentDirectory;
+                psi.UseShellExecute = option.UseShellExecute;
+                if (null != option.Verb) {
+                    psi.Verb = option.Verb;
+                }
+                if (null != option.Domain) {
+                    psi.Domain = option.Domain;
+                }
+                if (null != option.UserName) {
+                    psi.UserName = option.UserName;
+                }
+                if (null != option.Password) {
+                    unsafe {
+                        fixed (char* pchar = option.Password.ToCharArray()) {
+                            psi.Password = new System.Security.SecureString(pchar, option.Password.Length);
+                        }
+                    }
+                }
+                if (null != option.PasswordInClearText) {
+                    psi.PasswordInClearText = option.PasswordInClearText;
+                }
+                psi.LoadUserProfile = option.LoadUserProfile;
+                psi.WindowStyle = option.WindowStyle;
+                psi.CreateNoWindow = !option.NewWindow;
+                psi.ErrorDialog = option.ErrorDialog;
+                psi.WorkingDirectory = option.WorkingDirectory;
 
                 if (null != istream || null != input) {
                     psi.RedirectStandardInput = true;
@@ -1424,6 +1545,21 @@ namespace BatchCommand
                 Console.WriteLine("process({0} {1}) exception:{2}", fileName, args, ex.Message);
                 return -1;
             }
+        }
+
+        internal class ProcessStartOption
+        {
+            internal bool UseShellExecute = false;
+            internal string Verb = null;
+            internal string Domain = null;
+            internal string UserName = null;
+            internal string Password = null;
+            internal string PasswordInClearText = null;
+            internal bool LoadUserProfile = false;
+            internal ProcessWindowStyle WindowStyle = ProcessWindowStyle.Normal;
+            internal bool NewWindow = false;
+            internal bool ErrorDialog = false;
+            internal string WorkingDirectory = Environment.CurrentDirectory;
         }
 
         private static int s_CheckStartInterval = 500;

@@ -1,1 +1,3 @@
 # BatchCommand
+
+一个简单的基于dsl语法的批处理脚本，主要目的是在一个脚本里写在windows与mac等不同平台上的批处理。

@@ -194,7 +194,7 @@ namespace BatchCommand
                     ++ct;
 
                     if (BatchScript.FileEchoOn) {
-                        Console.WriteLine("copy file {0} -> {1}", file, targetFile);
+                        Console.WriteLine("copy file {0} => {1}", file, targetFile);
                     }
                 }
             }
@@ -219,7 +219,7 @@ namespace BatchCommand
                     ret = true;
                     
                     if (BatchScript.FileEchoOn) {
-                        Console.WriteLine("move directory {0} -> {1}", dir1, dir2);
+                        Console.WriteLine("move directory {0} => {1}", dir1, dir2);
                     }
                 }
             }
@@ -263,7 +263,7 @@ namespace BatchCommand
                     ret = true;
 
                     if (BatchScript.FileEchoOn) {
-                        Console.WriteLine("copy file {0} -> {1}", file1, file2);
+                        Console.WriteLine("copy file {0} => {1}", file1, file2);
                     }
                 }
             }
@@ -289,7 +289,7 @@ namespace BatchCommand
                     ret = true;
 
                     if (BatchScript.FileEchoOn) {
-                        Console.WriteLine("move file {0} -> {1}", file1, file2);
+                        Console.WriteLine("move file {0} => {1}", file1, file2);
                     }
                 }
             }

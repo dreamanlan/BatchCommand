@@ -11,6 +11,17 @@ using Dsl;
 
 namespace BatchCommand
 {
+    internal class FileEchoExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            if (operands.Count >= 1) {
+                BatchScript.FileEchoOn = (bool)Convert.ChangeType(operands[0], typeof(bool));
+            }
+            return BatchScript.FileEchoOn;
+        }
+    }
+
     internal class ListDirectoriesExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -117,12 +128,17 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 1) {
                 var dir = operands[0] as string;
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 if (!Directory.Exists(dir)) {
                     Directory.CreateDirectory(dir);
+                    ret = true;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("create directory {0}", dir);
+                    }
                 }
             }
             return ret;
@@ -133,36 +149,51 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            int ct = 0;
             if (operands.Count >= 2) {
                 var dir1 = operands[0] as string;
                 var dir2 = operands[1] as string;
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
-                string newExt = string.Empty;
-                if (operands.Count >= 3) {
-                    newExt = operands[2] as string;
+                List<string> filterAndNewExts = new List<string>();
+                for(int i = 2; i < operands.Count; ++i) {
+                    var str = operands[i] as string;
+                    if (null != str) {
+                        filterAndNewExts.Add(str);
+                    }
                 }
-                CopyFolder(dir1, dir2, newExt);
+                CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
             }
-            return ret;
+            return ct;
         }
-        private static void CopyFolder(string from, string to, string newExt)
+        private static void CopyFolder(string from, string to, IList<string> filterAndNewExts, ref int ct)
         {
             if (!Directory.Exists(to))
                 Directory.CreateDirectory(to);
             // 子文件夹
             foreach (string sub in Directory.GetDirectories(from)) {
-                CopyFolder(sub, Path.Combine(to, Path.GetFileName(sub)), newExt);
+                CopyFolder(sub, Path.Combine(to, Path.GetFileName(sub)), filterAndNewExts, ref ct);
             }
             // 文件
-            foreach (string file in Directory.GetFiles(from)) {
-                string targetFile;
-                if (string.IsNullOrEmpty(newExt))
-                    targetFile = Path.Combine(to, Path.GetFileName(file));
-                else
-                    targetFile = Path.Combine(to, Path.ChangeExtension(Path.GetFileName(file), "bytes"));
-                File.Copy(file, targetFile, true);
+            for (int i = 0; i < filterAndNewExts.Count; i += 2) {
+                string filter = filterAndNewExts[i];
+                string newExt = string.Empty;
+                if (i + 1 < filterAndNewExts.Count) {
+                    newExt = filterAndNewExts[i + 1];
+                }
+                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {
+                    string targetFile;
+                    if (string.IsNullOrEmpty(newExt))
+                        targetFile = Path.Combine(to, Path.GetFileName(file));
+                    else
+                        targetFile = Path.Combine(to, Path.ChangeExtension(Path.GetFileName(file), newExt));
+                    File.Copy(file, targetFile, true);
+                    ++ct;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("copy file {0} -> {1}", file, targetFile);
+                    }
+                }
             }
         }
     }
@@ -171,7 +202,7 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 2) {
                 var dir1 = operands[0] as string;
                 var dir2 = operands[1] as string;
@@ -182,6 +213,11 @@ namespace BatchCommand
                         Directory.Delete(dir2);
                     }
                     Directory.Move(dir1, dir2);
+                    ret = true;
+                    
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("move directory {0} -> {1}", dir1, dir2);
+                    }
                 }
             }
             return ret;
@@ -192,12 +228,17 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 1) {
                 var dir = operands[0] as string;
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 if (Directory.Exists(dir)) {
                     Directory.Delete(dir, true);
+                    ret = true;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("delete directory {0}", dir);
+                    }
                 }
             }
             return ret;
@@ -208,7 +249,7 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 2) {
                 var file1 = operands[0] as string;
                 var file2 = operands[1] as string;
@@ -216,6 +257,11 @@ namespace BatchCommand
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
                     File.Copy(file1, file2, true);
+                    ret = true;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("copy file {0} -> {1}", file1, file2);
+                    }
                 }
             }
             return ret;
@@ -226,7 +272,7 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 2) {
                 var file1 = operands[0] as string;
                 var file2 = operands[1] as string;
@@ -237,6 +283,11 @@ namespace BatchCommand
                         File.Delete(file2);
                     }
                     File.Move(file1, file2);
+                    ret = true;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("move file {0} -> {1}", file1, file2);
+                    }
                 }
             }
             return ret;
@@ -247,15 +298,42 @@ namespace BatchCommand
     {
         protected override object OnCalc(IList<object> operands)
         {
-            object ret = null;
+            bool ret = false;
             if (operands.Count >= 1) {
                 var file = operands[0] as string;
                 file = Environment.ExpandEnvironmentVariables(file);
                 if (File.Exists(file)) {
                     File.Delete(file);
+                    ret = true;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("delete file {0}", file);
+                    }
                 }
             }
             return ret;
+        }
+    }
+
+    internal class DeleteFilesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            int ct = 0;
+            if (operands.Count >= 2) {
+                var dir = operands[0] as string;
+                var filter = operands[1] as string;
+                dir = Environment.ExpandEnvironmentVariables(dir);
+                foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
+                    File.Delete(file);
+                    ++ct;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("delete file {0}", file);
+                    }
+                }
+            }
+            return ct;
         }
     }
 
@@ -1314,26 +1392,32 @@ namespace BatchCommand
         }
     }
 
-    public class BatchScript
+    internal class BatchScript
     {
-        public static int CheckStartInterval
+        internal static bool FileEchoOn
+        {
+            get { return s_FileEchoOn; }
+            set { s_FileEchoOn = value; }
+        }
+        internal static int CheckStartInterval
         {
             get { return s_CheckStartInterval; }
             set { s_CheckStartInterval = value; }
         }
-        public static string ScriptDirectory
+        internal static string ScriptDirectory
         {
             get { return s_ScriptDirectory; }
         }
-        public static List<Task<int>> Tasks
+        internal static List<Task<int>> Tasks
         {
             get { return s_Tasks; }
         }
-        public static void Init()
+        internal static void Init()
         {
             s_Calculator.Init();
 
             //注册Gm命令
+            s_Calculator.Register("fileecho", new ExpressionFactoryHelper<FileEchoExp>());
             s_Calculator.Register("listdirs", new ExpressionFactoryHelper<ListDirectoriesExp>());
             s_Calculator.Register("listfiles", new ExpressionFactoryHelper<ListFilesExp>());
             s_Calculator.Register("direxist", new ExpressionFactoryHelper<DirectoryExistExp>());
@@ -1345,6 +1429,7 @@ namespace BatchCommand
             s_Calculator.Register("copyfile", new ExpressionFactoryHelper<CopyFileExp>());
             s_Calculator.Register("movefile", new ExpressionFactoryHelper<MoveFileExp>());
             s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
+            s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());
             s_Calculator.Register("setenv", new ExpressionFactoryHelper<SetEnvironmentExp>());
             s_Calculator.Register("getenv", new ExpressionFactoryHelper<GetEnvironmentExp>());
             s_Calculator.Register("expand", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
@@ -1393,7 +1478,7 @@ namespace BatchCommand
             s_Calculator.Register("writealltext", new ExpressionFactoryHelper<WriteAllTextExp>());
             s_Calculator.Register("waitstartinterval", new ExpressionFactoryHelper<WaitStartIntervalExp>());
         }
-        public static object Run(string scpFile, string[] args)
+        internal static object Run(string scpFile, string[] args)
         {
             object r = null;
             bool redirect = true;
@@ -1562,6 +1647,7 @@ namespace BatchCommand
             internal string WorkingDirectory = Environment.CurrentDirectory;
         }
 
+        private static bool s_FileEchoOn = false;
         private static int s_CheckStartInterval = 500;
         private static string s_ScriptDirectory = string.Empty;
         private static List<Task<int>> s_Tasks = new List<Task<int>>();

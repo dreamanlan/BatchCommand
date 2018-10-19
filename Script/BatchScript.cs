@@ -162,6 +162,9 @@ namespace BatchCommand
                         filterAndNewExts.Add(str);
                     }
                 }
+                if (filterAndNewExts.Count <= 0) {
+                    filterAndNewExts.Add("*");
+                }
                 CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
             }
             return ct;
@@ -320,9 +323,12 @@ namespace BatchCommand
         protected override object OnCalc(IList<object> operands)
         {
             int ct = 0;
-            if (operands.Count >= 2) {
+            if (operands.Count >= 1) {
                 var dir = operands[0] as string;
-                var filter = operands[1] as string;
+                var filter = "*";
+                if (operands.Count >= 2) {
+                    filter = operands[1] as string;
+                }
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
                     File.Delete(file);
@@ -662,6 +668,9 @@ namespace BatchCommand
             }
 
             int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+            if (BatchScript.FileEchoOn) {
+                Console.WriteLine("new process:{0} {1}, exit code:{2}", fileName, args, exitCode);
+            }
 
             if (null != outputBuilder && null != output) {
                 var file = output as string;
@@ -824,6 +833,10 @@ namespace BatchCommand
                     args = Environment.ExpandEnvironmentVariables(args);
 
                     exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("new process:{0} {1}, exit code:{2}", fileName, args, exitCode);
+                    }
+
                     if (null!=outputBuilder && null != output) {
                         var file = output as string;
                         if (null != file) {
@@ -893,6 +906,9 @@ namespace BatchCommand
                 if (!string.IsNullOrEmpty(name)) {
                     var ps = Process.GetProcessesByName(name);
                     foreach (var p in ps) {
+                        if (BatchScript.FileEchoOn) {
+                            Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
+                        }
                         p.Kill();
                     }
                     ret = ps.Length;
@@ -900,6 +916,9 @@ namespace BatchCommand
                     int pid = (int)Convert.ChangeType(vObj, typeof(int));
                     var p = Process.GetProcessById(pid);
                     if (null != p) {
+                        if (BatchScript.FileEchoOn) {
+                            Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
+                        }
                         p.Kill();
                         ret = 1;
                     }

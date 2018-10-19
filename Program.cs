@@ -4,7 +4,7 @@ namespace BatchCommand
 {
     class MainClass
     {
-        public static void Main(string[] args)
+        static void Main(string[] args)
         {
             int exitCode = 0;
             try {

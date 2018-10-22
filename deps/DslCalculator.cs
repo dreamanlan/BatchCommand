@@ -234,46 +234,66 @@ namespace Calculator
     {
         public override object Calc()
         {
+            var varId = m_VarId.Calc();
             object v = m_Op.Calc();
-            Calculator.Variables[m_VarId] = v;
+            if(varId is int) {
+                int id = (int)Convert.ChangeType(varId, typeof(int));
+                Calculator.SetVariable(id, v);
+            } else {
+                var str = varId as string;
+                if (null != str) {
+                    Calculator.SetVariable(str, v);
+                }
+            }
             return v;
         }
         protected override bool Load(Dsl.CallData callData)
         {
             Dsl.CallData param1 = callData.GetParam(0) as Dsl.CallData;
             Dsl.ISyntaxComponent param2 = callData.GetParam(1);
-            m_VarId = int.Parse(param1.GetParamId(0));
+            m_VarId = Calculator.Load(param1.GetParam(0));
             m_Op = Calculator.Load(param2);
             return true;
         }
 
-        private int m_VarId;
+        private IExpression m_VarId;
         private IExpression m_Op;
     }
     internal sealed class VarGet : AbstractExpression
     {
         public override object Calc()
         {
-            object ret = 0;
-            Calculator.Variables.TryGetValue(m_VarId, out ret);
-            return ret;
+            var varId = m_VarId.Calc();
+            object v = null;
+            if (varId is int) {
+                int id = (int)Convert.ChangeType(varId, typeof(int));
+                v = Calculator.GetVariable(id);
+            } else {
+                var str = varId as string;
+                if (null != str) {
+                    v = Calculator.GetVariable(str);
+                }
+            }
+            return v;
         }
         protected override bool Load(Dsl.CallData callData)
         {
-            m_VarId = int.Parse(callData.GetParamId(0));
+            m_VarId = Calculator.Load(callData.GetParam(0));
             return true;
         }
 
-        private int m_VarId;
+        private IExpression m_VarId;
     }
     internal sealed class NamedVarSet : AbstractExpression
     {
         public override object Calc()
         {
             object v = m_Op.Calc();
-            Calculator.NamedVariables[m_VarId] = v;
-            if (null != v) {
-                Environment.SetEnvironmentVariable(m_VarId, v.ToString());
+            if (m_VarId.Length > 0) {
+                Calculator.SetVariable(m_VarId, v);
+                if (null != v && m_VarId[0] != '@' && m_VarId[0] != '$') {
+                    Environment.SetEnvironmentVariable(m_VarId, v.ToString());
+                }
             }
             return v;
         }
@@ -298,8 +318,9 @@ namespace Calculator
                 Calculator.RunState = RunStateEnum.Break;
             } else if (m_VarId == "continue") {
                 Calculator.RunState = RunStateEnum.Continue;
-            } else {
-                if (!Calculator.NamedVariables.TryGetValue(m_VarId, out ret)) {
+            } else if (m_VarId.Length > 0) {
+                ret = Calculator.GetVariable(m_VarId);
+                if (null == ret && m_VarId[0] != '@' && m_VarId[0] != '$') {
                     ret = Environment.GetEnvironmentVariable(m_VarId);
                 }
             }
@@ -1181,7 +1202,7 @@ namespace Calculator
             object count = m_Count.Calc();
             long ct = ToLong(count);
             for (int i = 0; i < ct; ++i) {
-                Calculator.NamedVariables["$$"] = i;
+                Calculator.SetVariable("$$", i);
                 for (int index = 0; index < m_Expressions.Count; ++index) {
                     v = m_Expressions[index].Calc();
                     if(Calculator.RunState == RunStateEnum.Continue) {
@@ -1245,7 +1266,7 @@ namespace Calculator
                 IEnumerator enumer = obj.GetEnumerator();
                 while (enumer.MoveNext()) {
                     object val = enumer.Current;
-                    Calculator.NamedVariables["$$"] = val;
+                    Calculator.SetVariable("$$", val);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
                         v = m_Expressions[index].Calc();
                         if (Calculator.RunState == RunStateEnum.Continue) {
@@ -1312,7 +1333,7 @@ namespace Calculator
             IEnumerator enumer = list.GetEnumerator();
             while (enumer.MoveNext()) {
                 object val = enumer.Current;
-                Calculator.NamedVariables["$$"] = val;
+                Calculator.SetVariable("$$", val);
                 for (int index = 0; index < m_Expressions.Count; ++index) {
                     v = m_Expressions[index].Calc();
                     if (Calculator.RunState == RunStateEnum.Continue) {
@@ -1886,12 +1907,12 @@ namespace Calculator
                         results.Add(val);
                     }
                     results.Sort((object o1, object o2) => {
-                        Calculator.NamedVariables["$$"] = o1;
+                        Calculator.SetVariable("$$", o1);
                         object r1 = null;
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             r1 = m_Expressions[index].Calc();
                         }
-                        Calculator.NamedVariables["$$"] = o2;
+                        Calculator.SetVariable("$$", o2);
                         object r2 = null;
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             r2 = m_Expressions[index].Calc();
@@ -1917,7 +1938,7 @@ namespace Calculator
                     while (enumer.MoveNext()) {
                         object val = enumer.Current;
 
-                        Calculator.NamedVariables["$$"] = val;
+                        Calculator.SetVariable("$$", val);
                         object r = null;
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             r = m_Expressions[index].Calc();
@@ -3089,7 +3110,26 @@ namespace Calculator
         {
             m_Procs.Clear();
             m_Stack.Clear();
-            m_NamedVariables.Clear();
+            m_NamedGlobalVariables.Clear();
+        }
+        public void ClearGlobalVariables()
+        {
+            m_NamedGlobalVariables.Clear();
+        }
+        public bool TryGetGlobalVariable(string v, out object result)
+        {
+            return m_NamedGlobalVariables.TryGetValue(v, out result);
+        }
+        public object GetGlobalVariable(string v)
+        {
+            object result = null;
+            m_NamedGlobalVariables.TryGetValue(v, out result);
+            return result;
+        }
+        public void SetGlobalVariable(string v, object val)
+        {
+            var vars = m_NamedGlobalVariables;
+            vars[v] = val;
         }
         public void Load(string dslFile)
         {
@@ -3132,10 +3172,6 @@ namespace Calculator
             }
             return ret;
         }
-        public Dictionary<string, object> NamedVariables
-        {
-            get { return m_NamedVariables; }
-        }
         public RunStateEnum RunState
         {
             get { return m_RunState; }
@@ -3148,12 +3184,60 @@ namespace Calculator
                 return stackInfo.Args;
             }
         }
-        internal Dictionary<int, object> Variables
+        internal bool TryGetVariable(int v, out object result)
         {
-            get 
-            {
-                var stackInfo = m_Stack.Peek();
-                return stackInfo.Vars;
+            return Variables.TryGetValue(v, out result);
+        }
+        internal object GetVariable(int v)
+        {
+            object result = null;
+            Variables.TryGetValue(v, out result);
+            return result;
+        }
+        internal void SetVariable(int v, object val)
+        {
+            Variables[v] = val;
+        }
+        internal bool TryGetVariable(string v, out object result)
+        {
+            bool ret = false;
+            if (v.Length > 0) {
+                if (v[0] == '@') {
+                    ret = TryGetGlobalVariable(v, out result);
+                } else if (v[0] == '$') {
+                    ret = NamedVariables.TryGetValue(v, out result);
+                } else {
+                    ret = TryGetGlobalVariable(v, out result);
+                }
+            } else {
+                result = null;
+            }
+            return ret;
+        }
+        internal object GetVariable(string v)
+        {
+            object result = null;
+            if (v.Length > 0) {
+                if (v[0] == '@') {
+                    result = GetGlobalVariable(v);
+                } else if (v[0] == '$') {
+                    NamedVariables.TryGetValue(v, out result);
+                } else {
+                    result = GetGlobalVariable(v);
+                }
+            }
+            return result;
+        }
+        internal void SetVariable(string v, object val)
+        {
+            if (v.Length > 0) {
+                if (v[0] == '@') {
+                    SetGlobalVariable(v, val);
+                } else if (v[0] == '$') {
+                    NamedVariables[v] = val;
+                } else {
+                    SetGlobalVariable(v, val);
+                }
             }
         }
         internal IExpression Load(Dsl.ISyntaxComponent comp)
@@ -3375,16 +3459,32 @@ namespace Calculator
             }
         }
 
+        private Dictionary<int, object> Variables
+        {
+            get {
+                var stackInfo = m_Stack.Peek();
+                return stackInfo.Vars;
+            }
+        }
+        private Dictionary<string, object> NamedVariables
+        {
+            get {
+                var stackInfo = m_Stack.Peek();
+                return stackInfo.NamedVars;
+            }
+        }
+
         private class StackInfo
         {
             internal IList<object> Args = null;
             internal Dictionary<int, object> Vars = new Dictionary<int, object>();
+            internal Dictionary<string, object> NamedVars = new Dictionary<string, object>();
         }
 
         private RunStateEnum m_RunState = RunStateEnum.Normal;
         private Dictionary<string, List<IExpression>> m_Procs = new Dictionary<string, List<IExpression>>();
         private Stack<StackInfo> m_Stack = new Stack<StackInfo>();
-        private Dictionary<string, object> m_NamedVariables = new Dictionary<string, object>();
+        private Dictionary<string, object> m_NamedGlobalVariables = new Dictionary<string, object>();
         private Dictionary<string, IExpressionFactory> m_ExpressionFactories = new Dictionary<string, IExpressionFactory>();
     }
 }

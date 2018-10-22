@@ -619,15 +619,27 @@ namespace BatchCommand
             IList<string> input = null;
             if (null != cfg.m_Input) {
                 var v = cfg.m_Input.Calc();
-                var str = v as string;
-                if (!string.IsNullOrEmpty(str)) {
-                    str = Environment.ExpandEnvironmentVariables(str);
-                    input = File.ReadAllLines(str);
-                } else {
-                    try {
+                try {
+                    var str = v as string;
+                    if (!string.IsNullOrEmpty(str)) {
+                        if (str[0] == '@' || str[0] == '$') {
+                            object val = Calculator.GetVariable(str);
+                            if (null != val) {
+                                var slist = new List<string>();
+                                var list = val as IList;
+                                foreach (var s in list) {
+                                    slist.Add(s.ToString());
+                                }
+                                input = slist;
+                            }
+                        } else {
+                            str = Environment.ExpandEnvironmentVariables(str);
+                            input = File.ReadAllLines(str);
+                        }
+                    } else {
                         int vn = (int)Convert.ChangeType(v, typeof(int));
-                        object val;
-                        if (Calculator.Variables.TryGetValue(vn, out val)) {
+                        object val = Calculator.GetVariable(vn);
+                        if (null != val) {
                             var slist = new List<string>();
                             var list = val as IList;
                             foreach (var s in list) {
@@ -635,9 +647,9 @@ namespace BatchCommand
                             }
                             input = slist;
                         }
-                    } catch (Exception ex) {
-                        Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                     }
+                } catch (Exception ex) {
+                    Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                 }
             }
             StringBuilder outputBuilder = null;
@@ -673,29 +685,37 @@ namespace BatchCommand
             }
 
             if (null != outputBuilder && null != output) {
-                var file = output as string;
-                if (null != file) {
-                    File.WriteAllText(file, outputBuilder.ToString());
-                } else {
-                    try {
+                try {
+                    var file = output as string;
+                    if (!string.IsNullOrEmpty(file)) {
+                        if (file[0] == '@' || file[0] == '$') {
+                            Calculator.SetVariable(file, outputBuilder.ToString());
+                        } else {
+                            File.WriteAllText(file, outputBuilder.ToString());
+                        }
+                    } else {
                         int v = (int)Convert.ChangeType(output, typeof(int));
-                        Calculator.Variables[v] = outputBuilder.ToString();
-                    } catch (Exception ex) {
-                        Console.WriteLine("output {0} failed:{1}", output, ex.Message);
+                        Calculator.SetVariable(v, outputBuilder.ToString());
                     }
+                } catch (Exception ex) {
+                    Console.WriteLine("output {0} failed:{1}", output, ex.Message);
                 }
             }
             if (null != errorBuilder && null != error) {
-                var file = error as string;
-                if (null != file) {
-                    File.WriteAllText(file, errorBuilder.ToString());
-                } else {
-                    try {
+                try {
+                    var file = error as string;
+                    if (!string.IsNullOrEmpty(file)) {
+                        if (file[0] == '@' || file[0] == '$') {
+                            Calculator.SetVariable(file, errorBuilder.ToString());
+                        } else {
+                            File.WriteAllText(file, errorBuilder.ToString());
+                        }
+                    } else {
                         int v = (int)Convert.ChangeType(error, typeof(int));
-                        Calculator.Variables[v] = errorBuilder.ToString();
-                    } catch (Exception ex) {
-                        Console.WriteLine("error {0} failed:{1}", error, ex.Message);
+                        Calculator.SetVariable(v, errorBuilder.ToString());
                     }
+                } catch (Exception ex) {
+                    Console.WriteLine("error {0} failed:{1}", error, ex.Message);
                 }
             }
             return exitCode;
@@ -769,15 +789,27 @@ namespace BatchCommand
                 IList<string> input = null;
                 if (null != cfg.m_Input) {
                     var v = cfg.m_Input.Calc();
-                    var str = v as string;
-                    if (!string.IsNullOrEmpty(str)) {
-                        str = Environment.ExpandEnvironmentVariables(str);
-                        input = File.ReadAllLines(str);
-                    } else {
-                        try {
+                    try {
+                        var str = v as string;
+                        if (!string.IsNullOrEmpty(str)) {
+                            if (str[0] == '@' || str[0] == '$') {
+                                object val = Calculator.GetVariable(str);
+                                if (null != val) {
+                                    var slist = new List<string>();
+                                    var list = val as IList;
+                                    foreach (var s in list) {
+                                        slist.Add(s.ToString());
+                                    }
+                                    input = slist;
+                                }
+                            } else {
+                                str = Environment.ExpandEnvironmentVariables(str);
+                                input = File.ReadAllLines(str);
+                            }
+                        } else {
                             int vn = (int)Convert.ChangeType(v, typeof(int));
-                            object val;
-                            if (Calculator.Variables.TryGetValue(vn, out val)) {
+                            object val = Calculator.GetVariable(vn);
+                            if (null != val) {
                                 var slist = new List<string>();
                                 var list = val as IList;
                                 foreach (var s in list) {
@@ -785,9 +817,9 @@ namespace BatchCommand
                                 }
                                 input = slist;
                             }
-                        } catch (Exception ex) {
-                            Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                         }
+                    } catch (Exception ex) {
+                        Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                     }
                 }
                 StringBuilder outputBuilder = null;
@@ -836,31 +868,39 @@ namespace BatchCommand
                     if (BatchScript.FileEchoOn) {
                         Console.WriteLine("new process:{0} {1}, exit code:{2}", fileName, args, exitCode);
                     }
-
-                    if (null!=outputBuilder && null != output) {
-                        var file = output as string;
-                        if (null != file) {
-                            File.WriteAllText(file, outputBuilder.ToString());
-                        } else {
-                            try {
+                    
+                    if (null != outputBuilder && null != output) {
+                        try {
+                            var file = output as string;
+                            if (!string.IsNullOrEmpty(file)) {
+                                if (file[0] == '@' || file[0] == '$') {
+                                    Calculator.SetVariable(file, outputBuilder.ToString());
+                                } else {
+                                    File.WriteAllText(file, outputBuilder.ToString());
+                                }
+                            } else {
                                 int v = (int)Convert.ChangeType(output, typeof(int));
-                                Calculator.Variables[v] = outputBuilder.ToString();
-                            } catch(Exception ex) {
-                                Console.WriteLine("output {0} failed:{1}", output, ex.Message);
+                                Calculator.SetVariable(v, outputBuilder.ToString());
                             }
+                        } catch (Exception ex) {
+                            Console.WriteLine("output {0} failed:{1}", output, ex.Message);
                         }
                     }
-                    if(null!=errorBuilder && null != error) {
-                        var file = error as string;
-                        if (null != file) {
-                            File.WriteAllText(file, errorBuilder.ToString());
-                        } else {
-                            try {
+                    if (null != errorBuilder && null != error) {
+                        try {
+                            var file = error as string;
+                            if (!string.IsNullOrEmpty(file)) {
+                                if (file[0] == '@' || file[0] == '$') {
+                                    Calculator.SetVariable(file, errorBuilder.ToString());
+                                } else {
+                                    File.WriteAllText(file, errorBuilder.ToString());
+                                }
+                            } else {
                                 int v = (int)Convert.ChangeType(error, typeof(int));
-                                Calculator.Variables[v] = errorBuilder.ToString();
-                            } catch (Exception ex) {
-                                Console.WriteLine("error {0} failed:{1}", error, ex.Message);
+                                Calculator.SetVariable(v, errorBuilder.ToString());
                             }
+                        } catch (Exception ex) {
+                            Console.WriteLine("error {0} failed:{1}", error, ex.Message);
                         }
                     }
                 }

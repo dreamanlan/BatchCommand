@@ -173,9 +173,13 @@ namespace BatchCommand
         {
             if (!Directory.Exists(to))
                 Directory.CreateDirectory(to);
+            var tName = Path.GetFileName(to);
             // 子文件夹
             foreach (string sub in Directory.GetDirectories(from)) {
-                CopyFolder(sub, Path.Combine(to, Path.GetFileName(sub)), filterAndNewExts, ref ct);
+                var sName = Path.GetFileName(sub);
+                if (sName == tName)
+                    continue;
+                CopyFolder(sub, Path.Combine(to, sName), filterAndNewExts, ref ct);
             }
             // 文件
             for (int i = 0; i < filterAndNewExts.Count; i += 2) {
@@ -184,7 +188,7 @@ namespace BatchCommand
                 if (i + 1 < filterAndNewExts.Count) {
                     newExt = filterAndNewExts[i + 1];
                 }
-                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {
+                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {                    
                     string targetFile;
                     if (string.IsNullOrEmpty(newExt))
                         targetFile = Path.Combine(to, Path.GetFileName(file));

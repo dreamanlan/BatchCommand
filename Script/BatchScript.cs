@@ -941,23 +941,30 @@ namespace BatchCommand
         {
             object ret = 0;
             if (operands.Count >= 1) {
+                int myselfId = 0;
+                var myself = Process.GetCurrentProcess();
+                if (null != myself) {
+                    myselfId = myself.Id;
+                }
                 var vObj = operands[0];
                 var name = vObj as string;
                 if (!string.IsNullOrEmpty(name)) {
                     int ct = 0;
                     var ps = Process.GetProcessesByName(name);
                     foreach (var p in ps) {
-                        if (BatchScript.FileEchoOn) {
-                            Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
+                        if (p.Id != myselfId) {
+                            if (BatchScript.FileEchoOn) {
+                                Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
+                            }
+                            p.Kill();
+                            ++ct;
                         }
-                        p.Kill();
-                        ++ct;
                     }
                     ret = ct;
                 } else if (vObj is int) {
                     int pid = (int)Convert.ChangeType(vObj, typeof(int));
                     var p = Process.GetProcessById(pid);
-                    if (null != p) {
+                    if (null != p && p.Id != myselfId) {
                         if (BatchScript.FileEchoOn) {
                             Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
                         }
@@ -967,6 +974,33 @@ namespace BatchCommand
                 } else {
 
                 }
+            }
+            return ret;
+        }
+    }
+
+    internal class KillMeExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            int ret = 0;
+            Process p = Process.GetCurrentProcess();
+            if (null != p) {
+                ret = p.Id;
+                p.Kill();
+            }            
+            return ret;
+        }
+    }
+
+    internal class GetCurrentProcessIdExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            int ret = 0;
+            Process p = Process.GetCurrentProcess();
+            if (null != p) {
+                ret = p.Id;
             }
             return ret;
         }
@@ -1532,6 +1566,8 @@ namespace BatchCommand
             s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());
+            s_Calculator.Register("killme", new ExpressionFactoryHelper<KillMeExp>());
+            s_Calculator.Register("pid", new ExpressionFactoryHelper<GetCurrentProcessIdExp>());
             s_Calculator.Register("plist", new ExpressionFactoryHelper<ListProcessesExp>());
             s_Calculator.Register("cd", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
             s_Calculator.Register("pwd", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());

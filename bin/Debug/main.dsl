@@ -26,6 +26,9 @@ script(main)
 		echo("{0} {1}", $$.Id, $$.ProcessName);
 	};
 	
+	echo("pid:{0}", pid());
+	echo("kill:{0}", kill("BatchCommand"));
+	
 	setfgcolor("DarkBlue");
 	echo("readline:");
 	var(1) = readline();
@@ -48,6 +51,9 @@ script(main)
 	};
 	pause();
 	resetcolor();
+	echo("kill me");
+	killme();
+	echo("you should not see this.");
 };
 
 script(calc1)

@@ -377,17 +377,58 @@ namespace BatchCommand
             int ct = 0;
             if (operands.Count >= 1) {
                 var dir = operands[0] as string;
-                var filter = "*";
-                if (operands.Count >= 2) {
-                    filter = operands[1] as string;
+                List<string> filters = new List<string>();
+                for (int i = 1; i < operands.Count; ++i) {
+                    var str = operands[i] as string;
+                    if (null != str) {
+                        filters.Add(str);
+                    }
+                }
+                if (filters.Count <= 0) {
+                    filters.Add("*");
                 }
                 dir = Environment.ExpandEnvironmentVariables(dir);
-                foreach (string file in Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly)) {
-                    File.Delete(file);
-                    ++ct;
+                foreach (var filter in filters) {
+                    foreach (string file in Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly)) {
+                        File.Delete(file);
+                        ++ct;
 
-                    if (BatchScript.FileEchoOn) {
-                        Console.WriteLine("delete file {0}", file);
+                        if (BatchScript.FileEchoOn) {
+                            Console.WriteLine("delete file {0}", file);
+                        }
+                    }
+                }
+            }
+            return ct;
+        }
+    }
+
+    internal class DeleteAllFilesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            int ct = 0;
+            if (operands.Count >= 1) {
+                var dir = operands[0] as string;
+                List<string> filters = new List<string>();
+                for (int i = 1; i < operands.Count; ++i) {
+                    var str = operands[i] as string;
+                    if (null != str) {
+                        filters.Add(str);
+                    }
+                }
+                if (filters.Count <= 0) {
+                    filters.Add("*");
+                }
+                dir = Environment.ExpandEnvironmentVariables(dir);
+                foreach (var filter in filters) {
+                    foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
+                        File.Delete(file);
+                        ++ct;
+
+                        if (BatchScript.FileEchoOn) {
+                            Console.WriteLine("delete file {0}", file);
+                        }
                     }
                 }
             }
@@ -1610,6 +1651,7 @@ namespace BatchCommand
             s_Calculator.Register("movefile", new ExpressionFactoryHelper<MoveFileExp>());
             s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
             s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());
+            s_Calculator.Register("deleteallfiles", new ExpressionFactoryHelper<DeleteAllFilesExp>());
             s_Calculator.Register("setenv", new ExpressionFactoryHelper<SetEnvironmentExp>());
             s_Calculator.Register("getenv", new ExpressionFactoryHelper<GetEnvironmentExp>());
             s_Calculator.Register("expand", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());

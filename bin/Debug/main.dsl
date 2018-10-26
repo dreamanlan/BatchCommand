@@ -22,6 +22,10 @@ script(main)
 	};
 	echo("dir result:{0}", $txt);
 	
+	looplist(plist("")){
+		echo("{0} {1}", $$.Id, $$.ProcessName);
+	};
+	
 	setfgcolor("DarkBlue");
 	echo("readline:");
 	var(1) = readline();

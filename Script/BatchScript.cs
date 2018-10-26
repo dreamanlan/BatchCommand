@@ -944,14 +944,16 @@ namespace BatchCommand
                 var vObj = operands[0];
                 var name = vObj as string;
                 if (!string.IsNullOrEmpty(name)) {
+                    int ct = 0;
                     var ps = Process.GetProcessesByName(name);
                     foreach (var p in ps) {
                         if (BatchScript.FileEchoOn) {
                             Console.WriteLine("kill {0}[pid:{1},session id:{2}]", p.ProcessName, p.Id, p.SessionId);
                         }
                         p.Kill();
+                        ++ct;
                     }
-                    ret = ps.Length;
+                    ret = ct;
                 } else if (vObj is int) {
                     int pid = (int)Convert.ChangeType(vObj, typeof(int));
                     var p = Process.GetProcessById(pid);
@@ -965,6 +967,38 @@ namespace BatchCommand
                 } else {
 
                 }
+            }
+            return ret;
+        }
+    }
+
+    internal class ListProcessesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            IList<Process> ret = null;
+            Process[] ps = Process.GetProcesses();
+            string filter = null;
+            if (operands.Count >= 1) {
+                filter = operands[0] as string;
+            }
+            if (null == filter)
+                filter = string.Empty;
+            if (!string.IsNullOrEmpty(filter)) {
+                var list = new List<Process>();
+                foreach (var p in ps) {
+                    try {
+                        if (!p.HasExited) {
+                            if (p.ProcessName.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0) {
+                                list.Add(p);
+                            }
+                        }
+                    } catch {
+                    }
+                }
+                ret = list;
+            } else {
+                ret = ps;
             }
             return ret;
         }
@@ -1498,6 +1532,7 @@ namespace BatchCommand
             s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());
+            s_Calculator.Register("plist", new ExpressionFactoryHelper<ListProcessesExp>());
             s_Calculator.Register("cd", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
             s_Calculator.Register("pwd", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
             s_Calculator.Register("getscriptdir", new ExpressionFactoryHelper<GetScriptDirectoryExp>());

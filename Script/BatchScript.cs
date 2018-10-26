@@ -271,6 +271,58 @@ namespace BatchCommand
         }
     }
 
+    internal class CopyFilesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            int ct = 0;
+            if (operands.Count >= 2) {
+                var dir1 = operands[0] as string;
+                var dir2 = operands[1] as string;
+                dir1 = Environment.ExpandEnvironmentVariables(dir1);
+                dir2 = Environment.ExpandEnvironmentVariables(dir2);
+                List<string> filterAndNewExts = new List<string>();
+                for (int i = 2; i < operands.Count; ++i) {
+                    var str = operands[i] as string;
+                    if (null != str) {
+                        filterAndNewExts.Add(str);
+                    }
+                }
+                if (filterAndNewExts.Count <= 0) {
+                    filterAndNewExts.Add("*");
+                }
+                CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
+            }
+            return ct;
+        }
+        private static void CopyFolder(string from, string to, IList<string> filterAndNewExts, ref int ct)
+        {
+            if (!Directory.Exists(to))
+                Directory.CreateDirectory(to);
+            // 文件
+            for (int i = 0; i < filterAndNewExts.Count; i += 2) {
+                string filter = filterAndNewExts[i];
+                string newExt = string.Empty;
+                if (i + 1 < filterAndNewExts.Count) {
+                    newExt = filterAndNewExts[i + 1];
+                }
+                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {
+                    string targetFile;
+                    if (string.IsNullOrEmpty(newExt))
+                        targetFile = Path.Combine(to, Path.GetFileName(file));
+                    else
+                        targetFile = Path.Combine(to, Path.ChangeExtension(Path.GetFileName(file), newExt));
+                    File.Copy(file, targetFile, true);
+                    ++ct;
+
+                    if (BatchScript.FileEchoOn) {
+                        Console.WriteLine("copy file {0} => {1}", file, targetFile);
+                    }
+                }
+            }
+        }
+    }
+
     internal class MoveFileExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -330,7 +382,7 @@ namespace BatchCommand
                     filter = operands[1] as string;
                 }
                 dir = Environment.ExpandEnvironmentVariables(dir);
-                foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
+                foreach (string file in Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly)) {
                     File.Delete(file);
                     ++ct;
 
@@ -1554,6 +1606,7 @@ namespace BatchCommand
             s_Calculator.Register("movedir", new ExpressionFactoryHelper<MoveDirectoryExp>());
             s_Calculator.Register("deletedir", new ExpressionFactoryHelper<DeleteDirectoryExp>());
             s_Calculator.Register("copyfile", new ExpressionFactoryHelper<CopyFileExp>());
+            s_Calculator.Register("copyfiles", new ExpressionFactoryHelper<CopyFilesExp>());
             s_Calculator.Register("movefile", new ExpressionFactoryHelper<MoveFileExp>());
             s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
             s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());

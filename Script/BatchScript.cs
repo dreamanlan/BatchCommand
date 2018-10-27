@@ -49,7 +49,7 @@ namespace BatchCommand
                 if (null != baseDir && Directory.Exists(baseDir)) {
                     var fullList = new List<string>();
                     foreach (var filter in filterList) {
-                        var list = Directory.GetDirectories(baseDir, filter, SearchOption.AllDirectories);
+                        var list = Directory.GetDirectories(baseDir, filter, SearchOption.TopDirectoryOnly);
                         fullList.AddRange(list);
                     }
                     ret = fullList;
@@ -60,6 +60,80 @@ namespace BatchCommand
     }
 
     internal class ListFilesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 1) {
+                var baseDir = operands[0] as string;
+                baseDir = Environment.ExpandEnvironmentVariables(baseDir);
+                IList<string> filterList = new string[] { "*" };
+                if (operands.Count >= 2) {
+                    var strList = operands[1] as IList<string>;
+                    if (null != strList && operands.Count == 2) {
+                        filterList = strList;
+                    } else {
+                        var list = new List<string>();
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var str = operands[i] as string;
+                            if (null != str) {
+                                list.Add(str);
+                            }
+                        }
+                        filterList = list;
+                    }
+                }
+                if (null != baseDir && Directory.Exists(baseDir)) {
+                    var fullList = new List<string>();
+                    foreach (var filter in filterList) {
+                        var list = Directory.GetFiles(baseDir, filter, SearchOption.TopDirectoryOnly);
+                        fullList.AddRange(list);
+                    }
+                    ret = fullList;
+                }
+            }
+            return ret;
+        }
+    }
+
+    internal class ListAllDirectoriesExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 1) {
+                var baseDir = operands[0] as string;
+                baseDir = Environment.ExpandEnvironmentVariables(baseDir);
+                IList<string> filterList = new string[] { "*" };
+                if (operands.Count >= 2) {
+                    var strList = operands[1] as IList<string>;
+                    if (null != strList && operands.Count == 2) {
+                        filterList = strList;
+                    } else {
+                        var list = new List<string>();
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var str = operands[i] as string;
+                            if (null != str) {
+                                list.Add(str);
+                            }
+                        }
+                        filterList = list;
+                    }
+                }
+                if (null != baseDir && Directory.Exists(baseDir)) {
+                    var fullList = new List<string>();
+                    foreach (var filter in filterList) {
+                        var list = Directory.GetDirectories(baseDir, filter, SearchOption.AllDirectories);
+                        fullList.AddRange(list);
+                    }
+                    ret = fullList;
+                }
+            }
+            return ret;
+        }
+    }
+
+    internal class ListAllFilesExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -165,21 +239,27 @@ namespace BatchCommand
                 if (filterAndNewExts.Count <= 0) {
                     filterAndNewExts.Add("*");
                 }
-                CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
+                var targetRoot = Path.GetFullPath(dir2);
+                CopyFolder(targetRoot, dir1, dir2, filterAndNewExts, ref ct);
             }
             return ct;
         }
-        private static void CopyFolder(string from, string to, IList<string> filterAndNewExts, ref int ct)
+        private static void CopyFolder(string targetRoot, string from, string to, IList<string> filterAndNewExts, ref int ct)
         {
             if (!Directory.Exists(to))
                 Directory.CreateDirectory(to);
-            var tName = Path.GetFileName(to);
             // 子文件夹
             foreach (string sub in Directory.GetDirectories(from)) {
+                var srcPath = Path.GetFullPath(sub);
+                if(Environment.OSVersion.Platform==PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                    if (srcPath.IndexOf(targetRoot) == 0)
+                        continue;
+                } else {
+                    if (srcPath.IndexOf(targetRoot, StringComparison.CurrentCultureIgnoreCase) == 0)
+                        continue;
+                }
                 var sName = Path.GetFileName(sub);
-                if (sName == tName)
-                    continue;
-                CopyFolder(sub, Path.Combine(to, sName), filterAndNewExts, ref ct);
+                CopyFolder(targetRoot, sub, Path.Combine(to, sName), filterAndNewExts, ref ct);
             }
             // 文件
             for (int i = 0; i < filterAndNewExts.Count; i += 2) {
@@ -437,71 +517,6 @@ namespace BatchCommand
                 }
             }
             return ct;
-        }
-    }
-
-    internal class SetEnvironmentExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            object ret = null;
-            if (operands.Count >= 2) {
-                var key = operands[0] as string;
-                var val = operands[1] as string;
-                val = Environment.ExpandEnvironmentVariables(val);
-                Environment.SetEnvironmentVariable(key, val);
-            }
-            return ret;
-        }
-    }
-
-    internal class GetEnvironmentExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            object ret = string.Empty;
-            if (operands.Count >= 1) {
-                var key = operands[0] as string;
-                return Environment.GetEnvironmentVariable(key);
-            }
-            return ret;
-        }
-    }
-
-    internal class ExpandEnvironmentsExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            object ret = string.Empty;
-            if (operands.Count >= 1) {
-                var key = operands[0] as string;
-                return Environment.ExpandEnvironmentVariables(key);
-            }
-            return ret;
-        }
-    }
-
-    internal class OsExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.OSVersion.VersionString;
-        }
-    }
-
-    internal class OsPlatformExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.OSVersion.Platform.ToString();
-        }
-    }
-
-    internal class OsVersionExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.OSVersion.Version.ToString();
         }
     }
 
@@ -1084,7 +1099,14 @@ namespace BatchCommand
             Process p = Process.GetCurrentProcess();
             if (null != p) {
                 ret = p.Id;
-                p.Kill();
+                int exitCode = 0;
+                if (operands.Count >= 1) {
+                    exitCode = (int)Convert.ChangeType(operands[0], typeof(int));
+                }
+                if (BatchScript.FileEchoOn) {
+                    Console.WriteLine("killme {0}[pid:{1},session id:{2}] exit code:{3}", p.ProcessName, p.Id, p.SessionId, exitCode);
+                }
+                Environment.Exit(exitCode);
             }            
             return ret;
         }
@@ -1135,57 +1157,11 @@ namespace BatchCommand
         }
     }
 
-    internal class SetCurrentDirectoryExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            object ret = string.Empty;
-            if (operands.Count >= 1) {
-                var dir = operands[0] as string;
-                Environment.CurrentDirectory = Environment.ExpandEnvironmentVariables(dir);
-                ret = dir;
-            }
-            return ret;
-        }
-    }
-
-    internal class GetCurrentDirectoryExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.CurrentDirectory;
-        }
-    }
-
     internal class GetScriptDirectoryExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return BatchScript.ScriptDirectory;
-        }
-    }
-
-    internal class EnvironmentsExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.GetEnvironmentVariables();
-        }
-    }
-
-    internal class CommandLineExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.CommandLine;
-        }
-    }
-
-    internal class CommandLineArgsExp : Calculator.SimpleExpressionBase
-    {
-        protected override object OnCalc(IList<object> operands)
-        {
-            return Environment.GetCommandLineArgs();
         }
     }
 
@@ -1491,26 +1467,11 @@ namespace BatchCommand
         }
     }
 
-    internal class MakeStringExp : Calculator.SimpleExpressionBase
+    internal class EnvironmentExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
-            List<char> chars = new List<char>();
-            for (int i = 0; i < operands.Count; ++i) {
-                var v = operands[i];
-                var str = v as string;
-                if (null != str) {
-                    char c = '\0';
-                    if (str.Length > 0) {
-                        c = str[0];
-                    }
-                    chars.Add(c);
-                } else {
-                    char c = (char)Convert.ChangeType(operands[i], typeof(char));
-                    chars.Add(c);
-                }
-            }
-            return new String(chars.ToArray());
+            return typeof(Environment);
         }
     }
 
@@ -1644,6 +1605,8 @@ namespace BatchCommand
             s_Calculator.Register("fileecho", new ExpressionFactoryHelper<FileEchoExp>());
             s_Calculator.Register("listdirs", new ExpressionFactoryHelper<ListDirectoriesExp>());
             s_Calculator.Register("listfiles", new ExpressionFactoryHelper<ListFilesExp>());
+            s_Calculator.Register("listalldirs", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
+            s_Calculator.Register("listallfiles", new ExpressionFactoryHelper<ListAllFilesExp>());
             s_Calculator.Register("direxist", new ExpressionFactoryHelper<DirectoryExistExp>());
             s_Calculator.Register("fileexist", new ExpressionFactoryHelper<FileExistExp>());
             s_Calculator.Register("createdir", new ExpressionFactoryHelper<CreateDirectoryExp>());
@@ -1656,24 +1619,13 @@ namespace BatchCommand
             s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
             s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());
             s_Calculator.Register("deleteallfiles", new ExpressionFactoryHelper<DeleteAllFilesExp>());
-            s_Calculator.Register("setenv", new ExpressionFactoryHelper<SetEnvironmentExp>());
-            s_Calculator.Register("getenv", new ExpressionFactoryHelper<GetEnvironmentExp>());
-            s_Calculator.Register("expand", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
-            s_Calculator.Register("os", new ExpressionFactoryHelper<OsExp>());
-            s_Calculator.Register("osplatform", new ExpressionFactoryHelper<OsPlatformExp>());
-            s_Calculator.Register("osversion", new ExpressionFactoryHelper<OsVersionExp>());
             s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());
             s_Calculator.Register("killme", new ExpressionFactoryHelper<KillMeExp>());
             s_Calculator.Register("pid", new ExpressionFactoryHelper<GetCurrentProcessIdExp>());
             s_Calculator.Register("plist", new ExpressionFactoryHelper<ListProcessesExp>());
-            s_Calculator.Register("cd", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
-            s_Calculator.Register("pwd", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
             s_Calculator.Register("getscriptdir", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
-            s_Calculator.Register("envs", new ExpressionFactoryHelper<EnvironmentsExp>());
-            s_Calculator.Register("cmdline", new ExpressionFactoryHelper<CommandLineExp>());
-            s_Calculator.Register("cmdlineargs", new ExpressionFactoryHelper<CommandLineArgsExp>());
             s_Calculator.Register("pause", new ExpressionFactoryHelper<PauseExp>());
             s_Calculator.Register("wait", new ExpressionFactoryHelper<WaitExp>());
             s_Calculator.Register("waitall", new ExpressionFactoryHelper<WaitAllExp>());
@@ -1700,7 +1652,7 @@ namespace BatchCommand
             s_Calculator.Register("getoutputencoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
             s_Calculator.Register("console", new ExpressionFactoryHelper<ConsoleExp>());
             s_Calculator.Register("encoding", new ExpressionFactoryHelper<EncodingExp>());
-            s_Calculator.Register("makestring", new ExpressionFactoryHelper<MakeStringExp>());
+            s_Calculator.Register("env", new ExpressionFactoryHelper<EnvironmentExp>());
             s_Calculator.Register("readalllines", new ExpressionFactoryHelper<ReadAllLinesExp>());
             s_Calculator.Register("writealllines", new ExpressionFactoryHelper<WriteAllLinesExp>());
             s_Calculator.Register("readalltext", new ExpressionFactoryHelper<ReadAllTextExp>());

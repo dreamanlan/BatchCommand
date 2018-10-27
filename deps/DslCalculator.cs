@@ -2186,6 +2186,28 @@ namespace Calculator
             return r;
         }
     }
+    internal class MakeStringExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            List<char> chars = new List<char>();
+            for (int i = 0; i < operands.Count; ++i) {
+                var v = operands[i];
+                var str = v as string;
+                if (null != str) {
+                    char c = '\0';
+                    if (str.Length > 0) {
+                        c = str[0];
+                    }
+                    chars.Add(c);
+                } else {
+                    char c = (char)Convert.ChangeType(operands[i], typeof(char));
+                    chars.Add(c);
+                }
+            }
+            return new String(chars.ToArray());
+        }
+    }
     internal class Str2IntExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -2816,6 +2838,187 @@ namespace Calculator
             return r;
         }
     }
+    internal class SetEnvironmentExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 2) {
+                var key = operands[0] as string;
+                var val = operands[1] as string;
+                val = Environment.ExpandEnvironmentVariables(val);
+                Environment.SetEnvironmentVariable(key, val);
+            }
+            return ret;
+        }
+    }
+    internal class GetEnvironmentExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = string.Empty;
+            if (operands.Count >= 1) {
+                var key = operands[0] as string;
+                return Environment.GetEnvironmentVariable(key);
+            }
+            return ret;
+        }
+    }
+    internal class ExpandEnvironmentsExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = string.Empty;
+            if (operands.Count >= 1) {
+                var key = operands[0] as string;
+                return Environment.ExpandEnvironmentVariables(key);
+            }
+            return ret;
+        }
+    }
+    internal class EnvironmentsExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.GetEnvironmentVariables();
+        }
+    }
+    internal class SetCurrentDirectoryExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = string.Empty;
+            if (operands.Count >= 1) {
+                var dir = operands[0] as string;
+                Environment.CurrentDirectory = Environment.ExpandEnvironmentVariables(dir);
+                ret = dir;
+            }
+            return ret;
+        }
+    }
+    internal class GetCurrentDirectoryExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.CurrentDirectory;
+        }
+    }
+    internal class CommandLineExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.CommandLine;
+        }
+    }
+    internal class CommandLineArgsExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.GetCommandLineArgs();
+        }
+    }
+    internal class OsExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.OSVersion.VersionString;
+        }
+    }
+    internal class OsPlatformExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.OSVersion.Platform.ToString();
+        }
+    }
+    internal class OsVersionExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Environment.OSVersion.Version.ToString();
+        }
+    }
+    internal class GetFullPathExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = string.Empty;
+            if (operands.Count >= 1) {
+                var path = operands[0] as string;
+                if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
+                    return Path.GetFullPath(path);
+                }
+            }
+            return ret;
+        }
+    }
+    internal class GetPathRootExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = string.Empty;
+            if (operands.Count >= 1) {
+                var path = operands[0] as string;
+                if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
+                    return Path.GetPathRoot(path);
+                }
+            }
+            return ret;
+        }
+    }
+    internal class GetRandomFileNameExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Path.GetRandomFileName();
+        }
+    }
+    internal class GetTempFileNameExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Path.GetTempFileName();
+        }
+    }
+    internal class GetTempPathExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            return Path.GetTempPath();
+        }
+    }
+    internal class HasExtensionExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = false;
+            if (operands.Count >= 1) {
+                var path = operands[0] as string;
+                if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
+                    return Path.HasExtension(path);
+                }
+            }
+            return ret;
+        }
+    }
+    internal class IsPathRootedExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = false;
+            if (operands.Count >= 1) {
+                var path = operands[0] as string;
+                if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
+                    return Path.IsPathRooted(path);
+                }
+            }
+            return ret;
+        }
+    }
     internal class GetFileNameExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -2824,6 +3027,7 @@ namespace Calculator
             if (operands.Count >= 1) {
                 var path = operands[0] as string;
                 if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
                     r = Path.GetFileName(path);
                 }
             }
@@ -2838,6 +3042,7 @@ namespace Calculator
             if (operands.Count >= 1) {
                 var path = operands[0] as string;
                 if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
                     r = Path.GetFileNameWithoutExtension(path);
                 }
             }
@@ -2852,6 +3057,7 @@ namespace Calculator
             if (operands.Count >= 1) {
                 var path = operands[0] as string;
                 if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
                     r = Path.GetExtension(path);
                 }
             }
@@ -2866,6 +3072,7 @@ namespace Calculator
             if (operands.Count >= 1) {
                 var path = operands[0] as string;
                 if (null != path) {
+                    path = Environment.ExpandEnvironmentVariables(path);
                     r = Path.GetDirectoryName(path);
                 }
             }
@@ -2881,6 +3088,8 @@ namespace Calculator
                 var path1 = operands[0] as string;
                 var path2 = operands[1] as string;
                 if (null != path1 && null != path2) {
+                    path1 = Environment.ExpandEnvironmentVariables(path1);
+                    path2 = Environment.ExpandEnvironmentVariables(path2);
                     r = Path.Combine(path1, path2);
                 }
             }
@@ -2896,6 +3105,7 @@ namespace Calculator
                 var path = operands[0] as string;
                 var ext = operands[1] as string;
                 if (null != path && null != ext) {
+                    path = Environment.ExpandEnvironmentVariables(path);
                     r = Path.ChangeExtension(path, ext);
                 }
             }
@@ -2957,7 +3167,7 @@ namespace Calculator
             return r;
         }
     }
-    internal class RedirectExp : Calculator.SimpleExpressionBase
+    internal class RedirectExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -3050,6 +3260,7 @@ namespace Calculator
             Register("stringtrimend", new ExpressionFactoryHelper<StringTrimEndExp>());
             Register("stringlower", new ExpressionFactoryHelper<StringLowerExp>());
             Register("stringupper", new ExpressionFactoryHelper<StringUpperExp>());
+            Register("makestring", new ExpressionFactoryHelper<MakeStringExp>());
             Register("str2int", new ExpressionFactoryHelper<Str2IntExp>());
             Register("str2float", new ExpressionFactoryHelper<Str2FloatExp>());
             Register("hex2int", new ExpressionFactoryHelper<Hex2IntExp>());
@@ -3087,6 +3298,24 @@ namespace Calculator
             Register("enqueue", new ExpressionFactoryHelper<EnqueueExp>());
             Register("dequeue", new ExpressionFactoryHelper<DequeueExp>());
             Register("queueclear", new ExpressionFactoryHelper<QueueClearExp>());
+            Register("setenv", new ExpressionFactoryHelper<SetEnvironmentExp>());
+            Register("getenv", new ExpressionFactoryHelper<GetEnvironmentExp>());
+            Register("expand", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
+            Register("envs", new ExpressionFactoryHelper<EnvironmentsExp>());
+            Register("cd", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
+            Register("pwd", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
+            Register("cmdline", new ExpressionFactoryHelper<CommandLineExp>());
+            Register("cmdlineargs", new ExpressionFactoryHelper<CommandLineArgsExp>());
+            Register("os", new ExpressionFactoryHelper<OsExp>());
+            Register("osplatform", new ExpressionFactoryHelper<OsPlatformExp>());
+            Register("osversion", new ExpressionFactoryHelper<OsVersionExp>());
+            Register("getfullpath", new ExpressionFactoryHelper<GetFullPathExp>());
+            Register("getpathroot", new ExpressionFactoryHelper<GetPathRootExp>());
+            Register("getrandomfilename", new ExpressionFactoryHelper<GetRandomFileNameExp>());
+            Register("gettempfilename", new ExpressionFactoryHelper<GetTempFileNameExp>());
+            Register("gettemppath", new ExpressionFactoryHelper<GetTempPathExp>());
+            Register("hasextension", new ExpressionFactoryHelper<HasExtensionExp>());
+            Register("ispathrooted", new ExpressionFactoryHelper<IsPathRootedExp>());
             Register("getfilename", new ExpressionFactoryHelper<GetFileNameExp>());
             Register("getfilenamewithoutextension", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
             Register("getextension", new ExpressionFactoryHelper<GetExtensionExp>());

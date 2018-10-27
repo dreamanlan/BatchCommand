@@ -7,7 +7,7 @@ script(main)
 	echo("os:{0}",os());
 	echo("osplatform:{0}",osplatform());
 	echo("osversion:{0}",osversion());
-
+	
 	@g1=123;
 	@g2=456;
 	echo("global:{0}", call("calc1"));
@@ -51,7 +51,7 @@ script(main)
 	};
 	pause();
 	resetcolor();
-	echo("kill me");
+	echo("kill me:{0}",pid());
 	killme();
 	echo("you should not see this.");
 };

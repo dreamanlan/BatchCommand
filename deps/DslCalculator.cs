@@ -2186,7 +2186,7 @@ namespace Calculator
             return r;
         }
     }
-    internal class MakeStringExp : Calculator.SimpleExpressionBase
+    internal class MakeStringExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2838,7 +2838,7 @@ namespace Calculator
             return r;
         }
     }
-    internal class SetEnvironmentExp : Calculator.SimpleExpressionBase
+    internal class SetEnvironmentExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2852,7 +2852,7 @@ namespace Calculator
             return ret;
         }
     }
-    internal class GetEnvironmentExp : Calculator.SimpleExpressionBase
+    internal class GetEnvironmentExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2864,7 +2864,7 @@ namespace Calculator
             return ret;
         }
     }
-    internal class ExpandEnvironmentsExp : Calculator.SimpleExpressionBase
+    internal class ExpandEnvironmentsExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2876,14 +2876,14 @@ namespace Calculator
             return ret;
         }
     }
-    internal class EnvironmentsExp : Calculator.SimpleExpressionBase
+    internal class EnvironmentsExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.GetEnvironmentVariables();
         }
     }
-    internal class SetCurrentDirectoryExp : Calculator.SimpleExpressionBase
+    internal class SetCurrentDirectoryExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2896,49 +2896,49 @@ namespace Calculator
             return ret;
         }
     }
-    internal class GetCurrentDirectoryExp : Calculator.SimpleExpressionBase
+    internal class GetCurrentDirectoryExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.CurrentDirectory;
         }
     }
-    internal class CommandLineExp : Calculator.SimpleExpressionBase
+    internal class CommandLineExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.CommandLine;
         }
     }
-    internal class CommandLineArgsExp : Calculator.SimpleExpressionBase
+    internal class CommandLineArgsExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.GetCommandLineArgs();
         }
     }
-    internal class OsExp : Calculator.SimpleExpressionBase
+    internal class OsExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.OSVersion.VersionString;
         }
     }
-    internal class OsPlatformExp : Calculator.SimpleExpressionBase
+    internal class OsPlatformExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.OSVersion.Platform.ToString();
         }
     }
-    internal class OsVersionExp : Calculator.SimpleExpressionBase
+    internal class OsVersionExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Environment.OSVersion.Version.ToString();
         }
     }
-    internal class GetFullPathExp : Calculator.SimpleExpressionBase
+    internal class GetFullPathExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2953,7 +2953,7 @@ namespace Calculator
             return ret;
         }
     }
-    internal class GetPathRootExp : Calculator.SimpleExpressionBase
+    internal class GetPathRootExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -2968,28 +2968,28 @@ namespace Calculator
             return ret;
         }
     }
-    internal class GetRandomFileNameExp : Calculator.SimpleExpressionBase
+    internal class GetRandomFileNameExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Path.GetRandomFileName();
         }
     }
-    internal class GetTempFileNameExp : Calculator.SimpleExpressionBase
+    internal class GetTempFileNameExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Path.GetTempFileName();
         }
     }
-    internal class GetTempPathExp : Calculator.SimpleExpressionBase
+    internal class GetTempPathExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
             return Path.GetTempPath();
         }
     }
-    internal class HasExtensionExp : Calculator.SimpleExpressionBase
+    internal class HasExtensionExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {
@@ -3004,7 +3004,7 @@ namespace Calculator
             return ret;
         }
     }
-    internal class IsPathRootedExp : Calculator.SimpleExpressionBase
+    internal class IsPathRootedExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
         {

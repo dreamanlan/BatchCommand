@@ -240,7 +240,9 @@ namespace BatchCommand
                     filterAndNewExts.Add("*");
                 }
                 var targetRoot = Path.GetFullPath(dir2);
-                CopyFolder(targetRoot, dir1, dir2, filterAndNewExts, ref ct);
+                if (Directory.Exists(dir1)) {
+                    CopyFolder(targetRoot, dir1, dir2, filterAndNewExts, ref ct);
+                }
             }
             return ct;
         }
@@ -375,7 +377,9 @@ namespace BatchCommand
                 if (filterAndNewExts.Count <= 0) {
                     filterAndNewExts.Add("*");
                 }
-                CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
+                if (Directory.Exists(dir1)) {
+                    CopyFolder(dir1, dir2, filterAndNewExts, ref ct);
+                }
             }
             return ct;
         }
@@ -472,13 +476,15 @@ namespace BatchCommand
                     filters.Add("*");
                 }
                 dir = Environment.ExpandEnvironmentVariables(dir);
-                foreach (var filter in filters) {
-                    foreach (string file in Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly)) {
-                        File.Delete(file);
-                        ++ct;
+                if (Directory.Exists(dir)) {
+                    foreach (var filter in filters) {
+                        foreach (string file in Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly)) {
+                            File.Delete(file);
+                            ++ct;
 
-                        if (BatchScript.FileEchoOn) {
-                            Console.WriteLine("delete file {0}", file);
+                            if (BatchScript.FileEchoOn) {
+                                Console.WriteLine("delete file {0}", file);
+                            }
                         }
                     }
                 }
@@ -505,13 +511,15 @@ namespace BatchCommand
                     filters.Add("*");
                 }
                 dir = Environment.ExpandEnvironmentVariables(dir);
-                foreach (var filter in filters) {
-                    foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
-                        File.Delete(file);
-                        ++ct;
+                if (Directory.Exists(dir)) {
+                    foreach (var filter in filters) {
+                        foreach (string file in Directory.GetFiles(dir, filter, SearchOption.AllDirectories)) {
+                            File.Delete(file);
+                            ++ct;
 
-                        if (BatchScript.FileEchoOn) {
-                            Console.WriteLine("delete file {0}", file);
+                            if (BatchScript.FileEchoOn) {
+                                Console.WriteLine("delete file {0}", file);
+                            }
                         }
                     }
                 }

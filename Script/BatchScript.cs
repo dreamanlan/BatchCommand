@@ -345,6 +345,10 @@ namespace BatchCommand
                 file1 = Environment.ExpandEnvironmentVariables(file1);
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
+                    var dir = Path.GetDirectoryName(file2);
+                    if (!Directory.Exists(dir)) {
+                        Directory.CreateDirectory(dir);
+                    }
                     File.Copy(file1, file2, true);
                     ret = true;
 
@@ -422,6 +426,10 @@ namespace BatchCommand
                 file1 = Environment.ExpandEnvironmentVariables(file1);
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
+                    var dir = Path.GetDirectoryName(file2);
+                    if (!Directory.Exists(dir)) {
+                        Directory.CreateDirectory(dir);
+                    }
                     if (File.Exists(file2)) {
                         File.Delete(file2);
                     }

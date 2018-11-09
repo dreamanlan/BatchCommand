@@ -2186,6 +2186,36 @@ namespace Calculator
             return r;
         }
     }
+    internal class StringReplaceExp : SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object r = null;
+            if (operands.Count >= 3) {
+                var str = operands[0] as string;
+                var key = operands[1] as string;
+                var val = operands[2] as string;
+                r = str.Replace(key, val);
+            }
+            return r;
+        }
+    }
+    internal class StringReplaceCharExp : SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object r = null;
+            if (operands.Count >= 3) {
+                var str = operands[0] as string;
+                var key = operands[1] as string;
+                var val = operands[2] as string;
+                if (null != str && !string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(val)) {
+                    r = str.Replace(key[0], val[0]);
+                }
+            }
+            return r;
+        }
+    }
     internal class MakeStringExp : SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -3260,6 +3290,8 @@ namespace Calculator
             Register("stringtrimend", new ExpressionFactoryHelper<StringTrimEndExp>());
             Register("stringlower", new ExpressionFactoryHelper<StringLowerExp>());
             Register("stringupper", new ExpressionFactoryHelper<StringUpperExp>());
+            Register("stringreplace", new ExpressionFactoryHelper<StringReplaceExp>());
+            Register("stringreplacechar", new ExpressionFactoryHelper<StringReplaceCharExp>());
             Register("makestring", new ExpressionFactoryHelper<MakeStringExp>());
             Register("str2int", new ExpressionFactoryHelper<Str2IntExp>());
             Register("str2float", new ExpressionFactoryHelper<Str2FloatExp>());

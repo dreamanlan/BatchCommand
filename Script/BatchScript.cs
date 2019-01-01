@@ -1824,7 +1824,11 @@ namespace BatchCommand
                 p.Close();
                 return r;
             } catch (Exception ex) {
-                Console.WriteLine("process({0} {1}) exception:{2}", fileName, args, ex.Message);
+                Console.WriteLine("process({0} {1}) exception:{2} stack:{3}", fileName, args, ex.Message, ex.StackTrace);
+                while (null != ex.InnerException) {
+                    ex = ex.InnerException;
+                    Console.WriteLine("\t=> exception:{0} stack:{1}", ex.Message, ex.StackTrace);
+                }
                 return -1;
             }
         }

@@ -536,6 +536,60 @@ namespace BatchCommand
         }
     }
 
+    internal class GetFileInfoExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 1) {
+                var file = operands[0] as string;
+                file = Environment.ExpandEnvironmentVariables(file);
+                if (File.Exists(file)) {
+                    ret = new FileInfo(file);
+                }
+            }
+            return ret;
+        }
+    }
+
+    internal class GetDirectoryInfoExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 1) {
+                var file = operands[0] as string;
+                file = Environment.ExpandEnvironmentVariables(file);
+                if (Directory.Exists(file)) {
+                    ret = new DirectoryInfo(file);
+                }
+            }
+            return ret;
+        }
+    }
+
+    internal class GetDriveInfoExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = null;
+            if (operands.Count >= 1) {
+                var drive = operands[0] as string;
+                ret = new DriveInfo(drive);
+            }
+            return ret;
+        }
+    }
+
+    internal class GetDrivesInfoExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object ret = DriveInfo.GetDrives();
+            return ret;
+        }
+    }
+
     internal class CommandExp : AbstractExpression
     {
         public override object Calc()
@@ -1635,6 +1689,10 @@ namespace BatchCommand
             s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
             s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());
             s_Calculator.Register("deleteallfiles", new ExpressionFactoryHelper<DeleteAllFilesExp>());
+            s_Calculator.Register("getfileinfo", new ExpressionFactoryHelper<GetFileInfoExp>());
+            s_Calculator.Register("getdirinfo", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
+            s_Calculator.Register("getdriveinfo", new ExpressionFactoryHelper<GetDriveInfoExp>());
+            s_Calculator.Register("getdrivesinfo", new ExpressionFactoryHelper<GetDrivesInfoExp>());
             s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());

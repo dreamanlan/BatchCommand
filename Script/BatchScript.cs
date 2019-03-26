@@ -248,7 +248,7 @@ namespace BatchCommand
         }
         private static void CopyFolder(string targetRoot, string from, string to, IList<string> filterAndNewExts, ref int ct)
         {
-            if (!Directory.Exists(to))
+            if (!string.IsNullOrEmpty(to) && !Directory.Exists(to))
                 Directory.CreateDirectory(to);
             // 子文件夹
             foreach (string sub in Directory.GetDirectories(from)) {
@@ -346,7 +346,7 @@ namespace BatchCommand
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
                     var dir = Path.GetDirectoryName(file2);
-                    if (!Directory.Exists(dir)) {
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) {
                         Directory.CreateDirectory(dir);
                     }
                     File.Copy(file1, file2, true);
@@ -389,7 +389,7 @@ namespace BatchCommand
         }
         private static void CopyFolder(string from, string to, IList<string> filterAndNewExts, ref int ct)
         {
-            if (!Directory.Exists(to))
+            if (!string.IsNullOrEmpty(to) && !Directory.Exists(to))
                 Directory.CreateDirectory(to);
             // 文件
             for (int i = 0; i < filterAndNewExts.Count; i += 2) {
@@ -427,7 +427,7 @@ namespace BatchCommand
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
                     var dir = Path.GetDirectoryName(file2);
-                    if (!Directory.Exists(dir)) {
+                    if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) {
                         Directory.CreateDirectory(dir);
                     }
                     if (File.Exists(file2)) {

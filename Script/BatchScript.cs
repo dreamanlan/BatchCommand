@@ -1618,7 +1618,7 @@ namespace BatchCommand
             if (operands.Count >= 2) {
                 string path = operands[0] as string;
                 var text = operands[1] as string;
-                if (!string.IsNullOrEmpty(path) && !string.IsNullOrEmpty(text)) {
+                if (!string.IsNullOrEmpty(path) && null != text) {
                     path = Environment.ExpandEnvironmentVariables(path);
                     Encoding encoding = Encoding.UTF8;
                     if (operands.Count >= 3) {

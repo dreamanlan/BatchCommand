@@ -1746,7 +1746,7 @@ namespace BatchCommand
                 sdir = Path.Combine(Environment.CurrentDirectory, sdir);
                 s_ScriptDirectory = sdir;
                 s_Calculator.Cleanup();
-                s_Calculator.Load(scpFile);
+                s_Calculator.LoadDsl(scpFile);
                 Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
                 r = s_Calculator.Calc("main", args);
                 if (s_Calculator.RunState == RunStateEnum.Redirect) {

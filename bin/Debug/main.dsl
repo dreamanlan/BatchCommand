@@ -1,4 +1,4 @@
-script(main)
+﻿script(main)
 {
 	clear();
 	echo("{0} {1} {2} {3} {4}", gettitle(), getbufferwidth(), getbufferheight(), getbgcolor(), getfgcolor());
@@ -7,6 +7,12 @@ script(main)
 	echo("os:{0}",os());
 	echo("osplatform:{0}",osplatform());
 	echo("osversion:{0}",osversion());
+
+	echo("2-1={0}",(2-1).ToString());
+	echo("2-1={0}",(2-1).m_value);
+	$a = (2-1).ToString();
+	$b = (2-1).m_value;
+	echo("2-1={0},{1}",$a,$b);
 	
 	@g1=123;
 	@g2=456;

@@ -592,7 +592,7 @@ namespace BatchCommand
 
     internal class CommandExp : AbstractExpression
     {
-        public override object Calc()
+        protected override object DoCalc()
         {
             int exitCode = 0;
             MemoryStream ims = null, oms = null;

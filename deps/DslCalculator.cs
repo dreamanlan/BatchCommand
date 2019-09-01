@@ -3249,9 +3249,9 @@ namespace Calculator
         {
             Calculator.RunState = RunStateEnum.Redirect;
             if (operands.Count >= 1) {
-                List<string> args = new List<string>();
+                ArrayList args = new ArrayList();
                 for (int i = 0; i < operands.Count; ++i) {
-                    var arg = operands[i] as string;
+                    var arg = operands[i];
                     args.Add(arg);
                 }
                 return args;

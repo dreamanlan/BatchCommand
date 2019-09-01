@@ -1733,14 +1733,18 @@ namespace BatchCommand
             s_Calculator.Register("writealltext", new ExpressionFactoryHelper<WriteAllTextExp>());
             s_Calculator.Register("waitstartinterval", new ExpressionFactoryHelper<WaitStartIntervalExp>());
         }
-        internal static object Run(string scpFile, string[] args)
+        internal static void Register(string name, IExpressionFactory factory)
+        {
+            s_Calculator.Register(name, factory);
+        }
+        internal static object Run(string scpFile, params object[] args)
         {
             object r = null;
             bool redirect = true;
             while (redirect) {
                 if (string.IsNullOrEmpty(scpFile)) {
                     scpFile = "main.dsl";
-                    args = new string[] { scpFile };
+                    args = new object[] { scpFile };
                 }
                 var sdir = Path.GetDirectoryName(scpFile);
                 sdir = Path.Combine(Environment.CurrentDirectory, sdir);
@@ -1751,18 +1755,36 @@ namespace BatchCommand
                 r = s_Calculator.Calc("main", args);
                 if (s_Calculator.RunState == RunStateEnum.Redirect) {
                     s_Calculator.RunState = RunStateEnum.Normal;
-                    var list = r as List<string>;
+                    var list = r as IList;
                     if (null == list || list.Count == 0) {
                         args = null;
                         scpFile = string.Empty;
                     } else {
-                        args = list.ToArray();
-                        scpFile = Environment.ExpandEnvironmentVariables(args[0]);
+                        args = new object[list.Count];
+                        list.CopyTo(args, 0);
+                        scpFile = Environment.ExpandEnvironmentVariables(args[0] as string);
                     }
                 } else {
                     redirect = false;
                 }
             }
+            return r;
+        }
+        internal static object Eval(string code, params object[] args)
+        {
+            object r = null;
+            string id = System.Guid.NewGuid().ToString();
+            string procCode = string.Format("script{{ {0}; }};", code);
+            var file = new Dsl.DslFile();
+            if(file.LoadFromString(procCode, id, msg => { Console.WriteLine("{0}", msg); })) {
+                s_Calculator.LoadDsl(id, new string[] { "$query", "$result", "$actionContext" }, file.DslInfos[0].First);
+                r = s_Calculator.Calc(id, args);
+            }
+            return r;
+        }
+        internal static object Call(string proc, params object[] args)
+        {
+            object r = s_Calculator.Calc(proc, args);
             return r;
         }
         internal static Encoding GetEncoding(object v)

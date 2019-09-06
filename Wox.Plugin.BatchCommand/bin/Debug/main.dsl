@@ -6,10 +6,10 @@ script(main)args($id, $metadata, $context)
     clearkeywords($id);
     addkeyword($id, "dsl");
     addkeyword($id, "cmd");
+    addkeyword($id, "open");
     addkeyword($id, "unity");
     addkeyword($id, "ue");
     addkeyword($id, "vscode");
-    addkeyword($id, "open");
     @curkey = "";
     @phase = 0;
     @exe = "";
@@ -17,7 +17,6 @@ script(main)args($id, $metadata, $context)
         "unity" => ["\\unity.exe", "unity \\Assets", "{0}", "-projectPath {0}"],
         "ue" => ["\\uedit64.exe", "ue *.dsl", "{0}", "{0}"],
         "vscode" => ["\\code.exe", "vscode *.dsl", "{0}", "{0}"],
-        "open" => ["*.exe", "open *.doc", "{0}", "{0}"]
     };
     return(0);
 };
@@ -40,6 +39,26 @@ script(on_query)args($query)
         $list = everythingsearch($query.FirstSearch);
         looplist($list){
             addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_cmd", $query);
+        };
+    }elseif($key=="open"){
+        if(@curkey!=$key){
+            @curkey = $key;
+            @phase = 0;
+            @exe = "";
+        };
+        
+        everythingreset();
+        everythingsetdefault();
+        if(@phase==0){
+            $list = everythingsearch($query.FirstSearch);
+            looplist($list){
+                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_open", $query);
+            };
+        }elseif(@phase==1){
+            $list = everythingsearch($query.FirstSearch);
+            looplist($list){
+                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_open_proj", $query);
+            };
         };
     }else{
         if(@curkey!=$key){
@@ -101,6 +120,23 @@ script(on_action_cmd)args($query, $result, $actionContext)
         verb("open");
     };
     return(1);  
+};
+
+script(on_action_open)args($query, $result, $actionContext)
+{
+    @exe = $result.Title;
+    @phase = 1;
+    api().ChangeQuery("open *", true);
+    return(0);  
+};
+script(on_action_open_proj)args($query, $result, $actionContext)
+{
+    $path = $result.Title;
+    process(@exe, $path){
+        nowait(true);
+    };
+    @phase = 0;
+    return(1); 
 };
 
 script(on_action_app)args($query, $result, $actionContext)

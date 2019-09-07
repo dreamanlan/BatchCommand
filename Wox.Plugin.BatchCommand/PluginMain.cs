@@ -410,24 +410,26 @@ internal class EverythingSearchExp : Calculator.SimpleExpressionBase
                 offset = (uint)Convert.ChangeType(operands[1], typeof(uint));
             if (operands.Count >= 3)
                 maxCount = (uint)Convert.ChangeType(operands[2], typeof(uint));
-            EveryThingSDK.Everything_SetSearchW(str);
-            EveryThingSDK.Everything_SetOffset(offset);
-            EveryThingSDK.Everything_SetMax(maxCount);
-            EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
-            if (EveryThingSDK.Everything_QueryW(true)) {
-                List<object[]> list = new List<object[]>();
-                uint num = EveryThingSDK.Everything_GetNumResults();
-                for(uint i = 0; i < num; ++i) {
-                    var sb = new StringBuilder(c_Capacity);
-                    EveryThingSDK.Everything_GetResultFullPathName(i, sb, c_Capacity);
-                    long size;
-                    EveryThingSDK.Everything_GetResultSize(i, out size);
-                    long time;
-                    EveryThingSDK.Everything_GetResultDateModified(i, out time);
-                    var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
-                    list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
+            if (!string.IsNullOrEmpty(str)) {
+                EveryThingSDK.Everything_SetSearchW(str);
+                EveryThingSDK.Everything_SetOffset(offset);
+                EveryThingSDK.Everything_SetMax(maxCount);
+                EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
+                if (EveryThingSDK.Everything_QueryW(true)) {
+                    List<object[]> list = new List<object[]>();
+                    uint num = EveryThingSDK.Everything_GetNumResults();
+                    for (uint i = 0; i < num; ++i) {
+                        var sb = new StringBuilder(c_Capacity);
+                        EveryThingSDK.Everything_GetResultFullPathName(i, sb, c_Capacity);
+                        long size;
+                        EveryThingSDK.Everything_GetResultSize(i, out size);
+                        long time;
+                        EveryThingSDK.Everything_GetResultDateModified(i, out time);
+                        var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
+                        list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
+                    }
+                    return list;
                 }
-                return list;
             }
         }
         return s_EmptyList;

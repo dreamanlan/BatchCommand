@@ -5,12 +5,14 @@ script(main)args($id, $metadata, $context)
 {
     clearkeywords($id);
     addkeyword($id, "dsl");
-    addkeyword($id, "file");
     addkeyword($id, "start");
+    addkeyword($id, "menu");
+    addkeyword($id, "file");
     addkeyword($id, "open");
     addkeyword($id, "unity");
     addkeyword($id, "ue");
     addkeyword($id, "vscode");
+    
     @curkey = "";
     @phase = 0;
     @exe = "";
@@ -40,6 +42,13 @@ script(on_query)args($query)
         }else{
             addresult("reload", "reload main.dsl", "", "on_action_change", $query);
             addresult("eval", "evaluate dsl code", "", "on_action_change", $query);
+        };
+    }elseif($key=="menu"){        
+        everythingreset();
+        everythingsetdefault();
+        $list = everythingsearch($query.FirstSearch);
+        looplist($list){
+            addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_menu", $query);
         };
     }elseif($key=="file"){        
         everythingreset();
@@ -76,19 +85,21 @@ script(on_query)args($query)
                 addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_open_proj", $query);
             };
         };
-    }else{
-        everythingreset();
-        everythingsetdefault();
-        if(@phase==0){
-            $cfglist = @cfg[$key];
-            $list = everythingsearch($cfglist[0]);
-            looplist($list){
-                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_app", $query);
-            };
-        }elseif(@phase==1){
-            $list = everythingsearch($query.FirstSearch);
-            looplist($list){
-                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_app_proj", $query);
+    }elseif(!isnull($key)){
+        if(hashtableget(@cfg, $key)){
+            everythingreset();
+            everythingsetdefault();
+            if(@phase==0){
+                $cfglist = @cfg[$key];
+                $list = everythingsearch($cfglist[0]);
+                looplist($list){
+                    addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_app", $query);
+                };
+            }elseif(@phase==1){
+                $list = everythingsearch($query.FirstSearch);
+                looplist($list){
+                    addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_app_proj", $query);
+                };
             };
         };
     };
@@ -122,6 +133,15 @@ script(on_action_eval_dsl)args($query, $result, $actionContext)
 {
     evaldsl($query.SecondToEndSearch, $query, $result, $actionContext);
     return(0);
+};
+
+script(on_action_menu)args($query, $result, $actionContext)
+{
+    $path = $result.Title;
+    $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
+    $shift = $actionContext.SpecialKeyState.ShiftPressed;
+    showcontextmenu($path, $ctrl, $shift);
+    return(0);  
 };
 
 script(on_action_file)args($query, $result, $actionContext)

@@ -5,7 +5,8 @@ script(main)args($id, $metadata, $context)
 {
     clearkeywords($id);
     addkeyword($id, "dsl");
-    addkeyword($id, "cmd");
+    addkeyword($id, "file");
+    addkeyword($id, "start");
     addkeyword($id, "open");
     addkeyword($id, "unity");
     addkeyword($id, "ue");
@@ -13,6 +14,7 @@ script(main)args($id, $metadata, $context)
     @curkey = "";
     @phase = 0;
     @exe = "";
+    @cmdpath = "";
     @cfg = {
         "unity" => ["\\unity.exe", "unity \\Assets", "{0}", "-projectPath {0}"],
         "ue" => ["\\uedit64.exe", "ue *.dsl", "{0}", "{0}"],
@@ -23,6 +25,12 @@ script(main)args($id, $metadata, $context)
 script(on_query)args($query)
 {
     $key = $query.ActionKeyword;
+    if(@curkey!=$key){
+        @curkey = $key;
+        @phase = 0;
+        @exe = "";
+        @cmdpath = "";
+    };
     if($key=="dsl"){
         $param = $query.FirstSearch;
         if($param=="reload"){
@@ -33,20 +41,28 @@ script(on_query)args($query)
             addresult("reload", "reload main.dsl", "", "on_action_change", $query);
             addresult("eval", "evaluate dsl code", "", "on_action_change", $query);
         };
-    }elseif($key=="cmd"){
+    }elseif($key=="file"){        
         everythingreset();
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
         looplist($list){
-            addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_cmd", $query);
+            addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_file", $query);
+        };
+    }elseif($key=="start"){        
+        everythingreset();
+        everythingsetdefault();
+        if(@phase==0){
+            $list = everythingsearch($query.FirstSearch);
+            looplist($list){
+                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_cmd", $query);
+            };
+        }elseif(@phase==1){
+            $list = everythingsearch($query.SecondSearch);
+            looplist($list){
+                addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_cmd_args", $query);
+            };
         };
     }elseif($key=="open"){
-        if(@curkey!=$key){
-            @curkey = $key;
-            @phase = 0;
-            @exe = "";
-        };
-        
         everythingreset();
         everythingsetdefault();
         if(@phase==0){
@@ -55,18 +71,12 @@ script(on_query)args($query)
                 addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_open", $query);
             };
         }elseif(@phase==1){
-            $list = everythingsearch($query.FirstSearch);
+            $list = everythingsearch($query.SecondSearch);
             looplist($list){
                 addresult($$[0], ""+$$[1]+" "+$$[2], "", "on_action_open_proj", $query);
             };
         };
     }else{
-        if(@curkey!=$key){
-            @curkey = $key;
-            @phase = 0;
-            @exe = "";
-        };
-        
         everythingreset();
         everythingsetdefault();
         if(@phase==0){
@@ -86,12 +96,15 @@ script(on_query)args($query)
 };
 script(on_context_menus)args($query, $result)
 {
-    addcontextmenu("Test Menu", "this is a test menu", "", "on_menu_action_test", $query, $result);
+    addcontextmenu("Show Explore Menu", "show explore menu", "", "on_menu_action_explore_menu", $query, $result);
     return(0);
 };
-script(on_menu_action_test)args($query, $result, $menu, $actionContext)
+script(on_menu_action_explore_menu)args($query, $result, $menu, $actionContext)
 {
-    api().ShowMsg($menu.Title, $menu.SubTitle, $menu.IcoPath);
+    $path = $result.Title;
+    $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
+    $shift = $actionContext.SpecialKeyState.ShiftPressed;
+    showcontextmenu($path, $ctrl, $shift);
     return(1);
 };
 
@@ -111,10 +124,30 @@ script(on_action_eval_dsl)args($query, $result, $actionContext)
     return(0);
 };
 
+script(on_action_file)args($query, $result, $actionContext)
+{
+    $path = $result.Title;
+    $args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    process($path, $args){
+        nowait(true);
+        useshellexecute(true);
+        verb("open");
+    };
+    return(1);  
+};
+
 script(on_action_cmd)args($query, $result, $actionContext)
 {
-    cmdpath = $result.Title;
-    process("cmd", "/c start /d %cmdpath% /b cmd"){
+    @cmdpath = $result.Title;
+    @phase = 1;
+    return(0);  
+};
+script(on_action_cmd_args)args($query, $result, $actionContext)
+{
+    cmdpath = @cmdpath;
+    $path = $result.Title;
+    $args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    process("cmd", "/c start /d %cmdpath% /b "+$path+$args){
         nowait(true);
         useshellexecute(true);
         verb("open");
@@ -126,13 +159,13 @@ script(on_action_open)args($query, $result, $actionContext)
 {
     @exe = $result.Title;
     @phase = 1;
-    api().ChangeQuery("open *", true);
     return(0);  
 };
 script(on_action_open_proj)args($query, $result, $actionContext)
 {
     $path = $result.Title;
-    process(@exe, $path){
+    $args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    process(@exe, $path+$args){
         nowait(true);
     };
     @phase = 0;
@@ -150,12 +183,13 @@ script(on_action_app)args($query, $result, $actionContext)
 script(on_action_app_proj)args($query, $result, $actionContext)
 {
     $key = $query.ActionKeyword;
+    $args = $query.SecondToEndSearch;
     $path = $result.Title;    
     //unity工程可以借助子目录名来筛选
     if($key=="unity" && $path.EndsWith("\\Assets")){
         $path = getdirectoryname($path);
     };
-    process(format(@cfg[$key][2],@exe), format(@cfg[$key][3],$path)){
+    process(format(@cfg[$key][2],@exe), format(@cfg[$key][3],$path)+" "+$args){
         nowait(true);
     };
     @phase = 0;

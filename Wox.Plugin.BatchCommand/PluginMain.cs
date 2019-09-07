@@ -24,6 +24,7 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("keywordregistered", new Calculator.ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
         BatchScript.Register("clearkeywords", new Calculator.ExpressionFactoryHelper<ClearActionKeywordsExp>());
         BatchScript.Register("addkeyword", new Calculator.ExpressionFactoryHelper<AddActionKeywordExp>());
+        BatchScript.Register("showcontextmenu", new Calculator.ExpressionFactoryHelper<ShowContextMenuExp>());
         BatchScript.Register("everythingreset", new Calculator.ExpressionFactoryHelper<EverythingResetExp>());
         BatchScript.Register("everythingsetdefault", new Calculator.ExpressionFactoryHelper<EverythingSetDefaultExp>());
         BatchScript.Register("everythingmatchpath", new Calculator.ExpressionFactoryHelper<EverythingMatchPathExp>());
@@ -237,6 +238,29 @@ internal class AddActionKeywordExp : Calculator.SimpleExpressionBase
                     return true;
                 }
             }
+        }
+        return false;
+    }
+}
+internal class ShowContextMenuExp : Calculator.SimpleExpressionBase
+{
+    protected override object OnCalc(IList<object> operands)
+    {
+        if (operands.Count >= 3) {
+            string path = operands[0] as string;
+            bool ctrl = (bool)Convert.ChangeType(operands[1], typeof(bool));
+            bool shift = (bool)Convert.ChangeType(operands[2], typeof(bool));
+
+            if (Directory.Exists(path)) {
+                var dis = new DirectoryInfo[] { new DirectoryInfo(path) };
+                var scm = new ShellApi.ShellContextMenu();
+                scm.ShowContextMenu(dis, ctrl, shift);
+            } else if (File.Exists(path)) {
+                var fis = new FileInfo[] { new FileInfo(path) };
+                var scm = new ShellApi.ShellContextMenu();
+                scm.ShowContextMenu(fis, ctrl, shift);
+            }
+            return true;
         }
         return false;
     }

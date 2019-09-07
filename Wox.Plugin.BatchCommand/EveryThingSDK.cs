@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-public class EveryThingSDK
+public static class EveryThingSDK
 {
     public const int EVERYTHING_OK = 0;
     public const int EVERYTHING_ERROR_MEMORY = 1;

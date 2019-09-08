@@ -410,7 +410,7 @@ internal class EverythingSearchExp : Calculator.SimpleExpressionBase
                 offset = (uint)Convert.ChangeType(operands[1], typeof(uint));
             if (operands.Count >= 3)
                 maxCount = (uint)Convert.ChangeType(operands[2], typeof(uint));
-            if (!string.IsNullOrEmpty(str)) {
+            if (null != str) {
                 EveryThingSDK.Everything_SetSearchW(str);
                 EveryThingSDK.Everything_SetOffset(offset);
                 EveryThingSDK.Everything_SetMax(maxCount);

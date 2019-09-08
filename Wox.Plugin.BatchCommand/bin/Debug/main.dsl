@@ -1,6 +1,8 @@
 //注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！
 //在Action处理里，BatchCommand插件尝试根据Title与SubTitle来定位正确的Result，所以结果列表
 //里不要出现Title与SubTitle都相同的项）
+//ActionKeyword注册为*时，Query.ActionKeyword为空串，输入的第一个部分是Query.FirstSearch，这与非*的ActionKeyword注册不同。
+//这里还是采用具体的ActionKeyword注册。
 script(main)args($id, $metadata, $context)
 {
     clearkeywords($id);
@@ -86,7 +88,7 @@ script(on_query)args($query)
             };
         };
     }elseif(!isnull($key)){
-        if(hashtableget(@cfg, $key)){
+        if(!isnull(hashtableget(@cfg, $key))){
             everythingreset();
             everythingsetdefault();
             if(@phase==0){

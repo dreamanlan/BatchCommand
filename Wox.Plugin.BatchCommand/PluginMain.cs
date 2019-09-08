@@ -12,7 +12,15 @@ public class Main : IPlugin, IContextMenu
 {
     public void Init(PluginInitContext context)
     {
+        s_StartupThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
         s_Context = context;
+        var txtWriter = new StringWriter(s_LogBuilder);
+        Console.SetOut(txtWriter);
+        Console.SetError(txtWriter);
+        using(var sw = new StreamWriter(s_LogFile, false)) {
+            sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
+            sw.Close();
+        }
         BatchScript.Init();
         BatchScript.Register("context", new Calculator.ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", new Calculator.ExpressionFactoryHelper<ApiExp>());
@@ -37,75 +45,111 @@ public class Main : IPlugin, IContextMenu
     }
     public List<Result> Query(Query query)
     {
-        s_Results.Clear();
-        BatchScript.Call("on_query", query);
-        return s_Results;
+        lock (s_PluginLock) {
+            s_Results.Clear();
+            BatchScript.Call("on_query", query);
+            ShowLog("Query");
+            return s_Results;
+        }
     }
     public List<Result> LoadContextMenus(Result selectedResult)
     {
-        s_ContextMenus.Clear();
-        Query query = selectedResult.ContextData as Query;
-        BatchScript.Call("on_context_menus", query, selectedResult);
-        return s_ContextMenus;
+        lock (s_PluginLock) {
+            s_ContextMenus.Clear();
+            Query query = selectedResult.ContextData as Query;
+            BatchScript.Call("on_context_menus", query, selectedResult);
+            ShowLog("LoadContextMenus");
+            return s_ContextMenus;
+        }
     }
 
     internal static void ReloadDsl()
     {
-        string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
-        BatchScript.Run(dslPath, s_Context.CurrentPluginMetadata.ID, s_Context.CurrentPluginMetadata, s_Context);
+        lock (s_PluginLock) {
+            string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
+            BatchScript.Run(dslPath, s_Context.CurrentPluginMetadata.ID, s_Context.CurrentPluginMetadata, s_Context);
+            ShowLog("ReloadDsl");
+        }
     }
     internal static bool OnMenuAction(string action, Query query, Result result, Result menu, ActionContext e)
     {
-        //由于Wox实现上的缺陷，这里根据menu的Title与SubTitle在菜单列表里查找真正的菜单项再调action
-        int ix = s_ContextMenus.IndexOf(menu);
-        if (ix < 0) {
-            s_Context.API.ShowMsg("Can't find menu " + menu.Title, menu.SubTitle, menu.IcoPath);
-            return false;
-        }
-        if (s_ContextMenus[ix].ContextData != menu.ContextData || s_ContextMenus[ix].Action != menu.Action) {
-            return s_ContextMenus[ix].Action(e);
-        }
-        object r = BatchScript.Call(action, query, result, menu, e);
-        if (s_NeedReload) {
-            s_NeedReload = false;
-            ReloadDsl();
-        }
-        if (null != r) {
-            bool ret = (bool)Convert.ChangeType(r, typeof(bool));
-            return ret;
-        }
-        else {
-            return false;
+        lock (s_PluginLock) {
+            //由于Wox实现上的缺陷，这里根据menu的Title与SubTitle在菜单列表里查找真正的菜单项再调action
+            int ix = s_ContextMenus.IndexOf(menu);
+            if (ix < 0) {
+                s_Context.API.ShowMsg("Can't find menu " + menu.Title, menu.SubTitle, menu.IcoPath);
+                return false;
+            }
+            if (s_ContextMenus[ix].ContextData != menu.ContextData || s_ContextMenus[ix].Action != menu.Action) {
+                return s_ContextMenus[ix].Action(e);
+            }
+            object r = BatchScript.Call(action, query, result, menu, e);
+            ShowLog("OnMenuAction");
+            if (s_NeedReload) {
+                s_NeedReload = false;
+                ReloadDsl();
+            }
+            if (null != r) {
+                bool ret = (bool)Convert.ChangeType(r, typeof(bool));
+                return ret;
+            }
+            else {
+                return false;
+            }
         }
     }
     internal static bool OnAction(string action, Query query, Result result, ActionContext e)
     {
-        //由于Wox实现上的缺陷，这里根据result的Title与SubTitle在结果列表里查找真正的result项再调action
-        int ix = s_Results.IndexOf(result);
-        if (ix < 0) {
-            s_Context.API.ShowMsg("Can't find result " + result.Title, result.SubTitle, result.IcoPath);
-            return false;
+        lock (s_PluginLock) {
+            //由于Wox实现上的缺陷，这里根据result的Title与SubTitle在结果列表里查找真正的result项再调action
+            int ix = s_Results.IndexOf(result);
+            if (ix < 0) {
+                s_Context.API.ShowMsg("Can't find result " + result.Title, result.SubTitle, result.IcoPath);
+                return false;
+            }
+            if (s_Results[ix].ContextData != result.ContextData || s_Results[ix].Action != result.Action) {
+                return s_Results[ix].Action(e);
+            }
+            object r = BatchScript.Call(action, query, result, e);
+            ShowLog("OnAction");
+            if (s_NeedReload) {
+                s_NeedReload = false;
+                ReloadDsl();
+            }
+            if (null != r) {
+                bool ret = (bool)Convert.ChangeType(r, typeof(bool));
+                return ret;
+            }
+            else {
+                return false;
+            }
         }
-        if (s_Results[ix].ContextData != result.ContextData || s_Results[ix].Action != result.Action) {
-            return s_Results[ix].Action(e);
+    }
+    internal static void ShowLog(string tag)
+    {
+        var txt = s_LogBuilder.ToString();
+        s_LogBuilder.Length = 0;
+        if (!string.IsNullOrEmpty(txt)) {
+            s_Context.API.ShowMsg(txt);
         }
-        object r = BatchScript.Call(action, query, result, e);
-        if (s_NeedReload) {
-            s_NeedReload = false;
-            ReloadDsl();
-        }
-        if (null != r) {
-            bool ret = (bool)Convert.ChangeType(r, typeof(bool));
-            return ret;
-        } else {
-            return false;
+        using (var sw = File.AppendText(s_LogFile)) {
+            var threadLog = string.Format("{0} Thread {1}.", tag, System.Threading.Thread.CurrentThread.ManagedThreadId);
+            sw.WriteLine(threadLog);
+            if (!string.IsNullOrEmpty(txt))
+                sw.WriteLine(txt);
+            sw.Close();
         }
     }
 
+    internal static int s_StartupThreadId = 0;
     internal static PluginInitContext s_Context = null;
     internal static List<Result> s_Results = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
     internal static bool s_NeedReload = false;
+
+    private static string s_LogFile = "BatchCommand.log";
+    private static StringBuilder s_LogBuilder = new StringBuilder();
+    private static object s_PluginLock = new object();
 }
 
 internal class ContextExp : Calculator.SimpleExpressionBase
@@ -435,6 +479,6 @@ internal class EverythingSearchExp : Calculator.SimpleExpressionBase
         return s_EmptyList;
     }
 
-    private static List<string> s_EmptyList = new List<string>();
+    private static List<object[]> s_EmptyList = new List<object[]>();
     private const int c_Capacity = 4096;
 }

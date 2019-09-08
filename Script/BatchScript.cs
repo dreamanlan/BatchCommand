@@ -1858,51 +1858,57 @@ namespace BatchCommand
                     psi.StandardErrorEncoding = encoding;
                 }
                 var p = Process.Start(psi);
-                if (psi.RedirectStandardInput) {
-                    if (null != istream) {
-                        istream.Seek(0, SeekOrigin.Begin);
-                        using(var sr = new StreamReader(istream, encoding, true, 1024, true)){
-                            string line;
-                            while((line = sr.ReadLine())!=null){
+                if (null != p) {
+                    if (psi.RedirectStandardInput) {
+                        if (null != istream) {
+                            istream.Seek(0, SeekOrigin.Begin);
+                            using (var sr = new StreamReader(istream, encoding, true, 1024, true)) {
+                                string line;
+                                while ((line = sr.ReadLine()) != null) {
+                                    p.StandardInput.WriteLine(line);
+                                    p.StandardInput.Flush();
+                                }
+                            }
+                            p.StandardInput.Close();
+                        }
+                        else if (null != input) {
+                            foreach (var line in input) {
                                 p.StandardInput.WriteLine(line);
                                 p.StandardInput.Flush();
                             }
+                            p.StandardInput.Close();
                         }
-                        p.StandardInput.Close();
-                    } else if (null != input) {
-                        foreach (var line in input) {
-                            p.StandardInput.WriteLine(line);
-                            p.StandardInput.Flush();
+                    }
+                    p.WaitForExit();
+                    if (psi.RedirectStandardOutput) {
+                        string txt = p.StandardOutput.ReadToEnd();
+                        p.StandardOutput.Close();
+                        if (null != ostream) {
+                            ostream.Seek(0, SeekOrigin.Begin);
+                            ostream.SetLength(0);
+                            var bytes = encoding.GetBytes(txt);
+                            ostream.Write(bytes, 0, bytes.Length);
                         }
-                        p.StandardInput.Close();
+                        if (null != output) {
+                            output.Clear();
+                            output.Append(txt);
+                        }
                     }
+                    if (psi.RedirectStandardError) {
+                        string txt = p.StandardError.ReadToEnd();
+                        p.StandardError.Close();
+                        if (null != error) {
+                            error.Clear();
+                            error.Append(txt);
+                        }
+                    }
+                    int r = p.ExitCode;
+                    p.Close();
+                    return r;
+                } else {
+                    Console.WriteLine("process({0} {1}) failed.", fileName, args);
+                    return -1;
                 }
-                p.WaitForExit();
-                if (psi.RedirectStandardOutput) {
-                    string txt = p.StandardOutput.ReadToEnd();
-                    p.StandardOutput.Close();
-                    if (null != ostream) {
-                        ostream.Seek(0, SeekOrigin.Begin);
-                        ostream.SetLength(0);
-                        var bytes = encoding.GetBytes(txt);
-                        ostream.Write(bytes, 0, bytes.Length);
-                    }
-                    if (null != output) {
-                        output.Clear();
-                        output.Append(txt);
-                    }
-                }
-                if (psi.RedirectStandardError) {
-                    string txt = p.StandardError.ReadToEnd();
-                    p.StandardError.Close();
-                    if (null != error) {
-                        error.Clear();
-                        error.Append(txt);
-                    }
-                }
-                int r = p.ExitCode;
-                p.Close();
-                return r;
             } catch (Exception ex) {
                 Console.WriteLine("process({0} {1}) exception:{2} stack:{3}", fileName, args, ex.Message, ex.StackTrace);
                 while (null != ex.InnerException) {

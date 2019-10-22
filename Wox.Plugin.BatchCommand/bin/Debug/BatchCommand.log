@@ -1,0 +1,26 @@
+Startup Thread 1.
+ReloadDsl Thread 1.
+Query Thread 12.
+Exception:未找到方法“System.Collections.Hashtable.$key”。
+   在 System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
+   在 System.Type.InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args)
+   在 Calculator.DotnetGetExp.DoCalc() 位置 E:\OpenSource\BatchCommand\deps\DslCalculator.cs:行号 1979
+
+Query Thread 7.
+Exception:未找到方法“System.Collections.Hashtable.$key”。
+   在 System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
+   在 System.Type.InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args)
+   在 Calculator.DotnetGetExp.DoCalc() 位置 E:\OpenSource\BatchCommand\deps\DslCalculator.cs:行号 1979
+
+Query Thread 7.
+Exception:未找到方法“System.Collections.Hashtable.$key”。
+   在 System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
+   在 System.Type.InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args)
+   在 Calculator.DotnetGetExp.DoCalc() 位置 E:\OpenSource\BatchCommand\deps\DslCalculator.cs:行号 1979
+
+Query Thread 34.
+Exception:未找到方法“System.Collections.Hashtable.$key”。
+   在 System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)
+   在 System.Type.InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args)
+   在 Calculator.DotnetGetExp.DoCalc() 位置 E:\OpenSource\BatchCommand\deps\DslCalculator.cs:行号 1979
+

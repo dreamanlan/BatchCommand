@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
@@ -35,7 +35,8 @@ namespace BatchCommand
                     var strList = operands[1] as IList<string>;
                     if (null != strList && operands.Count == 2) {
                         filterList = strList;
-                    } else {
+                    }
+                    else {
                         var list = new List<string>();
                         for (int i = 1; i < operands.Count; ++i) {
                             var str = operands[i] as string;
@@ -72,7 +73,8 @@ namespace BatchCommand
                     var strList = operands[1] as IList<string>;
                     if (null != strList && operands.Count == 2) {
                         filterList = strList;
-                    } else {
+                    }
+                    else {
                         var list = new List<string>();
                         for (int i = 1; i < operands.Count; ++i) {
                             var str = operands[i] as string;
@@ -109,7 +111,8 @@ namespace BatchCommand
                     var strList = operands[1] as IList<string>;
                     if (null != strList && operands.Count == 2) {
                         filterList = strList;
-                    } else {
+                    }
+                    else {
                         var list = new List<string>();
                         for (int i = 1; i < operands.Count; ++i) {
                             var str = operands[i] as string;
@@ -146,7 +149,8 @@ namespace BatchCommand
                     var strList = operands[1] as IList<string>;
                     if (null != strList && operands.Count == 2) {
                         filterList = strList;
-                    } else {
+                    }
+                    else {
                         var list = new List<string>();
                         for (int i = 1; i < operands.Count; ++i) {
                             var str = operands[i] as string;
@@ -230,7 +234,7 @@ namespace BatchCommand
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
                 List<string> filterAndNewExts = new List<string>();
-                for(int i = 2; i < operands.Count; ++i) {
+                for (int i = 2; i < operands.Count; ++i) {
                     var str = operands[i] as string;
                     if (null != str) {
                         filterAndNewExts.Add(str);
@@ -253,10 +257,11 @@ namespace BatchCommand
             // 子文件夹
             foreach (string sub in Directory.GetDirectories(from)) {
                 var srcPath = Path.GetFullPath(sub);
-                if(Environment.OSVersion.Platform==PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) {
+                if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) {
                     if (srcPath.IndexOf(targetRoot) == 0)
                         continue;
-                } else {
+                }
+                else {
                     if (srcPath.IndexOf(targetRoot, StringComparison.CurrentCultureIgnoreCase) == 0)
                         continue;
                 }
@@ -270,7 +275,7 @@ namespace BatchCommand
                 if (i + 1 < filterAndNewExts.Count) {
                     newExt = filterAndNewExts[i + 1];
                 }
-                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {                    
+                foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {
                     string targetFile;
                     if (string.IsNullOrEmpty(newExt))
                         targetFile = Path.Combine(to, Path.GetFileName(file));
@@ -298,12 +303,12 @@ namespace BatchCommand
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
                 if (Directory.Exists(dir1)) {
-                    if(Directory.Exists(dir2)){
+                    if (Directory.Exists(dir2)) {
                         Directory.Delete(dir2);
                     }
                     Directory.Move(dir1, dir2);
                     ret = true;
-                    
+
                     if (BatchScript.FileEchoOn) {
                         Console.WriteLine("move directory {0} => {1}", dir1, dir2);
                     }
@@ -597,7 +602,7 @@ namespace BatchCommand
             int exitCode = 0;
             MemoryStream ims = null, oms = null;
             int ct = m_CommandConfigs.Count;
-            for(int i = 0; i < ct; ++i) {
+            for (int i = 0; i < ct; ++i) {
                 try {
                     if (i > 0) {
                         ims = oms;
@@ -609,10 +614,12 @@ namespace BatchCommand
                     var cfg = m_CommandConfigs[i];
                     if (cfg.m_Commands.Count > 0) {
                         exitCode = ExecCommand(cfg, ims, oms);
-                    } else {
+                    }
+                    else {
                         exitCode = ExecProcess(cfg, ims, oms);
                     }
-                } finally {
+                }
+                finally {
                     if (null != ims) {
                         ims.Close();
                         ims.Dispose();
@@ -630,7 +637,7 @@ namespace BatchCommand
             var id = callData.GetId();
             if (id == "process") {
                 int num = callData.GetParamNum();
-                if (num > 0) {                    
+                if (num > 0) {
                     var param0 = callData.GetParam(0);
                     var exp0 = Calculator.Load(param0);
                     cmd.m_FileName = exp0;
@@ -640,15 +647,18 @@ namespace BatchCommand
                         var exp1 = Calculator.Load(param1);
                         cmd.m_Argments = exp1;
                     }
-                } else {
+                }
+                else {
                     Console.WriteLine("[syntax error] {0} line:{1}", callData.ToScriptString(false), callData.GetLine());
                 }
-            } else if (id == "command") {
+            }
+            else if (id == "command") {
                 int num = callData.GetParamNum();
                 if (num > 0) {
                     Console.WriteLine("[syntax error] {0} line:{1}", callData.ToScriptString(false), callData.GetLine());
                 }
-            } else {
+            }
+            else {
                 Console.WriteLine("[syntax error] {0} line:{1}", callData.ToScriptString(false), callData.GetLine());
             }
             return true;
@@ -670,49 +680,71 @@ namespace BatchCommand
                             var exp = Calculator.Load(cd.GetParam(0));
                             if (type == "input") {
                                 cmd.m_Input = exp;
-                            } else if (type == "output") {
+                            }
+                            else if (type == "output") {
                                 cmd.m_Output = exp;
-                            } else if (type == "error") {
+                            }
+                            else if (type == "error") {
                                 cmd.m_Error = exp;
-                            } else if (type == "nowait") {
+                            }
+                            else if (type == "redirecttoconsole") {
+                                cmd.m_RedirectToConsole = exp;
+                            }
+                            else if (type == "nowait") {
                                 cmd.m_NoWait = exp;
-                            } else if (type == "useshellexecute") {
+                            }
+                            else if (type == "useshellexecute") {
                                 cmd.m_UseShellExecute = exp;
-                            } else if (type == "verb") {
+                            }
+                            else if (type == "verb") {
                                 cmd.m_Verb = exp;
-                            } else if (type == "domain") {
+                            }
+                            else if (type == "domain") {
                                 cmd.m_Domain = exp;
-                            } else if (type == "user") {
+                            }
+                            else if (type == "user") {
                                 cmd.m_UserName = exp;
-                            } else if (type == "password") {
+                            }
+                            else if (type == "password") {
                                 cmd.m_Password = exp;
-                            } else if (type == "passwordincleartext") {
+                            }
+                            else if (type == "passwordincleartext") {
                                 cmd.m_PasswordInClearText = exp;
-                            } else if (type == "loadprofile") {
+                            }
+                            else if (type == "loadprofile") {
                                 cmd.m_LoadUserProfile = exp;
-                            } else if (type == "windowstyle") {
+                            }
+                            else if (type == "windowstyle") {
                                 cmd.m_WindowStyle = exp;
-                            } else if (type == "newwindow") {
+                            }
+                            else if (type == "newwindow") {
                                 cmd.m_NewWindow = exp;
-                            } else if (type == "errordialog") {
+                            }
+                            else if (type == "errordialog") {
                                 cmd.m_ErrorDialog = exp;
-                            } else if (type == "workingdirectory") {
+                            }
+                            else if (type == "workingdirectory") {
                                 cmd.m_WorkingDirectory = exp;
-                            } else if (type == "encoding") {
+                            }
+                            else if (type == "encoding") {
                                 cmd.m_Encoding = exp;
-                            } else {
+                            }
+                            else {
                                 Console.WriteLine("[syntax error] {0} line:{1}", cd.ToScriptString(false), cd.GetLine());
                             }
-                        } else {
+                        }
+                        else {
                             Console.WriteLine("[syntax error] {0} line:{1}", cd.ToScriptString(false), cd.GetLine());
                         }
-                    } else {
+                    }
+                    else {
                         var fd = comp as Dsl.FunctionData;
-                        if (null != fd && fd.Call.GetParamNum()== 0 && fd.HaveExternScript()) {
+                        if (null != fd && fd.Call.GetParamNum() == 0 && fd.HaveExternScript()) {
                             string os = fd.GetId();
                             string txt = fd.GetExternScript();
                             cmd.m_Commands.Add(os, txt);
-                        } else {
+                        }
+                        else {
                             Console.WriteLine("[syntax error] {0} line:{1}", comp.ToScriptString(false), comp.GetLine());
                         }
                     }
@@ -786,7 +818,8 @@ namespace BatchCommand
                 var name = v as string;
                 if (!string.IsNullOrEmpty(name)) {
                     encoding = Encoding.GetEncoding(name);
-                } else if (v is int) {
+                }
+                else if (v is int) {
                     int codePage = (int)Convert.ChangeType(v, typeof(int));
                     encoding = Encoding.GetEncoding(codePage);
                 }
@@ -814,11 +847,13 @@ namespace BatchCommand
                                 }
                                 input = slist;
                             }
-                        } else {
+                        }
+                        else {
                             str = Environment.ExpandEnvironmentVariables(str);
                             input = File.ReadAllLines(str);
                         }
-                    } else {
+                    }
+                    else {
                         int vn = (int)Convert.ChangeType(v, typeof(int));
                         object val = Calculator.GetVariable(vn);
                         if (null != val) {
@@ -830,10 +865,12 @@ namespace BatchCommand
                             input = slist;
                         }
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                 }
             }
+            bool redirectToConsole = BatchScript.FileEchoOn;
             StringBuilder outputBuilder = null;
             StringBuilder errorBuilder = null;
             object output = null;
@@ -844,7 +881,8 @@ namespace BatchCommand
                 if (!string.IsNullOrEmpty(str)) {
                     str = Environment.ExpandEnvironmentVariables(str);
                     output = str;
-                } else {
+                }
+                else {
                     output = v;
                 }
                 outputBuilder = new StringBuilder();
@@ -855,13 +893,19 @@ namespace BatchCommand
                 if (!string.IsNullOrEmpty(str)) {
                     str = Environment.ExpandEnvironmentVariables(str);
                     error = str;
-                } else {
+                }
+                else {
                     error = v;
                 }
                 errorBuilder = new StringBuilder();
             }
-
-            int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+            if (null != cfg.m_RedirectToConsole) {
+                var v = cfg.m_RedirectToConsole.Calc();
+                if (null != v) {
+                    redirectToConsole = (bool)Convert.ChangeType(v, typeof(bool));
+                }
+            }
+            int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, redirectToConsole, encoding);
             if (BatchScript.FileEchoOn) {
                 Console.WriteLine("new process:{0} {1}, exit code:{2}", fileName, args, exitCode);
             }
@@ -872,14 +916,17 @@ namespace BatchCommand
                     if (!string.IsNullOrEmpty(file)) {
                         if (file[0] == '@' || file[0] == '$') {
                             Calculator.SetVariable(file, outputBuilder.ToString());
-                        } else {
+                        }
+                        else {
                             File.WriteAllText(file, outputBuilder.ToString());
                         }
-                    } else {
+                    }
+                    else {
                         int v = (int)Convert.ChangeType(output, typeof(int));
                         Calculator.SetVariable(v, outputBuilder.ToString());
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     Console.WriteLine("output {0} failed:{1}", output, ex.Message);
                 }
             }
@@ -889,14 +936,17 @@ namespace BatchCommand
                     if (!string.IsNullOrEmpty(file)) {
                         if (file[0] == '@' || file[0] == '$') {
                             Calculator.SetVariable(file, errorBuilder.ToString());
-                        } else {
+                        }
+                        else {
                             File.WriteAllText(file, errorBuilder.ToString());
                         }
-                    } else {
+                    }
+                    else {
                         int v = (int)Convert.ChangeType(error, typeof(int));
                         Calculator.SetVariable(v, errorBuilder.ToString());
                     }
-                } catch (Exception ex) {
+                }
+                catch (Exception ex) {
                     Console.WriteLine("error {0} failed:{1}", error, ex.Message);
                 }
             }
@@ -960,7 +1010,8 @@ namespace BatchCommand
                     var name = v as string;
                     if (!string.IsNullOrEmpty(name)) {
                         encoding = Encoding.GetEncoding(name);
-                    } else if (v is int) {
+                    }
+                    else if (v is int) {
                         int codePage = (int)Convert.ChangeType(v, typeof(int));
                         encoding = Encoding.GetEncoding(codePage);
                     }
@@ -984,11 +1035,13 @@ namespace BatchCommand
                                     }
                                     input = slist;
                                 }
-                            } else {
+                            }
+                            else {
                                 str = Environment.ExpandEnvironmentVariables(str);
                                 input = File.ReadAllLines(str);
                             }
-                        } else {
+                        }
+                        else {
                             int vn = (int)Convert.ChangeType(v, typeof(int));
                             object val = Calculator.GetVariable(vn);
                             if (null != val) {
@@ -1000,10 +1053,12 @@ namespace BatchCommand
                                 input = slist;
                             }
                         }
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex) {
                         Console.WriteLine("input {0} failed:{1}", v, ex.Message);
                     }
                 }
+                bool redirectToConsole = BatchScript.FileEchoOn;
                 StringBuilder outputBuilder = null;
                 StringBuilder errorBuilder = null;
                 object output = null;
@@ -1014,7 +1069,8 @@ namespace BatchCommand
                     if (!string.IsNullOrEmpty(str)) {
                         str = Environment.ExpandEnvironmentVariables(str);
                         output = str;
-                    } else {
+                    }
+                    else {
                         output = v;
                     }
                     outputBuilder = new StringBuilder();
@@ -1025,10 +1081,17 @@ namespace BatchCommand
                     if (!string.IsNullOrEmpty(str)) {
                         str = Environment.ExpandEnvironmentVariables(str);
                         error = str;
-                    } else {
+                    }
+                    else {
                         error = v;
                     }
                     errorBuilder = new StringBuilder();
+                }
+                if (null != cfg.m_RedirectToConsole) {
+                    var v = cfg.m_RedirectToConsole.Calc();
+                    if (null != v) {
+                        redirectToConsole = (bool)Convert.ChangeType(v, typeof(bool));
+                    }
                 }
 
                 cmd = cmd.Trim();
@@ -1046,25 +1109,28 @@ namespace BatchCommand
                     fileName = Environment.ExpandEnvironmentVariables(fileName);
                     args = Environment.ExpandEnvironmentVariables(args);
 
-                    exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, encoding);
+                    exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, redirectToConsole, encoding);
                     if (BatchScript.FileEchoOn) {
                         Console.WriteLine("new process:{0} {1}, exit code:{2}", fileName, args, exitCode);
                     }
-                    
+
                     if (null != outputBuilder && null != output) {
                         try {
                             var file = output as string;
                             if (!string.IsNullOrEmpty(file)) {
                                 if (file[0] == '@' || file[0] == '$') {
                                     Calculator.SetVariable(file, outputBuilder.ToString());
-                                } else {
+                                }
+                                else {
                                     File.WriteAllText(file, outputBuilder.ToString());
                                 }
-                            } else {
+                            }
+                            else {
                                 int v = (int)Convert.ChangeType(output, typeof(int));
                                 Calculator.SetVariable(v, outputBuilder.ToString());
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex) {
                             Console.WriteLine("output {0} failed:{1}", output, ex.Message);
                         }
                     }
@@ -1074,14 +1140,17 @@ namespace BatchCommand
                             if (!string.IsNullOrEmpty(file)) {
                                 if (file[0] == '@' || file[0] == '$') {
                                     Calculator.SetVariable(file, errorBuilder.ToString());
-                                } else {
+                                }
+                                else {
                                     File.WriteAllText(file, errorBuilder.ToString());
                                 }
-                            } else {
+                            }
+                            else {
                                 int v = (int)Convert.ChangeType(error, typeof(int));
                                 Calculator.SetVariable(v, errorBuilder.ToString());
                             }
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex) {
                             Console.WriteLine("error {0} failed:{1}", error, ex.Message);
                         }
                     }
@@ -1112,6 +1181,7 @@ namespace BatchCommand
             internal IExpression m_Input = null;
             internal IExpression m_Output = null;
             internal IExpression m_Error = null;
+            internal IExpression m_RedirectToConsole = null;
         }
 
         private List<CommandConfig> m_CommandConfigs = new List<CommandConfig>();
@@ -1143,7 +1213,8 @@ namespace BatchCommand
                         }
                     }
                     ret = ct;
-                } else if (vObj is int) {
+                }
+                else if (vObj is int) {
                     int pid = (int)Convert.ChangeType(vObj, typeof(int));
                     var p = Process.GetProcessById(pid);
                     if (null != p && p.Id != myselfId) {
@@ -1153,7 +1224,8 @@ namespace BatchCommand
                         p.Kill();
                         ret = 1;
                     }
-                } else {
+                }
+                else {
 
                 }
             }
@@ -1177,7 +1249,7 @@ namespace BatchCommand
                     Console.WriteLine("killme {0}[pid:{1},session id:{2}] exit code:{3}", p.ProcessName, p.Id, p.SessionId, exitCode);
                 }
                 Environment.Exit(exitCode);
-            }            
+            }
             return ret;
         }
     }
@@ -1216,11 +1288,13 @@ namespace BatchCommand
                                 list.Add(p);
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                     }
                 }
                 ret = list;
-            } else {
+            }
+            else {
                 ret = ps;
             }
             return ret;
@@ -1303,7 +1377,8 @@ namespace BatchCommand
                             arrayList.Add(operands[i]);
                         }
                         Console.Write(fmt, arrayList.ToArray());
-                    } else {
+                    }
+                    else {
                         Console.Write(obj);
                     }
                 }
@@ -1341,7 +1416,8 @@ namespace BatchCommand
                 int f = (int)Convert.ChangeType(operands[0], typeof(int));
                 int d = (int)Convert.ChangeType(operands[1], typeof(int));
                 Console.Beep(f, d);
-            } else {
+            }
+            else {
                 Console.Beep();
             }
             return null;
@@ -1497,14 +1573,15 @@ namespace BatchCommand
                     Console.InputEncoding = BatchScript.GetEncoding(encoding1);
                     Console.OutputEncoding = BatchScript.GetEncoding(encoding2);
                 }
-            } else {
+            }
+            else {
                 Console.InputEncoding = Encoding.UTF8;
                 Console.OutputEncoding = Encoding.UTF8;
             }
             return null;
         }
     }
-    
+
     internal class GetInputEncodingExp : Calculator.SimpleExpressionBase
     {
         protected override object OnCalc(IList<object> operands)
@@ -1580,7 +1657,7 @@ namespace BatchCommand
                         encoding = BatchScript.GetEncoding(v);
                     }
                     var strs = new List<string>();
-                    foreach(var line in lines) {
+                    foreach (var line in lines) {
                         strs.Add(line.ToString());
                     }
                     File.WriteAllLines(path, strs, encoding);
@@ -1759,12 +1836,14 @@ namespace BatchCommand
                     if (null == list || list.Count == 0) {
                         args = null;
                         scpFile = string.Empty;
-                    } else {
+                    }
+                    else {
                         args = new object[list.Count];
                         list.CopyTo(args, 0);
                         scpFile = Environment.ExpandEnvironmentVariables(args[0] as string);
                     }
-                } else {
+                }
+                else {
                     redirect = false;
                 }
             }
@@ -1776,7 +1855,7 @@ namespace BatchCommand
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
-            if(file.LoadFromString(procCode, id, msg => { Console.WriteLine("{0}", msg); })) {
+            if (file.LoadFromString(procCode, id, msg => { Console.WriteLine("{0}", msg); })) {
                 s_Calculator.LoadDsl(id, new string[] { "$query", "$result", "$actionContext" }, file.DslInfos[0].First);
                 r = s_Calculator.Calc(id, args);
             }
@@ -1792,32 +1871,36 @@ namespace BatchCommand
             var name = v as string;
             if (null != name) {
                 return Encoding.GetEncoding(name);
-            } else if (v is int) {
+            }
+            else if (v is int) {
                 int codePage = (int)Convert.ChangeType(v, typeof(int));
                 return Encoding.GetEncoding(codePage);
-            } else {
+            }
+            else {
                 return Encoding.UTF8;
             }
         }
-        internal static int NewProcess(bool noWait, string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
+        internal static int NewProcess(bool noWait, string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, bool redirectToConsole, Encoding encoding)
         {
             if (noWait) {
-                var task = Task.Run<int>(() => NewProcessTask(fileName, args, option, istream, ostream, input, output, error, encoding));
+                var task = Task.Run<int>(() => NewProcessTask(fileName, args, option, istream, ostream, input, output, error, redirectToConsole, encoding));
                 s_Tasks.Add(task);
                 while (task.Status == TaskStatus.Created || task.Status == TaskStatus.WaitingForActivation || task.Status == TaskStatus.WaitingToRun) {
                     Console.WriteLine("wait {0}[{1}] start", Path.GetFileName(fileName), task.Status);
                     task.Wait(s_CheckStartInterval);
                 }
                 return 0;
-            } else {
-                return NewProcessTask(fileName, args, option, istream, ostream, input, output, error, encoding);
+            }
+            else {
+                return NewProcessTask(fileName, args, option, istream, ostream, input, output, error, redirectToConsole, encoding);
             }
         }
-        private static int NewProcessTask(string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, Encoding encoding)
+        private static int NewProcessTask(string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, bool redirectToConsole, Encoding encoding)
         {
             //考虑到跨平台兼容性，不使用特定进程环境变量
             try {
-                var psi = new ProcessStartInfo();
+                Process p = new Process();
+                var psi = p.StartInfo;
                 psi.FileName = fileName;
                 psi.Arguments = args;
                 psi.UseShellExecute = option.UseShellExecute;
@@ -1849,16 +1932,17 @@ namespace BatchCommand
                 if (null != istream || null != input) {
                     psi.RedirectStandardInput = true;
                 }
-                if (null != ostream || null != output) {
+                if (null != ostream || null != output || redirectToConsole) {
                     psi.RedirectStandardOutput = true;
                     psi.StandardOutputEncoding = encoding;
+                    p.OutputDataReceived += (sender, e) => OnOutputDataReceived(sender, e, ostream, output, redirectToConsole, encoding);
                 }
-                if (null != error) {
+                if (null != error || redirectToConsole) {
                     psi.RedirectStandardError = true;
                     psi.StandardErrorEncoding = encoding;
+                    p.ErrorDataReceived += (sender, e) => OnErrorDataReceived(sender, e, ostream, error, redirectToConsole, encoding);
                 }
-                var p = Process.Start(psi);
-                if (null != p) {
+                if (p.Start()) {
                     if (psi.RedirectStandardInput) {
                         if (null != istream) {
                             istream.Seek(0, SeekOrigin.Begin);
@@ -1879,43 +1963,69 @@ namespace BatchCommand
                             p.StandardInput.Close();
                         }
                     }
+                    if (null != ostream) {
+                        ostream.Seek(0, SeekOrigin.Begin);
+                        ostream.SetLength(0);
+                    }
+                    if (psi.RedirectStandardOutput)
+                        p.BeginOutputReadLine();
+                    if (psi.RedirectStandardError)
+                        p.BeginErrorReadLine();
                     p.WaitForExit();
                     if (psi.RedirectStandardOutput) {
-                        string txt = p.StandardOutput.ReadToEnd();
+                        p.CancelOutputRead();
                         p.StandardOutput.Close();
-                        if (null != ostream) {
-                            ostream.Seek(0, SeekOrigin.Begin);
-                            ostream.SetLength(0);
-                            var bytes = encoding.GetBytes(txt);
-                            ostream.Write(bytes, 0, bytes.Length);
-                        }
-                        if (null != output) {
-                            output.Clear();
-                            output.Append(txt);
-                        }
                     }
                     if (psi.RedirectStandardError) {
-                        string txt = p.StandardError.ReadToEnd();
+                        p.CancelErrorRead();
                         p.StandardError.Close();
-                        if (null != error) {
-                            error.Clear();
-                            error.Append(txt);
-                        }
                     }
                     int r = p.ExitCode;
                     p.Close();
                     return r;
-                } else {
+                }
+                else {
                     Console.WriteLine("process({0} {1}) failed.", fileName, args);
                     return -1;
                 }
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 Console.WriteLine("process({0} {1}) exception:{2} stack:{3}", fileName, args, ex.Message, ex.StackTrace);
                 while (null != ex.InnerException) {
                     ex = ex.InnerException;
                     Console.WriteLine("\t=> exception:{0} stack:{1}", ex.Message, ex.StackTrace);
                 }
                 return -1;
+            }
+        }
+
+        private static void OnOutputDataReceived(object sender, DataReceivedEventArgs e, Stream ostream, StringBuilder output, bool redirectToConsole, Encoding encoding)
+        {
+            var p = sender as Process;
+            if (p.StartInfo.RedirectStandardOutput) {
+                var txt = e.Data;
+                if (null != ostream) {
+                    var bytes = encoding.GetBytes(txt);
+                    ostream.Write(bytes, 0, bytes.Length);
+                }
+                if (null != output) {
+                    output.Append(txt);
+                }
+            }
+        }
+
+        private static void OnErrorDataReceived(object sender, DataReceivedEventArgs e, Stream ostream, StringBuilder error, bool redirectToConsole, Encoding encoding)
+        {
+            var p = sender as Process;
+            if (p.StartInfo.RedirectStandardError) {
+                var txt = e.Data;
+                if (null != ostream) {
+                    var bytes = encoding.GetBytes(txt);
+                    ostream.Write(bytes, 0, bytes.Length);
+                }
+                if (null != error) {
+                    error.Append(txt);
+                }
             }
         }
 

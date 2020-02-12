@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.IO;
 using Calculator;
 using Dsl;
@@ -593,6 +594,123 @@ namespace BatchCommand
             object ret = DriveInfo.GetDrives();
             return ret;
         }
+    }
+
+    internal class GrepExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object r = null;
+            if (operands.Count >= 1) {
+                var lines = operands[0] as IList<string>;
+                Regex regex = null;
+                if (operands.Count >= 2)
+                    regex = new Regex(operands[1] as string, RegexOptions.Compiled);
+                var outLines = new List<string>();
+                if (null != lines) {
+                    int ct = lines.Count;
+                    for (int i = 0; i < ct; ++i) {
+                        string lineStr = lines[i];
+                        if (null != regex) {
+                            if (regex.IsMatch(lineStr)) {
+                                outLines.Add(lineStr);
+                            }
+                        }
+                        else {
+                            outLines.Add(lineStr);
+                        }
+                    }
+                    r = outLines;
+                }
+            }
+            return r;
+        }
+    }
+
+    internal class SubstExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object r = null;
+            if (operands.Count >= 3) {
+                var lines = operands[0] as IList<string>;
+                Regex regex = new Regex(operands[1] as string, RegexOptions.Compiled);
+                string subst = operands[2] as string;
+                int count = -1;
+                if (operands.Count >= 4)
+                    count = (int)Convert.ChangeType(operands[3], typeof(int));
+                var outLines = new List<string>();
+                if (null != lines && null != regex && null != subst) {
+                    int ct = lines.Count;
+                    for (int i = 0; i < ct; ++i) {
+                        string lineStr = lines[i];
+                        lineStr = regex.Replace(lineStr, subst, count);
+                        outLines.Add(lineStr);
+                    }
+                    r = outLines;
+                }
+            }
+            return r;
+        }
+    }
+
+    internal class AwkExp : Calculator.SimpleExpressionBase
+    {
+        protected override object OnCalc(IList<object> operands)
+        {
+            object r = null;
+            if (operands.Count >= 2) {
+                var lines = operands[0] as IList<string>;
+                var script = operands[1] as string;
+                bool removeEmpties = true;
+                if (operands.Count >= 3)
+                    removeEmpties = (bool)Convert.ChangeType(operands[2], typeof(bool));
+                var sepList = new List<string> { " " };
+                if (operands.Count >= 4) {
+                    sepList.Clear();
+                    for(int i = 3; i < operands.Count; ++i) {
+                        var sep = operands[i] as string;
+                        if (!string.IsNullOrEmpty(sep)) {
+                            sepList.Add(sep);
+                        }
+                    }
+                }
+                var outLines = new List<string>();
+                if (null != lines && !string.IsNullOrEmpty(script)) {
+                    var seps = sepList.ToArray();
+                    var scpId = BatchScript.Eval(script, s_ArgNames);
+                    var args = new List<string>();
+                    int ct = lines.Count;
+                    for (int i = 0; i < ct; ++i) {
+                        string lineStr = lines[i];
+                        var fields = lineStr.Split(seps, removeEmpties ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
+                        args.Clear();
+                        args.Add(lineStr);
+                        args.AddRange(fields);
+                        var o = BatchScript.Call(scpId, args.ToArray());
+                        var rlist = o as IList;
+                        if (null != rlist) {
+                            foreach(var item in rlist) {
+                                var str = item as string;
+                                if (null != str) {
+                                    outLines.Add(str);
+                                }
+                            }
+                        }
+                        else {
+                            var str = o as string;
+                            if (null != str) {
+                                outLines.Add(str);
+                            }
+                        }
+                    }
+                    r = outLines;
+                }
+            }
+            return r;
+        }
+
+        private static string[] s_ArgNames = new string[] { "$0", "$1", "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9", "$10", "$11", "$12", "$13", "$14", "$15", "$16" };
     }
 
     internal class CommandExp : AbstractExpression
@@ -1770,6 +1888,9 @@ namespace BatchCommand
             s_Calculator.Register("getdirinfo", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
             s_Calculator.Register("getdriveinfo", new ExpressionFactoryHelper<GetDriveInfoExp>());
             s_Calculator.Register("getdrivesinfo", new ExpressionFactoryHelper<GetDrivesInfoExp>());
+            s_Calculator.Register("grep", new ExpressionFactoryHelper<GrepExp>());
+            s_Calculator.Register("subst", new ExpressionFactoryHelper<SubstExp>());
+            s_Calculator.Register("awk", new ExpressionFactoryHelper<AwkExp>());
             s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
             s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());
@@ -1849,17 +1970,16 @@ namespace BatchCommand
             }
             return r;
         }
-        internal static object Eval(string code, params object[] args)
+        internal static string Eval(string code, IList<string> argNames)
         {
-            object r = null;
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
             if (file.LoadFromString(procCode, id, msg => { Console.WriteLine("{0}", msg); })) {
-                s_Calculator.LoadDsl(id, new string[] { "$query", "$result", "$actionContext" }, file.DslInfos[0].First);
-                r = s_Calculator.Calc(id, args);
+                s_Calculator.LoadDsl(id, argNames, file.DslInfos[0].First);
+                return id;
             }
-            return r;
+            return null;
         }
         internal static object Call(string proc, params object[] args)
         {

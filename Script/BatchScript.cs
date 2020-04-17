@@ -2000,7 +2000,8 @@ namespace BatchCommand
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
             if (file.LoadFromString(procCode, id, msg => { Console.WriteLine("{0}", msg); })) {
-                s_Calculator.LoadDsl(id, argNames, file.DslInfos[0].First);
+                var func = file.DslInfos[0] as Dsl.FunctionData;
+                s_Calculator.LoadDsl(id, argNames, func);
                 return id;
             }
             return null;

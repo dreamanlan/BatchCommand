@@ -49,6 +49,7 @@
 		newwindow(true);
 		windowstyle("Normal");		
 	};
+	waitall();
 	echo("press any key ...");
 	command{
 		unix{:cat copy.dsl:};

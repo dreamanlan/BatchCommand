@@ -1,5 +1,6 @@
 ﻿script(main)
 {
+  fileecho(true);
 	clear();
 	echo("{0} {1} {2} {3} {4}", gettitle(), getbufferwidth(), getbufferheight(), getbgcolor(), getfgcolor());
 	settitle("测试c#批处理工具");

@@ -6,6 +6,7 @@ using System.Text;
 using System.IO;
 using Wox.Plugin;
 using BatchCommand;
+using Calculator;
 
 //注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
 public class Main : IPlugin, IContextMenu
@@ -47,7 +48,7 @@ public class Main : IPlugin, IContextMenu
     {
         lock (s_PluginLock) {
             s_Results.Clear();
-            BatchScript.Call("on_query", query);
+            BatchScript.Call("on_query", CalculatorValue.FromObject(query));
             ShowLog("Query");
             return s_Results;
         }
@@ -57,7 +58,7 @@ public class Main : IPlugin, IContextMenu
         lock (s_PluginLock) {
             s_ContextMenus.Clear();
             Query query = selectedResult.ContextData as Query;
-            BatchScript.Call("on_context_menus", query, selectedResult);
+            BatchScript.Call("on_context_menus", CalculatorValue.FromObject(query), CalculatorValue.FromObject(selectedResult));
             ShowLog("LoadContextMenus");
             return s_ContextMenus;
         }
@@ -67,7 +68,12 @@ public class Main : IPlugin, IContextMenu
     {
         lock (s_PluginLock) {
             string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
-            BatchScript.Run(dslPath, s_Context.CurrentPluginMetadata.ID, s_Context.CurrentPluginMetadata, s_Context);
+            var vargs = BatchScript.NewCalculatorValueList();
+            vargs.Add(s_Context.CurrentPluginMetadata.ID);
+            vargs.Add(CalculatorValue.FromObject(s_Context.CurrentPluginMetadata));
+            vargs.Add(CalculatorValue.FromObject(s_Context));
+            BatchScript.Run(dslPath, vargs);
+            BatchScript.RecycleCalculatorValueList(vargs);
             ShowLog("ReloadDsl");
         }
     }
@@ -83,7 +89,7 @@ public class Main : IPlugin, IContextMenu
             if (s_ContextMenus[ix].ContextData != menu.ContextData || s_ContextMenus[ix].Action != menu.Action) {
                 return s_ContextMenus[ix].Action(e);
             }
-            object r = BatchScript.Call(action, query, result, menu, e);
+            object r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
             ShowLog("OnMenuAction");
             if (s_NeedReload) {
                 s_NeedReload = false;
@@ -110,14 +116,14 @@ public class Main : IPlugin, IContextMenu
             if (s_Results[ix].ContextData != result.ContextData || s_Results[ix].Action != result.Action) {
                 return s_Results[ix].Action(e);
             }
-            object r = BatchScript.Call(action, query, result, e);
+            var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(e));
             ShowLog("OnAction");
             if (s_NeedReload) {
                 s_NeedReload = false;
                 ReloadDsl();
             }
-            if (null != r) {
-                bool ret = (bool)Convert.ChangeType(r, typeof(bool));
+            if (r.IsBoolean) {
+                bool ret = r.GetBool();
                 return ret;
             }
             else {
@@ -154,95 +160,97 @@ public class Main : IPlugin, IContextMenu
 
 internal class ContextExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        return Main.s_Context;
+        return CalculatorValue.FromObject(Main.s_Context);
     }
 }
 internal class ApiExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        return Main.s_Context.API;
+        return CalculatorValue.FromObject(Main.s_Context.API);
     }
 }
 internal class MetadataExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        return Main.s_Context.CurrentPluginMetadata;
+        return CalculatorValue.FromObject(Main.s_Context.CurrentPluginMetadata);
     }
 }
 internal class ReloadDslExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         Main.s_NeedReload = true;
-        return null;
+        return CalculatorValue.NullObject;
     }
 }
 internal class EvalDslExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
+        CalculatorValue r = CalculatorValue.NullObject;
         if (operands.Count >= 1) {
-            string code = operands[0] as string;
-            ArrayList args = new ArrayList();
+            string code = operands[0].As<string>();
+            var args = BatchScript.NewCalculatorValueList();
             for (int i = 1; i < operands.Count; ++i) {
                 var arg = operands[i];
                 args.Add(arg);
             }
             var id = BatchScript.Eval(code, new string[] { "$query", "$result", "$actionContext" });
             if (null != id) {
-                return BatchScript.Call(id, args.ToArray());
+                r = BatchScript.Call(id, args);
             }
+            BatchScript.RecycleCalculatorValueList(args);
         }
-        return null;
+        return r;
     }
 }
 internal class AddResultExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 5) {
-            string title = operands[0] as string;
-            string subTitle = operands[1] as string;
-            string icoPath = operands[2] as string;
-            string action = operands[3] as string;
-            Query query = operands[4] as Query;
+            string title = operands[0].AsString;
+            string subTitle = operands[1].AsString;
+            string icoPath = operands[2].AsString;
+            string action = operands[3].AsString;
+            Query query = operands[4].As<Query>();
 
             var item = new Result { Title = title, SubTitle = subTitle, IcoPath = icoPath, ContextData = query };
             item.Action = e => { return Main.OnAction(action, query, item, e); };
             Main.s_Results.Add(item);
         }
-        return null;
+        return CalculatorValue.NullObject;
     }
 }
 internal class AddContextMenuExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 6) {
-            string title = operands[0] as string;
-            string subTitle = operands[1] as string;
-            string icoPath = operands[2] as string;
-            string action = operands[3] as string;
-            Query query = operands[4] as Query;
-            Result result = operands[5] as Result;
+            string title = operands[0].AsString;
+            string subTitle = operands[1].AsString;
+            string icoPath = operands[2].AsString;
+            string action = operands[3].AsString;
+            Query query = operands[4].As<Query>();
+            Result result = operands[5].As<Result>();
 
             var item = new Result { Title = title, SubTitle = subTitle, IcoPath = icoPath, ContextData = query };
             item.Action = e => { return Main.OnMenuAction(action, query, result, item, e); };
             Main.s_ContextMenus.Add(item);
         }
-        return null;
+        return CalculatorValue.NullObject;
     }
 }
 internal class ActionKeywordRegisteredExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            string keyword = operands[0] as string;
+            string keyword = operands[0].AsString;
             Wox.Core.Plugin.PluginManager.ActionKeywordRegistered(keyword);
         }
         return false;
@@ -250,10 +258,10 @@ internal class ActionKeywordRegisteredExp : Calculator.SimpleExpressionBase
 }
 internal class ClearActionKeywordsExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            string id = operands[0] as string;
+            string id = operands[0].AsString;
             var plugin = Wox.Core.Plugin.PluginManager.GetPluginForId(id);
             if (null != plugin) {
                 var keywords = plugin.Metadata.ActionKeywords.ToArray();
@@ -268,11 +276,11 @@ internal class ClearActionKeywordsExp : Calculator.SimpleExpressionBase
 }
 internal class AddActionKeywordExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 2) {
-            string id = operands[0] as string;
-            string keyword = operands[1] as string;
+            string id = operands[0].AsString;
+            string keyword = operands[1].AsString;
             if (Wox.Core.Plugin.PluginManager.ActionKeywordRegistered(keyword)) {
                 return false;
             }
@@ -291,10 +299,10 @@ internal class AddActionKeywordExp : Calculator.SimpleExpressionBase
 }
 internal class ShowContextMenuExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 3) {
-            string path = operands[0] as string;
+            string path = operands[0].AsString;
             bool ctrl = (bool)Convert.ChangeType(operands[1], typeof(bool));
             bool shift = (bool)Convert.ChangeType(operands[2], typeof(bool));
 
@@ -314,27 +322,27 @@ internal class ShowContextMenuExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingResetExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         EveryThingSDK.Everything_Reset();
-        return null;
+        return CalculatorValue.NullObject;
     }
 }
 internal class EverythingSetDefaultExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         EveryThingSDK.Everything_SetMatchPath(false);
         EveryThingSDK.Everything_SetMatchCase(false);
         EveryThingSDK.Everything_SetMatchWholeWord(false);
         EveryThingSDK.Everything_SetRegex(false);
         EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
-        return null;
+        return CalculatorValue.NullObject;
     }
 }
 internal class EverythingMatchPathExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
@@ -347,7 +355,7 @@ internal class EverythingMatchPathExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingMatchCaseExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
@@ -360,7 +368,7 @@ internal class EverythingMatchCaseExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingMatchWholeWordExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
@@ -374,7 +382,7 @@ internal class EverythingMatchWholeWordExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingRegexExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
@@ -388,10 +396,10 @@ internal class EverythingRegexExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingSortExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            string type = operands[0] as string;
+            string type = operands[0].AsString;
             bool asc = true;
             if (operands.Count >= 2)
                 asc = (bool)Convert.ChangeType(operands[1], typeof(bool));
@@ -447,16 +455,16 @@ internal class EverythingSortExp : Calculator.SimpleExpressionBase
 }
 internal class EverythingSearchExp : Calculator.SimpleExpressionBase
 {
-    protected override object OnCalc(IList<object> operands)
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            string str = operands[0] as string;
+            string str = operands[0].AsString;
             uint offset = 0;
             uint maxCount = 100;
             if (operands.Count >= 2)
-                offset = (uint)Convert.ChangeType(operands[1], typeof(uint));
+                offset = operands[1].Get<uint>();
             if (operands.Count >= 3)
-                maxCount = (uint)Convert.ChangeType(operands[2], typeof(uint));
+                maxCount = operands[2].Get<uint>();
             if (null != str) {
                 EveryThingSDK.Everything_SetSearchW(str);
                 EveryThingSDK.Everything_SetOffset(offset);
@@ -475,11 +483,11 @@ internal class EverythingSearchExp : Calculator.SimpleExpressionBase
                         var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
                         list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
                     }
-                    return list;
+                    return CalculatorValue.FromObject(list);
                 }
             }
         }
-        return s_EmptyList;
+        return CalculatorValue.FromObject(s_EmptyList);
     }
 
     private static List<object[]> s_EmptyList = new List<object[]>();

@@ -10,11 +10,16 @@ namespace BatchCommand
             try {
                 BatchScript.Init();
                 object r = null;
+                var vargs = BatchScript.NewCalculatorValueList();
                 if (args.Length <= 0) {
-                    r = BatchScript.Run(string.Empty, args);
+                    r = BatchScript.Run(string.Empty, vargs);
                 } else {
-                    r = BatchScript.Run(args[0], args);
+                    foreach(var arg in args) {
+                        vargs.Add(arg);
+                    }
+                    r = BatchScript.Run(args[0], vargs);
                 }
+                BatchScript.RecycleCalculatorValueList(vargs);
                 if (null != r) {
                     exitCode = (int)Convert.ChangeType(r, typeof(int));
                 }

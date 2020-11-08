@@ -14,10 +14,10 @@ namespace BatchCommand
 {
     internal class FileEchoExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                BatchScript.FileEchoOn = (bool)Convert.ChangeType(operands[0], typeof(bool));
+                BatchScript.FileEchoOn = operands[0].GetBool();
             }
             return BatchScript.FileEchoOn;
         }
@@ -25,22 +25,22 @@ namespace BatchCommand
 
     internal class ListDirectoriesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var baseDir = operands[0] as string;
+                var baseDir = operands[0].AsString;
                 baseDir = Environment.ExpandEnvironmentVariables(baseDir);
                 IList<string> filterList = new string[] { "*" };
                 if (operands.Count >= 2) {
                     var list = new List<string>();
                     for (int i = 1; i < operands.Count; ++i) {
-                        var str = operands[i] as string;
+                        var str = operands[i].AsString;
                         if (null != str) {
                             list.Add(str);
                         }
                         else {
-                            var strList = operands[i] as IList;
+                            var strList = operands[i].As<IList>();
                             if (null != strList) {
                                 foreach (var strObj in strList) {
                                     var tempStr = strObj as string;
@@ -58,7 +58,7 @@ namespace BatchCommand
                         var list = Directory.GetDirectories(baseDir, filter, SearchOption.TopDirectoryOnly);
                         fullList.AddRange(list);
                     }
-                    ret = fullList;
+                    ret = CalculatorValue.FromObject(fullList);
                 }
             }
             return ret;
@@ -67,22 +67,22 @@ namespace BatchCommand
 
     internal class ListFilesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var baseDir = operands[0] as string;
+                var baseDir = operands[0].AsString;
                 baseDir = Environment.ExpandEnvironmentVariables(baseDir);
                 IList<string> filterList = new string[] { "*" };
                 if (operands.Count >= 2) {
                     var list = new List<string>();
                     for (int i = 1; i < operands.Count; ++i) {
-                        var str = operands[i] as string;
+                        var str = operands[i].AsString;
                         if (null != str) {
                             list.Add(str);
                         }
                         else {
-                            var strList = operands[i] as IList;
+                            var strList = operands[i].As<IList>();
                             if (null != strList) {
                                 foreach (var strObj in strList) {
                                     var tempStr = strObj as string;
@@ -100,7 +100,7 @@ namespace BatchCommand
                         var list = Directory.GetFiles(baseDir, filter, SearchOption.TopDirectoryOnly);
                         fullList.AddRange(list);
                     }
-                    ret = fullList;
+                    ret = CalculatorValue.FromObject(fullList);
                 }
             }
             return ret;
@@ -109,22 +109,22 @@ namespace BatchCommand
 
     internal class ListAllDirectoriesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var baseDir = operands[0] as string;
+                var baseDir = operands[0].AsString;
                 baseDir = Environment.ExpandEnvironmentVariables(baseDir);
                 IList<string> filterList = new string[] { "*" };
                 if (operands.Count >= 2) {
                     var list = new List<string>();
                     for (int i = 1; i < operands.Count; ++i) {
-                        var str = operands[i] as string;
+                        var str = operands[i].AsString;
                         if (null != str) {
                             list.Add(str);
                         }
                         else {
-                            var strList = operands[i] as IList;
+                            var strList = operands[i].As<IList>();
                             if (null != strList) {
                                 foreach (var strObj in strList) {
                                     var tempStr = strObj as string;
@@ -142,7 +142,7 @@ namespace BatchCommand
                         var list = Directory.GetDirectories(baseDir, filter, SearchOption.AllDirectories);
                         fullList.AddRange(list);
                     }
-                    ret = fullList;
+                    ret = CalculatorValue.FromObject(fullList);
                 }
             }
             return ret;
@@ -151,22 +151,22 @@ namespace BatchCommand
 
     internal class ListAllFilesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var baseDir = operands[0] as string;
+                var baseDir = operands[0].AsString;
                 baseDir = Environment.ExpandEnvironmentVariables(baseDir);
                 IList<string> filterList = new string[] { "*" };
                 if (operands.Count >= 2) {
                     var list = new List<string>();
                     for (int i = 1; i < operands.Count; ++i) {
-                        var str = operands[i] as string;
+                        var str = operands[i].AsString;
                         if (null != str) {
                             list.Add(str);
                         }
                         else {
-                            var strList = operands[i] as IList;
+                            var strList = operands[i].As<IList>();
                             if (null != strList) {
                                 foreach (var strObj in strList) {
                                     var tempStr = strObj as string;
@@ -184,7 +184,7 @@ namespace BatchCommand
                         var list = Directory.GetFiles(baseDir, filter, SearchOption.AllDirectories);
                         fullList.AddRange(list);
                     }
-                    ret = fullList;
+                    ret = CalculatorValue.FromObject(fullList);
                 }
             }
             return ret;
@@ -193,11 +193,11 @@ namespace BatchCommand
 
     internal class DirectoryExistExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var dir = operands[0] as string;
+                var dir = operands[0].AsString;
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 ret = Directory.Exists(dir);
             }
@@ -207,11 +207,11 @@ namespace BatchCommand
 
     internal class FileExistExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var file = operands[0] as string;
+                var file = operands[0].AsString;
                 file = Environment.ExpandEnvironmentVariables(file);
                 ret = File.Exists(file);
             }
@@ -221,11 +221,11 @@ namespace BatchCommand
 
     internal class CreateDirectoryExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 1) {
-                var dir = operands[0] as string;
+                var dir = operands[0].AsString;
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 if (!Directory.Exists(dir)) {
                     Directory.CreateDirectory(dir);
@@ -242,22 +242,22 @@ namespace BatchCommand
 
     internal class CopyDirectoryExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ct = 0;
             if (operands.Count >= 2) {
-                var dir1 = operands[0] as string;
-                var dir2 = operands[1] as string;
+                var dir1 = operands[0].AsString;
+                var dir2 = operands[1].AsString;
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
                 List<string> filterAndNewExts = new List<string>();
                 for (int i = 2; i < operands.Count; ++i) {
-                    var str = operands[i] as string;
+                    var str = operands[i].AsString;
                     if (null != str) {
                         filterAndNewExts.Add(str);
                     }
                     else {
-                        var strList = operands[i] as IList;
+                        var strList = operands[i].As<IList>();
                         if (null != strList) {
                             foreach (var strObj in strList) {
                                 var tempStr = strObj as string;
@@ -321,12 +321,12 @@ namespace BatchCommand
 
     internal class MoveDirectoryExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 2) {
-                var dir1 = operands[0] as string;
-                var dir2 = operands[1] as string;
+                var dir1 = operands[0].AsString;
+                var dir2 = operands[1].AsString;
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
                 if (Directory.Exists(dir1)) {
@@ -347,11 +347,11 @@ namespace BatchCommand
 
     internal class DeleteDirectoryExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 1) {
-                var dir = operands[0] as string;
+                var dir = operands[0].AsString;
                 dir = Environment.ExpandEnvironmentVariables(dir);
                 if (Directory.Exists(dir)) {
                     Directory.Delete(dir, true);
@@ -368,12 +368,12 @@ namespace BatchCommand
 
     internal class CopyFileExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 2) {
-                var file1 = operands[0] as string;
-                var file2 = operands[1] as string;
+                var file1 = operands[0].AsString;
+                var file2 = operands[1].AsString;
                 file1 = Environment.ExpandEnvironmentVariables(file1);
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
@@ -395,22 +395,22 @@ namespace BatchCommand
 
     internal class CopyFilesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ct = 0;
             if (operands.Count >= 2) {
-                var dir1 = operands[0] as string;
-                var dir2 = operands[1] as string;
+                var dir1 = operands[0].AsString;
+                var dir2 = operands[1].AsString;
                 dir1 = Environment.ExpandEnvironmentVariables(dir1);
                 dir2 = Environment.ExpandEnvironmentVariables(dir2);
                 List<string> filterAndNewExts = new List<string>();
                 for (int i = 2; i < operands.Count; ++i) {
-                    var str = operands[i] as string;
+                    var str = operands[i].AsString;
                     if (null != str) {
                         filterAndNewExts.Add(str);
                     }
                     else {
-                        var strList = operands[i] as IList;
+                        var strList = operands[i].As<IList>();
                         if (null != strList) {
                             foreach (var strObj in strList) {
                                 var tempStr = strObj as string;
@@ -459,12 +459,12 @@ namespace BatchCommand
 
     internal class MoveFileExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 2) {
-                var file1 = operands[0] as string;
-                var file2 = operands[1] as string;
+                var file1 = operands[0].AsString;
+                var file2 = operands[1].AsString;
                 file1 = Environment.ExpandEnvironmentVariables(file1);
                 file2 = Environment.ExpandEnvironmentVariables(file2);
                 if (File.Exists(file1)) {
@@ -489,11 +489,11 @@ namespace BatchCommand
 
     internal class DeleteFileExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool ret = false;
             if (operands.Count >= 1) {
-                var file = operands[0] as string;
+                var file = operands[0].AsString;
                 file = Environment.ExpandEnvironmentVariables(file);
                 if (File.Exists(file)) {
                     File.Delete(file);
@@ -510,19 +510,19 @@ namespace BatchCommand
 
     internal class DeleteFilesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ct = 0;
             if (operands.Count >= 1) {
-                var dir = operands[0] as string;
+                var dir = operands[0].AsString;
                 List<string> filters = new List<string>();
                 for (int i = 1; i < operands.Count; ++i) {
-                    var str = operands[i] as string;
+                    var str = operands[i].AsString;
                     if (null != str) {
                         filters.Add(str);
                     }
                     else {
-                        var strList = operands[i] as IList;
+                        var strList = operands[i].As<IList>();
                         if (null != strList) {
                             foreach (var strObj in strList) {
                                 var tempStr = strObj as string;
@@ -555,19 +555,19 @@ namespace BatchCommand
 
     internal class DeleteAllFilesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ct = 0;
             if (operands.Count >= 1) {
-                var dir = operands[0] as string;
+                var dir = operands[0].AsString;
                 List<string> filters = new List<string>();
                 for (int i = 1; i < operands.Count; ++i) {
-                    var str = operands[i] as string;
+                    var str = operands[i].AsString;
                     if (null != str) {
                         filters.Add(str);
                     }
                     else {
-                        var strList = operands[i] as IList;
+                        var strList = operands[i].As<IList>();
                         if (null != strList) {
                             foreach (var strObj in strList) {
                                 var tempStr = strObj as string;
@@ -600,14 +600,14 @@ namespace BatchCommand
 
     internal class GetFileInfoExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var file = operands[0] as string;
+                var file = operands[0].AsString;
                 file = Environment.ExpandEnvironmentVariables(file);
                 if (File.Exists(file)) {
-                    ret = new FileInfo(file);
+                    ret = CalculatorValue.FromObject(new FileInfo(file));
                 }
             }
             return ret;
@@ -616,14 +616,14 @@ namespace BatchCommand
 
     internal class GetDirectoryInfoExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var file = operands[0] as string;
+                var file = operands[0].AsString;
                 file = Environment.ExpandEnvironmentVariables(file);
                 if (Directory.Exists(file)) {
-                    ret = new DirectoryInfo(file);
+                    ret = CalculatorValue.FromObject(new DirectoryInfo(file));
                 }
             }
             return ret;
@@ -632,12 +632,12 @@ namespace BatchCommand
 
     internal class GetDriveInfoExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var drive = operands[0] as string;
-                ret = new DriveInfo(drive);
+                var drive = operands[0].AsString;
+                ret = CalculatorValue.FromObject(new DriveInfo(drive));
             }
             return ret;
         }
@@ -645,23 +645,23 @@ namespace BatchCommand
 
     internal class GetDrivesInfoExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = DriveInfo.GetDrives();
-            return ret;
+            var ret = DriveInfo.GetDrives();
+            return CalculatorValue.FromObject(ret);
         }
     }
 
     internal class GrepExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object r = null;
+            CalculatorValue r = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var lines = operands[0] as IList<string>;
+                var lines = operands[0].As<IList<string>>();
                 Regex regex = null;
                 if (operands.Count >= 2)
-                    regex = new Regex(operands[1] as string, RegexOptions.Compiled);
+                    regex = new Regex(operands[1].AsString, RegexOptions.Compiled);
                 var outLines = new List<string>();
                 if (null != lines) {
                     int ct = lines.Count;
@@ -676,7 +676,7 @@ namespace BatchCommand
                             outLines.Add(lineStr);
                         }
                     }
-                    r = outLines;
+                    r = CalculatorValue.FromObject(outLines);
                 }
             }
             return r;
@@ -685,16 +685,16 @@ namespace BatchCommand
 
     internal class SubstExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object r = null;
+            var r = CalculatorValue.NullObject;
             if (operands.Count >= 3) {
-                var lines = operands[0] as IList<string>;
-                Regex regex = new Regex(operands[1] as string, RegexOptions.Compiled);
-                string subst = operands[2] as string;
+                var lines = operands[0].As<IList<string>>();
+                Regex regex = new Regex(operands[1].AsString, RegexOptions.Compiled);
+                string subst = operands[2].AsString;
                 int count = -1;
                 if (operands.Count >= 4)
-                    count = (int)Convert.ChangeType(operands[3], typeof(int));
+                    count = operands[3].Get<int>();
                 var outLines = new List<string>();
                 if (null != lines && null != regex && null != subst) {
                     int ct = lines.Count;
@@ -703,7 +703,7 @@ namespace BatchCommand
                         lineStr = regex.Replace(lineStr, subst, count);
                         outLines.Add(lineStr);
                     }
-                    r = outLines;
+                    r = CalculatorValue.FromObject(outLines);
                 }
             }
             return r;
@@ -712,20 +712,20 @@ namespace BatchCommand
 
     internal class AwkExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object r = null;
+            var r = CalculatorValue.NullObject;
             if (operands.Count >= 2) {
-                var lines = operands[0] as IList<string>;
-                var script = operands[1] as string;
+                var lines = operands[0].As<IList<string>>();
+                var script = operands[1].AsString;
                 bool removeEmpties = true;
                 if (operands.Count >= 3)
-                    removeEmpties = (bool)Convert.ChangeType(operands[2], typeof(bool));
+                    removeEmpties = operands[2].Get<bool>();
                 var sepList = new List<string> { " " };
                 if (operands.Count >= 4) {
                     sepList.Clear();
                     for(int i = 3; i < operands.Count; ++i) {
-                        var sep = operands[i] as string;
+                        var sep = operands[i].AsString;
                         if (!string.IsNullOrEmpty(sep)) {
                             sepList.Add(sep);
                         }
@@ -735,16 +735,19 @@ namespace BatchCommand
                 if (null != lines && !string.IsNullOrEmpty(script)) {
                     var seps = sepList.ToArray();
                     var scpId = BatchScript.Eval(script, s_ArgNames);
-                    var args = new List<string>();
+                    var args = BatchScript.NewCalculatorValueList();
                     int ct = lines.Count;
                     for (int i = 0; i < ct; ++i) {
                         string lineStr = lines[i];
                         var fields = lineStr.Split(seps, removeEmpties ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
                         args.Clear();
                         args.Add(lineStr);
-                        args.AddRange(fields);
-                        var o = BatchScript.Call(scpId, args.ToArray());
-                        var rlist = o as IList;
+                        foreach (var field in fields) {
+                            args.Add(field);
+                        }
+                        var o = BatchScript.Call(scpId, args);
+                        BatchScript.RecycleCalculatorValueList(args);
+                        var rlist = o.As<IList>();
                         if (null != rlist) {
                             foreach(var item in rlist) {
                                 var str = item as string;
@@ -754,13 +757,13 @@ namespace BatchCommand
                             }
                         }
                         else {
-                            var str = o as string;
+                            var str = o.AsString;
                             if (null != str) {
                                 outLines.Add(str);
                             }
                         }
                     }
-                    r = outLines;
+                    r = CalculatorValue.FromObject(outLines);
                 }
             }
             return r;
@@ -771,7 +774,7 @@ namespace BatchCommand
 
     internal class CommandExp : AbstractExpression
     {
-        protected override object DoCalc()
+        protected override CalculatorValue DoCalc()
         {
             int exitCode = 0;
             MemoryStream ims = null, oms = null;
@@ -945,63 +948,63 @@ namespace BatchCommand
         {
             string fileName = string.Empty;
             if (null != cfg.m_FileName) {
-                fileName = cfg.m_FileName.Calc() as string;
+                fileName = cfg.m_FileName.Calc().AsString;
             }
             string args = string.Empty;
             if (null != cfg.m_Argments) {
-                args = cfg.m_Argments.Calc() as string;
+                args = cfg.m_Argments.Calc().AsString;
             }
             bool noWait = false;
             if (null != cfg.m_NoWait) {
-                noWait = (bool)Convert.ChangeType(cfg.m_NoWait.Calc(), typeof(bool));
+                noWait = cfg.m_NoWait.Calc().Get<bool>();
             }
             BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
             if (null != cfg.m_UseShellExecute) {
-                option.UseShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+                option.UseShellExecute = cfg.m_UseShellExecute.Calc().Get<bool>();
             }
             if (null != cfg.m_Verb) {
-                option.Verb = cfg.m_Verb.Calc() as string;
+                option.Verb = cfg.m_Verb.Calc().AsString;
             }
             if (null != cfg.m_Domain) {
-                option.Domain = cfg.m_Domain.Calc() as string;
+                option.Domain = cfg.m_Domain.Calc().AsString;
             }
             if (null != cfg.m_UserName) {
-                option.UserName = cfg.m_UserName.Calc() as string;
+                option.UserName = cfg.m_UserName.Calc().AsString;
             }
             if (null != cfg.m_Password) {
-                option.Password = cfg.m_Password.Calc() as string;
+                option.Password = cfg.m_Password.Calc().AsString;
             }
             if (null != cfg.m_PasswordInClearText) {
-                option.PasswordInClearText = cfg.m_PasswordInClearText.Calc() as string;
+                option.PasswordInClearText = cfg.m_PasswordInClearText.Calc().AsString;
             }
             if (null != cfg.m_LoadUserProfile) {
-                option.LoadUserProfile = (bool)Convert.ChangeType(cfg.m_LoadUserProfile.Calc(), typeof(bool));
+                option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().Get<bool>();
             }
             if (null != cfg.m_WindowStyle) {
-                var str = cfg.m_WindowStyle.Calc() as string;
+                var str = cfg.m_WindowStyle.Calc().AsString;
                 ProcessWindowStyle style;
                 if (Enum.TryParse(str, out style)) {
                     option.WindowStyle = style;
                 }
             }
             if (null != cfg.m_NewWindow) {
-                option.NewWindow = (bool)Convert.ChangeType(cfg.m_NewWindow.Calc(), typeof(bool));
+                option.NewWindow = cfg.m_NewWindow.Calc().Get<bool>();
             }
             if (null != cfg.m_ErrorDialog) {
-                option.ErrorDialog = (bool)Convert.ChangeType(cfg.m_ErrorDialog.Calc(), typeof(bool));
+                option.ErrorDialog = cfg.m_ErrorDialog.Calc().Get<bool>();
             }
             if (null != cfg.m_WorkingDirectory) {
-                option.WorkingDirectory = cfg.m_WorkingDirectory.Calc() as string;
+                option.WorkingDirectory = cfg.m_WorkingDirectory.Calc().AsString;
             }
             Encoding encoding = null;
             if (null != cfg.m_Encoding) {
                 var v = cfg.m_Encoding.Calc();
-                var name = v as string;
+                var name = v.AsString;
                 if (!string.IsNullOrEmpty(name)) {
                     encoding = Encoding.GetEncoding(name);
                 }
-                else if (v is int) {
-                    int codePage = (int)Convert.ChangeType(v, typeof(int));
+                else if (v.IsInteger) {
+                    int codePage = v.Get<int>();
                     encoding = Encoding.GetEncoding(codePage);
                 }
             }
@@ -1016,13 +1019,13 @@ namespace BatchCommand
             if (null != cfg.m_Input) {
                 var v = cfg.m_Input.Calc();
                 try {
-                    var str = v as string;
+                    var str = v.AsString;
                     if (!string.IsNullOrEmpty(str)) {
                         if (str[0] == '@' || str[0] == '$') {
-                            object val = Calculator.GetVariable(str);
-                            if (null != val) {
+                            var val = Calculator.GetVariable(str);
+                            if (!val.IsNullObject) {
                                 var slist = new List<string>();
-                                var list = val as IList;
+                                var list = val.As<IList>();
                                 foreach (var s in list) {
                                     slist.Add(s.ToString());
                                 }
@@ -1035,7 +1038,7 @@ namespace BatchCommand
                         }
                     }
                     else {
-                        int vn = (int)Convert.ChangeType(v, typeof(int));
+                        int vn = v.Get<int>();
                         object val = Calculator.GetVariable(vn);
                         if (null != val) {
                             var slist = new List<string>();
@@ -1058,7 +1061,7 @@ namespace BatchCommand
             object error = null;
             if (null != cfg.m_Output) {
                 var v = cfg.m_Output.Calc();
-                var str = v as string;
+                var str = v.AsString;
                 if (!string.IsNullOrEmpty(str)) {
                     str = Environment.ExpandEnvironmentVariables(str);
                     output = str;
@@ -1070,7 +1073,7 @@ namespace BatchCommand
             }
             if (null != cfg.m_Error) {
                 var v = cfg.m_Error.Calc();
-                var str = v as string;
+                var str = v.AsString;
                 if (!string.IsNullOrEmpty(str)) {
                     str = Environment.ExpandEnvironmentVariables(str);
                     error = str;
@@ -1082,9 +1085,7 @@ namespace BatchCommand
             }
             if (null != cfg.m_RedirectToConsole) {
                 var v = cfg.m_RedirectToConsole.Calc();
-                if (null != v) {
-                    redirectToConsole = (bool)Convert.ChangeType(v, typeof(bool));
-                }
+                redirectToConsole = v.Get<bool>();
             }
             int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, redirectToConsole, encoding);
             if (BatchScript.FileEchoOn) {
@@ -1145,55 +1146,55 @@ namespace BatchCommand
             if (cfg.m_Commands.TryGetValue(os, out cmd) || cfg.m_Commands.TryGetValue("common", out cmd)) {
                 bool noWait = false;
                 if (null != cfg.m_NoWait) {
-                    noWait = (bool)Convert.ChangeType(cfg.m_NoWait.Calc(), typeof(bool));
+                    noWait = cfg.m_NoWait.Calc().Get<bool>();
                 }
                 BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
                 if (null != cfg.m_UseShellExecute) {
-                    option.UseShellExecute = (bool)Convert.ChangeType(cfg.m_UseShellExecute.Calc(), typeof(bool));
+                    option.UseShellExecute = cfg.m_UseShellExecute.Calc().Get<bool>();
                 }
                 if (null != cfg.m_Verb) {
-                    option.Verb = cfg.m_Verb.Calc() as string;
+                    option.Verb = cfg.m_Verb.Calc().AsString;
                 }
                 if (null != cfg.m_Domain) {
-                    option.Domain = cfg.m_Domain.Calc() as string;
+                    option.Domain = cfg.m_Domain.Calc().AsString;
                 }
                 if (null != cfg.m_UserName) {
-                    option.UserName = cfg.m_UserName.Calc() as string;
+                    option.UserName = cfg.m_UserName.Calc().AsString;
                 }
                 if (null != cfg.m_Password) {
-                    option.Password = cfg.m_Password.Calc() as string;
+                    option.Password = cfg.m_Password.Calc().AsString;
                 }
                 if (null != cfg.m_PasswordInClearText) {
-                    option.PasswordInClearText = cfg.m_PasswordInClearText.Calc() as string;
+                    option.PasswordInClearText = cfg.m_PasswordInClearText.Calc().AsString;
                 }
                 if (null != cfg.m_LoadUserProfile) {
-                    option.LoadUserProfile = (bool)Convert.ChangeType(cfg.m_LoadUserProfile.Calc(), typeof(bool));
+                    option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().Get<bool>();
                 }
                 if (null != cfg.m_WindowStyle) {
-                    var str = cfg.m_WindowStyle.Calc() as string;
+                    var str = cfg.m_WindowStyle.Calc().AsString;
                     ProcessWindowStyle style;
                     if (Enum.TryParse(str, out style)) {
                         option.WindowStyle = style;
                     }
                 }
                 if (null != cfg.m_NewWindow) {
-                    option.NewWindow = (bool)Convert.ChangeType(cfg.m_NewWindow.Calc(), typeof(bool));
+                    option.NewWindow = cfg.m_NewWindow.Calc().Get<bool>();
                 }
                 if (null != cfg.m_ErrorDialog) {
-                    option.ErrorDialog = (bool)Convert.ChangeType(cfg.m_ErrorDialog.Calc(), typeof(bool));
+                    option.ErrorDialog = cfg.m_ErrorDialog.Calc().Get<bool>();
                 }
                 if (null != cfg.m_WorkingDirectory) {
-                    option.WorkingDirectory = cfg.m_WorkingDirectory.Calc() as string;
+                    option.WorkingDirectory = cfg.m_WorkingDirectory.Calc().AsString;
                 }
                 Encoding encoding = null;
                 if (null != cfg.m_Encoding) {
                     var v = cfg.m_Encoding.Calc();
-                    var name = v as string;
+                    var name = v.AsString;
                     if (!string.IsNullOrEmpty(name)) {
                         encoding = Encoding.GetEncoding(name);
                     }
-                    else if (v is int) {
-                        int codePage = (int)Convert.ChangeType(v, typeof(int));
+                    else if (v.IsInteger) {
+                        int codePage = v.Get<int>();
                         encoding = Encoding.GetEncoding(codePage);
                     }
                 }
@@ -1204,7 +1205,7 @@ namespace BatchCommand
                 if (null != cfg.m_Input) {
                     var v = cfg.m_Input.Calc();
                     try {
-                        var str = v as string;
+                        var str = v.AsString;
                         if (!string.IsNullOrEmpty(str)) {
                             if (str[0] == '@' || str[0] == '$') {
                                 object val = Calculator.GetVariable(str);
@@ -1223,7 +1224,7 @@ namespace BatchCommand
                             }
                         }
                         else {
-                            int vn = (int)Convert.ChangeType(v, typeof(int));
+                            int vn = v.Get<int>();
                             object val = Calculator.GetVariable(vn);
                             if (null != val) {
                                 var slist = new List<string>();
@@ -1246,7 +1247,7 @@ namespace BatchCommand
                 object error = null;
                 if (null != cfg.m_Output) {
                     var v = cfg.m_Output.Calc();
-                    var str = v as string;
+                    var str = v.AsString;
                     if (!string.IsNullOrEmpty(str)) {
                         str = Environment.ExpandEnvironmentVariables(str);
                         output = str;
@@ -1258,7 +1259,7 @@ namespace BatchCommand
                 }
                 if (null != cfg.m_Error) {
                     var v = cfg.m_Error.Calc();
-                    var str = v as string;
+                    var str = v.AsString;
                     if (!string.IsNullOrEmpty(str)) {
                         str = Environment.ExpandEnvironmentVariables(str);
                         error = str;
@@ -1270,9 +1271,7 @@ namespace BatchCommand
                 }
                 if (null != cfg.m_RedirectToConsole) {
                     var v = cfg.m_RedirectToConsole.Calc();
-                    if (null != v) {
-                        redirectToConsole = (bool)Convert.ChangeType(v, typeof(bool));
-                    }
+                    redirectToConsole = v.Get<bool>();
                 }
 
                 cmd = cmd.Trim();
@@ -1370,9 +1369,9 @@ namespace BatchCommand
 
     internal class KillExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = 0;
+            int ret = 0;
             if (operands.Count >= 1) {
                 int myselfId = 0;
                 var myself = Process.GetCurrentProcess();
@@ -1380,7 +1379,7 @@ namespace BatchCommand
                     myselfId = myself.Id;
                 }
                 var vObj = operands[0];
-                var name = vObj as string;
+                var name = vObj.AsString;
                 if (!string.IsNullOrEmpty(name)) {
                     int ct = 0;
                     var ps = Process.GetProcessesByName(name);
@@ -1395,8 +1394,8 @@ namespace BatchCommand
                     }
                     ret = ct;
                 }
-                else if (vObj is int) {
-                    int pid = (int)Convert.ChangeType(vObj, typeof(int));
+                else if (vObj.IsInteger) {
+                    int pid = vObj.Get<int>();
                     var p = Process.GetProcessById(pid);
                     if (null != p && p.Id != myselfId) {
                         if (BatchScript.FileEchoOn) {
@@ -1410,13 +1409,13 @@ namespace BatchCommand
 
                 }
             }
-            return ret;
+            return CalculatorValue.From(ret);
         }
     }
 
     internal class KillMeExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ret = 0;
             Process p = Process.GetCurrentProcess();
@@ -1424,7 +1423,7 @@ namespace BatchCommand
                 ret = p.Id;
                 int exitCode = 0;
                 if (operands.Count >= 1) {
-                    exitCode = (int)Convert.ChangeType(operands[0], typeof(int));
+                    exitCode = operands[0].Get<int>();
                 }
                 if (BatchScript.FileEchoOn) {
                     Console.WriteLine("killme {0}[pid:{1},session id:{2}] exit code:{3}", p.ProcessName, p.Id, p.SessionId, exitCode);
@@ -1437,7 +1436,7 @@ namespace BatchCommand
 
     internal class GetCurrentProcessIdExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             int ret = 0;
             Process p = Process.GetCurrentProcess();
@@ -1450,13 +1449,13 @@ namespace BatchCommand
 
     internal class ListProcessesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             IList<Process> ret = null;
             Process[] ps = Process.GetProcesses();
             string filter = null;
             if (operands.Count >= 1) {
-                filter = operands[0] as string;
+                filter = operands[0].AsString;
             }
             if (null == filter)
                 filter = string.Empty;
@@ -1478,13 +1477,13 @@ namespace BatchCommand
             else {
                 ret = ps;
             }
-            return ret;
+            return CalculatorValue.FromObject(ret);
         }
     }
 
     internal class GetScriptDirectoryExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return BatchScript.ScriptDirectory;
         }
@@ -1492,7 +1491,7 @@ namespace BatchCommand
 
     internal class PauseExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             var info = Console.ReadKey(true);
             return (int)info.KeyChar;
@@ -1501,16 +1500,13 @@ namespace BatchCommand
 
     internal class WaitExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            object ret = null;
+            var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var v = operands[0];
-                if (null != v) {
-                    int time = (int)Convert.ChangeType(v, typeof(int));
-                    Thread.Sleep(time);
-                    ret = time;
-                }
+                var time = operands[0].Get<int>();
+                Thread.Sleep(time);
+                ret = time;
             }
             return ret;
         }
@@ -1518,12 +1514,12 @@ namespace BatchCommand
 
     internal class WaitAllExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             var tasks = BatchScript.Tasks;
             int timeout = -1;
             if (operands.Count >= 1) {
-                timeout = (int)Convert.ChangeType(operands[0], typeof(int));
+                timeout = operands[0].Get<int>();
             }
             List<int> results = new List<int>();
             if (Task.WaitAll(tasks.ToArray(), timeout)) {
@@ -1531,31 +1527,31 @@ namespace BatchCommand
                     results.Add(task.Result);
                 }
             }
-            return results;
+            return CalculatorValue.FromObject(results);
         }
     }
 
     internal class ClearExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             Console.Clear();
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class WriteExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var obj = operands[0];
+                var obj = operands[0].Get<object>();
                 if (null != obj) {
                     var fmt = obj as string;
                     if (operands.Count > 1 && null != fmt) {
                         ArrayList arrayList = new ArrayList();
                         for (int i = 1; i < operands.Count; ++i) {
-                            arrayList.Add(operands[i]);
+                            arrayList.Add(operands[i].Get<object>());
                         }
                         Console.Write(fmt, arrayList.ToArray());
                     }
@@ -1564,13 +1560,13 @@ namespace BatchCommand
                     }
                 }
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class ReadLineExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.ReadLine();
         }
@@ -1578,11 +1574,11 @@ namespace BatchCommand
 
     internal class ReadExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             bool nodisplay = false;
             if (operands.Count >= 1) {
-                nodisplay = (bool)Convert.ChangeType(operands[0], typeof(bool));
+                nodisplay = operands[0].Get<bool>();
             }
             var info = Console.ReadKey(nodisplay);
             return info.KeyChar;
@@ -1591,23 +1587,23 @@ namespace BatchCommand
 
     internal class BeepExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int f = (int)Convert.ChangeType(operands[0], typeof(int));
-                int d = (int)Convert.ChangeType(operands[1], typeof(int));
+                int f = operands[0].Get<int>();
+                int d = operands[1].Get<int>();
                 Console.Beep(f, d);
             }
             else {
                 Console.Beep();
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetTitleExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.Title;
         }
@@ -1615,21 +1611,21 @@ namespace BatchCommand
 
     internal class SetTitleExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var title = operands[0] as string;
+                var title = operands[0].AsString;
                 if (null != title) {
                     Console.Title = title;
                 }
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetBufferWidthExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.BufferWidth;
         }
@@ -1637,7 +1633,7 @@ namespace BatchCommand
 
     internal class GetBufferHeightExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.BufferHeight;
         }
@@ -1645,20 +1641,20 @@ namespace BatchCommand
 
     internal class SetBufferSizeExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int w = (int)Convert.ChangeType(operands[0], typeof(int));
-                int h = (int)Convert.ChangeType(operands[1], typeof(int));
+                int w = operands[0].Get<int>();
+                int h = operands[1].Get<int>();
                 Console.SetBufferSize(w, h);
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetCursorLeftExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.CursorLeft;
         }
@@ -1666,7 +1662,7 @@ namespace BatchCommand
 
     internal class GetCursorTopExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return Console.CursorTop;
         }
@@ -1674,20 +1670,20 @@ namespace BatchCommand
 
     internal class SetCursorPosExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int left = (int)Convert.ChangeType(operands[0], typeof(int));
-                int top = (int)Convert.ChangeType(operands[1], typeof(int));
+                int left = operands[0].Get<int>();
+                int top = operands[1].Get<int>();
                 Console.SetCursorPosition(left, top);
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetBgColorExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             //Enum.GetName(typeof(ConsoleColor), Console.BackgroundColor);
             return Console.BackgroundColor.ToString();
@@ -1696,21 +1692,21 @@ namespace BatchCommand
 
     internal class SetBgColorExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var color = operands[0] as string;
+                var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
                     Console.BackgroundColor = (System.ConsoleColor)Enum.Parse(typeof(System.ConsoleColor), color);
                 }
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetFgColorExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             //Enum.GetName(typeof(ConsoleColor), Console.ForegroundColor);
             return Console.ForegroundColor.ToString();
@@ -1719,30 +1715,30 @@ namespace BatchCommand
 
     internal class SetFgColorExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var color = operands[0] as string;
+                var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
                     Console.ForegroundColor = (System.ConsoleColor)Enum.Parse(typeof(System.ConsoleColor), color);
                 }
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class ResetColorExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             Console.ResetColor();
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class SetEncodingExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
                 var encoding1 = operands[0];
@@ -1750,38 +1746,36 @@ namespace BatchCommand
                 if (operands.Count >= 2) {
                     encoding2 = operands[1];
                 }
-                if (null != encoding1 && null != encoding2) {
-                    Console.InputEncoding = BatchScript.GetEncoding(encoding1);
-                    Console.OutputEncoding = BatchScript.GetEncoding(encoding2);
-                }
+                Console.InputEncoding = BatchScript.GetEncoding(encoding1);
+                Console.OutputEncoding = BatchScript.GetEncoding(encoding2);
             }
             else {
                 Console.InputEncoding = Encoding.UTF8;
                 Console.OutputEncoding = Encoding.UTF8;
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class GetInputEncodingExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            return Console.InputEncoding;
+            return CalculatorValue.FromObject(Console.InputEncoding);
         }
     }
 
     internal class GetOutputEncodingExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            return Console.OutputEncoding;
+            return CalculatorValue.FromObject(Console.OutputEncoding);
         }
     }
 
     internal class ConsoleExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return typeof(Console);
         }
@@ -1789,7 +1783,7 @@ namespace BatchCommand
 
     internal class EncodingExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return typeof(Encoding);
         }
@@ -1797,7 +1791,7 @@ namespace BatchCommand
 
     internal class EnvironmentExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             return typeof(Environment);
         }
@@ -1805,10 +1799,10 @@ namespace BatchCommand
 
     internal class ReadAllLinesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                string path = operands[0] as string;
+                string path = operands[0].AsString;
                 if (!string.IsNullOrEmpty(path)) {
                     path = Environment.ExpandEnvironmentVariables(path);
                     Encoding encoding = Encoding.UTF8;
@@ -1816,20 +1810,20 @@ namespace BatchCommand
                         var v = operands[1];
                         encoding = BatchScript.GetEncoding(v);
                     }
-                    return File.ReadAllLines(path, encoding);
+                    return CalculatorValue.FromObject(File.ReadAllLines(path, encoding));
                 }
             }
-            return new string[0];
+            return CalculatorValue.FromObject(new string[0]);
         }
     }
 
     internal class WriteAllLinesExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                string path = operands[0] as string;
-                var lines = operands[1] as IList;
+                string path = operands[0].AsString;
+                var lines = operands[1].As<IList>();
                 if (!string.IsNullOrEmpty(path) && null != lines) {
                     path = Environment.ExpandEnvironmentVariables(path);
                     Encoding encoding = Encoding.UTF8;
@@ -1851,10 +1845,10 @@ namespace BatchCommand
 
     internal class ReadAllTextExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                string path = operands[0] as string;
+                string path = operands[0].AsString;
                 if (!string.IsNullOrEmpty(path)) {
                     path = Environment.ExpandEnvironmentVariables(path);
                     Encoding encoding = Encoding.UTF8;
@@ -1865,17 +1859,17 @@ namespace BatchCommand
                     return File.ReadAllText(path, encoding);
                 }
             }
-            return null;
+            return CalculatorValue.NullObject;
         }
     }
 
     internal class WriteAllTextExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                string path = operands[0] as string;
-                var text = operands[1] as string;
+                string path = operands[0].AsString;
+                var text = operands[1].AsString;
                 if (!string.IsNullOrEmpty(path) && null != text) {
                     path = Environment.ExpandEnvironmentVariables(path);
                     Encoding encoding = Encoding.UTF8;
@@ -1893,13 +1887,11 @@ namespace BatchCommand
 
     internal class WaitStartIntervalExp : Calculator.SimpleExpressionBase
     {
-        protected override object OnCalc(IList<object> operands)
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var v = operands[0];
-                if (null != v) {
-                    BatchScript.CheckStartInterval = (int)Convert.ChangeType(v, typeof(int));
-                }
+                var v = operands[0].Get<int>();
+                BatchScript.CheckStartInterval = v;
             }
             return BatchScript.CheckStartInterval;
         }
@@ -1998,14 +1990,17 @@ namespace BatchCommand
         {
             s_Calculator.Register(name, factory);
         }
-        internal static object Run(string scpFile, params object[] args)
+        internal static CalculatorValue Run(string scpFile, List<CalculatorValue> args)
         {
-            object r = null;
+            var r = CalculatorValue.NullObject;
             bool redirect = true;
+            var vargs = s_Calculator.NewCalculatorValueList();
+            vargs.AddRange(args);
             while (redirect) {
                 if (string.IsNullOrEmpty(scpFile)) {
                     scpFile = "main.dsl";
-                    args = new object[] { scpFile };
+                    vargs.Clear();
+                    vargs.Add(scpFile);
                 }
                 var sdir = Path.GetDirectoryName(scpFile);
                 sdir = Path.Combine(Environment.CurrentDirectory, sdir);
@@ -2013,24 +2008,27 @@ namespace BatchCommand
                 s_Calculator.Cleanup();
                 s_Calculator.LoadDsl(scpFile);
                 Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
-                r = s_Calculator.Calc("main", args);
+                r = s_Calculator.Calc("main", vargs);
                 if (s_Calculator.RunState == RunStateEnum.Redirect) {
                     s_Calculator.RunState = RunStateEnum.Normal;
-                    var list = r as IList;
+                    var list = r.As<IList>();
                     if (null == list || list.Count == 0) {
-                        args = null;
+                        vargs.Clear();
                         scpFile = string.Empty;
                     }
                     else {
-                        args = new object[list.Count];
-                        list.CopyTo(args, 0);
-                        scpFile = Environment.ExpandEnvironmentVariables(args[0] as string);
+                        vargs.Clear();
+                        foreach(var o in list) {
+                            vargs.Add(CalculatorValue.FromObject(o));
+                        }
+                        scpFile = Environment.ExpandEnvironmentVariables(vargs[0].AsString);
                     }
                 }
                 else {
                     redirect = false;
                 }
             }
+            s_Calculator.RecycleCalculatorValueList(vargs);
             return r;
         }
         internal static string Eval(string code, IList<string> argNames)
@@ -2045,19 +2043,84 @@ namespace BatchCommand
             }
             return null;
         }
-        internal static object Call(string proc, params object[] args)
+        internal static List<CalculatorValue> NewCalculatorValueList()
         {
-            object r = s_Calculator.Calc(proc, args);
+            return s_Calculator.NewCalculatorValueList();
+        }
+        internal static void RecycleCalculatorValueList(List<CalculatorValue> list)
+        {
+            s_Calculator.RecycleCalculatorValueList(list);
+        }
+        internal static CalculatorValue Call(string scpFile)
+        {
+            var args = NewCalculatorValueList();
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
             return r;
         }
-        internal static Encoding GetEncoding(object v)
+        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1)
         {
-            var name = v as string;
+            var args = NewCalculatorValueList();
+            args.Add(arg1);
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
+            return r;
+        }
+        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2)
+        {
+            var args = NewCalculatorValueList();
+            args.Add(arg1);
+            args.Add(arg2);
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
+            return r;
+        }
+        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3)
+        {
+            var args = NewCalculatorValueList();
+            args.Add(arg1);
+            args.Add(arg2);
+            args.Add(arg3);
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
+            return r;
+        }
+        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4)
+        {
+            var args = NewCalculatorValueList();
+            args.Add(arg1);
+            args.Add(arg2);
+            args.Add(arg3);
+            args.Add(arg4);
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
+            return r;
+        }
+        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4, CalculatorValue arg5)
+        {
+            var args = NewCalculatorValueList();
+            args.Add(arg1);
+            args.Add(arg2);
+            args.Add(arg3);
+            args.Add(arg4);
+            args.Add(arg5);
+            var r = Call(scpFile, args);
+            RecycleCalculatorValueList(args);
+            return r;
+        }
+        internal static CalculatorValue Call(string proc, List<CalculatorValue> args)
+        {
+            var r = s_Calculator.Calc(proc, args);
+            return r;
+        }
+        internal static Encoding GetEncoding(CalculatorValue v)
+        {
+            var name = v.AsString;
             if (null != name) {
                 return Encoding.GetEncoding(name);
             }
-            else if (v is int) {
-                int codePage = (int)Convert.ChangeType(v, typeof(int));
+            else if (v.IsInteger) {
+                int codePage = v.Get<int>();
                 return Encoding.GetEncoding(codePage);
             }
             else {

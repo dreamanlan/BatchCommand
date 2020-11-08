@@ -4,6 +4,8 @@
 	clear();
 	echo("{0} {1} {2} {3} {4}", gettitle(), getbufferwidth(), getbufferheight(), getbgcolor(), getfgcolor());
 	settitle("测试c#批处理工具");
+  $encoding = getinputencoding();
+  setencoding("gb2312");
 
 	echo("os:{0}",os());
 	echo("osplatform:{0}",osplatform());

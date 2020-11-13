@@ -6,7 +6,7 @@ using System.Text;
 using System.IO;
 using Wox.Plugin;
 using BatchCommand;
-using Calculator;
+using DslExpression;
 
 //注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
 public class Main : IPlugin, IContextMenu
@@ -23,25 +23,25 @@ public class Main : IPlugin, IContextMenu
             sw.Close();
         }
         BatchScript.Init();
-        BatchScript.Register("context", new Calculator.ExpressionFactoryHelper<ContextExp>());
-        BatchScript.Register("api", new Calculator.ExpressionFactoryHelper<ApiExp>());
-        BatchScript.Register("metadata", new Calculator.ExpressionFactoryHelper<MetadataExp>());
-        BatchScript.Register("reloaddsl", new Calculator.ExpressionFactoryHelper<ReloadDslExp>());
-        BatchScript.Register("evaldsl", new Calculator.ExpressionFactoryHelper<EvalDslExp>());
-        BatchScript.Register("addresult", new Calculator.ExpressionFactoryHelper<AddResultExp>());
-        BatchScript.Register("addcontextmenu", new Calculator.ExpressionFactoryHelper<AddContextMenuExp>());
-        BatchScript.Register("keywordregistered", new Calculator.ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
-        BatchScript.Register("clearkeywords", new Calculator.ExpressionFactoryHelper<ClearActionKeywordsExp>());
-        BatchScript.Register("addkeyword", new Calculator.ExpressionFactoryHelper<AddActionKeywordExp>());
-        BatchScript.Register("showcontextmenu", new Calculator.ExpressionFactoryHelper<ShowContextMenuExp>());
-        BatchScript.Register("everythingreset", new Calculator.ExpressionFactoryHelper<EverythingResetExp>());
-        BatchScript.Register("everythingsetdefault", new Calculator.ExpressionFactoryHelper<EverythingSetDefaultExp>());
-        BatchScript.Register("everythingmatchpath", new Calculator.ExpressionFactoryHelper<EverythingMatchPathExp>());
-        BatchScript.Register("everythingmatchcase", new Calculator.ExpressionFactoryHelper<EverythingMatchCaseExp>());
-        BatchScript.Register("everythingmatchwholeword", new Calculator.ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
-        BatchScript.Register("everythingregex", new Calculator.ExpressionFactoryHelper<EverythingRegexExp>());
-        BatchScript.Register("everythingsort", new Calculator.ExpressionFactoryHelper<EverythingSortExp>());
-        BatchScript.Register("everythingsearch", new Calculator.ExpressionFactoryHelper<EverythingSearchExp>());
+        BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
+        BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
+        BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
+        BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
+        BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
+        BatchScript.Register("addresult", new ExpressionFactoryHelper<AddResultExp>());
+        BatchScript.Register("addcontextmenu", new ExpressionFactoryHelper<AddContextMenuExp>());
+        BatchScript.Register("keywordregistered", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
+        BatchScript.Register("clearkeywords", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
+        BatchScript.Register("addkeyword", new ExpressionFactoryHelper<AddActionKeywordExp>());
+        BatchScript.Register("showcontextmenu", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("everythingreset", new ExpressionFactoryHelper<EverythingResetExp>());
+        BatchScript.Register("everythingsetdefault", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
+        BatchScript.Register("everythingmatchpath", new ExpressionFactoryHelper<EverythingMatchPathExp>());
+        BatchScript.Register("everythingmatchcase", new ExpressionFactoryHelper<EverythingMatchCaseExp>());
+        BatchScript.Register("everythingmatchwholeword", new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
+        BatchScript.Register("everythingregex", new ExpressionFactoryHelper<EverythingRegexExp>());
+        BatchScript.Register("everythingsort", new ExpressionFactoryHelper<EverythingSortExp>());
+        BatchScript.Register("everythingsearch", new ExpressionFactoryHelper<EverythingSearchExp>());
         ReloadDsl();
     }
     public List<Result> Query(Query query)
@@ -158,28 +158,28 @@ public class Main : IPlugin, IContextMenu
     private static object s_PluginLock = new object();
 }
 
-internal class ContextExp : Calculator.SimpleExpressionBase
+internal class ContextExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context);
     }
 }
-internal class ApiExp : Calculator.SimpleExpressionBase
+internal class ApiExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context.API);
     }
 }
-internal class MetadataExp : Calculator.SimpleExpressionBase
+internal class MetadataExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context.CurrentPluginMetadata);
     }
 }
-internal class ReloadDslExp : Calculator.SimpleExpressionBase
+internal class ReloadDslExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -187,7 +187,7 @@ internal class ReloadDslExp : Calculator.SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EvalDslExp : Calculator.SimpleExpressionBase
+internal class EvalDslExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -208,7 +208,7 @@ internal class EvalDslExp : Calculator.SimpleExpressionBase
         return r;
     }
 }
-internal class AddResultExp : Calculator.SimpleExpressionBase
+internal class AddResultExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -226,7 +226,7 @@ internal class AddResultExp : Calculator.SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class AddContextMenuExp : Calculator.SimpleExpressionBase
+internal class AddContextMenuExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -245,7 +245,7 @@ internal class AddContextMenuExp : Calculator.SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class ActionKeywordRegisteredExp : Calculator.SimpleExpressionBase
+internal class ActionKeywordRegisteredExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -256,7 +256,7 @@ internal class ActionKeywordRegisteredExp : Calculator.SimpleExpressionBase
         return false;
     }
 }
-internal class ClearActionKeywordsExp : Calculator.SimpleExpressionBase
+internal class ClearActionKeywordsExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -274,7 +274,7 @@ internal class ClearActionKeywordsExp : Calculator.SimpleExpressionBase
         return false;
     }
 }
-internal class AddActionKeywordExp : Calculator.SimpleExpressionBase
+internal class AddActionKeywordExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -297,7 +297,7 @@ internal class AddActionKeywordExp : Calculator.SimpleExpressionBase
         return false;
     }
 }
-internal class ShowContextMenuExp : Calculator.SimpleExpressionBase
+internal class ShowContextMenuExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -320,7 +320,7 @@ internal class ShowContextMenuExp : Calculator.SimpleExpressionBase
         return false;
     }
 }
-internal class EverythingResetExp : Calculator.SimpleExpressionBase
+internal class EverythingResetExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -328,7 +328,7 @@ internal class EverythingResetExp : Calculator.SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EverythingSetDefaultExp : Calculator.SimpleExpressionBase
+internal class EverythingSetDefaultExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -340,7 +340,7 @@ internal class EverythingSetDefaultExp : Calculator.SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EverythingMatchPathExp : Calculator.SimpleExpressionBase
+internal class EverythingMatchPathExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -353,7 +353,7 @@ internal class EverythingMatchPathExp : Calculator.SimpleExpressionBase
         }
     }
 }
-internal class EverythingMatchCaseExp : Calculator.SimpleExpressionBase
+internal class EverythingMatchCaseExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -366,7 +366,7 @@ internal class EverythingMatchCaseExp : Calculator.SimpleExpressionBase
         }
     }
 }
-internal class EverythingMatchWholeWordExp : Calculator.SimpleExpressionBase
+internal class EverythingMatchWholeWordExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -380,7 +380,7 @@ internal class EverythingMatchWholeWordExp : Calculator.SimpleExpressionBase
         }
     }
 }
-internal class EverythingRegexExp : Calculator.SimpleExpressionBase
+internal class EverythingRegexExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -394,7 +394,7 @@ internal class EverythingRegexExp : Calculator.SimpleExpressionBase
         }
     }
 }
-internal class EverythingSortExp : Calculator.SimpleExpressionBase
+internal class EverythingSortExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -453,7 +453,7 @@ internal class EverythingSortExp : Calculator.SimpleExpressionBase
         }
     }
 }
-internal class EverythingSearchExp : Calculator.SimpleExpressionBase
+internal class EverythingSearchExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {

@@ -9,7 +9,7 @@ namespace BatchCommand
             int exitCode = 0;
             try {
                 BatchScript.Init();
-                object r = null;
+                var r = DslExpression.CalculatorValue.NullObject;
                 var vargs = BatchScript.NewCalculatorValueList();
                 if (args.Length <= 0) {
                     r = BatchScript.Run(string.Empty, vargs);
@@ -20,11 +20,11 @@ namespace BatchCommand
                     r = BatchScript.Run(args[0], vargs);
                 }
                 BatchScript.RecycleCalculatorValueList(vargs);
-                if (null != r) {
-                    exitCode = (int)Convert.ChangeType(r, typeof(int));
+                if (!r.IsNullObject) {
+                    exitCode = r.Get<int>();
                 }
             } catch (Exception ex) {
-                Console.WriteLine("exception:{0}\n{1}", ex.Message, ex.StackTrace);
+                BatchScript.Log("exception:{0}\n{1}", ex.Message, ex.StackTrace);
                 exitCode = -1;
             }
             Environment.Exit(exitCode);

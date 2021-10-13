@@ -832,6 +832,22 @@ namespace BatchCommand
                             string txt = cd.GetParamId(0);
                             cmd.m_Commands.Add(os, txt);
                         }
+                        else if (num >= 2) {
+                            string type = cd.GetId();
+                            var exp = Calculator.Load(cd.GetParam(0));
+                            var opt = Calculator.Load(cd.GetParam(1));
+                            if (type == "output") {
+                                cmd.m_Output = exp;
+                                cmd.m_OutputOptArg = opt;
+                            }
+                            else if (type == "error") {
+                                cmd.m_Error = exp;
+                                cmd.m_ErrorOptArg = opt;
+                            }
+                            else {
+                                BatchScript.Log("[syntax error] {0} line:{1}", cd.ToScriptString(false), cd.GetLine());
+                            }
+                        }
                         else if (num >= 1) {
                             string type = cd.GetId();
                             var exp = Calculator.Load(cd.GetParam(0));
@@ -1019,34 +1035,19 @@ namespace BatchCommand
             if (null != cfg.m_Input) {
                 var v = cfg.m_Input.Calc();
                 try {
-                    var str = v.AsString;
-                    if (!string.IsNullOrEmpty(str)) {
-                        if (str[0] == '@' || str[0] == '$') {
-                            var val = Calculator.GetVariable(str);
-                            if (!val.IsNullObject) {
-                                var slist = new List<string>();
-                                var list = val.As<IList>();
-                                foreach (var s in list) {
-                                    slist.Add(s.ToString());
-                                }
-                                input = slist;
-                            }
+                    var list = v.As<IList>();
+                    if (null != list) {
+                        var slist = new List<string>();
+                        foreach (var s in list) {
+                            slist.Add(s.ToString());
                         }
-                        else {
-                            str = Environment.ExpandEnvironmentVariables(str);
-                            input = File.ReadAllLines(str);
-                        }
+                        input = slist;
                     }
                     else {
-                        int vn = v.Get<int>();
-                        object val = Calculator.GetVariable(vn);
-                        if (null != val) {
-                            var slist = new List<string>();
-                            var list = val as IList;
-                            foreach (var s in list) {
-                                slist.Add(s.ToString());
-                            }
-                            input = slist;
+                        var str = v.AsString;
+                        if (!string.IsNullOrEmpty(str)) {
+                            str = Environment.ExpandEnvironmentVariables(str);
+                            input = File.ReadAllLines(str);
                         }
                     }
                 }
@@ -1058,7 +1059,9 @@ namespace BatchCommand
             StringBuilder outputBuilder = null;
             StringBuilder errorBuilder = null;
             var output = CalculatorValue.NullObject;
+            int outputIx = -1;
             var error = CalculatorValue.NullObject;
+            int errorIx = -1;
             if (null != cfg.m_Output) {
                 var v = cfg.m_Output.Calc();
                 var str = v.AsString;
@@ -1069,6 +1072,8 @@ namespace BatchCommand
                 else {
                     output = v;
                 }
+                if (null != cfg.m_OutputOptArg)
+                    outputIx = cfg.m_OutputOptArg.Calc().Get<int>();
                 outputBuilder = new StringBuilder();
             }
             if (null != cfg.m_Error) {
@@ -1081,6 +1086,8 @@ namespace BatchCommand
                 else {
                     error = v;
                 }
+                if (null != cfg.m_ErrorOptArg)
+                    errorIx = cfg.m_ErrorOptArg.Calc().Get<int>();
                 errorBuilder = new StringBuilder();
             }
             if (null != cfg.m_RedirectToConsole) {
@@ -1103,9 +1110,12 @@ namespace BatchCommand
                             File.WriteAllText(file, outputBuilder.ToString());
                         }
                     }
-                    else {
-                        int v = output.Get<int>();
-                        Calculator.SetVariable(v, outputBuilder.ToString());
+                    else if (outputIx >= 0) {
+                        var list = output.As<IList>();
+                        while (list.Count <= outputIx) {
+                            list.Add(null);
+                        }
+                        list[outputIx] = outputBuilder.ToString();
                     }
                 }
                 catch (Exception ex) {
@@ -1123,9 +1133,12 @@ namespace BatchCommand
                             File.WriteAllText(file, errorBuilder.ToString());
                         }
                     }
-                    else {
-                        int v = error.Get<int>();
-                        Calculator.SetVariable(v, errorBuilder.ToString());
+                    else if (errorIx >= 0) {
+                        var list = error.As<IList>();
+                        while (list.Count <= errorIx) {
+                            list.Add(null);
+                        }
+                        list[errorIx] = errorBuilder.ToString();
                     }
                 }
                 catch (Exception ex) {
@@ -1205,34 +1218,19 @@ namespace BatchCommand
                 if (null != cfg.m_Input) {
                     var v = cfg.m_Input.Calc();
                     try {
-                        var str = v.AsString;
-                        if (!string.IsNullOrEmpty(str)) {
-                            if (str[0] == '@' || str[0] == '$') {
-                                object val = Calculator.GetVariable(str);
-                                if (null != val) {
-                                    var slist = new List<string>();
-                                    var list = val as IList;
-                                    foreach (var s in list) {
-                                        slist.Add(s.ToString());
-                                    }
-                                    input = slist;
-                                }
+                        var list = v.As<IList>();
+                        if (null != list) {
+                            var slist = new List<string>();
+                            foreach (var s in list) {
+                                slist.Add(s.ToString());
                             }
-                            else {
-                                str = Environment.ExpandEnvironmentVariables(str);
-                                input = File.ReadAllLines(str);
-                            }
+                            input = slist;
                         }
                         else {
-                            int vn = v.Get<int>();
-                            object val = Calculator.GetVariable(vn);
-                            if (null != val) {
-                                var slist = new List<string>();
-                                var list = val as IList;
-                                foreach (var s in list) {
-                                    slist.Add(s.ToString());
-                                }
-                                input = slist;
+                            var str = v.AsString;
+                            if (!string.IsNullOrEmpty(str)) {
+                                str = Environment.ExpandEnvironmentVariables(str);
+                                input = File.ReadAllLines(str);
                             }
                         }
                     }
@@ -1244,7 +1242,9 @@ namespace BatchCommand
                 StringBuilder outputBuilder = null;
                 StringBuilder errorBuilder = null;
                 var output = CalculatorValue.NullObject;
+                int outputIx = -1;
                 var error = CalculatorValue.NullObject;
+                int errorIx = -1;
                 if (null != cfg.m_Output) {
                     var v = cfg.m_Output.Calc();
                     var str = v.AsString;
@@ -1255,6 +1255,8 @@ namespace BatchCommand
                     else {
                         output = v;
                     }
+                    if (null != cfg.m_OutputOptArg)
+                        outputIx = cfg.m_OutputOptArg.Calc().Get<int>();
                     outputBuilder = new StringBuilder();
                 }
                 if (null != cfg.m_Error) {
@@ -1267,6 +1269,8 @@ namespace BatchCommand
                     else {
                         error = v;
                     }
+                    if (null != cfg.m_ErrorOptArg)
+                        errorIx = cfg.m_ErrorOptArg.Calc().Get<int>();
                     errorBuilder = new StringBuilder();
                 }
                 if (null != cfg.m_RedirectToConsole) {
@@ -1305,9 +1309,12 @@ namespace BatchCommand
                                     File.WriteAllText(file, outputBuilder.ToString());
                                 }
                             }
-                            else {
-                                int v = output.Get<int>();
-                                Calculator.SetVariable(v, outputBuilder.ToString());
+                            else if (outputIx >= 0) {
+                                var list = output.As<IList>();
+                                while (list.Count <= outputIx) {
+                                    list.Add(null);
+                                }
+                                list[outputIx] = outputBuilder.ToString();
                             }
                         }
                         catch (Exception ex) {
@@ -1325,9 +1332,12 @@ namespace BatchCommand
                                     File.WriteAllText(file, errorBuilder.ToString());
                                 }
                             }
-                            else {
-                                int v = error.Get<int>();
-                                Calculator.SetVariable(v, errorBuilder.ToString());
+                            else if (errorIx >= 0) {
+                                var list = error.As<IList>();
+                                while (list.Count <= errorIx) {
+                                    list.Add(null);
+                                }
+                                list[errorIx] = errorBuilder.ToString();
                             }
                         }
                         catch (Exception ex) {
@@ -1360,7 +1370,9 @@ namespace BatchCommand
             internal IExpression m_Encoding = null;
             internal IExpression m_Input = null;
             internal IExpression m_Output = null;
+            internal IExpression m_OutputOptArg = null;
             internal IExpression m_Error = null;
+            internal IExpression m_ErrorOptArg = null;
             internal IExpression m_RedirectToConsole = null;
         }
 

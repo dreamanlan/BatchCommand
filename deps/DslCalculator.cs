@@ -955,6 +955,10 @@ namespace DslExpression
         {
             Set(v);
         }
+        public void SetInteger(long v)
+        {
+            Set(v);
+        }
         public void SetNumber(double v)
         {
             Set(v);
@@ -970,6 +974,10 @@ namespace DslExpression
         public bool GetBool()
         {
             return Get<bool>();
+        }
+        public long GetInteger()
+        {
+            return Get<long>();
         }
         public double GetNumber()
         {
@@ -1963,72 +1971,20 @@ namespace DslExpression
             return true;
         }
     }
-    internal sealed class VarSet : AbstractExpression
-    {
-        protected override CalculatorValue DoCalc()
-        {
-            var varId = m_VarId.Calc();
-            CalculatorValue v = m_Op.Calc();
-            if (varId.IsInteger) {
-                int id = varId.Get<int>();
-                Calculator.SetVariable(id, v);
-            }
-            else {
-                var str = varId.AsString;
-                if (null != str) {
-                    Calculator.SetVariable(str, v);
-                }
-            }
-            return v;
-        }
-        protected override bool Load(Dsl.FunctionData callData)
-        {
-            Dsl.FunctionData param1 = callData.GetParam(0) as Dsl.FunctionData;
-            Dsl.ISyntaxComponent param2 = callData.GetParam(1);
-            m_VarId = Calculator.Load(param1.GetParam(0));
-            m_Op = Calculator.Load(param2);
-            return true;
-        }
-
-        private IExpression m_VarId;
-        private IExpression m_Op;
-    }
-    internal sealed class VarGet : AbstractExpression
-    {
-        protected override CalculatorValue DoCalc()
-        {
-            var varId = m_VarId.Calc();
-            CalculatorValue v = CalculatorValue.NullObject;
-            if (varId.IsInteger) {
-                int id = varId.Get<int>();
-                v = Calculator.GetVariable(id);
-            }
-            else {
-                var str = varId.AsString;
-                if (null != str) {
-                    v = Calculator.GetVariable(str);
-                }
-            }
-            return v;
-        }
-        protected override bool Load(Dsl.FunctionData callData)
-        {
-            m_VarId = Calculator.Load(callData.GetParam(0));
-            return true;
-        }
-
-        private IExpression m_VarId;
-    }
-    internal sealed class NamedVarSet : AbstractExpression
+    internal sealed class GlobalVarSet : AbstractExpression
     {
         protected override CalculatorValue DoCalc()
         {
             CalculatorValue v = m_Op.Calc();
-            if (m_VarId.Length > 0) {
-                Calculator.SetVariable(m_VarId, v);
-                if (!v.IsNullObject && m_VarId[0] != '@' && m_VarId[0] != '$') {
-                    Environment.SetEnvironmentVariable(m_VarId, v.ToString());
-                }
+            if (m_VarIx < int.MaxValue) {
+                Calculator.SetGlobalVaraibleByIndex(m_VarIx, v);
+            }
+            else if (m_VarId.Length > 0) {
+                m_VarIx = Calculator.AllocGlobalVariableIndex(m_VarId);
+                Calculator.SetGlobalVaraibleByIndex(m_VarIx, v);
+            }
+            if (m_VarId.Length > 0 && m_VarId[0] != '@') {
+                Environment.SetEnvironmentVariable(m_VarId, v.ToString());
             }
             return v;
         }
@@ -2043,23 +1999,30 @@ namespace DslExpression
 
         private string m_VarId;
         private IExpression m_Op;
+        private int m_VarIx = int.MaxValue;
     }
-    internal sealed class NamedVarGet : AbstractExpression
+    internal sealed class GlobalVarGet : AbstractExpression
     {
         protected override CalculatorValue DoCalc()
         {
             var ret = CalculatorValue.NullObject;
             if (m_VarId == "break") {
                 Calculator.RunState = RunStateEnum.Break;
+                return ret;
             }
             else if (m_VarId == "continue") {
                 Calculator.RunState = RunStateEnum.Continue;
+                return ret;
+            }
+            else if (m_VarIx < int.MaxValue) {
+                ret = Calculator.GetGlobalVaraibleByIndex(m_VarIx);
             }
             else if (m_VarId.Length > 0) {
-                ret = Calculator.GetVariable(m_VarId);
-                if (ret.IsNullObject && m_VarId[0] != '@' && m_VarId[0] != '$') {
-                    ret = CalculatorValue.FromObject(Environment.GetEnvironmentVariable(m_VarId));
-                }
+                m_VarIx = Calculator.GetGlobalVariableIndex(m_VarId);
+                ret = Calculator.GetGlobalVaraibleByIndex(m_VarIx);
+            }
+            if (ret.IsNullObject && m_VarId.Length > 0 && m_VarId[0] != '@') {
+                ret = Environment.ExpandEnvironmentVariables(m_VarId);
             }
             return ret;
         }
@@ -2070,6 +2033,57 @@ namespace DslExpression
         }
 
         private string m_VarId;
+        private int m_VarIx = int.MaxValue;
+    }
+    internal sealed class LocalVarSet : AbstractExpression
+    {
+        protected override CalculatorValue DoCalc()
+        {
+            CalculatorValue v = m_Op.Calc();
+            if (m_VarIx < int.MaxValue) {
+                Calculator.SetLocalVaraibleByIndex(m_VarIx, v);
+            }
+            else if (m_VarId.Length > 0) {
+                m_VarIx = Calculator.AllocLocalVariableIndex(m_VarId);
+                Calculator.SetLocalVaraibleByIndex(m_VarIx, v);
+            }
+            return v;
+        }
+        protected override bool Load(Dsl.FunctionData callData)
+        {
+            Dsl.ISyntaxComponent param1 = callData.GetParam(0);
+            Dsl.ISyntaxComponent param2 = callData.GetParam(1);
+            m_VarId = param1.GetId();
+            m_Op = Calculator.Load(param2);
+            return true;
+        }
+
+        private string m_VarId;
+        private IExpression m_Op;
+        private int m_VarIx = int.MaxValue;
+    }
+    internal sealed class LocalVarGet : AbstractExpression
+    {
+        protected override CalculatorValue DoCalc()
+        {
+            var ret = CalculatorValue.NullObject;
+            if (m_VarIx < int.MaxValue) {
+                ret = Calculator.GetLocalVaraibleByIndex(m_VarIx);
+            }
+            else if (m_VarId.Length > 0) {
+                m_VarIx = Calculator.GetLocalVariableIndex(m_VarId);
+                ret = Calculator.GetLocalVaraibleByIndex(m_VarIx);
+            }
+            return ret;
+        }
+        protected override bool Load(Dsl.ValueData valData)
+        {
+            m_VarId = valData.GetId();
+            return true;
+        }
+
+        private string m_VarId;
+        private int m_VarIx = int.MaxValue;
     }
     internal sealed class ConstGet : AbstractExpression
     {
@@ -3952,9 +3966,9 @@ namespace DslExpression
             if (operands.Count >= 2) {
                 var assem = operands[0].As<Assembly>();
                 string typeName = operands[1].AsString;
-                if (null!=assem && !string.IsNullOrEmpty(typeName)) {
+                if (null != assem && !string.IsNullOrEmpty(typeName)) {
                     var al = new ArrayList();
-                    for(int i = 2; i < operands.Count; ++i) {
+                    for (int i = 2; i < operands.Count; ++i) {
                         al.Add(operands[i].Get<object>());
                     }
                     r = CalculatorValue.FromObject(assem.CreateInstance(typeName, false, BindingFlags.CreateInstance, null, al.ToArray(), System.Globalization.CultureInfo.CurrentCulture, null));
@@ -4205,7 +4219,7 @@ namespace DslExpression
             if (operands.Count >= 2) {
                 string str = operands[0].AsString;
                 r = true;
-                for(int i = 1; i < operands.Count; ++i) {
+                for (int i = 1; i < operands.Count; ++i) {
                     var list = operands[i].As<IList>();
                     if (null != list) {
                         foreach (var o in list) {
@@ -4214,7 +4228,8 @@ namespace DslExpression
                                 return false;
                             }
                         }
-                    } else {
+                    }
+                    else {
                         var key = operands[i].AsString;
                         if (!string.IsNullOrEmpty(key) && !str.Contains(key)) {
                             return false;
@@ -4267,7 +4282,7 @@ namespace DslExpression
                     if (null != list) {
                         foreach (var o in list) {
                             var key = o as string;
-                            if (!string.IsNullOrEmpty(key)){
+                            if (!string.IsNullOrEmpty(key)) {
                                 if (str.Contains(key)) {
                                     return true;
                                 }
@@ -4490,7 +4505,8 @@ namespace DslExpression
             if (operands.Count >= 1) {
                 var fmt = operands[0].AsString;
                 r = DateTime.Now.ToString(fmt);
-            } else {
+            }
+            else {
                 r = DateTime.Now.ToString();
             }
             return r;
@@ -5552,17 +5568,27 @@ namespace DslExpression
     }
     public sealed class DslCalculator
     {
-        public Dsl.DslLogDelegation OnLog;
-        public IDictionary<string, CalculatorValue> NamedGlobalVariables
+        public class ProcInfo
         {
-            get { return m_NamedGlobalVariables; }
+            public Dictionary<string, int> LocalVarIndexes = new Dictionary<string, int>();
+            public List<IExpression> Codes = new List<IExpression>();
+
+            public void BuildArgNameIndexes(IList<string> argNames)
+            {
+                if (null != argNames) {
+                    for (int ix = 0; ix < argNames.Count; ++ix) {
+                        LocalVarIndexes[argNames[ix]] = -1 - ix;
+                    }
+                }
+            }
         }
+
+        public Dsl.DslLogDelegation OnLog;
         public void Init()
         {
             Register("args", new ExpressionFactoryHelper<ArgsGet>());
             Register("arg", new ExpressionFactoryHelper<ArgGet>());
             Register("argnum", new ExpressionFactoryHelper<ArgNumGet>());
-            Register("var", new ExpressionFactoryHelper<VarGet>());
             Register("+", new ExpressionFactoryHelper<AddExp>());
             Register("-", new ExpressionFactoryHelper<SubExp>());
             Register("*", new ExpressionFactoryHelper<MulExp>());
@@ -5728,30 +5754,43 @@ namespace DslExpression
         {
             m_Procs.Clear();
             m_Stack.Clear();
-            m_NamedGlobalVariables.Clear();
+            m_NamedGlobalVariableIndexes.Clear();
+            m_GlobalVariables.Clear();
         }
         public void ClearGlobalVariables()
         {
-            m_NamedGlobalVariables.Clear();
+            m_NamedGlobalVariableIndexes.Clear();
+            m_GlobalVariables.Clear();
         }
         public bool TryGetGlobalVariable(string v, out CalculatorValue result)
         {
-            return m_NamedGlobalVariables.TryGetValue(v, out result);
+            int index;
+            if (m_NamedGlobalVariableIndexes.TryGetValue(v, out index)) {
+                result = GetGlobalVaraibleByIndex(index);
+                return true;
+            }
+            else {
+                result = CalculatorValue.NullObject;
+                return false;
+            }
         }
         public CalculatorValue GetGlobalVariable(string v)
         {
             CalculatorValue result;
-            m_NamedGlobalVariables.TryGetValue(v, out result);
+            TryGetGlobalVariable(v, out result);
             return result;
         }
         public void SetGlobalVariable(string v, CalculatorValue val)
         {
-            var vars = m_NamedGlobalVariables;
-            vars[v] = val;
-        }
-        public bool RemoveGlobalVariable(string v)
-        {
-            return m_NamedGlobalVariables.Remove(v);
+            int index;
+            if (m_NamedGlobalVariableIndexes.TryGetValue(v, out index)) {
+                SetGlobalVaraibleByIndex(index, val);
+            }
+            else {
+                int ix = m_NamedGlobalVariableIndexes.Count;
+                m_NamedGlobalVariableIndexes.Add(v, ix);
+                m_GlobalVariables.Add(val);
+            }
         }
         public void LoadDsl(string dslFile)
         {
@@ -5769,6 +5808,7 @@ namespace DslExpression
                 return;
             var func = info as Dsl.FunctionData;
             string id;
+            ProcInfo procInfo = null;
             if (null != func) {
                 if (func.IsHighOrder)
                     id = func.LowerOrderFunction.GetParamId(0);
@@ -5782,41 +5822,31 @@ namespace DslExpression
                     func = statement.Second;
                     if (func.GetId() == "args" && func.IsHighOrder) {
                         if (func.LowerOrderFunction.GetParamNum() > 0) {
-                            List<string> names;
-                            if (!m_ProcArgNames.TryGetValue(id, out names)) {
-                                names = new List<string>();
-                                m_ProcArgNames.Add(id, names);
-                            }
-                            else {
-                                names.Clear();
-                            }
+                            procInfo = new ProcInfo();
                             foreach (var p in func.LowerOrderFunction.Params) {
-                                names.Add(p.GetId());
+                                string argName = p.GetId();
+                                int ix = procInfo.LocalVarIndexes.Count;
+                                procInfo.LocalVarIndexes.Add(argName, -1 - ix);
                             }
                         }
                     }
-	                else {
-	                    return;
-	                }
+                    else {
+                        return;
+                    }
                 }
                 else {
                     return;
                 }
             }
-            List<IExpression> list;
-            if (!m_Procs.TryGetValue(id, out list)) {
-                list = new List<IExpression>();
-                m_Procs.Add(id, list);
-            }
-            else {
-                list.Clear();
-            }
+            if (null == procInfo)
+                procInfo = new ProcInfo();
             foreach (Dsl.ISyntaxComponent comp in func.Params) {
                 var exp = Load(comp);
                 if (null != exp) {
-                    list.Add(exp);
+                    procInfo.Codes.Add(exp);
                 }
             }
+            m_Procs[id] = procInfo;
         }
         public void LoadDsl(string proc, Dsl.FunctionData func)
         {
@@ -5824,31 +5854,23 @@ namespace DslExpression
         }
         public void LoadDsl(string proc, IList<string> argNames, Dsl.FunctionData func)
         {
+            ProcInfo procInfo = null;
             if (null != argNames && argNames.Count > 0) {
-                List<string> names;
-                if (!m_ProcArgNames.TryGetValue(proc, out names)) {
-                    names = new List<string>(argNames);
-                    m_ProcArgNames.Add(proc, names);
-                }
-                else {
-                    names.Clear();
-                    names.AddRange(argNames);
+                procInfo = new ProcInfo();
+                foreach (var argName in argNames) {
+                    int ix = procInfo.LocalVarIndexes.Count;
+                    procInfo.LocalVarIndexes.Add(argName, -1 - ix);
                 }
             }
-            List<IExpression> list;
-            if (!m_Procs.TryGetValue(proc, out list)) {
-                list = new List<IExpression>();
-                m_Procs.Add(proc, list);
-            }
-            else {
-                list.Clear();
-            }
+            if (null == procInfo)
+                procInfo = new ProcInfo();
             foreach (Dsl.ISyntaxComponent comp in func.Params) {
                 var exp = Load(comp);
                 if (null != exp) {
-                    list.Add(exp);
+                    procInfo.Codes.Add(exp);
                 }
             }
+            m_Procs[proc] = procInfo;
         }
         public List<CalculatorValue> NewCalculatorValueList()
         {
@@ -5896,21 +5918,11 @@ namespace DslExpression
         public CalculatorValue Calc(string proc, List<CalculatorValue> args)
         {
             CalculatorValue ret = 0;
-            List<IExpression> exps;
-            if (m_Procs.TryGetValue(proc, out exps)) {
-                var si = new StackInfo();
-                si.Args.AddRange(args);
-                m_Stack.Push(si);
+            ProcInfo procInfo;
+            if (m_Procs.TryGetValue(proc, out procInfo)) {
+                LocalStackPush(args, procInfo);
                 try {
-                    List<string> names;
-                    if (m_ProcArgNames.TryGetValue(proc, out names)) {
-                        for (int i = 0; i < names.Count; ++i) {
-                            if (i < args.Count)
-                                SetVariable(names[i], args[i]);
-                            else
-                                SetVariable(names[i], CalculatorValue.NullObject);
-                        }
-                    }
+                    var exps = procInfo.Codes;
                     for (int i = 0; i < exps.Count; ++i) {
                         var exp = exps[i];
                         try {
@@ -5955,7 +5967,7 @@ namespace DslExpression
                     }
                 }
                 finally {
-                    m_Stack.Pop();
+                    LocalStackPop();
                 }
             }
             return ret;
@@ -5984,24 +5996,6 @@ namespace DslExpression
                 return stackInfo.Args;
             }
         }
-        public bool TryGetVariable(int v, out CalculatorValue result)
-        {
-            return Variables.TryGetValue(v, out result);
-        }
-        public CalculatorValue GetVariable(int v)
-        {
-            CalculatorValue result;
-            Variables.TryGetValue(v, out result);
-            return result;
-        }
-        public void SetVariable(int v, CalculatorValue val)
-        {
-            Variables[v] = val;
-        }
-        public bool RemoveVariable(int v)
-        {
-            return Variables.Remove(v);
-        }
         public bool TryGetVariable(string v, out CalculatorValue result)
         {
             bool ret = false;
@@ -6010,7 +6004,7 @@ namespace DslExpression
                     ret = TryGetGlobalVariable(v, out result);
                 }
                 else if (v[0] == '$') {
-                    ret = NamedVariables.TryGetValue(v, out result);
+                    ret = TryGetLocalVariable(v, out result);
                 }
                 else {
                     ret = TryGetGlobalVariable(v, out result);
@@ -6029,7 +6023,7 @@ namespace DslExpression
                     result = GetGlobalVariable(v);
                 }
                 else if (v[0] == '$') {
-                    NamedVariables.TryGetValue(v, out result);
+                    result = GetLocalVariable(v);
                 }
                 else {
                     result = GetGlobalVariable(v);
@@ -6044,28 +6038,28 @@ namespace DslExpression
                     SetGlobalVariable(v, val);
                 }
                 else if (v[0] == '$') {
-                    NamedVariables[v] = val;
+                    SetLocalVariable(v, val);
                 }
                 else {
                     SetGlobalVariable(v, val);
                 }
             }
         }
-        public bool RemoveVariable(string v)
+        public void LocalStackPush(List<CalculatorValue> args, ProcInfo procInfo)
         {
-            bool ret = false;
-            if (v.Length > 0) {
-                if (v[0] == '@') {
-                    ret = RemoveGlobalVariable(v);
-                }
-                else if (v[0] == '$') {
-                    ret = NamedVariables.Remove(v);
-                }
-                else {
-                    ret = RemoveGlobalVariable(v);
-                }
+            var si = StackInfo.New();
+            if (null != args) {
+                si.Args.AddRange(args);
             }
-            return ret;
+            si.Init(procInfo);
+            m_Stack.Push(si);
+        }
+        public void LocalStackPop()
+        {
+            var poped = m_Stack.Pop();
+            if (null != poped) {
+                poped.Recycle();
+            }
         }
         public IExpression Load(Dsl.ISyntaxComponent comp)
         {
@@ -6087,13 +6081,18 @@ namespace DslExpression
                         }
                         return p;
                     }
-                    else if(id == "true" || id == "false") {
+                    else if (id == "true" || id == "false") {
                         ConstGet constExp = new ConstGet();
                         constExp.Load(comp, this);
                         return constExp;
                     }
+                    else if (id.Length > 0 && id[0] == '$') {
+                        LocalVarGet varExp = new LocalVarGet();
+                        varExp.Load(comp, this);
+                        return varExp;
+                    }
                     else {
-                        NamedVarGet varExp = new NamedVarGet();
+                        GlobalVarGet varExp = new GlobalVarGet();
                         varExp.Load(comp, this);
                         return varExp;
                     }
@@ -6170,11 +6169,11 @@ namespace DslExpression
                                 }
                                 IExpression exp = null;
                                 string name = callData.GetParamId(0);
-                                if (name == "var") {
-                                    exp = new VarSet();
+                                if (name.Length > 0 && name[0] == '$') {
+                                    exp = new LocalVarSet();
                                 }
                                 else {
-                                    exp = new NamedVarSet();
+                                    exp = new GlobalVarSet();
                                 }
                                 if (null != exp) {
                                     exp.Load(comp, this);
@@ -6289,11 +6288,11 @@ namespace DslExpression
                 Dsl.StatementData stData = comp as Dsl.StatementData;
                 if (null != stData) {
                     Dsl.FunctionData first = stData.First;
-                    if(first.HaveId() && !first.HaveParamOrStatement()) {
+                    if (first.HaveId() && !first.HaveParamOrStatement()) {
                         //将命令行语法转换为函数调用语法
                         Dsl.FunctionData fd = new Dsl.FunctionData();
                         fd.CopyFrom(first);
-                        for(int argi = 1; argi < stData.GetFunctionNum(); ++argi) {
+                        for (int argi = 1; argi < stData.GetFunctionNum(); ++argi) {
                             var pfd = stData.GetFunction(argi);
                             if (pfd.HaveId() && !pfd.HaveParamOrStatement()) {
                                 fd.AddParam(pfd.Name);
@@ -6319,6 +6318,74 @@ namespace DslExpression
                 Log("DslCalculator error, {0} line {1}", comp.ToScriptString(false), comp.GetLine());
             }
             return ret;
+        }
+        internal int AllocGlobalVariableIndex(string name)
+        {
+            int ix;
+            if (!m_NamedGlobalVariableIndexes.TryGetValue(name, out ix)) {
+                ix = m_NamedGlobalVariableIndexes.Count;
+                m_NamedGlobalVariableIndexes.Add(name, ix);
+                m_GlobalVariables.Add(CalculatorValue.NullObject);
+            }
+            return ix;
+        }
+        internal int AllocLocalVariableIndex(string name)
+        {
+            int ix;
+            if (!LocalVariableIndexes.TryGetValue(name, out ix)) {
+                ix = LocalVariableIndexes.Count;
+                LocalVariableIndexes.Add(name, ix);
+                LocalVariables.Add(CalculatorValue.NullObject);
+            }
+            return ix;
+        }
+        internal int GetGlobalVariableIndex(string name)
+        {
+            int ix;
+            if (!m_NamedGlobalVariableIndexes.TryGetValue(name, out ix)) {
+                ix = int.MaxValue;
+            }
+            return ix;
+        }
+        internal int GetLocalVariableIndex(string name)
+        {
+            int ix;
+            if (!LocalVariableIndexes.TryGetValue(name, out ix)) {
+                ix = int.MaxValue;
+            }
+            return ix;
+        }
+        internal CalculatorValue GetGlobalVaraibleByIndex(int ix)
+        {
+            return m_GlobalVariables[ix];
+        }
+        internal CalculatorValue GetLocalVaraibleByIndex(int ix)
+        {
+            if (ix >= 0) {
+                return LocalVariables[ix];
+            }
+            else {
+                int argIx = -1 - ix;
+                if (argIx >= 0 && argIx < Arguments.Count)
+                    return Arguments[argIx];
+                else
+                    return CalculatorValue.NullObject;
+            }
+        }
+        internal void SetGlobalVaraibleByIndex(int ix, CalculatorValue val)
+        {
+            m_GlobalVariables[ix] = val;
+        }
+        internal void SetLocalVaraibleByIndex(int ix, CalculatorValue val)
+        {
+            if (ix >= 0) {
+                LocalVariables[ix] = val;
+            }
+            else {
+                int argIx = -1 - ix;
+                if (argIx >= 0 && argIx < Arguments.Count)
+                    Arguments[argIx] = val;
+            }
         }
         private Dsl.ISyntaxComponent ConvertMember(Dsl.ISyntaxComponent p, int paramClass)
         {
@@ -6351,34 +6418,144 @@ namespace DslExpression
             }
         }
 
-        private Dictionary<int, CalculatorValue> Variables
+        private bool TryGetLocalVariable(string v, out CalculatorValue result)
         {
-            get {
-                var stackInfo = m_Stack.Peek();
-                return stackInfo.Vars;
+            int index;
+            if (LocalVariableIndexes.TryGetValue(v, out index)) {
+                result = GetLocalVaraibleByIndex(index);
+                return true;
+            }
+            else {
+                result = CalculatorValue.NullObject;
+                return false;
             }
         }
-        private Dictionary<string, CalculatorValue> NamedVariables
+
+        private CalculatorValue GetLocalVariable(string v)
+        {
+            CalculatorValue result;
+            TryGetLocalVariable(v, out result);
+            return result;
+        }
+        private void SetLocalVariable(string v, CalculatorValue val)
+        {
+            int index;
+            if (LocalVariableIndexes.TryGetValue(v, out index)) {
+                SetLocalVaraibleByIndex(index, val);
+            }
+            else {
+                int ix = LocalVariableIndexes.Count;
+                LocalVariableIndexes.Add(v, ix);
+                LocalVariables.Add(val);
+            }
+        }
+        private Dictionary<string, int> LocalVariableIndexes
         {
             get {
                 var stackInfo = m_Stack.Peek();
-                return stackInfo.NamedVars;
+                return stackInfo.ProcInfo.LocalVarIndexes;
+            }
+        }
+        private List<CalculatorValue> LocalVariables
+        {
+            get {
+                var stackInfo = m_Stack.Peek();
+                return stackInfo.LocalVars;
             }
         }
 
         private class StackInfo
         {
+            internal ProcInfo ProcInfo = null;
             internal List<CalculatorValue> Args = new List<CalculatorValue>();
-            internal Dictionary<int, CalculatorValue> Vars = new Dictionary<int, CalculatorValue>();
-            internal Dictionary<string, CalculatorValue> NamedVars = new Dictionary<string, CalculatorValue>();
+            internal List<CalculatorValue> LocalVars = new List<CalculatorValue>();
+
+            internal void Init(ProcInfo procInfo)
+            {
+                ProcInfo = procInfo;
+                LocalVars.Capacity = procInfo.LocalVarIndexes.Count;
+                for (int ix = 0; ix < procInfo.LocalVarIndexes.Count; ++ix) {
+                    LocalVars.Add(CalculatorValue.NullObject);
+                }
+            }
+            internal void Recycle()
+            {
+                ProcInfo = null;
+                Args.Clear();
+                LocalVars.Clear();
+
+                s_Pool.Recycle(this);
+            }
+            internal static StackInfo New()
+            {
+                return s_Pool.Alloc();
+            }
+            private static SimpleObjectPool<StackInfo> s_Pool = new SimpleObjectPool<StackInfo>();
         }
 
         private RunStateEnum m_RunState = RunStateEnum.Normal;
-        private Dictionary<string, List<string>> m_ProcArgNames = new Dictionary<string, List<string>>();
-        private Dictionary<string, List<IExpression>> m_Procs = new Dictionary<string, List<IExpression>>();
+        private Dictionary<string, ProcInfo> m_Procs = new Dictionary<string, ProcInfo>();
         private Stack<StackInfo> m_Stack = new Stack<StackInfo>();
-        private Dictionary<string, CalculatorValue> m_NamedGlobalVariables = new Dictionary<string, CalculatorValue>();
+        private Dictionary<string, int> m_NamedGlobalVariableIndexes = new Dictionary<string, int>();
+        private List<CalculatorValue> m_GlobalVariables = new List<CalculatorValue>();
         private Dictionary<string, IExpressionFactory> m_ExpressionFactories = new Dictionary<string, IExpressionFactory>();
         private CalculatorValueListPool m_Pool = new CalculatorValueListPool(16);
+    }
+
+    public class SimpleObjectPool<T> where T : new()
+    {
+        public SimpleObjectPool()
+        {
+            m_UnusedObjects = new Queue<T>();
+        }
+        public SimpleObjectPool(int initPoolSize)
+        {
+            m_UnusedObjects = new Queue<T>(initPoolSize);
+            Init(initPoolSize);
+        }
+        public void Init(int initPoolSize)
+        {
+            for (int i = 0; i < initPoolSize; ++i) {
+                T t = new T();
+                Recycle(t);
+            }
+        }
+        public T Alloc()
+        {
+            if (m_UnusedObjects.Count > 0) {
+                var t = m_UnusedObjects.Dequeue();
+                m_HashCodes.Remove(t.GetHashCode());
+                return t;
+            }
+            else {
+                T t = new T();
+                return t;
+            }
+        }
+        public void Recycle(T t)
+        {
+            if (null != t && m_UnusedObjects.Count < m_PoolSize) {
+                int hashCode = t.GetHashCode();
+                if (!m_HashCodes.Contains(hashCode)) {
+                    m_HashCodes.Add(hashCode);
+                    m_UnusedObjects.Enqueue(t);
+                }
+            }
+        }
+        public void Clear()
+        {
+            m_HashCodes.Clear();
+            m_UnusedObjects.Clear();
+        }
+        public int Count
+        {
+            get {
+                return m_UnusedObjects.Count;
+            }
+        }
+
+        private HashSet<int> m_HashCodes = new HashSet<int>();
+        private Queue<T> m_UnusedObjects = new Queue<T>();
+        private int m_PoolSize = 4096;
     }
 }

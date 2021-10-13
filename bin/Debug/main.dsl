@@ -40,12 +40,12 @@
 	
 	setfgcolor("DarkBlue");
 	echo("readline:");
-	var(1) = readline();
+	$var1 = readline();
 	echo("read:");
-	var(2) = read();
+	$var2 = read();
 	echo();
-	var(3) = makestring(var(2),var(2),var(2));
-	echo("makestring:{0}", var(3));
+	$var3 = makestring($var2,$var2,$var2);
+	echo("makestring:{0}", $var3);
 	echo("press any key ...");
 	process("cmd", "/c dir"){
 		nowait(true);

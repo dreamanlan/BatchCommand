@@ -2026,7 +2026,7 @@ namespace BatchCommand
                 var sdir = Path.GetDirectoryName(scpFile);
                 sdir = Path.Combine(Environment.CurrentDirectory, sdir);
                 s_ScriptDirectory = sdir;
-                s_Calculator.Cleanup();
+                s_Calculator.Clear();
                 s_Calculator.LoadDsl(scpFile);
                 Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
                 r = s_Calculator.Calc("main", vargs);

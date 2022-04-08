@@ -13,12 +13,16 @@ public class Main : IPlugin, IContextMenu
 {
     public void Init(PluginInitContext context)
     {
+        string exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+        string dir = Path.GetDirectoryName(exe);
+        Directory.SetCurrentDirectory(dir);
         s_StartupThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
         s_Context = context;
         var txtWriter = new StringWriter(s_LogBuilder);
         Console.SetOut(txtWriter);
         Console.SetError(txtWriter);
         using(var sw = new StreamWriter(s_LogFile, false)) {
+            sw.WriteLine("dir:{0} exe:{1}", dir, exe);
             sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
             sw.Close();
         }

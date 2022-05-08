@@ -2818,8 +2818,8 @@ namespace DslExpression
         }
         protected override bool Load(Dsl.StatementData statementData)
         {
-            Dsl.FunctionData funcData1 = statementData.First;
-            Dsl.FunctionData funcData2 = statementData.Second;
+            Dsl.FunctionData funcData1 = statementData.First.AsFunction;
+            Dsl.FunctionData funcData2 = statementData.Second.AsFunction;
             if (funcData1.IsHighOrder && funcData1.HaveLowerOrderParam() && funcData2.GetId() == ":" && funcData2.HaveParamOrStatement()) {
                 Dsl.ISyntaxComponent cond = funcData1.LowerOrderFunction.GetParam(0);
                 Dsl.ISyntaxComponent op1 = funcData1.GetParam(0);
@@ -2893,8 +2893,8 @@ namespace DslExpression
             //简化语法if(exp) func(args);语法的处理
             int funcNum = statementData.GetFunctionNum();
             if (funcNum == 2) {
-                var first = statementData.First;
-                var second = statementData.Second;
+                var first = statementData.First.AsFunction;
+                var second = statementData.Second.AsFunction;
                 var firstId = first.GetId();
                 var secondId = second.GetId();
                 if (firstId == "if" && !first.HaveStatement() && !first.HaveExternScript() &&
@@ -2915,7 +2915,8 @@ namespace DslExpression
                 }
             }
             //标准if语句的处理
-            foreach (var fData in statementData.Functions) {
+            foreach (var fd in statementData.Functions) {
+                var fData = fd.AsFunction;
                 if (fData.GetId() == "if" || fData.GetId() == "elseif") {
                     IfExp.Clause item = new IfExp.Clause();
                     if (fData.IsHighOrder && fData.LowerOrderFunction.GetParamNum() > 0) {
@@ -3009,8 +3010,8 @@ namespace DslExpression
         {
             //简化语法while(exp) func(args);语法的处理
             if (statementData.GetFunctionNum() == 2) {
-                var first = statementData.First;
-                var second = statementData.Second;
+                var first = statementData.First.AsFunction;
+                var second = statementData.Second.AsFunction;
                 var firstId = first.GetId();
                 var secondId = second.GetId();
                 if (firstId == "while" && !first.HaveStatement() && !first.HaveExternScript() &&
@@ -3078,8 +3079,8 @@ namespace DslExpression
         {
             //简化语法loop(exp) func(args);语法的处理
             if (statementData.GetFunctionNum() == 2) {
-                var first = statementData.First;
-                var second = statementData.Second;
+                var first = statementData.First.AsFunction;
+                var second = statementData.Second.AsFunction;
                 var firstId = first.GetId();
                 var secondId = second.GetId();
                 if (firstId == "loop" && !first.HaveStatement() && !first.HaveExternScript() &&
@@ -3151,8 +3152,8 @@ namespace DslExpression
         {
             //简化语法looplist(exp) func(args);语法的处理
             if (statementData.GetFunctionNum() == 2) {
-                var first = statementData.First;
-                var second = statementData.Second;
+                var first = statementData.First.AsFunction;
+                var second = statementData.Second.AsFunction;
                 var firstId = first.GetId();
                 var secondId = second.GetId();
                 if (firstId == "looplist" && !first.HaveStatement() && !first.HaveExternScript() &&
@@ -3228,8 +3229,8 @@ namespace DslExpression
         {
             //简化语法foreach(exp1,exp2,...) func(args);语法的处理
             if (statementData.GetFunctionNum() == 2) {
-                var first = statementData.First;
-                var second = statementData.Second;
+                var first = statementData.First.AsFunction;
+                var second = statementData.Second.AsFunction;
                 var firstId = first.GetId();
                 var secondId = second.GetId();
                 if (firstId == "foreach" && !first.HaveStatement() && !first.HaveExternScript() &&
@@ -6002,8 +6003,8 @@ namespace DslExpression
             else {
                 var statement = info as Dsl.StatementData;
                 if (null != statement && statement.GetFunctionNum() == 2) {
-                    id = statement.First.GetParamId(0);
-                    func = statement.Second;
+                    id = statement.First.AsFunction.GetParamId(0);
+                    func = statement.Second.AsFunction;
                     if (func.GetId() == "args" && func.IsHighOrder) {
                         if (func.LowerOrderFunction.GetParamNum() > 0) {
                             procInfo = new ProcInfo();
@@ -6468,19 +6469,14 @@ namespace DslExpression
             if (null != ret) {
                 Dsl.StatementData stData = comp as Dsl.StatementData;
                 if (null != stData) {
-                    Dsl.FunctionData first = stData.First;
-                    if (first.HaveId() && !first.HaveParamOrStatement()) {
+                    Dsl.ValueData first = stData.First.AsValue;
+                    if (null != first) {
                         //将命令行语法转换为函数调用语法
                         Dsl.FunctionData fd = new Dsl.FunctionData();
-                        fd.CopyFrom(first);
+                        fd.Name = first;
                         for (int argi = 1; argi < stData.GetFunctionNum(); ++argi) {
                             var pfd = stData.GetFunction(argi);
-                            if (pfd.HaveId() && !pfd.HaveParamOrStatement()) {
-                                fd.AddParam(pfd.Name);
-                            }
-                            else {
-                                fd.AddParam(pfd);
-                            }
+                            fd.AddParam(pfd);
                         }
                         if (!ret.Load(fd, this)) {
                             //error

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "CppLua2Dsl": {
+      "commandName": "Project",
+      "commandLineArgs": "c:/UE_4.27 d:/SourceInsightCodes/UE_4_27_DSL",
+      "workingDirectory": "D:\\GitHub\\BatchCommand\\CppLua2Dsl\\bin\\Debug"
+    }
+  }
+}

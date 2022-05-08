@@ -920,8 +920,15 @@ namespace BatchCommand
         protected override bool Load(Dsl.StatementData statementData)
         {
             for (int i = 0; i < statementData.GetFunctionNum(); ++i) {
-                var funcData = statementData.GetFunction(i);
-                Load(funcData);
+                var func = statementData.GetFunction(i);
+                var vd = func.AsValue;
+                if (null != vd) {
+                    Load(vd);
+                }
+                else {
+                    var fd = func.AsFunction;
+                    Load(fd);
+                }
             }
             return true;
         }

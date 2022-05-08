@@ -76,11 +76,10 @@ namespace CppLua2Dsl
                     string targetFile = Path.Combine(to, Path.GetFileName(file));
                     if (filter == "*.lua") {
                         try {
-                            if (s_DslFile.LoadLua(file, msg => s_ErrorWriter?.WriteLine(msg))) {
+                            if (s_DslFile.LoadLua(file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
                                 s_DslFile.Save(targetFile);
                             }
                             else {
-                                s_ErrorWriter?.WriteLine("{0} can't parsed !", file);
                                 s_ErrorWriter?.Flush();
                                 Console.Write("{0} can't parsed !", file);
                                 Console.WriteLine(s_Spaces);
@@ -109,11 +108,10 @@ namespace CppLua2Dsl
                                 Console.WriteLine(s_Spaces);
                             }
                             else {
-                                if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine(msg))) {
+                                if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
                                     s_DslFile.Save(targetFile);
                                 }
                                 else {
-                                    s_ErrorWriter?.WriteLine("{0} can't parsed !", file);
                                     s_ErrorWriter?.Flush();
                                     Console.Write("{0} can't parsed !", file);
                                     Console.WriteLine(s_Spaces);

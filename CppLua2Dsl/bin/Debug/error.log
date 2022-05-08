@@ -9,183 +9,18 @@ skip Object C file c:/UE_4.27\Engine\Plugins\Developer\VisualStudioCodeSourceCod
 skip Object C file c:/UE_4.27\Engine\Plugins\Developer\XCodeSourceCodeAccess\Source\XCodeSourceCodeAccess\Private\XCodeSourceCodeAccessor.cpp.
 c:/UE_4.27\Engine\Plugins\Enterprise\DatasmithCADImporter\Source\DatasmithWireTranslator\Private\AliasCoretechWrapper.cpp can't parsed !
 c:/UE_4.27\Engine\Plugins\Enterprise\DatasmithCADImporter\Source\DatasmithWireTranslator2021\Private\AliasCoretechWrapper.cpp can't parsed !
-[error] expecting ) but found }, last token ; line 906, cur token } line 907
-[error] expecting ) but found }, last token ; line 906, cur token } line 907
-[error] expecting ) but found }, last token ; line 1047, cur token } line 1048
-[error] expecting ) but found }, last token ; line 1047, cur token } line 1048
-[error] expecting ) but found }, last token ; line 1798, cur token } line 1799
-[error] expecting ) but found }, last token ; line 1846, cur token } line 1847
-c:/UE_4.27\Engine\Plugins\Enterprise\MDLImporter\Source\MDLImporter\Private\generator\FunctionGenerator.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 1184, cur token <<eof>> line 1185
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\alembic\maya\AbcExport\AbcExport.cpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 357, cur token <<eof>> line 359
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\alembic\maya\AbcImport\AbcImport.cpp can't parsed !
-[error] input left, last token var line 111, cur token ) line 111
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\config\cmake_ext_mod\HDFTests.c can't parsed !
-[error] input left, last token ; line 559, cur token } line 560
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\fortran\src\H5match_types.c can't parsed !
-[error] input left, last token ) line 3032, cur token } line 3034
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\src\H5C.c can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 746, cur token <<eof>> line 747
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\src\H5PL.c can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 13253, cur token <<eof>> line 13255
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\test\tselect.c can't parsed !
-[error] input left, last token ; line 2950, cur token } line 2952
-c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\testpar\t_shapesame.c can't parsed !
+[error] input left, last token var line 111, cur token ) line 111 file:c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\config\cmake_ext_mod\HDFTests.c
+[error] input left, last token ; line 559, cur token } line 560 file:c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\fortran\src\H5match_types.c
+[error] input left, last token ) line 3032, cur token } line 3034 file:c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\src\H5C.c
+[error] input left, last token ; line 2950, cur token } line 2952 file:c:/UE_4.27\Engine\Plugins\Experimental\AlembicImporter\Source\ThirdParty\Alembic\hdf5\testpar\t_shapesame.c
 skip Object C file c:/UE_4.27\Engine\Plugins\Experimental\AppleVision\Source\AppleVision\Private\AppleVisionPlugin.cpp.
-[error] expecting } but found ), last token ) line 105, cur token ) line 106
-[error] input left, last token ) line 105, cur token ) line 106
-c:/UE_4.27\Engine\Plugins\Experimental\ColorCorrectRegions\Source\ColorCorrectRegions\Private\ColorCorrectRegionSubsystem.cpp can't parsed !
-[error] expecting } but found ), last token BOOST_MOVE_STD_NS_BEG line 1709, cur token ) line 1709
-[error] expecting ) but found }, last token ( line 1745, cur token } line 1745
-[error] input left, last token ( line 1745, cur token } line 1745
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\container\slist.hpp can't parsed !
-[error] input left, last token ) line 341, cur token } line 343
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\functional\forward_adapter.hpp can't parsed !
-[error] input left, last token ; line 424, cur token } line 425
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\lambda\detail\lambda_functor_base.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 288, cur token } line 289
-[error] expecting ) but found }, last token ; line 300, cur token } line 301
-[error] expecting ) but found }, last token ; line 313, cur token } line 314
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\lexical_cast\detail\converter_lexical_streams.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 804, cur token <<eof>> line 806
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\math\special_functions\detail\unchecked_factorial.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1239, cur token <<eof>> line 1240
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\math\special_functions\prime.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 83, cur token <<eof>> line 84
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\comparison_op.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 61, cur token <<eof>> line 62
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\contains_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 44, cur token <<eof>> line 45
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\count_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 80, cur token <<eof>> line 81
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\insert_range_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 63, cur token <<eof>> line 64
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\largest_int.hpp can't parsed !
-[error] input left, last token } line 158, cur token } line 158
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\logical_op.hpp can't parsed !
-[error] input left, last token ) line 60, cur token } line 61
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\msvc_dtw.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 77, cur token <<eof>> line 78
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 77, cur token <<eof>> line 78
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\numeric_cast_utils.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 87, cur token <<eof>> line 88
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\O1_size_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 76, cur token <<eof>> line 77
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\order_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 70, cur token <<eof>> line 71
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\push_back_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\push_front_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 52, cur token <<eof>> line 53
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\size_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 60, cur token <<eof>> line 61
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\set\aux_\has_key_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 116, cur token <<eof>> line 117
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\vector\aux_\at.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 229, cur token <<eof>> line 230
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\apply.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 234, cur token <<eof>> line 235
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\apply_wrap.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 96, cur token <<eof>> line 97
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\copy_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 79, cur token <<eof>> line 80
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\count_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 78, cur token <<eof>> line 79
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\distance.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\eval_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 117, cur token <<eof>> line 118
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\iter_fold_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 88, cur token <<eof>> line 89
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\replace_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 55, cur token <<eof>> line 56
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 55, cur token <<eof>> line 56
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\same_as.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 52, cur token <<eof>> line 53
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\tag.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 150, cur token <<eof>> line 151
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\unpack_args.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 297, cur token <<eof>> line 298
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\numeric\ublas\exception.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 146, cur token } line 147
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\thread\win32\once.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 5897, cur token <<eof>> line 5898
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\thread\future.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 73, cur token <<eof>> line 74
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 73, cur token <<eof>> line 74
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\has_nothrow_constructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 82, cur token <<eof>> line 83
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 82, cur token <<eof>> line 83
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\has_nothrow_copy.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 48, cur token <<eof>> line 49
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\has_trivial_destructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 79, cur token <<eof>> line 80
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\has_trivial_move_constructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 85, cur token <<eof>> line 86
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_assignable.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 90, cur token <<eof>> line 91
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_constructible.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 98, cur token <<eof>> line 99
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_default_constructible.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 69, cur token <<eof>> line 70
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_destructible.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 106, cur token } line 107
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_empty.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 97, cur token <<eof>> line 98
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 97, cur token <<eof>> line 98
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_nothrow_move_constructible.hpp can't parsed !
-[error] input left, last token ) line 142, cur token } line 144
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_virtual_base_of.hpp can't parsed !
-[error] expecting } but found ), last token ) line 195, cur token ) line 195
-[error] expecting } but found ), last token ) line 195, cur token ) line 195
-[error] expecting } but found ), last token ) line 195, cur token ) line 195
-[error] input left, last token ) line 195, cur token ) line 195
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\multi_index_container.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 1952, cur token } line 1953
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\openvdb\python\pyGrid.h can't parsed !
-[error] expecting ) but found }, last token ; line 237, cur token } line 238
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\openvdb\python\pyTransform.cc can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1119, cur token <<eof>> line 1124
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1119, cur token <<eof>> line 1124
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1119, cur token <<eof>> line 1124
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1119, cur token <<eof>> line 1124
-c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\openvdb\tools\RayTracer.h can't parsed !
+[error] input left, last token } line 114, cur token } line 115 file:c:/UE_4.27\Engine\Plugins\Experimental\ColorCorrectRegions\Source\ColorCorrectRegions\Private\ColorCorrectRegionSubsystem.cpp
+[error] input left, last token ) line 341, cur token } line 343 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\functional\forward_adapter.hpp
+[error] input left, last token ; line 424, cur token } line 425 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\lambda\detail\lambda_functor_base.hpp
+[error] input left, last token } line 158, cur token } line 158 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\logical_op.hpp
+[error] input left, last token ) line 60, cur token } line 61 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\mpl\aux_\msvc_dtw.hpp
+[error] input left, last token ) line 142, cur token } line 144 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\type_traits\is_virtual_base_of.hpp
+[error] input left, last token } line 1374, cur token } line 1376 file:c:/UE_4.27\Engine\Plugins\Experimental\ProxyLODPlugin\Source\ThirdParty\boost\multi_index_container.hpp
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Linux\plugins\usd\resources\codegenTemplates\schemaClass.h.
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Linux\plugins\usd\resources\codegenTemplates\tokens.h.
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Linux\plugins\usd\resources\codegenTemplates\schemaClass.cpp.
@@ -204,248 +39,13 @@ skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\Usd
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Win64\plugins\usd\resources\codegenTemplates\tokens.cpp.
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Win64\plugins\usd\resources\codegenTemplates\wrapSchemaClass.cpp.
 skip template file c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Resources\UsdResources\Win64\plugins\usd\resources\codegenTemplates\wrapTokens.cpp.
-[error] expecting ) but found }, last token ; line 121, cur token } line 122
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\archive\text_woarchive.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 288, cur token } line 289
-[error] expecting ) but found }, last token ; line 300, cur token } line 301
-[error] expecting ) but found }, last token ; line 313, cur token } line 314
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\lexical_cast\detail\converter_lexical_streams.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 83, cur token <<eof>> line 84
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\comparison_op.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 61, cur token <<eof>> line 62
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\contains_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 80, cur token <<eof>> line 81
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\insert_range_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 63, cur token <<eof>> line 64
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\largest_int.hpp can't parsed !
-[error] input left, last token } line 158, cur token } line 158
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\logical_op.hpp can't parsed !
-[error] input left, last token ) line 60, cur token } line 61
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\msvc_dtw.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 77, cur token <<eof>> line 78
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 77, cur token <<eof>> line 78
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\numeric_cast_utils.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 87, cur token <<eof>> line 88
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\O1_size_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 70, cur token <<eof>> line 71
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\push_back_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\push_front_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 52, cur token <<eof>> line 53
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\size_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 60, cur token <<eof>> line 61
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\set\aux_\has_key_impl.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 116, cur token <<eof>> line 117
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\vector\aux_\at.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 229, cur token <<eof>> line 230
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\apply.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 234, cur token <<eof>> line 235
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\apply_wrap.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 78, cur token <<eof>> line 79
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\distance.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 71, cur token <<eof>> line 72
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\eval_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 117, cur token <<eof>> line 118
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\iter_fold_if.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 55, cur token <<eof>> line 56
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 55, cur token <<eof>> line 56
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\same_as.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 52, cur token <<eof>> line 53
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\tag.hpp can't parsed !
-[error] input left, last token } line 754, cur token } line 754
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\python\suite\indexing\detail\indexing_suite_detail.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 73, cur token <<eof>> line 74
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 73, cur token <<eof>> line 74
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\has_nothrow_constructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 82, cur token <<eof>> line 83
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 82, cur token <<eof>> line 83
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\has_nothrow_copy.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 48, cur token <<eof>> line 49
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\has_trivial_destructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 79, cur token <<eof>> line 80
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\has_trivial_move_constructor.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 85, cur token <<eof>> line 86
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_assignable.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 90, cur token <<eof>> line 91
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_constructible.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 98, cur token <<eof>> line 99
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_default_constructible.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 69, cur token <<eof>> line 70
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_destructible.hpp can't parsed !
-[error] expecting ) but found }, last token ; line 106, cur token } line 107
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_empty.hpp can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 97, cur token <<eof>> line 98
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 97, cur token <<eof>> line 98
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_nothrow_move_constructible.hpp can't parsed !
-[error] input left, last token ) line 142, cur token } line 144
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_virtual_base_of.hpp can't parsed !
-[error] expecting } but found ), last token ) line 186, cur token ) line 186
-[error] expecting } but found ), last token ) line 186, cur token ) line 186
-[error] expecting } but found ), last token ) line 186, cur token ) line 186
-[error] input left, last token ) line 186, cur token ) line 186
-c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\multi_index_container.hpp can't parsed !
-[error][行 20 ]：字符无法结束！
-
-[error][行 20 ]：字符无法结束！
-
-[error][行 21 ]：字符无法结束！
-
-[error][行 21 ]：字符无法结束！
-
-[error][行 22 ]：字符无法结束！
-
-[error][行 22 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 24 ]：字符无法结束！
-
-[error][行 24 ]：字符无法结束！
-
-[error][行 25 ]：字符无法结束！
-
-[error][行 25 ]：字符无法结束！
-
-[error][行 26 ]：字符无法结束！
-
-[error][行 26 ]：字符无法结束！
-
-[error][行 27 ]：字符无法结束！
-
-[error][行 27 ]：字符无法结束！
-
-[error][行 19 ]：字符无法结束！
-
-[error][行 19 ]：字符无法结束！
-
-[error][行 20 ]：字符无法结束！
-
-[error][行 20 ]：字符无法结束！
-
-[error][行 21 ]：字符无法结束！
-
-[error][行 21 ]：字符无法结束！
-
-[error][行 22 ]：字符无法结束！
-
-[error][行 22 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 24 ]：字符无法结束！
-
-[error][行 24 ]：字符无法结束！
-
-[error][行 39 ]：字符无法结束！
-
-[error][行 39 ]：字符无法结束！
-
-[error][行 40 ]：字符无法结束！
-
-[error][行 40 ]：字符无法结束！
-
-[error][行 41 ]：字符无法结束！
-
-[error][行 41 ]：字符无法结束！
-
-[error][行 42 ]：字符无法结束！
-
-[error][行 42 ]：字符无法结束！
-
-[error][行 43 ]：字符无法结束！
-
-[error][行 43 ]：字符无法结束！
-
-[error][行 44 ]：字符无法结束！
-
-[error][行 44 ]：字符无法结束！
-
-[error][行 45 ]：字符无法结束！
-
-[error][行 45 ]：字符无法结束！
-
-[error][行 46 ]：字符无法结束！
-
-[error][行 46 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 23 ]：字符无法结束！
-
-[error][行 26 ]：字符无法结束！
-
-[error][行 26 ]：字符无法结束！
-
-[error][行 29 ]：字符无法结束！
-
-[error][行 29 ]：字符无法结束！
-
-[error][行 32 ]：字符无法结束！
-
-[error][行 32 ]：字符无法结束！
-
-[error][行 38 ]：字符无法结束！
-
-[error][行 38 ]：字符无法结束！
-
-[error][行 103 ]：字符无法结束！
-
-[error][行 103 ]：字符无法结束！
-
-[error][行 104 ]：字符无法结束！
-
-[error][行 104 ]：字符无法结束！
-
-[error][行 105 ]：字符无法结束！
-
-[error][行 105 ]：字符无法结束！
-
-[error][行 110 ]：字符无法结束！
-
-[error][行 110 ]：字符无法结束！
-
-[error][行 111 ]：字符无法结束！
-
-[error][行 111 ]：字符无法结束！
-
-[error][行 112 ]：字符无法结束！
-
-[error][行 112 ]：字符无法结束！
-
-[error][行 113 ]：字符无法结束！
-
-[error][行 113 ]：字符无法结束！
-
-[error][行 114 ]：字符无法结束！
-
-[error][行 114 ]：字符无法结束！
-
-[error][行 115 ]：字符无法结束！
-
-[error][行 115 ]：字符无法结束！
-
-[error][行 163 ]：字符无法结束！
-
-[error][行 163 ]：字符无法结束！
-
-[error][行 164 ]：字符无法结束！
-
-[error][行 164 ]：字符无法结束！
-
-[error][行 240 ]：字符无法结束！
-
-[error][行 240 ]：字符无法结束！
-
+[error] input left, last token } line 158, cur token } line 158 file:c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\logical_op.hpp
+[error] input left, last token ) line 60, cur token } line 61 file:c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\mpl\aux_\msvc_dtw.hpp
+[error] input left, last token } line 754, cur token } line 754 file:c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\python\suite\indexing\detail\indexing_suite_detail.hpp
+[error] input left, last token ) line 142, cur token } line 144 file:c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\type_traits\is_virtual_base_of.hpp
+[error] input left, last token } line 1386, cur token } line 1388 file:c:/UE_4.27\Engine\Plugins\Importers\USDImporter\Source\ThirdParty\USD\include\boost\multi_index_container.hpp
 skip Object C file c:/UE_4.27\Engine\Plugins\Media\AvfMedia\Source\AvfMedia\Private\Player\AvfMediaPlayer.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Media\AvfMedia\Source\AvfMedia\Private\Player\AvfMediaTracks.cpp.
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1152, cur token <<eof>> line 1153
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1152, cur token <<eof>> line 1153
-c:/UE_4.27\Engine\Plugins\Media\WmfMedia\Source\WmfMedia\Private\Wmf\WmfMediaStreamSink.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Plugins\Online\IOS\OnlineSubsystemIOS\Source\Private\OnlineAchievementsInterfaceIOS.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Online\IOS\OnlineSubsystemIOS\Source\Private\OnlineIdentityInterfaceIOS.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Online\IOS\OnlineSubsystemIOS\Source\Private\OnlineLeaderboardsInterfaceIOS.cpp.
@@ -478,86 +78,20 @@ skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\AR\AppleAR\AppleARKit\Sourc
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\AR\AppleAR\AppleARKit\Source\AppleARKit\Private\ARKitGeoTrackingSupport.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\AR\AppleAR\AppleARKitFaceSupport\Source\AppleARKitFaceSupport\Private\AppleARKitFaceMeshComponent.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\AR\AzureSpatialAnchorsForARKit\Source\AzureSpatialAnchorsForARKit\Private\AzureSpatialAnchorsARKitInterop.cpp.
-[error] input left, last token 0x40 line 19197, cur token } line 19198
-c:/UE_4.27\Engine\Plugins\Runtime\Database\SQLiteCore\Source\SQLiteCore\Private\sqlite\sqlite3.inl can't parsed !
+[error] input left, last token 0x40 line 19197, cur token } line 19198 file:c:/UE_4.27\Engine\Plugins\Runtime\Database\SQLiteCore\Source\SQLiteCore\Private\sqlite\sqlite3.inl
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\Firebase\Source\ThirdParty\IOS\include\FIROptions.h.
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\IOSReplayKit\Source\IOSReplayKit\Private\IOSReplayKit.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\IOSReplayKit\Source\IOSReplayKit\Private\ReplayKitRecorder.cpp.
 skip Object C file c:/UE_4.27\Engine\Plugins\Runtime\LocationServicesIOSImpl\Source\LocationServicesIOSImpl\Private\LocationServicesIOSImpl.cpp.
-[error][行 253 ]：字符无法结束！
-
-[error][行 253 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 261, cur token } line 262
-c:/UE_4.27\Engine\Plugins\Runtime\nDisplay\Source\DisplayCluster\Private\Render\Synchronization\Windows\DisplayClusterRenderSyncPolicyNvidiaWindows.cpp can't parsed !
 c:/UE_4.27\Engine\Plugins\Runtime\Steam\SteamVR\Source\SteamVR\Private\SteamVRHMD.cpp can't parsed !
-[error][行 784 ]：字符无法结束！
-
-[error][行 784 ]：字符无法结束！
-
-[error][行 785 ]：字符无法结束！
-
-[error][行 785 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 787, cur token } line 788
-[error] expecting ) but found }, last token ; line 787, cur token } line 788
-[error][行 833 ]：字符无法结束！
-
-[error][行 833 ]：字符无法结束！
-
-[error][行 834 ]：字符无法结束！
-
-[error][行 834 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 836, cur token } line 837
-[error] expecting ) but found }, last token ; line 836, cur token } line 837
-[error][行 1871 ]：字符无法结束！
-
-[error][行 1871 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 1874, cur token } line 1875
-c:/UE_4.27\Engine\Source\Developer\AutomationDriver\Private\Specs\AutomationDriver.spec.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Developer\CrashDebugHelper\Private\Mac\CrashDebugHelperMac.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Developer\DesktopPlatform\Private\Mac\DesktopPlatformMac.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Developer\DesktopPlatform\Private\Mac\MacNativeFeedbackContext.cpp.
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 528, cur token <<eof>> line 529
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 528, cur token <<eof>> line 529
-c:/UE_4.27\Engine\Source\Developer\IOS\IOSTargetPlatform\Private\IOSTargetDevice.cpp can't parsed !
-[error] expecting } but found ), last token nullptr line 104, cur token ) line 104
-[error] expecting } but found ), last token nullptr line 104, cur token ) line 104
-[error] input left, last token nullptr line 104, cur token ) line 104
-c:/UE_4.27\Engine\Source\Developer\Linux\LinuxTargetPlatform\Private\LinuxTargetPlatform.h can't parsed !
+[error] input left, last token ; line 113, cur token } line 114 file:c:/UE_4.27\Engine\Source\Developer\Linux\LinuxTargetPlatform\Private\LinuxTargetPlatform.h
 skip Object C file c:/UE_4.27\Engine\Source\Developer\Mac\MacTargetPlatform\Private\LocalMacTargetDevice.h.
 skip Object C file c:/UE_4.27\Engine\Source\Developer\StandaloneRenderer\Private\IOS\SlateOpenGLESView.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Developer\StandaloneRenderer\Private\IOS\SlateOpenGLViewport.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Developer\StandaloneRenderer\Private\Mac\OpenGL\SlateOpenGLContext.cpp.
-[error][行 1216 ]：字符无法结束！
-
-[error][行 1216 ]：字符无法结束！
-
-[error][行 1222 ]：字符无法结束！
-
-[error][行 1222 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 1228, cur token } line 1229
-[error] expecting ) but found }, last token ; line 1228, cur token } line 1229
-c:/UE_4.27\Engine\Source\Developer\TraceAnalysis\Private\Analysis\Engine.cpp can't parsed !
-[error] expecting ) but found }, last token ; line 68, cur token } line 69
-[error] expecting ) but found }, last token ; line 99, cur token } line 100
-c:/UE_4.27\Engine\Source\Developer\TraceAnalysis\Private\Store\AsioFile.cpp can't parsed !
-[error][行 30 ]：字符无法结束！
-
-[error][行 30 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 47, cur token } line 48
-c:/UE_4.27\Engine\Source\Editor\IntroTutorials\Private\TutorialImageDecorator.cpp can't parsed !
-[error][行 617 ]：字符无法结束！
-
-[error][行 617 ]：字符无法结束！
-
-[error] expecting ) but found }, last token } line 486, cur token } line 487
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 516, cur token <<eof>> line 517
-c:/UE_4.27\Engine\Source\Runtime\Apple\MetalRHI\Private\Shaders\Types\Templates\MetalBaseShader.h can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Apple\MetalRHI\Private\Shaders\MetalShaderParameterCache.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Apple\MetalRHI\Private\MetalCommandBuffer.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Apple\MetalRHI\Private\MetalCommandEncoder.cpp.
@@ -594,41 +128,8 @@ skip Object C file c:/UE_4.27\Engine\Source\Runtime\ApplicationCore\Private\Mac\
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\ApplicationCore\Private\Mac\MacPlatformSurvey.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\ApplicationCore\Private\Mac\MacTextInputMethodSystem.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\ApplicationCore\Private\Mac\MacWindow.cpp.
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 3593, cur token <<eof>> line 3594
-c:/UE_4.27\Engine\Source\Runtime\AssetRegistry\Private\AssetRegistry.cpp can't parsed !
-[error] expecting ) but found }, last token ) line 983, cur token } line 984
-c:/UE_4.27\Engine\Source\Runtime\AVEncoder\Private\Decoders\vdecmpeg4\M4Decoder.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\AVIWriter\Private\AVIWriter.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\Apple\ApplePlatformFile.cpp.
-[error][行 194 ]：字符无法结束！
-
-[error][行 194 ]：字符无法结束！
-
-[error][行 234 ]：字符无法结束！
-
-[error][行 234 ]：字符无法结束！
-
-[error][行 315 ]：字符无法结束！
-
-[error][行 315 ]：字符无法结束！
-
-[error][行 316 ]：字符无法结束！
-
-[error][行 316 ]：字符无法结束！
-
-[error][行 317 ]：字符无法结束！
-
-[error][行 317 ]：字符无法结束！
-
-[error][行 318 ]：字符无法结束！
-
-[error][行 318 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 414, cur token } line 415
-[error] expecting ) but found }, last token ; line 414, cur token } line 415
-[error] expecting ) but found }, last token ; line 414, cur token } line 415
-[error] expecting ) but found }, last token ; line 414, cur token } line 415
-c:/UE_4.27\Engine\Source\Runtime\Core\Private\Internationalization\Internationalization.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\IOS\IOSAsyncTask.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\IOS\IOSChunkInstaller.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\IOS\IOSPlatformCrashContext.cpp.
@@ -638,275 +139,37 @@ skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\IOS\IOSPlatform
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\Mac\CocoaThread.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\Mac\MacPlatformMisc.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Private\Mac\MacPlatformProcess.cpp.
-[error][行 641 ]：字符无法结束！
-
-[error][行 641 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 645, cur token } line 646
-c:/UE_4.27\Engine\Source\Runtime\Core\Private\Misc\FileHelper.cpp can't parsed !
-[error][行 112 ]：字符无法结束！
-
-[error][行 113 ]：字符无法结束！
-
-[error][行 114 ]：字符无法结束！
-
-[error][行 115 ]：字符无法结束！
-
-[error][行 116 ]：字符无法结束！
-
-[error][行 117 ]：字符无法结束！
-
-[error][行 118 ]：字符无法结束！
-
-[error][行 119 ]：字符无法结束！
-
-[error][行 120 ]：字符无法结束！
-
-[error][行 121 ]：字符无法结束！
-
-[error][行 122 ]：字符无法结束！
-
-[error][行 123 ]：字符无法结束！
-
-[error][行 124 ]：字符无法结束！
-
-[error][行 125 ]：字符无法结束！
-
-[error][行 126 ]：字符无法结束！
-
-[error][行 127 ]：字符无法结束！
-
-[error][行 131 ]：字符无法结束！
-
-[error][行 132 ]：字符无法结束！
-
-[error][行 133 ]：字符无法结束！
-
-[error][行 134 ]：字符无法结束！
-
-[error][行 135 ]：字符无法结束！
-
-[error][行 136 ]：字符无法结束！
-
-[error][行 137 ]：字符无法结束！
-
-[error][行 138 ]：字符无法结束！
-
-[error][行 139 ]：字符无法结束！
-
-[error][行 140 ]：字符无法结束！
-
-[error][行 141 ]：字符无法结束！
-
-[error][行 142 ]：字符无法结束！
-
-[error][行 143 ]：字符无法结束！
-
-[error][行 144 ]：字符无法结束！
-
-[error][行 145 ]：字符无法结束！
-
-[error][行 146 ]：字符无法结束！
-
-[error] expecting } but found END_OF_SLK_INPUT, last token } line 220, cur token <<eof>> line 221
-c:/UE_4.27\Engine\Source\Runtime\Core\Private\Unix\UnixForkPageProtector.h can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Public\Apple\ApplePlatformMisc.h.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Core\Public\IOS\IOSCommandLineHelper.h.
-[error] expecting ) but found }, last token ; line 2924, cur token } line 2925
-c:/UE_4.27\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp can't parsed !
-[error][行 10 ]：字符无法结束！
-
-[error][行 10 ]：字符无法结束！
-
-[error][行 13 ]：字符无法结束！
-
-[error][行 13 ]：字符无法结束！
-
-[error][行 37 ]：字符无法结束！
-
-[error][行 38 ]：字符无法结束！
-
-[error] expecting } but found ), last token ) line 416, cur token ) line 417
-[error] input left, last token ) line 416, cur token ) line 417
-c:/UE_4.27\Engine\Source\Runtime\Engine\Classes\Engine\StaticMesh.h can't parsed !
-[error] expecting } but found ), last token MeshName line 2571, cur token ) line 2571
-[error] input left, last token MeshName line 2571, cur token ) line 2571
-c:/UE_4.27\Engine\Source\Runtime\Engine\Private\HierarchicalInstancedStaticMesh.cpp can't parsed !
-[error] expecting ) but found }, last token ; line 91, cur token } line 92
-c:/UE_4.27\Engine\Source\Runtime\Engine\Private\SkeletalMeshComponentPhysics.cpp can't parsed !
+[error] input left, last token ; line 457, cur token } line 458 file:c:/UE_4.27\Engine\Source\Runtime\Engine\Classes\Engine\StaticMesh.h
+[error] input left, last token ) line 2572, cur token } line 2573 file:c:/UE_4.27\Engine\Source\Runtime\Engine\Private\HierarchicalInstancedStaticMesh.cpp
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\ImageWrapper\Private\Formats\IcnsImageWrapper.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\IOS\IOSLocalNotification\Private\IOSLocalNotification.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Launch\Private\IOS\IOSAppDelegateConsoleHandling.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Launch\Private\IOS\LaunchIOS.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Launch\Private\Mac\LaunchMac.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Launch\Private\LaunchEngineLoop.cpp.
-[error][行 44 ]：字符无法结束！
-
-[error][行 44 ]：字符无法结束！
-
-[error][行 45 ]：字符无法结束！
-
-[error][行 45 ]：字符无法结束！
-
-[error][行 696 ]：字符无法结束！
-
-[error][行 696 ]：字符无法结束！
-
-[error][行 696 ]：字符无法结束！
-
-[error][行 696 ]：字符无法结束！
-
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 6782, cur token <<eof>> line 6782
-c:/UE_4.27\Engine\Source\Runtime\NavigationSystem\Private\NavMesh\RecastNavMeshGenerator.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Online\BackgroundHTTP\Private\IOS\ApplePlatformBackgroundHttpManager.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Online\BackgroundHTTP\Private\IOS\ApplePlatformBackgroundHttpRequest.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Online\HTTP\Private\Apple\AppleHTTP.cpp.
-[error] expecting ) but found END_OF_SLK_INPUT, last token } line 1328, cur token <<eof>> line 1329
-c:/UE_4.27\Engine\Source\Runtime\OpenGLDrv\Private\OpenGLDevice.cpp can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Slate\Private\Framework\MultiBox\Mac\MacMenu.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Slate\Private\Framework\Text\IOS\IOSPlatformTextField.cpp.
-[error][行 66 ]：字符无法结束！
-
-[error][行 66 ]：字符无法结束！
-
-[error] expecting ) but found }, last token ; line 94, cur token } line 95
-c:/UE_4.27\Engine\Source\Runtime\Slate\Private\Framework\Text\TextDecorators.cpp can't parsed !
 c:/UE_4.27\Engine\Source\Runtime\SlateCore\Private\Fonts\SlateFontRenderer.h can't parsed !
-[error][行 375 ]：字符无法结束！
-
-[error][行 375 ]：字符无法结束！
-
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\WebBrowser\Private\IOS\IOSPlatformWebBrowser.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\WebBrowser\Private\WebBrowserSingleton.cpp.
-[error] expecting ) but found }, last token ; line 180, cur token } line 182
-c:/UE_4.27\Engine\Source\ThirdParty\AMD\Amf\components\Capture.h can't parsed !
-[error] expecting } but found ), last token inline_entires line 168, cur token ) line 168
-[error] expecting } but found ), last token inline_entires line 168, cur token ) line 168
-[error] expecting } but found ), last token inline_entires line 168, cur token ) line 168
-[error] input left, last token inline_entires line 168, cur token ) line 168
-c:/UE_4.27\Engine\Source\ThirdParty\Breakpad\src\common\dwarf_cu_to_module.h can't parsed !
-[error] expecting } but found ), last token inline_entries line 134, cur token ) line 134
-[error] expecting } but found ), last token inline_entries line 134, cur token ) line 134
-[error] input left, last token inline_entries line 134, cur token ) line 134
-c:/UE_4.27\Engine\Source\ThirdParty\Breakpad\src\common\dwarf_line_to_module.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 4555, cur token <<eof>> line 4556
-c:/UE_4.27\Engine\Source\ThirdParty\Breakpad\src\third_party\lss\linux_syscall_support.h can't parsed !
-[error] input left, last token ) line 345, cur token } line 346
-c:/UE_4.27\Engine\Source\ThirdParty\CryptoPP\5.6.5\include\eccrypto.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 552, cur token <<eof>> line 554
-c:/UE_4.27\Engine\Source\ThirdParty\DirectShow\DirectShow-1.0.0\src\Public\wxlist.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 17, cur token <<eof>> line 18
-c:/UE_4.27\Engine\Source\ThirdParty\FBX\2020.2\include\fbxsdk\fbxsdk_nsbegin.h can't parsed !
-[error] input left, last token ) line 14, cur token } line 15
-c:/UE_4.27\Engine\Source\ThirdParty\FBX\2020.2\include\fbxsdk\fbxsdk_nsend.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 316, cur token <<eof>> line 317
-c:/UE_4.27\Engine\Source\ThirdParty\glslang\glslang\src\glslang_lib\glslang\Include\PoolAlloc.h can't parsed !
-[error] expecting } but found ), last token ) line 280, cur token ) line 281
-[error] expecting } but found ), last token ) line 280, cur token ) line 281
-[error] input left, last token ) line 280, cur token ) line 281
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\internal\_flow_graph_body_impl.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 592, cur token <<eof>> line 593
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 592, cur token <<eof>> line 593
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 592, cur token <<eof>> line 593
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 592, cur token <<eof>> line 593
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\internal\_flow_graph_cache_impl.h can't parsed !
-[error] expecting } but found ), last token ) line 217, cur token ) line 218
-[error] expecting } but found ), last token ) line 217, cur token ) line 218
-[error] expecting } but found ), last token ) line 217, cur token ) line 218
-[error] expecting } but found ), last token ) line 217, cur token ) line 218
-[error] expecting } but found ), last token ) line 217, cur token ) line 218
-[error] input left, last token ) line 217, cur token ) line 218
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\internal\_flow_graph_impl.h can't parsed !
-[error] input left, last token } line 118, cur token } line 118
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\machine\msvc_ia32_common.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 3984, cur token <<eof>> line 3985
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 3984, cur token <<eof>> line 3985
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\flow_graph.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 347, cur token <<eof>> line 348
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\src\perf\time_framework.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 714, cur token <<eof>> line 715
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\src\tbb\custom_scheduler.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 833, cur token <<eof>> line 834
-c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\src\test\harness.h can't parsed !
-[error] expecting } but found ), last token ` line 668, cur token ) line 668
-[error] expecting } but found ), last token ` line 668, cur token ) line 668
-[error] expecting } but found ), last token ` line 668, cur token ) line 668
-[error] input left, last token ` line 668, cur token ) line 668
-c:/UE_4.27\Engine\Source\ThirdParty\llvm\8\include\llvm\Support\YAMLTraits.h can't parsed !
-[error] expecting ) but found END_OF_SLK_INPUT, last token , line 6, cur token <<eof>> line 7
-c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\cpp-test\test-t\unbal6.h can't parsed !
-[error] expecting ) but found END_OF_SLK_INPUT, last token , line 6, cur token <<eof>> line 7
-c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-c\unbal6.h can't parsed !
-[error] expecting ) but found END_OF_SLK_INPUT, last token , line 6, cur token <<eof>> line 7
-c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-t\unbal6.h can't parsed !
-[error] input left, last token ; line 992, cur token } line 994
-c:/UE_4.27\Engine\Source\ThirdParty\nvTextureTools\nvTextureTools-2.0.6\src\src\nvmath\Matrix.h can't parsed !
-[error] input left, last token ; line 992, cur token } line 994
-c:/UE_4.27\Engine\Source\ThirdParty\nvTextureTools\nvTextureTools-2.0.8\src\src\nvmath\Matrix.h can't parsed !
-[error] input left, last token ) line 63, cur token } line 64
-c:/UE_4.27\Engine\Source\ThirdParty\PhysX3\PxShared\include\foundation\PxUnionCast.h can't parsed !
-[error] input left, last token ; line 175, cur token } line 175
-c:/UE_4.27\Engine\Source\ThirdParty\PhysX3\PxShared\src\foundation\include\unix\sse2\PsUnixSse2InlineAoS.h can't parsed !
+[error] input left, last token ; line 352, cur token } line 354 file:c:/UE_4.27\Engine\Source\ThirdParty\Breakpad\src\common\dwarf_cu_to_module.h
+[error] input left, last token ; line 207, cur token } line 209 file:c:/UE_4.27\Engine\Source\ThirdParty\Breakpad\src\common\dwarf_line_to_module.h
+[error] input left, last token ) line 345, cur token } line 346 file:c:/UE_4.27\Engine\Source\ThirdParty\CryptoPP\5.6.5\include\eccrypto.h
+[error] input left, last token ) line 14, cur token } line 15 file:c:/UE_4.27\Engine\Source\ThirdParty\FBX\2020.2\include\fbxsdk\fbxsdk_nsend.h
+[error] input left, last token } line 315, cur token } line 316 file:c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\internal\_flow_graph_body_impl.h
+[error] input left, last token } line 516, cur token } line 517 file:c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\internal\_flow_graph_impl.h
+[error] input left, last token } line 118, cur token } line 118 file:c:/UE_4.27\Engine\Source\ThirdParty\Intel\TBB\IntelTBB-2019u8\Include\tbb\machine\msvc_ia32_common.h
+[error] input left, last token } line 1908, cur token } line 1909 file:c:/UE_4.27\Engine\Source\ThirdParty\llvm\8\include\llvm\Support\YAMLTraits.h
+[error] input left, last token ; line 992, cur token } line 994 file:c:/UE_4.27\Engine\Source\ThirdParty\nvTextureTools\nvTextureTools-2.0.6\src\src\nvmath\Matrix.h
+[error] input left, last token ; line 992, cur token } line 994 file:c:/UE_4.27\Engine\Source\ThirdParty\nvTextureTools\nvTextureTools-2.0.8\src\src\nvmath\Matrix.h
+[error] input left, last token ) line 63, cur token } line 64 file:c:/UE_4.27\Engine\Source\ThirdParty\PhysX3\PxShared\include\foundation\PxUnionCast.h
+[error] input left, last token ; line 175, cur token } line 175 file:c:/UE_4.27\Engine\Source\ThirdParty\PhysX3\PxShared\src\foundation\include\unix\sse2\PsUnixSse2InlineAoS.h
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\PLCrashReporter\PLCrashReporter\Source\CrashReporter.h.
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1184, cur token <<eof>> line 1185
-c:/UE_4.27\Engine\Source\ThirdParty\SDL2\SDL-gui-backend\src\video\arm\pixman-arm-neon-asm.h can't parsed !
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-[error] expecting ] but found END_OF_SLK_INPUT, last token endm line 1034, cur token <<eof>> line 1035
-c:/UE_4.27\Engine\Source\ThirdParty\SDL2\SDL-gui-backend\src\video\arm\pixman-arm-simd-asm.h can't parsed !
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\ShaderConductor\ShaderConductor\External\cxxopts\test\catch.hpp.
-[error][行 67 ]：字符无法结束！
-
-[error][行 67 ]：字符无法结束！
-
-[error][行 76 ]：字符无法结束！
-
-[error][行 76 ]：字符无法结束！
-
-[error][行 82 ]：字符无法结束！
-
-[error][行 82 ]：字符无法结束！
-
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\third_party\protobuf\objectivec\GPBExtensionRegistry.h.
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 10641, cur token <<eof>> line 10642
-c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\third_party\protobuf\ruby\ext\google\protobuf_c\upb.h can't parsed !
-[error] input left, last token mBoundary line 23, cur token } line 24
-c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\tools\strict_enum_value_checker\changed_file_4.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 27, cur token <<eof>> line 28
-c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\tools\strict_enum_value_checker\changed_file_5.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1551, cur token <<eof>> line 1552
-c:/UE_4.27\Engine\Source\ThirdParty\Windows\DirectX\Include\xact3.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 1551, cur token <<eof>> line 1552
-c:/UE_4.27\Engine\Source\ThirdParty\Windows\DirectXLegacy\Include\xact3.h can't parsed !
-[error] expecting } but found END_OF_SLK_INPUT, last token ) line 31, cur token <<eof>> line 32
-c:/UE_4.27\Engine\Source\ThirdParty\zlib\zlib-1.2.5\Src\contrib\minizip\mztools.h can't parsed !
+[error] input left, last token mBoundary line 23, cur token } line 24 file:c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\tools\strict_enum_value_checker\changed_file_4.h

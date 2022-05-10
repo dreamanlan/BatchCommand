@@ -108,8 +108,10 @@ namespace CppLua2Dsl
                                 Console.WriteLine(s_Spaces);
                             }
                             else {
+                                txt = Preprocess(txt, file);
+                                File.WriteAllText(targetFile, txt);
                                 if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
-                                    s_DslFile.Save(targetFile);
+                                    s_DslFile.Save(targetFile + ".dsl");
                                 }
                                 else {
                                     s_ErrorWriter?.Flush();
@@ -207,6 +209,80 @@ namespace CppLua2Dsl
             }
             return false;
         }
+        private static string Preprocess(string txt, string file)
+        {
+            var sb = new StringBuilder();
+            Dsl.DslFile dslFile = new Dsl.DslFile();
+            if(dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=")) {
+                //遍历并提取代码
+                foreach(var info in dslFile.DslInfos) {
+                    HandleSyntax(sb, info);
+                }
+            }
+            return sb.ToString();
+        }
+        private static void HandleSyntax(StringBuilder sb, Dsl.ISyntaxComponent syntax)
+        {
+            var func = syntax as Dsl.FunctionData;
+            if (null != func) {
+                HandleFunction(sb, func);
+            }
+            else {
+                var statement = syntax as Dsl.StatementData;
+                if (null != statement) {
+                    HandleStatement(sb, statement);
+                }
+                else {
+                    throw new Exception("exception: "+syntax.ToString());
+                }
+            }
+        }
+        private static void HandleFunction(StringBuilder sb, Dsl.FunctionData func)
+        {
+            string id = func.GetId();
+            if (id == "@@code") {
+                sb.Append(func.GetParamId(0));
+                sb.AppendLine();
+            }
+            else if (id.StartsWith("@@if")) {
+                sb.Append("//");
+                sb.Append(id);
+                sb.AppendLine();
+                foreach(var syntx in func.Params) {
+                    HandleSyntax(sb, syntx);
+                }
+            }
+            else if (id.StartsWith("@@el")) {
+                sb.Append("//");
+                sb.Append(id);
+                sb.AppendLine();
+                string code = func.GetParamId(0);
+                var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
+                foreach (var line in lines) {
+                    sb.Append("//");
+                    sb.Append(line.TrimEnd());
+                    sb.AppendLine();
+                }
+            }
+            else {
+                sb.Append("//");
+                sb.Append(id);
+                sb.AppendLine();
+            }
+        }
+        private static void HandleStatement(StringBuilder sb, Dsl.StatementData statement)
+        {
+            foreach(var vf in statement.Functions) {
+                var func = vf.AsFunction;
+                if (null != func) {
+                    HandleFunction(sb, func);
+                }
+                else {
+                    //error
+                }
+            }
+        }
+
 
         private static StreamWriter? s_ErrorWriter = null;
         private static StringBuilder s_LineBuffer = new StringBuilder();

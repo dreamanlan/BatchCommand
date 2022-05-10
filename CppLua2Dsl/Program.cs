@@ -85,10 +85,10 @@ namespace CppLua2Dsl
                                 Console.WriteLine(s_Spaces);
                             }
                         }
-                        catch {
-                            s_ErrorWriter?.WriteLine("{0} can't parsed !", file);
+                        catch(Exception ex) {
+                            s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
                             s_ErrorWriter?.Flush();
-                            Console.Write("{0} can't parsed !", file);
+                            Console.Write("{0} can't parsed {1} !", file, ex.Message);
                             Console.WriteLine(s_Spaces);
                         }
                     }
@@ -108,10 +108,12 @@ namespace CppLua2Dsl
                                 Console.WriteLine(s_Spaces);
                             }
                             else {
-                                txt = Preprocess(txt, file);
+                                string gppTxt;
+                                txt = Preprocess(txt, file, out gppTxt);
                                 File.WriteAllText(targetFile, txt);
+                                File.WriteAllText(targetFile + "_gpp.txt", gppTxt);
                                 if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
-                                    s_DslFile.Save(targetFile + ".dsl");
+                                    s_DslFile.Save(targetFile + "_dsl.txt");
                                 }
                                 else {
                                     s_ErrorWriter?.Flush();
@@ -120,10 +122,10 @@ namespace CppLua2Dsl
                                 }
                             }
                         }
-                        catch {
-                            s_ErrorWriter?.WriteLine("{0} can't parsed !", file);
+                        catch(Exception ex) {
+                            s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
                             s_ErrorWriter?.Flush();
-                            Console.Write("{0} can't parsed !", file);
+                            Console.Write("{0} can't parsed {1} !", file, ex.Message);
                             Console.WriteLine(s_Spaces);
                         }
                     }
@@ -209,11 +211,11 @@ namespace CppLua2Dsl
             }
             return false;
         }
-        private static string Preprocess(string txt, string file)
+        private static string Preprocess(string txt, string file, out string gppTxt)
         {
             var sb = new StringBuilder();
-            Dsl.DslFile dslFile = new Dsl.DslFile();
-            if(dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=")) {
+            Dsl.DslFile dslFile = new Dsl.DslFile();            
+            if(dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
                 //遍历并提取代码
                 foreach(var info in dslFile.DslInfos) {
                     HandleSyntax(sb, info);

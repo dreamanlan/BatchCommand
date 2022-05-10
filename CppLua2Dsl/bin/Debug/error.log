@@ -4,7 +4,3 @@ skip template file c:/UE_4.27\Engine\Binaries\ThirdParty\USD\UsdResources\Win64\
 skip template file c:/UE_4.27\Engine\Binaries\ThirdParty\USD\UsdResources\Win64\plugins\usd\resources\codegenTemplates\tokens.cpp.
 skip template file c:/UE_4.27\Engine\Binaries\ThirdParty\USD\UsdResources\Win64\plugins\usd\resources\codegenTemplates\wrapSchemaClass.cpp.
 skip template file c:/UE_4.27\Engine\Binaries\ThirdParty\USD\UsdResources\Win64\plugins\usd\resources\codegenTemplates\wrapTokens.cpp.
-skip Object C file c:/UE_4.27\Engine\Plugins\Developer\CLionSourceCodeAccess\Source\CLionSourceCodeAccess\Private\CLionSourceCodeAccessor.cpp.
-skip Object C file c:/UE_4.27\Engine\Plugins\Developer\VisualStudioCodeSourceCodeAccess\Source\VisualStudioCodeSourceCodeAccess\Private\VisualStudioCodeSourceCodeAccessor.cpp.
-skip Object C file c:/UE_4.27\Engine\Plugins\Developer\XCodeSourceCodeAccess\Source\XCodeSourceCodeAccess\Private\XCodeSourceCodeAccessor.cpp.
-skip Object C file c:/UE_4.27\Engine\Plugins\Experimental\AppleVision\Source\AppleVision\Private\AppleVisionPlugin.cpp.

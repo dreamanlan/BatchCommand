@@ -16,6 +16,14 @@ namespace CppLua2Dsl
                 string srcDir = args[0];
                 string destDir = args[1];
                 CopyDir(srcDir, destDir);
+
+                //===test===
+                //string file = @"C:\UE_5.0\Engine\Plugins\Editor\GLTFImporter\Source\GLTFImporter\Private\GLTFImportOptions.h";
+                //string targetFile = @"D:\SourceInsightCodes\UE_5_0\Engine\Plugins\Editor\GLTFImporter\Source\GLTFImporter\Private\GLTFImportOptions.h";
+                //string filter = "*.h";
+                //CopyFile(file, targetFile, filter, "pp.txt");
+                //===end test===
+
                 s_ErrorWriter?.Close();
             }
         }
@@ -74,65 +82,71 @@ namespace CppLua2Dsl
                     Console.SetCursorPosition(1, 30);
 
                     string targetFile = Path.Combine(to, Path.GetFileName(file));
-                    if (filter == "*.lua") {
-                        try {
-                            if (s_DslFile.LoadLua(file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
-                                s_DslFile.Save(targetFile);
-                            }
-                            else {
-                                s_ErrorWriter?.Flush();
-                                Console.Write("{0} can't parsed !", file);
-                                Console.WriteLine(s_Spaces);
-                            }
-                        }
-                        catch(Exception ex) {
-                            s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
-                            s_ErrorWriter?.Flush();
-                            Console.Write("{0} can't parsed {1} !", file, ex.Message);
-                            Console.WriteLine(s_Spaces);
-                        }
-                    }
-                    else {
-                        try {
-                            string txt = File.ReadAllText(file);
-                            if (s_CppTemplStart.IsMatch(txt) && s_CppTemplEnd.IsMatch(txt)) {
-                                s_ErrorWriter?.WriteLine("skip template file {0}.", file);
-                                s_ErrorWriter?.Flush();
-                                Console.Write("skip template file {0}.", file);
-                                Console.WriteLine(s_Spaces);
-                            }
-                            else if (IsObjectC(txt)) {
-                                s_ErrorWriter?.WriteLine("skip Object C file {0}.", file);
-                                s_ErrorWriter?.Flush();
-                                Console.Write("skip Object C file {0}.", file);
-                                Console.WriteLine(s_Spaces);
-                            }
-                            else {
-                                string gppTxt;
-                                txt = Preprocess(txt, file, out gppTxt);
-                                File.WriteAllText(targetFile, txt);
-                                File.WriteAllText(targetFile + "_gpp.txt", gppTxt);
-                                if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
-                                    s_DslFile.Save(targetFile + "_dsl.txt");
-                                }
-                                else {
-                                    s_ErrorWriter?.Flush();
-                                    Console.Write("{0} can't parsed !", file);
-                                    Console.WriteLine(s_Spaces);
-                                }
-                            }
-                        }
-                        catch(Exception ex) {
-                            s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
-                            s_ErrorWriter?.Flush();
-                            Console.Write("{0} can't parsed {1} !", file, ex.Message);
-                            Console.WriteLine(s_Spaces);
-                        }
-                    }
+                    CopyFile(file, targetFile, filter, string.Empty);
 
                     ++ct;
                     Console.SetCursorPosition(1, 1);
                     Console.Write("copy {0}/{1} file {2} => {3}", ct, total, file, targetFile);
+                    Console.WriteLine(s_Spaces);
+                }
+            }
+        }
+        private static void CopyFile(string file, string targetFile, string filter, string ppfile)
+        {
+            if (filter == "*.lua") {
+                try {
+                    if (s_DslFile.LoadLua(file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
+                        s_DslFile.Save(targetFile);
+                    }
+                    else {
+                        s_ErrorWriter?.Flush();
+                        Console.Write("{0} can't parsed !", file);
+                        Console.WriteLine(s_Spaces);
+                    }
+                }
+                catch (Exception ex) {
+                    s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
+                    s_ErrorWriter?.Flush();
+                    Console.Write("{0} can't parsed {1} !", file, ex.Message);
+                    Console.WriteLine(s_Spaces);
+                }
+            }
+            else {
+                try {
+                    string txt = File.ReadAllText(file);
+                    if (s_CppTemplStart.IsMatch(txt) && s_CppTemplEnd.IsMatch(txt)) {
+                        s_ErrorWriter?.WriteLine("skip template file {0}.", file);
+                        s_ErrorWriter?.Flush();
+                        Console.Write("skip template file {0}.", file);
+                        Console.WriteLine(s_Spaces);
+                    }
+                    else if (IsObjectC(txt)) {
+                        s_ErrorWriter?.WriteLine("skip Object C file {0}.", file);
+                        s_ErrorWriter?.Flush();
+                        Console.Write("skip Object C file {0}.", file);
+                        Console.WriteLine(s_Spaces);
+                    }
+                    else {
+                        string gppTxt;
+                        txt = Preprocess(txt, file, out gppTxt);
+                        File.WriteAllText(targetFile, txt);
+                        if (!string.IsNullOrEmpty(ppfile)) {
+                            File.WriteAllText(ppfile, gppTxt);
+                        }
+                        if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
+                            s_DslFile.Save(targetFile + "_dsl.txt");
+                        }
+                        else {
+                            s_ErrorWriter?.Flush();
+                            Console.Write("{0} can't parsed !", file);
+                            Console.WriteLine(s_Spaces);
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    s_ErrorWriter?.WriteLine("{0} can't parsed {1}\n{2} !", file, ex.Message, ex.StackTrace);
+                    s_ErrorWriter?.Flush();
+                    Console.Write("{0} can't parsed {1} !", file, ex.Message);
                     Console.WriteLine(s_Spaces);
                 }
             }
@@ -193,7 +207,7 @@ namespace CppLua2Dsl
 
                                 }
                                 else if (ch == '[') {
-                                    if(second)
+                                    if (second)
                                         return true;
                                     second = true;
                                 }
@@ -214,77 +228,112 @@ namespace CppLua2Dsl
         private static string Preprocess(string txt, string file, out string gppTxt)
         {
             var sb = new StringBuilder();
-            Dsl.DslFile dslFile = new Dsl.DslFile();            
-            if(dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
+            Dsl.DslFile dslFile = new Dsl.DslFile();
+            if (dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
                 //遍历并提取代码
-                foreach(var info in dslFile.DslInfos) {
-                    HandleSyntax(sb, info);
+                foreach (var info in dslFile.DslInfos) {
+                    HandleSyntax(sb, info, false);
                 }
             }
             return sb.ToString();
         }
-        private static void HandleSyntax(StringBuilder sb, Dsl.ISyntaxComponent syntax)
+        private static void HandleSyntax(StringBuilder sb, Dsl.ISyntaxComponent syntax, bool commentOut)
         {
             var func = syntax as Dsl.FunctionData;
             if (null != func) {
-                HandleFunction(sb, func);
+                HandleFunction(sb, func, commentOut);
             }
             else {
                 var statement = syntax as Dsl.StatementData;
                 if (null != statement) {
-                    HandleStatement(sb, statement);
+                    HandleStatement(sb, statement, commentOut);
                 }
                 else {
-                    throw new Exception("exception: "+syntax.ToString());
+                    throw new Exception("exception: " + syntax.ToString());
                 }
             }
         }
-        private static void HandleFunction(StringBuilder sb, Dsl.FunctionData func)
+        private static void HandleCall(StringBuilder sb, Dsl.FunctionData call)
+        {
+            var id = call.GetId();
+            if (id.Length >= 2 && id[0] == '@' && id[1] == '@')
+                id = "#" + id.Substring(2);
+            sb.Append(id);
+            foreach(var p in call.Params) {
+                sb.Append(' ');
+                var vd = p as Dsl.ValueData;
+                if (null != vd && vd.GetIdType() == Dsl.ValueData.STRING_TOKEN) {
+                    sb.Append(vd.GetId());
+                }
+                else {
+                    sb.Append(p.ToScriptString(false));
+                }
+            }
+        }
+        private static void HandleFunction(StringBuilder sb, Dsl.FunctionData func, bool commentOut)
         {
             string id = func.GetId();
-            if (id == "@@code") {
-                sb.Append(func.GetParamId(0));
-                sb.AppendLine();
-            }
-            else if (id.StartsWith("@@if")) {
+            if (id.StartsWith("@@if")) {
                 sb.Append("//");
-                sb.Append(id);
+                HandleCall(sb, func.LowerOrderFunction);
                 sb.AppendLine();
-                foreach(var syntx in func.Params) {
-                    HandleSyntax(sb, syntx);
+                foreach (var syntax in func.Params) {
+                    HandleSyntax(sb, syntax, commentOut);
                 }
             }
             else if (id.StartsWith("@@el")) {
                 sb.Append("//");
-                sb.Append(id);
+                HandleCall(sb, func.LowerOrderFunction);
                 sb.AppendLine();
-                string code = func.GetParamId(0);
-                var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
-                foreach (var line in lines) {
-                    sb.Append("//");
-                    sb.Append(line.TrimEnd());
-                    sb.AppendLine();
+                foreach (var syntax in func.Params) {
+                    HandleSyntax(sb, syntax, true);
                 }
+            }
+            else if (id == "@@code" || id == "@@define") {
+                if (commentOut) {
+                    string code = func.GetParamId(0);
+                    var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
+                    foreach (var line in lines) {
+                        if (line != lines[0])
+                            sb.AppendLine();
+                        sb.Append("//");
+                        sb.Append(line.TrimEnd());
+                    }
+                }
+                else {
+                    sb.Append(func.GetParamId(0));
+                }
+                //sb.AppendLine();
+            }
+            else if (id.StartsWith("@@include") || id.StartsWith("@@undef")) {
+                if (commentOut) {
+                    sb.Append("//");
+                }
+                HandleCall(sb, func);
+                sb.AppendLine();
+            }
+            else if (id.StartsWith("@@pragma")) {
+                HandleCall(sb, func);
+                sb.AppendLine();
             }
             else {
                 sb.Append("//");
-                sb.Append(id);
+                HandleCall(sb, func);
                 sb.AppendLine();
             }
         }
-        private static void HandleStatement(StringBuilder sb, Dsl.StatementData statement)
+        private static void HandleStatement(StringBuilder sb, Dsl.StatementData statement, bool commentOut)
         {
-            foreach(var vf in statement.Functions) {
+            foreach (var vf in statement.Functions) {
                 var func = vf.AsFunction;
                 if (null != func) {
-                    HandleFunction(sb, func);
+                    HandleFunction(sb, func, commentOut);
                 }
                 else {
                     //error
                 }
             }
         }
-
 
         private static StreamWriter? s_ErrorWriter = null;
         private static StringBuilder s_LineBuffer = new StringBuilder();

@@ -133,16 +133,16 @@ skip Object C file c:/UE_4.27\Engine\Source\Runtime\Slate\Private\Framework\Mult
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\Slate\Private\Framework\Text\IOS\IOSPlatformTextField.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\WebBrowser\Private\IOS\IOSPlatformWebBrowser.cpp.
 skip Object C file c:/UE_4.27\Engine\Source\Runtime\WebBrowser\Private\WebBrowserSingleton.cpp.
-[error] expecting } but found END_OF_SLK_INPUT, last token ; line 138, cur token <<eof>> line 139 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\Android\libunwind\libunwind\include\tdep\jmpbuf.h
-[error] expecting } but found END_OF_SLK_INPUT, last token ; line 184, cur token <<eof>> line 185 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\libOpus\opus-1.3.1-12\celt\fixed_c6x.h
+[error] expecting } but found END_OF_SLK_INPUT, last token ) line 59, cur token <<eof>> line 60 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\Android\libunwind\libunwind\include\tdep\jmpbuf.h
+[error] expecting } but found END_OF_SLK_INPUT, last token ) line 116, cur token <<eof>> line 117 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\libOpus\opus-1.3.1-12\celt\fixed_c6x.h
 [error] input left, last token ; line 5, cur token } line 6 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\cpp-test\test-t\unbal1.h
-[error] expecting } but found END_OF_SLK_INPUT, last token { line 21, cur token <<eof>> line 22 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\cpp-test\test-t\unbal2.h
+[error] expecting } but found END_OF_SLK_INPUT, last token { line 16, cur token <<eof>> line 17 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\cpp-test\test-t\unbal2.h
 [error] input left, last token ; line 5, cur token } line 6 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-c\unbal1.h
-[error] expecting } but found END_OF_SLK_INPUT, last token { line 21, cur token <<eof>> line 22 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-c\unbal2.h
+[error] expecting } but found END_OF_SLK_INPUT, last token { line 16, cur token <<eof>> line 17 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-c\unbal2.h
 [error] input left, last token ; line 5, cur token } line 6 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-t\unbal1.h
-[error] expecting } but found END_OF_SLK_INPUT, last token { line 21, cur token <<eof>> line 22 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-t\unbal2.h
+[error] expecting } but found END_OF_SLK_INPUT, last token { line 16, cur token <<eof>> line 17 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\MCPP\mcpp-2.7.2\test-t\unbal2.h
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\PLCrashReporter\PLCrashReporter\Source\CrashReporter.h.
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\ShaderConductor\ShaderConductor\External\cxxopts\test\catch.hpp.
-[error] input left, last token ; line 47, cur token } line 48 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\ShaderConductor\ShaderConductor\External\DirectXShaderCompiler\tools\llvm-c-test\llvm-c-test.h
-[error] expecting } but found END_OF_SLK_INPUT, last token ; line 184, cur token <<eof>> line 185 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\third_party\opus\src\celt\fixed_c6x.h
+[error] input left, last token ; line 46, cur token } line 47 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\ShaderConductor\ShaderConductor\External\DirectXShaderCompiler\tools\llvm-c-test\llvm-c-test.h
+[error] expecting } but found END_OF_SLK_INPUT, last token ) line 116, cur token <<eof>> line 117 preprocess file:c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\third_party\opus\src\celt\fixed_c6x.h
 skip Object C file c:/UE_4.27\Engine\Source\ThirdParty\WebRTC\4147\Include\third_party\protobuf\objectivec\GPBExtensionRegistry.h.

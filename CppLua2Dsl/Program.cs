@@ -289,7 +289,7 @@ namespace CppLua2Dsl
                     HandleSyntax(sb, syntax, true);
                 }
             }
-            else if (id == "@@code" || id == "@@define") {
+            else if (id == "@@code") {
                 if (commentOut) {
                     string code = func.GetParamId(0);
                     var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
@@ -302,6 +302,40 @@ namespace CppLua2Dsl
                 }
                 else {
                     sb.Append(func.GetParamId(0));
+                }
+                //sb.AppendLine();
+            }
+            else if (id == "@@define") {
+                if (commentOut) {
+                    sb.Append("//#define ");
+                    string code = func.GetParamId(0);
+                    var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
+                    for (int i = 0; i < lines.Length; i++) {
+                        var line = lines[i];
+                        if (line[line.Length - 1] == '\r')
+                            line = line.Substring(0, line.Length - 1);
+                        sb.Append("//");
+                        if (i < lines.Length - 1 && line[line.Length - 1] != '\\')
+                            sb.Append(line + "\\");
+                        else
+                            sb.Append(line);
+                        sb.AppendLine();
+                    }
+                }
+                else {
+                    sb.Append("#define ");
+                    string code = func.GetParamId(0);
+                    var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
+                    for (int i = 0; i < lines.Length; i++) {
+                        var line = lines[i];
+                        if (line[line.Length - 1] == '\r')
+                            line = line.Substring(0, line.Length - 1);
+                        if (i < lines.Length - 1 && line[line.Length - 1] != '\\')
+                            sb.Append(line + "\\");
+                        else
+                            sb.Append(line);
+                        sb.AppendLine();
+                    }
                 }
                 //sb.AppendLine();
             }

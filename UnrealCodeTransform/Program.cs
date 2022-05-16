@@ -479,10 +479,10 @@ namespace UnrealCodeTransform
                     var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
                     for (int i = 0; i < lines.Length; i++) {
                         var line = lines[i];
-                        if (line[line.Length - 1] == '\r')
+                        if (line.Length > 0 && line[line.Length - 1] == '\r')
                             line = line.Substring(0, line.Length - 1);
                         sb.Append("//");
-                        if (i < lines.Length - 1 && line[line.Length - 1] != '\\')
+                        if (i < lines.Length - 1 && line.Length > 0 && line[line.Length - 1] != '\\')
                             sb.Append(line + "\\");
                         else
                             sb.Append(line);
@@ -495,9 +495,9 @@ namespace UnrealCodeTransform
                     var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
                     for (int i = 0; i < lines.Length; i++) {
                         var line = lines[i];
-                        if (line[line.Length - 1] == '\r')
+                        if (line.Length > 0 && line[line.Length - 1] == '\r')
                             line = line.Substring(0, line.Length - 1);
-                        if (i < lines.Length - 1 && line[line.Length - 1] != '\\')
+                        if (i < lines.Length - 1 && line.Length > 0 && line[line.Length - 1] != '\\')
                             sb.Append(line + "\\");
                         else
                             sb.Append(line);

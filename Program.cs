@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace BatchCommand
 {
@@ -17,11 +18,15 @@ namespace BatchCommand
                     foreach(var arg in args) {
                         vargs.Add(arg);
                     }
+                    Stopwatch sw = Stopwatch.StartNew();
                     r = BatchScript.Run(args[0], vargs);
+                    sw.Stop();
+                    long us = sw.ElapsedTicks*1000000 / Stopwatch.Frequency;
+                    Console.WriteLine("consume time: {0}us", us);
                 }
                 BatchScript.RecycleCalculatorValueList(vargs);
                 if (!r.IsNullObject) {
-                    exitCode = r.Get<int>();
+                    exitCode = r.GetInt();
                 }
             } catch (Exception ex) {
                 BatchScript.Log("exception:{0}\n{1}", ex.Message, ex.StackTrace);

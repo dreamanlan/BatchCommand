@@ -466,9 +466,9 @@ internal class EverythingSearchExp : SimpleExpressionBase
             uint offset = 0;
             uint maxCount = 100;
             if (operands.Count >= 2)
-                offset = operands[1].Get<uint>();
+                offset = operands[1].GetUInt();
             if (operands.Count >= 3)
-                maxCount = operands[2].Get<uint>();
+                maxCount = operands[2].GetUInt();
             if (null != str) {
                 EveryThingSDK.Everything_SetSearchW(str);
                 EveryThingSDK.Everything_SetOffset(offset);

@@ -694,7 +694,7 @@ namespace BatchCommand
                 string subst = operands[2].AsString;
                 int count = -1;
                 if (operands.Count >= 4)
-                    count = operands[3].Get<int>();
+                    count = operands[3].GetInt();
                 var outLines = new List<string>();
                 if (null != lines && null != regex && null != subst) {
                     int ct = lines.Count;
@@ -720,7 +720,7 @@ namespace BatchCommand
                 var script = operands[1].AsString;
                 bool removeEmpties = true;
                 if (operands.Count >= 3)
-                    removeEmpties = operands[2].Get<bool>();
+                    removeEmpties = operands[2].GetBool();
                 var sepList = new List<string> { " " };
                 if (operands.Count >= 4) {
                     sepList.Clear();
@@ -979,11 +979,11 @@ namespace BatchCommand
             }
             bool noWait = false;
             if (null != cfg.m_NoWait) {
-                noWait = cfg.m_NoWait.Calc().Get<bool>();
+                noWait = cfg.m_NoWait.Calc().GetBool();
             }
             BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
             if (null != cfg.m_UseShellExecute) {
-                option.UseShellExecute = cfg.m_UseShellExecute.Calc().Get<bool>();
+                option.UseShellExecute = cfg.m_UseShellExecute.Calc().GetBool();
             }
             if (null != cfg.m_Verb) {
                 option.Verb = cfg.m_Verb.Calc().AsString;
@@ -1001,7 +1001,7 @@ namespace BatchCommand
                 option.PasswordInClearText = cfg.m_PasswordInClearText.Calc().AsString;
             }
             if (null != cfg.m_LoadUserProfile) {
-                option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().Get<bool>();
+                option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().GetBool();
             }
             if (null != cfg.m_WindowStyle) {
                 var str = cfg.m_WindowStyle.Calc().AsString;
@@ -1011,10 +1011,10 @@ namespace BatchCommand
                 }
             }
             if (null != cfg.m_NewWindow) {
-                option.NewWindow = cfg.m_NewWindow.Calc().Get<bool>();
+                option.NewWindow = cfg.m_NewWindow.Calc().GetBool();
             }
             if (null != cfg.m_ErrorDialog) {
-                option.ErrorDialog = cfg.m_ErrorDialog.Calc().Get<bool>();
+                option.ErrorDialog = cfg.m_ErrorDialog.Calc().GetBool();
             }
             if (null != cfg.m_WorkingDirectory) {
                 option.WorkingDirectory = cfg.m_WorkingDirectory.Calc().AsString;
@@ -1027,7 +1027,7 @@ namespace BatchCommand
                     encoding = Encoding.GetEncoding(name);
                 }
                 else if (v.IsInteger) {
-                    int codePage = v.Get<int>();
+                    int codePage = v.GetInt();
                     encoding = Encoding.GetEncoding(codePage);
                 }
             }
@@ -1080,7 +1080,7 @@ namespace BatchCommand
                     output = v;
                 }
                 if (null != cfg.m_OutputOptArg)
-                    outputIx = cfg.m_OutputOptArg.Calc().Get<int>();
+                    outputIx = cfg.m_OutputOptArg.Calc().GetInt();
                 outputBuilder = new StringBuilder();
             }
             if (null != cfg.m_Error) {
@@ -1094,12 +1094,12 @@ namespace BatchCommand
                     error = v;
                 }
                 if (null != cfg.m_ErrorOptArg)
-                    errorIx = cfg.m_ErrorOptArg.Calc().Get<int>();
+                    errorIx = cfg.m_ErrorOptArg.Calc().GetInt();
                 errorBuilder = new StringBuilder();
             }
             if (null != cfg.m_RedirectToConsole) {
                 var v = cfg.m_RedirectToConsole.Calc();
-                redirectToConsole = v.Get<bool>();
+                redirectToConsole = v.GetBool();
             }
             int exitCode = BatchScript.NewProcess(noWait, fileName, args, option, istream, ostream, input, outputBuilder, errorBuilder, redirectToConsole, encoding);
             if (BatchScript.FileEchoOn) {
@@ -1166,11 +1166,11 @@ namespace BatchCommand
             if (cfg.m_Commands.TryGetValue(os, out cmd) || cfg.m_Commands.TryGetValue("common", out cmd)) {
                 bool noWait = false;
                 if (null != cfg.m_NoWait) {
-                    noWait = cfg.m_NoWait.Calc().Get<bool>();
+                    noWait = cfg.m_NoWait.Calc().GetBool();
                 }
                 BatchScript.ProcessStartOption option = new BatchScript.ProcessStartOption();
                 if (null != cfg.m_UseShellExecute) {
-                    option.UseShellExecute = cfg.m_UseShellExecute.Calc().Get<bool>();
+                    option.UseShellExecute = cfg.m_UseShellExecute.Calc().GetBool();
                 }
                 if (null != cfg.m_Verb) {
                     option.Verb = cfg.m_Verb.Calc().AsString;
@@ -1188,7 +1188,7 @@ namespace BatchCommand
                     option.PasswordInClearText = cfg.m_PasswordInClearText.Calc().AsString;
                 }
                 if (null != cfg.m_LoadUserProfile) {
-                    option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().Get<bool>();
+                    option.LoadUserProfile = cfg.m_LoadUserProfile.Calc().GetBool();
                 }
                 if (null != cfg.m_WindowStyle) {
                     var str = cfg.m_WindowStyle.Calc().AsString;
@@ -1198,10 +1198,10 @@ namespace BatchCommand
                     }
                 }
                 if (null != cfg.m_NewWindow) {
-                    option.NewWindow = cfg.m_NewWindow.Calc().Get<bool>();
+                    option.NewWindow = cfg.m_NewWindow.Calc().GetBool();
                 }
                 if (null != cfg.m_ErrorDialog) {
-                    option.ErrorDialog = cfg.m_ErrorDialog.Calc().Get<bool>();
+                    option.ErrorDialog = cfg.m_ErrorDialog.Calc().GetBool();
                 }
                 if (null != cfg.m_WorkingDirectory) {
                     option.WorkingDirectory = cfg.m_WorkingDirectory.Calc().AsString;
@@ -1214,7 +1214,7 @@ namespace BatchCommand
                         encoding = Encoding.GetEncoding(name);
                     }
                     else if (v.IsInteger) {
-                        int codePage = v.Get<int>();
+                        int codePage = v.GetInt();
                         encoding = Encoding.GetEncoding(codePage);
                     }
                 }
@@ -1263,7 +1263,7 @@ namespace BatchCommand
                         output = v;
                     }
                     if (null != cfg.m_OutputOptArg)
-                        outputIx = cfg.m_OutputOptArg.Calc().Get<int>();
+                        outputIx = cfg.m_OutputOptArg.Calc().GetInt();
                     outputBuilder = new StringBuilder();
                 }
                 if (null != cfg.m_Error) {
@@ -1277,12 +1277,12 @@ namespace BatchCommand
                         error = v;
                     }
                     if (null != cfg.m_ErrorOptArg)
-                        errorIx = cfg.m_ErrorOptArg.Calc().Get<int>();
+                        errorIx = cfg.m_ErrorOptArg.Calc().GetInt();
                     errorBuilder = new StringBuilder();
                 }
                 if (null != cfg.m_RedirectToConsole) {
                     var v = cfg.m_RedirectToConsole.Calc();
-                    redirectToConsole = v.Get<bool>();
+                    redirectToConsole = v.GetBool();
                 }
 
                 cmd = cmd.Trim();
@@ -1414,7 +1414,7 @@ namespace BatchCommand
                     ret = ct;
                 }
                 else if (vObj.IsInteger) {
-                    int pid = vObj.Get<int>();
+                    int pid = vObj.GetInt();
                     var p = Process.GetProcessById(pid);
                     if (null != p && p.Id != myselfId) {
                         if (BatchScript.FileEchoOn) {
@@ -1442,7 +1442,7 @@ namespace BatchCommand
                 ret = p.Id;
                 int exitCode = 0;
                 if (operands.Count >= 1) {
-                    exitCode = operands[0].Get<int>();
+                    exitCode = operands[0].GetInt();
                 }
                 if (BatchScript.FileEchoOn) {
                     Console.WriteLine("killme {0}[pid:{1},session id:{2}] exit code:{3}", p.ProcessName, p.Id, p.SessionId, exitCode);
@@ -1523,7 +1523,7 @@ namespace BatchCommand
         {
             var ret = CalculatorValue.NullObject;
             if (operands.Count >= 1) {
-                var time = operands[0].Get<int>();
+                var time = operands[0].GetInt();
                 Thread.Sleep(time);
                 ret = time;
             }
@@ -1538,7 +1538,7 @@ namespace BatchCommand
             var tasks = BatchScript.Tasks;
             int timeout = -1;
             if (operands.Count >= 1) {
-                timeout = operands[0].Get<int>();
+                timeout = operands[0].GetInt();
             }
             List<int> results = new List<int>();
             if (Task.WaitAll(tasks.ToArray(), timeout)) {
@@ -1564,13 +1564,13 @@ namespace BatchCommand
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var obj = operands[0].Get<object>();
+                var obj = operands[0].GetObject();
                 if (null != obj) {
                     var fmt = obj as string;
                     if (operands.Count > 1 && null != fmt) {
                         ArrayList arrayList = new ArrayList();
                         for (int i = 1; i < operands.Count; ++i) {
-                            arrayList.Add(operands[i].Get<object>());
+                            arrayList.Add(operands[i].GetObject());
                         }
                         Console.Write(fmt, arrayList.ToArray());
                     }
@@ -1597,7 +1597,7 @@ namespace BatchCommand
         {
             bool nodisplay = false;
             if (operands.Count >= 1) {
-                nodisplay = operands[0].Get<bool>();
+                nodisplay = operands[0].GetBool();
             }
             var info = Console.ReadKey(nodisplay);
             return info.KeyChar;
@@ -1609,8 +1609,8 @@ namespace BatchCommand
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int f = operands[0].Get<int>();
-                int d = operands[1].Get<int>();
+                int f = operands[0].GetInt();
+                int d = operands[1].GetInt();
                 Console.Beep(f, d);
             }
             else {
@@ -1663,8 +1663,8 @@ namespace BatchCommand
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int w = operands[0].Get<int>();
-                int h = operands[1].Get<int>();
+                int w = operands[0].GetInt();
+                int h = operands[1].GetInt();
                 Console.SetBufferSize(w, h);
             }
             return CalculatorValue.NullObject;
@@ -1692,8 +1692,8 @@ namespace BatchCommand
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 2) {
-                int left = operands[0].Get<int>();
-                int top = operands[1].Get<int>();
+                int left = operands[0].GetInt();
+                int top = operands[1].GetInt();
                 Console.SetCursorPosition(left, top);
             }
             return CalculatorValue.NullObject;
@@ -1909,7 +1909,7 @@ namespace BatchCommand
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
             if (operands.Count >= 1) {
-                var v = operands[0].Get<int>();
+                var v = operands[0].GetInt();
                 BatchScript.CheckStartInterval = v;
             }
             return BatchScript.CheckStartInterval;
@@ -2148,7 +2148,7 @@ namespace BatchCommand
                 return Encoding.GetEncoding(name);
             }
             else if (v.IsInteger) {
-                int codePage = v.Get<int>();
+                int codePage = v.GetInt();
                 return Encoding.GetEncoding(codePage);
             }
             else {

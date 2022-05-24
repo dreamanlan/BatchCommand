@@ -554,15 +554,15 @@ static inline double StrToDouble(const std::string& value)
                 return VarAssignString;
             }
         }break;
-        case BRACE_DATA_TYPE_POINTER: {
-            switch (srcVarType) {
-            case BRACE_DATA_TYPE_POINTER:
-                return VarAssignPointer;
-            }
-        }break;
         case BRACE_DATA_TYPE_OBJECT: {
             switch (srcVarType) {
             case BRACE_DATA_TYPE_OBJECT:
+                return VarAssignObject;
+            }
+        }break;
+        case BRACE_DATA_TYPE_UOBJECT: {
+            switch (srcVarType) {
+            case BRACE_DATA_TYPE_UOBJECT:
                 return VarAssignUObject;
             }
         }break;

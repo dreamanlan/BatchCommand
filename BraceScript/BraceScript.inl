@@ -105,15 +105,15 @@ static inline double StrToDouble(const std::string& value)
     }
 
 #define DEFINE_VAR_ASSIGN(POSTFIX, NAME) \
-    static inline void VarAssign##POSTFIX(VariableInfo& info, int destIndex, int srcIndex)\
+    static inline void VarAssign##POSTFIX(VariableInfo& info, int destIndex, VariableInfo& srcInfo, int srcIndex)\
     {\
-        info.##NAME[destIndex] = info.##NAME[srcIndex];\
+        info.##NAME[destIndex] = srcInfo.##NAME[srcIndex];\
     }
 
 #define DEFINE_VAR_CAST_ASSIGN(POSTFIX, DESTNAME, DESTTYPE, SRCNAME) \
-    static inline void VarCastAssign##POSTFIX(VariableInfo& info, int destIndex, int srcIndex)\
+    static inline void VarCastAssign##POSTFIX(VariableInfo& info, int destIndex, VariableInfo& srcInfo, int srcIndex)\
     {\
-        info.##DESTNAME[destIndex] = static_cast<DESTTYPE>(info.##SRCNAME[srcIndex]);\
+        info.##DESTNAME[destIndex] = static_cast<DESTTYPE>(srcInfo.##SRCNAME[srcIndex]);\
     }
 
     DEFINE_VAR_GET(Bool, BoolVars, bool);

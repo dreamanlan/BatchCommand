@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Dsl.h"
 #include <stack>
+#include <deque>
 #include <unordered_map>
 #include <functional>
 
@@ -56,21 +57,32 @@ namespace Brace
     };
 
     struct VariableInfo;
-    typedef void (*VarAssignPtr)(VariableInfo&, int, int);
+    typedef void (*VarAssignPtr)(VariableInfo&, int, VariableInfo&, int);
     extern VarAssignPtr GetVarAssignPtr(int varType, int srcVarType);
     extern const char* GetBraceDataTypeName(int type);
 
-    struct BraceApiLoadInfo final
+    struct VarTypeInfo
     {
         int Type;
         int VarIndex;
-        bool NeedExecute;
 
-        BraceApiLoadInfo(void) :Type(BRACE_DATA_TYPE_UNKNOWN), VarIndex(INVALID_INDEX), NeedExecute(true)
+        VarTypeInfo(void) :Type(BRACE_DATA_TYPE_UNKNOWN), VarIndex(INVALID_INDEX)
         {}
-        BraceApiLoadInfo(int type, int varIndex) :Type(type), VarIndex(varIndex), NeedExecute(true)
+        VarTypeInfo(int type, int varIndex) :Type(type), VarIndex(varIndex)
         {}
-        BraceApiLoadInfo(int type, int varIndex, bool needExecute) :Type(type), VarIndex(varIndex), NeedExecute(needExecute)
+    };
+    struct VarInfo final : public VarTypeInfo
+    {
+        std::string Name;
+
+        VarInfo(void) :VarTypeInfo(), Name() {}
+        VarInfo(const std::string& name, int type, int index) :VarTypeInfo(type, index), Name(name) {}
+    };
+    struct BraceApiLoadInfo final : public VarTypeInfo
+    {
+        BraceApiLoadInfo(void) :VarTypeInfo()
+        {}
+        BraceApiLoadInfo(int type, int varIndex) :VarTypeInfo(type, varIndex)
         {}
     };
 
@@ -112,31 +124,34 @@ namespace Brace
         int AllocVariable(int type);
     };
 
-    struct VarTypeInfo final
-    {
-        std::string Name;
-        int Type;
-        int Index;
-
-        VarTypeInfo(void) :Type(BRACE_DATA_TYPE_UNKNOWN), Index(INVALID_INDEX) {}
-        VarTypeInfo(const std::string& name, int type, int index) :Name(name), Type(type), Index(index) {}
-        VarTypeInfo(std::string&& name, int type, int index) :Name(name), Type(type), Index(index) {}
-    };
-
     struct ProcInfo final
     {
         std::string Name;
-        std::vector<VarTypeInfo> Params;
-        VarTypeInfo RetValue;
-        std::unordered_map<std::string, VarTypeInfo> VarTypeInfos;
+        std::vector<VarInfo> Params;
+        VarInfo RetValue;
+        std::unordered_map<std::string, VarInfo> VarTypeInfos;
         std::vector<BraceApiExecutor> Codes;
         VariableInfo VarInitInfo;
+
+        VariableInfo* AllocVariableInfo(void)const;
+        void RecycleVariableInfo(VariableInfo* p)const;
+        void ShrinkPool(int max_num)const;
+
+        ProcInfo(void);
+        ~ProcInfo(void);
+    private:
+        /// Members of ProcInfo are immutable at run time, except for VaraibleInfoPool & VariableInfoStore, which uses Pointers 
+        /// to preserve the const semantics of ProcInfo. 
+        /// Stack operations are used to use recently used memory for better locality, while deques are used to shrink memory.
+        std::deque<VariableInfo*>* VariableInfoPool;
+        std::vector<VariableInfo*>* VariableInfoStore;
     };
 
     struct RuntimeStackInfo final
     {
+        const RuntimeStackInfo* LastStackInfo;
         const ProcInfo* Proc;
-        VariableInfo Variables;
+        VariableInfo* Variables;
     };
 
     class IBraceApiFactory
@@ -192,7 +207,6 @@ namespace Brace
         void AddApiInstance(IBraceApi* p)const;
         BraceApiExecutor LoadHelper(const DslData::ISyntaxComponent& syntaxUnit, BraceApiLoadInfo& loadInfo)const;
     protected:
-        void RunProc(const ProcInfo* proc)const;
         ProcInfo* GlobalProcInfo(void)const;
         VariableInfo* GlobalVariables(void)const;
         RuntimeStackInfo& CurRuntimeStack(void)const;
@@ -236,7 +250,6 @@ namespace Brace
         void Run(void);
         bool HasError(void)const { return m_HasError; }
     private:
-        void RunProc(const ProcInfo* proc);
         ProcInfo* GlobalProcInfo(void)const;
         VariableInfo* GlobalVariables(void)const;
         const RuntimeStackInfo& CurRuntimeStack(void)const;

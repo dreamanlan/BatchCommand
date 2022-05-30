@@ -12,7 +12,18 @@ using DslExpression;
 
 namespace BatchCommand
 {
-    internal class FileEchoExp : SimpleExpressionBase
+    internal sealed class TimeStatisticOnExp : SimpleExpressionBase
+    {
+        protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+        {
+            if (operands.Count >= 1) {
+                BatchScript.TimeStatisticOn = operands[0].GetBool();
+            }
+            return BatchScript.TimeStatisticOn;
+        }
+    }
+
+    internal sealed class FileEchoExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -23,7 +34,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ListDirectoriesExp : SimpleExpressionBase
+    internal sealed class ListDirectoriesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -65,7 +76,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ListFilesExp : SimpleExpressionBase
+    internal sealed class ListFilesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -107,7 +118,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ListAllDirectoriesExp : SimpleExpressionBase
+    internal sealed class ListAllDirectoriesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -149,7 +160,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ListAllFilesExp : SimpleExpressionBase
+    internal sealed class ListAllFilesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -191,7 +202,7 @@ namespace BatchCommand
         }
     }
 
-    internal class DirectoryExistExp : SimpleExpressionBase
+    internal sealed class DirectoryExistExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -205,7 +216,7 @@ namespace BatchCommand
         }
     }
 
-    internal class FileExistExp : SimpleExpressionBase
+    internal sealed class FileExistExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -219,7 +230,7 @@ namespace BatchCommand
         }
     }
 
-    internal class CreateDirectoryExp : SimpleExpressionBase
+    internal sealed class CreateDirectoryExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -240,7 +251,7 @@ namespace BatchCommand
         }
     }
 
-    internal class CopyDirectoryExp : SimpleExpressionBase
+    internal sealed class CopyDirectoryExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -319,7 +330,7 @@ namespace BatchCommand
         }
     }
 
-    internal class MoveDirectoryExp : SimpleExpressionBase
+    internal sealed class MoveDirectoryExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -345,7 +356,7 @@ namespace BatchCommand
         }
     }
 
-    internal class DeleteDirectoryExp : SimpleExpressionBase
+    internal sealed class DeleteDirectoryExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -366,7 +377,7 @@ namespace BatchCommand
         }
     }
 
-    internal class CopyFileExp : SimpleExpressionBase
+    internal sealed class CopyFileExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -393,7 +404,7 @@ namespace BatchCommand
         }
     }
 
-    internal class CopyFilesExp : SimpleExpressionBase
+    internal sealed class CopyFilesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -457,7 +468,7 @@ namespace BatchCommand
         }
     }
 
-    internal class MoveFileExp : SimpleExpressionBase
+    internal sealed class MoveFileExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -487,7 +498,7 @@ namespace BatchCommand
         }
     }
 
-    internal class DeleteFileExp : SimpleExpressionBase
+    internal sealed class DeleteFileExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -508,7 +519,7 @@ namespace BatchCommand
         }
     }
 
-    internal class DeleteFilesExp : SimpleExpressionBase
+    internal sealed class DeleteFilesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -553,7 +564,7 @@ namespace BatchCommand
         }
     }
 
-    internal class DeleteAllFilesExp : SimpleExpressionBase
+    internal sealed class DeleteAllFilesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -598,7 +609,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetFileInfoExp : SimpleExpressionBase
+    internal sealed class GetFileInfoExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -614,7 +625,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetDirectoryInfoExp : SimpleExpressionBase
+    internal sealed class GetDirectoryInfoExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -630,7 +641,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetDriveInfoExp : SimpleExpressionBase
+    internal sealed class GetDriveInfoExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -643,7 +654,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetDrivesInfoExp : SimpleExpressionBase
+    internal sealed class GetDrivesInfoExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -652,7 +663,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GrepExp : SimpleExpressionBase
+    internal sealed class GrepExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -683,7 +694,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SubstExp : SimpleExpressionBase
+    internal sealed class SubstExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -710,7 +721,7 @@ namespace BatchCommand
         }
     }
 
-    internal class AwkExp : SimpleExpressionBase
+    internal sealed class AwkExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -772,7 +783,7 @@ namespace BatchCommand
         private static string[] s_ArgNames = new string[] { "$0", "$1", "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9", "$10", "$11", "$12", "$13", "$14", "$15", "$16" };
     }
 
-    internal class CommandExp : AbstractExpression
+    internal sealed class CommandExp : AbstractExpression
     {
         protected override CalculatorValue DoCalc()
         {
@@ -1386,7 +1397,7 @@ namespace BatchCommand
         private List<CommandConfig> m_CommandConfigs = new List<CommandConfig>();
     }
 
-    internal class KillExp : SimpleExpressionBase
+    internal sealed class KillExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1432,7 +1443,7 @@ namespace BatchCommand
         }
     }
 
-    internal class KillMeExp : SimpleExpressionBase
+    internal sealed class KillMeExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1453,7 +1464,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetCurrentProcessIdExp : SimpleExpressionBase
+    internal sealed class GetCurrentProcessIdExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1466,7 +1477,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ListProcessesExp : SimpleExpressionBase
+    internal sealed class ListProcessesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1500,7 +1511,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetScriptDirectoryExp : SimpleExpressionBase
+    internal sealed class GetScriptDirectoryExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1508,7 +1519,7 @@ namespace BatchCommand
         }
     }
 
-    internal class PauseExp : SimpleExpressionBase
+    internal sealed class PauseExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1517,7 +1528,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WaitExp : SimpleExpressionBase
+    internal sealed class WaitExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1531,7 +1542,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WaitAllExp : SimpleExpressionBase
+    internal sealed class WaitAllExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1550,7 +1561,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ClearExp : SimpleExpressionBase
+    internal sealed class ClearExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1559,7 +1570,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WriteExp : SimpleExpressionBase
+    internal sealed class WriteExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1583,7 +1594,142 @@ namespace BatchCommand
         }
     }
 
-    internal class ReadLineExp : SimpleExpressionBase
+    internal sealed class WriteBlockExp : AbstractExpression
+    {
+        protected override CalculatorValue DoCalc()
+        {
+            if (null != m_BeginChars && null != m_EndChars) {
+                var c1 = m_BeginChars.Calc().ToString();
+                var c2 = m_EndChars.Calc().ToString();
+                if (c1.Length == 2 && c2.Length == 2) {
+                    m_BeginFirst = c1[0];
+                    m_BeginSecond = c1[1];
+                    m_EndFirst = c2[0];
+                    m_EndSecond = c2[1];
+                }
+            }
+            Console.Write(BlockExp.CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder, m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond));
+            return CalculatorValue.NullObject;
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if (funcData.HaveExternScript()) {
+                m_Block = funcData.GetParamId(0);
+            }
+            if (funcData.IsHighOrder) {
+                var callData = funcData.LowerOrderFunction;
+                if (callData.GetParamNum() == 2) {
+                    m_BeginChars = Calculator.Load(callData.GetParam(0));
+                    m_EndChars = Calculator.Load(callData.GetParam(1));
+                }
+            }
+            return true;
+        }
+
+        private IExpression m_BeginChars = null;
+        private IExpression m_EndChars = null;
+
+        private string m_Block = String.Empty;
+        private StringBuilder m_OutputBuilder = new StringBuilder();
+        private StringBuilder m_TempBuilder = new StringBuilder();
+        private char m_BeginFirst = BlockExp.c_BeginFirst;
+        private char m_BeginSecond = BlockExp.c_BeginSecond;
+        private char m_EndFirst = BlockExp.c_EndFirst;
+        private char m_EndSecond = BlockExp.c_EndSecond;
+    }
+
+    internal sealed class BlockExp : AbstractExpression
+    {
+        protected override CalculatorValue DoCalc()
+        {
+            if (null != m_BeginChars && null != m_EndChars) {
+                var c1 = m_BeginChars.Calc().ToString();
+                var c2 = m_EndChars.Calc().ToString();
+                if (c1.Length == 2 && c2.Length == 2) {
+                    m_BeginFirst = c1[0];
+                    m_BeginSecond = c1[1];
+                    m_EndFirst = c2[0];
+                    m_EndSecond = c2[1];
+                }
+            }
+            return CalculatorValue.From(CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder, m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond));
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if (funcData.HaveExternScript()) {
+                m_Block = funcData.GetParamId(0);
+            }
+            if (funcData.IsHighOrder) {
+                var callData = funcData.LowerOrderFunction;
+                if (callData.GetParamNum() == 2) {
+                    m_BeginChars = Calculator.Load(callData.GetParam(0));
+                    m_EndChars = Calculator.Load(callData.GetParam(1));
+                }
+            }
+            return true;
+        }
+
+        private IExpression m_BeginChars = null;
+        private IExpression m_EndChars = null;
+
+        private string m_Block = String.Empty;
+        private StringBuilder m_OutputBuilder = new StringBuilder();
+        private StringBuilder m_TempBuilder = new StringBuilder();
+        private char m_BeginFirst = c_BeginFirst;
+        private char m_BeginSecond = c_BeginSecond;
+        private char m_EndFirst = c_EndFirst;
+        private char m_EndSecond = c_EndSecond;
+
+        internal static string CalcBlockString(string block, DslCalculator calculator, StringBuilder outputBuilder, StringBuilder tempBuilder, char beginFirst, char beginSecond, char endFirst, char endSecond)
+        {
+            outputBuilder.Length = 0;
+            for (int i = 0; i < block.Length; ++i) {
+                char c = block[i];
+                char nc = '\0';
+                if (i + 1 < block.Length) {
+                    nc = block[i + 1];
+                }
+                if (c == beginFirst && nc == beginSecond) {
+                    ++i;
+                    ++i;
+                    tempBuilder.Length = 0;
+                    for (int j = i; j < block.Length; ++j) {
+                        c = block[j];
+                        nc = '\0';
+                        if (j + 1 < block.Length) {
+                            nc = block[j + 1];
+                        }
+                        if (c == endFirst && nc == endSecond) {
+                            string varNameOrCode = tempBuilder.ToString().Trim();
+                            CalculatorValue val;
+                            if (calculator.TryGetVariable(varNameOrCode, out val)) {
+                                outputBuilder.Append(val.ToString());
+                            }
+                            else {
+                                val = BatchScript.EvalAndRun(varNameOrCode);
+                                outputBuilder.Append(val.ToString());
+                            }
+                            i = j + 1;
+                            break;
+                        }
+                        else {
+                            tempBuilder.Append(c);
+                        }
+                    }
+                }
+                else {
+                    outputBuilder.Append(c);
+                }
+            }
+            return outputBuilder.ToString();
+        }
+        internal const char c_BeginFirst = '{';
+        internal const char c_BeginSecond = '%';
+        internal const char c_EndFirst = '%';
+        internal const char c_EndSecond = '}';
+    }
+
+    internal sealed class ReadLineExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1591,7 +1737,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ReadExp : SimpleExpressionBase
+    internal sealed class ReadExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1604,7 +1750,7 @@ namespace BatchCommand
         }
     }
 
-    internal class BeepExp : SimpleExpressionBase
+    internal sealed class BeepExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1620,7 +1766,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetTitleExp : SimpleExpressionBase
+    internal sealed class GetTitleExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1628,7 +1774,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetTitleExp : SimpleExpressionBase
+    internal sealed class SetTitleExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1642,7 +1788,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetBufferWidthExp : SimpleExpressionBase
+    internal sealed class GetBufferWidthExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1650,7 +1796,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetBufferHeightExp : SimpleExpressionBase
+    internal sealed class GetBufferHeightExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1658,7 +1804,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetBufferSizeExp : SimpleExpressionBase
+    internal sealed class SetBufferSizeExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1671,7 +1817,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetCursorLeftExp : SimpleExpressionBase
+    internal sealed class GetCursorLeftExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1679,7 +1825,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetCursorTopExp : SimpleExpressionBase
+    internal sealed class GetCursorTopExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1687,7 +1833,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetCursorPosExp : SimpleExpressionBase
+    internal sealed class SetCursorPosExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1700,7 +1846,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetBgColorExp : SimpleExpressionBase
+    internal sealed class GetBgColorExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1709,7 +1855,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetBgColorExp : SimpleExpressionBase
+    internal sealed class SetBgColorExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1723,7 +1869,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetFgColorExp : SimpleExpressionBase
+    internal sealed class GetFgColorExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1732,7 +1878,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetFgColorExp : SimpleExpressionBase
+    internal sealed class SetFgColorExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1746,7 +1892,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ResetColorExp : SimpleExpressionBase
+    internal sealed class ResetColorExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1755,7 +1901,7 @@ namespace BatchCommand
         }
     }
 
-    internal class SetEncodingExp : SimpleExpressionBase
+    internal sealed class SetEncodingExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1776,7 +1922,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetInputEncodingExp : SimpleExpressionBase
+    internal sealed class GetInputEncodingExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1784,7 +1930,7 @@ namespace BatchCommand
         }
     }
 
-    internal class GetOutputEncodingExp : SimpleExpressionBase
+    internal sealed class GetOutputEncodingExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1792,7 +1938,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ConsoleExp : SimpleExpressionBase
+    internal sealed class ConsoleExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1800,7 +1946,7 @@ namespace BatchCommand
         }
     }
 
-    internal class EncodingExp : SimpleExpressionBase
+    internal sealed class EncodingExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1808,7 +1954,7 @@ namespace BatchCommand
         }
     }
 
-    internal class EnvironmentExp : SimpleExpressionBase
+    internal sealed class EnvironmentExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1816,7 +1962,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ReadAllLinesExp : SimpleExpressionBase
+    internal sealed class ReadAllLinesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1836,7 +1982,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WriteAllLinesExp : SimpleExpressionBase
+    internal sealed class WriteAllLinesExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1862,7 +2008,7 @@ namespace BatchCommand
         }
     }
 
-    internal class ReadAllTextExp : SimpleExpressionBase
+    internal sealed class ReadAllTextExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1882,7 +2028,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WriteAllTextExp : SimpleExpressionBase
+    internal sealed class WriteAllTextExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1904,7 +2050,7 @@ namespace BatchCommand
         }
     }
 
-    internal class WaitStartIntervalExp : SimpleExpressionBase
+    internal sealed class WaitStartIntervalExp : SimpleExpressionBase
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
@@ -1916,8 +2062,13 @@ namespace BatchCommand
         }
     }
 
-    internal class BatchScript
+    internal sealed class BatchScript
     {
+        internal static bool TimeStatisticOn
+        {
+            get { return s_TimeStatisticOn; }
+            set { s_TimeStatisticOn = value; }
+        }
         internal static bool FileEchoOn
         {
             get { return s_FileEchoOn; }
@@ -1986,6 +2137,8 @@ namespace BatchCommand
             s_Calculator.Register("waitall", new ExpressionFactoryHelper<WaitAllExp>());
             s_Calculator.Register("clear", new ExpressionFactoryHelper<ClearExp>());
             s_Calculator.Register("write", new ExpressionFactoryHelper<WriteExp>());
+            s_Calculator.Register("writeblock", new ExpressionFactoryHelper<WriteBlockExp>());
+            s_Calculator.Register("block", new ExpressionFactoryHelper<BlockExp>());
             s_Calculator.Register("readline", new ExpressionFactoryHelper<ReadLineExp>());
             s_Calculator.Register("read", new ExpressionFactoryHelper<ReadExp>());
             s_Calculator.Register("beep", new ExpressionFactoryHelper<BeepExp>());
@@ -2070,6 +2223,17 @@ namespace BatchCommand
                 return id;
             }
             return null;
+        }
+        internal static CalculatorValue EvalAndRun(string code)
+        {
+            CalculatorValue r = CalculatorValue.EmptyString;
+            var file = new Dsl.DslFile();
+            if (file.LoadFromString(code, "eval", msg => { Log(msg); })) {
+                List<IExpression> exps = new List<IExpression>();
+                s_Calculator.LoadDsl(file.DslInfos, exps);
+                r = s_Calculator.CalcInCurrentContext(exps);
+            }
+            return r;
         }
         internal static List<CalculatorValue> NewCalculatorValueList()
         {
@@ -2314,7 +2478,7 @@ namespace BatchCommand
             }
         }
 
-        internal class ProcessStartOption
+        internal sealed class ProcessStartOption
         {
             internal bool UseShellExecute = false;
             internal string Verb = null;
@@ -2329,6 +2493,7 @@ namespace BatchCommand
             internal string WorkingDirectory = Environment.CurrentDirectory;
         }
 
+        private static bool s_TimeStatisticOn = false;
         private static bool s_FileEchoOn = false;
         private static int s_CheckStartInterval = 500;
         private static string s_ScriptDirectory = string.Empty;

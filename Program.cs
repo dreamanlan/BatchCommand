@@ -22,7 +22,8 @@ namespace BatchCommand
                     r = BatchScript.Run(args[0], vargs);
                     sw.Stop();
                     long us = sw.ElapsedTicks*1000000 / Stopwatch.Frequency;
-                    Console.WriteLine("consume time: {0}us", us);
+                    if (BatchScript.TimeStatisticOn)
+                        Console.WriteLine("consume time: {0}us", us);
                 }
                 BatchScript.RecycleCalculatorValueList(vargs);
                 if (!r.IsNullObject) {

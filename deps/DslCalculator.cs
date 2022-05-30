@@ -5977,13 +5977,17 @@ namespace DslExpression
             }
             if (null == procInfo)
                 procInfo = new ProcInfo();
-            foreach (Dsl.ISyntaxComponent comp in func.Params) {
+            LoadDsl(func.Params, procInfo.Codes);
+            m_Procs[proc] = procInfo;
+        }
+        public void LoadDsl(IList<Dsl.ISyntaxComponent> statements, List<IExpression> exps)
+        {
+            foreach (Dsl.ISyntaxComponent comp in statements) {
                 var exp = Load(comp);
                 if (null != exp) {
-                    procInfo.Codes.Add(exp);
+                    exps.Add(exp);
                 }
             }
-            m_Procs[proc] = procInfo;
         }
         public List<CalculatorValue> NewCalculatorValueList()
         {
@@ -6043,59 +6047,62 @@ namespace DslExpression
         {
             return Calc(null, procContext, procInfo);
         }
-        private CalculatorValue Calc<T>(List<CalculatorValue> args, T procContext, ProcInfo procInfo) where T : class
+        public CalculatorValue CalcInCurrentContext(IList<IExpression> exps)
         {
             CalculatorValue ret = 0;
-            LocalStackPush(args, procContext, procInfo);
-            try {
-                var exps = procInfo.Codes;
-                for (int i = 0; i < exps.Count; ++i) {
-                    var exp = exps[i];
-                    try {
-                        ret = exp.Calc();
-                        if (m_RunState == RunStateEnum.Return) {
-                            m_RunState = RunStateEnum.Normal;
-                            break;
-                        }
-                        else if (m_RunState == RunStateEnum.Redirect) {
-                            break;
-                        }
+            for (int i = 0; i < exps.Count; ++i) {
+                var exp = exps[i];
+                try {
+                    ret = exp.Calc();
+                    if (m_RunState == RunStateEnum.Return) {
+                        m_RunState = RunStateEnum.Normal;
+                        break;
                     }
-                    catch (DirectoryNotFoundException ex5) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex5.Message, ex5.StackTrace);
-                        OutputInnerException(ex5);
-                    }
-                    catch (FileNotFoundException ex4) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex4.Message, ex4.StackTrace);
-                        OutputInnerException(ex4);
-                    }
-                    catch (IOException ex3) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex3.Message, ex3.StackTrace);
-                        OutputInnerException(ex3);
-                        ret = -1;
-                    }
-                    catch (UnauthorizedAccessException ex2) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex2.Message, ex2.StackTrace);
-                        OutputInnerException(ex2);
-                        ret = -1;
-                    }
-                    catch (NotSupportedException ex1) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex1.Message, ex1.StackTrace);
-                        OutputInnerException(ex1);
-                        ret = -1;
-                    }
-                    catch (Exception ex) {
-                        Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex.Message, ex.StackTrace);
-                        OutputInnerException(ex);
-                        ret = -1;
+                    else if (m_RunState == RunStateEnum.Redirect) {
                         break;
                     }
                 }
+                catch (DirectoryNotFoundException ex5) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex5.Message, ex5.StackTrace);
+                    OutputInnerException(ex5);
+                }
+                catch (FileNotFoundException ex4) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex4.Message, ex4.StackTrace);
+                    OutputInnerException(ex4);
+                }
+                catch (IOException ex3) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex3.Message, ex3.StackTrace);
+                    OutputInnerException(ex3);
+                    ret = -1;
+                }
+                catch (UnauthorizedAccessException ex2) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex2.Message, ex2.StackTrace);
+                    OutputInnerException(ex2);
+                    ret = -1;
+                }
+                catch (NotSupportedException ex1) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex1.Message, ex1.StackTrace);
+                    OutputInnerException(ex1);
+                    ret = -1;
+                }
+                catch (Exception ex) {
+                    Log("calc:[{0}] exception:{1}\n{2}", exp.ToString(), ex.Message, ex.StackTrace);
+                    OutputInnerException(ex);
+                    ret = -1;
+                    break;
+                }
+            }
+            return ret;
+        }
+        private CalculatorValue Calc<T>(List<CalculatorValue> args, T procContext, ProcInfo procInfo) where T : class
+        {
+            LocalStackPush(args, procContext, procInfo);
+            try {
+                return CalcInCurrentContext(procInfo.Codes);
             }
             finally {
                 LocalStackPop();
             }
-            return ret;
         }
         public RunStateEnum RunState
         {
@@ -6386,13 +6393,11 @@ namespace DslExpression
                     }
                 }
             }
-            IExpression ret = null;
-            string expId = comp.GetId();
-            if (null != funcData && !funcData.IsHighOrder && m_Procs.ContainsKey(expId)) {
-                ret = new FunctionCall();
-            }
-            else {
-                ret = Create(comp.GetId());
+            IExpression ret = Create(comp.GetId());
+            if (null == ret) {
+                if (null != funcData && !funcData.IsHighOrder) {
+                    ret = new FunctionCall();
+                }
             }
             if (null != ret) {
                 Dsl.StatementData stData = comp as Dsl.StatementData;

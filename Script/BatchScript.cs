@@ -2089,7 +2089,10 @@ namespace BatchCommand
         }
         internal static void Log(string fmt, params object[] args)
         {
-            Console.WriteLine(fmt, args);
+            if (args.Length == 0)
+                Console.WriteLine(fmt);
+            else
+                Console.WriteLine(fmt, args);
         }
         internal static void Log(object arg)
         {

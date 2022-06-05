@@ -6112,7 +6112,10 @@ namespace DslExpression
         public void Log(string fmt, params object[] args)
         {
             if (null != OnLog) {
-                OnLog(string.Format(fmt, args));
+                if (args.Length == 0)
+                    OnLog(fmt);
+                else
+                    OnLog(string.Format(fmt, args));
             }
         }
         public void Log(object arg)

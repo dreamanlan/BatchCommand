@@ -2104,6 +2104,7 @@ namespace BatchCommand
             s_Calculator.Init();
 
             //注册Gm命令
+            s_Calculator.Register("timestat", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             s_Calculator.Register("fileecho", new ExpressionFactoryHelper<FileEchoExp>());
             s_Calculator.Register("listdirs", new ExpressionFactoryHelper<ListDirectoriesExp>());
             s_Calculator.Register("listfiles", new ExpressionFactoryHelper<ListFilesExp>());

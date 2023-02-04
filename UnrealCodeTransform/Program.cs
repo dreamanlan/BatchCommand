@@ -247,6 +247,7 @@ namespace UnrealCodeTransform
                     if (ch == '*' && i < line.Length - 1 && line[i + 1] == '/') {
                         s_InCommentBlock = false;
                         k = i + 2;
+                        break;
                     }
                 }
                 if (s_InCommentBlock)
@@ -290,6 +291,7 @@ namespace UnrealCodeTransform
                             if (ch == '*' && j < line.Length - 1 && line[j + 1] == '/') {
                                 s_InCommentBlock = false;
                                 i = j + 1;
+                                break;
                             }
                         }
                         if (s_InCommentBlock)

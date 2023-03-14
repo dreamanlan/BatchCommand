@@ -193,7 +193,7 @@ namespace UnrealCodeTransform
                 if (IsMatch(trimLine)) {
                     var pureLine = trimLine.TrimEnd();
                     if (pureLine[pureLine.Length - 1] == ')') {
-                        if (s_DslFile.LoadCppFromString(pureLine, "line", msg => s_ErrorWriter?.WriteLine(msg))) {
+                        if (s_DslFile.LoadCppFromString(pureLine, msg => s_ErrorWriter?.WriteLine(msg))) {
                             var pcom = s_DslFile.DslInfos[0];
                             string id = pcom.GetId();
                             if (s_FilterNames.Contains(id)) {
@@ -216,7 +216,7 @@ namespace UnrealCodeTransform
                             s_MultiLineBuffer.AppendLine(kTrimLine);
                             if (kTrimLine[kTrimLine.Length - 1] == ')') {
                                 var mline = s_MultiLineBuffer.ToString();
-                                if (s_DslFile.LoadCppFromString(mline, "mline", msg => s_ErrorWriter?.WriteLine(msg))) {
+                                if (s_DslFile.LoadCppFromString(mline, msg => s_ErrorWriter?.WriteLine(msg))) {
                                     var pcom = s_DslFile.DslInfos[0];
                                     string id = pcom.GetId();
                                     if (s_FilterNames.Contains(id)) {
@@ -398,7 +398,7 @@ namespace UnrealCodeTransform
         {
             var sb = new StringBuilder();
             Dsl.DslFile dslFile = new Dsl.DslFile();
-            if (dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
+            if (dslFile.LoadGppFromString(txt, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
                 //遍历并提取代码
                 foreach (var info in dslFile.DslInfos) {
                     HandleSyntax(sb, info, false);

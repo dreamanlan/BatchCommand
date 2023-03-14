@@ -2221,7 +2221,7 @@ namespace BatchCommand
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
-            if (file.LoadFromString(procCode, id, msg => { Log(msg); })) {
+            if (file.LoadFromString(procCode, msg => { Log(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
                 s_Calculator.LoadDsl(id, argNames, func);
                 return id;
@@ -2232,7 +2232,7 @@ namespace BatchCommand
         {
             CalculatorValue r = CalculatorValue.EmptyString;
             var file = new Dsl.DslFile();
-            if (file.LoadFromString(code, "eval", msg => { Log(msg); })) {
+            if (file.LoadFromString(code, msg => { Log(msg); })) {
                 List<IExpression> exps = new List<IExpression>();
                 s_Calculator.LoadDsl(file.DslInfos, exps);
                 r = s_Calculator.CalcInCurrentContext(exps);

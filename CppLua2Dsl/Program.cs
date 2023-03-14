@@ -133,7 +133,7 @@ namespace CppLua2Dsl
                         if (!string.IsNullOrEmpty(ppfile)) {
                             File.WriteAllText(ppfile, gppTxt);
                         }
-                        if (s_DslFile.LoadCppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
+                        if (s_DslFile.LoadCppFromString(txt, msg => s_ErrorWriter?.WriteLine("{0} file:{1}", msg, file))) {
                             s_DslFile.Save(targetFile + "_dsl.txt");
                         }
                         else {
@@ -229,7 +229,7 @@ namespace CppLua2Dsl
         {
             var sb = new StringBuilder();
             Dsl.DslFile dslFile = new Dsl.DslFile();
-            if (dslFile.LoadGppFromString(txt, file, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
+            if (dslFile.LoadGppFromString(txt, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
                 //遍历并提取代码
                 foreach (var info in dslFile.DslInfos) {
                     HandleSyntax(sb, info, false);

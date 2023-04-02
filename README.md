@@ -7,6 +7,10 @@ Script/BatchScript.cs是用于批处理的一个API，比如运行另外一个�
 
 这个解释器与一般解释器的不同点在于，因为MetaDSL语法将类C语言的常用语法构造都抽象成了3类语法：值、函数、语句，然后解释器直接将这些语法构造交给API来处理，所以函数与语句都是API实现的。
 
+[解释器原理笔记](https://zhuanlan.zhihu.com/p/82055862)，这个笔记基于以前版本的MetaDSL所写，当时MetaDSL的基本语法有四类：值、函数调用、函数定义、语句，现在是三类了，不过原理是一样的。
+
+另外BatchCommand在用于代码生成时比较多的会用到的是模板代码生成功能，这是相关原理的[笔记](https://zhuanlan.zhihu.com/p/618899030)。
+
 因为是C#开发的，通常不用查看源码来了解API，使用ilspy直接反编译BatchCommand.exe来查看API会更方便一些。
 
 主要有2个API注册的入口点，可以用ilspy从这2处入口来查找API。一个是DslCalculator.cs文件里的DslCalculator.Init，ilspy里搜索这个就可以看到：

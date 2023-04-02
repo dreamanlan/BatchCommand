@@ -33,3 +33,5 @@ API的实现有2种方式，一种是继承AbstractExpression类，重写Load与
 - 复杂一些的API示例（语句类API通常采用此类实现，或者参数不是普通值类型的API）
 ![其他API实现示例](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other_exam.png)
 
+![其他API实现示例](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other2_exam.png)
+

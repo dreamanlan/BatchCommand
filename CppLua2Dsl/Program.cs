@@ -13,16 +13,18 @@ namespace CppLua2Dsl
                 return;
             }
             using (s_ErrorWriter = new StreamWriter("error.log", false)) {
-                string srcDir = args[0];
-                string destDir = args[1];
-                CopyDir(srcDir, destDir);
-
-                //===test===
-                //string file = @"C:\UE_5.0\Engine\Plugins\Editor\GLTFImporter\Source\GLTFImporter\Private\GLTFImportOptions.h";
-                //string targetFile = @"D:\SourceInsightCodes\UE_5_0\Engine\Plugins\Editor\GLTFImporter\Source\GLTFImporter\Private\GLTFImportOptions.h";
-                //string filter = "*.h";
-                //CopyFile(file, targetFile, filter, "pp.txt");
-                //===end test===
+                bool isTest = false;
+                if (isTest) {
+                    string file = @"Engine\Binaries\Win64\DatasmithSDK\Private\Delegates\Delegate.h";
+                    string targetFile = @"D:\test.h";
+                    string filter = "*.h";
+                    CopyFile(file, targetFile, filter, "pp.txt");
+                }
+                else {
+                    string srcDir = args[0];
+                    string destDir = args[1];
+                    CopyDir(srcDir, destDir);
+                }
 
                 s_ErrorWriter?.Close();
             }
@@ -120,12 +122,14 @@ namespace CppLua2Dsl
                         Console.Write("skip template file {0}.", file);
                         Console.WriteLine(s_Spaces);
                     }
+                    /*
                     else if (IsObjectC(txt)) {
                         s_ErrorWriter?.WriteLine("skip Object C file {0}.", file);
                         s_ErrorWriter?.Flush();
                         Console.Write("skip Object C file {0}.", file);
                         Console.WriteLine(s_Spaces);
                     }
+                    */
                     else {
                         string gppTxt;
                         txt = Preprocess(txt, file, out gppTxt);
@@ -372,7 +376,7 @@ namespace CppLua2Dsl
         private static StreamWriter? s_ErrorWriter = null;
         private static StringBuilder s_LineBuffer = new StringBuilder();
         private static Dsl.DslFile s_DslFile = new Dsl.DslFile();
-        private static string[] s_Filters = new string[] { "*.lua", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc" };
+        private static string[] s_Filters = new string[] { "*.lua", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc", "*.m", "*.mm" };
         private static string s_Spaces = string.Empty.PadRight(1024);
         private static Regex s_CppTemplStart = new Regex(@"^\s*{%", RegexOptions.Compiled | RegexOptions.Multiline);
         private static Regex s_CppTemplEnd = new Regex(@"%}\s*$", RegexOptions.Compiled | RegexOptions.Multiline);

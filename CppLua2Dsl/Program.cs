@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -13,9 +14,9 @@ namespace CppLua2Dsl
                 return;
             }
             using (s_ErrorWriter = new StreamWriter("error.log", false)) {
-                bool isTest = false;
+                bool isTest = true;
                 if (isTest) {
-                    string file = @"Engine\Binaries\Win64\DatasmithSDK\Private\Delegates\Delegate.h";
+                    string file = @"D:\UGit\unity_engine\Runtime\GfxDevice\GfxDevice.h";
                     string targetFile = @"D:\test.h";
                     string filter = "*.h";
                     CopyFile(file, targetFile, filter, "pp.txt");
@@ -310,9 +311,30 @@ namespace CppLua2Dsl
                 //sb.AppendLine();
             }
             else if (id == "@@define") {
+                var p = func.GetParam(0);
+                var pvd = p as Dsl.ValueData;
+                string code = string.Empty;
+                if (null != pvd) {
+                    code = pvd.GetId();
+                }
+                else {
+                    var psd = p as Dsl.StatementData;
+                    if (null != psd) {
+                        var psb = new StringBuilder();
+                        for (int ix = 0; ix < psd.GetFunctionNum(); ++ix) {
+                            var pf = psd.GetFunction(ix);
+                            if (ix > 0)
+                                psb.Append(" ");
+                            psb.Append(pf.GetId());
+                        }
+                        code = psb.ToString();
+                    }
+                    else {
+                        Debug.Assert(false);
+                    }
+                }
                 if (commentOut) {
                     sb.Append("//#define ");
-                    string code = func.GetParamId(0);
                     var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
                     for (int i = 0; i < lines.Length; i++) {
                         var line = lines[i];
@@ -328,7 +350,6 @@ namespace CppLua2Dsl
                 }
                 else {
                     sb.Append("#define ");
-                    string code = func.GetParamId(0);
                     var lines = code.Split(new char[] { '\n' }, StringSplitOptions.None);
                     for (int i = 0; i < lines.Length; i++) {
                         var line = lines[i];

@@ -16,7 +16,7 @@ namespace UnrealCodeTransform
             using (s_ErrorWriter = new StreamWriter("error.log", false)) {
                 bool isTest = false;
                 if (isTest) {
-                    string file = @"D:\UGit\GfxDevice.h";
+                    string file = @"D:\UGit\UndoBase.h";
                     string targetFile = @"D:\test.h";
                     string filter = "*.h";
                     CopyFile(file, targetFile, filter, "pp.txt");
@@ -405,28 +405,28 @@ namespace UnrealCodeTransform
             if (dslFile.LoadGppFromString(txt, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
                 //遍历并提取代码
                 foreach (var info in dslFile.DslInfos) {
-                    HandleSyntax(sb, info, false);
+                    HandleSyntax(sb, info, false, file);
                 }
             }
             return sb.ToString();
         }
-        private static void HandleSyntax(StringBuilder sb, Dsl.ISyntaxComponent syntax, bool commentOut)
+        private static void HandleSyntax(StringBuilder sb, Dsl.ISyntaxComponent syntax, bool commentOut, string file)
         {
             var func = syntax as Dsl.FunctionData;
             if (null != func) {
-                HandleFunction(sb, func, commentOut);
+                HandleFunction(sb, func, commentOut, file);
             }
             else {
                 var statement = syntax as Dsl.StatementData;
                 if (null != statement) {
-                    HandleStatement(sb, statement, commentOut);
+                    HandleStatement(sb, statement, commentOut, file);
                 }
                 else {
                     throw new Exception("exception: " + syntax.ToString());
                 }
             }
         }
-        private static void HandleCall(StringBuilder sb, Dsl.FunctionData call)
+        private static void HandleCall(StringBuilder sb, Dsl.FunctionData call, string file)
         {
             var id = call.GetId();
             if (id.Length >= 2 && id[0] == '@' && id[1] == '@')
@@ -443,23 +443,23 @@ namespace UnrealCodeTransform
                 }
             }
         }
-        private static void HandleFunction(StringBuilder sb, Dsl.FunctionData func, bool commentOut)
+        private static void HandleFunction(StringBuilder sb, Dsl.FunctionData func, bool commentOut, string file)
         {
             string id = func.GetId();
             if (id.StartsWith("@@if")) {
                 sb.Append("//");
-                HandleCall(sb, func.LowerOrderFunction);
+                HandleCall(sb, func.LowerOrderFunction, file);
                 sb.AppendLine();
                 foreach (var syntax in func.Params) {
-                    HandleSyntax(sb, syntax, commentOut);
+                    HandleSyntax(sb, syntax, commentOut, file);
                 }
             }
             else if (id.StartsWith("@@el")) {
                 sb.Append("//");
-                HandleCall(sb, func.LowerOrderFunction);
+                HandleCall(sb, func.LowerOrderFunction, file);
                 sb.AppendLine();
                 foreach (var syntax in func.Params) {
-                    HandleSyntax(sb, syntax, true);
+                    HandleSyntax(sb, syntax, true, file);
                 }
             }
             else if (id == "@@code") {
@@ -479,27 +479,33 @@ namespace UnrealCodeTransform
                 //sb.AppendLine();
             }
             else if (id == "@@define") {
-                var p = func.GetParam(0);
-                var pvd = p as Dsl.ValueData;
                 string code = string.Empty;
-                if (null != pvd) {
-                    code = pvd.GetId();
-                }
-                else {
-                    var psd = p as Dsl.StatementData;
-                    if (null != psd) {
-                        var psb = new StringBuilder();
-                        for (int ix = 0; ix < psd.GetFunctionNum(); ++ix) {
-                            var pf = psd.GetFunction(ix);
-                            if (ix > 0)
-                                psb.Append(" ");
-                            psb.Append(pf.GetId());
-                        }
-                        code = psb.ToString();
+                if (func.GetParamNum() > 0) {
+                    var p = func.GetParam(0);
+                    var pvd = p as Dsl.ValueData;
+                    if (null != pvd) {
+                        code = pvd.GetId();
                     }
                     else {
-                        Debug.Assert(false);
+                        var psd = p as Dsl.StatementData;
+                        if (null != psd) {
+                            var psb = new StringBuilder();
+                            for (int ix = 0; ix < psd.GetFunctionNum(); ++ix) {
+                                var pf = psd.GetFunction(ix);
+                                if (ix > 0)
+                                    psb.Append(" ");
+                                psb.Append(pf.GetId());
+                            }
+                            code = psb.ToString();
+                        }
+                        else {
+                            code = p.ToScriptString(false);
+                            s_ErrorWriter?.WriteLine("file:{0} #define {1}", file, code);
+                        }
                     }
+                }
+                else {
+                    s_ErrorWriter?.WriteLine("file:{0} #define", file);
                 }
                 if (commentOut) {
                     sb.Append("//#define ");
@@ -536,25 +542,25 @@ namespace UnrealCodeTransform
                 if (commentOut) {
                     sb.Append("//");
                 }
-                HandleCall(sb, func);
+                HandleCall(sb, func, file);
                 sb.AppendLine();
             }
             else if (id.StartsWith("@@pragma")) {
-                HandleCall(sb, func);
+                HandleCall(sb, func, file);
                 sb.AppendLine();
             }
             else {
                 sb.Append("//");
-                HandleCall(sb, func);
+                HandleCall(sb, func, file);
                 sb.AppendLine();
             }
         }
-        private static void HandleStatement(StringBuilder sb, Dsl.StatementData statement, bool commentOut)
+        private static void HandleStatement(StringBuilder sb, Dsl.StatementData statement, bool commentOut, string file)
         {
             foreach (var vf in statement.Functions) {
                 var func = vf.AsFunction;
                 if (null != func) {
-                    HandleFunction(sb, func, commentOut);
+                    HandleFunction(sb, func, commentOut, file);
                 }
                 else {
                     //error

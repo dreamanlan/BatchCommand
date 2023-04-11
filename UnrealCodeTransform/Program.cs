@@ -14,9 +14,9 @@ namespace UnrealCodeTransform
                 return;
             }
             using (s_ErrorWriter = new StreamWriter("error.log", false)) {
-                bool isTest = true;
+                bool isTest = false;
                 if (isTest) {
-                    string file = @"D:\UGit\unity_engine\Runtime\GfxDevice\GfxDevice.h";
+                    string file = @"D:\UGit\GfxDevice.h";
                     string targetFile = @"D:\test.h";
                     string filter = "*.h";
                     CopyFile(file, targetFile, filter, "pp.txt");

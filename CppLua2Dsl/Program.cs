@@ -114,6 +114,9 @@ namespace CppLua2Dsl
                     Console.WriteLine(s_Spaces);
                 }
             }
+            else if (s_CopyFileTypes.Contains(filter)) {
+                File.Copy(file, targetFile, true);
+            }
             else {
                 try {
                     string txt = File.ReadAllText(file);
@@ -403,7 +406,8 @@ namespace CppLua2Dsl
         private static StreamWriter? s_ErrorWriter = null;
         private static StringBuilder s_LineBuffer = new StringBuilder();
         private static Dsl.DslFile s_DslFile = new Dsl.DslFile();
-        private static string[] s_Filters = new string[] { "*.lua", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc", "*.m", "*.mm" };
+        private static string[] s_Filters = new string[] { "*.lua", "*.cs", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc", "*.m", "*.mm" };
+        private static string[] s_CopyFileTypes = new string[] { "*.cs" };
         private static string s_Spaces = string.Empty.PadRight(1024);
         private static Regex s_CppTemplStart = new Regex(@"^\s*{%", RegexOptions.Compiled | RegexOptions.Multiline);
         private static Regex s_CppTemplEnd = new Regex(@"%}\s*$", RegexOptions.Compiled | RegexOptions.Multiline);

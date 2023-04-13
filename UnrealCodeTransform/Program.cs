@@ -95,7 +95,7 @@ namespace UnrealCodeTransform
         }
         private static void CopyFile(string file, string targetFile, string filter, string ppfile)
         {
-            if (filter == "*.cs") {
+            if (s_CopyFileTypes.Contains(filter)) {
                 File.Copy(file, targetFile, true);
             }
             else {
@@ -571,7 +571,8 @@ namespace UnrealCodeTransform
         private static StreamWriter? s_ErrorWriter = null;
         private static StringBuilder s_MultiLineBuffer = new StringBuilder();
         private static Dsl.DslFile s_DslFile = new Dsl.DslFile();
-        private static string[] s_Filters = new string[] { "*.cs", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc", "*.m", "*.mm" };
+        private static string[] s_Filters = new string[] { "*.lua", "*.cs", "*.h", "*.hpp", "*.hxx", "*.hh", "*.inl", "*.c", "*.cpp", "*.cxx", "*.cc", "*.m", "*.mm" };
+        private static string[] s_CopyFileTypes = new string[] { "*.lua", "*.cs" };
         private static HashSet<string> s_FilterNames = new HashSet<string> { "UCLASS", "UENUM", "USTRUCT", "UINTERFACE", "UPROPERTY", "UFUNCTION" };
         private static string s_Spaces = string.Empty.PadRight(1024);
         private static Stack<char> s_MatchStack = new Stack<char>();

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "GlslRewriter": {
+      "commandName": "Project",
+      "commandLineArgs": "test.glsl test.txt",
+      "workingDirectory": "D:\\GitHub\\BatchCommand\\GlslRewriter\\bin\\Debug\\net6.0"
+    }
+  }
+}

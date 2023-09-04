@@ -2,27 +2,162 @@
 using System.Diagnostics;
 using static GlslRewriter.Program;
 using Dsl;
+using System;
 
 namespace GlslRewriter
 {
-    //目前主要用于将反编译（spirv-cross或yuzu）出来的glsl转换为SSA形式与表达式合并，表达式合并（借助计算图来生成）只用于生成注释，方便理解代码
+    //目前主要用于将反编译（spirv-cross或yuzu）出来的glsl转换为近似SSA形式与表达式合并，表达式合并（借助计算图来生成）只用于生成注释，方便理解代码
     //可能不适合用于通常的glsl代码
-    internal class Program
+    public class Program
     {
         static void Main(string[] args)
         {
-            if (args.Length != 2) {
-                Console.WriteLine("[usage]GlslRewriter input.glsl output.glsl");
+            if (args.Length == 0) {
+                Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-cs] [-printgraph] [-src ] glsl_file");
+                Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name].txt");
+                Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
+                Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
+                Console.WriteLine(" [-cs] glsl_file is compute shader");
+                Console.WriteLine(" [-printgraph] output compute graph [-notprintgraph] dont output (default)");
+                Console.WriteLine(" [-debug] debug mode");
+                Console.WriteLine(" [-src ] glsl_file source glsl file, -src can be omitted when file is the last argument");
                 return;
             }
-            Transform(args[0], args[1]);
+            else {
+                bool printGraph = false;
+                string srcFilePath = string.Empty;
+                string outFilePath = string.Empty;
+                string argFilePath = string.Empty;
+                for (int i = 0; i < args.Length; ++i) {
+                    if (0 == string.Compare(args[i], "-out", true)) {
+                        if (i < args.Length - 1) {
+                            string arg = args[i + 1];
+                            if (!arg.StartsWith("-")) {
+                                outFilePath = arg;
+                                ++i;
+                            }
+                        }
+                    }
+                    else if (0 == string.Compare(args[i], "-src", true)) {
+                        if (i < args.Length - 1) {
+                            string arg = args[i + 1];
+                            if (!arg.StartsWith("-")) {
+                                srcFilePath = arg;
+                                if (!File.Exists(srcFilePath)) {
+                                    Console.WriteLine("file path not found ! {0}", srcFilePath);
+                                }
+                                ++i;
+                            }
+                        }
+                    }
+                    else if (0 == string.Compare(args[i], "-args", true)) {
+                        if (i < args.Length - 1) {
+                            string arg = args[i + 1];
+                            if (!arg.StartsWith("-")) {
+                                argFilePath = arg;
+                                if (!File.Exists(argFilePath)) {
+                                    Console.WriteLine("file path not found ! {0}", argFilePath);
+                                }
+                                ++i;
+                            }
+                        }
+                    }
+                    else if (0 == string.Compare(args[i], "-vs", true)) {
+                        s_IsVsShader = true;
+                        s_IsPsShader = false;
+                        s_IsCsShader = false;
+                    }
+                    else if (0 == string.Compare(args[i], "-ps", true)) {
+                        s_IsPsShader = true;
+                        s_IsVsShader = false;
+                        s_IsCsShader = false;
+                    }
+                    else if (0 == string.Compare(args[i], "-cs", true)) {
+                        s_IsCsShader = true;
+                        s_IsVsShader = false;
+                        s_IsPsShader = false;
+                    }
+                    else if (0 == string.Compare(args[i], "-printgraph", true)) {
+                        printGraph = true;
+                    }
+                    else if (0 == string.Compare(args[i], "-notprintgraph", true)) {
+                        printGraph = false;
+                    }
+                    else if (0 == string.Compare(args[i], "-debug", true)) {
+                        s_IsDebugMode = true;
+                    }
+                    else if (args[i][0] == '-') {
+                        Console.WriteLine("unknown command option ! {0}", args[i]);
+                    }
+                    else {
+                        srcFilePath = args[i];
+                        if (!File.Exists(srcFilePath)) {
+                            Console.WriteLine("file path not found ! {0}", srcFilePath);
+                        }
+                        break;
+                    }
+                }
+
+                string oldCurDir = Environment.CurrentDirectory;
+                string exeFullName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                string? exeDir = Path.GetDirectoryName(exeFullName);
+                Debug.Assert(null != exeDir);
+                Environment.CurrentDirectory = exeDir;
+                Console.WriteLine("curdir {0} change to exedir {1}", oldCurDir, exeDir);
+
+                try {
+                    string? workDir = Path.GetDirectoryName(srcFilePath);
+                    Debug.Assert(null != workDir);
+                    string tmpDir = Path.Combine(workDir, "tmp");
+                    if (!Directory.Exists(tmpDir)) {
+                        Directory.CreateDirectory(tmpDir);
+                    }
+
+                    string srcFileName = Path.GetFileName(srcFilePath);
+                    string srcFileNameWithoutExt = Path.GetFileNameWithoutExtension(srcFileName);
+                    string glslFilePath = srcFilePath;
+                    string srcExt = Path.GetExtension(srcFilePath);
+
+                    if (string.IsNullOrEmpty(argFilePath)) {
+                        argFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_args.dsl");
+                    }
+                    if (File.Exists(argFilePath)) {
+                        Config.LoadConfig(argFilePath, tmpDir);
+                    }
+
+                    if (string.IsNullOrEmpty(outFilePath)) {
+                        if (srcExt == "txt")
+                            outFilePath = Path.ChangeExtension(glslFilePath, "glsl");
+                        else
+                            outFilePath = Path.ChangeExtension(glslFilePath, "txt");
+                    }
+
+                    Transform(srcFilePath, outFilePath);
+
+                    if (printGraph) {
+                        s_GlobalComputeGraph.Print(null);
+                        if (s_FuncInfos.TryGetValue("main", out var funcInfo)) {
+                            var cg = funcInfo.FuncComputeGraph;
+                            cg.Print(funcInfo);
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    Console.WriteLine("{0}", ex.Message);
+                    Console.WriteLine("[Stack]:");
+                    Console.WriteLine("{0}", ex.StackTrace);
+                }
+                finally {
+                    Environment.CurrentDirectory = oldCurDir;
+                }
+            }
         }
 
         private static void Transform(string srcFile, string outFile)
         {
             File.Delete(outFile);
             var glslFileLines = File.ReadAllLines(srcFile);
-            var glslLines = RemovePreprocessLines(glslFileLines);
+            var glslLines = RemovePreprocessAndImportAttrs(glslFileLines);
             string glslTxt = PreprocessCondExp(glslLines);
 
             var file = new Dsl.DslFile();
@@ -109,7 +244,7 @@ namespace GlslRewriter
                         stm.AddFunction(func);
                         return true;
                     }
-                    else if (name == "struct") {
+                    else if (name == "struct" || name == "if" || name == "switch" || name == "for" || name == "do" || name == "while") {
                         statement.Functions.Remove(func);
                         dslAction.endStatement();
                         dslAction.beginStatement();
@@ -146,15 +281,106 @@ namespace GlslRewriter
             lineList.AddRange(lines);
             File.WriteAllLines(outFile, lineList.ToArray());
         }
-        private static List<string> RemovePreprocessLines(IList<string> glslLines)
+        private static List<string> RemovePreprocessAndImportAttrs(IList<string> glslLines)
         {
             var lines = new List<string>();
+            bool attrImported = false;
+            bool needFindLBrace = false;
             foreach(var line in glslLines) {
                 if (line.TrimStart().StartsWith("#"))
                     continue;
                 lines.Add(line);
+                if (needFindLBrace) {
+                    int ix = line.IndexOf('{');
+                    if (ix >= 0) {
+                        needFindLBrace = false;
+                        attrImported = true;
+                        lines.AddRange(GetImportAttrs());
+                    }
+                }
+                else if (!attrImported) {
+                    int ix1 = line.IndexOf("void");
+                    int ix2 = line.IndexOf("main", ix1 >= 0 ? ix1 : 0);
+                    int ix3 = line.IndexOf("(", ix2 >= 0 ? ix2 : 0);
+                    int ix4 = line.IndexOf(")", ix3 >= 0 ? ix3 : 0);
+                    int ix5 = line.IndexOf('{', ix4 >= 0 ? ix4 : 0);
+                    if (ix1 >= 0 && ix2 >= 0 && ix3 >= 0) {
+                        bool match1 = false;
+                        for (int i = ix1 + "void".Length; i < ix2 && i < line.Length; ++i) {
+                            char ch = line[i];
+                            if (ch == ' ' || ch == '\t') {
+                                match1 = true;
+                            }
+                            else {
+                                match1 = false;
+                                break;
+                            }
+                        }
+                        bool match2 = true;
+                        for (int i = ix2 + "main".Length; i < ix3 && i < line.Length; ++i) {
+                            char ch = line[i];
+                            if (ch == ' ' || ch == '\t') {
+                            }
+                            else {
+                                match2 = false;
+                                break;
+                            }
+                        }
+                        if (match1 && match2) {
+                            if (ix5 > ix4 && ix4 > ix3) {
+                                attrImported = true;
+                                lines.AddRange(GetImportAttrs());
+                            }
+                            else if (ix5 < 0) {
+                                needFindLBrace = true;
+                            }
+                        }
+                    }
+                }
             }
             return lines;
+        }
+        private static List<string> GetImportAttrs()
+        {
+            List<string> stms = new List<string>();
+            //插入参数初始化
+            string shaderType = "ps";
+            if (s_IsVsShader)
+                shaderType = "vs";
+            else if (s_IsPsShader)
+                shaderType = "ps";
+            else if (s_IsCsShader)
+                shaderType = "cs";
+            if (Config.s_ShaderConfigs.TryGetValue(shaderType, out var cfg)) {
+                if (!string.IsNullOrEmpty(cfg.InAttrImportFile)) {
+                    if (File.Exists(cfg.InAttrImportFile)) {
+                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", cfg.AttrIndex, cfg.InAttrImportFile);
+                        stms.AddRange(lines);
+                    }
+                    else {
+                        Console.WriteLine("Can't find file {0}", cfg.InAttrImportFile);
+                    }
+                }
+                if (!string.IsNullOrEmpty(cfg.OutAttrImportFile)) {
+                    if (File.Exists(cfg.OutAttrImportFile)) {
+                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", cfg.AttrIndex, cfg.OutAttrImportFile);
+                        stms.AddRange(lines);
+                    }
+                    else {
+                        Console.WriteLine("Can't find file {0}", cfg.OutAttrImportFile);
+                    }
+                }
+                foreach (var uniform in cfg.UniformImports) {
+                    if (File.Exists(uniform.File)) {
+                        var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.File);
+                        stms.AddRange(lines);
+                    }
+                    else {
+                        Console.WriteLine("Can't find file {0}", uniform.File);
+                    }
+                }
+            }
+            return stms;
         }
         private static string PreprocessCondExp(IList<string> glslLines)
         {
@@ -294,37 +520,37 @@ namespace GlslRewriter
         }
         private static void Transform(Dsl.DslFile file)
         {
-            var semanticInfo = new SemanticInfo();
             foreach (var dsl in file.DslInfos) {
-                TransformToplevelSyntax(dsl, ref semanticInfo);
+                TransformToplevelSyntax(dsl);
             }
         }
 
         //顶层语法处理
-        private static void TransformToplevelSyntax(Dsl.ISyntaxComponent syntax, ref SemanticInfo semanticInfo)
+        private static void TransformToplevelSyntax(Dsl.ISyntaxComponent syntax)
         {
             var valData = syntax as Dsl.ValueData;
             var funcData = syntax as Dsl.FunctionData;
             var stmData = syntax as Dsl.StatementData;
             if (null != valData) {
-                TransformToplevelValue(valData, ref semanticInfo);
+                TransformToplevelValue(valData);
             }
             else if (null != funcData) {
-                TransformToplevelFunction(funcData, ref semanticInfo);
+                TransformToplevelFunction(funcData);
             }
             else if (null != stmData) {
-                TransformToplevelStatement(stmData, 0, new List<Dsl.ValueOrFunctionData>(), ref semanticInfo);
+                TransformToplevelStatement(stmData, 0, new List<Dsl.ValueOrFunctionData>());
             }
         }
-        private static void TransformToplevelStatement(Dsl.StatementData stmData, int startFuncIx, List<Dsl.ValueOrFunctionData> modifiers, ref SemanticInfo semanticInfo)
+        private static void TransformToplevelStatement(Dsl.StatementData stmData, int startFuncIx, List<Dsl.ValueOrFunctionData> modifiers)
         {
+            var semanticInfo = new SemanticInfo();
             string id = stmData.GetFunctionId(startFuncIx);
             if (id == "out") {
                 var funcNum = stmData.GetFunctionNum();
                 if (startFuncIx + 1 < funcNum) {
                     var func = stmData.GetFunction(startFuncIx + 1).AsFunction;
                     if (null != func) {
-                        TransformOutFunc(func);
+                        TransformOutBlock(func);
                     }
                     else {
                         TransformVar(stmData, startFuncIx, true, ref semanticInfo);
@@ -336,7 +562,7 @@ namespace GlslRewriter
             }
             else if (id == "layout") {
                 modifiers.Add(stmData.GetFunction(startFuncIx));
-                TransformToplevelStatement(stmData, startFuncIx + 1, modifiers, ref semanticInfo);
+                TransformToplevelStatement(stmData, startFuncIx + 1, modifiers);
             }
             else if (id == "struct") {
                 var funcNum = stmData.GetFunctionNum();
@@ -364,7 +590,7 @@ namespace GlslRewriter
                     var func = stmData.GetFunction(startFuncIx + 1).AsFunction;
                     if (null != func) {
                         var namePart = startFuncIx + 2 < funcNum ? stmData.GetFunction(startFuncIx + 2) : (Dsl.ValueOrFunctionData?)null;
-                        TransformUniformFunc(func, namePart);
+                        TransformUniformBlock(func, namePart);
                     }
                     else {
                         TransformVar(stmData, startFuncIx, true, ref semanticInfo);
@@ -380,7 +606,7 @@ namespace GlslRewriter
                     int startIndex = index;
                     string fid = stmData.GetFunctionId(startIndex);
                     if (fid == "layout" || fid == "struct" || fid == "uniform" || fid == "out" || fid == "in") {
-                        TransformToplevelStatement(stmData, startIndex, new List<ValueOrFunctionData>(), ref semanticInfo);
+                        TransformToplevelStatement(stmData, startIndex, new List<ValueOrFunctionData>());
                         handled = true;
                         break;
                     }
@@ -402,8 +628,9 @@ namespace GlslRewriter
                 }
             }
         }
-        private static void TransformToplevelFunction(Dsl.FunctionData funcData, ref SemanticInfo semanticInfo)
+        private static void TransformToplevelFunction(Dsl.FunctionData funcData)
         {
+            var semanticInfo = new SemanticInfo();
             if (funcData.GetId() == "=") {
                 var p = funcData.GetParam(0);
                 var vd = p as Dsl.ValueData;
@@ -445,14 +672,15 @@ namespace GlslRewriter
                     }
                 }
                 var v = funcData.GetParam(1);
-                TransformSyntax(v, false, ref semanticInfo, out var addStm);
+                TransformExpression(v, ref semanticInfo);
             }
             else {
                 TransformGeneralFunction(funcData, ref semanticInfo);
             }
         }
-        private static void TransformToplevelValue(Dsl.ValueData valData, ref SemanticInfo semanticInfo)
+        private static void TransformToplevelValue(Dsl.ValueData valData)
         {
+            var semanticInfo = new SemanticInfo();
             TransformVar(valData, ref semanticInfo);
         }
 
@@ -573,7 +801,7 @@ namespace GlslRewriter
                     pcomp = pFunc.GetParam(0);
                     pStm = pcomp as Dsl.StatementData;
                     pDef = pFunc.GetParam(1);
-                    TransformSyntax(pDef, false, ref semanticInfo, out var addStm);
+                    TransformExpression(pDef, ref semanticInfo);
                 }
                 if (null != pStm) {
                     var paramInfo = ParseVarInfo(pStm);
@@ -620,7 +848,7 @@ namespace GlslRewriter
                     }
                 }
                 //处理语句
-                if (stmIx < func.GetParamNum() && null != syntax && TransformSyntax(syntax, true, ref semanticInfo, out var addStm)) {
+                if (stmIx < func.GetParamNum() && null != syntax && TransformStatement(syntax, out var addStm)) {
                     func.Params.Insert(stmIx + 1, addStm);
                     ++stmIx;
                 }
@@ -628,7 +856,7 @@ namespace GlslRewriter
             PopBlock();
             PopFuncInfo();
         }
-        private static void TransformUniformFunc(Dsl.FunctionData func, Dsl.ValueOrFunctionData? varNamePart)
+        private static void TransformUniformBlock(Dsl.FunctionData func, Dsl.ValueOrFunctionData? varNamePart)
         {
             if (null != varNamePart) {
                 var val = varNamePart.AsValue;
@@ -650,7 +878,7 @@ namespace GlslRewriter
                 }
             }
         }
-        private static void TransformOutFunc(Dsl.FunctionData func)
+        private static void TransformOutBlock(Dsl.FunctionData func)
         {
             if(func.GetId()== "gl_PerVertex") {
                 var stmData = func.GetParam(0) as Dsl.StatementData;
@@ -661,94 +889,159 @@ namespace GlslRewriter
             }
         }
 
-        //非顶层语法处理
-        private static bool TransformSyntax(Dsl.ISyntaxComponent syntax, bool isStatement, ref SemanticInfo semanticInfo, out Dsl.ISyntaxComponent? addStm)
+        //非顶层语句语法处理
+        private static bool TransformStatement(Dsl.ISyntaxComponent syntax, out Dsl.ISyntaxComponent? addStm)
         {
             addStm = null;
+            var semanticInfo = new SemanticInfo();
 
             var valData = syntax as Dsl.ValueData;
             var funcData = syntax as Dsl.FunctionData;
             var stmData = syntax as Dsl.StatementData;
             if (null != valData) {
-                TransformValue(valData, ref semanticInfo, out addStm);
+                string valId = valData.GetId();
+                if (valId == "return" || valId == "discard" || valId == "break" || valId == "continue") {
+                }
+                else {
+                    TransformVar(valData, ref semanticInfo);
+                }
             }
             else if (null != funcData) {
-                TransformFunction(funcData, ref semanticInfo, out addStm);
+                string funcId = funcData.GetId();
+                if (funcId == "=") {
+                    var p = funcData.GetParam(0);
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    var sd = p as Dsl.StatementData;
+                    var tempVarSi = new SemanticInfo();
+                    if (null != vd) {
+                        TransformAssignLeft(vd, ref tempVarSi);
+                    }
+                    else if (null != fd) {
+                        TransformGeneralCall(fd, ref tempVarSi);
+                    }
+                    else if (null != sd) {
+                        TransformAssignLeft(sd, 0, false, ref tempVarSi);
+                    }
+                    var tempValSi = new SemanticInfo();
+                    var v = funcData.GetParam(1);
+                    TransformExpression(v, ref tempValSi);
+                    HandleVarAliasInfoUpdate();
+
+                    var tempSi = new SemanticInfo();
+                    var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), tempVarSi.ResultType, "=");
+
+                    var vgn = tempVarSi.GraphNode;
+                    var agn = tempValSi.GraphNode;
+                    Debug.Assert(null != vgn);
+                    Debug.Assert(null != agn);
+
+                    cgcn.AddPrev(agn);
+                    agn.AddNext(cgcn);
+
+                    cgcn.AddNext(vgn);
+                    vgn.AddPrev(cgcn);
+
+                    AddComputeGraphRootNode(cgcn);
+
+                    //string exp = cgcn.GetExpression();
+                    string exp = cgcn.GetValue();
+                    funcData.LastComments.Add("//  " + exp);
+                }
+                else if (funcId == "<-") {
+                    var p = funcData.GetParam(0);
+                    var v = funcData.GetParam(1);
+                    var fd = p as Dsl.FunctionData;
+                    TransformExpression(v, ref semanticInfo);
+                    if (null != fd) {
+                        funcData.LowerOrderFunction = fd;
+                    }
+                    else {
+                        funcData.Name.SetId("return");
+                    }
+                    funcData.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                    funcData.Params.Clear();
+                    funcData.AddParam(v);
+                }
+                else if (funcId == "if") {
+                    if (TransformIfFunction(funcData, out var addFunc)) {
+                        addStm = addFunc;
+                    }
+                }
+                else if (funcId == "switch") {
+                    Console.WriteLine("Can't rewrite GLSL including loop !");
+
+                    TransformGeneralFunction(funcData, ref semanticInfo);
+                }
+                else if (funcId == "while" || funcId == "for") {
+                    Console.WriteLine("Can't rewrite GLSL including loop !");
+
+                    TransformGeneralFunction(funcData, ref semanticInfo);
+                }
+                else {
+                    TransformGeneralFunction(funcData, ref semanticInfo);
+                }
             }
             else if (null != stmData) {
-                TransformStatement(stmData, ref semanticInfo, out addStm);
-            }
-            return null != addStm;
-        }
-        private static bool TransformStatement(Dsl.StatementData stmData, ref SemanticInfo semanticInfo, out Dsl.ISyntaxComponent? addStm)
-        {
-            addStm = null;
-            //DSL需要逗号分隔语句，否则多个语句会连在一起，这里进行拆分。
-            int funcIndex = 0;
-            while (funcIndex < stmData.GetFunctionNum()) {
-                bool existsFunc = ParseStatement(stmData, ref funcIndex, out var f, out var modifiers);
-                if (existsFunc) {
-                    Debug.Assert(null != f);
-                    TransformGeneralFunction(f, ref semanticInfo);
+                var firstValOrFunc = stmData.GetFunction(0);
+                string funcId = firstValOrFunc.GetId();
+                if (funcId == "if") {
+                    if (TransformIfStatement(stmData, out var addFunc)) {
+                        addStm = addFunc;
+                    }
                 }
-                else {
-                    break;
-                }
-            }
-            //注：现在通过MetaDSL语义行为回调来处理拆分，理论上上面的代码都是直接break到这里（可能只有非复合语句的语句块需要上面代码处理）
-            var firstValOrFunc = stmData.GetFunction(funcIndex);
-            string funcId = firstValOrFunc.GetId();
-            if (funcId == "return") {
-                var retFunc = firstValOrFunc.AsFunction;
-                if (null != retFunc) {
-                    TransformGeneralFunction(retFunc, ref semanticInfo);
-                }
-                else {
-                    for (int ix = funcIndex + 1; ix < stmData.GetFunctionNum(); ++ix) {
+                else if (funcId == "do") {
+                    Console.WriteLine("Can't rewrite GLSL including loop !");
+
+                    for (int ix = 0; ix < stmData.GetFunctionNum(); ++ix) {
                         var fd = stmData.GetFunction(ix).AsFunction;
                         if (null != fd)
                             TransformGeneralFunction(fd, ref semanticInfo);
                     }
                 }
-            }
-            else if (funcId == "if") {
-                if (funcIndex == 0) {
-                    if (TransformIfStatement(stmData, out var addFunc)) {
-                        addStm = addFunc;
-                    }
+                else if (funcId == "?") {
+                    Debug.Assert(false);
+                    TransformConditionStatement(stmData, ref semanticInfo);
                 }
                 else {
-                    Debug.Assert(false);
+                    TransformVar(stmData, 0, false, ref semanticInfo);
                 }
-            }
-            else if (funcId == "switch") {
-                //todo
-                for (int ix = funcIndex; ix < stmData.GetFunctionNum(); ++ix) {
-                    var fd = stmData.GetFunction(ix).AsFunction;
-                    if (null != fd)
-                        TransformGeneralFunction(fd, ref semanticInfo);
-                }
-            }
-            else if (funcId == "while" || funcId == "for" || funcId == "do") {
-                Console.WriteLine("Can't rewrite GLSL including loop !");
-
-                for (int ix = funcIndex; ix < stmData.GetFunctionNum(); ++ix) {
-                    var fd = stmData.GetFunction(ix).AsFunction;
-                    if (null != fd)
-                        TransformGeneralFunction(fd, ref semanticInfo);
-                }
-            }
-            else if (funcId == "?") {
-                TransformConditionStatement(stmData, funcIndex, ref semanticInfo);
-            }
-            else {
-                TransformVar(stmData, funcIndex, false, ref semanticInfo);
             }
             return null != addStm;
         }
-        private static bool TransformFunction(Dsl.FunctionData funcData, ref SemanticInfo semanticInfo, out Dsl.ISyntaxComponent? addStm)
+
+        //表达式语法处理，表达式总是有一个返回值
+        private static void TransformExpression(Dsl.ISyntaxComponent syntax, ref SemanticInfo semanticInfo)
         {
-            addStm = null;
+            string resultType = TypeInference(syntax);
+            semanticInfo.ResultType = resultType;
+
+            var valData = syntax as Dsl.ValueData;
+            var funcData = syntax as Dsl.FunctionData;
+            var stmData = syntax as Dsl.StatementData;
+            if (null != valData) {
+                TransformValueExpression(valData, ref semanticInfo);
+            }
+            else if (null != funcData) {
+                TransformFunctionExpression(funcData, ref semanticInfo);
+            }
+            else if (null != stmData) {
+                TransformStatementExpression(stmData, ref semanticInfo);
+            }
+        }
+        private static void TransformStatementExpression(Dsl.StatementData stmData, ref SemanticInfo semanticInfo)
+        {
+            var firstValOrFunc = stmData.GetFunction(0);
+            string funcId = firstValOrFunc.GetId();
+            if (funcId == "?") {
+                TransformConditionStatement(stmData, ref semanticInfo);
+            }
+            else {
+                TransformVar(stmData, 0, false, ref semanticInfo);
+            }
+        }
+        private static void TransformFunctionExpression(Dsl.FunctionData funcData, ref SemanticInfo semanticInfo)
+        {
             string funcId = funcData.GetId();
             if (funcId == "=") {
                 var p = funcData.GetParam(0);
@@ -763,41 +1056,13 @@ namespace GlslRewriter
                     TransformGeneralCall(fd, ref tempVarSi);
                 }
                 else if (null != sd) {
-                    //在dsl语法里，分号分隔各语句，glsl里的复合语句不加分隔符，dsl解析时会将赋值语句前面的复合语句解析到赋值语句左边
-                    //的语法部分，这里需要把复合语句与赋值语句的左边部分拆分，以正确识别赋值语句里的变量定义（但不能改变整体的表示，否
-                    //则输出到时语法可能会不正确）
-                    //注：通过MetalDSL语义行为回调处理，可以在赋值语句解析前将复合语句拆分，这里处理无法在回调里处理的部分，精确语法应
-                    //优先在回调里处理，可能只有非复合语句的语句块会走到这里
-                    Dsl.StatementData? left, right;
-                    if (SplitStatementsInExpression(sd, out left, out right)) {
-                        Debug.Assert(null != left && null != right);
-                        string id = left.GetId();
-                        int funcIndex = 0;
-                        while (funcIndex < left.GetFunctionNum()) {
-                            bool existsFunc = ParseStatement(left, ref funcIndex, out var f, out var modifiers);
-                            if (existsFunc) {
-                                Debug.Assert(null != f);
-                                TransformGeneralFunction(f, ref semanticInfo);
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                        if (funcIndex < left.GetFunctionNum()) {
-                            Debug.Assert(false);
-                        }
-                        TransformAssignLeft(right, 0, false, sd, ref tempVarSi);
-                    }
-                    else {
-                        TransformAssignLeft(sd, 0, false, ref tempVarSi);
-                    }
+                    TransformAssignLeft(sd, 0, false, ref tempVarSi);
                 }
                 var tempValSi = new SemanticInfo();
                 var v = funcData.GetParam(1);
-                TransformSyntax(v, false, ref tempValSi, out var caddStm);
+                TransformExpression(v, ref tempValSi);
                 HandleVarAliasInfoUpdate();
 
-                var tempSi = new SemanticInfo();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), tempVarSi.ResultType, "=");
 
                 var vgn = tempVarSi.GraphNode;
@@ -812,127 +1077,35 @@ namespace GlslRewriter
                 vgn.AddPrev(cgcn);
 
                 AddComputeGraphRootNode(cgcn);
+                semanticInfo.GraphNode = vgn;
 
                 string exp = cgcn.GetExpression();
-                funcData.LastComments.Add("//  "+exp);
-            }
-            else if (funcId == "<-") {
-                var p = funcData.GetParam(0);
-                var v = funcData.GetParam(1);
-                var vd = p as Dsl.ValueData;
-                var fd = p as Dsl.FunctionData;
-                var sd = p as Dsl.StatementData;
-                if (null != sd) {
-                    //在dsl语法里，分号分隔各语句，glsl里的复合语句不加分隔符，dsl解析时会将赋值语句前面的复合语句解析到return语句左边
-                    //的语法部分，这里需要把复合语句与return语句的左边部分拆分，以正确处理return语句，在解析时已经把return语句改为<-表达式了,
-                    //这里需要改为return函数形式
-                    //注：通过MetalDSL语义行为回调处理，可以在赋值语句解析前将复合语句拆分，这里处理无法在回调里处理的部分，精确语法应
-                    //优先在回调里处理，可能只有非复合语句的语句块会走到这里
-                    Dsl.StatementData? left, right;
-                    if (SplitStatementsInExpression(sd, out left, out right)) {
-                        Debug.Assert(null != left && null != right);
-                        string id = left.GetId();
-                        int funcIndex = 0;
-                        while (funcIndex < left.GetFunctionNum()) {
-                            bool existsFunc = ParseStatement(left, ref funcIndex, out var f, out var modifiers);
-                            if (existsFunc) {
-                                Debug.Assert(null != f);
-                                TransformGeneralFunction(f, ref semanticInfo);
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                        if (funcIndex < left.GetFunctionNum()) {
-                            Debug.Assert(false);
-                        }
-                    }
-                    else {
-                        Debug.Assert(false);
-                    }
-                }
-                var vfd = v as Dsl.FunctionData;
-                if (null != vfd && vfd.GetId() == "*") {
-                    string lhs = vfd.GetParamId(0);
-                    string rhs = vfd.GetParamId(1);
-                }
-                TransformSyntax(v, false, ref semanticInfo, out var caddStm);
-                if (null != fd) {
-                    funcData.LowerOrderFunction = fd;
-                }
-                else {
-                    funcData.Name.SetId("return");
-                }
-                funcData.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
-                funcData.Params.Clear();
-                funcData.AddParam(v);
-            }
-            else if (funcId == "if") {
-                if (TransformIfFunction(funcData, out var addFunc)) {
-                    addStm = addFunc;
-                }
+                funcData.LastComments.Add("//  " + exp);
             }
             else {
                 TransformGeneralFunction(funcData, ref semanticInfo);
             }
-            return null != addStm;
         }
-        private static bool TransformValue(Dsl.ValueData valData, ref SemanticInfo semanticInfo, out Dsl.ISyntaxComponent? addStm)
+        private static void TransformValueExpression(Dsl.ValueData valData, ref SemanticInfo semanticInfo)
         {
-            addStm = null;
             TransformVar(valData, ref semanticInfo);
-            return null != addStm;
         }
 
         private static void TransformGeneralFunction(Dsl.FunctionData funcData, ref SemanticInfo semanticInfo)
         {
-            if (null != funcData) {
-                if (funcData.IsHighOrder) {
-                    var lowerFunc = funcData.LowerOrderFunction;
-                    if (lowerFunc.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET && funcData.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
-                        //array init
-                        TransformGeneralFunction(funcData, ref semanticInfo);
-                        return;
-                    }
-                    if (funcData.HaveStatement()) {
-                        TransformGeneralFunction(lowerFunc, ref semanticInfo);
-                        PushBlock();
-                        for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
-                            var syntax = funcData.GetParam(stmIx);
-                            if (TransformSyntax(syntax, true, ref semanticInfo, out var addStm)) {
-                                funcData.Params.Insert(stmIx + 1, addStm);
-                                ++stmIx;
-                            }
-                        }
-                        PopBlock();
-                    }
-                    else {
-                        TransformGeneralCall(funcData, ref semanticInfo);
-                    }
+            if (funcData.IsHighOrder) {
+                var lowerFunc = funcData.LowerOrderFunction;
+                if (lowerFunc.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET && funcData.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
+                    //array init
+                    TransformGeneralFunction(funcData, ref semanticInfo);
+                    return;
                 }
-                else if (funcData.HaveStatement()) {
+                if (funcData.HaveStatement()) {
+                    TransformGeneralFunction(lowerFunc, ref semanticInfo);
                     PushBlock();
                     for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
-                        Dsl.ISyntaxComponent? syntax = null;
-                        for (; ; ) {
-                            //去掉连续分号
-                            syntax = funcData.GetParam(stmIx);
-                            if (syntax.IsValid()) {
-                                break;
-                            }
-                            else {
-                                funcData.Params.Remove(syntax);
-                                if (stmIx < funcData.GetParamNum()) {
-                                    syntax = funcData.GetParam(stmIx);
-                                }
-                                else {
-                                    syntax = null;
-                                    break;
-                                }
-                            }
-                        }
-                        //处理语句
-                        if (stmIx < funcData.GetParamNum() && null != syntax && TransformSyntax(syntax, true, ref semanticInfo, out var addStm)) {
+                        var syntax = funcData.GetParam(stmIx);
+                        if (TransformStatement(syntax, out var addStm)) {
                             funcData.Params.Insert(stmIx + 1, addStm);
                             ++stmIx;
                         }
@@ -942,6 +1115,38 @@ namespace GlslRewriter
                 else {
                     TransformGeneralCall(funcData, ref semanticInfo);
                 }
+            }
+            else if (funcData.HaveStatement()) {
+                PushBlock();
+                for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
+                    Dsl.ISyntaxComponent? syntax = null;
+                    for (; ; ) {
+                        //去掉连续分号
+                        syntax = funcData.GetParam(stmIx);
+                        if (syntax.IsValid()) {
+                            break;
+                        }
+                        else {
+                            funcData.Params.Remove(syntax);
+                            if (stmIx < funcData.GetParamNum()) {
+                                syntax = funcData.GetParam(stmIx);
+                            }
+                            else {
+                                syntax = null;
+                                break;
+                            }
+                        }
+                    }
+                    //处理语句
+                    if (stmIx < funcData.GetParamNum() && null != syntax && TransformStatement(syntax, out var addStm)) {
+                        funcData.Params.Insert(stmIx + 1, addStm);
+                        ++stmIx;
+                    }
+                }
+                PopBlock();
+            }
+            else {
+                TransformGeneralCall(funcData, ref semanticInfo);
             }
         }
         private static void TransformGeneralCall(Dsl.FunctionData call, ref SemanticInfo semanticInfo)
@@ -962,15 +1167,12 @@ namespace GlslRewriter
                                         return;
                                     }
                                 }
-                                TransformSyntax(pp, false, ref semanticInfo, out var addStm);
+                                TransformExpression(pp, ref semanticInfo);
                             }
                             else {
                                 for (int ix = 0; ix < paramNum; ++ix) {
                                     var syntax = call.GetParam(ix);
-                                    if (TransformSyntax(syntax, false, ref semanticInfo, out var addStm)) {
-                                        call.Params.Insert(ix + 1, addStm);
-                                        ++ix;
-                                    }
+                                    TransformExpression(syntax, ref semanticInfo);
                                 }
                             }
                         }
@@ -988,10 +1190,7 @@ namespace GlslRewriter
                 for (int ix = 0; ix < paramNum; ++ix) {
                     var syntax = call.GetParam(ix);
                     var tsemanticInfo = new SemanticInfo();
-                    if (TransformSyntax(syntax, false, ref tsemanticInfo, out var addStm)) {
-                        call.Params.Insert(ix + 1, addStm);
-                        ++ix;
-                    }
+                    TransformExpression(syntax, ref tsemanticInfo);
 
                     var agn = tsemanticInfo.GraphNode;
                     Debug.Assert(null != agn);
@@ -1007,10 +1206,7 @@ namespace GlslRewriter
                 for (int ix = 0; ix < paramNum; ++ix) {
                     var syntax = call.GetParam(ix);
                     var tsemanticInfo = new SemanticInfo();
-                    if (TransformSyntax(syntax, false, ref tsemanticInfo, out var addStm)) {
-                        call.Params.Insert(ix + 1, addStm);
-                        ++ix;
-                    }
+                    TransformExpression(syntax, ref tsemanticInfo);
 
                     var agn = tsemanticInfo.GraphNode;
                     Debug.Assert(null != agn);
@@ -1023,18 +1219,18 @@ namespace GlslRewriter
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD) {
                 var tsemanticInfo = new SemanticInfo();
                 if (call.IsHighOrder) {
-                    TransformFunction(call.LowerOrderFunction, ref tsemanticInfo, out var addStm);
+                    TransformFunctionExpression(call.LowerOrderFunction, ref tsemanticInfo);
                 }
                 else {
-                    TransformValue(call.Name, ref tsemanticInfo, out var addStm);
+                    TransformValueExpression(call.Name, ref tsemanticInfo);
                 }
                 var agn1 = tsemanticInfo.GraphNode;
                 Debug.Assert(null != agn1);
 
                 string m = call.GetParamId(0);
-                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), string.Empty, m);
+                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m);
 
-                var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, ".");
+                var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), "float", ".");
 
                 cgcn.AddPrev(agn1);
                 agn1.AddNext(cgcn);
@@ -1047,16 +1243,16 @@ namespace GlslRewriter
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
                 var tsemanticInfo = new SemanticInfo();
                 if (call.IsHighOrder) {
-                    TransformFunction(call.LowerOrderFunction, ref tsemanticInfo, out var addStm);
+                    TransformFunctionExpression(call.LowerOrderFunction, ref tsemanticInfo);
                 }
                 else {
-                    TransformValue(call.Name, ref tsemanticInfo, out var addStm);
+                    TransformValueExpression(call.Name, ref tsemanticInfo);
                 }
                 var agn1 = tsemanticInfo.GraphNode;
                 Debug.Assert(null != agn1);
 
                 var tsemanticInfo2 = new SemanticInfo();
-                TransformSyntax(call.GetParam(0), false, ref tsemanticInfo2, out var addStm2);
+                TransformExpression(call.GetParam(0), ref tsemanticInfo2);
                 var agn2 = tsemanticInfo2.GraphNode;
                 Debug.Assert(null != agn2);
 
@@ -1086,7 +1282,7 @@ namespace GlslRewriter
                     PushBlock();
                     for (int stmIx = 0; stmIx < ifFunc.GetParamNum(); ++stmIx) {
                         var syntax = ifFunc.GetParam(stmIx);
-                        if (TransformSyntax(syntax, true, ref semanticInfo, out var addStm)) {
+                        if (TransformStatement(syntax, out var addStm)) {
                             ifFunc.Params.Insert(stmIx + 1, addStm);
                             ++stmIx;
                         }
@@ -1156,10 +1352,10 @@ namespace GlslRewriter
 
         }
 
-        private static void TransformConditionStatement(Dsl.StatementData stmData, int index, ref SemanticInfo semanticInfo)
+        private static void TransformConditionStatement(Dsl.StatementData stmData, ref SemanticInfo semanticInfo)
         {
-            var tfunc = stmData.GetFunction(index).AsFunction;
-            var ffunc = stmData.GetFunction(index + 1).AsFunction;
+            var tfunc = stmData.GetFunction(0).AsFunction;
+            var ffunc = stmData.GetFunction(1).AsFunction;
             Debug.Assert(null != tfunc && null != ffunc);
             var cond = tfunc.LowerOrderFunction.GetParam(0);
             var tval = tfunc.GetParam(0);
@@ -1168,9 +1364,9 @@ namespace GlslRewriter
             var tsemanticInfo1 = new SemanticInfo();
             var tsemanticInfo2 = new SemanticInfo();
             var tsemanticInfo3 = new SemanticInfo();
-            TransformSyntax(cond, false, ref tsemanticInfo1, out var addStm1);
-            TransformSyntax(tval, false, ref tsemanticInfo2, out var addStm2);
-            TransformSyntax(fval, false, ref tsemanticInfo3, out var addStm3);
+            TransformExpression(cond, ref tsemanticInfo1);
+            TransformExpression(tval, ref tsemanticInfo2);
+            TransformExpression(fval, ref tsemanticInfo3);
 
             var agn1 = tsemanticInfo1.GraphNode;
             var agn2 = tsemanticInfo2.GraphNode;
@@ -1190,6 +1386,7 @@ namespace GlslRewriter
             agn3.AddNext(cgcn);
 
             semanticInfo.GraphNode = cgcn;
+            semanticInfo.ResultType = cgcn.Type;
         }
 
         //变量的SSA处理
@@ -1207,6 +1404,10 @@ namespace GlslRewriter
                             varInfo.CopyFrom(lastVarInfo);
                             varInfo.Name = vid;
                             AddVar(varInfo);
+
+                            var cgvn = FindComputeGraphVarNode(varInfo.Name);
+                            semanticInfo.GraphNode = cgvn;
+                            semanticInfo.ResultType = varInfo.Type;
                         }
                     }
                     else {
@@ -1215,16 +1416,19 @@ namespace GlslRewriter
                         }
                         var cgvn = FindComputeGraphVarNode(valData.GetId());
                         semanticInfo.GraphNode = cgvn;
+                        semanticInfo.ResultType = vinfo.Type;
                     }
                 }
                 else {
-                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), string.Empty, valData.GetId());
+                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", valData.GetId());
                     semanticInfo.GraphNode = cgcn;
+                    semanticInfo.ResultType = cgcn.Type;
                 }
             }
             else {
-                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), string.Empty, valData.GetId());
+                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), valData.GetId().IndexOf('.') >= 0 ? "float" : "int", valData.GetId());
                 semanticInfo.GraphNode = cgcn;
+                semanticInfo.ResultType = cgcn.Type;
             }
         }
         private static void TransformVar(Dsl.StatementData stmData, int index, bool toplevel, ref SemanticInfo semanticInfo)
@@ -1266,6 +1470,11 @@ namespace GlslRewriter
                 if (isType) {
                     VarInfo vinfo = ParseVarInfo(stmData);
                     AddVar(vinfo);
+
+                    var cgvn = FindComputeGraphVarNode(vinfo.Name);
+                    semanticInfo.GraphNode = cgvn;
+                    semanticInfo.ResultType = vinfo.Type;
+
                     if (needAdjustArrTag) {
                         var typeFunc = stmData.GetFunction(funcNum - 2).AsFunction;
                         var nameValOrFunc = stmData.GetFunction(funcNum - 1);
@@ -1322,6 +1531,7 @@ namespace GlslRewriter
 
                             var cgvn = FindComputeGraphVarNode(vid);
                             semanticInfo.GraphNode = cgvn;
+                            semanticInfo.ResultType = varInfo.Type;
                         }
                         else {
                             Debug.Assert(false);
@@ -1339,6 +1549,7 @@ namespace GlslRewriter
                         var cgvn = new ComputeGraphVarNode(CurFuncInfo(), vinfo.Type, valData.GetId());
                         AddComputeGraphVarNode(cgvn);
                         semanticInfo.GraphNode = cgvn;
+                        semanticInfo.ResultType = vinfo.Type;
 
                         s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         var setVars = CurSetVars();
@@ -1397,6 +1608,7 @@ namespace GlslRewriter
 
                     var cgvn = FindComputeGraphVarNode(vinfo.Name);
                     semanticInfo.GraphNode = cgvn;
+                    semanticInfo.ResultType = vinfo.Type;
 
                     if (needAdjustArrTag) {
                         var typeFunc = stmData.GetFunction(funcNum - 2).AsFunction;
@@ -1577,6 +1789,138 @@ namespace GlslRewriter
             return false;
         }
 
+        private static VarInfo ParseVarInfo(Dsl.StatementData varStm)
+        {
+            var lastId = varStm.Last.GetId();
+
+            var nameInfoFunc = varStm.Last.AsFunction;
+            string arrTag = string.Empty;
+            if (null != nameInfoFunc) {
+                arrTag = BuildTypeWithTypeArgs(nameInfoFunc).Substring(lastId.Length);
+            }
+
+            VarInfo vinfo = new VarInfo();
+            int funcNum = varStm.GetFunctionNum();
+            for (int ix = 0; ix < funcNum - 1; ++ix) {
+                var valOrFunc = varStm.GetFunction(ix);
+                string id = valOrFunc.GetId();
+                if (ix == funcNum - 2) {
+                    var func = valOrFunc.AsFunction;
+                    if (null != func)
+                        vinfo.Type = BuildTypeWithTypeArgs(func) + arrTag;
+                    else
+                        vinfo.Type = id + arrTag;
+                }
+                else {
+                    if (id == "inout")
+                        vinfo.IsInOut = true;
+                    else if (id == "out")
+                        vinfo.IsOut = true;
+
+                    vinfo.Modifiers.Add(id);
+                }
+            }
+            vinfo.Name = lastId;
+            return vinfo;
+        }
+        private static string BuildTypeWithTypeArgs(Dsl.FunctionData func)
+        {
+            var sb = new StringBuilder();
+            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+                var arrTags = new List<string>();
+                string baseType = BuildTypeWithArrTags(func, arrTags);
+                sb.Append(baseType);
+                for (int ix = arrTags.Count - 1; ix >= 0; --ix) {
+                    sb.Append(arrTags[ix]);
+                }
+            }
+            else {
+                if (func.IsHighOrder) {
+                    sb.Append(BuildTypeWithTypeArgs(func.LowerOrderFunction));
+                }
+                else {
+                    sb.Append(func.GetId());
+                }
+                foreach (var p in func.Params) {
+                    sb.Append('|');
+                    sb.Append(DslToNameString(p));
+                }
+            }
+            return sb.ToString();
+        }
+        private static string BuildTypeWithArrTags(Dsl.FunctionData func, List<string> arrTags)
+        {
+            string ret = string.Empty;
+            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+                if (func.IsHighOrder) {
+                    ret = BuildTypeWithArrTags(func.LowerOrderFunction, arrTags);
+                }
+                else {
+                    ret = func.GetId();
+                }
+                string arrTag = "_x";
+                if (func.GetParamNum() > 0) {
+                    arrTag += func.GetParamId(0);
+                }
+                arrTags.Add(arrTag);
+            }
+            else {
+                ret = BuildTypeWithTypeArgs(func);
+            }
+            return ret;
+        }
+        private static string DslToNameString(Dsl.ISyntaxComponent syntax)
+        {
+            var valData = syntax as Dsl.ValueData;
+            if (null != valData)
+                return valData.GetId();
+            else {
+                var funcData = syntax as Dsl.FunctionData;
+                if (null != funcData) {
+                    var sb = new StringBuilder();
+                    if (funcData.IsHighOrder) {
+                        sb.Append(DslToNameString(funcData.LowerOrderFunction));
+                    }
+                    else {
+                        sb.Append(funcData.GetId());
+                    }
+                    switch (funcData.GetParamClassUnmasked()) {
+                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                            sb.Append(".");
+                            break;
+                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                            sb.Append("_x");
+                            break;
+                        default:
+                            if (funcData.GetParamNum() > 0)
+                                sb.Append("_");
+                            break;
+                    }
+                    foreach (var p in funcData.Params) {
+                        sb.Append(DslToNameString(p));
+                    }
+                    return sb.ToString();
+                }
+                else {
+                    var stmData = syntax as Dsl.StatementData;
+                    if (null != stmData) {
+                        var sb = new StringBuilder();
+                        for (int ix = 0; ix < stmData.GetFunctionNum(); ++ix) {
+                            if (ix > 0)
+                                sb.Append("__");
+                            var func = stmData.GetFunction(ix);
+                            sb.Append(DslToNameString(func));
+                        }
+                        return sb.ToString();
+                    }
+                    else {
+                        return string.Empty;
+                    }
+                }
+            }
+        }
+
+        //表达式类型推导
         private static string TypeInference(Dsl.ISyntaxComponent syntax)
         {
             var valData = syntax as Dsl.ValueData;
@@ -1924,186 +2268,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-
-        private static VarInfo ParseVarInfo(Dsl.StatementData varStm)
-        {
-            var lastId = varStm.Last.GetId();
-
-            var nameInfoFunc = varStm.Last.AsFunction;
-            string arrTag = string.Empty;
-            if (null != nameInfoFunc) {
-                arrTag = BuildTypeWithTypeArgs(nameInfoFunc).Substring(lastId.Length);
-            }
-
-            VarInfo vinfo = new VarInfo();
-            int funcNum = varStm.GetFunctionNum();
-            for (int ix = 0; ix < funcNum - 1; ++ix) {
-                var valOrFunc = varStm.GetFunction(ix);
-                string id = valOrFunc.GetId();
-                if (ix == funcNum - 2) {
-                    var func = valOrFunc.AsFunction;
-                    if (null != func)
-                        vinfo.Type = BuildTypeWithTypeArgs(func) + arrTag;
-                    else
-                        vinfo.Type = id + arrTag;
-                }
-                else {
-                    if (id == "inout")
-                        vinfo.IsInOut = true;
-                    else if (id == "out")
-                        vinfo.IsOut = true;
-
-                    vinfo.Modifiers.Add(id);
-                }
-            }
-            vinfo.Name = lastId;
-            return vinfo;
-        }
-
-        private static string BuildTypeWithTypeArgs(Dsl.FunctionData func)
-        {
-            var sb = new StringBuilder();
-            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
-                var arrTags = new List<string>();
-                string baseType = BuildTypeWithArrTags(func, arrTags);
-                sb.Append(baseType);
-                for (int ix = arrTags.Count - 1; ix >= 0; --ix) {
-                    sb.Append(arrTags[ix]);
-                }
-            }
-            else {
-                if (func.IsHighOrder) {
-                    sb.Append(BuildTypeWithTypeArgs(func.LowerOrderFunction));
-                }
-                else {
-                    sb.Append(func.GetId());
-                }
-                foreach (var p in func.Params) {
-                    sb.Append('|');
-                    sb.Append(DslToNameString(p));
-                }
-            }
-            return sb.ToString();
-        }
-        private static string BuildTypeWithArrTags(Dsl.FunctionData func, List<string> arrTags)
-        {
-            string ret = string.Empty;
-            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
-                if (func.IsHighOrder) {
-                    ret = BuildTypeWithArrTags(func.LowerOrderFunction, arrTags);
-                }
-                else {
-                    ret = func.GetId();
-                }
-                string arrTag = "_x";
-                if (func.GetParamNum() > 0) {
-                    arrTag += func.GetParamId(0);
-                }
-                arrTags.Add(arrTag);
-            }
-            else {
-                ret = BuildTypeWithTypeArgs(func);
-            }
-            return ret;
-        }
-        private static string DslToNameString(Dsl.ISyntaxComponent syntax)
-        {
-            var valData = syntax as Dsl.ValueData;
-            if (null != valData)
-                return valData.GetId();
-            else {
-                var funcData = syntax as Dsl.FunctionData;
-                if (null != funcData) {
-                    var sb = new StringBuilder();
-                    if (funcData.IsHighOrder) {
-                        sb.Append(DslToNameString(funcData.LowerOrderFunction));
-                    }
-                    else {
-                        sb.Append(funcData.GetId());
-                    }
-                    switch (funcData.GetParamClassUnmasked()) {
-                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
-                            sb.Append(".");
-                            break;
-                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
-                            sb.Append("_x");
-                            break;
-                        default:
-                            if (funcData.GetParamNum() > 0)
-                                sb.Append("_");
-                            break;
-                    }
-                    foreach (var p in funcData.Params) {
-                        sb.Append(DslToNameString(p));
-                    }
-                    return sb.ToString();
-                }
-                else {
-                    var stmData = syntax as Dsl.StatementData;
-                    if (null != stmData) {
-                        var sb = new StringBuilder();
-                        for (int ix = 0; ix < stmData.GetFunctionNum(); ++ix) {
-                            if (ix > 0)
-                                sb.Append("__");
-                            var func = stmData.GetFunction(ix);
-                            sb.Append(DslToNameString(func));
-                        }
-                        return sb.ToString();
-                    }
-                    else {
-                        return string.Empty;
-                    }
-                }
-            }
-        }
-
-        private static string GetFullTypeFuncSig(string funcName, IList<string> argTypes)
-        {
-            var sb = new StringBuilder();
-            sb.Append(funcName);
-            foreach (var t in argTypes) {
-                sb.Append("_");
-                sb.Append(t);
-            }
-            return sb.ToString();
-        }
-        private static string GetFuncResultType(string resultTypeTag, string funcOrObjType, IList<string> args, IList<string> oriArgs)
-        {
-            string ret;
-            if (resultTypeTag == "@@")
-                ret = funcOrObjType;
-            else if (resultTypeTag == "@0-$0")
-                ret = GetTypeRemoveSuffix(args[0]);
-            else if (resultTypeTag == "@0")
-                ret = args[0];
-            else if (resultTypeTag == "@m") {
-                ret = GetMaxType(oriArgs);
-            }
-            else if (!resultTypeTag.Contains('@') && !resultTypeTag.Contains('$'))
-                ret = resultTypeTag;
-            else {
-                string rt = resultTypeTag.Replace("@@", funcOrObjType).Replace("@0-$0", GetTypeRemoveSuffix(args[0])).Replace("@0", args[0]).Replace("$0", GetTypeSuffix(args[0])).Replace("$R0", GetTypeSuffixReverse(args[0]));
-                if (args.Count > 1) {
-                    rt = rt.Replace("@1-$1", GetTypeRemoveSuffix(args[1])).Replace("@1", args[1]).Replace("$1", GetTypeSuffix(args[1])).Replace("$R1", GetTypeSuffixReverse(args[1]));
-                }
-                if (rt.Contains("m")) {
-                    string mt = GetMaxType(oriArgs);
-                    rt = rt.Replace("@m-$m", GetTypeRemoveSuffix(mt)).Replace("@m", mt).Replace("$m", GetTypeSuffix(mt)).Replace("$Rm", GetTypeSuffixReverse(mt));
-                }
-                ret = rt;
-            }
-            return ret;
-        }
-        private static int GetMemberCount(string member)
-        {
-            int ct = 0;
-            foreach (char c in member) {
-                if (c == '_')
-                    ++ct;
-            }
-            return ct;
-        }
-
         private static bool IsArgsMatch(IList<string> args, FuncInfo funcInfo, out int score)
         {
             bool ret = false;
@@ -2182,28 +2346,88 @@ namespace GlslRewriter
             }
             return ret;
         }
-        private static string GetTypeRemoveSuffix(string type)
+
+        //函数签名与类型编码
+        private static string GetFullTypeFuncSig(string funcName, IList<string> argTypes)
         {
-            type = GetTypeRemoveArrTag(type, out var arrNums);
+            var sb = new StringBuilder();
+            sb.Append(funcName);
+            foreach (var t in argTypes) {
+                sb.Append("_");
+                sb.Append(t);
+            }
+            return sb.ToString();
+        }
+        private static string GetFuncResultType(string resultTypeTag, string funcOrObjType, IList<string> args, IList<string> oriArgs)
+        {
+            string ret;
+            if (resultTypeTag == "@@")
+                ret = funcOrObjType;
+            else if (resultTypeTag == "@0-$0")
+                ret = GetTypeRemoveSuffix(args[0]);
+            else if (resultTypeTag == "@0")
+                ret = args[0];
+            else if (resultTypeTag == "@m") {
+                ret = GetMaxType(oriArgs);
+            }
+            else if (!resultTypeTag.Contains('@') && !resultTypeTag.Contains('$'))
+                ret = resultTypeTag;
+            else {
+                string rt = resultTypeTag.Replace("@@", funcOrObjType).Replace("@0-$0", GetTypeRemoveSuffix(args[0])).Replace("@0", args[0]).Replace("$0", GetTypeSuffix(args[0])).Replace("$R0", GetTypeSuffixReverse(args[0]));
+                if (args.Count > 1) {
+                    rt = rt.Replace("@1-$1", GetTypeRemoveSuffix(args[1])).Replace("@1", args[1]).Replace("$1", GetTypeSuffix(args[1])).Replace("$R1", GetTypeSuffixReverse(args[1]));
+                }
+                if (rt.Contains("m")) {
+                    string mt = GetMaxType(oriArgs);
+                    rt = rt.Replace("@m-$m", GetTypeRemoveSuffix(mt)).Replace("@m", mt).Replace("$m", GetTypeSuffix(mt)).Replace("$Rm", GetTypeSuffixReverse(mt));
+                }
+                ret = rt;
+            }
+            return ret;
+        }
+        private static int GetMemberCount(string member)
+        {
+            int ct = 0;
+            foreach (char c in member) {
+                if (c == '_')
+                    ++ct;
+            }
+            return ct;
+        }
+
+        internal static string GetTypeRemoveSuffix(string type)
+        {
+            return GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
+        }
+        internal static string GetTypeRemoveSuffix(string type, out string suffix, out IList<int> arrNums)
+        {
+            type = GetTypeRemoveArrTag(type, out arrNums);
             if (type.Length >= 3) {
                 char last = type[type.Length - 1];
                 if (last == '2' || last == '3' || last == '4') {
                     string last3 = type.Substring(type.Length - 3);
-                    if (last3 == "2x2" || last3 == "3x3" || last3 == "4x4")
+                    if (last3 == "2x2" || last3 == "3x3" || last3 == "4x4") {
+                        suffix = last3;
                         return type.Substring(0, type.Length - 3);
-                    else if (last3 == "2x3" || last3 == "3x2" || last3 == "3x4" || last3 == "4x3" || last3 == "2x4" || last3 == "4x2")
+                    }
+                    else if (last3 == "2x3" || last3 == "3x2" || last3 == "3x4" || last3 == "4x3" || last3 == "2x4" || last3 == "4x2") {
+                        suffix = last3;
                         return type.Substring(0, type.Length - 3);
-                    else
+                    }
+                    else {
+                        suffix = last.ToString();
                         return type.Substring(0, type.Length - 1);
+                    }
                 }
             }
+            suffix = string.Empty;
             return type;
         }
-        private static string GetTypeSuffix(string type)
+        internal static string GetTypeSuffix(string type)
         {
             return GetTypeSuffix(type, out var arrNums);
         }
-        private static string GetTypeSuffix(string type, out IList<int> arrNums)
+        internal static string GetTypeSuffix(string type, out IList<int> arrNums)
         {
             type = GetTypeRemoveArrTag(type, out arrNums);
             if (type.Length >= 3) {
@@ -2223,11 +2447,11 @@ namespace GlslRewriter
             }
             return string.Empty;
         }
-        private static string GetTypeSuffixReverse(string type)
+        internal static string GetTypeSuffixReverse(string type)
         {
             return GetTypeSuffixReverse(type, out var arrNums);
         }
-        private static string GetTypeSuffixReverse(string type, out IList<int> arrNums)
+        internal static string GetTypeSuffixReverse(string type, out IList<int> arrNums)
         {
             type = GetTypeRemoveArrTag(type, out arrNums);
             if (type.Length >= 3) {
@@ -2247,14 +2471,14 @@ namespace GlslRewriter
             }
             return string.Empty;
         }
-        private static string GetTypeRemoveArrTag(string type, out IList<int> arrNums)
+        internal static string GetTypeRemoveArrTag(string type, out IList<int> arrNums)
         {
             var list = new List<int>();
             var r = GetTypeRemoveArrTagRecursively(type, list);
             arrNums = list;
             return r;
         }
-        private static string GetTypeRemoveArrTagRecursively(string type, List<int> arrNums)
+        internal static string GetTypeRemoveArrTagRecursively(string type, List<int> arrNums)
         {
             int st = type.LastIndexOf("_x");
             if (st > 0) {
@@ -2266,7 +2490,7 @@ namespace GlslRewriter
             }
             return type;
         }
-        private static string VectorMatrixTypeToScalarType(string vm)
+        internal static string VectorMatrixTypeToScalarType(string vm)
         {
             if (vm.StartsWith("vec"))
                 return "float";
@@ -2314,6 +2538,7 @@ namespace GlslRewriter
             }
         }
 
+        //计算图
         private static ComputeGraph CurComputeGraph()
         {
             var curFunc = CurFuncInfo();
@@ -2338,6 +2563,10 @@ namespace GlslRewriter
             else {
                 cg.VarNodes.Add(cgvn.VarName, cgvn);
             }
+
+            string name = cgvn.VarName;
+            string type = cgvn.Type;
+            VariableTable.AllocVar(name, type);
         }
         private static ComputeGraphVarNode? FindComputeGraphVarNode(string name)
         {
@@ -2353,6 +2582,7 @@ namespace GlslRewriter
             return ret;
         }
 
+        //程序结构
         private static void AddVar(VarInfo varInfo)
         {
             if (!s_VarInfos.TryGetValue(varInfo.Name, out var varInfos)) {
@@ -2524,16 +2754,16 @@ namespace GlslRewriter
             return c_IndentString.Substring(0, indent);
         }
 
-        internal sealed class VarInfo
+        public sealed class VarInfo
         {
-            internal string Name = string.Empty;
-            internal string Type = string.Empty;
-            internal bool IsInOut = false;
-            internal bool IsOut = false;
-            internal List<string> Modifiers = new List<string>();
-            internal Dsl.ISyntaxComponent? DefaultValue = null;
+            public string Name = string.Empty;
+            public string Type = string.Empty;
+            public bool IsInOut = false;
+            public bool IsOut = false;
+            public List<string> Modifiers = new List<string>();
+            public Dsl.ISyntaxComponent? DefaultValue = null;
 
-            internal void CopyFrom(VarInfo other)
+            public void CopyFrom(VarInfo other)
             {
                 Name = other.Name;
                 Type = other.Type;
@@ -2542,65 +2772,65 @@ namespace GlslRewriter
                 Modifiers.AddRange(other.Modifiers);
                 DefaultValue = other.DefaultValue;
             }
-            internal string CalcTypeString()
+            public string CalcTypeString()
             {
                 return (Modifiers.Count > 0 ? string.Join(' ', Modifiers) + " " : string.Empty) + Type;
             }
         }
-        internal sealed class FuncInfo
+        public sealed class FuncInfo
         {
-            internal string Name = string.Empty;
-            internal string Signature = string.Empty;
-            internal bool HasInOutOrOutParams = false;
-            internal List<VarInfo> Params = new List<VarInfo>();
-            internal VarInfo? RetInfo = null;
-            internal List<VarInfo> InOutOrOutParams = new List<VarInfo>();
+            public string Name = string.Empty;
+            public string Signature = string.Empty;
+            public bool HasInOutOrOutParams = false;
+            public List<VarInfo> Params = new List<VarInfo>();
+            public VarInfo? RetInfo = null;
+            public List<VarInfo> InOutOrOutParams = new List<VarInfo>();
 
-            internal ComputeGraph FuncComputeGraph = new ComputeGraph();
+            public ComputeGraph FuncComputeGraph = new ComputeGraph();
 
-            internal bool IsVoid()
+            public bool IsVoid()
             {
                 return null == RetInfo || RetInfo.Type == "void";
             }
         }
-        internal sealed class StructInfo
+        public sealed class StructInfo
         {
-            internal string Name = string.Empty;
-            internal List<VarInfo> Fields = new List<VarInfo>();
+            public string Name = string.Empty;
+            public List<VarInfo> Fields = new List<VarInfo>();
         }
-        internal sealed class BufferInfo
+        public sealed class BufferInfo
         {
-            internal string Name = string.Empty;
-            internal string Layout = string.Empty;
-            internal string instName = string.Empty;
-            internal List<VarInfo> Variables = new List<VarInfo>();
+            public string Name = string.Empty;
+            public string Layout = string.Empty;
+            public string instName = string.Empty;
+            public List<VarInfo> Variables = new List<VarInfo>();
         }
-        internal sealed class ArrayInitInfo
+        public sealed class ArrayInitInfo
         {
-            internal string Type = string.Empty;
-            internal int Size = 0;
+            public string Type = string.Empty;
+            public int Size = 0;
         }
-        internal enum CondExpEnum
+        public enum CondExpEnum
         {
             Question = 0,
             Colon,
         }
-        internal sealed class CondExpInfo
+        public sealed class CondExpInfo
         {
-            internal CondExpInfo(CondExpEnum part)
+            public CondExpInfo(CondExpEnum part)
             {
                 m_CondExpPart = part;
                 m_ParenthesisCount = 0;
             }
-            internal void IncParenthesisCount()
+            public void IncParenthesisCount()
             {
                 ++m_ParenthesisCount;
             }
-            internal void DecParenthesisCount()
+            public void DecParenthesisCount()
             {
                 --m_ParenthesisCount;
             }
-            internal bool MaybeCompletePart(CondExpEnum part)
+            public bool MaybeCompletePart(CondExpEnum part)
             {
                 return m_CondExpPart == part && m_ParenthesisCount == 0;
             }
@@ -2609,62 +2839,55 @@ namespace GlslRewriter
             private int m_ParenthesisCount;
         }
 
-        internal sealed class VarSyntaxInfo
+        public sealed class VarSyntaxInfo
         {
-            internal List<Dsl.ValueData> Vars = new List<Dsl.ValueData>();
+            public List<Dsl.ValueData> Vars = new List<Dsl.ValueData>();
         }
-        internal sealed class VarAliasInfo
+        public sealed class VarAliasInfo
         {
-            internal int AliasIndex = 0;
-            internal string AliasSuffix = string.Empty;
-            internal int BlockId = -1;
+            public int AliasIndex = 0;
+            public string AliasSuffix = string.Empty;
+            public int BlockId = -1;
 
-            internal VarAliasInfo Clone()
+            public VarAliasInfo Clone()
             {
                 return new VarAliasInfo { AliasIndex = AliasIndex, AliasSuffix = AliasSuffix, BlockId = BlockId };
             }
         }
-        internal sealed class PhiVarInfo
+        public sealed class PhiVarInfo
         {
-            internal string PhiVarName = string.Empty;
-            internal List<string> PhiArgs = new List<string>();
-            internal Dsl.ISyntaxComponent? ParentStatement = null;
-            internal int ParamIndex = -1;
+            public string PhiVarName = string.Empty;
+            public List<string> PhiArgs = new List<string>();
+            public Dsl.ISyntaxComponent? ParentStatement = null;
+            public int ParamIndex = -1;
         }
-        internal sealed class LexicalScopeInfo
+        public sealed class LexicalScopeInfo
         {
-            internal int BlockId = 0;
-            internal VarInfo? LastVarType = null;
-            internal HashSet<string> SetVars = new HashSet<string>();
-            internal Dictionary<string, PhiVarInfo> PhiVarInfos = new Dictionary<string, PhiVarInfo>();
+            public int BlockId = 0;
+            public VarInfo? LastVarType = null;
+            public HashSet<string> SetVars = new HashSet<string>();
+            public Dictionary<string, PhiVarInfo> PhiVarInfos = new Dictionary<string, PhiVarInfo>();
 
-            internal Dictionary<string, VarAliasInfo>? VarAliasInfos = null;
+            public Dictionary<string, VarAliasInfo>? VarAliasInfos = null;
         }
-        internal struct SemanticInfo
+        public struct SemanticInfo
         {
-            internal string ResultType = string.Empty;
-            internal bool IsVarValRef = false;
-            internal string NameOrConst = string.Empty;
+            public string ResultType = string.Empty;
 
-            internal ComputeGraphNode? GraphNode = null;
+            public ComputeGraphNode? GraphNode = null;
 
             public SemanticInfo()
             {
                 Reset();
             }
-            internal void Reset()
+            public void Reset()
             {
                 ResultType = string.Empty;
-                IsVarValRef = false;
-                NameOrConst = string.Empty;
                 GraphNode = null;
             }
-            internal void CopyResultFrom(SemanticInfo other)
+            public void CopyResultFrom(SemanticInfo other)
             {
                 ResultType = other.ResultType;
-                IsVarValRef = other.IsVarValRef;
-                NameOrConst = other.NameOrConst;
-
                 GraphNode = other.GraphNode;
             }
         }
@@ -2688,6 +2911,11 @@ namespace GlslRewriter
         private static Dictionary<string, FuncInfo> s_FuncInfos = new Dictionary<string, FuncInfo>();
         private static Dictionary<string, HashSet<string>> s_FuncOverloads = new Dictionary<string, HashSet<string>>();
         private static Stack<FuncInfo> s_FuncParseStack = new Stack<FuncInfo>();
+
+        private static bool s_IsVsShader = false;
+        private static bool s_IsPsShader = true;
+        private static bool s_IsCsShader = false;
+        private static bool s_IsDebugMode = false;
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
 

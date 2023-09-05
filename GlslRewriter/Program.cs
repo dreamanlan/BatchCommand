@@ -4,6 +4,7 @@ using static GlslRewriter.Program;
 using Dsl;
 using System;
 using System.Xml.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace GlslRewriter
 {
@@ -938,9 +939,9 @@ namespace GlslRewriter
 
                     AddComputeGraphRootNode(cgcn);
 
-                    //string exp = cgcn.GetExpression();
-                    string exp = cgcn.GetValue();
-                    funcData.LastComments.Add("//  " + exp);
+                    string val = cgcn.GetValue();
+                    string exp = cgcn.GetExpression();
+                    funcData.LastComments.Add("// " + val + "      <=>      " + exp);
                 }
                 else if (funcId == "<-") {
                     var p = funcData.GetParam(0);
@@ -1277,23 +1278,31 @@ namespace GlslRewriter
                 if (ifFunc.HaveStatement()) {
                     var suffix = "_phi_" + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                    HashSet<string> setVars = new HashSet<string>();
                     PushBlock(true, false);
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(ifFunc);
-                    var addFunc = new Dsl.FunctionData();
-                    addFunc.Name = new Dsl.ValueData("else", Dsl.AbstractSyntaxComponent.ID_TOKEN);
-                    addFunc.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_STATEMENT);
                     foreach(var vname in CurSetVars()) {
+                        if (!setVars.Contains(vname))
+                            setVars.Add(vname);
                         var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
                         ifFunc.AddParam(assignFunc);
-
-                        var assignFunc2 = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
-                        addFunc.AddParam(assignFunc2);
                     }
-                    insertAfterOuter = new List<ISyntaxComponent>();
-                    Debug.Assert(null != insertAfterOuter);
-                    insertAfterOuter.Add(addFunc);
                     PopBlock();
+                    //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
+                    //2、更新各变量的别名为phi变量别名
+                    insertBeforeOuter = new List<ISyntaxComponent>();
+                    Debug.Assert(null != insertBeforeOuter);
+                    foreach (var vname in setVars) {
+                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                        insertBeforeOuter.Add(assignFunc);
+
+                        var curAliasInfos = CurVarAliasInfos();
+                        if (curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
+                            varAliasInfo.AliasSuffix = suffix;
+                            TryAddComputeGraphVarNode(vname, suffix);
+                        }
+                    }
                 }
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
@@ -1325,7 +1334,7 @@ namespace GlslRewriter
                     PopBlock();
                 }
             }
-            //1、多分支的处理方法与单if分支不同，我们在if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
+            //1、多分支if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
             //2、更新各变量的别名为phi变量别名
             insertBeforeOuter = new List<ISyntaxComponent>();
             Debug.Assert(null != insertBeforeOuter);
@@ -1336,6 +1345,7 @@ namespace GlslRewriter
                 var curAliasInfos = CurVarAliasInfos();
                 if(curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
                     varAliasInfo.AliasSuffix = suffix;
+                    TryAddComputeGraphVarNode(vname, suffix);
                 }
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
@@ -1537,8 +1547,10 @@ namespace GlslRewriter
             assignFunc.AddParam(new Dsl.ValueData(vname + phiSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
             if (aliasInfos.TryGetValue(vname, out var aliasInfo)) {
                 refVarValDataOuter = new Dsl.ValueData(vname + aliasInfo.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN);
-                if (updateVarAliasInfo)
+                if (updateVarAliasInfo) {
                     aliasInfo.AliasSuffix = phiSuffix;
+                    TryAddComputeGraphVarNode(vname, phiSuffix);
+                }
             }
             else {
                 refVarValDataOuter = new Dsl.ValueData(vname, Dsl.AbstractSyntaxComponent.ID_TOKEN);
@@ -1699,7 +1711,8 @@ namespace GlslRewriter
                     }
                     else {
                         if(CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                            string nid = vid + "_" + (info.AliasIndex + 1).ToString();
+                            int aliasIndex = GetVarAliasIndex(vid);
+                            string nid = vid + "_" + (aliasIndex + 1).ToString();
                             valData.SetId(nid);
                         }
                         else {
@@ -1812,14 +1825,24 @@ namespace GlslRewriter
             while (s_VarAliasInfoUpdateQueue.Count > 0) {
                 string vid = s_VarAliasInfoUpdateQueue.Dequeue();
                 if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                    ++info.AliasIndex;
-                    info.AliasSuffix = "_" + info.AliasIndex.ToString();
-                    info.BlockId = CurBlockId();
+                    int aliasIndex = IncVarAliasIndex(vid);
+                    info.AliasSuffix = "_" + aliasIndex.ToString();
                 }
                 else {
-                    info = new VarAliasInfo { AliasIndex = 0, AliasSuffix = "_0", BlockId = CurBlockId() };
+                    info = new VarAliasInfo { AliasSuffix = "_0" };
                     CurVarAliasInfos().Add(vid, info);
                 }
+            }
+        }
+        private static void TryAddComputeGraphVarNode(string vname, string phiSuffix)
+        {
+            var vinfo = GetVarInfo(vname);
+            Debug.Assert(null != vinfo);
+            string phiVarAlias = vname + phiSuffix;
+            var node = FindComputeGraphVarNode(phiVarAlias);
+            if (null == node) {
+                var cgvn = new ComputeGraphVarNode(CurFuncInfo(), vinfo.Type, phiVarAlias);
+                AddComputeGraphVarNode(cgvn);
             }
         }
 
@@ -2940,6 +2963,25 @@ namespace GlslRewriter
             return varInfo;
         }
 
+        private static int GetVarAliasIndex(string name)
+        {
+            if(s_VarAliasIndexes.TryGetValue(name, out var ix)) {
+                return ix.Index;
+            }
+            else {
+                return 0;
+            }
+        }
+        private static int IncVarAliasIndex(string name)
+        {
+            if (!s_VarAliasIndexes.TryGetValue(name, out var ix)) {
+                ix = new VarAliasIndex { Index = 0 };
+                s_VarAliasIndexes.Add(name, ix);
+            }
+            ++ix.Index;
+            return ix.Index;
+        }
+
         internal static int GenUniqueNumber()
         {
             return ++s_UniqueNumber;
@@ -3041,14 +3083,16 @@ namespace GlslRewriter
         }
         public sealed class VarAliasInfo
         {
-            public int AliasIndex = 0;
             public string AliasSuffix = string.Empty;
-            public int BlockId = -1;
 
             public VarAliasInfo Clone()
             {
-                return new VarAliasInfo { AliasIndex = AliasIndex, AliasSuffix = AliasSuffix, BlockId = BlockId };
+                return new VarAliasInfo { AliasSuffix = AliasSuffix };
             }
+        }
+        private sealed class VarAliasIndex
+        {
+            internal int Index = 0;
         }
         public sealed class UndeterminedVarAlias
         {
@@ -3098,6 +3142,7 @@ namespace GlslRewriter
         //赋值语句左边变量别名替换需要等当前语句处理完成后进行（有可能右边引用的相同变量，此时引用变量的别名应该是之前赋值确定的别名）
         //这个队列用于此目的
         private static Queue<string> s_VarAliasInfoUpdateQueue = new Queue<string>();
+        private static Dictionary<string, VarAliasIndex> s_VarAliasIndexes = new Dictionary<string, VarAliasIndex>();
 
         private static Dictionary<string, Dictionary<int, VarInfo>> s_VarInfos = new Dictionary<string, Dictionary<int, VarInfo>>();
         private static Stack<LexicalScopeInfo> s_LexicalScopeStack = new Stack<LexicalScopeInfo>();

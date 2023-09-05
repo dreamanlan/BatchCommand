@@ -3,6 +3,7 @@ using System.Diagnostics;
 using static GlslRewriter.Program;
 using Dsl;
 using System;
+using System.Xml.Linq;
 
 namespace GlslRewriter
 {
@@ -562,7 +563,10 @@ namespace GlslRewriter
                 }
             }
             else if (id == "in") {
-                TransformVar(stmData, startFuncIx, true, ref semanticInfo);
+                //不是语句最后部分按变量处理，compute shader里描述线程数会使用in结束的语法
+                if (startFuncIx < stmData.GetFunctionNum() - 1) {
+                    TransformVar(stmData, startFuncIx, true, ref semanticInfo);
+                }
             }
             else if (id == "flat") {
                 TransformVar(stmData, startFuncIx, true, ref semanticInfo);
@@ -787,7 +791,7 @@ namespace GlslRewriter
             string funcName = paramsPart.GetId();
             funcInfo.Name = funcName;
             PushFuncInfo(funcInfo);
-            PushBlock();
+            PushBlock(false, false);
 
             var retInfo = new VarInfo();
             if (modifiers.Count > 0) {
@@ -835,31 +839,7 @@ namespace GlslRewriter
                     overloads.Add(signature);
                 }
             }
-            for (int stmIx = 0; stmIx < func.GetParamNum(); ++stmIx) {
-                Dsl.ISyntaxComponent? syntax = null;
-                for (; ; ) {
-                    //去掉连续分号
-                    syntax = func.GetParam(stmIx);
-                    if (syntax.IsValid()) {
-                        break;
-                    }
-                    else {
-                        func.Params.Remove(syntax);
-                        if (stmIx < func.GetParamNum()) {
-                            syntax = func.GetParam(stmIx);
-                        }
-                        else {
-                            syntax = null;
-                            break;
-                        }
-                    }
-                }
-                //处理语句
-                if (stmIx < func.GetParamNum() && null != syntax && TransformStatement(syntax, out var addStm)) {
-                    func.Params.Insert(stmIx + 1, addStm);
-                    ++stmIx;
-                }
-            }
+            TransformFunctionStatements(func);
             PopBlock();
             PopFuncInfo();
         }
@@ -897,9 +877,10 @@ namespace GlslRewriter
         }
 
         //非顶层语句语法处理
-        private static bool TransformStatement(Dsl.ISyntaxComponent syntax, out Dsl.ISyntaxComponent? addStm)
+        private static bool TransformStatement(Dsl.ISyntaxComponent syntax, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
-            addStm = null;
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
             var semanticInfo = new SemanticInfo();
 
             var valData = syntax as Dsl.ValueData;
@@ -907,7 +888,13 @@ namespace GlslRewriter
             var stmData = syntax as Dsl.StatementData;
             if (null != valData) {
                 string valId = valData.GetId();
-                if (valId == "return" || valId == "discard" || valId == "break" || valId == "continue") {
+                if (valId == "return" || valId == "discard") {
+                }
+                else if (valId == "break") {
+                    TransformBreak(valData, out insertBeforeOuter, out insertAfterOuter);
+                }
+                else if (valId == "continue") {
+                    TransformContinue(valData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else {
                     TransformVar(valData, ref semanticInfo);
@@ -971,19 +958,18 @@ namespace GlslRewriter
                     funcData.AddParam(v);
                 }
                 else if (funcId == "if") {
-                    if (TransformIfFunction(funcData, out var addFunc)) {
-                        addStm = addFunc;
-                    }
+                    TransformIfFunction(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (funcId == "switch") {
-                    Console.WriteLine("Can't rewrite GLSL including loop !");
+                    Console.WriteLine("Can't rewrite GLSL including switch !");
 
-                    TransformGeneralFunction(funcData, ref semanticInfo);
+                    TransformSwitchFunction(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
-                else if (funcId == "while" || funcId == "for") {
-                    Console.WriteLine("Can't rewrite GLSL including loop !");
-
-                    TransformGeneralFunction(funcData, ref semanticInfo);
+                else if(funcId == "for") {
+                    TransformForFunction(funcData, out insertBeforeOuter, out insertAfterOuter);
+                }
+                else if (funcId == "while") {
+                    TransformWhileFunction(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else {
                     TransformGeneralFunction(funcData, ref semanticInfo);
@@ -993,18 +979,10 @@ namespace GlslRewriter
                 var firstValOrFunc = stmData.GetFunction(0);
                 string funcId = firstValOrFunc.GetId();
                 if (funcId == "if") {
-                    if (TransformIfStatement(stmData, out var addFunc)) {
-                        addStm = addFunc;
-                    }
+                    TransformIfStatement(stmData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (funcId == "do") {
-                    Console.WriteLine("Can't rewrite GLSL including loop !");
-
-                    for (int ix = 0; ix < stmData.GetFunctionNum(); ++ix) {
-                        var fd = stmData.GetFunction(ix).AsFunction;
-                        if (null != fd)
-                            TransformGeneralFunction(fd, ref semanticInfo);
-                    }
+                    TransformDoWhileStatement(stmData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (funcId == "?") {
                     Debug.Assert(false);
@@ -1014,7 +992,7 @@ namespace GlslRewriter
                     TransformVar(stmData, 0, false, ref semanticInfo);
                 }
             }
-            return null != addStm;
+            return null != insertBeforeOuter || null != insertAfterOuter;
         }
 
         //表达式语法处理，表达式总是有一个返回值
@@ -1109,14 +1087,8 @@ namespace GlslRewriter
                 }
                 if (funcData.HaveStatement()) {
                     TransformGeneralFunction(lowerFunc, ref semanticInfo);
-                    PushBlock();
-                    for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
-                        var syntax = funcData.GetParam(stmIx);
-                        if (TransformStatement(syntax, out var addStm)) {
-                            funcData.Params.Insert(stmIx + 1, addStm);
-                            ++stmIx;
-                        }
-                    }
+                    PushBlock(false, false);
+                    TransformFunctionStatements(funcData);
                     PopBlock();
                 }
                 else {
@@ -1124,32 +1096,8 @@ namespace GlslRewriter
                 }
             }
             else if (funcData.HaveStatement()) {
-                PushBlock();
-                for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
-                    Dsl.ISyntaxComponent? syntax = null;
-                    for (; ; ) {
-                        //去掉连续分号
-                        syntax = funcData.GetParam(stmIx);
-                        if (syntax.IsValid()) {
-                            break;
-                        }
-                        else {
-                            funcData.Params.Remove(syntax);
-                            if (stmIx < funcData.GetParamNum()) {
-                                syntax = funcData.GetParam(stmIx);
-                            }
-                            else {
-                                syntax = null;
-                                break;
-                            }
-                        }
-                    }
-                    //处理语句
-                    if (stmIx < funcData.GetParamNum() && null != syntax && TransformStatement(syntax, out var addStm)) {
-                        funcData.Params.Insert(stmIx + 1, addStm);
-                        ++stmIx;
-                    }
-                }
+                PushBlock(false, false);
+                TransformFunctionStatements(funcData);
                 PopBlock();
             }
             else {
@@ -1196,14 +1144,16 @@ namespace GlslRewriter
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
                 for (int ix = 0; ix < paramNum; ++ix) {
                     var syntax = call.GetParam(ix);
-                    var tsemanticInfo = new SemanticInfo();
-                    TransformExpression(syntax, ref tsemanticInfo);
+                    if (syntax.IsValid()) {
+                        var tsemanticInfo = new SemanticInfo();
+                        TransformExpression(syntax, ref tsemanticInfo);
 
-                    var agn = tsemanticInfo.GraphNode;
-                    Debug.Assert(null != agn);
+                        var agn = tsemanticInfo.GraphNode;
+                        Debug.Assert(null != agn);
 
-                    cgcn.AddPrev(agn);
-                    agn.AddNext(cgcn);
+                        cgcn.AddPrev(agn);
+                        agn.AddNext(cgcn);
+                    }
                 }
                 semanticInfo.GraphNode = cgcn;
             }
@@ -1274,91 +1224,235 @@ namespace GlslRewriter
                 semanticInfo.GraphNode = cgcn;
             }
         }
+        private static void TransformFunctionStatements(Dsl.FunctionData funcData)
+        {
+            for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
+                Dsl.ISyntaxComponent? syntax = null;
+                for (; ; ) {
+                    //去掉连续分号
+                    syntax = funcData.GetParam(stmIx);
+                    if (syntax.IsValid()) {
+                        break;
+                    }
+                    else {
+                        funcData.Params.Remove(syntax);
+                        if (stmIx < funcData.GetParamNum()) {
+                            syntax = funcData.GetParam(stmIx);
+                        }
+                        else {
+                            syntax = null;
+                            break;
+                        }
+                    }
+                }
+                //处理语句
+                if (stmIx < funcData.GetParamNum() && null != syntax) {
+                    if (TransformStatement(syntax, out var insertBefore, out var insertAfter)) {
+                        if (null != insertBefore) {
+                            foreach (var isyntax in insertBefore) {
+                                funcData.Params.Insert(stmIx, isyntax);
+                                ++stmIx;
+                            }
+                        }
+                        if (null != insertAfter) {
+                            foreach (var isyntax in insertAfter) {
+                                funcData.Params.Insert(stmIx + 1, isyntax);
+                                ++stmIx;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         //if语句的SSA处理
-        private static bool TransformIfFunction(Dsl.FunctionData ifFunc, out Dsl.FunctionData? addFunc)
+        private static bool TransformIfFunction(Dsl.FunctionData ifFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
             var semanticInfo = new SemanticInfo();
-            addFunc = null;
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
             if (ifFunc.IsHighOrder) {
                 var lowerFunc = ifFunc.LowerOrderFunction;
-                TransformGeneralFunction(lowerFunc, ref semanticInfo);
+                TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (ifFunc.HaveStatement()) {
                     var suffix = "_phi_" + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
-                    PushBlock();
-                    for (int stmIx = 0; stmIx < ifFunc.GetParamNum(); ++stmIx) {
-                        var syntax = ifFunc.GetParam(stmIx);
-                        if (TransformStatement(syntax, out var addStm)) {
-                            ifFunc.Params.Insert(stmIx + 1, addStm);
-                            ++stmIx;
-                        }
-                    }
-                    addFunc = new Dsl.FunctionData();
+                    PushBlock(true, false);
+                    SetCurBlockPhiSuffix(suffix);
+                    TransformFunctionStatements(ifFunc);
+                    var addFunc = new Dsl.FunctionData();
                     addFunc.Name = new Dsl.ValueData("else", Dsl.AbstractSyntaxComponent.ID_TOKEN);
                     addFunc.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_STATEMENT);
                     foreach(var vname in CurSetVars()) {
-                        var assignFunc = new Dsl.FunctionData();
-                        assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
-                        assignFunc.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR);
-                        assignFunc.SetSeparator(Dsl.AbstractSyntaxComponent.SEPARATOR_SEMICOLON);
-                        assignFunc.AddParam(new Dsl.ValueData(vname + suffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
-                        if(CurVarAliasInfos().TryGetValue(vname, out var aliasInfo)) {
-                            assignFunc.AddParam(new Dsl.ValueData(vname + aliasInfo.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
-                            aliasInfo.AliasSuffix = suffix;
-                        }
-                        else {
-                            Debug.Assert(false);
-                        }
+                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
                         ifFunc.AddParam(assignFunc);
 
-                        var assignFunc2 = new Dsl.FunctionData();
-                        assignFunc2.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
-                        assignFunc2.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR);
-                        assignFunc2.SetSeparator(Dsl.AbstractSyntaxComponent.SEPARATOR_SEMICOLON);
-                        assignFunc2.AddParam(new Dsl.ValueData(vname + suffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
-                        if (oldAliasInfos.TryGetValue(vname, out var aliasInfo2)) {
-                            assignFunc2.AddParam(new Dsl.ValueData(vname + aliasInfo2.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
-                        }
-                        else {
-                            assignFunc2.AddParam(new Dsl.ValueData(vname, Dsl.AbstractSyntaxComponent.ID_TOKEN));
-                        }
+                        var assignFunc2 = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
                         addFunc.AddParam(assignFunc2);
+                    }
+                    insertAfterOuter = new List<ISyntaxComponent>();
+                    Debug.Assert(null != insertAfterOuter);
+                    insertAfterOuter.Add(addFunc);
+                    PopBlock();
+                }
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformIfStatement(Dsl.StatementData ifStatement, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            var suffix = "_phi_" + GenUniqueNumber();
+            var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+            HashSet<string> setVars = new HashSet<string>();
+            foreach (var valOrFunc in ifStatement.Functions) {
+                var f = valOrFunc.AsFunction;
+                if (null != f) {
+                    if (f.IsHighOrder) {
+                        var semanticInfo = new SemanticInfo();
+                        TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
+                    }
+                    PushBlock(true, false);
+                    SetCurBlockPhiSuffix(suffix);
+                    TransformFunctionStatements(f);
+                    //每个分支处理自己赋值过的变量，同时将变量名汇总
+                    foreach (var vname in CurSetVars()) {
+                        if(!setVars.Contains(vname))
+                            setVars.Add(vname);
+                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
+                        f.AddParam(assignFunc);
                     }
                     PopBlock();
                 }
             }
-            return addFunc != null;
-        }
-        private static bool TransformIfStatement(Dsl.StatementData ifStatement, out Dsl.FunctionData? addFunc)
-        {
-            addFunc = null;
-            return addFunc != null;
-        }
-        private static void TransformForFunction(Dsl.FunctionData forFunc)
-        {
-            //支持循环后的可能调整
-            //0、所有变量的语法引用记录到一个字典里，供后续修订别名使用
-            //1、phi变量的值变为phi函数运算的结果，同时赋值放到语句块外（从而是SSA形式）
-            //2、别名信息记录引入的位置（可能记录词法范围ID即可），词法范围信息上记一个入口phi变量信息，供分析中添加，在退出词法范围时实际
-            //修改语法
-            //3、在进入语句块时备份一份所有变量别名信息，用于确定离开语句块后的phi函数参数
-            //4、在进入语句块时为块内使用的每一个变量引入一个phi变量，在实际变量使用时根据当前变量的别名引入层次添加到2中入口phi变量信息里，
-            //如果是在里层循环跨多层循环使用循环外变量，则各层循环的入口phi变量信息都需要增加相应phi变量，最终使用最里层的phi变量作为新名称
-            //5、在离开语句块时修订进入语句块时的phi变量对应的phi函数参数，加入赋值变量的最后别名，在离开语句块后为块内赋值过的每一个变量
-            //引入一个phi变量
-            //6、所有插入的phi变量赋值语句都保留语法引用与上级语法，全部处理完后，如果phi函数参数只有一个的，删除phi变量与赋值，所有对该
-            //phi变量的引用修订别名为其唯一参数
-        }
-        private static void TransformWhileFunction(Dsl.FunctionData forFunc)
-        {
+            //1、多分支的处理方法与单if分支不同，我们在if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
+            //2、更新各变量的别名为phi变量别名
+            insertBeforeOuter = new List<ISyntaxComponent>();
+            Debug.Assert(null != insertBeforeOuter);
+            foreach (var vname in setVars) {
+                var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                insertBeforeOuter.Add(assignFunc);
 
+                var curAliasInfos = CurVarAliasInfos();
+                if(curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
+                    varAliasInfo.AliasSuffix = suffix;
+                }
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
         }
-        private static void TransformDoWhileStatement(Dsl.StatementData forFunc)
+        private static bool TransformSwitchFunction(Dsl.FunctionData ifFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
-
+            //先不支持了，好像一般反编译的shader都不会使用switch语句
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            return insertBeforeOuter != null || insertAfterOuter != null;
         }
-
+        private static bool TransformForFunction(Dsl.FunctionData forFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            var semanticInfo = new SemanticInfo();
+            if (forFunc.IsHighOrder) {
+                var lowerFunc = forFunc.LowerOrderFunction;
+                TransformGeneralCall(lowerFunc, ref semanticInfo);
+                if (forFunc.HaveStatement()) {
+                    var suffix = "_phi_" + GenUniqueNumber();
+                    var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                    PushBlock(true, true);
+                    SetCurBlockPhiSuffix(suffix);
+                    TransformFunctionStatements(forFunc);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    PopBlock();
+                    if (null != newRefVarValDataOuter) {
+                        foreach (var pair in newRefVarValDataOuter) {
+                            foreach (var vd in pair.Value) {
+                                TryAddUndeterminedVarAlias(pair.Key, vd);
+                            }
+                        }
+                    }
+                }
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformWhileFunction(Dsl.FunctionData whileFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            var semanticInfo = new SemanticInfo();
+            if (whileFunc.IsHighOrder) {
+                var lowerFunc = whileFunc.LowerOrderFunction;
+                TransformGeneralCall(lowerFunc, ref semanticInfo);
+                if (whileFunc.HaveStatement()) {
+                    var suffix = "_phi_" + GenUniqueNumber();
+                    var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                    PushBlock(true, true);
+                    SetCurBlockPhiSuffix(suffix);
+                    TransformFunctionStatements(whileFunc);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    PopBlock();
+                    if (null != newRefVarValDataOuter) {
+                        foreach (var pair in newRefVarValDataOuter) {
+                            foreach (var vd in pair.Value) {
+                                TryAddUndeterminedVarAlias(pair.Key, vd);
+                            }
+                        }
+                    }
+                }
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformDoWhileStatement(Dsl.StatementData stm, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            var semanticInfo = new SemanticInfo();
+            var doFunc = stm.First.AsFunction;
+            var whileFunc = stm.Second.AsFunction;
+            Debug.Assert(null != doFunc);
+            Debug.Assert(null != whileFunc);
+            if (doFunc.HaveStatement()) {
+                var suffix = "_phi_" + GenUniqueNumber();
+                var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                PushBlock(true, true);
+                SetCurBlockPhiSuffix(suffix);
+                TransformFunctionStatements(doFunc);
+                ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                PopBlock();
+                if (null != newRefVarValDataOuter) {
+                    foreach (var pair in newRefVarValDataOuter) {
+                        foreach (var vd in pair.Value) {
+                            TryAddUndeterminedVarAlias(pair.Key, vd);
+                        }
+                    }
+                }
+            }
+            TransformGeneralCall(whileFunc, ref semanticInfo);
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformBreak(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertAfterOuter = null;
+            var suffix = GetCurLoopBlockPhiSuffix();
+            insertBeforeOuter = new List<ISyntaxComponent>();
+            Debug.Assert(null != insertBeforeOuter);
+            foreach (var vname in CurLoopSetVars()) {
+                var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), false);
+                insertBeforeOuter.Add(assignFunc);
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformContinue(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertAfterOuter = null;
+            var suffix = GetCurLoopBlockPhiSuffix();
+            insertBeforeOuter = new List<ISyntaxComponent>();
+            Debug.Assert(null != insertBeforeOuter);
+            foreach (var vname in CurLoopSetVars()) {
+                var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), false);
+                insertBeforeOuter.Add(assignFunc);
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
         private static void TransformConditionStatement(Dsl.StatementData stmData, ref SemanticInfo semanticInfo)
         {
             var tfunc = stmData.GetFunction(0).AsFunction;
@@ -1396,6 +1490,63 @@ namespace GlslRewriter
             semanticInfo.ResultType = cgcn.Type;
         }
 
+        private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
+        {
+            newRefVarValDataOuter = new Dictionary<string, List<ValueData>>();
+            insertBeforeOuter = new List<ISyntaxComponent>();
+            Debug.Assert(null != insertBeforeOuter);
+            var undeterminedAliasTable = CurUndeterminedVarAliasTable();
+            foreach (var vname in CurSetVars()) {
+                //处理循环里的未决别名
+                string phiVarName = vname + phiSuffix;
+                if (undeterminedAliasTable.TryGetValue(vname, out var info)) {
+                    foreach (var valData in info.ValueDatas) {
+                        valData.SetId(phiVarName);
+                    }
+                    undeterminedAliasTable.Remove(vname);
+                }
+
+                //在循环结束前添加phi变量赋值
+                var assignFunc = BuildPhiVarAliasAssignment(vname, phiSuffix, CurVarAliasInfos(), true);
+                loopFunc.AddParam(assignFunc);
+
+                //在循环体前添加phi变量赋值，这里有可能为外层循环引入未决别名
+                var assignFunc2 = BuildPhiVarAliasAssignment(vname, phiSuffix, oldAliasInfos, false, out var refVarData);
+                if(newRefVarValDataOuter.TryGetValue(vname, out var list)) {
+                    if (list.Contains(refVarData))
+                        list.Add(refVarData);
+                }
+                else {
+                    list = new List<ValueData>();
+                    list.Add(refVarData);
+                    newRefVarValDataOuter.Add(vname, list);
+                }
+                insertBeforeOuter.Add(assignFunc2);
+            }
+        }
+        private static Dsl.FunctionData BuildPhiVarAliasAssignment(string vname, string phiSuffix, Dictionary<string, VarAliasInfo> aliasInfos, bool updateVarAliasInfo)
+        {
+            return BuildPhiVarAliasAssignment(vname, phiSuffix, aliasInfos, updateVarAliasInfo, out var valData);
+        }
+        private static Dsl.FunctionData BuildPhiVarAliasAssignment(string vname, string phiSuffix, Dictionary<string, VarAliasInfo> aliasInfos, bool updateVarAliasInfo, out Dsl.ValueData refVarValDataOuter)
+        {
+            var assignFunc = new Dsl.FunctionData();
+            assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
+            assignFunc.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR);
+            assignFunc.SetSeparator(Dsl.AbstractSyntaxComponent.SEPARATOR_SEMICOLON);
+            assignFunc.AddParam(new Dsl.ValueData(vname + phiSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
+            if (aliasInfos.TryGetValue(vname, out var aliasInfo)) {
+                refVarValDataOuter = new Dsl.ValueData(vname + aliasInfo.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN);
+                if (updateVarAliasInfo)
+                    aliasInfo.AliasSuffix = phiSuffix;
+            }
+            else {
+                refVarValDataOuter = new Dsl.ValueData(vname, Dsl.AbstractSyntaxComponent.ID_TOKEN);
+            }
+            assignFunc.AddParam(refVarValDataOuter);
+            return assignFunc;
+        }
+
         //变量的SSA处理
         private static void TransformVar(Dsl.ValueData valData, ref SemanticInfo semanticInfo)
         {
@@ -1421,6 +1572,8 @@ namespace GlslRewriter
                         if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                             valData.SetId(vid + info.AliasSuffix);
                         }
+                        //如果引用的变量不是在当前循环里赋值的，添加到未决别名表里（此变量可能在循环后续赋值，如果被赋值，需要修改别名为phi变量别名）
+                        TryAddUndeterminedVarAlias(vid, valData);
                         var cgvn = FindComputeGraphVarNode(valData.GetId());
                         semanticInfo.GraphNode = cgvn;
                         semanticInfo.ResultType = vinfo.Type;
@@ -1661,9 +1814,10 @@ namespace GlslRewriter
                 if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                     ++info.AliasIndex;
                     info.AliasSuffix = "_" + info.AliasIndex.ToString();
+                    info.BlockId = CurBlockId();
                 }
                 else {
-                    info = new VarAliasInfo { AliasIndex = 0, AliasSuffix = "_0" };
+                    info = new VarAliasInfo { AliasIndex = 0, AliasSuffix = "_0", BlockId = CurBlockId() };
                     CurVarAliasInfos().Add(vid, info);
                 }
             }
@@ -1692,58 +1846,6 @@ namespace GlslRewriter
             return ret;
         }
         private static bool SplitToplevelStatementsInExpression(Dsl.StatementData expParam, out Dsl.StatementData? left, out Dsl.StatementData? right)
-        {
-            left = null;
-            right = null;
-            int funcNum = expParam.GetFunctionNum();
-            var lastFunc = expParam.Last.AsFunction;
-            if (null != lastFunc && lastFunc.IsHighOrder) {
-                //语句大括号后接圆括号表达式
-                var innerFunc = lastFunc;
-                while (innerFunc.IsHighOrder && innerFunc.HaveParam())
-                    innerFunc = innerFunc.LowerOrderFunction;
-                if (null != innerFunc && innerFunc.HaveStatement()) {
-                    left = new Dsl.StatementData();
-                    right = new Dsl.StatementData();
-                    for (int i = 0; i < funcNum - 1; ++i) {
-                        left.AddFunction(expParam.GetFunction(i));
-                    }
-                    left.AddFunction(innerFunc);
-                    var func = new Dsl.FunctionData();
-                    right.AddFunction(func);
-                    var f = lastFunc;
-                    while (f != innerFunc) {
-                        func.Params.AddRange(f.Params);
-                        f = f.LowerOrderFunction;
-                        if (f != innerFunc) {
-                            func.LowerOrderFunction = new Dsl.FunctionData();
-                            func = func.LowerOrderFunction;
-                        }
-                    }
-                    return true;
-                }
-            }
-            for (int ix = funcNum - 2; ix >= 0; --ix) {
-                var func = expParam.GetFunction(ix);
-                string id = func.GetId();
-                var f_ = func.AsFunction;
-                if (null != f_) {
-                    if (ix < funcNum - 1 && f_.HaveStatement()) {
-                        left = new Dsl.StatementData();
-                        right = new Dsl.StatementData();
-                        for (int i = 0; i <= ix; ++i) {
-                            left.AddFunction(expParam.GetFunction(i));
-                        }
-                        for (int i = ix + 1; i < funcNum; ++i) {
-                            right.AddFunction(expParam.GetFunction(i));
-                        }
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        private static bool SplitStatementsInExpression(Dsl.StatementData expParam, out Dsl.StatementData? left, out Dsl.StatementData? right)
         {
             left = null;
             right = null;
@@ -2636,7 +2738,7 @@ namespace GlslRewriter
                 funcInfo.RetInfo = varInfo;
             }
         }
-        private static void PushBlock()
+        private static void PushBlock(bool isBranch, bool isLoop)
         {
             ++s_LastBlockId;
             Dictionary<string, VarAliasInfo>? varAliasInfo = null;
@@ -2649,7 +2751,7 @@ namespace GlslRewriter
                 Debug.Assert(null != s_ToplevelLexicalScopeInfo.VarAliasInfos);
                 varAliasInfo = CloneVarAliasInfos(s_ToplevelLexicalScopeInfo.VarAliasInfos);
             }
-            s_LexicalScopeStack.Push(new LexicalScopeInfo { BlockId = s_LastBlockId, LastVarType = null, VarAliasInfos = varAliasInfo });
+            s_LexicalScopeStack.Push(new LexicalScopeInfo { IsBranch = isBranch, IsLoop = isLoop, BlockId = s_LastBlockId, LastVarType = null, VarAliasInfos = varAliasInfo });
         }
         private static void PopBlock()
         {
@@ -2662,12 +2764,39 @@ namespace GlslRewriter
                         setVars.Add(key);
                     }
                 }
+                var undeterminedVarAliasTable = curInfo.UndeterminedVarAliasTable;
+                foreach (var pair in lastInfo.UndeterminedVarAliasTable) {
+                    if(undeterminedVarAliasTable.TryGetValue(pair.Key, out var info)) {
+                        info.ValueDatas.AddRange(pair.Value.ValueDatas);
+                    }
+                    else {
+                        undeterminedVarAliasTable.Add(pair.Key, pair.Value);
+                    }
+                }
+                //如果不是分支块，则别名信息被上层块继承
+                if (!lastInfo.IsBranch) {
+                    var varAliasInfos = curInfo.VarAliasInfos;
+                    Debug.Assert(null != varAliasInfos);
+                    Debug.Assert(null != lastInfo.VarAliasInfos);
+                    foreach (var pair in lastInfo.VarAliasInfos) {
+                        varAliasInfos[pair.Key] = pair.Value;
+                    }
+                }
             }
             else {
                 var setVars = s_ToplevelLexicalScopeInfo.SetVars;
                 foreach (var key in lastInfo.SetVars) {
                     if (!setVars.Contains(key)) {
                         setVars.Add(key);
+                    }
+                }
+                var undeterminedVarAliasTable = s_ToplevelLexicalScopeInfo.UndeterminedVarAliasTable;
+                foreach (var pair in lastInfo.UndeterminedVarAliasTable) {
+                    if (undeterminedVarAliasTable.TryGetValue(pair.Key, out var info)) {
+                        info.ValueDatas.AddRange(pair.Value.ValueDatas);
+                    }
+                    else {
+                        undeterminedVarAliasTable.Add(pair.Key, pair.Value);
                     }
                 }
             }
@@ -2686,12 +2815,28 @@ namespace GlslRewriter
             }
             return s_ToplevelLexicalScopeInfo.SetVars;
         }
-        private static Dictionary<string, PhiVarInfo> CurPhiVarInfos()
+        private static HashSet<string> CurLoopSetVars()
         {
             if (s_LexicalScopeStack.Count > 0) {
-                return s_LexicalScopeStack.Peek().PhiVarInfos;
+                HashSet<string> result = new HashSet<string>();
+                foreach (var info in s_LexicalScopeStack) {
+                    foreach(var key in info.SetVars) {
+                        if (!result.Contains(key))
+                            result.Add(key);
+                    }
+                    if (info.IsLoop)
+                        break;
+                }
+                return result;
             }
-            return s_ToplevelLexicalScopeInfo.PhiVarInfos;
+            return s_ToplevelLexicalScopeInfo.SetVars;
+        }
+        private static Dictionary<string, UndeterminedVarAlias> CurUndeterminedVarAliasTable()
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                return s_LexicalScopeStack.Peek().UndeterminedVarAliasTable;
+            }
+            return s_ToplevelLexicalScopeInfo.UndeterminedVarAliasTable;
         }
         private static Dictionary<string, VarAliasInfo> CurVarAliasInfos()
         {
@@ -2703,6 +2848,50 @@ namespace GlslRewriter
             var toplevelInfos = s_ToplevelLexicalScopeInfo.VarAliasInfos;
             Debug.Assert(null != toplevelInfos);
             return toplevelInfos;
+        }
+        private static void TryAddUndeterminedVarAlias(string vname, Dsl.ValueData valData)
+        {
+            var curLoopSetVars = CurLoopSetVars();
+            if (!curLoopSetVars.Contains(vname)) {
+                var curUndeterminedVarAliasTable = CurUndeterminedVarAliasTable();
+                if(curUndeterminedVarAliasTable.TryGetValue(vname, out var info)) {
+                    if (!info.ValueDatas.Contains(valData))
+                        info.ValueDatas.Add(valData);
+                }
+                else {
+                    info = new UndeterminedVarAlias();
+                    info.ValueDatas.Add(valData);
+                    curUndeterminedVarAliasTable.Add(vname, info);
+                }
+            }
+        }
+        private static void SetCurBlockPhiSuffix(string suffix)
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                s_LexicalScopeStack.Peek().PhiSuffix = suffix;
+            }
+            else {
+                s_ToplevelLexicalScopeInfo.PhiSuffix = suffix;
+            }
+        }
+        private static string GetCurBlockPhiSuffix()
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                return s_LexicalScopeStack.Peek().PhiSuffix;
+            }
+            else {
+                return s_ToplevelLexicalScopeInfo.PhiSuffix;
+            }
+        }
+        private static string GetCurLoopBlockPhiSuffix()
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                foreach (var info in s_LexicalScopeStack) {
+                    if (info.IsLoop)
+                        return info.PhiSuffix;
+                }
+            }
+            return string.Empty;
         }
         private static void SetLastVarType(VarInfo info)
         {
@@ -2861,19 +3050,19 @@ namespace GlslRewriter
                 return new VarAliasInfo { AliasIndex = AliasIndex, AliasSuffix = AliasSuffix, BlockId = BlockId };
             }
         }
-        public sealed class PhiVarInfo
+        public sealed class UndeterminedVarAlias
         {
-            public string PhiVarName = string.Empty;
-            public List<string> PhiArgs = new List<string>();
-            public Dsl.ISyntaxComponent? ParentStatement = null;
-            public int ParamIndex = -1;
+            public List<Dsl.ValueData> ValueDatas = new List<ValueData>();
         }
         public sealed class LexicalScopeInfo
         {
+            public bool IsBranch = false;
+            public bool IsLoop = false;
             public int BlockId = 0;
+            public string PhiSuffix = string.Empty;
             public VarInfo? LastVarType = null;
             public HashSet<string> SetVars = new HashSet<string>();
-            public Dictionary<string, PhiVarInfo> PhiVarInfos = new Dictionary<string, PhiVarInfo>();
+            public Dictionary<string, UndeterminedVarAlias> UndeterminedVarAliasTable = new Dictionary<string, UndeterminedVarAlias>();
 
             public Dictionary<string, VarAliasInfo>? VarAliasInfos = null;
         }
@@ -2899,16 +3088,17 @@ namespace GlslRewriter
             }
         }
 
+        internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
+
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();
         private static SortedDictionary<string, StructInfo> s_StructInfos = new SortedDictionary<string, StructInfo>();
         private static SortedDictionary<string, BufferInfo> s_BufferInfos = new SortedDictionary<string, BufferInfo>();
         private static SortedDictionary<string, ArrayInitInfo> s_ArrayInits = new SortedDictionary<string, ArrayInitInfo>();
 
+        //赋值语句左边变量别名替换需要等当前语句处理完成后进行（有可能右边引用的相同变量，此时引用变量的别名应该是之前赋值确定的别名）
+        //这个队列用于此目的
         private static Queue<string> s_VarAliasInfoUpdateQueue = new Queue<string>();
-        private static Dictionary<string, VarSyntaxInfo> s_VarSyntaxInfos = new Dictionary<string, VarSyntaxInfo>();
-        private static List<PhiVarInfo> s_PhiVarInfos = new List<PhiVarInfo>();
 
-        internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         private static Dictionary<string, Dictionary<int, VarInfo>> s_VarInfos = new Dictionary<string, Dictionary<int, VarInfo>>();
         private static Stack<LexicalScopeInfo> s_LexicalScopeStack = new Stack<LexicalScopeInfo>();
         private static LexicalScopeInfo s_ToplevelLexicalScopeInfo = new LexicalScopeInfo { VarAliasInfos = new Dictionary<string, VarAliasInfo>() };

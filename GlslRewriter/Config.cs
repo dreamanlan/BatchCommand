@@ -137,7 +137,42 @@ namespace GlslRewriter
                     }
                 }
             }
+
+            if (Program.s_IsVsShader) {
+                s_ShaderConfigs.TryGetValue("vs", out s_ActiveConfig);
+            }
+            else if(Program.s_IsPsShader) {
+                s_ShaderConfigs.TryGetValue("ps", out s_ActiveConfig);
+            }
+            else if(Program.s_IsCsShader) {
+                s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
+            }
         }
+        internal static bool CalcFunc(string func, IList<string> args, out string val)
+        {
+            bool ret = false;
+            val = string.Empty;
+            if (ActiveConfig.Calculators.TryGetValue(func, out var infos)) {
+                foreach(var info in infos) {
+                    bool match = true;
+                    for (int i = 0; i < args.Count && i < info.Args.Count; ++i) {
+                        if (args[i] == info.Args[i] || info.Args[i]=="*") {
+                        }
+                        else {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match && null != info.OnGetValue) {
+                        val = info.OnGetValue();
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+            return ret;
+        }
+
         private static void AddShaderConfig(string shaderType, Dsl.FunctionData dslCfg)
         {
             var cfgInfo = new ShaderConfig();
@@ -146,14 +181,17 @@ namespace GlslRewriter
                 string id = p.GetId();
                 var pfd = p as Dsl.FunctionData;
                 if (null != pfd) {
-                    if (id == "uniform") {
-                        ParseUniformImport(cfgInfo, pfd);
-                    }
-                    else if (id == "vs_attr") {
+                    if (id == "vs_attr") {
                         ParseInOutAttr(id, cfgInfo, pfd);
                     }
                     else if (id == "ps_attr") {
                         ParseInOutAttr(id, cfgInfo, pfd);
+                    }
+                    else if (id == "uniform") {
+                        ParseUniformImport(cfgInfo, pfd);
+                    }
+                    else if (id == "calculator") {
+                        ParseCalculator(cfgInfo, pfd);
                     }
                 }
             }
@@ -277,6 +315,106 @@ namespace GlslRewriter
 
             cfg.UniformImports.Add(info);
         }
+        private static void ParseCalculator(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "=") {
+                            var func = fd.GetParam(0) as Dsl.FunctionData;
+                            var val = fd.GetParam(1);
+                            if (null != func) {
+                                ParseCalculatorInfo(cfg, func, val);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private static void ParseCalculatorInfo(ShaderConfig cfg, Dsl.FunctionData func, Dsl.ISyntaxComponent val)
+        {
+            if (func.IsHighOrder) {
+
+            }
+            else {
+                var info = new CalculatorInfo();
+                info.Func = func.GetId();
+                foreach(var p in func.Params) {
+                    info.Args.Add(p.GetId());
+                }
+                var vd = val as Dsl.ValueData;
+                var fd = val as Dsl.FunctionData;
+                if (null != vd) {
+                    info.OnGetValue = () => { return vd.GetId(); };
+                }
+                else if (null != fd) {
+                    string fid = fd.GetId();
+                    if (fid == "rand_color") {
+                        info.OnGetValue = () => {
+                            var sb = new StringBuilder();
+                            sb.Append("vec4");
+                            sb.Append("(");
+                            sb.Append(s_Random.NextDouble());
+                            sb.Append(",");
+                            sb.Append(s_Random.NextDouble());
+                            sb.Append(",");
+                            sb.Append(s_Random.NextDouble());
+                            sb.Append(",");
+                            sb.Append(s_Random.NextDouble());
+                            sb.Append(")");
+                            return sb.ToString();
+                        };
+                    }
+                    else if (fid == "rand_uv") {
+                        string argStr = fd.GetParamId(0);
+                        int.TryParse(argStr, out var num);
+                        if (num >= 2 && num <= 4) {
+                            info.OnGetValue = () => {
+                                var sb = new StringBuilder();
+                                sb.Append("vec");
+                                sb.Append(num);
+                                sb.Append("(");
+                                sb.Append(s_Random.NextDouble());
+                                for (int i = 0; i < num - 1; ++i) {
+                                    sb.Append(",");
+                                    sb.Append(s_Random.NextDouble());
+                                }
+                                sb.Append(")");
+                                return sb.ToString();
+                            };
+                        }
+                    }
+                    else if (fid == "rand_size") {
+                        List<int> list = new List<int>();
+                        foreach(var arg in fd.Params) {
+                            int.TryParse(arg.GetId(), out var v);
+                            list.Add(v);
+                        }
+                        info.OnGetValue = () => {
+                            var sb = new StringBuilder();
+                            sb.Append("vec");
+                            sb.Append(list.Count);
+                            sb.Append("(");
+                            for (int i = 0; i < list.Count; ++i) {
+                                if (i > 0)
+                                    sb.Append(",");
+                                sb.Append(s_Random.Next(list[i]));
+                            }
+                            sb.Append(")");
+                            return sb.ToString();
+                        };
+                    }
+                }
+
+                if(!cfg.Calculators.TryGetValue(info.Func, out var infos)) {
+                    infos = new List<CalculatorInfo>();
+                    cfg.Calculators.Add(info.Func, infos);
+                }
+                infos.Add(info);
+            }
+        }
 
         internal class InOutAttrInfo
         {
@@ -292,13 +430,33 @@ namespace GlslRewriter
             internal string Type = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
+        internal delegate string CalculatorValueDelegation();
+        internal class CalculatorInfo
+        {
+            internal string Func = string.Empty;
+            internal List<string> Args = new List<string>();
+            internal CalculatorValueDelegation? OnGetValue;
+        }
         internal class ShaderConfig
         {
             internal string ShaderType = string.Empty;
             internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
+            internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
         }
 
-        internal static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
+        internal static ShaderConfig ActiveConfig
+        {
+            get {
+                if(null == s_ActiveConfig) {
+                    s_ActiveConfig = new ShaderConfig();
+                }
+                return s_ActiveConfig;
+            }
+        }
+        private static ShaderConfig? s_ActiveConfig = null;
+
+        private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
+        private static Random s_Random = new Random();
     }
 }

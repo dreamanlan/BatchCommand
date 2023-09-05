@@ -346,44 +346,36 @@ namespace GlslRewriter
         {
             List<string> stms = new List<string>();
             //插入参数初始化
-            string shaderType = "ps";
-            if (s_IsVsShader)
-                shaderType = "vs";
-            else if (s_IsPsShader)
-                shaderType = "ps";
-            else if (s_IsCsShader)
-                shaderType = "cs";
             if (s_IsPsShader) {
                 stms.Add("gl_FragCoord = vec4(0);");
             }
-            if (Config.s_ShaderConfigs.TryGetValue(shaderType, out var cfg)) {
-                var attrCfg = cfg.InOutAttrInfo;
-                if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
-                    if (File.Exists(attrCfg.InAttrImportFile)) {
-                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
-                        stms.AddRange(lines);
-                    }
-                    else {
-                        Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
-                    }
+            var cfg = Config.ActiveConfig;
+            var attrCfg = cfg.InOutAttrInfo;
+            if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
+                if (File.Exists(attrCfg.InAttrImportFile)) {
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
+                    stms.AddRange(lines);
                 }
-                if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
-                    if (File.Exists(attrCfg.OutAttrImportFile)) {
-                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
-                        stms.AddRange(lines);
-                    }
-                    else {
-                        Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
-                    }
+                else {
+                    Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
                 }
-                foreach (var uniform in cfg.UniformImports) {
-                    if (File.Exists(uniform.File)) {
-                        var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.UsedIndexes, uniform.File);
-                        stms.AddRange(lines);
-                    }
-                    else {
-                        Console.WriteLine("Can't find file {0}", uniform.File);
-                    }
+            }
+            if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
+                if (File.Exists(attrCfg.OutAttrImportFile)) {
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
+                    stms.AddRange(lines);
+                }
+                else {
+                    Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
+                }
+            }
+            foreach (var uniform in cfg.UniformImports) {
+                if (File.Exists(uniform.File)) {
+                    var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.UsedIndexes, uniform.File);
+                    stms.AddRange(lines);
+                }
+                else {
+                    Console.WriteLine("Can't find file {0}", uniform.File);
                 }
             }
             return stms;
@@ -3154,10 +3146,10 @@ namespace GlslRewriter
         private static Dictionary<string, HashSet<string>> s_FuncOverloads = new Dictionary<string, HashSet<string>>();
         private static Stack<FuncInfo> s_FuncParseStack = new Stack<FuncInfo>();
 
-        private static bool s_IsVsShader = false;
-        private static bool s_IsPsShader = true;
-        private static bool s_IsCsShader = false;
-        private static bool s_IsDebugMode = false;
+        internal static bool s_IsVsShader = false;
+        internal static bool s_IsPsShader = true;
+        internal static bool s_IsCsShader = false;
+        internal static bool s_IsDebugMode = false;
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
 

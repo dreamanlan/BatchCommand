@@ -300,7 +300,8 @@ namespace GlslRewriter
             }
             else if (curLevel < 16) {
                 if (PrevNodes.Count > 0) {
-                    m_Value = PrevNodes[0].CalcValue(curLevel + 1);
+                    //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
+                    m_Value = PrevNodes[PrevNodes.Count - 1].CalcValue(curLevel + 1);
                 }
                 else {
                     m_Value = VarName;
@@ -314,7 +315,8 @@ namespace GlslRewriter
         {
             if (curLevel < 16) {
                 if (PrevNodes.Count > 0) {
-                    m_Expression = PrevNodes[0].CalcExpression(curLevel + 1);
+                    //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
+                    m_Expression = PrevNodes[PrevNodes.Count - 1].CalcExpression(curLevel + 1);
                 }
                 else {
                     m_Expression = VarName;

@@ -19,6 +19,11 @@ vs
         add(1,54,55,57,60,61);
         add_range(22,28);
     };
+    calculator
+    {
+        textureSize(*,*) = "vec2(512,128)";
+        texelFetch(*,*,*) = "vec4(0.5,0.5,0.5,1.0)";
+    };
 };
 ps
 {

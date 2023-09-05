@@ -624,6 +624,9 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else {
+                succ = Config.CalcFunc(func, args, out val);
+            }
             return succ;
         }
         public static bool CalcCondExp(string cond, string opd1, string opd2, out string val)

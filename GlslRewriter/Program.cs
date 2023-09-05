@@ -14,7 +14,7 @@ namespace GlslRewriter
         {
             if (args.Length == 0) {
                 Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-cs] [-printgraph] [-src ] glsl_file");
-                Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name].txt");
+                Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
                 Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
                 Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
                 Console.WriteLine(" [-cs] glsl_file is compute shader");
@@ -115,7 +115,6 @@ namespace GlslRewriter
 
                     string srcFileName = Path.GetFileName(srcFilePath);
                     string srcFileNameWithoutExt = Path.GetFileNameWithoutExtension(srcFileName);
-                    string glslFilePath = srcFilePath;
                     string srcExt = Path.GetExtension(srcFilePath);
 
                     if (string.IsNullOrEmpty(argFilePath)) {
@@ -126,10 +125,10 @@ namespace GlslRewriter
                     }
 
                     if (string.IsNullOrEmpty(outFilePath)) {
-                        if (srcExt == "txt")
-                            outFilePath = Path.ChangeExtension(glslFilePath, "glsl");
+                        if (srcExt == ".txt")
+                            outFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_" + srcExt.Substring(1) + ".glsl");
                         else
-                            outFilePath = Path.ChangeExtension(glslFilePath, "txt");
+                            outFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_" + srcExt.Substring(1) + ".txt");
                     }
 
                     Transform(srcFilePath, outFilePath);
@@ -157,7 +156,7 @@ namespace GlslRewriter
         {
             File.Delete(outFile);
             var glslFileLines = File.ReadAllLines(srcFile);
-            var glslLines = RemovePreprocessAndImportAttrs(glslFileLines);
+            var glslLines = CompletionAndSkipPP(glslFileLines);
             string glslTxt = PreprocessCondExp(glslLines);
 
             var file = new Dsl.DslFile();
@@ -281,11 +280,12 @@ namespace GlslRewriter
             lineList.AddRange(lines);
             File.WriteAllLines(outFile, lineList.ToArray());
         }
-        private static List<string> RemovePreprocessAndImportAttrs(IList<string> glslLines)
+        private static List<string> CompletionAndSkipPP(IList<string> glslLines)
         {
             var lines = new List<string>();
             bool attrImported = false;
             bool needFindLBrace = false;
+            lines.Add("vec4 gl_FragCoord;");
             foreach(var line in glslLines) {
                 if (line.TrimStart().StartsWith("#"))
                     continue;
@@ -351,28 +351,32 @@ namespace GlslRewriter
                 shaderType = "ps";
             else if (s_IsCsShader)
                 shaderType = "cs";
+            if (s_IsPsShader) {
+                stms.Add("gl_FragCoord = vec4(0);");
+            }
             if (Config.s_ShaderConfigs.TryGetValue(shaderType, out var cfg)) {
-                if (!string.IsNullOrEmpty(cfg.InAttrImportFile)) {
-                    if (File.Exists(cfg.InAttrImportFile)) {
-                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", cfg.AttrIndex, cfg.InAttrImportFile);
+                var attrCfg = cfg.InOutAttrInfo;
+                if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
+                    if (File.Exists(attrCfg.InAttrImportFile)) {
+                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
                         stms.AddRange(lines);
                     }
                     else {
-                        Console.WriteLine("Can't find file {0}", cfg.InAttrImportFile);
+                        Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
                     }
                 }
-                if (!string.IsNullOrEmpty(cfg.OutAttrImportFile)) {
-                    if (File.Exists(cfg.OutAttrImportFile)) {
-                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", cfg.AttrIndex, cfg.OutAttrImportFile);
+                if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
+                    if (File.Exists(attrCfg.OutAttrImportFile)) {
+                        var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
                         stms.AddRange(lines);
                     }
                     else {
-                        Console.WriteLine("Can't find file {0}", cfg.OutAttrImportFile);
+                        Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
                     }
                 }
                 foreach (var uniform in cfg.UniformImports) {
                     if (File.Exists(uniform.File)) {
-                        var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.File);
+                        var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.UsedIndexes, uniform.File);
                         stms.AddRange(lines);
                     }
                     else {
@@ -558,6 +562,9 @@ namespace GlslRewriter
                 }
             }
             else if (id == "in") {
+                TransformVar(stmData, startFuncIx, true, ref semanticInfo);
+            }
+            else if (id == "flat") {
                 TransformVar(stmData, startFuncIx, true, ref semanticInfo);
             }
             else if (id == "layout") {

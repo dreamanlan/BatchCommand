@@ -2,7 +2,7 @@
   "profiles": {
     "GlslRewriter": {
       "commandName": "Project",
-      "commandLineArgs": "-out test.txt -vs test.glsl",
+      "commandLineArgs": "-ps test.fs",
       "workingDirectory": "D:\\GitHub\\BatchCommand\\GlslRewriter\\bin\\Debug\\net6.0"
     }
   }

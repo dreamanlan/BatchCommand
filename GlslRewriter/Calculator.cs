@@ -916,8 +916,12 @@ namespace GlslRewriter
                 }
             }
             else if (val.Length > 1 && val[0] == '0') {
-                longVal = Convert.ToInt64(val, 8);
-                return true;
+                try {
+                    longVal = Convert.ToInt64(val, 8);
+                    return true;
+                }
+                catch {
+                }
             }
             else if (long.TryParse(val, out longVal)) {
                 return true;

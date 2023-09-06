@@ -6323,7 +6323,7 @@ namespace DslExpression
                         //将无参数名字转换为无参函数调用
                         Dsl.FunctionData fd = new Dsl.FunctionData();
                         fd.Name.CopyFrom(valueData);
-                        fd.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                        fd.SetParenthesisParamClass();
                         if (!p.Load(fd, this)) {
                             //error
                             Log("DslCalculator error, {0} line {1}", comp.ToScriptString(false), comp.GetLine());
@@ -6402,7 +6402,7 @@ namespace DslExpression
                                             newCall.Name = new Dsl.ValueData("dotnetset", Dsl.ValueData.ID_TOKEN);
                                         else
                                             newCall.Name = new Dsl.ValueData("collectionset", Dsl.ValueData.ID_TOKEN);
-                                        newCall.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                                        newCall.SetParenthesisParamClass();
                                         if (innerCall.IsHighOrder) {
                                             newCall.Params.Add(innerCall.LowerOrderFunction);
                                             newCall.Params.Add(ConvertMember(innerCall.GetParam(0), innerCall.GetParamClass()));
@@ -6458,7 +6458,7 @@ namespace DslExpression
                                         }
                                         Dsl.FunctionData newCall = new Dsl.FunctionData();
                                         newCall.Name = new Dsl.ValueData(apiName, Dsl.ValueData.ID_TOKEN);
-                                        newCall.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                                        newCall.SetParenthesisParamClass();
                                         if (innerCall.IsHighOrder) {
                                             newCall.Params.Add(innerCall.LowerOrderFunction);
                                             newCall.Params.Add(ConvertMember(innerCall.GetParam(0), innerCall.GetParamClass()));
@@ -6490,7 +6490,7 @@ namespace DslExpression
                                         newCall.Name = new Dsl.ValueData("dotnetget", Dsl.ValueData.ID_TOKEN);
                                     else
                                         newCall.Name = new Dsl.ValueData("collectionget", Dsl.ValueData.ID_TOKEN);
-                                    newCall.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                                    newCall.SetParenthesisParamClass();
                                     if (callData.IsHighOrder) {
                                         newCall.Params.Add(callData.LowerOrderFunction);
                                         newCall.Params.Add(ConvertMember(callData.GetParam(0), callData.GetParamClass()));

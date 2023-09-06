@@ -5,6 +5,7 @@ using Dsl;
 using System;
 using System.Xml.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.ComponentModel.Design;
 
 namespace GlslRewriter
 {
@@ -182,7 +183,7 @@ namespace GlslRewriter
                 var func = statement.Last.AsFunction;
                 if (null != func) {
                     if (func.HaveStatement()) {
-                        if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch") {
+                        if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch" || (func.IsHighOrder && func.LowerOrderFunction.IsParenthesisParamClass())) {
                             //结束当前语句并开始一个新的空语句
                             dslAction.endStatement();
                             dslAction.beginStatement();
@@ -635,7 +636,8 @@ namespace GlslRewriter
         private static void TransformToplevelFunction(Dsl.FunctionData funcData)
         {
             var semanticInfo = new SemanticInfo();
-            if (funcData.GetId() == "=") {
+            string funcId = funcData.GetId();
+            if (funcId == "=") {
                 var p = funcData.GetParam(0);
                 var vd = p as Dsl.ValueData;
                 var fd = p as Dsl.FunctionData;
@@ -931,9 +933,44 @@ namespace GlslRewriter
 
                     AddComputeGraphRootNode(cgcn);
 
-                    string val = cgcn.GetValue();
-                    string exp = cgcn.GetExpression();
-                    funcData.LastComments.Add("// " + val + "      <=>      " + exp);
+                    //计算总是要执行，输出按配置可能跳过
+                    cgcn.CalcValue();
+                    if (Config.CalcMaxLevel(p, out var maxLvlForVal, out var maxLvlForExp)) {
+                        string val = cgcn.GetValue(maxLvlForVal);
+                        string exp = cgcn.GetExpression(maxLvlForExp);
+                        funcData.LastComments.Add("// " + val + "      <=>      " + exp);
+                    }
+                }
+                else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!="){
+                    //convert to var = var op val
+                    var p1 = funcData.GetParam(0);
+                    var p22 = funcData.GetParam(1);
+                    funcData.Name.SetId("=");
+
+                    var p2 = new Dsl.FunctionData();
+                    p2.Name = new Dsl.ValueData(funcId.Substring(0, funcId.Length - 1), AbstractSyntaxComponent.ID_TOKEN);
+                    p2.SetOperatorParamClass();
+                    var p21 = Dsl.Utility.CloneDsl(p1);
+                    p2.AddParam(p21);
+                    p2.AddParam(p22);
+                    funcData.Params[1] = p2;
+
+                    return TransformStatement(funcData, out insertBeforeOuter, out insertAfterOuter);
+                }
+                else if (funcId == "++" || funcId == "--") {
+                    //convert to var = var + 1
+                    var p1 = funcData.GetParam(0);
+                    funcData.Name.SetId("=");
+
+                    var p2 = new Dsl.FunctionData();
+                    p2.Name = new Dsl.ValueData(funcId.Substring(0, 1), AbstractSyntaxComponent.ID_TOKEN);
+                    p2.SetOperatorParamClass();
+                    var p21 = Dsl.Utility.CloneDsl(p1);
+                    p2.AddParam(p21);
+                    p2.AddParam(new Dsl.ValueData("1", AbstractSyntaxComponent.NUM_TOKEN));
+                    funcData.Params[1] = p2;
+
+                    return TransformStatement(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (funcId == "<-") {
                     var p = funcData.GetParam(0);
@@ -946,7 +983,7 @@ namespace GlslRewriter
                     else {
                         funcData.Name.SetId("return");
                     }
-                    funcData.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS);
+                    funcData.SetParenthesisParamClass();
                     funcData.Params.Clear();
                     funcData.AddParam(v);
                 }
@@ -1056,9 +1093,6 @@ namespace GlslRewriter
 
                 AddComputeGraphRootNode(cgcn);
                 semanticInfo.GraphNode = vgn;
-
-                string exp = cgcn.GetExpression();
-                funcData.LastComments.Add("//  " + exp);
             }
             else {
                 TransformGeneralFunction(funcData, ref semanticInfo);
@@ -1073,7 +1107,7 @@ namespace GlslRewriter
         {
             if (funcData.IsHighOrder) {
                 var lowerFunc = funcData.LowerOrderFunction;
-                if (lowerFunc.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET && funcData.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
+                if (lowerFunc.IsBracketParamClass() && funcData.IsParenthesisParamClass()) {
                     //array init
                     TransformGeneralFunction(funcData, ref semanticInfo);
                     return;
@@ -1108,7 +1142,7 @@ namespace GlslRewriter
                                 var pp = call.GetParam(0);
                                 var innerCall = pp as Dsl.FunctionData;
                                 if (null != innerCall) {
-                                    if (!innerCall.HaveId() && innerCall.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
+                                    if (!innerCall.HaveId() && innerCall.IsParenthesisParamClass()) {
                                         call.ClearParams();
                                         call.Params.AddRange(innerCall.Params);
                                         TransformGeneralCall(call, ref semanticInfo);
@@ -1534,8 +1568,8 @@ namespace GlslRewriter
         {
             var assignFunc = new Dsl.FunctionData();
             assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
-            assignFunc.SetParamClass((int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR);
-            assignFunc.SetSeparator(Dsl.AbstractSyntaxComponent.SEPARATOR_SEMICOLON);
+            assignFunc.SetOperatorParamClass();
+            assignFunc.SetSemiColonSeparator();
             assignFunc.AddParam(new Dsl.ValueData(vname + phiSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
             if (aliasInfos.TryGetValue(vname, out var aliasInfo)) {
                 refVarValDataOuter = new Dsl.ValueData(vname + aliasInfo.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN);
@@ -1605,7 +1639,7 @@ namespace GlslRewriter
             //未初始化的变量定义
             var lastId = stmData.Last.GetId();
             var last = stmData.Last.AsFunction;
-            if (null == last || (last.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET && !last.HaveStatement())) {
+            if (null == last || (last.IsBracketParamClass() && !last.HaveStatement())) {
                 bool isType = true;
                 bool needAdjustArrTag = false;
                 int funcNum = stmData.GetFunctionNum();
@@ -1619,7 +1653,7 @@ namespace GlslRewriter
                             break;
                         }
                         else {
-                            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+                            if (func.IsBracketParamClass()) {
                                 if (ix == funcNum - 2) {
                                     needAdjustArrTag = true;
                                 }
@@ -1741,7 +1775,7 @@ namespace GlslRewriter
             //赋初始值的变量定义
             var lastId = stmData.Last.GetId();
             var last = stmData.Last.AsFunction;
-            if (null == last || (last.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET && !last.HaveStatement())) {
+            if (null == last || (last.IsBracketParamClass() && !last.HaveStatement())) {
                 bool isType = true;
                 bool needAdjustArrTag = false;
                 int funcNum = stmData.GetFunctionNum();
@@ -1755,7 +1789,7 @@ namespace GlslRewriter
                             break;
                         }
                         else {
-                            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+                            if (func.IsBracketParamClass()) {
                                 if (ix == funcNum - 2) {
                                     needAdjustArrTag = true;
                                 }
@@ -1950,7 +1984,7 @@ namespace GlslRewriter
         private static string BuildTypeWithTypeArgs(Dsl.FunctionData func)
         {
             var sb = new StringBuilder();
-            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+            if (func.IsBracketParamClass()) {
                 var arrTags = new List<string>();
                 string baseType = BuildTypeWithArrTags(func, arrTags);
                 sb.Append(baseType);
@@ -1975,7 +2009,7 @@ namespace GlslRewriter
         private static string BuildTypeWithArrTags(Dsl.FunctionData func, List<string> arrTags)
         {
             string ret = string.Empty;
-            if (func.GetParamClassUnmasked() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+            if (func.IsBracketParamClass()) {
                 if (func.IsHighOrder) {
                     ret = BuildTypeWithArrTags(func.LowerOrderFunction, arrTags);
                 }

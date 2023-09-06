@@ -1,6 +1,25 @@
 vs
 {
-    vs_attr("d:/UC/vs_in.csv", "d:/UC/vs_out.csv", 0);
+    setting
+    {
+        def_max_level_for_value = 16;
+        def_max_level_for_expression = 2048;
+        def_skip_all_comments;
+        set_object_max_level(out_attr9_0.x, 64, 2048);
+
+        invalid_variable{
+            in_attr0,
+            in_attr1,
+            in_attr4,
+            in_attr5,
+            in_attr6,
+            in_attr7,
+            in_attr9,
+            in_attr10,
+            in_attr11
+        };
+    };
+    //vs_attr("d:/UC/vs_in.csv", "d:/UC/vs_out.csv", 0);
     uniform("d:/UC/vs_cbuf8.csv", "uvec4"){
         add_range(0,7);
         add(29,30);

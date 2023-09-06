@@ -11,7 +11,7 @@ namespace GlslRewriter
     public struct BoolVal
     {
         public bool Value = false;
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public BoolVal() { }
         public BoolVal(bool val) { Value = val; IsValid = true; }
@@ -20,7 +20,7 @@ namespace GlslRewriter
     public struct FloatVal
     {
         public float Value = 0;
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public FloatVal() { }
         public FloatVal(float val) { Value = val; IsValid = true; }
@@ -29,7 +29,7 @@ namespace GlslRewriter
     public struct IntVal
     {
         public int Value = 0;
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public IntVal() { }
         public IntVal(int val) { Value = val; IsValid = true; }
@@ -38,7 +38,7 @@ namespace GlslRewriter
     public struct UintVal
     {
         public uint Value = 0;
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public UintVal() { }
         public UintVal(uint val) { Value = val; IsValid = true; }
@@ -47,7 +47,7 @@ namespace GlslRewriter
     public struct Bool4Val
     {
         public Bool4 Value = new Bool4();
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public Bool4Val() { }
         public Bool4Val(Bool4 val) { Value = val; IsValid = true; }
@@ -56,7 +56,7 @@ namespace GlslRewriter
     public struct Float4Val
     {
         public Float4 Value = new Float4();
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public Float4Val() { }
         public Float4Val(Float4 val) { Value = val; IsValid = true; }
@@ -65,7 +65,7 @@ namespace GlslRewriter
     public struct Int4Val
     {
         public Int4 Value = new Int4();
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public Int4Val() { }
         public Int4Val(Int4 val) { Value = val; IsValid = true; }
@@ -74,7 +74,7 @@ namespace GlslRewriter
     public struct Uint4Val
     {
         public Uint4 Value = new Uint4();
-        public bool IsValid = true;
+        public bool IsValid = false;
 
         public Uint4Val() { }
         public Uint4Val(Uint4 val) { Value = val; IsValid = true; }
@@ -115,11 +115,27 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (Calculator.TryParseBool(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -129,8 +145,15 @@ namespace GlslRewriter
                 return x.ToString();
             else if (m == "y")
                 return y.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -196,11 +219,27 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (float.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -210,8 +249,15 @@ namespace GlslRewriter
                 return x.ToString();
             else if (m == "y")
                 return y.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -277,11 +323,27 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (int.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -291,8 +353,15 @@ namespace GlslRewriter
                 return x.ToString();
             else if (m == "y")
                 return y.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -358,11 +427,27 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (uint.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -372,8 +457,15 @@ namespace GlslRewriter
                 return x.ToString();
             else if (m == "y")
                 return y.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -451,13 +543,32 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (Calculator.TryParseBool(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
                 else if (m == "z")
                     z = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -469,8 +580,17 @@ namespace GlslRewriter
                 return y.ToString();
             else if (m == "z")
                 return z.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -550,13 +670,32 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (float.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
                 else if (m == "z")
                     z = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -568,8 +707,17 @@ namespace GlslRewriter
                 return y.ToString();
             else if (m == "z")
                 return z.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -649,13 +797,32 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (int.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
                 else if (m == "z")
                     z = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -667,8 +834,17 @@ namespace GlslRewriter
                 return y.ToString();
             else if (m == "z")
                 return z.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -748,13 +924,32 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (uint.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
                     y = val;
                 else if (m == "z")
                     z = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -766,8 +961,17 @@ namespace GlslRewriter
                 return y.ToString();
             else if (m == "z")
                 return z.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -859,6 +1063,7 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (Calculator.TryParseBool(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
@@ -867,7 +1072,28 @@ namespace GlslRewriter
                     z = val;
                 else if (m == "w")
                     w = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        case 3:
+                            w = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -881,8 +1107,19 @@ namespace GlslRewriter
                 return z.ToString();
             else if (m == "w")
                 return w.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                    case 3:
+                        return w.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -976,6 +1213,7 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (float.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
@@ -984,7 +1222,28 @@ namespace GlslRewriter
                     z = val;
                 else if (m == "w")
                     w = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        case 3:
+                            w = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -998,8 +1257,19 @@ namespace GlslRewriter
                 return z.ToString();
             else if (m == "w")
                 return w.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                    case 3:
+                        return w.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -1093,6 +1363,7 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (int.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
@@ -1101,7 +1372,28 @@ namespace GlslRewriter
                     z = val;
                 else if (m == "w")
                     w = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        case 3:
+                            w = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -1115,8 +1407,19 @@ namespace GlslRewriter
                 return z.ToString();
             else if (m == "w")
                 return w.ToString();
-            else
-                return string.Empty;
+            else if (int.TryParse(m, out var ix)) {
+                switch (ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                    case 3:
+                        return w.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -1210,6 +1513,7 @@ namespace GlslRewriter
         {
             bool ret = false;
             if (uint.TryParse(v, out var val)) {
+                ret = true;
                 if (m == "x")
                     x = val;
                 else if (m == "y")
@@ -1218,7 +1522,28 @@ namespace GlslRewriter
                     z = val;
                 else if (m == "w")
                     w = val;
-                ret = true;
+                else if (int.TryParse(m, out var ix)) {
+                    switch (ix) {
+                        case 0:
+                            x = val;
+                            break;
+                        case 1:
+                            y = val;
+                            break;
+                        case 2:
+                            z = val;
+                            break;
+                        case 3:
+                            w = val;
+                            break;
+                        default:
+                            ret = false;
+                            break;
+                    }
+                }
+                else {
+                    ret = false;
+                }
             }
             return ret;
         }
@@ -1232,8 +1557,19 @@ namespace GlslRewriter
                 return z.ToString();
             else if (m == "w")
                 return w.ToString();
-            else
-                return string.Empty;
+            else if(int.TryParse(m, out var ix)) {
+                switch(ix) {
+                    case 0:
+                        return x.ToString();
+                    case 1:
+                        return y.ToString();
+                    case 2:
+                        return z.ToString();
+                    case 3:
+                        return w.ToString();
+                }
+            }
+            return string.Empty;
         }
         public override string ToString()
         {
@@ -1337,6 +1673,7 @@ namespace GlslRewriter
                     }
                 }
             }
+            /*
             else if (suffix.Length > 0) {
                 if (baseType == "vec") {
                     s_Float4Vars[name] = new Float4();
@@ -1365,11 +1702,14 @@ namespace GlslRewriter
                     s_BoolVars[name] = false;
                 }
             }
+            */
         }
         public static bool GetVarValue(string name, string type, out string varVal)
         {
             bool exists = false;
             varVal = string.Empty;
+            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+                return false;
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);
@@ -1463,6 +1803,11 @@ namespace GlslRewriter
             varVal = string.Empty;
             string name = left.VarName;
             string type = left.Type;
+            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+                return false;
+            if(Config.ActiveConfig.SettingInfo.InvalidObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
+                return false;
+            }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count == 0 && suffix.Length > 0) {
                 if (baseType == "vec") {
@@ -1501,31 +1846,36 @@ namespace GlslRewriter
             }
             string name = left.VarName;
             string type = left.Type;
+            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+                return false;
+            if (Config.ActiveConfig.SettingInfo.InvalidArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
+                return false;
+            }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);
                 int arrNum = arrNums[0];
                 if (suffix.Length > 0) {
                     if (baseType == "vec") {
-                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "ivec") {
-                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "uvec") {
-                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "bvec") {
-                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
@@ -1533,28 +1883,54 @@ namespace GlslRewriter
                 }
                 else {
                     if (baseType == "float") {
-                        if (s_FloatArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "int") {
-                        if (s_IntArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_IntArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "uint") {
-                        if (s_UintArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_UintArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
                     }
                     else if (baseType == "bool") {
-                        if (s_BoolArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_BoolArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.ToString();
                         }
+                    }
+                }
+            }
+            else if (suffix.Length > 0) {
+                if (baseType == "vec") {
+                    if (s_Float4Vars.TryGetValue(name, out var val)) {
+                        exists = true;
+                        varVal = val.GetMember(ix);
+                    }
+                }
+                else if (baseType == "ivec") {
+                    if (s_Int4Vars.TryGetValue(name, out var val)) {
+                        exists = true;
+                        varVal = val.GetMember(ix);
+                    }
+                }
+                else if (baseType == "uvec") {
+                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
+                        exists = true;
+                        varVal = val.GetMember(ix);
+                    }
+                }
+                else if (baseType == "bvec") {
+                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
+                        exists = true;
+                        varVal = val.GetMember(ix);
                     }
                 }
             }
@@ -1569,31 +1945,42 @@ namespace GlslRewriter
             }
             string name = left.VarName;
             string type = left.Type;
+            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+                return false;
+            if (Config.ActiveConfig.SettingInfo.InvalidArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
+                return false;
+            }
+            if (Config.ActiveConfig.SettingInfo.InvalidObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
+                return false;
+            }
+            if (Config.ActiveConfig.SettingInfo.InvalidObjectArrayMembers.TryGetValue(name, out var list) && list.TryGetValue(index, out var hashSet) && hashSet.Contains(m)) {
+                return false;
+            }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);
                 int arrNum = arrNums[0];
                 if (suffix.Length > 0) {
                     if (baseType == "vec") {
-                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.GetMember(m);
                         }
                     }
                     else if (baseType == "ivec") {
-                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.GetMember(m);
                         }
                     }
                     else if (baseType == "uvec") {
-                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.GetMember(m);
                         }
                     }
                     else if (baseType == "bvec") {
-                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
                             varVal = vals[index].Value.GetMember(m);
                         }
@@ -1832,7 +2219,7 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphCalcNode right, int curLevel)
+        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphCalcNode right)
         {
             bool isConst = true;
             List<string> consts = new List<string>();
@@ -1846,7 +2233,7 @@ namespace GlslRewriter
                 }
             }
             if (!isConst) {
-                AssignValue(left, right.CalcValue(curLevel + 1));
+                AssignValue(left, right.CalcValue());
                 return;
             }
             string name = left.VarName;
@@ -1996,7 +2383,7 @@ namespace GlslRewriter
                 int arrNum = arrNums[0];
                 if (suffix.Length == 0) {
                     if (baseType == "float") {
-                        if (s_FloatArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             if (float.TryParse(right, out var val)) {
                                 vals[index] = new FloatVal(val);
                             }
@@ -2006,7 +2393,7 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "int") {
-                        if (s_IntArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_IntArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             if (int.TryParse(right, out var val)) {
                                 vals[index] = new IntVal(val);
                             }
@@ -2016,7 +2403,7 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "uint") {
-                        if (s_UintArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_UintArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             if (uint.TryParse(right, out var val)) {
                                 vals[index] = new UintVal(val);
                             }
@@ -2026,7 +2413,7 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "bool") {
-                        if (s_BoolArrayVars.TryGetValue(name, out var vals) && index <= vals.Count) {
+                        if (s_BoolArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             if (Calculator.TryParseBool(right, out var val)) {
                                 vals[index] = new BoolVal(val);
                             }
@@ -2034,6 +2421,40 @@ namespace GlslRewriter
                                 vals[index] = new BoolVal(val, false);
                             }
                         }
+                    }
+                }
+            }
+            else if (suffix.Length > 0) {
+                if (baseType == "vec") {
+                    if (s_Float4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, right))
+                            s_Float4Vars[name] = val;
+                        else
+                            s_Float4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "ivec") {
+                    if (s_Int4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, right))
+                            s_Int4Vars[name] = val;
+                        else
+                            s_Int4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "uvec") {
+                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, right))
+                            s_Uint4Vars[name] = val;
+                        else
+                            s_Uint4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "bvec") {
+                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, right))
+                            s_Bool4Vars[name] = val;
+                        else
+                            s_Bool4Vars.Remove(name);
                     }
                 }
             }
@@ -2139,8 +2560,42 @@ namespace GlslRewriter
                     }
                 }
             }
+            else if (suffix.Length > 0) {
+                if (baseType == "vec") {
+                    if (s_Float4Vars.TryGetValue(name, out var val)) {
+                        if (s_FloatVars.TryGetValue(otherName, out var val2) && val.SetMember(ix, val2.ToString()))
+                            s_Float4Vars[name] = val;
+                        else
+                            s_Float4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "ivec") {
+                    if (s_Int4Vars.TryGetValue(name, out var val)) {
+                        if (s_IntVars.TryGetValue(otherName, out var val2) && val.SetMember(ix, val2.ToString()))
+                            s_Int4Vars[name] = val;
+                        else
+                            s_Int4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "uvec") {
+                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
+                        if (s_UintVars.TryGetValue(otherName, out var val2) && val.SetMember(ix, val2.ToString()))
+                            s_Uint4Vars[name] = val;
+                        else
+                            s_Uint4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "bvec") {
+                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
+                        if (s_BoolVars.TryGetValue(otherName, out var val2) && val.SetMember(ix, val2.ToString()))
+                            s_Bool4Vars[name] = val;
+                        else
+                            s_Bool4Vars.Remove(name);
+                    }
+                }
+            }
         }
-        public static void ArrayAssignValue(ComputeGraphVarNode left, string ix, ComputeGraphCalcNode right, int curLevel)
+        public static void ArrayAssignValue(ComputeGraphVarNode left, string ix, ComputeGraphCalcNode right)
         {
             bool isConst = true;
             List<string> consts = new List<string>();
@@ -2154,7 +2609,7 @@ namespace GlslRewriter
                 }
             }
             if (!isConst) {
-                ArrayAssignValue(left, ix, right.CalcValue(curLevel + 1));
+                ArrayAssignValue(left, ix, right.CalcValue());
                 return;
             }
             if (!int.TryParse(ix, out var index) || index < 0) {
@@ -2234,6 +2689,40 @@ namespace GlslRewriter
                                 vals[index] = new UintVal(val, false);
                             }
                         }
+                    }
+                }
+            }
+            else if (suffix.Length > 0) {
+                if (baseType == "vec") {
+                    if (s_Float4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, consts[0]))
+                            s_Float4Vars[name] = val;
+                        else
+                            s_Float4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "ivec") {
+                    if (s_Int4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, consts[0]))
+                            s_Int4Vars[name] = val;
+                        else
+                            s_Int4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "uvec") {
+                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, consts[0]))
+                            s_Uint4Vars[name] = val;
+                        else
+                            s_Uint4Vars.Remove(name);
+                    }
+                }
+                else if (baseType == "bvec") {
+                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
+                        if (val.SetMember(ix, consts[0]))
+                            s_Bool4Vars[name] = val;
+                        else
+                            s_Bool4Vars.Remove(name);
                     }
                 }
             }

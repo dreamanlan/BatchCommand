@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace GlslRewriter
 {
     public static class Calculator
     {
-        public static bool CalcFunc(string func, IList<string> args, out string val)
+        public static bool CalcFunc(string func, IList<string> args, ref string type, out string val)
         {
             bool succ = false;
             val = string.Empty;
@@ -561,6 +562,12 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if(func=="roundEven") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Round(v).ToString();
+                    succ = true;
+                }
+            }
             else if (func == "log2") {
                 if (float.TryParse(args[0], out var v)) {
                     val = MathF.Log2(v).ToString();
@@ -624,28 +631,35 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
-            else {
-                succ = Config.CalcFunc(func, args, out val);
-            }
             return succ;
         }
-        public static bool CalcCondExp(string cond, string opd1, string opd2, out string val)
+        public static bool CalcCondExp(string cond, string opd1, string opd2, ref string type, out string val)
         {
             bool succ = false;
             val = string.Empty;
             if(TryParseBool(cond, out var bval)) {
                 if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
                     if (bval) {
-                        if (isFloat1)
+                        if (isFloat1) {
                             val = dval1.ToString();
-                        else
+                            type = "float";
+                        }
+                        else {
                             val = lval1.ToString();
+                            if (string.IsNullOrEmpty(type))
+                                type = "int";
+                        }
                     }
                     else {
-                        if (isFloat1)
+                        if (isFloat1) {
                             val = dval2.ToString();
-                        else
+                            type = "float";
+                        }
+                        else {
                             val = lval2.ToString();
+                            if (string.IsNullOrEmpty(type))
+                                type = "int";
+                        }
                     }
                     succ = true;
                 }
@@ -656,12 +670,13 @@ namespace GlslRewriter
                     else {
                         val = bval2.ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
             return succ;
         }
-        public static bool CalcBinary(string op, string opd1, string opd2, out string val)
+        public static bool CalcBinary(string op, string opd1, string opd2, ref string type, out string val)
         {
             bool succ = false;
             val = string.Empty;
@@ -671,9 +686,12 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         val = (v1 + v2).ToString();
+                        type = "float";
                     }
                     else {
                         val = (lval1 + lval2).ToString();
+                        if (string.IsNullOrEmpty(type))
+                            type = "int";
                     }
                     succ = true;
                 }
@@ -684,9 +702,12 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         val = (v1 - v2).ToString();
+                        type = "float";
                     }
                     else {
                         val = (lval1 - lval2).ToString();
+                        if (string.IsNullOrEmpty(type))
+                            type = "int";
                     }
                     succ = true;
                 }
@@ -697,9 +718,12 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         val = (v1 * v2).ToString();
+                        type = "float";
                     }
                     else {
                         val = (lval1 * lval2).ToString();
+                        if (string.IsNullOrEmpty(type))
+                            type = "int";
                     }
                     succ = true;
                 }
@@ -712,12 +736,15 @@ namespace GlslRewriter
                         if (v2 != 0) {
                             val = (v1 / v2).ToString();
                             succ = true;
+                            type = "float";
                         }
                     }
                     else {
                         if (lval2 != 0) {
                             val = (lval1 / lval2).ToString();
                             succ = true;
+                            if (string.IsNullOrEmpty(type))
+                                type = "int";
                         }
                     }
                 }
@@ -728,9 +755,12 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         val = (v1 % v2).ToString();
+                        type = "float";
                     }
                     else {
                         val = (lval1 % lval2).ToString();
+                        if (string.IsNullOrEmpty(type))
+                            type = "int";
                     }
                     succ = true;
                 }
@@ -745,6 +775,7 @@ namespace GlslRewriter
                     else {
                         val = (lval1 == lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
@@ -758,6 +789,7 @@ namespace GlslRewriter
                     else {
                         val = (lval1 != lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
@@ -771,6 +803,7 @@ namespace GlslRewriter
                     else {
                         val = (lval1 >= lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
@@ -784,6 +817,7 @@ namespace GlslRewriter
                     else {
                         val = (lval1 <= lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
@@ -797,6 +831,7 @@ namespace GlslRewriter
                     else {
                         val = (lval1 > lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
@@ -810,36 +845,58 @@ namespace GlslRewriter
                     else {
                         val = (lval1 < lval2).ToString();
                     }
+                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "&&") {
                 if(TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
                     val = (bval1 && bval2).ToString();
+                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "||") {
                 if (TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
                     val = (bval1 || bval2) ? "true" : "false";
+                    type = "bool";
+                    succ = true;
+                }
+            }
+            else if (op == "^^") {
+                if (TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
+                    val = (bval1 != bval2) ? "true" : "false";
+                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "&") {
                 if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
                     val = (lval1 & lval2).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
                     succ = true;
                 }
             }
             else if (op == "|") {
                 if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
                     val = (lval1 | lval2).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
+                    succ = true;
+                }
+            }
+            else if (op == "^") {
+                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
+                    val = (lval1 ^ lval2).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
                     succ = true;
                 }
             }
             return succ;
         }
-        public static bool CalcUnary(string op, string opd, out string val)
+        public static bool CalcUnary(string op, string opd, ref string type, out string val)
         {
             bool succ = false;
             val = string.Empty;
@@ -847,9 +904,12 @@ namespace GlslRewriter
                 if(TryParseNumeric(opd, out var isFloat, out var dval, out var lval)) {
                     if (isFloat) {
                         val = (-dval).ToString();
+                        type = "float";
                     }
                     else {
                         val = (-lval).ToString();
+                        if (string.IsNullOrEmpty(type))
+                            type = "int";
                     }
                     succ = true;
                 }
@@ -857,18 +917,111 @@ namespace GlslRewriter
             else if (op == "~") {
                 if (long.TryParse(opd, out var lval)) {
                     val = (~lval).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
                     succ = true;
                 }
             }
             else if (op == "!") {
                 if(TryParseBool(opd, out var bval)) {
                     val = (!bval).ToString();
+                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "+") {
                 val = opd;
                 succ = true;
+            }
+            return succ;
+        }
+        public static bool CalcMember(string objType, string objVal, string m, ref string type, out string oval)
+        {
+            bool succ = false;
+            oval = string.Empty;
+            if (objType == "vec4") {
+                if (Float4.TryParse(objVal, out var val)) {
+                    type = "float";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "ivec4") {
+                if (Int4.TryParse(objVal, out var val)) {
+                    type = "int";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "uvec4") {
+                if (Uint4.TryParse(objVal, out var val)) {
+                    type = "uint";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "bvec4") {
+                if (Bool4.TryParse(objVal, out var val)) {
+                    type = "bool";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "vec3") {
+                if (Float3.TryParse(objVal, out var val)) {
+                    type = "float";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "ivec3") {
+                if (Int3.TryParse(objVal, out var val)) {
+                    type = "int";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "uvec3") {
+                if (Uint3.TryParse(objVal, out var val)) {
+                    type = "uint";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "bvec3") {
+                if (Bool3.TryParse(objVal, out var val)) {
+                    type = "bool";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "vec2") {
+                if (Float2.TryParse(objVal, out var val)) {
+                    type = "float";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "ivec2") {
+                if (Int2.TryParse(objVal, out var val)) {
+                    type = "int";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "uvec2") {
+                if (Uint2.TryParse(objVal, out var val)) {
+                    type = "uint";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
+            }
+            else if (objType == "bvec2") {
+                if (Bool2.TryParse(objVal, out var val)) {
+                    type = "bool";
+                    oval = val.GetMember(m);
+                    succ = true;
+                }
             }
             return succ;
         }

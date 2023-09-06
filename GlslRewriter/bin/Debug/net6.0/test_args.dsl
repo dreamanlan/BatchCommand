@@ -3,9 +3,58 @@ vs
     setting
     {
         def_max_level_for_value = 16;
-        def_max_level_for_expression = 2048;
+        def_max_level_for_expression = 256;
         def_skip_all_comments;
+        /*
+        set_object_max_level(out_attr0_0.x, 64, 2048);
+        set_object_max_level(out_attr0_0.y, 64, 2048);
+        set_object_max_level(out_attr0_0.z, 64, 2048);
+        set_object_max_level(out_attr0_0.w, 64, 2048);
+        set_object_max_level(out_attr1_0.x, 64, 2048);
+        set_object_max_level(out_attr1_0.y, 64, 2048);
+        set_object_max_level(out_attr1_0.z, 64, 2048);
+        set_object_max_level(out_attr1_0.w, 64, 2048);
+        set_object_max_level(out_attr2_0.x, 64, 2048);
+        set_object_max_level(out_attr2_0.y, 64, 2048);
+        set_object_max_level(out_attr2_0.z, 64, 2048);
+        set_object_max_level(out_attr2_0.w, 64, 2048);
+        set_object_max_level(out_attr3_0.x, 64, 2048);
+        set_object_max_level(out_attr3_0.y, 64, 2048);
+        set_object_max_level(out_attr3_0.z, 64, 2048);
+        set_object_max_level(out_attr3_0.w, 64, 2048);
+        set_object_max_level(out_attr4_0.x, 64, 2048);
+        set_object_max_level(out_attr4_0.y, 64, 2048);
+        set_object_max_level(out_attr4_0.z, 64, 2048);
+        set_object_max_level(out_attr4_0.w, 64, 2048);
+        set_object_max_level(out_attr5_0.x, 64, 2048);
+        set_object_max_level(out_attr5_0.y, 64, 2048);
+        set_object_max_level(out_attr5_0.z, 64, 2048);
+        set_object_max_level(out_attr5_0.w, 64, 2048);
+        set_object_max_level(out_attr6_0.x, 64, 2048);
+        set_object_max_level(out_attr6_0.y, 64, 2048);
+        set_object_max_level(out_attr6_0.z, 64, 2048);
+        set_object_max_level(out_attr6_0.w, 64, 2048);
+        set_object_max_level(out_attr7_0.x, 64, 2048);
+        set_object_max_level(out_attr7_0.y, 64, 2048);
+        set_object_max_level(out_attr7_0.z, 64, 2048);
+        set_object_max_level(out_attr7_0.w, 64, 2048);
+        set_object_max_level(out_attr8_0.x, 64, 2048);
+        set_object_max_level(out_attr8_0.y, 64, 2048);
+        set_object_max_level(out_attr8_0.z, 64, 2048);
+        set_object_max_level(out_attr8_0.w, 64, 2048);
         set_object_max_level(out_attr9_0.x, 64, 2048);
+        set_object_max_level(out_attr9_0.y, 64, 2048);
+        set_object_max_level(out_attr9_0.z, 64, 2048);
+        set_object_max_level(out_attr9_0.w, 64, 2048);
+        set_object_max_level(out_attr10_0.x, 64, 2048);
+        set_object_max_level(out_attr10_0.y, 64, 2048);
+        set_object_max_level(out_attr10_0.z, 64, 2048);
+        set_object_max_level(out_attr10_0.w, 64, 2048);
+        set_object_max_level(out_attr11_0.x, 64, 2048);
+        set_object_max_level(out_attr11_0.y, 64, 2048);
+        set_object_max_level(out_attr11_0.z, 64, 2048);
+        */
+        set_object_max_level(out_attr11_0.w, 64, 2048);
 
         invalid_variable{
             in_attr0,
@@ -46,6 +95,17 @@ vs
 };
 ps
 {
+    setting
+    {
+        def_max_level_for_value = 16;
+        def_max_level_for_expression = 2048;
+        def_skip_all_comments;
+
+        set_object_max_level(frag_color0.x, 64, 2048);
+        set_object_max_level(frag_color0.y, 64, 2048);
+        set_object_max_level(frag_color0.z, 64, 2048);
+        set_object_max_level(frag_color0.w, 64, 2048);
+    };
     ps_attr("d:/UC/vs_out.csv", 0){
         map_in_attr("out_attr0","in_attr0");
         map_in_attr("out_attr1","in_attr1");

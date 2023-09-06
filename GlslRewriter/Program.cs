@@ -934,7 +934,7 @@ namespace GlslRewriter
                     AddComputeGraphRootNode(cgcn);
 
                     //计算总是要执行，输出按配置可能跳过
-                    cgcn.CalcValue();
+                    cgcn.DoCalc();
                     if (Config.CalcMaxLevel(p, out var maxLvlForVal, out var maxLvlForExp)) {
                         string val = cgcn.GetValue(maxLvlForVal);
                         string exp = cgcn.GetExpression(maxLvlForExp);
@@ -1745,7 +1745,7 @@ namespace GlslRewriter
                             valData.SetId(vid + "_0");
                         }
 
-                        var cgvn = new ComputeGraphVarNode(CurFuncInfo(), vinfo.Type, valData.GetId());
+                        var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, valData.GetId());
                         AddComputeGraphVarNode(cgvn);
                         semanticInfo.GraphNode = cgvn;
                         semanticInfo.ResultType = vinfo.Type;
@@ -1867,7 +1867,7 @@ namespace GlslRewriter
             string phiVarAlias = vname + phiSuffix;
             var node = FindComputeGraphVarNode(phiVarAlias);
             if (null == node) {
-                var cgvn = new ComputeGraphVarNode(CurFuncInfo(), vinfo.Type, phiVarAlias);
+                var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, phiVarAlias);
                 AddComputeGraphVarNode(cgvn);
             }
         }
@@ -2747,10 +2747,11 @@ namespace GlslRewriter
                 varInfos = new Dictionary<int, VarInfo>();
                 s_VarInfos.Add(varInfo.Name, varInfos);
             }
+            varInfo.OwnFunc = CurFuncInfo();
             varInfos[CurBlockId()] = varInfo;
             SetLastVarType(varInfo);
 
-            var cgvn = new ComputeGraphVarNode(CurFuncInfo(), varInfo.Type, varInfo.Name);
+            var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, varInfo.Type, varInfo.Name);
             AddComputeGraphVarNode(cgvn);
         }
         private static FuncInfo? CurFuncInfo()
@@ -3026,6 +3027,7 @@ namespace GlslRewriter
             public bool IsOut = false;
             public List<string> Modifiers = new List<string>();
             public Dsl.ISyntaxComponent? DefaultValue = null;
+            public FuncInfo? OwnFunc = null;
 
             public void CopyFrom(VarInfo other)
             {
@@ -3183,7 +3185,7 @@ namespace GlslRewriter
         internal static bool s_IsVsShader = false;
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
-        internal static bool s_IsDebugMode = false;
+        internal static bool s_IsDebugMode = true;
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
 

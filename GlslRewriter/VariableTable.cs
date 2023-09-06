@@ -2219,7 +2219,7 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphCalcNode right)
+        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphCalcNode right, HashSet<ComputeGraphNode> visits)
         {
             bool isConst = true;
             List<string> consts = new List<string>();
@@ -2233,7 +2233,7 @@ namespace GlslRewriter
                 }
             }
             if (!isConst) {
-                AssignValue(left, right.CalcValue());
+                AssignValue(left, right.CalcValue(visits));
                 return;
             }
             string name = left.VarName;
@@ -2343,6 +2343,11 @@ namespace GlslRewriter
                         else
                             s_Float4Vars.Remove(name);
                     }
+                    else {
+                        val = new Float4();
+                        if (val.SetMember(m, right))
+                            s_Float4Vars[name] = val;
+                    }
                 }
                 else if (baseType == "ivec") {
                     if (s_Int4Vars.TryGetValue(name, out var val)) {
@@ -2350,6 +2355,11 @@ namespace GlslRewriter
                             s_Int4Vars[name] = val;
                         else
                             s_Int4Vars.Remove(name);
+                    }
+                    else {
+                        val = new Int4();
+                        if (val.SetMember(m, right))
+                            s_Int4Vars[name] = val;
                     }
                 }
                 else if (baseType == "uvec") {
@@ -2359,6 +2369,11 @@ namespace GlslRewriter
                         else
                             s_Uint4Vars.Remove(name);
                     }
+                    else {
+                        val = new Uint4();
+                        if (val.SetMember(m, right))
+                            s_Uint4Vars[name] = val;
+                    }
                 }
                 else if (baseType == "bvec") {
                     if (s_Bool4Vars.TryGetValue(name, out var val)) {
@@ -2366,6 +2381,11 @@ namespace GlslRewriter
                             s_Bool4Vars[name] = val;
                         else
                             s_Bool4Vars.Remove(name);
+                    }
+                    else {
+                        val = new Bool4();
+                        if (val.SetMember(m, right))
+                            s_Bool4Vars[name] = val;
                     }
                 }
             }
@@ -2595,7 +2615,7 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void ArrayAssignValue(ComputeGraphVarNode left, string ix, ComputeGraphCalcNode right)
+        public static void ArrayAssignValue(ComputeGraphVarNode left, string ix, ComputeGraphCalcNode right, HashSet<ComputeGraphNode> visits)
         {
             bool isConst = true;
             List<string> consts = new List<string>();
@@ -2609,7 +2629,7 @@ namespace GlslRewriter
                 }
             }
             if (!isConst) {
-                ArrayAssignValue(left, ix, right.CalcValue());
+                ArrayAssignValue(left, ix, right.CalcValue(visits));
                 return;
             }
             if (!int.TryParse(ix, out var index) || index < 0) {

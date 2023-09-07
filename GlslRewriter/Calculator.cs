@@ -1028,10 +1028,16 @@ namespace GlslRewriter
 
         public static string ReStringNumeric(string val)
         {
+            string type = string.Empty;
+            return ReStringNumeric(val, ref type);
+        }
+        public static string ReStringNumeric(string val, ref string type)
+        {
             if (val.Length >= 2) {
                 char c = val[val.Length - 1];
                 if (c == 'u' || c == 'U') {
                     val = val.Substring(0, val.Length - 1);
+                    type = "uint";
                 }
                 else if (c == 'f' || c == 'F') {
                     val = val.Substring(0, val.Length - 1);
@@ -1039,21 +1045,32 @@ namespace GlslRewriter
                     if (c == 'l' || c == 'L') {
                         val = val.Substring(0, val.Length - 1);
                     }
+                    type = "float";
                 }
             }
             if (val.IndexOfAny(s_FloatExponent) > 0) {
                 if (double.TryParse(val, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
                     val = v.ToString();
                 }
+                type = "float";
             }
             else if (val.Length > 2 && val[0] == '0' && val[1] == 'x') {
                 if (ulong.TryParse(val, NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
                     val = v.ToString();
                 }
+                type = "uint";
             }
             else if (val.Length > 1 && val[0] == '0') {
                 ulong v = Convert.ToUInt64(val, 8);
                 val = v.ToString();
+                type = "uint";
+            }
+            if(long.TryParse(val, out var lv)) {
+                if (string.IsNullOrEmpty(type))
+                    type = "int";
+            }
+            else if(TryParseBool(val, out var bv)) {
+                type = "bool";
             }
             return val;
         }

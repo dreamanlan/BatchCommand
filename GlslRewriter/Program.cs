@@ -6,6 +6,7 @@ using System;
 using System.Xml.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel.Design;
+using System.Security;
 
 namespace GlslRewriter
 {
@@ -16,18 +17,15 @@ namespace GlslRewriter
         static void Main(string[] args)
         {
             if (args.Length == 0) {
-                Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-cs] [-printgraph] [-src ] glsl_file");
+                Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-src ] glsl_file");
                 Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
                 Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
                 Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
                 Console.WriteLine(" [-cs] glsl_file is compute shader");
-                Console.WriteLine(" [-printgraph] output compute graph [-notprintgraph] dont output (default)");
-                Console.WriteLine(" [-debug] debug mode");
                 Console.WriteLine(" [-src ] glsl_file source glsl file, -src can be omitted when file is the last argument");
                 return;
             }
             else {
-                bool printGraph = false;
                 string srcFilePath = string.Empty;
                 string outFilePath = string.Empty;
                 string argFilePath = string.Empty;
@@ -80,15 +78,6 @@ namespace GlslRewriter
                         s_IsVsShader = false;
                         s_IsPsShader = false;
                     }
-                    else if (0 == string.Compare(args[i], "-printgraph", true)) {
-                        printGraph = true;
-                    }
-                    else if (0 == string.Compare(args[i], "-notprintgraph", true)) {
-                        printGraph = false;
-                    }
-                    else if (0 == string.Compare(args[i], "-debug", true)) {
-                        s_IsDebugMode = true;
-                    }
                     else if (args[i][0] == '-') {
                         Console.WriteLine("unknown command option ! {0}", args[i]);
                     }
@@ -136,7 +125,7 @@ namespace GlslRewriter
 
                     Transform(srcFilePath, outFilePath);
 
-                    if (printGraph) {
+                    if (Config.ActiveConfig.SettingInfo.PrintGraph) {
                         s_GlobalComputeGraph.Print(null);
                         if (s_FuncInfos.TryGetValue("main", out var funcInfo)) {
                             var cg = funcInfo.FuncComputeGraph;
@@ -935,10 +924,32 @@ namespace GlslRewriter
 
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
-                    if (Config.CalcMaxLevel(p, out var maxLvlForVal, out var maxLvlForExp)) {
-                        string val = cgcn.GetValue(maxLvlForVal);
-                        string exp = cgcn.GetExpression(maxLvlForExp);
-                        funcData.LastComments.Add("// " + val + "      <=>      " + exp);
+                    if (Config.CalcSettingForVariable(p, out var maxLvlForVal, out var maxLvlForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
+                        string val = maxLvlForVal >= 0 ? cgcn.GetValue(new ComputeSetting(maxLvlForVal, useMultilineComments, expandedOnlyOnce)) : string.Empty;
+                        string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
+                        if (useMultilineComments) {
+                            var sb = new StringBuilder(val.Length + exp.Length + 128);
+                            sb.Append("/*");
+                            if (maxLvlForVal >= 0)
+                                sb.AppendLine(val);
+                            if (maxLvlForVal >= 0 && maxLvlForExp >= 0)
+                                sb.Append("<=>");
+                            if (maxLvlForExp >= 0)
+                                sb.AppendLine(exp);
+                            sb.Append("*/");
+                            funcData.LastComments.Add(sb.ToString());
+                        }
+                        else {
+                            var sb = new StringBuilder(val.Length + exp.Length + 128);
+                            sb.Append("// ");
+                            if (maxLvlForVal >= 0)
+                                sb.Append(val);
+                            if (maxLvlForVal >= 0 && maxLvlForExp >= 0)
+                                sb.Append("  <=>  ");
+                            if (maxLvlForExp >= 0)
+                                sb.Append(exp);
+                            funcData.LastComments.Add(sb.ToString());
+                        }
                     }
                 }
                 else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!="){
@@ -3185,7 +3196,6 @@ namespace GlslRewriter
         internal static bool s_IsVsShader = false;
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
-        internal static bool s_IsDebugMode = true;
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
 

@@ -2,59 +2,67 @@ vs
 {
     setting
     {
-        def_max_level_for_value = 16;
-        def_max_level_for_expression = 256;
-        def_skip_all_comments;
-        /*
-        set_object_max_level(out_attr0_0.x, 64, 2048);
-        set_object_max_level(out_attr0_0.y, 64, 2048);
-        set_object_max_level(out_attr0_0.z, 64, 2048);
-        set_object_max_level(out_attr0_0.w, 64, 2048);
-        set_object_max_level(out_attr1_0.x, 64, 2048);
-        set_object_max_level(out_attr1_0.y, 64, 2048);
-        set_object_max_level(out_attr1_0.z, 64, 2048);
-        set_object_max_level(out_attr1_0.w, 64, 2048);
-        set_object_max_level(out_attr2_0.x, 64, 2048);
-        set_object_max_level(out_attr2_0.y, 64, 2048);
-        set_object_max_level(out_attr2_0.z, 64, 2048);
-        set_object_max_level(out_attr2_0.w, 64, 2048);
-        set_object_max_level(out_attr3_0.x, 64, 2048);
-        set_object_max_level(out_attr3_0.y, 64, 2048);
-        set_object_max_level(out_attr3_0.z, 64, 2048);
-        set_object_max_level(out_attr3_0.w, 64, 2048);
-        set_object_max_level(out_attr4_0.x, 64, 2048);
-        set_object_max_level(out_attr4_0.y, 64, 2048);
-        set_object_max_level(out_attr4_0.z, 64, 2048);
-        set_object_max_level(out_attr4_0.w, 64, 2048);
-        set_object_max_level(out_attr5_0.x, 64, 2048);
-        set_object_max_level(out_attr5_0.y, 64, 2048);
-        set_object_max_level(out_attr5_0.z, 64, 2048);
-        set_object_max_level(out_attr5_0.w, 64, 2048);
-        set_object_max_level(out_attr6_0.x, 64, 2048);
-        set_object_max_level(out_attr6_0.y, 64, 2048);
-        set_object_max_level(out_attr6_0.z, 64, 2048);
-        set_object_max_level(out_attr6_0.w, 64, 2048);
-        set_object_max_level(out_attr7_0.x, 64, 2048);
-        set_object_max_level(out_attr7_0.y, 64, 2048);
-        set_object_max_level(out_attr7_0.z, 64, 2048);
-        set_object_max_level(out_attr7_0.w, 64, 2048);
-        set_object_max_level(out_attr8_0.x, 64, 2048);
-        set_object_max_level(out_attr8_0.y, 64, 2048);
-        set_object_max_level(out_attr8_0.z, 64, 2048);
-        set_object_max_level(out_attr8_0.w, 64, 2048);
-        set_object_max_level(out_attr9_0.x, 64, 2048);
-        set_object_max_level(out_attr9_0.y, 64, 2048);
-        set_object_max_level(out_attr9_0.z, 64, 2048);
-        set_object_max_level(out_attr9_0.w, 64, 2048);
-        set_object_max_level(out_attr10_0.x, 64, 2048);
-        set_object_max_level(out_attr10_0.y, 64, 2048);
-        set_object_max_level(out_attr10_0.z, 64, 2048);
-        set_object_max_level(out_attr10_0.w, 64, 2048);
-        set_object_max_level(out_attr11_0.x, 64, 2048);
-        set_object_max_level(out_attr11_0.y, 64, 2048);
-        set_object_max_level(out_attr11_0.z, 64, 2048);
-        */
-        set_object_max_level(out_attr11_0.w, 64, 2048);
+        debug_mode;
+        //print_graph;
+        //use_multiline_comments;
+        //variable_expanded_only_once;
+        def_max_level_for_value = 64;
+        def_max_level_for_expression = -1;
+        //def_skip_all_comments;
+        compute_graph_nodes_capacity = 10240;
+        shader_variables_capacity = 1024;
+        string_buffer_capacity_surplus = 1024;
+        max_length_for_value = 16 * 1024;
+        max_length_for_expression = 64 * 1024;
+
+        set_object_comment(out_attr0_0.x, 64, 2048, true, true);
+        set_object_comment(out_attr0_0.y, 64, 2048);
+        set_object_comment(out_attr0_0.z, 64, 2048);
+        set_object_comment(out_attr0_0.w, 64, 2048);
+        set_object_comment(out_attr1_0.x, 64, 2048);
+        set_object_comment(out_attr1_0.y, 64, 2048);
+        set_object_comment(out_attr1_0.z, 64, 2048);
+        set_object_comment(out_attr1_0.w, 64, 2048);
+        set_object_comment(out_attr2_0.x, 64, 2048);
+        set_object_comment(out_attr2_0.y, 64, 2048);
+        set_object_comment(out_attr2_0.z, 64, 2048);
+        set_object_comment(out_attr2_0.w, 64, 2048);
+        set_object_comment(out_attr3_0.x, 64, 2048);
+        set_object_comment(out_attr3_0.y, 64, 2048);
+        set_object_comment(out_attr3_0.z, 64, 2048);
+        set_object_comment(out_attr3_0.w, 64, 2048);
+        set_object_comment(out_attr4_0.x, 64, 2048);
+        set_object_comment(out_attr4_0.y, 64, 2048);
+        set_object_comment(out_attr4_0.z, 64, 2048);
+        set_object_comment(out_attr4_0.w, 64, 2048);
+        set_object_comment(out_attr5_0.x, 64, 2048);
+        set_object_comment(out_attr5_0.y, 64, 2048);
+        set_object_comment(out_attr5_0.z, 64, 2048);
+        set_object_comment(out_attr5_0.w, 64, 2048);
+        set_object_comment(out_attr6_0.x, 64, 2048);
+        set_object_comment(out_attr6_0.y, 64, 2048);
+        set_object_comment(out_attr6_0.z, 64, 2048);
+        set_object_comment(out_attr6_0.w, 64, 2048);
+        set_object_comment(out_attr7_0.x, 64, 2048);
+        set_object_comment(out_attr7_0.y, 64, 2048);
+        set_object_comment(out_attr7_0.z, 64, 2048);
+        set_object_comment(out_attr7_0.w, 64, 2048);
+        set_object_comment(out_attr8_0.x, 64, 2048);
+        set_object_comment(out_attr8_0.y, 64, 2048);
+        set_object_comment(out_attr8_0.z, 64, 2048);
+        set_object_comment(out_attr8_0.w, 64, 2048);
+        set_object_comment(out_attr9_0.x, 64, 2048);
+        set_object_comment(out_attr9_0.y, 64, 2048);
+        set_object_comment(out_attr9_0.z, 64, 2048);
+        set_object_comment(out_attr9_0.w, 64, 2048);
+        set_object_comment(out_attr10_0.x, 64, 2048);
+        set_object_comment(out_attr10_0.y, 64, 2048);
+        set_object_comment(out_attr10_0.z, 64, 2048);
+        set_object_comment(out_attr10_0.w, 64, 2048);
+        set_object_comment(out_attr11_0.x, 64, 2048);
+        set_object_comment(out_attr11_0.y, 64, 2048);
+        set_object_comment(out_attr11_0.z, 64, 2048);
+        set_object_comment(out_attr11_0.w, 64, 2048);
 
         invalid_variable{
             in_attr0,
@@ -97,14 +105,23 @@ ps
 {
     setting
     {
-        def_max_level_for_value = 16;
-        def_max_level_for_expression = 2048;
-        def_skip_all_comments;
+        debug_mode;
+        //print_graph;
+        //use_multiline_comments;
+        //variable_expanded_only_once;
+        def_max_level_for_value = 64;
+        def_max_level_for_expression = -1;
+        //def_skip_all_comments;
+        compute_graph_nodes_capacity = 10240;
+        shader_variables_capacity = 1024;
+        string_buffer_capacity_surplus = 1024;
+        max_length_for_value = 16 * 1024;
+        max_length_for_expression = 64 * 1024;
 
-        set_object_max_level(frag_color0.x, 64, 2048);
-        set_object_max_level(frag_color0.y, 64, 2048);
-        set_object_max_level(frag_color0.z, 64, 2048);
-        set_object_max_level(frag_color0.w, 64, 2048);
+        set_object_comment(frag_color0.x, 64, 2048, true, true);
+        set_object_comment(frag_color0.y, 64, 2048);
+        set_object_comment(frag_color0.z, 64, 2048);
+        set_object_comment(frag_color0.w, 64, 2048);
     };
     ps_attr("d:/UC/vs_out.csv", 0){
         map_in_attr("out_attr0","in_attr0");
@@ -133,4 +150,19 @@ ps
 };
 cs
 {
+    setting
+    {
+        debug_mode;
+        //print_graph;
+        //use_multiline_comments;
+        //variable_expanded_only_once;
+        def_max_level_for_value = 64;
+        def_max_level_for_expression = -1;
+        //def_skip_all_comments;
+        compute_graph_nodes_capacity = 10240;
+        shader_variables_capacity = 1024;
+        string_buffer_capacity_surplus = 1024;
+        max_length_for_value = 16 * 1024;
+        max_length_for_expression = 64 * 1024;
+    };
 };

@@ -431,7 +431,7 @@ namespace GlslRewriter
         protected override void TryGenerateValue(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
         {
             if (curLevel < setting.MaxLevel) {
-                if (PrevNodes.Count > 0) {
+                if (PrevNodes.Count > 0 && !Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
                     if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
                         sb.Append(VarName);
                     }
@@ -453,7 +453,7 @@ namespace GlslRewriter
         protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
         {
             if (null != OwnFunc && curLevel < setting.MaxLevel) {
-                if (PrevNodes.Count > 0) {
+                if (PrevNodes.Count > 0 && !Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
                     if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
                         sb.Append(VarName);
                     }

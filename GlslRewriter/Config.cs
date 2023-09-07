@@ -335,6 +335,13 @@ namespace GlslRewriter
                                 }
                             }
                         }
+                        else if (fid == "dont_expand_variable") {
+                            foreach (var fp in fd.Params) {
+                                string vname = fp.GetId();
+                                if (!cfg.SettingInfo.DontExpandVariables.Contains(vname))
+                                    cfg.SettingInfo.DontExpandVariables.Add(vname);
+                            }
+                        }
                         else if (fid == "set_variable_comment") {
                             string key = fd.GetParamId(0);
                             string v1type = "int";
@@ -941,11 +948,15 @@ namespace GlslRewriter
             internal int StringBufferCapacitySurplus = 1024;
             internal int MaxLengthForValue = 8 * 1024;
             internal int MaxLengthForExpression = 8 * 1024;
+
+            internal HashSet<string> DontExpandVariables = new HashSet<string>();
+
             internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
             internal Dictionary<string, SettingInfoForVariable> VariableSettingInfos = new Dictionary<string, SettingInfoForVariable>();
             internal Dictionary<string, Dictionary<string, SettingInfoForVariable>> ObjectSettingInfos = new Dictionary<string, Dictionary<string, SettingInfoForVariable>>();
             internal Dictionary<string, Dictionary<int, SettingInfoForVariable>> ArraySettingInfos = new Dictionary<string, Dictionary<int, SettingInfoForVariable>>();
             internal Dictionary<string, Dictionary<int, Dictionary<string, SettingInfoForVariable>>> ObjectArraySettingInfos = new Dictionary<string, Dictionary<int, Dictionary<string, SettingInfoForVariable>>>();
+
             internal HashSet<string> InvalidVariables = new HashSet<string>();
             internal Dictionary<string, HashSet<string>> InvalidObjectMembers = new Dictionary<string, HashSet<string>>();
             internal Dictionary<string, HashSet<int>> InvalidArrayElements = new Dictionary<string, HashSet<int>>();

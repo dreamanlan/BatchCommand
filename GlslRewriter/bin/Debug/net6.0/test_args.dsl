@@ -124,7 +124,20 @@ ps
         set_object_comment(frag_color0.z, 64, 2048);
         set_object_comment(frag_color0.w, 64, 2048);
 
+        set_variable_comment(f_2_16, 64, 2048);
+        set_variable_comment(f4_0_2, 64, 2048);
+        set_variable_comment(f4_0_3, 64, 2048);
+        set_variable_comment(f4_0_4, 64, 2048);
         set_variable_comment(f_5_3, 64, 2048);
+
+        dont_expand_variable{
+            f_2_16,
+            f4_0_2,
+            f4_0_3,
+            f4_0_4,
+            f_4_8,
+            f_5_3
+        };
     };
     ps_attr("d:/UC/vs_out.csv", 0){
         map_in_attr("out_attr0","in_attr0");
@@ -156,7 +169,7 @@ ps
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
         texture(*,*) = vec4(0.5,0.5,0.5,1.0);
-        textureQueryLod(*,*) = vec2(1,1);
+        textureQueryLod(*,*) = vec2(4,1);
     };
 };
 cs

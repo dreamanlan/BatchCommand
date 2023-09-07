@@ -568,6 +568,12 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if (func == "abs") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Abs(v).ToString();
+                    succ = true;
+                }
+            }
             else if (func == "log2") {
                 if (float.TryParse(args[0], out var v)) {
                     val = MathF.Log2(v).ToString();
@@ -894,6 +900,22 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if (op == "<<") {
+                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
+                    val = (lval1 << (int)lval2).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
+                    succ = true;
+                }
+            }
+            else if (op == ">>") {
+                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
+                    val = (lval1 >> (int)lval2).ToString();
+                    if (string.IsNullOrEmpty(type))
+                        type = "int";
+                    succ = true;
+                }
+            }
             return succ;
         }
         public static bool CalcUnary(string op, string opd, ref string type, out string val)
@@ -1033,7 +1055,17 @@ namespace GlslRewriter
         }
         public static string ReStringNumeric(string val, ref string type)
         {
-            if (val.Length >= 2) {
+            if (val.Length > 2 && val[0] == '0' && val[1] == 'x') {
+                char c = val[val.Length - 1];
+                if (c == 'u' || c == 'U') {
+                    val = val.Substring(0, val.Length - 1);
+                }
+                if (ulong.TryParse(val.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
+                    val = v.ToString();
+                }
+                type = "uint";
+            }
+            else if (val.Length >= 2) {
                 char c = val[val.Length - 1];
                 if (c == 'u' || c == 'U') {
                     val = val.Substring(0, val.Length - 1);
@@ -1050,22 +1082,16 @@ namespace GlslRewriter
             }
             if (val.IndexOfAny(s_FloatExponent) > 0) {
                 if (double.TryParse(val, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
-                    val = v.ToString();
+                    val = v.ToString(s_DoubleFormat);
                 }
                 type = "float";
-            }
-            else if (val.Length > 2 && val[0] == '0' && val[1] == 'x') {
-                if (ulong.TryParse(val, NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
-                    val = v.ToString();
-                }
-                type = "uint";
             }
             else if (val.Length > 1 && val[0] == '0') {
                 ulong v = Convert.ToUInt64(val, 8);
                 val = v.ToString();
                 type = "uint";
             }
-            if(long.TryParse(val, out var lv)) {
+            if (long.TryParse(val, out var lv)) {
                 if (string.IsNullOrEmpty(type))
                     type = "int";
             }
@@ -1122,5 +1148,7 @@ namespace GlslRewriter
         }
 
         public static char[] s_FloatExponent = new char[] { 'e', 'E', '.' };
+        private static string s_FloatFormat = "###########################0.00#####";
+        private static string s_DoubleFormat = "###########################0.00#############";
     }
 }

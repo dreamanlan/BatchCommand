@@ -97,8 +97,9 @@ vs
     };
     calculator
     {
-        textureSize(*,*) = "vec2(512,128)";
-        texelFetch(*,*,*) = "vec4(0.5,0.5,0.5,1.0)";
+        textureSize(*,*) = vec2(512,128);
+        texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
+        textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
     };
 };
 ps
@@ -122,6 +123,8 @@ ps
         set_object_comment(frag_color0.y, 64, 2048);
         set_object_comment(frag_color0.z, 64, 2048);
         set_object_comment(frag_color0.w, 64, 2048);
+
+        set_variable_comment(f_5_3, 64, 2048);
     };
     ps_attr("d:/UC/vs_out.csv", 0){
         map_in_attr("out_attr0","in_attr0");
@@ -146,6 +149,14 @@ ps
     };
     uniform("d:/UC/fs_cbuf15.csv", "uvec4"){
         add(1,25,26,28,42,43,44,57);
+    };
+    calculator
+    {
+        textureSize(*,*) = vec2(512,128);
+        texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
+        textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
+        texture(*,*) = vec4(0.5,0.5,0.5,1.0);
+        textureQueryLod(*,*) = vec2(1,1);
     };
 };
 cs

@@ -29,6 +29,7 @@ namespace GlslRewriter
                 string srcFilePath = string.Empty;
                 string outFilePath = string.Empty;
                 string argFilePath = string.Empty;
+                bool typeByExt = true;
                 for (int i = 0; i < args.Length; ++i) {
                     if (0 == string.Compare(args[i], "-out", true)) {
                         if (i < args.Length - 1) {
@@ -67,16 +68,22 @@ namespace GlslRewriter
                         s_IsVsShader = true;
                         s_IsPsShader = false;
                         s_IsCsShader = false;
+
+                        typeByExt = false;
                     }
                     else if (0 == string.Compare(args[i], "-ps", true)) {
                         s_IsPsShader = true;
                         s_IsVsShader = false;
                         s_IsCsShader = false;
+
+                        typeByExt = false;
                     }
                     else if (0 == string.Compare(args[i], "-cs", true)) {
                         s_IsCsShader = true;
                         s_IsVsShader = false;
                         s_IsPsShader = false;
+
+                        typeByExt = false;
                     }
                     else if (args[i][0] == '-') {
                         Console.WriteLine("unknown command option ! {0}", args[i]);
@@ -108,6 +115,24 @@ namespace GlslRewriter
                     string srcFileName = Path.GetFileName(srcFilePath);
                     string srcFileNameWithoutExt = Path.GetFileNameWithoutExtension(srcFileName);
                     string srcExt = Path.GetExtension(srcFilePath);
+
+                    if (typeByExt) {
+                        if (s_VertExts.Contains(srcExt)) {
+                            s_IsVsShader = true;
+                            s_IsPsShader = false;
+                            s_IsCsShader = false;
+                        }
+                        else if (s_FragExts.Contains(srcExt)) {
+                            s_IsVsShader = false;
+                            s_IsPsShader = true;
+                            s_IsCsShader = false;
+                        }
+                        else if (s_CompExts.Contains(srcExt)) {
+                            s_IsVsShader = false;
+                            s_IsPsShader = false;
+                            s_IsCsShader = true;
+                        }
+                    }
 
                     if (string.IsNullOrEmpty(argFilePath)) {
                         argFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_args.dsl");
@@ -149,7 +174,7 @@ namespace GlslRewriter
             File.Delete(outFile);
             var glslFileLines = File.ReadAllLines(srcFile);
             var glslLines = CompletionAndSkipPP(glslFileLines);
-            string glslTxt = PreprocessCondExp(glslLines);
+            string glslTxt = ConvertCondExpAndSkipComments(glslLines);
 
             var file = new Dsl.DslFile();
             file.onGetToken = (ref Dsl.Common.DslAction dslAction, ref Dsl.Common.DslToken dslToken, ref string tok, ref short val, ref int line) => {
@@ -337,7 +362,7 @@ namespace GlslRewriter
             List<string> stms = new List<string>();
             //插入参数初始化
             if (s_IsPsShader) {
-                stms.Add("gl_FragCoord = vec4(0);");
+                stms.Add("gl_FragCoord = vec4(320,240,0.5,1.0);");
             }
             var cfg = Config.ActiveConfig;
             var attrCfg = cfg.InOutAttrInfo;
@@ -370,7 +395,7 @@ namespace GlslRewriter
             }
             return stms;
         }
-        private static string PreprocessCondExp(IList<string> glslLines)
+        private static string ConvertCondExpAndSkipComments(IList<string> glslLines)
         {
             //c语言的?:操作符与赋值操作是相同优先级，这与MetaDSL里不一样，有可能条件表达式里会出现赋值表达式，我们需要把这些表达式括起来再进行dsl解析
             var sb = new StringBuilder();
@@ -952,7 +977,7 @@ namespace GlslRewriter
                         }
                     }
                 }
-                else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!="){
+                else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!=" && funcId != "<=" && funcId != ">=") {
                     //convert to var = var op val
                     var p1 = funcData.GetParam(0);
                     var p22 = funcData.GetParam(1);
@@ -3198,6 +3223,12 @@ namespace GlslRewriter
         internal static bool s_IsCsShader = false;
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
+        private static HashSet<string> s_VertExts = new HashSet<string> { ".vert", ".vs", ".vsh" };
+        private static HashSet<string> s_FragExts = new HashSet<string> { ".frag", ".fs", ".fsh" };
+        private static HashSet<string> s_CompExts = new HashSet<string> { ".comp", ".cs", ".csh" };
+        private static HashSet<string> s_GeomExts = new HashSet<string> { ".geom", ".gs", ".gsh" };
+        private static HashSet<string> s_TessCtrlExts = new HashSet<string> { ".tesc", ".tcs" };
+        private static HashSet<string> s_TessEvalExts = new HashSet<string> { ".tese", ".tes" };
 
         private static Dictionary<string, string> s_BuiltInFuncs = new Dictionary<string, string> {
             { "float", "@@" },

@@ -931,7 +931,7 @@ namespace GlslRewriter
             internal bool DefUseMultilineComments = false;
             internal bool DefVariableExpandedOnlyOnce = false;
             internal int DefMaxLevelForExpression = 16;
-            internal int DefMaxLengthForExpression = 256;
+            internal int DefMaxLengthForExpression = 512;
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;

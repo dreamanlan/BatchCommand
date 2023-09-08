@@ -7,7 +7,7 @@ vs
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
         def_max_level_for_expression = 16;
-        def_max_length_for_expression = 256;
+        def_max_length_for_expression = 512;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
         shader_variables_capacity = 1024;
@@ -109,7 +109,7 @@ ps
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
         def_max_level_for_expression = 16;
-        def_max_length_for_expression = 256;
+        def_max_length_for_expression = 512;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
         shader_variables_capacity = 1024;

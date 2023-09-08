@@ -985,7 +985,7 @@ namespace GlslRewriter
             internal bool DebugMode = false;
             internal bool PrintGraph = false;
             internal bool NeedUniformUtofVals = true;
-            internal bool NeedUniformFtouVals = true;
+            internal bool NeedUniformFtouVals = false;
             internal bool DefUseMultilineComments = false;
             internal bool DefVariableExpandedOnlyOnce = false;
             internal int DefMaxLevelForExpression = 32;

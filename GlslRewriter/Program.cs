@@ -961,7 +961,7 @@ namespace GlslRewriter
                             int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLengthForExpression;
                             bool defMultiline = Config.ActiveConfig.SettingInfo.DefUseMultilineComments;
                             bool defExpand = Config.ActiveConfig.SettingInfo.DefVariableExpandedOnlyOnce;
-                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, true)) : string.Empty;
+                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, false, true)) : string.Empty;
 
                             var sb = new StringBuilder(val.Length + exp.Length + 128);
                             sb.Append("/*");
@@ -978,14 +978,19 @@ namespace GlslRewriter
                             funcData.LastComments.Add(sb.ToString());
                         }
                         else {
+                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce, true, true)) : string.Empty;
+
                             var sb = new StringBuilder(val.Length + exp.Length + 128);
                             sb.Append("// ");
                             if (!string.IsNullOrEmpty(val))
                                 sb.Append(val);
                             if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
                                 sb.Append("  <=>  ");
-                            if (maxLvlForExp >= 0)
-                                sb.Append(exp);
+                            if (maxLvlForExp >= 0) {
+                                sb.AppendLine(exp0);
+                                sb.Append(" // ");
+                                sb.AppendLine(exp);
+                            }
                             funcData.LastComments.Add(sb.ToString());
                         }
                     }

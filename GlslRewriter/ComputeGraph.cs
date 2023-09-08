@@ -19,7 +19,8 @@ namespace GlslRewriter
         public int MaxLength { get; init; } = 0;
         public bool UseMultilineComments { get; init; } = false;
         public bool VariableExpandedOnlyOnce { get; init; } = false;
-        public bool ForceGenerate { get; init; } = false;
+        public bool WithValue { get; init; } = false;
+        public bool DontCacheExpression { get; init; } = false;
 
         public ComputeSetting() { }
         public ComputeSetting(int maxLevel, int maxLength, bool useMultilineComments, bool variableExpandedOnlyOnce)
@@ -29,13 +30,14 @@ namespace GlslRewriter
             UseMultilineComments = useMultilineComments;
             VariableExpandedOnlyOnce = variableExpandedOnlyOnce;
         }
-        public ComputeSetting(int maxLevel, int maxLength, bool useMultilineComments, bool variableExpandedOnlyOnce, bool forceGenerate)
+        public ComputeSetting(int maxLevel, int maxLength, bool useMultilineComments, bool variableExpandedOnlyOnce, bool withValue, bool dontCacheExpression)
         {
             MaxLevel = maxLevel;
             MaxLength = maxLength;
             UseMultilineComments = useMultilineComments;
             VariableExpandedOnlyOnce = variableExpandedOnlyOnce;
-            ForceGenerate = forceGenerate;
+            WithValue = withValue;
+            DontCacheExpression = dontCacheExpression;
         }
     }
     public class ComputeGraphNode
@@ -228,10 +230,17 @@ namespace GlslRewriter
             HashSet<string> usedVars = new HashSet<string>(Config.ActiveConfig.SettingInfo.ShaderVariablesCapacity);
             var sb = new StringBuilder(setting.MaxLength + Config.ActiveConfig.SettingInfo.StringBufferCapacitySurplus);
             HashSet<ComputeGraphNode> visits = new HashSet<ComputeGraphNode>(Config.ActiveConfig.SettingInfo.ComputeGraphNodesCapacity);
-            GenerateExpression(sb, 0, 0, setting, usedVars, visits);
-            m_Expression = sb.ToString();
-            m_ExpressionIndent = 0;
-            return m_Expression;
+            GenerateExpression(sb, 0, 0, setting, usedVars, visits, null);
+            string result;
+            if (setting.DontCacheExpression) {
+                result = sb.ToString();
+            }
+            else {
+                m_Expression = sb.ToString();
+                m_ExpressionIndent = 0;
+                result = m_Expression;
+            }
+            return result;
         }
 
         public void DoCalc()
@@ -258,9 +267,9 @@ namespace GlslRewriter
             }
             return null != m_Value ? m_Value : string.Empty;
         }
-        public void GenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
+        public void GenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
-            if (setting.ForceGenerate || setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(m_Expression)) {
+            if (setting.DontCacheExpression || setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(m_Expression)) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
                     if (visits.Contains(this)) {
                         Debug.Assert(false);
@@ -276,7 +285,7 @@ namespace GlslRewriter
                     sb.Append("...");
                 }
                 else {
-                    TryGenerateExpression(sb, indent, curLevel, setting, usedVars, visits);
+                    TryGenerateExpression(sb, indent, curLevel, setting, usedVars, visits, fromNode);
                 }
                 visits.Remove(this);
             }
@@ -309,7 +318,7 @@ namespace GlslRewriter
         protected virtual void TryCalcValue(HashSet<ComputeGraphNode> visits)
         {
         }
-        protected virtual void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
+        protected virtual void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
         }
 
@@ -321,7 +330,7 @@ namespace GlslRewriter
         public List<ComputeGraphNode> OutNodes = new List<ComputeGraphNode>();
 
         protected string? m_Value = null;
-        protected string? m_Expression = null;
+        protected string m_Expression = string.Empty;
         protected int m_ExpressionIndent = 0;
 
         public static void ResetStatic()
@@ -351,7 +360,7 @@ namespace GlslRewriter
             val = Calculator.ReStringNumeric(val);
             m_Value = val;
         }
-        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
+        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
             sb.Append(Value);
         }
@@ -400,29 +409,34 @@ namespace GlslRewriter
                 }
             }
         }
-        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
+        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
-            if (null != OwnFunc && PrevNodes.Count > 0 && !Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
-                if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
+            if (null != OwnFunc && PrevNodes.Count > 0) {
+                if (Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
                     sb.Append(VarName);
                 }
                 else {
-                    if (curLevel < setting.MaxLevel) {
-                        if (setting.VariableExpandedOnlyOnce)
-                            usedVars.Add(VarName);
-                        //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
-                        int start = sb.Length;
-                        PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                        int end = sb.Length;
-                        if (!setting.VariableExpandedOnlyOnce) {
-                            if (end > start) {
-                                m_Expression = sb.ToString(start, end - start);
-                                m_ExpressionIndent = indent;
-                            }
-                        }
+                    if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
+                        sb.Append(VarName);
                     }
                     else {
-                        sb.Append(VarName + "...");
+                        if (curLevel < setting.MaxLevel) {
+                            if (setting.VariableExpandedOnlyOnce)
+                                usedVars.Add(VarName);
+                            //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
+                            int start = sb.Length;
+                            PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
+                            int end = sb.Length;
+                            if (!setting.VariableExpandedOnlyOnce && !setting.DontCacheExpression) {
+                                if (end > start) {
+                                    m_Expression = sb.ToString(start, end - start);
+                                    m_ExpressionIndent = indent;
+                                }
+                            }
+                        }
+                        else {
+                            sb.Append(VarName + "...");
+                        }
                     }
                 }
             }
@@ -585,39 +599,39 @@ namespace GlslRewriter
                 }
             }
         }
-        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
+        protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
             if (Operator.Length > 0 && (char.IsLetter(Operator[0]) || Operator[0] == '_')) {
                 if (Operator == "fma") {
                     //fma(a,b,c) => a*b+c
                     sb.Append("(");
-                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(" * ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(" + ");
-                    PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
                 else if (Operator == "min" && PrevNodes[0] is ComputeGraphCalcNode cnode && cnode.Operator == "max") {
                     //min(max(v,a),b) => clamp(v,a,b)
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode);
                     sb.Append(", ");
-                    cnode.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode);
                     sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
                 else if (Operator == "max" && PrevNodes[0] is ComputeGraphCalcNode cnode2 && cnode2.Operator == "min") {
                     //max(min(v,b),a) => clamp(v,a,b)
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode2.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode2.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode2);
                     sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(", ");
-                    cnode2.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode2.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode2);
                     sb.Append(")");
                 }
                 else if (Operator == "min" && PrevNodes[0] is ComputeGraphVarNode vnode && vnode.PrevNodes[vnode.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode3 && cnode3.Operator=="="
@@ -625,11 +639,11 @@ namespace GlslRewriter
                     //min({vname = max(v,a)},b) => clamp(v,a,b)
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode31.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode31.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode31);
                     sb.Append(",  ");
-                    cnode31.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode31.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode31);
                     sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
                 else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
@@ -637,14 +651,20 @@ namespace GlslRewriter
                     //max({vname = min(v,b)},a) => clamp(v,a,b)
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode41.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode41.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode41);
                     sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     sb.Append(", ");
-                    cnode41.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                    cnode41.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, cnode41);
                     sb.Append(")");
                 }
                 else {
+                    bool withValue = false;
+                    if(setting.WithValue && (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (Operator == "utof" || Operator== "uintBitsToFloat")
+                        || Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (Operator == "ftou" || Operator == "floatBitsToUint"))){
+                        withValue = true;
+                        sb.Append("{");
+                    }
                     sb.Append(Operator);
                     sb.Append("(");
                     bool first = true;
@@ -653,20 +673,47 @@ namespace GlslRewriter
                             first = false;
                         else
                             sb.Append(", ");
-                        p.GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                        p.GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                     }
                     sb.Append(")");
+                    if (withValue) {
+                        sb.Append(" : ");
+                        sb.Append(m_Value);
+                        sb.Append("}");
+                    }
                 }
             }
             else if (Operator == ".") {
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                bool withValue = false;
+                if (setting.WithValue) {
+                    if (fromNode is not ComputeGraphCalcNode) {
+                        withValue = true;
+                        sb.Append("{");
+                    }
+                    else if(fromNode is ComputeGraphCalcNode calcNode) {
+                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
+                    Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
+
+                        }
+                        else {
+                            withValue = true;
+                            sb.Append("{");
+                        }
+                    }
+                }
+                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(".");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
+                if (withValue) {
+                    sb.Append(" : ");
+                    sb.Append(m_Value);
+                    sb.Append("}");
+                }
             }
             else if (Operator == "[]") {
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append("[");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append("]");
             }
             else if (Operator == "=") {
@@ -677,7 +724,7 @@ namespace GlslRewriter
                     AppendAssignLeft(sb, NextNodes[0]);
                     sb.Append(" = ");
                 }
-                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel + 1, setting, usedVars, visits, this);
                 if (setting.UseMultilineComments) {
                     sb.AppendLine();
                     sb.Append(Literal.GetIndentString(indent));
@@ -686,27 +733,27 @@ namespace GlslRewriter
             }
             else if (PrevNodes.Count == 3) {
                 sb.Append("(");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(" ? ");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(" : ");
-                PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(")");
             }
             else if (PrevNodes.Count == 2) {
                 sb.Append("(");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(" ");
                 sb.Append(Operator);
                 sb.Append(" ");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(")");
             }
             else {
                 sb.Append("(");
                 sb.Append(Operator);
                 sb.Append(" ");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append(")");
             }
         }

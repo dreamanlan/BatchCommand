@@ -953,14 +953,23 @@ namespace GlslRewriter
                         string val = cgcn.GetValue();
                         string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
                         if (useMultilineComments) {
+                            int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevelForExpression;
+                            int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLengthForExpression;
+                            bool defMultiline = Config.ActiveConfig.SettingInfo.DefUseMultilineComments;
+                            bool defExpand = Config.ActiveConfig.SettingInfo.DefVariableExpandedOnlyOnce;
+                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, true)) : string.Empty;
+
                             var sb = new StringBuilder(val.Length + exp.Length + 128);
                             sb.Append("/*");
                             if (!string.IsNullOrEmpty(val))
                                 sb.AppendLine(val);
                             if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                sb.AppendLine("<=>");
+                            if (maxLvlForExp >= 0) {
+                                sb.AppendLine(exp0);
                                 sb.Append("<=>");
-                            if (maxLvlForExp >= 0)
                                 sb.AppendLine(exp);
+                            }
                             sb.Append("*/");
                             funcData.LastComments.Add(sb.ToString());
                         }

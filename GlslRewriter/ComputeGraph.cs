@@ -19,6 +19,7 @@ namespace GlslRewriter
         public int MaxLength { get; init; } = 0;
         public bool UseMultilineComments { get; init; } = false;
         public bool VariableExpandedOnlyOnce { get; init; } = false;
+        public bool ForceGenerate { get; init; } = false;
 
         public ComputeSetting() { }
         public ComputeSetting(int maxLevel, int maxLength, bool useMultilineComments, bool variableExpandedOnlyOnce)
@@ -27,6 +28,14 @@ namespace GlslRewriter
             MaxLength = maxLength;
             UseMultilineComments = useMultilineComments;
             VariableExpandedOnlyOnce = variableExpandedOnlyOnce;
+        }
+        public ComputeSetting(int maxLevel, int maxLength, bool useMultilineComments, bool variableExpandedOnlyOnce, bool forceGenerate)
+        {
+            MaxLevel = maxLevel;
+            MaxLength = maxLength;
+            UseMultilineComments = useMultilineComments;
+            VariableExpandedOnlyOnce = variableExpandedOnlyOnce;
+            ForceGenerate = forceGenerate;
         }
     }
     public class ComputeGraphNode
@@ -251,7 +260,7 @@ namespace GlslRewriter
         }
         public void GenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
         {
-            if (setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(m_Expression)) {
+            if (setting.ForceGenerate || setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(m_Expression)) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
                     if (visits.Contains(this)) {
                         Debug.Assert(false);

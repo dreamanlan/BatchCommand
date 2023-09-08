@@ -6,7 +6,7 @@ vs
         //print_graph;
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
-        def_max_level_for_expression = 8;
+        def_max_level_for_expression = 16;
         def_max_length_for_expression = 256;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
@@ -108,7 +108,7 @@ ps
         //print_graph;
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
-        def_max_level_for_expression = 8;
+        def_max_level_for_expression = 16;
         def_max_length_for_expression = 256;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;

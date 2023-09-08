@@ -930,7 +930,7 @@ namespace GlslRewriter
             internal bool PrintGraph = false;
             internal bool DefUseMultilineComments = false;
             internal bool DefVariableExpandedOnlyOnce = false;
-            internal int DefMaxLevelForExpression = 8;
+            internal int DefMaxLevelForExpression = 16;
             internal int DefMaxLengthForExpression = 256;
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;

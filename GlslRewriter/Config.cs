@@ -149,13 +149,13 @@ namespace GlslRewriter
                 s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
             }
         }
-        internal static bool CalcSettingForVariable(Dsl.ISyntaxComponent varDsl, out int maxLevelForVal, out int maxLevelForExp, out bool useMultilineComments, out bool expandedOnlyOnce)
+        internal static bool CalcSettingForVariable(Dsl.ISyntaxComponent varDsl, out int maxLevelForExp, out int maxLengthForExp, out bool useMultilineComments, out bool expandedOnlyOnce)
         {
             var settingInfo = ActiveConfig.SettingInfo;
-            maxLevelForVal = settingInfo.DefMaxLevelForValue;
             maxLevelForExp = settingInfo.DefMaxLevelForExpression;
-            useMultilineComments = settingInfo.UseMultilineComments;
-            expandedOnlyOnce = settingInfo.VariableExpandedOnlyOnce;
+            maxLengthForExp = settingInfo.DefMaxLengthForExpression;
+            useMultilineComments = settingInfo.DefUseMultilineComments;
+            expandedOnlyOnce = settingInfo.DefVariableExpandedOnlyOnce;
 
             var vd = varDsl as Dsl.ValueData;
             var fd = varDsl as Dsl.FunctionData;
@@ -169,8 +169,8 @@ namespace GlslRewriter
             if (null != vd) {
                 string vname = vd.GetId();
                 if(settingInfo.VariableSettingInfos.TryGetValue(vname, out var lvlInfo)) {
-                    maxLevelForVal = lvlInfo.MaxLevelForValue;
                     maxLevelForExp = lvlInfo.MaxLevelForExpression;
+                    maxLengthForExp = lvlInfo.MaxLengthForExpression;
                     useMultilineComments = lvlInfo.UseMultilineComments;
                     expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
                 }
@@ -183,8 +183,8 @@ namespace GlslRewriter
                     if(int.TryParse(ixStr, out var index) && settingInfo.ObjectArraySettingInfos.TryGetValue(cid, out var objArrLvlInfo)
                         && objArrLvlInfo.TryGetValue(index, out var objLvlInfo)
                         && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                        maxLevelForVal = lvlInfo.MaxLevelForValue;
                         maxLevelForExp = lvlInfo.MaxLevelForExpression;
+                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
                         useMultilineComments = lvlInfo.UseMultilineComments;
                         expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
                     }
@@ -193,8 +193,8 @@ namespace GlslRewriter
                     string cid = fd.GetId();
                     string member = fd.GetParamId(0);
                     if(settingInfo.ObjectSettingInfos.TryGetValue(cid, out var objLvlInfo) && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                        maxLevelForVal = lvlInfo.MaxLevelForValue;
                         maxLevelForExp = lvlInfo.MaxLevelForExpression;
+                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
                         useMultilineComments = lvlInfo.UseMultilineComments;
                         expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
                     }
@@ -203,14 +203,14 @@ namespace GlslRewriter
                     string cid = fd.GetId();
                     string ixStr = fd.GetParamId(0);
                     if (int.TryParse(ixStr, out var index) && settingInfo.ArraySettingInfos.TryGetValue(cid, out var arrLvlInfo) && arrLvlInfo.TryGetValue(index, out var lvlInfo)) {
-                        maxLevelForVal = lvlInfo.MaxLevelForValue;
                         maxLevelForExp = lvlInfo.MaxLevelForExpression;
+                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
                         useMultilineComments = lvlInfo.UseMultilineComments;
                         expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
                     }
                 }
             }
-            return maxLevelForVal >= 0 || maxLevelForExp >= 0;
+            return maxLevelForExp >= 0 || maxLengthForExp >= 0;
         }
         internal static bool CalcFunc(string func, IList<string> args, ref string type, out string val)
         {
@@ -280,15 +280,14 @@ namespace GlslRewriter
                         else if (vid == "print_graph") {
                             cfg.SettingInfo.PrintGraph = true;
                         }
-                        else if (vid == "use_multiline_comments") {
-                            cfg.SettingInfo.UseMultilineComments = true;
+                        else if (vid == "def_use_multiline_comments") {
+                            cfg.SettingInfo.DefUseMultilineComments = true;
+                        }
+                        else if (vid == "def_variable_expanded_only_once") {
+                            cfg.SettingInfo.DefVariableExpandedOnlyOnce = true;
                         }
                         else if (vid == "def_skip_all_comments") {
-                            cfg.SettingInfo.DefMaxLevelForValue = -1;
                             cfg.SettingInfo.DefMaxLevelForExpression = -1;
-                        }
-                        else if(vid== "variable_expanded_only_once") {
-                            cfg.SettingInfo.VariableExpandedOnlyOnce = true;
                         }
                     }
                     else if (null != fd) {
@@ -299,14 +298,14 @@ namespace GlslRewriter
                             string vstr = DoCalc(fd.GetParam(1), ref vtype);
                             cfg.SettingInfo.SettingVariables[key] = vstr;
 
-                            if (key == "def_max_level_for_value") {
-                                if (int.TryParse(vstr, out var v)) {
-                                    cfg.SettingInfo.DefMaxLevelForValue = v;
-                                }
-                            }
-                            else if (key == "def_max_level_for_expression") {
+                            if (key == "def_max_level_for_expression") {
                                 if (int.TryParse(vstr, out var v)) {
                                     cfg.SettingInfo.DefMaxLevelForExpression = v;
+                                }
+                            }
+                            else if (key == "def_max_length_for_expression") {
+                                if (int.TryParse(vstr, out var v)) {
+                                    cfg.SettingInfo.DefMaxLengthForExpression = v;
                                 }
                             }
                             else if (key == "compute_graph_nodes_capacity") {
@@ -322,16 +321,6 @@ namespace GlslRewriter
                             else if(key== "string_buffer_capacity_surplus") {
                                 if (int.TryParse(vstr, out var v)) {
                                     cfg.SettingInfo.StringBufferCapacitySurplus = v;
-                                }
-                            }
-                            else if (key == "max_length_for_value") {
-                                if (int.TryParse(vstr, out var v)) {
-                                    cfg.SettingInfo.MaxLengthForValue = v;
-                                }
-                            }
-                            else if (key == "max_length_for_expression") {
-                                if (int.TryParse(vstr, out var v)) {
-                                    cfg.SettingInfo.MaxLengthForExpression = v;
                                 }
                             }
                         }
@@ -352,14 +341,14 @@ namespace GlslRewriter
                             string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
                             string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
-                            if (int.TryParse(v1str, out var lvlForVal) && int.TryParse(v2str, out var lvlForExp)
+                            if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 if(!cfg.SettingInfo.VariableSettingInfos.TryGetValue(key, out var lvlInfo)) {
                                     lvlInfo = new SettingInfoForVariable();
                                     cfg.SettingInfo.VariableSettingInfos.Add(key, lvlInfo);
                                 }
-                                lvlInfo.MaxLevelForValue = lvlForVal;
                                 lvlInfo.MaxLevelForExpression = lvlForExp;
+                                lvlInfo.MaxLengthForExpression = lenForExp;
                                 lvlInfo.UseMultilineComments = mlc;
                                 lvlInfo.VariableExpandedOnlyOnce = once;
                             }
@@ -374,7 +363,7 @@ namespace GlslRewriter
                             string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
                             string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForVal) && int.TryParse(v2str, out var lvlForExp)
+                            if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.GetId();
                                 string member = cd.GetParamId(0);
@@ -386,8 +375,8 @@ namespace GlslRewriter
                                     lvlInfo = new SettingInfoForVariable();
                                     objLvlInfo.Add(member, lvlInfo);
                                 }
-                                lvlInfo.MaxLevelForValue = lvlForVal;
                                 lvlInfo.MaxLevelForExpression = lvlForExp;
+                                lvlInfo.MaxLengthForExpression = lenForExp;
                                 lvlInfo.UseMultilineComments = mlc;
                                 lvlInfo.VariableExpandedOnlyOnce = once;
                             }
@@ -402,7 +391,7 @@ namespace GlslRewriter
                             string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
                             string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForVal) && int.TryParse(v2str, out var lvlForExp)
+                            if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.GetId();
                                 string ixType = "int";
@@ -416,8 +405,8 @@ namespace GlslRewriter
                                         lvlInfo = new SettingInfoForVariable();
                                         arrLvlInfo.Add(index, lvlInfo);
                                     }
-                                    lvlInfo.MaxLevelForValue = lvlForVal;
                                     lvlInfo.MaxLevelForExpression = lvlForExp;
+                                    lvlInfo.MaxLengthForExpression = lenForExp;
                                     lvlInfo.UseMultilineComments = mlc;
                                     lvlInfo.VariableExpandedOnlyOnce = once;
                                 }
@@ -433,8 +422,8 @@ namespace GlslRewriter
                             string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
                             string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForVal)
-                                && int.TryParse(v2str, out var lvlForExp) && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                            if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp)
+                                && int.TryParse(v2str, out var lenForExp) && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.LowerOrderFunction.GetId();
                                 string ixType = "int";
                                 string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
@@ -452,8 +441,8 @@ namespace GlslRewriter
                                         lvlInfo = new SettingInfoForVariable();
                                         objLvlInfo.Add(member, lvlInfo);
                                     }
-                                    lvlInfo.MaxLevelForValue = lvlForVal;
                                     lvlInfo.MaxLevelForExpression = lvlForExp;
+                                    lvlInfo.MaxLengthForExpression = lenForExp;
                                     lvlInfo.UseMultilineComments = mlc;
                                     lvlInfo.VariableExpandedOnlyOnce = once;
                                 }
@@ -466,8 +455,8 @@ namespace GlslRewriter
                                     lvlInfo = new SettingInfoForVariable();
                                     cfg.SettingInfo.VariableSettingInfos.Add(vname, lvlInfo);
                                 }
-                                lvlInfo.MaxLevelForValue = -1;
                                 lvlInfo.MaxLevelForExpression = -1;
+                                lvlInfo.MaxLengthForExpression = -1;
                             }
                         }
                         else if (fid == "skip_object_comment") {
@@ -484,8 +473,8 @@ namespace GlslRewriter
                                         lvlInfo = new SettingInfoForVariable();
                                         objLvlInfo.Add(member, lvlInfo);
                                     }
-                                    lvlInfo.MaxLevelForValue = -1;
                                     lvlInfo.MaxLevelForExpression = -1;
+                                    lvlInfo.MaxLengthForExpression = -1;
                                 }
                             }
                         }
@@ -505,8 +494,8 @@ namespace GlslRewriter
                                             lvlInfo = new SettingInfoForVariable();
                                             arrLvlInfo.Add(index, lvlInfo);
                                         }
-                                        lvlInfo.MaxLevelForValue = -1;
                                         lvlInfo.MaxLevelForExpression = -1;
+                                        lvlInfo.MaxLengthForExpression = -1;
                                     }
                                 }
                             }
@@ -532,8 +521,8 @@ namespace GlslRewriter
                                             lvlInfo = new SettingInfoForVariable();
                                             objLvlInfo.Add(member, lvlInfo);
                                         }
-                                        lvlInfo.MaxLevelForValue = -1;
                                         lvlInfo.MaxLevelForExpression = -1;
+                                        lvlInfo.MaxLengthForExpression = -1;
                                     }
                                 }
                             }
@@ -930,8 +919,8 @@ namespace GlslRewriter
 
         internal class SettingInfoForVariable
         {
-            internal int MaxLevelForValue = 0;
             internal int MaxLevelForExpression = 0;
+            internal int MaxLengthForExpression = 0;
             internal bool UseMultilineComments = true;
             internal bool VariableExpandedOnlyOnce = true;
         }
@@ -939,15 +928,13 @@ namespace GlslRewriter
         {
             internal bool DebugMode = false;
             internal bool PrintGraph = false;
-            internal bool UseMultilineComments = false;
-            internal bool VariableExpandedOnlyOnce = false;
-            internal int DefMaxLevelForValue = 16;
-            internal int DefMaxLevelForExpression = -1;
+            internal bool DefUseMultilineComments = false;
+            internal bool DefVariableExpandedOnlyOnce = false;
+            internal int DefMaxLevelForExpression = 8;
+            internal int DefMaxLengthForExpression = 256;
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;
-            internal int MaxLengthForValue = 8 * 1024;
-            internal int MaxLengthForExpression = 8 * 1024;
 
             internal HashSet<string> DontExpandVariables = new HashSet<string>();
 

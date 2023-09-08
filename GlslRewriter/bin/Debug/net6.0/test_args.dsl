@@ -4,16 +4,14 @@ vs
     {
         debug_mode;
         //print_graph;
-        //use_multiline_comments;
-        //variable_expanded_only_once;
-        def_max_level_for_value = 64;
-        def_max_level_for_expression = -1;
+        //def_use_multiline_comments;
+        //def_variable_expanded_only_once;
+        def_max_level_for_expression = 8;
+        def_max_length_for_expression = 256;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
-        max_length_for_value = 16 * 1024;
-        max_length_for_expression = 64 * 1024;
 
         set_object_comment(out_attr0_0.x, 64, 2048, true, true);
         set_object_comment(out_attr0_0.y, 64, 2048);
@@ -108,16 +106,14 @@ ps
     {
         debug_mode;
         //print_graph;
-        //use_multiline_comments;
-        //variable_expanded_only_once;
-        def_max_level_for_value = 64;
-        def_max_level_for_expression = -1;
+        //def_use_multiline_comments;
+        //def_variable_expanded_only_once;
+        def_max_level_for_expression = 8;
+        def_max_length_for_expression = 256;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
-        max_length_for_value = 16 * 1024;
-        max_length_for_expression = 64 * 1024;
 
         set_object_comment(frag_color0.x, 64, 2048, true, true);
         set_object_comment(frag_color0.y, 64, 2048);
@@ -135,16 +131,43 @@ ps
         set_variable_comment(pf_2_8, 64, 2048);
 
         dont_expand_variable{
+            f_0_12,
             f_2_16,
+            f_2_11,
+            f_2_16,
+            f_3_22,
+            f4_0_0,
+            f4_0_1,
             f4_0_2,
             f4_0_3,
             f4_0_4,
             f_4_8,
+            f_5_2,
             f_5_3,
-            pf_3_7,
-            pf_1_23,
+            f_5_4,
+            pf_0_15,
+            pf_0_19,
             pf_0_20,
-            pf_2_8
+            pf_0_23,
+            pf_0_24,
+            pf_0_25,
+            pf_1_23,
+            pf_1_26,
+            pf_1_27,
+            pf_1_28,
+            pf_2_11,
+            pf_2_12,
+            pf_2_13,
+            pf_2_5,
+            pf_2_7,
+            pf_2_8,
+            pf_3_2,
+            pf_3_3,
+            pf_3_5,
+            pf_3_7,
+            pf_4_4,
+            pf_5_2,
+            pf_6_1,
         };
     };
     ps_attr("d:/UC/vs_out.csv", 0){

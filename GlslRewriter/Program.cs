@@ -949,15 +949,15 @@ namespace GlslRewriter
 
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
-                    if (Config.CalcSettingForVariable(p, out var maxLvlForVal, out var maxLvlForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
-                        string val = maxLvlForVal >= 0 ? cgcn.GetValue(new ComputeSetting(maxLvlForVal, useMultilineComments, expandedOnlyOnce)) : string.Empty;
-                        string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
+                    if (Config.CalcSettingForVariable(p, out var maxLvlForExp, out var maxLenForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
+                        string val = cgcn.GetValue();
+                        string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
                         if (useMultilineComments) {
                             var sb = new StringBuilder(val.Length + exp.Length + 128);
                             sb.Append("/*");
-                            if (maxLvlForVal >= 0)
+                            if (!string.IsNullOrEmpty(val))
                                 sb.AppendLine(val);
-                            if (maxLvlForVal >= 0 && maxLvlForExp >= 0)
+                            if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
                                 sb.Append("<=>");
                             if (maxLvlForExp >= 0)
                                 sb.AppendLine(exp);
@@ -967,11 +967,9 @@ namespace GlslRewriter
                         else {
                             var sb = new StringBuilder(val.Length + exp.Length + 128);
                             sb.Append("// ");
-                            if (maxLvlForVal >= 0)
+                            if (!string.IsNullOrEmpty(val))
                                 sb.Append(val);
-                            if (maxLvlForVal >= 0 && maxLvlForExp >= 0)
-                                sb.Append("  <=>  ");
-                            if (maxLvlForExp >= 0)
+                            else if(maxLvlForExp >= 0)
                                 sb.Append(exp);
                             funcData.LastComments.Add(sb.ToString());
                         }

@@ -129,6 +129,10 @@ ps
         set_variable_comment(f4_0_3, 64, 2048);
         set_variable_comment(f4_0_4, 64, 2048);
         set_variable_comment(f_5_3, 64, 2048);
+        set_variable_comment(pf_3_7, 64, 2048);
+        set_variable_comment(pf_1_23, 64, 2048);
+        set_variable_comment(pf_0_20, 64, 2048);
+        set_variable_comment(pf_2_8, 64, 2048);
 
         dont_expand_variable{
             f_2_16,
@@ -136,7 +140,11 @@ ps
             f4_0_3,
             f4_0_4,
             f_4_8,
-            f_5_3
+            f_5_3,
+            pf_3_7,
+            pf_1_23,
+            pf_0_20,
+            pf_2_8
         };
     };
     ps_attr("d:/UC/vs_out.csv", 0){

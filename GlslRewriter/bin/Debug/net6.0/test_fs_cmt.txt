@@ -122,7 +122,20 @@ void main()
 	f_0_0 = in_attr1.z ;	// 1.46396
 	f_1_0 = in_attr1.w ;	// 3.26268															in_attr1.zw是采样tex5纹理的坐标
 	f2_0_0 = vec2(f_0_0, f_1_0 );	// vec2(1.46396,3.26268)
-	f4_0_0 = vec4(textureQueryLod(tex5, f2_0_0 ), 0.0, 0.0 );	// vec4(4,1,0,0)
+	f4_0_0 = vec4(textureQueryLod(tex5, f2_0_0 ), 0.0, 0.0 );	/* vec4(4,1,0,0)
+																								f4_0_0 = vec4(textureQueryLod(tex5,vec2(in_attr1.z,in_attr1.w)),0.0,0.0)
+<=>
+vec4(textureQueryLod(tex5, vec2(in_attr1.z, in_attr1.w)), 0.0, 0.0)
+<=>
+{f4_0_0 = vec4(textureQueryLod(tex5, 
+	{f2_0_0 = vec2(
+		{f_0_0 = in_attr1.z
+		}, 
+		{f_1_0 = in_attr1.w
+		})
+	}), 0.0, 0.0)
+}
+*/
 	f_2_0 = f4_0_0.y ;	// 1
 	u_0_0 = uint(f_2_0 );	// 1
 	u_0_1 = u_0_0 << 8u;	// 256
@@ -130,7 +143,32 @@ void main()
 	pf_0_0 = f_2_1 / 256.0;	// 1
 	f_2_2 = min(pf_0_0, 2. );	// 1
 	f2_0_1 = vec2(f_0_0, f_1_0 );	// vec2(1.46396,3.26268)
-	f4_0_1 = textureLod(tex5, f2_0_1, f_2_2 );	// vec4(0.5,0.5,0.5,1)							从tex5上采样一个颜色，使用其xw 2个通道
+	f4_0_1 = textureLod(tex5, f2_0_1, f_2_2 );	/* vec4(0.5,0.5,0.5,1)							从tex5上采样一个颜色，使用其xw 2个通道
+																								f4_0_1 = textureLod(tex5,vec2(in_attr1.z,in_attr1.w),min((float((uint(f_2_0)<<8u))/256.0),2.))
+<=>
+textureLod(tex5, vec2(in_attr1.z, in_attr1.w), min((float((uint(f4_0_0.y) << 8u)) / 256.0), 2.))
+<=>
+{f4_0_1 = textureLod(tex5, 
+	{f2_0_1 = vec2(
+		{f_0_0 = in_attr1.z
+		}, 
+		{f_1_0 = in_attr1.w
+		})
+	}, 
+	{f_2_2 = min(
+		{pf_0_0 = (
+			{f_2_1 = float(
+				{u_0_1 = (
+					{u_0_0 = uint(
+						{f_2_0 = f4_0_0.y
+						})
+					} << 8u)
+				})
+			} / 256.0)
+		}, 2.)
+	})
+}
+*/
 	f_0_1 = f4_0_1.x ;	// 0.5
 	f_1_1 = f4_0_1.w ;	// 1
 	f_2_3 = in_attr1.x ;	// 0.5
@@ -145,36 +183,37 @@ void main()
 	pf_1_2 = pf_1_1 + f_3_0;	// 0.535
 	f2_0_2 = vec2(pf_0_3, pf_1_2 );	// vec2(0.5,0.535)
 	f4_0_2 = vec4(textureQueryLod(tex3, f2_0_2 ), 0.0, 0.0 );	/*vec4(4,1,0,0)					tex3采样坐标 in_attr1.xy + (tex5.xw  * fs_cbuf9[189 ].x * 2 - fs_cbuf9[189 ].x)，看起来是使用tex5的xw微调输入uv （in_attr1.xy）
+																								f4_0_2 = vec4(textureQueryLod(tex3,vec2((((f4_0_1.x*utof(fs_cbuf9[189].x))*2.+(0.-utof(fs_cbuf9[189].x)))+in_attr1.x),(((f4_0_1.w*utof(fs_cbuf9[189].x))*2.+(0.-utof(fs_cbuf9[189].x)))+in_attr1.y))),0.0,0.0)
 <=>
-vec4(textureQueryLod(tex3,vec2((pf_0_2+f_2_3),(pf_1_1+f_3_0))),0.0,0.0)
+vec4(textureQueryLod(tex3, vec2((((f4_0_1.x * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.x), (((f4_0_1.w * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.y))), 0.0, 0.0)
 <=>
-{f4_0_2 = vec4(textureQueryLod(tex3,
+{f4_0_2 = vec4(textureQueryLod(tex3, 
 	{f2_0_2 = vec2(
 		{pf_0_3 = (
 			{pf_0_2 = (
 				{pf_0_1 = (
 					{f_0_1 = f4_0_1.x
-					}*
+					} * 
 					{f_4_0 = utof(fs_cbuf9[189].x)
 					})
-				}*2.+
-				{f_0_2 = (0.-f_4_0)
+				} * 2. + 
+				{f_0_2 = (0. - f_4_0)
 				})
-			}+
+			} + 
 			{f_2_3 = in_attr1.x
 			})
-		},
+		}, 
 		{pf_1_2 = (
 			{pf_1_1 = (
 				{pf_1_0 = (
 					{f_1_1 = f4_0_1.w
-					}*f_4_0)
-				}*2.+f_0_2)
-			}+
+					} * f_4_0)
+				} * 2. + f_0_2)
+			} + 
 			{f_3_0 = in_attr1.y
 			})
 		})
-	}),0.0,0.0)
+	}), 0.0, 0.0)
 }
 */
 	f_0_3 = f4_0_2.y ;	// 1
@@ -201,34 +240,35 @@ vec4(textureQueryLod(tex3,vec2((pf_0_2+f_2_3),(pf_1_1+f_3_0))),0.0,0.0)
 	f_2_8 = min(pf_2_0, 2. );	// 1
 	f2_0_3 = vec2(f_1_8, f_0_7 );	// vec2(0.56595826,0.1917964)
 	f4_0_3 = texture(depthTex, f2_0_3 );	/*vec4(0.5,0.5,0.5,1)								深度纹理坐标计算 in_attr2.xy * gl_FragCoord_0.w * 1 / (in_attr2.w * gl_FragCoord_0.w)
+																								f4_0_3 = texture(depthTex,vec2(((in_attr2.x*gl_FragCoord_0.w)*(1.0/(in_attr2.w*gl_FragCoord_0.w))),((in_attr2.y*gl_FragCoord_0.w)*(1.0/(in_attr2.w*gl_FragCoord_0.w)))))
 <=>
-texture(depthTex,vec2((f_1_7*f_0_6),(f_2_6*f_0_6)))
+texture(depthTex, vec2(((in_attr2.x * gl_FragCoord_0.w) * (1.0 / (in_attr2.w * gl_FragCoord_0.w))), ((in_attr2.y * gl_FragCoord_0.w) * (1.0 / (in_attr2.w * gl_FragCoord_0.w)))))
 <=>
-{f4_0_3 = texture(depthTex,
+{f4_0_3 = texture(depthTex, 
 	{f2_0_3 = vec2(
 		{f_1_8 = (
 			{f_1_7 = (
 				{f_1_6 = in_attr2.x
-				}*
+				} * 
 				{f_2_4 = gl_FragCoord_0.w
 				})
-			}*
-			{f_0_6 = (1.0/
+			} * 
+			{f_0_6 = (1.0 / 
 				{f_0_5 = (
 					{f_0_4 = in_attr2.w
-					}*
+					} * 
 					{f_1_2 = gl_FragCoord_0.w
 					})
 				})
 			})
-		},
+		}, 
 		{f_0_7 = (
 			{f_2_6 = (
 				{f_2_5 = in_attr2.y
-				}*
+				} * 
 				{f_3_1 = gl_FragCoord_0.w
 				})
-			}*f_0_6)
+			} * f_0_6)
 		})
 	})
 }
@@ -237,46 +277,47 @@ texture(depthTex,vec2((f_1_7*f_0_6),(f_2_6*f_0_6)))
 	f_1_9 = float(u_1_0 & 0xffff );	// 2
 	f3_0_0 = vec3(pf_0_3, pf_1_2, f_1_9 );	// vec3(0.5,0.535,2)
 	f4_0_4 = textureLod(tex4, f3_0_0, f_2_8 );	/*vec4(0.5,0.5,0.5,1)							使用与tex3纹理相同的uv与在tex3上查询到的lod数据采样，第三个采样坐标数据来自in_attr6.x，应该是序列帧的索引
+																								f4_0_4 = textureLod(tex4,vec3((((f4_0_1.x*utof(fs_cbuf9[189].x))*2.+(0.-utof(fs_cbuf9[189].x)))+in_attr1.x),(((f4_0_1.w*utof(fs_cbuf9[189].x))*2.+(0.-utof(fs_cbuf9[189].x)))+in_attr1.y),float((uint(clamp(roundEven(f_1_3),float(0.),float(65535.)))&0xffff))),min((float((uint(f_0_3)<<8u))/256.0),2.))
 <=>
-textureLod(tex4,vec3((pf_0_2+f_2_3),(pf_1_1+f_3_0),float((u_1_0&0xffff))),min((f_2_7/256.0),2.))
+textureLod(tex4, vec3((((f4_0_1.x * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.x), (((f4_0_1.w * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.y), float((uint(clamp(roundEven(in_attr6.x), float(0.), float(65535.))) & 0xffff))), min((float((uint(f4_0_2.y) << 8u)) / 256.0), 2.))
 <=>
-{f4_0_4 = textureLod(tex4,
+{f4_0_4 = textureLod(tex4, 
 	{f3_0_0 = vec3(
 		{pf_0_3 = (
 			{pf_0_2 = (
 				{pf_0_1 = (
 					{f_0_1 = f4_0_1.x
-					}*
+					} * 
 					{f_4_0 = utof(fs_cbuf9[189].x)
 					})
-				}*2.+
-				{f_0_2 = (0.-f_4_0)
+				} * 2. + 
+				{f_0_2 = (0. - f_4_0)
 				})
-			}+
+			} + 
 			{f_2_3 = in_attr1.x
 			})
-		},
+		}, 
 		{pf_1_2 = (
 			{pf_1_1 = (
 				{pf_1_0 = (
 					{f_1_1 = f4_0_1.w
-					}*f_4_0)
-				}*2.+f_0_2)
-			}+
+					} * f_4_0)
+				} * 2. + f_0_2)
+			} + 
 			{f_3_0 = in_attr1.y
 			})
-		},
+		}, 
 		{f_1_9 = float((
 			{u_1_0 = uint(
 				{f_1_5 = clamp(
 					{f_1_4 = roundEven(
 						{f_1_3 = in_attr6.x
 						})
-					},float(0.),float(65535.))
+					}, float(0.), float(65535.))
 				})
-			}&0xffff))
+			} & 0xffff))
 		})
-	},
+	}, 
 	{f_2_8 = min(
 		{pf_2_0 = (
 			{f_2_7 = float(
@@ -284,10 +325,10 @@ textureLod(tex4,vec3((pf_0_2+f_2_3),(pf_1_1+f_3_0),float((u_1_0&0xffff))),min((f
 					{u_0_2 = uint(
 						{f_0_3 = f4_0_2.y
 						})
-					}<<8u)
+					} << 8u)
 				})
-			}/256.0)
-		},2.)
+			} / 256.0)
+		}, 2.)
 	})
 }
 */
@@ -321,7 +362,7 @@ textureLod(tex4,vec3((pf_0_2+f_2_3),(pf_1_1+f_3_0),float((u_1_0&0xffff))),min((f
 	pf_1_4 = fma(f_4_3, f_2_10, pf_1_3 );	// 11238.733925
 	pf_2_2 = pf_2_1 * f_6_0;	// 1
 	pf_1_5 = pf_1_4 * f_8_1;	// 2247.7468000000003
-	f_2_11 = min(max(pf_1_5, 0.0 ), 1.0 );	// 1
+	f_2_11 = min(max(pf_1_5, 0.0 ), 1.0 );	// 1  <=>  clamp((((1.0 / ((in_attr2.z * (1.0 / in_attr2.w)) * utof(fs_cbuf8[30].w) + (0. - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z) + (f4_0_3.x * utof(fs_cbuf8[30].w) + utof(fs_cbuf8[30].x))) * (1.0 / utof(fs_cbuf9[140].y))), 0.0, 1.0)
 	f_4_4 = in_attr4.y ;	// 1268.1571
 	f_5_1 = 0. - (0. );	// 0
 	pf_1_6 = pf_2_2 + f_5_1;	// 1
@@ -350,14 +391,14 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 {f_2_16 = clamp(
 	{pf_1_9 = (
 		{pf_1_8 = (
-			{pf_1_7 = (f_2_11*f_5_2)
-			}*
+			{pf_1_7 = (f_2_11 * f_5_2)
+			} * 
 			{f_3_6 = in_attr3.x
 			})
-		}+
-		{f_2_15 = (0.-0.)
+		} + 
+		{f_2_15 = (0. - 0.)
 		})
-	},0.0,1.0)
+	}, 0.0, 1.0)
 }
 */
 	pf_1_10 = pf_3_0 * pf_3_0;	// 76944.5241743376
@@ -387,12 +428,12 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 	pf_1_16 = pf_0_11 + pf_2_2;	// 1
 	f_5_3 = (1.0 ) / pf_0_11;	/*(1.0/((f_4_8*f_3_15)*0.005))											f_5_3 = 1.0 / (f_4_8 * in_attr5.y * 0.005) 难道是迭代步数？
 <=>
-{f_5_3 = (1.0/
+{f_5_3 = (1.0 / 
 	{pf_0_11 = (
-		{pf_0_10 = (f_4_8*
+		{pf_0_10 = (f_4_8 * 
 			{f_3_15 = in_attr5.y
 			})
-		}*0.005)
+		} * 0.005)
 	})
 }
 */
@@ -488,15 +529,15 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 																		pf_5_2 = pf_3_3 * fs_cbuf15[42].x * fs_cbuf15[42].w
 																		pf_1_23 = pf_5_2 * (0 - fs_cbuf15[1].x) + pf_5_2 + pf_2_7
 <=>
-((pf_5_2*(0.-f_4_16)+pf_5_2)+pf_2_7)
+((pf_5_2 * (0. - utof(fs_cbuf15[1].x)) + pf_5_2) + pf_2_7)
 <=>
 {pf_1_23 = (
-	{pf_1_22 = (pf_5_2*
-		{f_4_17 = (0.-
+	{pf_1_22 = (pf_5_2 * 
+		{f_4_17 = (0. - 
 			{f_4_16 = utof(fs_cbuf15[1].x)
 			})
-		}+pf_5_2)
-	}+pf_2_7)
+		} + pf_5_2)
+	} + pf_2_7)
 }
 */
 	f_4_23 = in_attr9.x ;	// 0.40435
@@ -505,15 +546,15 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 																		pf_0_19 = tex4.x * (pf_2_5 * (0 - fs_cbuf15[44].y) + fs_cbuf15[43].y) + pf_2_5 * fs_cbuf15[44].y
 																		pf_0_20 = pf_6_1 * (0 - fs_cbuf15[1].x) + pf_6_1 + pf_0_19
 <=>
-((pf_6_1*(0.-f_4_18)+pf_6_1)+pf_0_19)
+((pf_6_1 * (0. - utof(fs_cbuf15[1].x)) + pf_6_1) + pf_0_19)
 <=>
 {pf_0_20 = (
-	{pf_5_3 = (pf_6_1*
-		{f_4_19 = (0.-
+	{pf_5_3 = (pf_6_1 * 
+		{f_4_19 = (0. - 
 			{f_4_18 = utof(fs_cbuf15[1].x)
 			})
-		}+pf_6_1)
-	}+pf_0_19)
+		} + pf_6_1)
+	} + pf_0_19)
 }
 */
 	f_5_10 = in_attr9.z ;	// 0.50397
@@ -522,15 +563,15 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 																		pf_4_4 = tex4.x * (pf_2_5 * (0 - fs_cbuf15[44].z) + fs_cbuf15[43].z) + pf_2_5 * fs_cbuf15[44].z
 																		pf_2_8 = pf_3_5 * (0 - fs_cbuf15[1].x) + pf_3_5 + pf_4_4
 <=>
-((pf_3_5*(0.-f_4_20)+pf_3_5)+pf_4_4)
+((pf_3_5 * (0. - utof(fs_cbuf15[1].x)) + pf_3_5) + pf_4_4)
 <=>
 {pf_2_8 = (
-	{pf_3_6 = (pf_3_5*
-		{f_4_21 = (0.-
+	{pf_3_6 = (pf_3_5 * 
+		{f_4_21 = (0. - 
 			{f_4_20 = utof(fs_cbuf15[1].x)
 			})
-		}+pf_3_5)
-	}+pf_4_4)
+		} + pf_3_5)
+	} + pf_4_4)
 }
 */
 	pf_3_7 = fma(pf_6_2, -0.9, 1. );	/*((min(pf_1_21,1.)*(0.-f_5_8)+utof(fs_cbuf15[57].w))*-0.9+1.)								分解为如下语句
@@ -545,18 +586,18 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 		{f_3_25 = min(
 			{pf_1_21 = (
 				{pf_1_20 = (
-					{f_3_19 = (0.-f_4_8)
-					}+1.05)
-				}*f_3_22)
-			},1.)
-		}*
-		{f_5_9 = (0.-
+					{f_3_19 = (0. - f_4_8)
+					} + 1.05)
+				} * f_3_22)
+			}, 1.)
+		} * 
+		{f_5_9 = (0. - 
 			{f_5_8 = utof(fs_cbuf15[57].w)
 			})
-		}+
+		} + 
 		{f_4_22 = utof(fs_cbuf15[57].w)
 		})
-	}*-0.9+1.)
+	} * -0.9 + 1.)
 }
 */
 	pf_1_24 = pf_3_7 * pf_1_23;	// (pf_3_7*pf_1_23)
@@ -625,13 +666,13 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 {frag_color0.x = 
 	{pf_1_29 = (
 		{pf_3_11 = (
-			{f_0_25 = (0.-pf_1_28)
-			}+
+			{f_0_25 = (0. - pf_1_28)
+			} + 
 			{f_9_4 = in_attr10.x
 			})
-		}*
+		} * 
 		{f_6_8 = in_attr10.w
-		}+pf_1_28)
+		} + pf_1_28)
 	}
 }
 */
@@ -644,13 +685,13 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 {frag_color0.y = 
 	{pf_0_26 = (
 		{pf_4_8 = (
-			{f_0_26 = (0.-pf_0_25)
-			}+
+			{f_0_26 = (0. - pf_0_25)
+			} + 
 			{f_1_13 = in_attr10.y
 			})
-		}*
+		} * 
 		{f_6_8 = in_attr10.w
-		}+pf_0_25)
+		} + pf_0_25)
 	}
 }
 */
@@ -663,13 +704,13 @@ clamp(((pf_1_7*f_3_6)+(0.-0.)),0.0,1.0)
 {frag_color0.z = 
 	{pf_2_14 = (
 		{pf_5_7 = (
-			{f_0_27 = (0.-pf_2_13)
-			}+
+			{f_0_27 = (0. - pf_2_13)
+			} + 
 			{f_5_12 = in_attr10.z
 			})
-		}*
+		} * 
 		{f_6_8 = in_attr10.w
-		}+pf_2_13)
+		} + pf_2_13)
 	}
 }
 */

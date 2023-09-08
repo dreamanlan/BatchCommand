@@ -79,6 +79,45 @@ namespace GlslRewriter
 
                                 results.Add(sb.ToString());
                                 sb.Length = 0;
+
+                                if (type == "vec4") {
+                                    if (Config.ActiveConfig.SettingInfo.NeedUniformFtouVals) {
+                                        sb.Append("// ");
+                                        sb.Append(cols[0]);
+                                        sb.Append(" = ");
+                                        sb.Append("uvec4(");
+                                        string vals = cols[1];
+                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            float.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.ftou(v).ToString());
+                                        }
+                                        sb.Append(");");
+                                        s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                        sb.Length = 0;
+                                    }
+                                }
+                                else {
+                                    if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
+                                        sb.Append("// ");
+                                        sb.Append(cols[0]);
+                                        sb.Append(" = ");
+                                        sb.Append("vec4(");
+                                        string vals = cols[1];
+                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            uint.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.utof(v).ToString());
+                                        }
+                                        sb.Append(");");
+                                        s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                        sb.Length = 0;
+                                    }
+                                }
                             }
                         }
                     }
@@ -115,6 +154,8 @@ namespace GlslRewriter
             cols.Add(sb.ToString().Trim());
             return cols;
         }
+
+        internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
     }
     internal static class Config
     {
@@ -298,7 +339,17 @@ namespace GlslRewriter
                             string vstr = DoCalc(fd.GetParam(1), ref vtype);
                             cfg.SettingInfo.SettingVariables[key] = vstr;
 
-                            if (key == "def_max_level_for_expression") {
+                            if (key == "need_uniform_utof_vals") {
+                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                    cfg.SettingInfo.NeedUniformUtofVals = v;
+                                }
+                            }
+                            else if (key == "need_uniform_ftou_vals") {
+                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                    cfg.SettingInfo.NeedUniformFtouVals = v;
+                                }
+                            }
+                            else if (key == "def_max_level_for_expression") {
                                 if (int.TryParse(vstr, out var v)) {
                                     cfg.SettingInfo.DefMaxLevelForExpression = v;
                                 }
@@ -334,13 +385,13 @@ namespace GlslRewriter
                         else if (fid == "set_variable_comment") {
                             string key = fd.GetParamId(0);
                             string v1type = "int";
-                            string v1str = DoCalc(fd.GetParam(1), ref v1type);
+                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
                             string v2type = "int";
-                            string v2str = DoCalc(fd.GetParam(2), ref v2type);
+                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
                             string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
+                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
+                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
                             if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 if(!cfg.SettingInfo.VariableSettingInfos.TryGetValue(key, out var lvlInfo)) {
@@ -356,13 +407,13 @@ namespace GlslRewriter
                         else if (fid == "set_object_comment") {
                             var cd = fd.GetParam(0) as Dsl.FunctionData;
                             string v1type = "int";
-                            string v1str = DoCalc(fd.GetParam(1), ref v1type);
+                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
                             string v2type = "int";
-                            string v2str = DoCalc(fd.GetParam(2), ref v2type);
+                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
                             string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
+                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
+                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
                             if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.GetId();
@@ -384,13 +435,13 @@ namespace GlslRewriter
                         else if (fid == "set_array_comment") {
                             var cd = fd.GetParam(0) as Dsl.FunctionData;
                             string v1type = "int";
-                            string v1str = DoCalc(fd.GetParam(1), ref v1type);
+                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
                             string v2type = "int";
-                            string v2str = DoCalc(fd.GetParam(2), ref v2type);
+                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
                             string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
+                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
+                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
                             if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
                                 && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.GetId();
@@ -415,13 +466,13 @@ namespace GlslRewriter
                         else if (fid == "set_object_array_comment") {
                             var cd = fd.GetParam(0) as Dsl.FunctionData;
                             string v1type = "int";
-                            string v1str = DoCalc(fd.GetParam(1), ref v1type);
+                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
                             string v2type = "int";
-                            string v2str = DoCalc(fd.GetParam(2), ref v2type);
+                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
                             string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? "True" : DoCalc(fd.GetParam(3), ref v3type);
+                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
                             string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? "True" : DoCalc(fd.GetParam(4), ref v4type);
+                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
                             if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp)
                                 && int.TryParse(v2str, out var lenForExp) && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
                                 string cid = cd.LowerOrderFunction.GetId();
@@ -921,16 +972,23 @@ namespace GlslRewriter
         {
             internal int MaxLevelForExpression = 0;
             internal int MaxLengthForExpression = 0;
-            internal bool UseMultilineComments = true;
-            internal bool VariableExpandedOnlyOnce = true;
+            internal bool UseMultilineComments = false;
+            internal bool VariableExpandedOnlyOnce = false;
+
+            internal const string c_DefMaxLvl = "256";
+            internal const string c_DefMaxLen = "102400";
+            internal const string c_Multiline = "True";
+            internal const string c_ExpandOnce = "True";
         }
         internal class SettingInfo
         {
             internal bool DebugMode = false;
             internal bool PrintGraph = false;
+            internal bool NeedUniformUtofVals = true;
+            internal bool NeedUniformFtouVals = true;
             internal bool DefUseMultilineComments = false;
             internal bool DefVariableExpandedOnlyOnce = false;
-            internal int DefMaxLevelForExpression = 16;
+            internal int DefMaxLevelForExpression = 32;
             internal int DefMaxLengthForExpression = 512;
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;

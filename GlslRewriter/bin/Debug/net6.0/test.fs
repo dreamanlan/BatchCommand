@@ -2,18 +2,18 @@
 #pragma optionNV(fastmath off)
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec4 in_attr0; //(只用w)
-layout(location = 1) in vec4 in_attr1; //(xyzw全用)
-layout(location = 2) in vec4 in_attr2; //(xyzw全用)
-layout(location = 3) in vec4 in_attr3; //(只用x)
-layout(location = 4) in vec4 in_attr4; //(用xyz)
-layout(location = 5) flat in vec4 in_attr5; //(只用y)
-layout(location = 6) flat in vec4 in_attr6; //(只用x)
-layout(location = 7) in vec4 in_attr7; //(用xy)
-layout(location = 8) in vec4 in_attr8; //(用xz)
-layout(location = 9) in vec4 in_attr9; //(xyzw全用)
-layout(location = 10) in vec4 in_attr10; //(xyzw全用)
-layout(location = 11) in vec4 in_attr11; //(xyzw全用)
+layout(location = 0) in vec4 in_attr0; //(只锟斤拷w)
+layout(location = 1) in vec4 in_attr1; //(xyzw全锟斤拷)
+layout(location = 2) in vec4 in_attr2; //(xyzw全锟斤拷)
+layout(location = 3) in vec4 in_attr3; //(只锟斤拷x)
+layout(location = 4) in vec4 in_attr4; //(锟斤拷xyz)
+layout(location = 5) flat in vec4 in_attr5; //(只锟斤拷y)
+layout(location = 6) flat in vec4 in_attr6; //(只锟斤拷x)
+layout(location = 7) in vec4 in_attr7; //(锟斤拷xy)
+layout(location = 8) in vec4 in_attr8; //(锟斤拷xz)
+layout(location = 9) in vec4 in_attr9; //(xyzw全锟斤拷)
+layout(location = 10) in vec4 in_attr10; //(xyzw全锟斤拷)
+layout(location = 11) in vec4 in_attr11; //(xyzw全锟斤拷)
 
 layout(location = 0) out vec4 frag_color0;
 
@@ -187,9 +187,9 @@ void main() {
     f_3 = utof(fs_cbuf9[139].z); //1065353216, 0, 0, 0
     b_0 = pf_1 <= f_3 && !isnan(pf_1) && !isnan(f_3);
     b_1 = b_0 ? true : false;
-    //if(b_1) {
-    //    discard;
-    //}
+    if(b_1) {
+        discard;
+    }
 
     f_3 = utof(fs_cbuf8[29].x); //1133488083, 1154548889, 1152292204, 0
     f_2 = 0. - (f_2);

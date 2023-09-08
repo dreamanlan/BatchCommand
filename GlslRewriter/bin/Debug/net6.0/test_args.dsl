@@ -6,7 +6,7 @@ vs
         //print_graph;
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
-        def_max_level_for_expression = 16;
+        def_max_level_for_expression = 32;
         def_max_length_for_expression = 512;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
@@ -108,7 +108,7 @@ ps
         //print_graph;
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
-        def_max_level_for_expression = 16;
+        def_max_level_for_expression = 32;
         def_max_length_for_expression = 512;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
@@ -121,6 +121,8 @@ ps
         set_object_comment(frag_color0.w, 64, 2048);
 
         set_variable_comment(f_2_16, 64, 2048);
+        set_variable_comment(f4_0_0, 64, 2048);
+        set_variable_comment(f4_0_1, 64, 2048);
         set_variable_comment(f4_0_2, 64, 2048);
         set_variable_comment(f4_0_3, 64, 2048);
         set_variable_comment(f4_0_4, 64, 2048);
@@ -135,6 +137,7 @@ ps
             f_2_16,
             f_2_11,
             f_2_16,
+            f_3_11,
             f_3_22,
             f4_0_0,
             f4_0_1,

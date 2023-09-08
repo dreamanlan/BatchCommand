@@ -402,12 +402,12 @@ namespace GlslRewriter
         }
         protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits)
         {
-            if (null != OwnFunc && curLevel < setting.MaxLevel) {
-                if (PrevNodes.Count > 0 && !Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
-                    if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
-                        sb.Append(VarName);
-                    }
-                    else {
+            if (null != OwnFunc && PrevNodes.Count > 0 && !Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
+                if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
+                    sb.Append(VarName);
+                }
+                else {
+                    if (curLevel < setting.MaxLevel) {
                         if (setting.VariableExpandedOnlyOnce)
                             usedVars.Add(VarName);
                         //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
@@ -421,9 +421,9 @@ namespace GlslRewriter
                             }
                         }
                     }
-                }
-                else {
-                    sb.Append(VarName);
+                    else {
+                        sb.Append(VarName + "...");
+                    }
                 }
             }
             else {
@@ -592,9 +592,9 @@ namespace GlslRewriter
                     //fma(a,b,c) => a*b+c
                     sb.Append("(");
                     PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append("*");
+                    sb.Append(" * ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append("+");
+                    sb.Append(" + ");
                     PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     sb.Append(")");
                 }
@@ -603,9 +603,9 @@ namespace GlslRewriter
                     sb.Append("clamp");
                     sb.Append("(");
                     cnode.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     cnode.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     sb.Append(")");
                 }
@@ -614,9 +614,9 @@ namespace GlslRewriter
                     sb.Append("clamp");
                     sb.Append("(");
                     cnode2.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     cnode2.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     sb.Append(")");
                 }
@@ -626,9 +626,9 @@ namespace GlslRewriter
                     sb.Append("clamp");
                     sb.Append("(");
                     cnode31.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(",  ");
                     cnode31.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     sb.Append(")");
                 }
@@ -638,9 +638,9 @@ namespace GlslRewriter
                     sb.Append("clamp");
                     sb.Append("(");
                     cnode41.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
-                    sb.Append(",");
+                    sb.Append(", ");
                     cnode41.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     sb.Append(")");
                 }
@@ -652,7 +652,7 @@ namespace GlslRewriter
                         if (first)
                             first = false;
                         else
-                            sb.Append(",");
+                            sb.Append(", ");
                         p.GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                     }
                     sb.Append(")");
@@ -696,13 +696,16 @@ namespace GlslRewriter
             else if (PrevNodes.Count == 2) {
                 sb.Append("(");
                 PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
+                sb.Append(" ");
                 sb.Append(Operator);
+                sb.Append(" ");
                 PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                 sb.Append(")");
             }
             else {
                 sb.Append("(");
                 sb.Append(Operator);
+                sb.Append(" ");
                 PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits);
                 sb.Append(")");
             }

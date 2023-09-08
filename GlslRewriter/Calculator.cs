@@ -498,37 +498,25 @@ namespace GlslRewriter
             }
             else if (func == "ftoi" || func == "floatBitsToInt") {
                 if (float.TryParse(args[0], out var v)) {
-                    unsafe {
-                        int* p = (int*)&v;
-                        val = (*p).ToString();
-                    }
+                    val = ftoi(v).ToString();
                     succ = true;
                 }
             }
             else if (func == "ftou" || func == "floatBitsToUint") {
                 if (float.TryParse(args[0], out var v)) {
-                    unsafe {
-                        uint* p = (uint*)&v;
-                        val = (*p).ToString();
-                    }
+                    val = ftou(v).ToString();
                     succ = true;
                 }
             }
             else if (func == "itof" || func == "intBitsToFloat") {
                 if (int.TryParse(args[0], out var v)) {
-                    unsafe {
-                        float* p = (float*)&v;
-                        val = (*p).ToString();
-                    }
+                    val = itof(v).ToString();
                     succ = true;
                 }
             }
             else if (func == "utof" || func == "uintBitsToFloat") {
                 if (uint.TryParse(args[0], out var v)) {
-                    unsafe {
-                        float* p = (float*)&v;
-                        val = (*p).ToString();
-                    }
+                    val = utof(v).ToString();
                     succ = true;
                 }
             }
@@ -1048,6 +1036,30 @@ namespace GlslRewriter
             return succ;
         }
 
+        public static unsafe int ftoi(float v)
+        {
+            int* p = (int*)&v;
+            var val = *p;
+            return val;
+        }
+        public static unsafe float itof(int v)
+        {
+            float* p = (float*)&v;
+            var val = *p;
+            return val;
+        }
+        public static unsafe uint ftou(float v)
+        {
+            uint* p = (uint*)&v;
+            var val = *p;
+            return val;
+        }
+        public static unsafe float utof(uint v)
+        {
+            float* p = (float*)&v;
+            var val = *p;
+            return val;
+        }
         public static string ReStringNumeric(string val)
         {
             string type = string.Empty;

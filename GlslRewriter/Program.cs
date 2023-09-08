@@ -293,6 +293,10 @@ namespace GlslRewriter
             }
 
             var lineList = new List<string>();
+            if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
+                lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
+                lineList.Add(string.Empty);
+            }
             var lines = File.ReadAllLines(outFile);
             lineList.AddRange(lines);
             File.WriteAllLines(outFile, lineList.ToArray());
@@ -978,7 +982,9 @@ namespace GlslRewriter
                             sb.Append("// ");
                             if (!string.IsNullOrEmpty(val))
                                 sb.Append(val);
-                            else if(maxLvlForExp >= 0)
+                            if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                sb.Append("  <=>  ");
+                            if (maxLvlForExp >= 0)
                                 sb.Append(exp);
                             funcData.LastComments.Add(sb.ToString());
                         }

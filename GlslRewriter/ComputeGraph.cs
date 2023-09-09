@@ -411,13 +411,46 @@ namespace GlslRewriter
         }
         protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, in ComputeSetting setting, HashSet<string> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
+            bool withValue = false;
+            if (setting.WithValue) {
+                if (fromNode is not ComputeGraphCalcNode) {
+                    //这种情形对变量结点应该不会出现
+                    withValue = true;
+                }
+                else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
+                    //只对数组或成员访问计算结点的叶子结点标注计算值
+                    if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
+                Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
+                        //对于需要类型转换的uniform，值标注在类型转换函数调用上
+                    }
+                    else {
+                        withValue = true;
+                    }
+                }
+            }
             if (null != OwnFunc && PrevNodes.Count > 0) {
                 if (Config.ActiveConfig.SettingInfo.DontExpandVariables.Contains(VarName)) {
+                    if (withValue) {
+                        sb.Append("{");
+                    }
                     sb.Append(VarName);
+                    if (withValue) {
+                        sb.Append(" : ");
+                        sb.Append(m_Value);
+                        sb.Append("}");
+                    }
                 }
                 else {
                     if (setting.VariableExpandedOnlyOnce && usedVars.Contains(VarName)) {
+                        if (withValue) {
+                            sb.Append("{");
+                        }
                         sb.Append(VarName);
+                        if (withValue) {
+                            sb.Append(" : ");
+                            sb.Append(m_Value);
+                            sb.Append("}");
+                        }
                     }
                     else {
                         if (curLevel < setting.MaxLevel) {
@@ -441,7 +474,15 @@ namespace GlslRewriter
                 }
             }
             else {
+                if (withValue) {
+                    sb.Append("{");
+                }
                 sb.Append(VarName);
+                if (withValue) {
+                    sb.Append(" : ");
+                    sb.Append(m_Value);
+                    sb.Append("}");
+                }
             }
         }
 
@@ -647,7 +688,7 @@ namespace GlslRewriter
                     sb.Append(")");
                 }
                 else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
-                    && PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
+                    && cnode4.PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
                     //max({vname = min(v,b)},a) => clamp(v,a,b)
                     sb.Append("clamp");
                     sb.Append("(");
@@ -662,6 +703,7 @@ namespace GlslRewriter
                     bool withValue = false;
                     if(setting.WithValue && (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (Operator == "utof" || Operator== "uintBitsToFloat")
                         || Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (Operator == "ftou" || Operator == "floatBitsToUint"))){
+                        //需要类型的uniform，在转换函数调用上标注计算值
                         withValue = true;
                         sb.Append("{");
                     }
@@ -687,13 +729,15 @@ namespace GlslRewriter
                 bool withValue = false;
                 if (setting.WithValue) {
                     if (fromNode is not ComputeGraphCalcNode) {
+                        //如果父结点不是计算结点（常量或变量），则当前成员访问结点已经是成员访问叶子结点，在此结点上标注计算值
                         withValue = true;
                         sb.Append("{");
                     }
-                    else if(fromNode is ComputeGraphCalcNode calcNode) {
+                    else if(fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
+                        //只对数组或成员访问计算结点的叶子结点标注计算值
                         if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
                     Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
-
+                            //对于需要类型转换的uniform，值标注在类型转换函数调用上
                         }
                         else {
                             withValue = true;
@@ -711,10 +755,34 @@ namespace GlslRewriter
                 }
             }
             else if (Operator == "[]") {
+                bool withValue = false;
+                if (setting.WithValue) {
+                    if (fromNode is not ComputeGraphCalcNode) {
+                        //如果父结点不是计算结点（常量或变量），则当前成员访问结点已经是数组元素访问叶子结点，在此结点上标注计算值
+                        withValue = true;
+                        sb.Append("{");
+                    }
+                    else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
+                        //只对数组或成员访问计算结点的叶子结点标注计算值
+                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
+                    Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
+                            //对于需要类型转换的uniform，值标注在类型转换函数调用上
+                        }
+                        else {
+                            withValue = true;
+                            sb.Append("{");
+                        }
+                    }
+                }
                 PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append("[");
                 PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, setting, usedVars, visits, this);
                 sb.Append("]");
+                if (withValue) {
+                    sb.Append(" : ");
+                    sb.Append(m_Value);
+                    sb.Append("}");
+                }
             }
             else if (Operator == "=") {
                 if (setting.UseMultilineComments) {

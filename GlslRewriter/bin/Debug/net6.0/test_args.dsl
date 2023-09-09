@@ -6,61 +6,95 @@ vs
         //print_graph;
         //def_use_multiline_comments;
         //def_variable_expanded_only_once;
-        def_max_level_for_expression = 32;
+        def_max_level_for_expression = -1;
         def_max_length_for_expression = 512;
         //def_skip_all_comments;
         compute_graph_nodes_capacity = 10240;
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
 
-        set_object_comment(out_attr0_0.x, 64, 2048, true, true);
-        set_object_comment(out_attr0_0.y, 64, 2048);
-        set_object_comment(out_attr0_0.z, 64, 2048);
-        set_object_comment(out_attr0_0.w, 64, 2048);
-        set_object_comment(out_attr1_0.x, 64, 2048);
-        set_object_comment(out_attr1_0.y, 64, 2048);
-        set_object_comment(out_attr1_0.z, 64, 2048);
-        set_object_comment(out_attr1_0.w, 64, 2048);
-        set_object_comment(out_attr2_0.x, 64, 2048);
-        set_object_comment(out_attr2_0.y, 64, 2048);
-        set_object_comment(out_attr2_0.z, 64, 2048);
-        set_object_comment(out_attr2_0.w, 64, 2048);
-        set_object_comment(out_attr3_0.x, 64, 2048);
-        set_object_comment(out_attr3_0.y, 64, 2048);
-        set_object_comment(out_attr3_0.z, 64, 2048);
-        set_object_comment(out_attr3_0.w, 64, 2048);
-        set_object_comment(out_attr4_0.x, 64, 2048);
-        set_object_comment(out_attr4_0.y, 64, 2048);
-        set_object_comment(out_attr4_0.z, 64, 2048);
-        set_object_comment(out_attr4_0.w, 64, 2048);
-        set_object_comment(out_attr5_0.x, 64, 2048);
-        set_object_comment(out_attr5_0.y, 64, 2048);
-        set_object_comment(out_attr5_0.z, 64, 2048);
-        set_object_comment(out_attr5_0.w, 64, 2048);
-        set_object_comment(out_attr6_0.x, 64, 2048);
-        set_object_comment(out_attr6_0.y, 64, 2048);
-        set_object_comment(out_attr6_0.z, 64, 2048);
-        set_object_comment(out_attr6_0.w, 64, 2048);
-        set_object_comment(out_attr7_0.x, 64, 2048);
-        set_object_comment(out_attr7_0.y, 64, 2048);
-        set_object_comment(out_attr7_0.z, 64, 2048);
-        set_object_comment(out_attr7_0.w, 64, 2048);
-        set_object_comment(out_attr8_0.x, 64, 2048);
-        set_object_comment(out_attr8_0.y, 64, 2048);
-        set_object_comment(out_attr8_0.z, 64, 2048);
-        set_object_comment(out_attr8_0.w, 64, 2048);
-        set_object_comment(out_attr9_0.x, 64, 2048);
-        set_object_comment(out_attr9_0.y, 64, 2048);
-        set_object_comment(out_attr9_0.z, 64, 2048);
-        set_object_comment(out_attr9_0.w, 64, 2048);
-        set_object_comment(out_attr10_0.x, 64, 2048);
-        set_object_comment(out_attr10_0.y, 64, 2048);
-        set_object_comment(out_attr10_0.z, 64, 2048);
-        set_object_comment(out_attr10_0.w, 64, 2048);
-        set_object_comment(out_attr11_0.x, 64, 2048);
-        set_object_comment(out_attr11_0.y, 64, 2048);
-        set_object_comment(out_attr11_0.z, 64, 2048);
-        set_object_comment(out_attr11_0.w, 64, 2048);
+        set_object_comment(out_attr0_0.x, 64, 20480, true, true);
+        set_object_comment(out_attr0_0.y, 64, 20480);
+        set_object_comment(out_attr0_0.z, 64, 20480);
+        set_object_comment(out_attr0_0.w, 64, 20480);
+        set_object_comment(out_attr1_0.x, 64, 20480);
+        set_object_comment(out_attr1_0.y, 64, 20480);
+        set_object_comment(out_attr1_0.z, 64, 20480);
+        set_object_comment(out_attr1_0.w, 64, 20480);
+        set_object_comment(out_attr2_0.x, 64, 20480);
+        set_object_comment(out_attr2_0.y, 64, 20480);
+        set_object_comment(out_attr2_0.z, 64, 20480);
+        set_object_comment(out_attr2_0.w, 64, 20480);
+        set_object_comment(out_attr3_0.x, 64, 20480);
+        set_object_comment(out_attr3_0.y, 64, 20480);
+        set_object_comment(out_attr3_0.z, 64, 20480);
+        set_object_comment(out_attr3_0.w, 64, 20480);
+        set_object_comment(out_attr4_0.x, 64, 20480);
+        set_object_comment(out_attr4_0.y, 64, 20480);
+        set_object_comment(out_attr4_0.z, 64, 20480);
+        set_object_comment(out_attr4_0.w, 64, 20480);
+        set_object_comment(out_attr5_0.x, 64, 20480);
+        set_object_comment(out_attr5_0.y, 64, 20480);
+        set_object_comment(out_attr5_0.z, 64, 20480);
+        set_object_comment(out_attr5_0.w, 64, 20480);
+        set_object_comment(out_attr6_0.x, 64, 20480);
+        set_object_comment(out_attr6_0.y, 64, 20480);
+        set_object_comment(out_attr6_0.z, 64, 20480);
+        set_object_comment(out_attr6_0.w, 64, 20480);
+        set_object_comment(out_attr7_0.x, 64, 20480);
+        set_object_comment(out_attr7_0.y, 64, 20480);
+        set_object_comment(out_attr7_0.z, 64, 20480);
+        set_object_comment(out_attr7_0.w, 64, 20480);
+        set_object_comment(out_attr8_0.x, 64, 20480);
+        set_object_comment(out_attr8_0.y, 64, 20480);
+        set_object_comment(out_attr8_0.z, 64, 20480);
+        set_object_comment(out_attr8_0.w, 64, 20480);
+        set_object_comment(out_attr9_0.x, 64, 20480);
+        set_object_comment(out_attr9_0.y, 64, 20480);
+        set_object_comment(out_attr9_0.z, 64, 20480);
+        set_object_comment(out_attr9_0.w, 64, 20480);
+        set_object_comment(out_attr10_0.x, 64, 20480);
+        set_object_comment(out_attr10_0.y, 64, 20480);
+        set_object_comment(out_attr10_0.z, 64, 20480);
+        set_object_comment(out_attr10_0.w, 64, 20480);
+        set_object_comment(out_attr11_0.x, 64, 20480);
+        set_object_comment(out_attr11_0.y, 64, 20480);
+        set_object_comment(out_attr11_0.z, 64, 20480);
+        set_object_comment(out_attr11_0.w, 64, 20480);
+
+        set_variable_comment(f4_0_0, 64, 20480);
+        set_variable_comment(f4_0_1, 64, 20480);
+
+        dont_expand_variable{
+            f_2_31,
+            f4_0_0,
+            f4_0_1,
+            pf_4_1,
+            pf_4_2,
+            pf_4_3,
+            pf_4_4,
+            pf_4_5,
+            pf_4_6,
+            pf_7_3,
+            pf_8_1,
+            pf_8_3,
+            pf_9_2,
+            pf_9_3,
+            pf_10_1,
+            pf_10_2,
+            pf_14_3,
+            pf_19_5,
+            pf_21_0,
+            pf_21_1,
+            pf_22_0,
+            pf_23_0,
+            u_0_9,
+            u_0_10,
+            u_1_3,
+            u_1_4,
+            u_1_5,
+            u_2_t,
+        };
 
         invalid_variable{
             in_attr0,

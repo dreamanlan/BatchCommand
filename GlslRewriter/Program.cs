@@ -954,44 +954,50 @@ namespace GlslRewriter
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
                     if (Config.CalcSettingForVariable(p, out var maxLvlForExp, out var maxLenForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
+                        int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevelForExpression;
+                        int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLengthForExpression;
+                        bool defMultiline = Config.ActiveConfig.SettingInfo.DefUseMultilineComments;
+                        bool defExpand = Config.ActiveConfig.SettingInfo.DefVariableExpandedOnlyOnce;
                         string val = cgcn.GetValue();
+                        string expWithVal = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, true, true)) : string.Empty;
                         string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
                         if (useMultilineComments) {
-                            int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevelForExpression;
-                            int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLengthForExpression;
-                            bool defMultiline = Config.ActiveConfig.SettingInfo.DefUseMultilineComments;
-                            bool defExpand = Config.ActiveConfig.SettingInfo.DefVariableExpandedOnlyOnce;
-                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, false, true)) : string.Empty;
+                            string singleLineExp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, false, true)) : string.Empty;
 
-                            var sb = new StringBuilder(val.Length + exp.Length + 128);
-                            sb.Append("/*");
-                            if (!string.IsNullOrEmpty(val))
-                                sb.AppendLine(val);
-                            if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
-                                sb.AppendLine("<=>");
-                            if (maxLvlForExp >= 0) {
-                                sb.AppendLine(exp0);
-                                sb.Append("<=>");
-                                sb.AppendLine(exp);
+                            if (!string.IsNullOrEmpty(val) || maxLvlForExp >= 0) {
+                                var sb = new StringBuilder(val.Length + exp.Length + 128);
+                                sb.Append("/* ");
+                                if (!string.IsNullOrEmpty(val))
+                                    sb.Append(val);
+                                if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                    sb.Append("  <=>  ");
+                                if (maxLvlForExp >= 0) {
+                                    sb.AppendLine(expWithVal);
+                                    sb.AppendLine("<=>");
+                                    sb.AppendLine(singleLineExp);
+                                    sb.Append("<=>");
+                                    sb.Append(exp);
+                                }
+                                sb.AppendLine();
+                                sb.Append("*/");
+                                funcData.LastComments.Add(sb.ToString());
                             }
-                            sb.Append("*/");
-                            funcData.LastComments.Add(sb.ToString());
                         }
                         else {
-                            string exp0 = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce, true, true)) : string.Empty;
-
-                            var sb = new StringBuilder(val.Length + exp.Length + 128);
-                            sb.Append("// ");
-                            if (!string.IsNullOrEmpty(val))
-                                sb.Append(val);
-                            if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
-                                sb.Append("  <=>  ");
-                            if (maxLvlForExp >= 0) {
-                                sb.AppendLine(exp0);
-                                sb.Append(" // ");
-                                sb.AppendLine(exp);
+                            if (!string.IsNullOrEmpty(val) || maxLvlForExp >= 0) {
+                                var sb = new StringBuilder(val.Length + exp.Length + 128);
+                                sb.Append("// ");
+                                if (!string.IsNullOrEmpty(val))
+                                    sb.Append(val);
+                                if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                    sb.Append("  <=>  ");
+                                if (maxLvlForExp >= 0) {
+                                    sb.AppendLine(expWithVal);
+                                    sb.Append("// ");
+                                    sb.Append(exp);
+                                }
+                                funcData.LastComments.Add(sb.ToString());
                             }
-                            funcData.LastComments.Add(sb.ToString());
                         }
                     }
                 }

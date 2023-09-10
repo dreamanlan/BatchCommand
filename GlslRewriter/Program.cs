@@ -299,6 +299,12 @@ namespace GlslRewriter
             }
             var lines = File.ReadAllLines(outFile);
             lineList.AddRange(lines);
+            if(Config.ActiveConfig.SettingInfo.GenerateExpressionList && s_ExpressionList.Count > 0) {
+                lineList.Add("/*{");
+                lineList.AddRange(s_ExpressionVariableInitList);
+                lineList.AddRange(s_ExpressionList);
+                lineList.Add("}*/");
+            }
             File.WriteAllLines(outFile, lineList.ToArray());
         }
         private static List<string> CompletionAndSkipPP(IList<string> glslLines)
@@ -953,27 +959,28 @@ namespace GlslRewriter
 
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
-                    if (Config.CalcSettingForVariable(p, out var maxLvlForExp, out var maxLenForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
-                        int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevelForExpression;
-                        int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLengthForExpression;
-                        bool defMultiline = Config.ActiveConfig.SettingInfo.DefUseMultilineComments;
-                        bool defExpand = Config.ActiveConfig.SettingInfo.DefVariableExpandedOnlyOnce;
-                        string val = cgcn.GetValue();
-                        string expWithVal = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, true, true)) : string.Empty;
-                        string exp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
+                    if (Config.CalcSettingForVariable(p, out var isVariableSetting, out var markValue, out var comment, out var maxLvlForExp, out var maxLenForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
+                        int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
+                        int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
+                        string val = markValue ? cgcn.GetValue() : string.Empty;
+                        string expWithVal = markValue && comment ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, true, true)) : string.Empty;
+                        string exp = comment ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
+                        string singleLineExp = exp;
                         if (useMultilineComments) {
-                            string singleLineExp = maxLvlForExp >= 0 ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, defMultiline, defExpand, false, true)) : string.Empty;
+                            singleLineExp = comment ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true)) : string.Empty;
 
-                            if (!string.IsNullOrEmpty(val) || maxLvlForExp >= 0) {
+                            if (!string.IsNullOrEmpty(val) || comment) {
                                 var sb = new StringBuilder(val.Length + exp.Length + 128);
                                 sb.Append("/* ");
                                 if (!string.IsNullOrEmpty(val))
                                     sb.Append(val);
-                                if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                if (!string.IsNullOrEmpty(val) && comment)
                                     sb.Append("  <=>  ");
-                                if (maxLvlForExp >= 0) {
-                                    sb.AppendLine(expWithVal);
-                                    sb.AppendLine("<=>");
+                                if (comment) {
+                                    if (markValue) {
+                                        sb.AppendLine(expWithVal);
+                                        sb.AppendLine("<=>");
+                                    }
                                     sb.AppendLine(singleLineExp);
                                     sb.Append("<=>");
                                     sb.Append(exp);
@@ -984,19 +991,63 @@ namespace GlslRewriter
                             }
                         }
                         else {
-                            if (!string.IsNullOrEmpty(val) || maxLvlForExp >= 0) {
+                            if (!string.IsNullOrEmpty(val) || comment) {
                                 var sb = new StringBuilder(val.Length + exp.Length + 128);
                                 sb.Append("// ");
                                 if (!string.IsNullOrEmpty(val))
                                     sb.Append(val);
-                                if (!string.IsNullOrEmpty(val) && maxLvlForExp >= 0)
+                                if (!string.IsNullOrEmpty(val) && comment)
                                     sb.Append("  <=>  ");
-                                if (maxLvlForExp >= 0) {
-                                    sb.AppendLine(expWithVal);
+                                if (comment) {
+                                    if (markValue)
+                                        sb.AppendLine(expWithVal);
                                     sb.Append("// ");
                                     sb.Append(exp);
                                 }
                                 funcData.LastComments.Add(sb.ToString());
+                            }
+                        }
+
+                        if (comment && isVariableSetting && Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                            var line = s_ExpressionLineBuilder;
+                            if (!string.IsNullOrEmpty(val) || markValue) {
+                                line.Length = 0;
+                                line.Append("// ");
+                                if (!string.IsNullOrEmpty(val)) {
+                                    line.Append(val);
+                                }
+                                if (!string.IsNullOrEmpty(val) && markValue)
+                                    line.Append("  <=>  ");
+                                if (markValue) {
+                                    line.Append(expWithVal);
+                                }
+                                s_ExpressionList.Add(line.ToString());
+                            }
+
+                            string varExp = Config.CalcVariableExpression(p, out var vname);
+
+                            line.Length = 0;
+                            line.Append(varExp);
+                            line.Append(" = ");
+                            line.Append(singleLineExp);
+                            line.Append(";");
+                            s_ExpressionList.Add(line.ToString());
+
+                            if (!string.IsNullOrEmpty(vname)) {
+                                line.Length = 0;
+                                //phi变量需要反向搜索 _phi_ 子串来识别，这里不为phi变量引入变量定义，考虑到phi变量需要人工处理
+                                //有意让编译器报未定义变量可能更合适一些
+                                int len = vname.LastIndexOf('_');
+                                if (len > 0) {
+                                    string oriVarName = vname.Substring(0, len);
+                                    var vinfo = GetVarInfo(oriVarName);
+                                    if (null != vinfo) {
+                                        string type = vinfo.Type;
+                                        if (vinfo.Modifiers.Contains("precise"))
+                                            type = "precise " + vinfo.Type;
+                                        s_ExpressionVariableInitList.Add(type + " " + vname + ";");
+                                    }
+                                }
                             }
                         }
                     }
@@ -1626,6 +1677,7 @@ namespace GlslRewriter
         }
         private static Dsl.FunctionData BuildPhiVarAliasAssignment(string vname, string phiSuffix, Dictionary<string, VarAliasInfo> aliasInfos, bool updateVarAliasInfo, out Dsl.ValueData refVarValDataOuter)
         {
+            //注：phi变量赋值不生成计算结点，因为phi变量本身不是SSA形式，我们在计算图上phi变量这里断开前后依赖，实际代码需要在最后手动处理
             var assignFunc = new Dsl.FunctionData();
             assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
             assignFunc.SetOperatorParamClass();
@@ -3230,6 +3282,9 @@ namespace GlslRewriter
         }
 
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
+        internal static StringBuilder s_ExpressionLineBuilder = new StringBuilder();
+        internal static SortedSet<string> s_ExpressionVariableInitList = new SortedSet<string>();
+        internal static List<string> s_ExpressionList = new List<string>();
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();
         private static SortedDictionary<string, StructInfo> s_StructInfos = new SortedDictionary<string, StructInfo>();

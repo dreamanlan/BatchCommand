@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static GlslRewriter.Config;
+using System.Xml.Linq;
 
 namespace GlslRewriter
 {
@@ -190,13 +196,19 @@ namespace GlslRewriter
                 s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
             }
         }
-        internal static bool CalcSettingForVariable(Dsl.ISyntaxComponent varDsl, out int maxLevelForExp, out int maxLengthForExp, out bool useMultilineComments, out bool expandedOnlyOnce)
+        internal static bool CalcSettingForVariable(Dsl.ISyntaxComponent varDsl, out bool isVariableSetting, out bool markValue, out bool comment, out int maxLevelForExp, out int maxLengthForExp, out bool useMultilineComments, out bool expandedOnlyOnce)
         {
             var settingInfo = ActiveConfig.SettingInfo;
-            maxLevelForExp = settingInfo.DefMaxLevelForExpression;
-            maxLengthForExp = settingInfo.DefMaxLengthForExpression;
-            useMultilineComments = settingInfo.DefUseMultilineComments;
-            expandedOnlyOnce = settingInfo.DefVariableExpandedOnlyOnce;
+            bool skipValue = ActiveConfig.SettingInfo.DefSkipValue;
+            bool skipComments = ActiveConfig.SettingInfo.DefSkipComments;
+            maxLevelForExp = settingInfo.DefMaxLevel;
+            maxLengthForExp = settingInfo.DefMaxLength;
+            useMultilineComments = settingInfo.DefMultilineComments;
+            expandedOnlyOnce = settingInfo.DefExpandedOnlyOnce;
+            isVariableSetting = false;
+
+            markValue = !skipValue;
+            comment = !skipComments;
 
             var vd = varDsl as Dsl.ValueData;
             var fd = varDsl as Dsl.FunctionData;
@@ -210,10 +222,13 @@ namespace GlslRewriter
             if (null != vd) {
                 string vname = vd.GetId();
                 if(settingInfo.VariableSettingInfos.TryGetValue(vname, out var lvlInfo)) {
-                    maxLevelForExp = lvlInfo.MaxLevelForExpression;
-                    maxLengthForExp = lvlInfo.MaxLengthForExpression;
-                    useMultilineComments = lvlInfo.UseMultilineComments;
-                    expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
+                    maxLevelForExp = lvlInfo.MaxLevel;
+                    maxLengthForExp = lvlInfo.MaxLength;
+                    useMultilineComments = lvlInfo.MultilineComments;
+                    expandedOnlyOnce = lvlInfo.ExpandedOnlyOnce;
+
+                    isVariableSetting = true;
+                    comment = lvlInfo.MaxLevel >= 0;
                 }
             }
             else if (null != fd) {
@@ -224,34 +239,92 @@ namespace GlslRewriter
                     if(int.TryParse(ixStr, out var index) && settingInfo.ObjectArraySettingInfos.TryGetValue(cid, out var objArrLvlInfo)
                         && objArrLvlInfo.TryGetValue(index, out var objLvlInfo)
                         && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                        maxLevelForExp = lvlInfo.MaxLevelForExpression;
-                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
-                        useMultilineComments = lvlInfo.UseMultilineComments;
-                        expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
+                        maxLevelForExp = lvlInfo.MaxLevel;
+                        maxLengthForExp = lvlInfo.MaxLength;
+                        useMultilineComments = lvlInfo.MultilineComments;
+                        expandedOnlyOnce = lvlInfo.ExpandedOnlyOnce;
+
+                        isVariableSetting = true;
+                        comment = lvlInfo.MaxLevel >= 0;
                     }
                 }
                 else if (fd.IsPeriodParamClass()) {
                     string cid = fd.GetId();
                     string member = fd.GetParamId(0);
                     if(settingInfo.ObjectSettingInfos.TryGetValue(cid, out var objLvlInfo) && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                        maxLevelForExp = lvlInfo.MaxLevelForExpression;
-                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
-                        useMultilineComments = lvlInfo.UseMultilineComments;
-                        expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
+                        maxLevelForExp = lvlInfo.MaxLevel;
+                        maxLengthForExp = lvlInfo.MaxLength;
+                        useMultilineComments = lvlInfo.MultilineComments;
+                        expandedOnlyOnce = lvlInfo.ExpandedOnlyOnce;
+
+                        isVariableSetting = true;
+                        comment = lvlInfo.MaxLevel >= 0;
                     }
                 }
                 else if (fd.IsBracketParamClass()) {
                     string cid = fd.GetId();
                     string ixStr = fd.GetParamId(0);
                     if (int.TryParse(ixStr, out var index) && settingInfo.ArraySettingInfos.TryGetValue(cid, out var arrLvlInfo) && arrLvlInfo.TryGetValue(index, out var lvlInfo)) {
-                        maxLevelForExp = lvlInfo.MaxLevelForExpression;
-                        maxLengthForExp = lvlInfo.MaxLengthForExpression;
-                        useMultilineComments = lvlInfo.UseMultilineComments;
-                        expandedOnlyOnce = lvlInfo.VariableExpandedOnlyOnce;
+                        maxLevelForExp = lvlInfo.MaxLevel;
+                        maxLengthForExp = lvlInfo.MaxLength;
+                        useMultilineComments = lvlInfo.MultilineComments;
+                        expandedOnlyOnce = lvlInfo.ExpandedOnlyOnce;
+
+                        isVariableSetting = true;
+                        comment = lvlInfo.MaxLevel >= 0;
                     }
                 }
             }
-            return maxLevelForExp >= 0 || maxLengthForExp >= 0;
+            return markValue || comment;
+        }
+        internal static string CalcVariableExpression(Dsl.ISyntaxComponent varDsl, out string varName)
+        {
+            varName = string.Empty;
+
+            var sb = new StringBuilder();
+            var vd = varDsl as Dsl.ValueData;
+            var fd = varDsl as Dsl.FunctionData;
+            var sd = varDsl as Dsl.StatementData;
+            if (null != sd) {
+                fd = sd.Last.AsFunction;
+                if (null == fd) {
+                    vd = sd.Last.AsValue;
+                }
+            }
+            if (null != vd) {
+                string vname = vd.GetId();
+                sb.Append(vname);
+
+                varName = vname;
+            }
+            else if (null != fd) {
+                if (fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {
+                    string cid = fd.LowerOrderFunction.GetId();
+                    string ixStr = fd.LowerOrderFunction.GetParamId(0);
+                    string member = fd.GetParamId(0);
+                    sb.Append(cid);
+                    sb.Append("[");
+                    sb.Append(ixStr);
+                    sb.Append("].");
+                    sb.Append(member);
+                }
+                else if (fd.IsPeriodParamClass()) {
+                    string cid = fd.GetId();
+                    string member = fd.GetParamId(0);
+                    sb.Append(cid);
+                    sb.Append(".");
+                    sb.Append(member);
+                }
+                else if (fd.IsBracketParamClass()) {
+                    string cid = fd.GetId();
+                    string ixStr = fd.GetParamId(0);
+                    sb.Append(cid);
+                    sb.Append("[");
+                    sb.Append(ixStr);
+                    sb.Append("]");
+                }
+            }
+            return sb.ToString();
         }
         internal static bool CalcFunc(string func, IList<string> args, ref string type, out string val)
         {
@@ -321,14 +394,20 @@ namespace GlslRewriter
                         else if (vid == "print_graph") {
                             cfg.SettingInfo.PrintGraph = true;
                         }
-                        else if (vid == "def_use_multiline_comments") {
-                            cfg.SettingInfo.DefUseMultilineComments = true;
+                        else if (vid == "generate_expression_list") {
+                            cfg.SettingInfo.GenerateExpressionList = true;
                         }
-                        else if (vid == "def_variable_expanded_only_once") {
-                            cfg.SettingInfo.DefVariableExpandedOnlyOnce = true;
+                        else if (vid == "def_multiline_comments") {
+                            cfg.SettingInfo.DefMultilineComments = true;
                         }
-                        else if (vid == "def_skip_all_comments") {
-                            cfg.SettingInfo.DefMaxLevelForExpression = -1;
+                        else if (vid == "def_expanded_only_once") {
+                            cfg.SettingInfo.DefExpandedOnlyOnce = true;
+                        }
+                        else if (vid == "def_skip_value") {
+                            cfg.SettingInfo.DefSkipValue = true;
+                        }
+                        else if (vid == "def_skip_comments") {
+                            cfg.SettingInfo.DefSkipComments = true;
                         }
                     }
                     else if (null != fd) {
@@ -349,14 +428,34 @@ namespace GlslRewriter
                                     cfg.SettingInfo.NeedUniformFtouVals = v;
                                 }
                             }
-                            else if (key == "def_max_level_for_expression") {
-                                if (int.TryParse(vstr, out var v)) {
-                                    cfg.SettingInfo.DefMaxLevelForExpression = v;
+                            else if (key == "def_max_level") {
+                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                    cfg.SettingInfo.DefMaxLevel = v;
                                 }
                             }
-                            else if (key == "def_max_length_for_expression") {
-                                if (int.TryParse(vstr, out var v)) {
-                                    cfg.SettingInfo.DefMaxLengthForExpression = v;
+                            else if (key == "def_max_length") {
+                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                    cfg.SettingInfo.DefMaxLength = v;
+                                }
+                            }
+                            else if (key == "def_max_level_for_variable") {
+                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                    SettingInfoForVariable.s_DefMaxLvl = v.ToString();
+                                }
+                            }
+                            else if (key == "def_max_length_for_variable") {
+                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                    SettingInfoForVariable.s_DefMaxLen = v.ToString();
+                                }
+                            }
+                            else if (key == "def_multiline_comments_for_variable") {
+                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                    SettingInfoForVariable.s_DefMultiline = v.ToString();
+                                }
+                            }
+                            else if (key == "def_expanded_only_once_for_variable") {
+                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                    SettingInfoForVariable.s_DefExpandOnce = v.ToString();
                                 }
                             }
                             else if (key == "compute_graph_nodes_capacity") {
@@ -375,272 +474,295 @@ namespace GlslRewriter
                                 }
                             }
                         }
-                        else if (fid == "dont_expand_variable") {
-                            foreach (var fp in fd.Params) {
-                                string vname = fp.GetId();
-                                if (!cfg.SettingInfo.DontExpandVariables.Contains(vname))
-                                    cfg.SettingInfo.DontExpandVariables.Add(vname);
-                            }
+                        else if (fid == "variable_comment") {
+                            ParseVariableComment(cfg, fd);
                         }
-                        else if (fid == "set_variable_comment") {
-                            string key = fd.GetParamId(0);
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                            string v2type = "int";
-                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                            string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
-                            string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
-                            if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                                && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
-                                if(!cfg.SettingInfo.VariableSettingInfos.TryGetValue(key, out var lvlInfo)) {
-                                    lvlInfo = new SettingInfoForVariable();
-                                    cfg.SettingInfo.VariableSettingInfos.Add(key, lvlInfo);
-                                }
-                                lvlInfo.MaxLevelForExpression = lvlForExp;
-                                lvlInfo.MaxLengthForExpression = lenForExp;
-                                lvlInfo.UseMultilineComments = mlc;
-                                lvlInfo.VariableExpandedOnlyOnce = once;
-                            }
+                        else if (fid == "object_comment") {
+                            ParseObjectComment(cfg, fd);
                         }
-                        else if (fid == "set_object_comment") {
-                            var cd = fd.GetParam(0) as Dsl.FunctionData;
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                            string v2type = "int";
-                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                            string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
-                            string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                                && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
-                                string cid = cd.GetId();
-                                string member = cd.GetParamId(0);
-                                if (!cfg.SettingInfo.ObjectSettingInfos.TryGetValue(cid, out var objLvlInfo)) {
-                                    objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
-                                    cfg.SettingInfo.ObjectSettingInfos.Add(cid, objLvlInfo);
-                                }
-                                if(!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                                    lvlInfo = new SettingInfoForVariable();
-                                    objLvlInfo.Add(member, lvlInfo);
-                                }
-                                lvlInfo.MaxLevelForExpression = lvlForExp;
-                                lvlInfo.MaxLengthForExpression = lenForExp;
-                                lvlInfo.UseMultilineComments = mlc;
-                                lvlInfo.VariableExpandedOnlyOnce = once;
-                            }
+                        else if (fid == "array_comment") {
+                            ParseArrayComment(cfg, fd);
                         }
-                        else if (fid == "set_array_comment") {
-                            var cd = fd.GetParam(0) as Dsl.FunctionData;
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                            string v2type = "int";
-                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                            string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
-                            string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                                && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
-                                string cid = cd.GetId();
-                                string ixType = "int";
-                                string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                                if (int.TryParse(ixStr, out var index)) {
-                                    if (!cfg.SettingInfo.ArraySettingInfos.TryGetValue(cid, out var arrLvlInfo)) {
-                                        arrLvlInfo = new Dictionary<int, SettingInfoForVariable>();
-                                        cfg.SettingInfo.ArraySettingInfos.Add(cid, arrLvlInfo);
-                                    }
-                                    if (!arrLvlInfo.TryGetValue(index, out var lvlInfo)) {
-                                        lvlInfo = new SettingInfoForVariable();
-                                        arrLvlInfo.Add(index, lvlInfo);
-                                    }
-                                    lvlInfo.MaxLevelForExpression = lvlForExp;
-                                    lvlInfo.MaxLengthForExpression = lenForExp;
-                                    lvlInfo.UseMultilineComments = mlc;
-                                    lvlInfo.VariableExpandedOnlyOnce = once;
-                                }
-                            }
-                        }
-                        else if (fid == "set_object_array_comment") {
-                            var cd = fd.GetParam(0) as Dsl.FunctionData;
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.c_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                            string v2type = "int";
-                            string v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.c_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                            string v3type = "bool";
-                            string v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.c_Multiline : DoCalc(fd.GetParam(3), ref v3type);
-                            string v4type = "bool";
-                            string v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.c_ExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
-                            if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp)
-                                && int.TryParse(v2str, out var lenForExp) && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
-                                string cid = cd.LowerOrderFunction.GetId();
-                                string ixType = "int";
-                                string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
-                                string member = cd.GetParamId(0);
-                                if (int.TryParse(ixStr, out var index)) {
-                                    if (!cfg.SettingInfo.ObjectArraySettingInfos.TryGetValue(cid, out var objArrLvlInfo)) {
-                                        objArrLvlInfo = new Dictionary<int, Dictionary<string, SettingInfoForVariable>>();
-                                        cfg.SettingInfo.ObjectArraySettingInfos.Add(cid, objArrLvlInfo);
-                                    }
-                                    if (!objArrLvlInfo.TryGetValue(index, out var objLvlInfo)) {
-                                        objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
-                                        objArrLvlInfo.Add(index, objLvlInfo);
-                                    }
-                                    if (!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                                        lvlInfo = new SettingInfoForVariable();
-                                        objLvlInfo.Add(member, lvlInfo);
-                                    }
-                                    lvlInfo.MaxLevelForExpression = lvlForExp;
-                                    lvlInfo.MaxLengthForExpression = lenForExp;
-                                    lvlInfo.UseMultilineComments = mlc;
-                                    lvlInfo.VariableExpandedOnlyOnce = once;
-                                }
-                            }
-                        }
-                        else if (fid == "skip_variable_comment") {
-                            foreach (var fp in fd.Params) {
-                                string vname = fp.GetId();
-                                if (!cfg.SettingInfo.VariableSettingInfos.TryGetValue(vname, out var lvlInfo)) {
-                                    lvlInfo = new SettingInfoForVariable();
-                                    cfg.SettingInfo.VariableSettingInfos.Add(vname, lvlInfo);
-                                }
-                                lvlInfo.MaxLevelForExpression = -1;
-                                lvlInfo.MaxLengthForExpression = -1;
-                            }
-                        }
-                        else if (fid == "skip_object_comment") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsPeriodParamClass()) {
-                                    string cid = cd.GetId();
-                                    string member = cd.GetParamId(0);
-                                    if (!cfg.SettingInfo.ObjectSettingInfos.TryGetValue(cid, out var objLvlInfo)) {
-                                        objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
-                                        cfg.SettingInfo.ObjectSettingInfos.Add(cid, objLvlInfo);
-                                    }
-                                    if (!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                                        lvlInfo = new SettingInfoForVariable();
-                                        objLvlInfo.Add(member, lvlInfo);
-                                    }
-                                    lvlInfo.MaxLevelForExpression = -1;
-                                    lvlInfo.MaxLengthForExpression = -1;
-                                }
-                            }
-                        }
-                        else if (fid == "skip_array_comment") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsBracketParamClass()) {
-                                    string cid = cd.GetId();
-                                    string ixType = "int";
-                                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                                    if (int.TryParse(ixStr, out var index)) {
-                                        if (!cfg.SettingInfo.ArraySettingInfos.TryGetValue(cid, out var arrLvlInfo)) {
-                                            arrLvlInfo = new Dictionary<int, SettingInfoForVariable>();
-                                            cfg.SettingInfo.ArraySettingInfos.Add(cid, arrLvlInfo);
-                                        }
-                                        if (!arrLvlInfo.TryGetValue(index, out var lvlInfo)) {
-                                            lvlInfo = new SettingInfoForVariable();
-                                            arrLvlInfo.Add(index, lvlInfo);
-                                        }
-                                        lvlInfo.MaxLevelForExpression = -1;
-                                        lvlInfo.MaxLengthForExpression = -1;
-                                    }
-                                }
-                            }
-                        }
-                        else if (fid == "skip_object_array_comment") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
-                                    string cid = cd.LowerOrderFunction.GetId();
-                                    string ixType = "int";
-                                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
-                                    string member = cd.GetParamId(0);
-                                    if (int.TryParse(ixStr, out var index)) {
-                                        if (!cfg.SettingInfo.ObjectArraySettingInfos.TryGetValue(cid, out var objArrLvlInfo)) {
-                                            objArrLvlInfo = new Dictionary<int, Dictionary<string, SettingInfoForVariable>>();
-                                            cfg.SettingInfo.ObjectArraySettingInfos.Add(cid, objArrLvlInfo);
-                                        }
-                                        if (!objArrLvlInfo.TryGetValue(index, out var objLvlInfo)) {
-                                            objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
-                                            objArrLvlInfo.Add(index, objLvlInfo);
-                                        }
-                                        if (!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
-                                            lvlInfo = new SettingInfoForVariable();
-                                            objLvlInfo.Add(member, lvlInfo);
-                                        }
-                                        lvlInfo.MaxLevelForExpression = -1;
-                                        lvlInfo.MaxLengthForExpression = -1;
-                                    }
-                                }
-                            }
+                        else if (fid == "object_array_comment") {
+                            ParseObjectArrayComment(cfg, fd);
                         }
                         else if (fid == "invalid_variable") {
-                            foreach (var fp in fd.Params) {
-                                string vname = fp.GetId();
-                                if (!cfg.SettingInfo.InvalidVariables.Contains(vname))
-                                    cfg.SettingInfo.InvalidVariables.Add(vname);
-                            }
+                            ParseInvalidVariable(cfg, fd);
                         }
                         else if (fid == "invalid_object_member") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsPeriodParamClass()) {
-                                    string cid = cd.GetId();
-                                    string member = cd.GetParamId(0);
-                                    if (!cfg.SettingInfo.InvalidObjectMembers.TryGetValue(cid, out var memberHashSet)) {
-                                        memberHashSet = new HashSet<string>();
-                                        cfg.SettingInfo.InvalidObjectMembers.Add(cid, memberHashSet);
-                                    }
-                                    if (!memberHashSet.Contains(member))
-                                        memberHashSet.Add(member);
-                                }
-                            }
+                            ParseInvalidObjectMember(cfg, fd);
                         }
                         else if (fid == "invalid_array_element") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsBracketParamClass()) {
-                                    string cid = cd.GetId();
-                                    string ixType = "int";
-                                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                                    if (int.TryParse(ixStr, out var ix)) {
-                                        if (!cfg.SettingInfo.InvalidArrayElements.TryGetValue(cid, out var ixHashSet)) {
-                                            ixHashSet = new HashSet<int>();
-                                            cfg.SettingInfo.InvalidArrayElements.Add(cid, ixHashSet);
-                                        }
-                                        if (!ixHashSet.Contains(ix))
-                                            ixHashSet.Add(ix);
-                                    }
-                                }
-                            }
+                            ParseInvalidArrayElement(cfg, fd);
                         }
                         else if (fid == "invalid_object_array_member") {
-                            foreach (var fp in fd.Params) {
-                                var cd = fp as Dsl.FunctionData;
-                                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
-                                    string cid = cd.LowerOrderFunction.GetId();
-                                    string ixType = "int";
-                                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
-                                    string member = cd.GetParamId(0);
-                                    if (int.TryParse(ixStr, out var ix)) {
-                                        if (!cfg.SettingInfo.InvalidObjectArrayMembers.TryGetValue(cid, out var elemMemberList)) {
-                                            elemMemberList = new Dictionary<int, HashSet<string>>();
-                                            cfg.SettingInfo.InvalidObjectArrayMembers.Add(cid, elemMemberList);
-                                        }
-                                        if(!elemMemberList.TryGetValue(ix, out var memberHashSet)) {
-                                            memberHashSet = new HashSet<string>();
-                                            elemMemberList.Add(ix, memberHashSet);
-                                        }
-                                        if (!memberHashSet.Contains(member))
-                                            memberHashSet.Add(member);
-                                    }
-                                }
-                            }
+                            ParseInvalidObjectArrayMember(cfg, fd);
                         }
+                    }
+                }
+            }
+        }
+        private static void ParseVariableComment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                string v1str = SettingInfoForVariable.s_DefMaxLvl;
+                string v2str = SettingInfoForVariable.s_DefMaxLen;
+                string v3str = SettingInfoForVariable.s_DefMultiline;
+                string v4str = SettingInfoForVariable.s_DefExpandOnce;
+                var vd = fp as Dsl.ValueData;
+                var fd = fp as Dsl.FunctionData;
+                string key = string.Empty;
+                if (null != vd) {
+                    key = vd.GetId();
+                }
+                else if (null != fd && fd.IsParenthesisParamClass()) {
+                    key = fd.GetParamId(0);
+
+                    string sid = fd.GetId();
+                    if (sid == "set") {
+                        string v1type = "int";
+                        v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
+                        string v2type = "int";
+                        v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
+                        string v3type = "bool";
+                        v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
+                        string v4type = "bool";
+                        v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                    }
+                    else if (sid == "skip") {
+                        v1str = "-1";
+                    }
+                }
+                if (!string.IsNullOrEmpty(key)) {
+                    if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
+                        && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                        if (!cfg.SettingInfo.VariableSettingInfos.TryGetValue(key, out var lvlInfo)) {
+                            lvlInfo = new SettingInfoForVariable();
+                            cfg.SettingInfo.VariableSettingInfos.Add(key, lvlInfo);
+                        }
+                        lvlInfo.MaxLevel = lvlForExp;
+                        lvlInfo.MaxLength = lenForExp;
+                        lvlInfo.MultilineComments = mlc;
+                        lvlInfo.ExpandedOnlyOnce = once;
+
+                        if (!cfg.SettingInfo.DontExpandVariables.Contains(key))
+                            cfg.SettingInfo.DontExpandVariables.Add(key);
+                    }
+                }
+            }
+        }
+        private static void ParseObjectComment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                string v1str = SettingInfoForVariable.s_DefMaxLvl;
+                string v2str = SettingInfoForVariable.s_DefMaxLen;
+                string v3str = SettingInfoForVariable.s_DefMultiline;
+                string v4str = SettingInfoForVariable.s_DefExpandOnce;
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsParenthesisParamClass()) {
+                    var fd = cd;
+                    cd = fd.GetParam(0) as Dsl.FunctionData;
+
+                    string sid = fd.GetId();
+                    if (sid == "set") {
+                        string v1type = "int";
+                        v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
+                        string v2type = "int";
+                        v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
+                        string v3type = "bool";
+                        v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
+                        string v4type = "bool";
+                        v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                    }
+                    else if (sid == "skip") {
+                        v1str = "-1";
+                    }
+                }
+                if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
+                && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                    string cid = cd.GetId();
+                    string member = cd.GetParamId(0);
+                    if (!cfg.SettingInfo.ObjectSettingInfos.TryGetValue(cid, out var objLvlInfo)) {
+                        objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
+                        cfg.SettingInfo.ObjectSettingInfos.Add(cid, objLvlInfo);
+                    }
+                    if (!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
+                        lvlInfo = new SettingInfoForVariable();
+                        objLvlInfo.Add(member, lvlInfo);
+                    }
+                    lvlInfo.MaxLevel = lvlForExp;
+                    lvlInfo.MaxLength = lenForExp;
+                    lvlInfo.MultilineComments = mlc;
+                    lvlInfo.ExpandedOnlyOnce = once;
+                }
+            }
+        }
+        private static void ParseArrayComment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                string v1str = SettingInfoForVariable.s_DefMaxLvl;
+                string v2str = SettingInfoForVariable.s_DefMaxLen;
+                string v3str = SettingInfoForVariable.s_DefMultiline;
+                string v4str = SettingInfoForVariable.s_DefExpandOnce;
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsParenthesisParamClass()) {
+                    var fd = cd;
+                    cd = fd.GetParam(0) as Dsl.FunctionData;
+
+                    string sid = fd.GetId();
+                    if (sid == "set") {
+                        string v1type = "int";
+                        v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
+                        string v2type = "int";
+                        v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
+                        string v3type = "bool";
+                        v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
+                        string v4type = "bool";
+                        v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                    }
+                    else if (sid == "skip") {
+                        v1str = "-1";
+                    }
+                }
+                if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
+                && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                    string cid = cd.GetId();
+                    string ixType = "int";
+                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
+                    if (int.TryParse(ixStr, out var index)) {
+                        if (!cfg.SettingInfo.ArraySettingInfos.TryGetValue(cid, out var arrLvlInfo)) {
+                            arrLvlInfo = new Dictionary<int, SettingInfoForVariable>();
+                            cfg.SettingInfo.ArraySettingInfos.Add(cid, arrLvlInfo);
+                        }
+                        if (!arrLvlInfo.TryGetValue(index, out var lvlInfo)) {
+                            lvlInfo = new SettingInfoForVariable();
+                            arrLvlInfo.Add(index, lvlInfo);
+                        }
+                        lvlInfo.MaxLevel = lvlForExp;
+                        lvlInfo.MaxLength = lenForExp;
+                        lvlInfo.MultilineComments = mlc;
+                        lvlInfo.ExpandedOnlyOnce = once;
+                    }
+                }
+            }
+        }
+        private static void ParseObjectArrayComment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                string v1str = SettingInfoForVariable.s_DefMaxLvl;
+                string v2str = SettingInfoForVariable.s_DefMaxLen;
+                string v3str = SettingInfoForVariable.s_DefMultiline;
+                string v4str = SettingInfoForVariable.s_DefExpandOnce;
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsParenthesisParamClass()) {
+                    var fd = cd;
+                    cd = fd.GetParam(0) as Dsl.FunctionData;
+
+                    string sid = fd.GetId();
+                    if (sid == "set") {
+                        string v1type = "int";
+                        v1str = fd.GetParamNum() <= 1 ? SettingInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
+                        string v2type = "int";
+                        v2str = fd.GetParamNum() <= 2 ? SettingInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
+                        string v3type = "bool";
+                        v3str = fd.GetParamNum() <= 3 ? SettingInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
+                        string v4type = "bool";
+                        v4str = fd.GetParamNum() <= 4 ? SettingInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                    }
+                    else if (sid == "skip") {
+                        v1str = "-1";
+                    }
+                }
+                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp)
+                && int.TryParse(v2str, out var lenForExp) && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                    string cid = cd.LowerOrderFunction.GetId();
+                    string ixType = "int";
+                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                    string member = cd.GetParamId(0);
+                    if (int.TryParse(ixStr, out var index)) {
+                        if (!cfg.SettingInfo.ObjectArraySettingInfos.TryGetValue(cid, out var objArrLvlInfo)) {
+                            objArrLvlInfo = new Dictionary<int, Dictionary<string, SettingInfoForVariable>>();
+                            cfg.SettingInfo.ObjectArraySettingInfos.Add(cid, objArrLvlInfo);
+                        }
+                        if (!objArrLvlInfo.TryGetValue(index, out var objLvlInfo)) {
+                            objLvlInfo = new Dictionary<string, SettingInfoForVariable>();
+                            objArrLvlInfo.Add(index, objLvlInfo);
+                        }
+                        if (!objLvlInfo.TryGetValue(member, out var lvlInfo)) {
+                            lvlInfo = new SettingInfoForVariable();
+                            objLvlInfo.Add(member, lvlInfo);
+                        }
+                        lvlInfo.MaxLevel = lvlForExp;
+                        lvlInfo.MaxLength = lenForExp;
+                        lvlInfo.MultilineComments = mlc;
+                        lvlInfo.ExpandedOnlyOnce = once;
+                    }
+                }
+            }
+        }
+        private static void ParseInvalidVariable(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                string vname = fp.GetId();
+                if (!cfg.SettingInfo.InvalidVariables.Contains(vname))
+                    cfg.SettingInfo.InvalidVariables.Add(vname);
+            }
+        }
+        private static void ParseInvalidObjectMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsPeriodParamClass()) {
+                    string cid = cd.GetId();
+                    string member = cd.GetParamId(0);
+                    if (!cfg.SettingInfo.InvalidObjectMembers.TryGetValue(cid, out var memberHashSet)) {
+                        memberHashSet = new HashSet<string>();
+                        cfg.SettingInfo.InvalidObjectMembers.Add(cid, memberHashSet);
+                    }
+                    if (!memberHashSet.Contains(member))
+                        memberHashSet.Add(member);
+                }
+            }
+        }
+        private static void ParseInvalidArrayElement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsBracketParamClass()) {
+                    string cid = cd.GetId();
+                    string ixType = "int";
+                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
+                    if (int.TryParse(ixStr, out var ix)) {
+                        if (!cfg.SettingInfo.InvalidArrayElements.TryGetValue(cid, out var ixHashSet)) {
+                            ixHashSet = new HashSet<int>();
+                            cfg.SettingInfo.InvalidArrayElements.Add(cid, ixHashSet);
+                        }
+                        if (!ixHashSet.Contains(ix))
+                            ixHashSet.Add(ix);
+                    }
+                }
+            }
+        }
+        private static void ParseInvalidObjectArrayMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
+                    string cid = cd.LowerOrderFunction.GetId();
+                    string ixType = "int";
+                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                    string member = cd.GetParamId(0);
+                    if (int.TryParse(ixStr, out var ix)) {
+                        if (!cfg.SettingInfo.InvalidObjectArrayMembers.TryGetValue(cid, out var elemMemberList)) {
+                            elemMemberList = new Dictionary<int, HashSet<string>>();
+                            cfg.SettingInfo.InvalidObjectArrayMembers.Add(cid, elemMemberList);
+                        }
+                        if (!elemMemberList.TryGetValue(ix, out var memberHashSet)) {
+                            memberHashSet = new HashSet<string>();
+                            elemMemberList.Add(ix, memberHashSet);
+                        }
+                        if (!memberHashSet.Contains(member))
+                            memberHashSet.Add(member);
                     }
                 }
             }
@@ -970,15 +1092,15 @@ namespace GlslRewriter
 
         internal class SettingInfoForVariable
         {
-            internal int MaxLevelForExpression = 0;
-            internal int MaxLengthForExpression = 0;
-            internal bool UseMultilineComments = false;
-            internal bool VariableExpandedOnlyOnce = false;
+            internal int MaxLevel = 0;
+            internal int MaxLength = 0;
+            internal bool MultilineComments = false;
+            internal bool ExpandedOnlyOnce = false;
 
-            internal const string c_DefMaxLvl = "256";
-            internal const string c_DefMaxLen = "102400";
-            internal const string c_Multiline = "True";
-            internal const string c_ExpandOnce = "True";
+            internal static string s_DefMaxLvl = "256";
+            internal static string s_DefMaxLen = "102400";
+            internal static string s_DefMultiline = "True";
+            internal static string s_DefExpandOnce = "True";
         }
         internal class SettingInfo
         {
@@ -986,10 +1108,13 @@ namespace GlslRewriter
             internal bool PrintGraph = false;
             internal bool NeedUniformUtofVals = true;
             internal bool NeedUniformFtouVals = false;
-            internal bool DefUseMultilineComments = false;
-            internal bool DefVariableExpandedOnlyOnce = false;
-            internal int DefMaxLevelForExpression = 32;
-            internal int DefMaxLengthForExpression = 512;
+            internal bool DefMultilineComments = false;
+            internal bool DefExpandedOnlyOnce = false;
+            internal bool DefSkipValue = false;
+            internal bool DefSkipComments = false;
+            internal bool GenerateExpressionList = false;
+            internal int DefMaxLevel = 32;
+            internal int DefMaxLength = 512;
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;

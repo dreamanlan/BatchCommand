@@ -108,123 +108,164 @@ void main()
 	precise float pf_0_15, pf_3_7, pf_1_26, pf_1_27, pf_1_28, pf_1_29, pf_0_23, pf_0_24, pf_0_25, pf_0_26, pf_2_11, pf_2_12, pf_2_13, pf_2_14;
 	
 	//in_attr1.zw是tex5的纹理坐标
+	//vec4(textureQueryLod(tex5, vec2(ia1.z, ia1.w)), 0, 0
 	//vec4(4,1,0,0)  <=>  vec4(textureQueryLod({tex5 : }, vec2({in_attr1.z : 1.46396}, {in_attr1.w : 3.26268})), 0.0, 0.0)
 	f4_0_0 = vec4(textureQueryLod(tex5, vec2(in_attr1.z, in_attr1.w)), 0.0, 0.0);
 	f_2_0 = f4_0_0.y;
-	//vec4(0.5,0.5,0.5,1)  <=>  textureLod({tex5 : }, vec2({in_attr1.z : 1.46396}, {in_attr1.w : 3.26268}), min((float((uint({f4_0_0.y : 1}) << 8u)) / 256.0), 2.))
+	//textureLod(tex5, vec2(ia1.z, ia1.w), min(f4_0_0.y, 2))
+	//vec4(0.5,0.5,0.5,0.75)  <=>  textureLod({tex5 : }, vec2({in_attr1.z : 1.46396}, {in_attr1.w : 3.26268}), min((float((uint({f4_0_0.y : 1}) << 8u)) / 256.0), 2.))
 	f4_0_1 = textureLod(tex5, vec2(in_attr1.z, in_attr1.w), min((float((uint(f_2_0) << 8u)) / 256.0), 2.));
 	//tex3采样坐标(这张纹理只用来取lod信息，应该就是tex4数组里的一张) in_attr1.xy + (tex5.xw  * fs_cbuf9[189 ].x * 2 - fs_cbuf9[189 ].x)
 	//看起来是使用tex5的xw微调输入uv （in_attr1.xy可认为是tex3/tex4的采样坐标基准值）
+	//vec4(textureQueryLod(tex3, vec2(c189.x * (f4_0_1.x * 2 - 1) + ia1.x, c189.x * (f4_0_1.w * 2 - 1) + ia1.y)), 0, 0)
 	//vec4(4,1,0,0)  <=>  vec4(textureQueryLod({tex3 : }, vec2(((({f4_0_1.x : 0.5} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.x : 0.5}), ((({f4_0_1.w : 1} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.y : 0.5}))), 0.0, 0.0)
 	f4_0_2 = vec4(textureQueryLod(tex3, vec2((((f4_0_1.x * utof(fs_cbuf9[189].x)) * 2. - utof(fs_cbuf9[189].x)) + in_attr1.x), (((f4_0_1.w * utof(fs_cbuf9[189].x)) * 2. - utof(fs_cbuf9[189].x)) + in_attr1.y))), 0.0, 0.0);
 	//深度纹理坐标计算 in_attr2.xy * gl_FragCoord.w * 1 / (in_attr2.w * gl_FragCoord.w) （gl_FragCoord.w是直接能消去的，不知道为啥这样写）
-	//vec4(0.5,0.5,0.5,1)  <=>  texture({depthTex : }, vec2((({in_attr2.x : 714.15204} * {gl_FragCoord.w : 1}) * (1.0 / ({in_attr2.w : 1261.8458} * {gl_FragCoord.w : 1}))), (({in_attr2.y : 242.01749} * {gl_FragCoord.w : 1}) * (1.0 / ({in_attr2.w : 1261.8458} * {gl_FragCoord.w : 1})))))
+	//texture(depthTex, vec2(ia2.x / ia2.w, ia2.y / ia2.w))
+	//vec4(0.5,0.5,0.5,0.75)  <=>  texture({depthTex : }, vec2((({in_attr2.x : 714.15204} * {gl_FragCoord.w : 1}) * (1.0 / ({in_attr2.w : 1261.8458} * {gl_FragCoord.w : 1}))), (({in_attr2.y : 242.01749} * {gl_FragCoord.w : 1}) * (1.0 / ({in_attr2.w : 1261.8458} * {gl_FragCoord.w : 1})))))
 	f4_0_3 = texture(depthTex, vec2(((in_attr2.x * gl_FragCoord.w) / (in_attr2.w * gl_FragCoord.w)), ((in_attr2.y * gl_FragCoord.w) / (in_attr2.w * gl_FragCoord.w))));
 	//使用与tex3纹理相同的uv与在tex3上查询到的lod数据采样，第三个采样坐标数据来自in_attr6.x，应该是序列帧的索引
 	//采样坐标：(tex5.xw * 2 - vec(1)) * fs_cbuf9[189].x + in_attr1.xy
-	//vec4(0.5,0.5,0.5,1)  <=>  textureLod({tex4 : }, vec3(((({f4_0_1.x : 0.5} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.x : 0.5}), ((({f4_0_1.w : 1} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.y : 0.5}), float((uint(clamp(roundEven({in_attr6.x : 2}), float(0.), float(65535.))) & 0xffff))), min((float((uint({f4_0_2.y : 1}) << 8u)) / 256.0), 2.))
+	//textureLod(tex4, vec3(c189.x * (f4_0_1.x * 2 - 1) + ia1.x, c189.x * (f4_0_1.w * 2 - 1) * ia1.y, (float)((uint)clamp(roundEven(ia6.x), 0, 65535) & 0xffff)), min(f4_0_3.y, 2))
+	//vec4(0.5,0.5,0.5,0.75)  <=>  textureLod({tex4 : }, vec3(((({f4_0_1.x : 0.5} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.x : 0.5}), ((({f4_0_1.w : 0.75} * {utof(fs_cbuf9[189].x) : 0.035}) * 2. + (0. - {utof(fs_cbuf9[189].x) : 0.035})) + {in_attr1.y : 0.5}), float((uint(clamp(roundEven({in_attr6.x : 2}), float(0.), float(65535.))) & 0xffff))), min((float((uint({f4_0_2.y : 1}) << 8u)) / 256.0), 2.))
 	f4_0_4 = textureLod(tex4, vec3((((f4_0_1.x * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.x), (((f4_0_1.w * utof(fs_cbuf9[189].x)) * 2. + (0. - utof(fs_cbuf9[189].x))) + in_attr1.y), float((uint(clamp(roundEven(in_attr6.x), float(0.), float(65535.))) & 0xffff))), min((float((uint(f4_0_2.y)<<8u))/256.0), 2.));
 	
 	//这里计算的是最终输出颜色的alpha值，分解为如下语句
+	//clamp(((1 / (ia2.z / ia2.w * c30.w - c30.y) * c30.z) + (depthTex.x * c30.w + c30.w)) * (1 / c140.y), 0, 1)
 	//1  <=>  clamp((((1.0 / (({in_attr2.z : 1260.8962} * (1.0 / {in_attr2.w : 1261.8458})) * {utof(fs_cbuf8[30].w) : 24999} + (0. - {utof(fs_cbuf8[30].y) : 25000}))) * {utof(fs_cbuf8[30].z) : 25000} + ({f4_0_3.x : 0.5} * {utof(fs_cbuf8[30].w) : 24999} + {utof(fs_cbuf8[30].x) : 1})) * (1.0 / {utof(fs_cbuf9[140].y) : 5})), 0.0, 1.0)
 	f_2_11 = clamp(((1 / (in_attr2.z / in_attr2.w * utof(fs_cbuf8[30].w) - utof(fs_cbuf8[30].y))) * utof(fs_cbuf8[30].z) + (f4_0_3.x * utof(fs_cbuf8[30].w) + utof(fs_cbuf8[30].x))) * (1 / utof(fs_cbuf9[140].y)), 0, 1);
-	//1  <=>  clamp(((({f4_0_4.w : 1} * {in_attr8.z : 1}) * {in_attr0.w : 1}) + (0. - 0.)), 0.0, 1.0)
+	//clamp(tex4.w * ia8.z * ia0.w, 0, 1)
+	//0.75  <=>  clamp(((({f4_0_4.w : 0.75} * {in_attr8.z : 1}) * {in_attr0.w : 1}) + (0. - 0.)), 0.0, 1.0)
 	f_5_2 = clamp(f4_0_4.w * in_attr8.z * in_attr0.w + 0, 0, 1);
-	//False  <=>  (((((({f_2_11 : 1} * {f_5_2 : 1}) * {in_attr3.x : 1}) <= {utof(fs_cbuf9[139].z) : 0}) && (! isnan((({f_2_11 : 1} * {f_5_2 : 1}) * {in_attr3.x : 1})))) && (! isnan({utof(fs_cbuf9[139].z) : 0}))) ? true : false)
+	//(f_2_11 * f_5_2 * ia3.x) <= c139.z && !isnan(f_2_11 * f_5_2 * ia3.x) && !isnan(c139.z) ? true : false
+	//False  <=>  (((((({f_2_11 : 1} * {f_5_2 : 0.75}) * {in_attr3.x : 1}) <= {utof(fs_cbuf9[139].z) : 0}) && (! isnan((({f_2_11 : 1} * {f_5_2 : 0.75}) * {in_attr3.x : 1})))) && (! isnan({utof(fs_cbuf9[139].z) : 0}))) ? true : false)
 	b_1_0 = ((((((f_2_11 * f_5_2) * in_attr3.x) <= utof(fs_cbuf9[139].z)) && (! isnan(((f_2_11 * f_5_2) * in_attr3.x)))) && (! isnan(utof(fs_cbuf9[139].z)))) ? true : false);
 	if(b_1_0 )
 	{
 		discard;
 	}
-	//1  <=>  clamp(((({f_2_11 : 1} * {f_5_2 : 1}) * {in_attr3.x : 1}) + (0. - 0.)), 0.0, 1.0)
+	//clamp(f_2_11 * f_5_2 * ia3.x, 0, 1)
+	//0.75  <=>  clamp(((({f_2_11 : 1} * {f_5_2 : 0.75}) * {in_attr3.x : 1}) + (0. - 0.)), 0.0, 1.0)
 	f_2_16 = clamp(f_2_11 * f_5_2 * in_attr3.x + 0, 0, 1);
 
 
 	//可能是三维空间距离 length(fs_cbuf8[29] - in_attr4), inversesqrt用于后续计算单位向量
+	//inversesqrt((c29.z - ia4.z) * (c29.z - ia4.z) + (c29.y - ia4.y) * (c29.y - ia4.y) + (c29.x - ia4.x) * (c29.x - ia4.x))
 	//0.0007574785  <=>  inversesqrt((((0. - {in_attr4.z : 170.82373}) + {utof(fs_cbuf8[29].z) : 1396.6694}) * ((0. - {in_attr4.z : 170.82373}) + {utof(fs_cbuf8[29].z) : 1396.6694}) + (((0. - {in_attr4.y : 1268.1571}) + {utof(fs_cbuf8[29].y) : 1672.1437}) * ((0. - {in_attr4.y : 1268.1571}) + {utof(fs_cbuf8[29].y) : 1672.1437}) + (((0. - {in_attr4.x : 564.6999}) + {utof(fs_cbuf8[29].x) : 287.31113}) * ((0. - {in_attr4.x : 564.6999}) + {utof(fs_cbuf8[29].x) : 287.31113})))))
 	f_3_11 = inversesqrt((((0. - in_attr4.z) + utof(fs_cbuf8[29].z)) * ((0. - in_attr4.z) + utof(fs_cbuf8[29].z)) + (((0. - in_attr4.y) + utof(fs_cbuf8[29].y)) * ((0. - in_attr4.y) + utof(fs_cbuf8[29].y)) + (((0. - in_attr4.x) + utof(fs_cbuf8[29].x)) * ((0. - in_attr4.x) + utof(fs_cbuf8[29].x))))));
+	//视线与光线的点积？
 	//dot((dx/dist, dy/dist, dz/dist), fs_cbuf15[28]) (dx/dist, dy/dist, dz/dist)是单位矢量，从in_attr4指向fs_cbuf8[29]的矢量
 	//dot((dx/dist, dy/dist, dz/dist), fs_cbuf15[28]) * 2 - 1
+	//clamp(((c29.z - ia4.z) * f_3_11 * c28.z + (c29.y - ia4.y) * f_3_11 * c28.y + (c29.x - ia4.x) * f_3_11 * c28.x) * 2 - 1, 0, 1)
 	//0  <=>  clamp((((((0. - {in_attr4.z : 170.82373}) + {utof(fs_cbuf8[29].z) : 1396.6694}) * {f_3_11 : 0.0007574785}) * {utof(fs_cbuf15[28].z) : -0.63026583} + ((((0. - {in_attr4.y : 1268.1571}) + {utof(fs_cbuf8[29].y) : 1672.1437}) * {f_3_11 : 0.0007574785}) * {utof(fs_cbuf15[28].y) : -0.57410127} + ((((0. - {in_attr4.x : 564.6999}) + {utof(fs_cbuf8[29].x) : 287.31113}) * {f_3_11 : 0.0007574785}) * {utof(fs_cbuf15[28].x) : 0.52265936}))) * 2. + (0. - 1.)), 0.0, 1.0)
 	f_4_8 = clamp((((((0. - in_attr4.z) + utof(fs_cbuf8[29].z)) * f_3_11) * utof(fs_cbuf15[28].z) + ((((0. - in_attr4.y) + utof(fs_cbuf8[29].y)) * f_3_11) * utof(fs_cbuf15[28].y) + ((((0. - in_attr4.x) + utof(fs_cbuf8[29].x)) * f_3_11) * utof(fs_cbuf15[28].x)))) * 2. + (0. - 1.)), 0.0, 1.0);
+	//1 / (f_4_8 * ia5.y * 0.005)
 	//(1.0 / (({f_4_8 : 0} * {in_attr5.y : 175.44524}) * 0.005))
-	f_5_3 = 1.0 / (f_4_8 * in_attr5.y * 0.005); //难道是迭代步数？
+	f_5_3 = 1.0 / (f_4_8 * in_attr5.y * 0.005); //
 	
 	//单句全部展开太复杂，分解成如下语句
+	//(clamp(tex4.x, 0.1, 0.3) - 0.1) * 3.5 + 0.33
 	//0.9999998800000001  <=>  ((clamp({f4_0_4.x : 0.5}, 0.1, 0.3) + -0.1) * 3.3499994 + 0.33)
 	pf_2_5 = (clamp(f4_0_4.x, 0.1, 0.3) - 0.1) * 3.3499994 + 0.33;
 	//使用in_attr8.x来选择fs_cbuf9[190].w与fs_cbuf9[190].z之间的一个值，0对应最大值，1对应最小值
+	//(c190.w - c190.z) * ia8.x + c190.z
 	//4  <=>  ({in_attr8.x : 1} * ((0. - {utof(fs_cbuf9[190].z) : 20}) + {utof(fs_cbuf9[190].w) : 4}) + {utof(fs_cbuf9[190].z) : 20})
 	pf_3_2 = in_attr8.x * (0 - utof(fs_cbuf9[190].z) + utof(fs_cbuf9[190].w)) + utof(fs_cbuf9[190].z);
-	//0.082085  <=>  exp2(((((0. - {utof(fs_cbuf9[189].y) : 3.5}) + {utof(fs_cbuf9[190].y) : 2.5}) * {in_attr8.x : 1} + {utof(fs_cbuf9[189].y) : 3.5}) * log2(abs({f4_0_4.x : 0.5}))))
+	//exp2(((c190.y - c189.y) * ia8.x + c189.y) * log2(abs(tex4.x)))
+	//0.17677669  <=>  exp2(((((0. - {utof(fs_cbuf9[189].y) : 3.5}) + {utof(fs_cbuf9[190].y) : 2.5}) * {in_attr8.x : 1} + {utof(fs_cbuf9[189].y) : 3.5}) * log2(abs({f4_0_4.x : 0.5}))))
 	f_0_12 = exp2(((utof(fs_cbuf9[190].y) - utof(fs_cbuf9[189].y)) * in_attr8.x + utof(fs_cbuf9[189].y)) * log2(abs(f4_0_4.x)));
-	//0.32834  <=>  ({pf_3_2 : 4} * {f_0_12 : 0.082085})
+	//0.70710676  <=>  ({pf_3_2 : 4} * {f_0_12 : 0.17677669})
 	pf_3_3 = pf_3_2 * f_0_12;
 	
 	//单句全部展开太复杂，分解成如下几句（输出颜色x分量参数）
-	//0.9390524  <=>  (({pf_3_3 : 0.32834} * {utof(fs_cbuf15[42].x) : 4.4}) * {utof(fs_cbuf15[42].w) : 0.65})
+	//pf_3_3 * c42.x * c42.w
+	//2.022325305  <=>  (({pf_3_3 : 0.70710677} * {utof(fs_cbuf15[42].x) : 4.4}) * {utof(fs_cbuf15[42].w) : 0.65})
 	pf_5_2 = pf_3_3 * utof(fs_cbuf15[42].x) * utof(fs_cbuf15[42].w);
-	//这句看起来是个特殊混合操作，tex4.x * (1 - pf_2_5 * 90%) + pf_2_5 * 90%
+	//这句看起来是个特殊混合操作
+	//tex4.x * (c43.x - pf_2_5 * c44.x) + pf_2_5 * c44.x = c43.x * tex4.x + pf_2_5 * c44.x * (1 - tex4.x)
 	//0.949999945  <=>  ({f4_0_4.x : 0.5} * ({pf_2_5 : 0.9999999} * (0. - {utof(fs_cbuf15[44].x) : 0.9}) + {utof(fs_cbuf15[43].x) : 1}) + ({pf_2_5 : 0.9999999} * {utof(fs_cbuf15[44].x) : 0.9}))
 	pf_2_7 = f4_0_4.x * (pf_2_5 * (0 - utof(fs_cbuf15[44].x)) + utof(fs_cbuf15[43].x)) + (pf_2_5 * utof(fs_cbuf15[44].x));
-	//1.8890523  <=>  (({pf_5_2 : 0.9390524} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_5_2 : 0.9390524}) + {pf_2_7 : 0.9499999})
+	//pf_5_2 * (1 - c1.x) + pf_2_7
+	//2.9723252  <=>  (({pf_5_2 : 2.0223253} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_5_2 : 2.0223253}) + {pf_2_7 : 0.9499999})
 	pf_1_23 = pf_5_2 * (0 - utof(fs_cbuf15[1].x)) + pf_5_2 + pf_2_7;
 
 	//单句全部展开太复杂，分解成如下几句（输出颜色y分量参数）
-	//0.7383530050000001  <=>  (({pf_3_3 : 0.32834} * {utof(fs_cbuf15[42].y) : 3.4596078}) * {utof(fs_cbuf15[42].w) : 0.65})
+	//pf_3_3 * c42.y * c42.w
+	//1.59010293  <=>  (({pf_3_3 : 0.70710677} * {utof(fs_cbuf15[42].y) : 3.4596078}) * {utof(fs_cbuf15[42].w) : 0.65})
 	pf_6_1 = pf_3_3 * utof(fs_cbuf15[42].y) * utof(fs_cbuf15[42].w);
+	//tex4.x * (c43.y - pf_2_5 * c44.y) + pf_2_5 * c44.y = c43.y * tex4.x + pf_2_5 * c44.y * (1 - tex4.x)
 	//0.829999937  <=>  ({f4_0_4.x : 0.5} * ({pf_2_5 : 0.9999999} * (0. - {utof(fs_cbuf15[44].y) : 0.775}) + {utof(fs_cbuf15[43].y) : 0.885}) + ({pf_2_5 : 0.9999999} * {utof(fs_cbuf15[44].y) : 0.775}))
 	pf_0_19 = f4_0_4.x * (pf_2_5 * (0 - utof(fs_cbuf15[44].y)) + utof(fs_cbuf15[43].y)) + pf_2_5 * utof(fs_cbuf15[44].y);
-	//1.5683529  <=>  (({pf_6_1 : 0.738353} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_6_1 : 0.738353}) + {pf_0_19 : 0.8299999})
+	//pf_6_1 * (1 - c1.x) + pf_0_19
+	//2.4201028  <=>  (({pf_6_1 : 1.5901029} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_6_1 : 1.5901029}) + {pf_0_19 : 0.8299999})
 	pf_0_20 = pf_6_1 * (0 - utof(fs_cbuf15[1].x)) + pf_6_1 + pf_0_19;
 
 	//单句全部展开太复杂，分解成如下语句（输出颜色z分量参数）
-	//0.5629712400000001  <=>  (({pf_3_3 : 0.32834} * {utof(fs_cbuf15[42].z) : 2.6378438}) * {utof(fs_cbuf15[42].w) : 0.65})
+	//pf_3_3 * c42.z * c42.w
+	//1.21240418  <=>  (({pf_3_3 : 0.70710677} * {utof(fs_cbuf15[42].z) : 2.6378438}) * {utof(fs_cbuf15[42].w) : 0.65})
 	pf_3_5 = pf_3_3 * utof(fs_cbuf15[42].z) * utof(fs_cbuf15[42].w);
+	//tex4.x * (c43.z - pf_2_5 * c44.z) + pf_2_5 * c44.z = c43.z * tex4.x + pf_2_5 * c44.z * (1 - tex4.x)
 	//0.6124999275  <=>  ({f4_0_4.x : 0.5} * ({pf_2_5 : 0.9999999} * (0. - {utof(fs_cbuf15[44].z) : 0.575}) + {utof(fs_cbuf15[43].z) : 0.65}) + ({pf_2_5 : 0.9999999} * {utof(fs_cbuf15[44].z) : 0.575}))
 	pf_4_4 = f4_0_4.x * (pf_2_5 * (0 - utof(fs_cbuf15[44].z)) + utof(fs_cbuf15[43].z)) + pf_2_5 * utof(fs_cbuf15[44].z);
-	//1.1754711800000002  <=>  (({pf_3_5 : 0.56297123} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_3_5 : 0.56297123}) + {pf_4_4 : 0.61249995})
+	//pf_3_5 * (1 - c1.x) + pf_4_4
+	//1.8249040500000002  <=>  (({pf_3_5 : 1.2124041} * (0. - {utof(fs_cbuf15[1].x) : 0}) + {pf_3_5 : 1.2124041}) + {pf_4_4 : 0.61249995})
 	pf_2_8 = pf_3_5 * (0 - utof(fs_cbuf15[1].x)) + pf_3_5 + pf_4_4;
 
 	//单句全部展开太复杂，分解为如下语句（计算输出颜色xyz分量的系数）
-	//clamp(({f_5_3 : } * ((({f_4_8 : 0} * {in_attr5.y : 175.44524}) * 0.005) + (({f4_0_4.w : 1} * {in_attr8.z : 1}) * {in_attr0.w : 1})) + (0. - {f_5_3 : })), 0.0, 1.0)
+	//clamp(f_5_3 * (f_4_8 * ia5.y * 0.005 + tex4.w * ia8.z * ia0.w - 1), 0, 1)
+	//clamp(({f_5_3 : } * ((({f_4_8 : 0} * {in_attr5.y : 175.44524}) * 0.005) + (({f4_0_4.w : 0.75} * {in_attr8.z : 1}) * {in_attr0.w : 1})) + (0. - {f_5_3 : })), 0.0, 1.0)
 	f_5_4 = clamp((f_5_3 * ((f_4_8 * in_attr5.y * 0.005) + (f4_0_4.w * in_attr8.z * in_attr0.w)) + (0. - f_5_3)), 0.0, 1.0);
+	//f_4_8 * (f_5_4 - 1) + 1
 	//({f_5_4 : } + (((0. - {f_4_8 : 0}) + 1.) * (0. - {f_5_4 : }) + ((0. - {f_4_8 : 0}) + 1.)))
 	pf_0_15 = f_5_4 + ((1. - f_4_8) * (0. - f_5_4) + (1. - f_4_8));
+	//1 / (f_4_8 * pf_0_15 * max(0, exp2(pf_0_15 * -5) - 0.03125) + 1);
 	//(1.0 / (({f_4_8 : 0} * {pf_0_15 : }) * max(0., (exp2(({pf_0_15 : } * -5.)) + -0.03125)) + 1.))
 	f_3_22 = 1 / (f_4_8 * pf_0_15 * max(0, exp2(pf_0_15 * -5) - 0.03125) + 1);
+	//(c57.w * (1 - min((1.05 - f_4_8) * f_3_22, 1)) * -0.9 + 1
 	//((min((((0. - {f_4_8 : 0}) + 1.05) * {f_3_22 : }), 1.) * (0. - {utof(fs_cbuf15[57].w) : 1}) + {utof(fs_cbuf15[57].w) : 1}) * -0.9 + 1.)
 	pf_3_7 = (min(((0 - f_4_8) + 1.05) * f_3_22, 1) * (0 - utof(fs_cbuf15[57].w)) + utof(fs_cbuf15[57].w)) * -0.9 + 1;
 
 	//单句全部展开太复杂，分解为如下语句（计算输出颜色x分量），有点像3次FBM
-	//((((0. - ({pf_3_7 : } * {pf_1_23 : 1.8890523})) + {utof(fs_cbuf15[26].x) : 1.12035}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_1_23 : 1.8890523})) * {in_attr9.w : 0.52491} + {in_attr9.x : 0.40435})
+	//((c26.x - (pf_3_7 * pf_1_23)) * ia7.y + (pf_3_7 * pf_1_23)) * ia9.w + ia9.x = (c26.x * ia7.y - (pf_3_7 * pf_1_23) * (1 - ia7.y)) * ia9.w + ia9.x
+	//((((0. - ({pf_3_7 : } * {pf_1_23 : 2.972325})) + {utof(fs_cbuf15[26].x) : 1.12035}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_1_23 : 2.972325})) * {in_attr9.w : 0.52491} + {in_attr9.x : 0.40435})
 	pf_1_26 = (((0. - (pf_3_7 * pf_1_23)) + utof(fs_cbuf15[26].x)) * in_attr7.y + (pf_3_7 * pf_1_23)) * in_attr9.w + in_attr9.x;
+	//(ia11.x - pf_1_26) * ia11.w + pf_1_26
 	//(((0. - {pf_1_26 : }) + {in_attr11.x : 0.20251}) * {in_attr11.w : 0} + {pf_1_26 : })
 	pf_1_27 = ((0. - pf_1_26) + in_attr11.x) * in_attr11.w + pf_1_26;
+	//(c25.x - pf_1_27) * ia7.x + pf_1_27
 	//(((0. - {pf_1_27 : }) + {utof(fs_cbuf15[25].x) : 0.68200004}) * {in_attr7.x : 0.12} + {pf_1_27 : })
 	pf_1_28 = ((0. - pf_1_27) + utof(fs_cbuf15[25].x)) * in_attr7.x + pf_1_27;
+	//(ia10.x - pf_1_28) * ia10.w + pf_1_28
 	//(((0. - {pf_1_28 : }) + {in_attr10.x : 4.77344}) * {in_attr10.w : 0} + {pf_1_28 : })
 	pf_1_29 = ((0. - pf_1_28) + in_attr10.x) * in_attr10.w + pf_1_28;
 	frag_color0.x = pf_1_29;
 
 	//单句全部展开太复杂，分解为如下语句（计算输出颜色y分量）
-	//((((0. - ({pf_3_7 : } * {pf_0_20 : 1.5683529})) + {utof(fs_cbuf15[26].y) : 1.3145001}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_0_20 : 1.5683529})) * {in_attr9.w : 0.52491} + {in_attr9.y : 0.39195})
+	//((c26.y - (pf_3_7 * pf_0_20)) * ia7.y + (pf_3_7 * pf_0_20)) * ia9.w + ia9.x = (c26.y * ia7.y - (pf_3_7 * pf_0_20) * (1 - ia7.y)) * ia9.w + ia9.x
+	//((((0. - ({pf_3_7 : } * {pf_0_20 : 2.4201028})) + {utof(fs_cbuf15[26].y) : 1.3145001}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_0_20 : 2.4201028})) * {in_attr9.w : 0.52491} + {in_attr9.y : 0.39195})
 	pf_0_23 = (((0. - (pf_3_7 * pf_0_20)) + utof(fs_cbuf15[26].y)) * in_attr7.y + (pf_3_7 * pf_0_20)) * in_attr9.w + in_attr9.y;
+	//(ia11.y - pf_0_23) * ia11.w + pf_0_23
 	//(((0. - {pf_0_23 : }) + {in_attr11.y : 0.44214}) * {in_attr11.w : 0} + {pf_0_23 : })
 	pf_0_24 = ((0. - pf_0_23) + in_attr11.y) * in_attr11.w + pf_0_23;
+	//(c25.y - pf_0_24) * ia7.x + pf_0_24
 	//(((0. - {pf_0_24 : }) + {utof(fs_cbuf15[25].y) : 0.99055004}) * {in_attr7.x : 0.12} + {pf_0_24 : })
 	pf_0_25 = ((0. - pf_0_24) + utof(fs_cbuf15[25].y)) * in_attr7.x + pf_0_24;
+	//(ia10.y - pf_0_25) * ia10.w + pf_0_25
 	//(((0. - {pf_0_25 : }) + {in_attr10.y : 3.10352}) * {in_attr10.w : 0} + {pf_0_25 : })
 	pf_0_26 = ((0. - pf_0_25) + in_attr10.y) * in_attr10.w + pf_0_25;
 	frag_color0.y = pf_0_26;
 
 	//单句全部展开太复杂，分解为如下语句（计算输出颜色z分量）
-	//((((0. - ({pf_3_7 : } * {pf_2_8 : 1.1754712})) + {utof(fs_cbuf15[26].z) : 0.66605}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_2_8 : 1.1754712})) * {in_attr9.w : 0.52491} + {in_attr9.z : 0.50397})
+	//((c26.z - (pf_3_7 * pf_2_8)) * ia7.y + (pf_3_7 * pf_2_8)) * ia9.w + ia9.x = (c26.y * ia7.y - (pf_3_7 * pf_2_8) * (1 - ia7.y)) * ia9.w + ia9.x
+	//((((0. - ({pf_3_7 : } * {pf_2_8 : 1.8249041})) + {utof(fs_cbuf15[26].z) : 0.66605}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_2_8 : 1.8249041})) * {in_attr9.w : 0.52491} + {in_attr9.z : 0.50397})
 	pf_2_11 = (((0. - (pf_3_7 * pf_2_8)) + utof(fs_cbuf15[26].z)) * in_attr7.y + (pf_3_7 * pf_2_8)) * in_attr9.w + in_attr9.z;
+	//(ia11.z - pf_2_11) * ia11.w + pf_2_11
 	//(((0. - {pf_2_11 : }) + {in_attr11.z : 0.8335}) * {in_attr11.w : 0} + {pf_2_11 : })
 	pf_2_12 = ((0. - pf_2_11) + in_attr11.z) * in_attr11.w + pf_2_11;
+	//(c25.z - pf_2_12) * ia7.x + pf_2_12
 	//(((0. - {pf_2_12 : }) + {utof(fs_cbuf15[25].z) : 0.63965}) * {in_attr7.x : 0.12} + {pf_2_12 : })
 	pf_2_13 = ((0. - pf_2_12) + utof(fs_cbuf15[25].z)) * in_attr7.x + pf_2_12;
+	//(ia10.z - pf_2_13) * ia10.w + pf_2_13
 	//(((0. - {pf_2_13 : }) + {in_attr10.z : 1.75391}) * {in_attr10.w : 0} + {pf_2_13 : })
 	pf_2_14 = ((0. - pf_2_13) + in_attr10.z) * in_attr10.w + pf_2_13;
 	frag_color0.z = pf_2_14;

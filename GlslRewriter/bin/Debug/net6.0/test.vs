@@ -137,54 +137,40 @@ void main() {
     u_1 = b_0 ? 0u : u_1;
     b_0 = int(u_1) <= int(0u);
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         gl_Position.x = 0.;
     }
-    */
     b_1 = b_0 ? true : false;
     u_2 = u_0;
-    /*
     if(b_1) {
         u_3 = (vs_cbuf8[30].y); //1065353216, 1187205120, 1187205120, 1187204608
         u_2 = u_3;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         gl_Position.y = 0.;
     }
-    */
     b_1 = b_0 ? true : false;
     u_0 = u_2;
-    /*
     if(b_1) {
         f_0 = utof(u_2);
         pf_0 = f_0 * 5.;
         u_3 = ftou(pf_0);
         u_0 = u_3;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         out_attr3.x = 0.; //
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         f_0 = utof(u_0);
         gl_Position.z = f_0;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         return;
     }
-    */
 
     f_0 = in_attr5.w; //0	0	0	1060.5
     u_0 = ftou(f_0);
@@ -199,54 +185,40 @@ void main() {
     b_1 = f_0 > f_1 && !isnan(f_0) && !isnan(f_1);
     b_0 = b_1 || b_0;
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         gl_Position.x = 0.;
     }
-    */
     b_1 = b_0 ? true : false;
     u_3 = u_0;
-    /*
     if(b_1) {
         u_4 = (vs_cbuf8[30].y); //1065353216, 1187205120, 1187205120, 1187204608
         u_3 = u_4;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         gl_Position.y = 0.;
     }
-    */
     b_1 = b_0 ? true : false;
     u_0 = u_3;
-    /*
     if(b_1) {
         f_0 = utof(u_3);
         pf_1 = f_0 * 5.;
         u_4 = ftou(pf_1);
         u_0 = u_4;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         out_attr3.x = 0.; //
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         f_0 = utof(u_0);
         gl_Position.z = f_0;
     }
-    */
     b_1 = b_0 ? true : false;
-    /*
     if(b_1) {
         return;
     }
-    */
 
     f_0 = utof(vs_cbuf9[11].y); //0, 0, 0, 0
     b_0 = 0. < f_0 && !isnan(0.) && !isnan(f_0); //false
@@ -269,7 +241,6 @@ void main() {
     b_2 = b_0 ? true : false;
     u_0 = u_2;
     u_3 = u_1;
-    /*
     if(b_2) {//false
         f_1 = utof(vs_cbuf9[12].z); //0, 0, 0, 0
         pf_4 = f_0 * f_1;
@@ -286,7 +257,6 @@ void main() {
         u_0 = u_5;
         u_3 = u_4;
     }
-    */
     b_0 = b_1 ? true : false;
     u_1 = u_0;
     if(b_0) {//true

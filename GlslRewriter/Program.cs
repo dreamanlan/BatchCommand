@@ -1667,11 +1667,13 @@ namespace GlslRewriter
                         }
                     }
                     else {
-                        if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                            valData.SetId(vid + info.AliasSuffix);
+                        if (null != vinfo.OwnFunc) {
+                            if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
+                                valData.SetId(vid + info.AliasSuffix);
+                            }
+                            //如果引用的变量不是在当前循环里赋值的，添加到未决别名表里（此变量可能在循环后续赋值，如果被赋值，需要修改别名为phi变量别名）
+                            TryAddUndeterminedVarAlias(vid, valData);
                         }
-                        //如果引用的变量不是在当前循环里赋值的，添加到未决别名表里（此变量可能在循环后续赋值，如果被赋值，需要修改别名为phi变量别名）
-                        TryAddUndeterminedVarAlias(vid, valData);
                         var cgvn = FindComputeGraphVarNode(valData.GetId());
                         semanticInfo.GraphNode = cgvn;
                         semanticInfo.ResultType = vinfo.Type;
@@ -1796,13 +1798,16 @@ namespace GlslRewriter
                         }
                     }
                     else {
-                        if(CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                            int aliasIndex = GetVarAliasIndex(vid);
-                            string nid = vid + "_" + (aliasIndex + 1).ToString();
-                            valData.SetId(nid);
-                        }
-                        else {
-                            valData.SetId(vid + "_0");
+                        if (null != vinfo.OwnFunc) {
+                            if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
+                                int aliasIndex = GetVarAliasIndex(vid);
+                                string nid = vid + "_" + (aliasIndex + 1).ToString();
+                                valData.SetId(nid);
+                            }
+                            else {
+                                valData.SetId(vid + "_0");
+                            }
+                            s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         }
 
                         var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, valData.GetId());
@@ -1810,7 +1815,6 @@ namespace GlslRewriter
                         semanticInfo.GraphNode = cgvn;
                         semanticInfo.ResultType = vinfo.Type;
 
-                        s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         var setVars = CurSetVars();
                         if (!setVars.Contains(vid)) {
                             setVars.Add(vid);
@@ -2961,6 +2965,11 @@ namespace GlslRewriter
         }
         private static void TryAddUndeterminedVarAlias(string vname, Dsl.ValueData valData)
         {
+            var vinfo = GetVarInfo(vname);
+            if (null != vinfo && null == vinfo.OwnFunc) {
+                //全局变量不换名
+                return;
+            }
             var curLoopSetVars = CurLoopSetVars();
             if (!curLoopSetVars.Contains(vname)) {
                 var curUndeterminedVarAliasTable = CurUndeterminedVarAliasTable();

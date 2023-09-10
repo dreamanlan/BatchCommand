@@ -520,6 +520,12 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if (func == "isinf") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = float.IsInfinity(v).ToString();
+                    succ = true;
+                }
+            }
             else if (func == "isnan") {
                 if (float.TryParse(args[0], out var v)) {
                     val = float.IsNaN(v).ToString();
@@ -552,13 +558,25 @@ namespace GlslRewriter
             }
             else if(func=="roundEven") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Round(v).ToString();
+                    val = MathF.Round(v, MidpointRounding.ToEven).ToString();
                     succ = true;
                 }
             }
             else if (func == "abs") {
                 if (float.TryParse(args[0], out var v)) {
                     val = MathF.Abs(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "log") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Log(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "exp") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Exp(v).ToString();
                     succ = true;
                 }
             }
@@ -570,7 +588,7 @@ namespace GlslRewriter
             }
             else if (func == "exp2") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Exp(v).ToString();
+                    val = MathF.Pow(2, v).ToString();
                     succ = true;
                 }
             }
@@ -587,6 +605,96 @@ namespace GlslRewriter
                         val = (1.0f / sv).ToString();
                         succ = true;
                     }
+                }
+            }
+            else if (func == "sin") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Sin(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "cos") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Cos(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "tan") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Tan(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "sinh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Sinh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "cosh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Cosh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "tanh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Tanh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "asin") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Asin(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "acos") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Acos(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "atan") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Atan(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "asinh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Asinh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "acosh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Acosh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "atanh") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = MathF.Atanh(v).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "degrees") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = (v * 180.0f / MathF.PI).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "radians") {
+                if (float.TryParse(args[0], out var v)) {
+                    val = (v * MathF.PI / 180.0f).ToString();
+                    succ = true;
+                }
+            }
+            else if (func == "pow") {
+                if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2)) {
+                    val = MathF.Pow(v1, v2).ToString();
+                    succ = true;
                 }
             }
             else if (func == "fma") {

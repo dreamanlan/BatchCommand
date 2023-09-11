@@ -486,6 +486,9 @@ namespace GlslRewriter
                         else if (fid == "object_array_comment") {
                             ParseObjectArrayComment(cfg, fd);
                         }
+                        else if (fid == "auto_split") {
+                            ParseAutoSplit(cfg, fd);
+                        }
                         else if (fid == "invalid_variable") {
                             ParseInvalidVariable(cfg, fd);
                         }
@@ -511,12 +514,12 @@ namespace GlslRewriter
                 string v4str = SettingInfoForVariable.s_DefExpandOnce;
                 var vd = fp as Dsl.ValueData;
                 var fd = fp as Dsl.FunctionData;
-                string key = string.Empty;
                 if (null != vd) {
-                    key = vd.GetId();
+                    string key = vd.GetId();
+                    cfg.SettingInfo.AddSplitOnVariable(key);
                 }
                 else if (null != fd && fd.IsParenthesisParamClass()) {
-                    key = fd.GetParamId(0);
+                    string key = fd.GetParamId(0);
 
                     string sid = fd.GetId();
                     if (sid == "set") {
@@ -532,22 +535,7 @@ namespace GlslRewriter
                     else if (sid == "skip") {
                         v1str = "-1";
                     }
-                }
-                if (!string.IsNullOrEmpty(key)) {
-                    if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                        && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
-                        if (!cfg.SettingInfo.VariableSettingInfos.TryGetValue(key, out var lvlInfo)) {
-                            lvlInfo = new SettingInfoForVariable();
-                            cfg.SettingInfo.VariableSettingInfos.Add(key, lvlInfo);
-                        }
-                        lvlInfo.MaxLevel = lvlForExp;
-                        lvlInfo.MaxLength = lenForExp;
-                        lvlInfo.MultilineComments = mlc;
-                        lvlInfo.ExpandedOnlyOnce = once;
-
-                        if (!cfg.SettingInfo.DontExpandVariables.Contains(key))
-                            cfg.SettingInfo.DontExpandVariables.Add(key);
-                    }
+                    cfg.SettingInfo.AddSplitOnVariable(key, v1str, v2str, v3str, v4str);
                 }
             }
         }
@@ -696,6 +684,43 @@ namespace GlslRewriter
                         lvlInfo.MaxLength = lenForExp;
                         lvlInfo.MultilineComments = mlc;
                         lvlInfo.ExpandedOnlyOnce = once;
+                    }
+                }
+            }
+        }
+        private static void ParseAutoSplit(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            var callCfg = dslCfg;
+            if (dslCfg.IsHighOrder)
+                callCfg = dslCfg.LowerOrderFunction;
+
+            string levelType = "int";
+            string levelStr = callCfg.HaveStatement() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0), ref levelType);
+            if (int.TryParse(levelStr, out var splitLevel)) {
+                cfg.SettingInfo.AutoSplitLevel = splitLevel;
+            }
+
+            foreach (var fp in dslCfg.Params) {
+                var fd = fp as Dsl.FunctionData;
+                if (null != fd && fd.IsParenthesisParamClass()) {
+                    string sid = fd.GetId();
+                    if (sid == "split_on") {
+                        string v1type = "int";
+                        string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
+                        string v2type = "int";
+                        string v2str = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1), ref v2type);
+                        if(!string.IsNullOrEmpty(v1str) && int.TryParse(v2str, out var lvl)) {
+                            cfg.SettingInfo.AutoSplitOnFuncs[v1str] = lvl;
+                        }
+                    }
+                    else if (sid == "skip") {
+                        string v1type = "int";
+                        string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
+                        if (!string.IsNullOrEmpty(v1str)) {
+                            if (!cfg.SettingInfo.AutoSplitSkips.Contains(v1str)) {
+                                cfg.SettingInfo.AutoSplitSkips.Add(v1str);
+                            }
+                        }
                     }
                 }
             }
@@ -1119,9 +1144,11 @@ namespace GlslRewriter
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;
 
-            internal HashSet<string> DontExpandVariables = new HashSet<string>();
+            internal int AutoSplitLevel = -1;
+            internal Dictionary<string, int> AutoSplitOnFuncs = new Dictionary<string, int>();
+            internal HashSet<string> AutoSplitSkips = new HashSet<string>();
 
-            internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
+            internal HashSet<string> SplitOnVariables = new HashSet<string>();
             internal Dictionary<string, SettingInfoForVariable> VariableSettingInfos = new Dictionary<string, SettingInfoForVariable>();
             internal Dictionary<string, Dictionary<string, SettingInfoForVariable>> ObjectSettingInfos = new Dictionary<string, Dictionary<string, SettingInfoForVariable>>();
             internal Dictionary<string, Dictionary<int, SettingInfoForVariable>> ArraySettingInfos = new Dictionary<string, Dictionary<int, SettingInfoForVariable>>();
@@ -1131,6 +1158,50 @@ namespace GlslRewriter
             internal Dictionary<string, HashSet<string>> InvalidObjectMembers = new Dictionary<string, HashSet<string>>();
             internal Dictionary<string, HashSet<int>> InvalidArrayElements = new Dictionary<string, HashSet<int>>();
             internal Dictionary<string, Dictionary<int, HashSet<string>>> InvalidObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
+
+            internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
+            internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
+
+            internal void AutoSplitAddVariable(string vname)
+            {
+                if (!string.IsNullOrEmpty(vname)) {
+                    if (AutoSplitSkips.Contains(vname))
+                        return;
+                    AddSplitOnVariable(vname);
+                }
+            }
+            internal void AddSplitOnVariable(string vname)
+            {
+                if (!string.IsNullOrEmpty(vname)) {
+                    if (!SplitOnVariables.Contains(vname)) {
+                        AutoSplitAddedVariables.Add(vname + ",");
+                    }
+
+                    AddSplitOnVariable(vname, SettingInfoForVariable.s_DefMaxLvl, SettingInfoForVariable.s_DefMaxLen, SettingInfoForVariable.s_DefMultiline, SettingInfoForVariable.s_DefExpandOnce);
+                }
+            }
+            internal void AddSplitOnVariable(string vname, string v1str, string v2str, string v3str, string v4str)
+            {
+                if (!string.IsNullOrEmpty(vname)) {
+                    if (!SplitOnVariables.Contains(vname))
+                        SplitOnVariables.Add(vname);
+
+                    if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
+                        && Calculator.TryParseBool(v3str, out var mlc) && Calculator.TryParseBool(v4str, out var once)) {
+                        if (!VariableSettingInfos.TryGetValue(vname, out var lvlInfo)) {
+                            lvlInfo = new SettingInfoForVariable();
+                            VariableSettingInfos.Add(vname, lvlInfo);
+                        }
+                        lvlInfo.MaxLevel = lvlForExp;
+                        lvlInfo.MaxLength = lenForExp;
+                        lvlInfo.MultilineComments = mlc;
+                        lvlInfo.ExpandedOnlyOnce = once;
+                    }
+                }
+            }
+
+            internal static string s_DefSplitLevel = "18";
+            internal static string s_DefSplitOnLevel = "12";
         }
         internal class InOutAttrInfo
         {

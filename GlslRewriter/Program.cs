@@ -305,6 +305,11 @@ namespace GlslRewriter
                 lineList.AddRange(s_ExpressionList);
                 lineList.Add("}*/");
             }
+            if(Config.ActiveConfig.SettingInfo.AutoSplitLevel>=0 && Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count > 0) {
+                lineList.Add("/*variable_comment{");
+                lineList.AddRange(Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables);
+                lineList.Add("}*/");
+            }
             File.WriteAllLines(outFile, lineList.ToArray());
         }
         private static List<string> CompletionAndSkipPP(IList<string> glslLines)

@@ -2022,13 +2022,13 @@ namespace GlslRewriter
                     }
                     else {
                         if (null != vinfo.OwnFunc) {
-                            if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                                int aliasIndex = GetVarAliasIndex(vid);
+                            if (TryGetVarAliasIndex(vid, out var aliasIndex)) {
                                 string nid = vid + c_AliasSeparator + (aliasIndex + 1).ToString();
                                 valData.SetId(nid);
                             }
                             else {
-                                valData.SetId(vid + c_AliasSeparator + "0");
+                                string nid = vid + c_AliasSeparator + aliasIndex.ToString();
+                                valData.SetId(nid);
                             }
                             s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         }
@@ -2137,12 +2137,12 @@ namespace GlslRewriter
         {
             while (s_VarAliasInfoUpdateQueue.Count > 0) {
                 string vid = s_VarAliasInfoUpdateQueue.Dequeue();
+                int aliasIndex = IncVarAliasIndex(vid);
                 if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
-                    int aliasIndex = IncVarAliasIndex(vid);
                     info.AliasSuffix = c_AliasSeparator + aliasIndex.ToString();
                 }
                 else {
-                    info = new VarAliasInfo { AliasSuffix = c_AliasSeparator + "0" };
+                    info = new VarAliasInfo { AliasSuffix = c_AliasSeparator + aliasIndex.ToString() };
                     CurVarAliasInfos().Add(vid, info);
                 }
             }
@@ -3300,22 +3300,28 @@ namespace GlslRewriter
             return varInfo;
         }
 
-        private static int GetVarAliasIndex(string name)
+        private static bool TryGetVarAliasIndex(string name, out int index)
         {
+            bool ret;
             if(s_VarAliasIndexes.TryGetValue(name, out var ix)) {
-                return ix.Index;
+                index = ix.Index;
+                ret = true;
             }
             else {
-                return 0;
+                index = 0;
+                ret = false;
             }
+            return ret;
         }
         private static int IncVarAliasIndex(string name)
         {
-            if (!s_VarAliasIndexes.TryGetValue(name, out var ix)) {
+            if (s_VarAliasIndexes.TryGetValue(name, out var ix)) {
+                ++ix.Index;
+            }
+            else {
                 ix = new VarAliasIndex { Index = 0 };
                 s_VarAliasIndexes.Add(name, ix);
             }
-            ++ix.Index;
             return ix.Index;
         }
 

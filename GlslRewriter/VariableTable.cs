@@ -1795,6 +1795,11 @@ namespace GlslRewriter
                     }
                 }
             }
+            if(!exists && Config.ActiveConfig.SettingInfo.VariableAssignments.TryGetValue(name, out var vinfo)) {
+                Debug.Assert(type == vinfo.Type);
+                varVal = vinfo.Value;
+                exists = true;
+            }
             return exists;
         }
         public static bool ObjectGetValue(ComputeGraphVarNode left, string m, out string varVal)
@@ -1834,6 +1839,12 @@ namespace GlslRewriter
                         varVal = val.GetMember(m);
                     }
                 }
+            }
+            if (!exists && Config.ActiveConfig.SettingInfo.ObjectMemberAssignments.TryGetValue(name, out var objInfo) &&
+                objInfo.TryGetValue(m, out var vinfo)) {
+                Debug.Assert(type == vinfo.Type);
+                varVal = vinfo.Value;
+                exists = true;
             }
             return exists;
         }
@@ -1934,6 +1945,12 @@ namespace GlslRewriter
                     }
                 }
             }
+            if (!exists && Config.ActiveConfig.SettingInfo.ArrayElementAssignments.TryGetValue(name, out var arrInfo) &&
+                arrInfo.TryGetValue(index, out var vinfo)) {
+                Debug.Assert(type == vinfo.Type);
+                varVal = vinfo.Value;
+                exists = true;
+            }
             return exists;
         }
         public static bool ObjectArrayGetValue(ComputeGraphVarNode left, string ix, string m, out string varVal)
@@ -1986,6 +2003,13 @@ namespace GlslRewriter
                         }
                     }
                 }
+            }
+            if (!exists && Config.ActiveConfig.SettingInfo.ObjectArrayMemberAssignments.TryGetValue(name, out var arrInfo) &&
+                arrInfo.TryGetValue(index, out var objInfo) &&
+                objInfo.TryGetValue(m, out var vinfo)) {
+                Debug.Assert(type == vinfo.Type);
+                varVal = vinfo.Value;
+                exists = true;
             }
             return exists;
         }

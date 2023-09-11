@@ -522,6 +522,18 @@ namespace GlslRewriter
                         else if (fid == "invalidate_object_array_member") {
                             ParseInvalidateObjectArrayMember(cfg, fd);
                         }
+                        else if (fid == "variable_assignment") {
+                            ParseVariableAssignment(cfg, fd);
+                        }
+                        else if (fid == "object_member_assignment") {
+                            ParseObjectMemberAssignment(cfg, fd);
+                        }
+                        else if (fid == "array_element_assignment") {
+                            ParseArrayElementAssignment(cfg, fd);
+                        }
+                        else if (fid == "object_array_member_assignment") {
+                            ParseObjectArrayMemberAssignment(cfg, fd);
+                        }
                     }
                 }
             }
@@ -809,6 +821,109 @@ namespace GlslRewriter
                         }
                         if (!memberHashSet.Contains(member))
                             memberHashSet.Add(member);
+                    }
+                }
+            }
+        }
+        private static void ParseVariableAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var fd = fp as Dsl.FunctionData;
+                if (null != fd){
+                    string fid = fd.GetId();
+                    if (fid == "=") {
+                        string key = fd.GetParamId(0);
+                        string valType = string.Empty;
+                        string val = DoCalc(fd.GetParam(1), ref valType);
+
+                        cfg.SettingInfo.VariableAssignments[key] = new ValueInfo { Type = valType, Value = val };
+                    }
+                }
+            }
+        }
+        private static void ParseObjectMemberAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var fd = fp as Dsl.FunctionData;
+                if (null != fd) {
+                    string fid = fd.GetId();
+                    if (fid == "=") {
+                        var cd = fd.GetParam(0) as Dsl.FunctionData;
+                        string valType = string.Empty;
+                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var vinfo = new ValueInfo { Type = valType, Value = val };
+
+                        if (null != cd && cd.IsPeriodParamClass()) {
+                            string cid = cd.GetId();
+                            string member = cd.GetParamId(0);
+                            if (!cfg.SettingInfo.ObjectMemberAssignments.TryGetValue(cid, out var members)) {
+                                members = new Dictionary<string, ValueInfo>();
+                                cfg.SettingInfo.ObjectMemberAssignments.Add(cid, members);
+                            }
+                            members[member] = vinfo;
+                        }
+                    }
+                }
+            }
+        }
+        private static void ParseArrayElementAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var fd = fp as Dsl.FunctionData;
+                if (null != fd) {
+                    string fid = fd.GetId();
+                    if (fid == "=") {
+                        var cd = fd.GetParam(0) as Dsl.FunctionData;
+                        string valType = string.Empty;
+                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var vinfo = new ValueInfo { Type = valType, Value = val };
+
+                        if (null != cd && cd.IsBracketParamClass()) {
+                            string cid = cd.GetId();
+                            string ixType = "int";
+                            string ixStr = DoCalc(cd.GetParam(0), ref ixType);
+                            if (int.TryParse(ixStr, out var index)) {
+                                if (!cfg.SettingInfo.ArrayElementAssignments.TryGetValue(cid, out var elements)) {
+                                    elements = new Dictionary<int, ValueInfo>();
+                                    cfg.SettingInfo.ArrayElementAssignments.Add(cid, elements);
+                                }
+                                elements[index] = vinfo;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        private static void ParseObjectArrayMemberAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var fd = fp as Dsl.FunctionData;
+                if (null != fd) {
+                    string fid = fd.GetId();
+                    if (fid == "=") {
+                        var cd = fd.GetParam(0) as Dsl.FunctionData;
+                        string valType = string.Empty;
+                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var vinfo = new ValueInfo { Type = valType, Value = val };
+
+
+                        if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
+                            string cid = cd.LowerOrderFunction.GetId();
+                            string ixType = "int";
+                            string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                            string member = cd.GetParamId(0);
+                            if (int.TryParse(ixStr, out var index)) {
+                                if (!cfg.SettingInfo.ObjectArrayMemberAssignments.TryGetValue(cid, out var objects)) {
+                                    objects = new Dictionary<int, Dictionary<string, ValueInfo>>();
+                                    cfg.SettingInfo.ObjectArrayMemberAssignments.Add(cid, objects);
+                                }
+                                if (!objects.TryGetValue(index, out var objInfo)) {
+                                    objInfo = new Dictionary<string, ValueInfo>();
+                                    objects.Add(index, objInfo);
+                                }
+                                objInfo[member] = vinfo;
+                            }
+                        }
                     }
                 }
             }
@@ -1148,6 +1263,11 @@ namespace GlslRewriter
             internal static string s_DefMultiline = "True";
             internal static string s_DefExpandOnce = "True";
         }
+        internal class ValueInfo
+        {
+            internal string Type = string.Empty;
+            internal string Value = string.Empty;
+        }
         internal class SettingInfo
         {
             internal bool DebugMode = false;
@@ -1180,6 +1300,11 @@ namespace GlslRewriter
             internal Dictionary<string, HashSet<string>> InvalidatedObjectMembers = new Dictionary<string, HashSet<string>>();
             internal Dictionary<string, HashSet<int>> InvalidatedArrayElements = new Dictionary<string, HashSet<int>>();
             internal Dictionary<string, Dictionary<int, HashSet<string>>> InvalidatedObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
+
+            internal Dictionary<string, ValueInfo> VariableAssignments = new Dictionary<string, ValueInfo>();
+            internal Dictionary<string, Dictionary<string, ValueInfo>> ObjectMemberAssignments = new Dictionary<string, Dictionary<string, ValueInfo>>();
+            internal Dictionary<string, Dictionary<int, ValueInfo>> ArrayElementAssignments = new Dictionary<string, Dictionary<int, ValueInfo>>();
+            internal Dictionary<string, Dictionary<int, Dictionary<string, ValueInfo>>> ObjectArrayMemberAssignments = new Dictionary<string, Dictionary<int, Dictionary<string, ValueInfo>>>();
 
             internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();

@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel.Design;
 using System.Security;
+using static GlslRewriter.Config;
 
 namespace GlslRewriter
 {
@@ -301,12 +302,12 @@ namespace GlslRewriter
             lineList.AddRange(lines);
             if(Config.ActiveConfig.SettingInfo.GenerateExpressionList && s_ExpressionList.Count > 0) {
                 lineList.Add("/*{");
-                lineList.AddRange(s_ExpressionVariableInitList);
+                lineList.AddRange(s_ExpressionVariableDefinitionList);
                 lineList.AddRange(s_ExpressionList);
                 lineList.Add("}*/");
             }
             if(Config.ActiveConfig.SettingInfo.AutoSplitLevel>=0 && Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count > 0) {
-                lineList.Add("/*variable_comment{");
+                lineList.Add("/*split_variable_assignment{");
                 lineList.AddRange(Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables);
                 lineList.Add("}*/");
             }
@@ -912,7 +913,11 @@ namespace GlslRewriter
             var stmData = syntax as Dsl.StatementData;
             if (null != valData) {
                 string valId = valData.GetId();
-                if (valId == "return" || valId == "discard") {
+                if (valId == "return") {
+                    TransformReturn(valData, out insertBeforeOuter, out insertAfterOuter);
+                }
+                else if(valId == "discard") {
+                    TransformDiscard(valData, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (valId == "break") {
                     TransformBreak(valData, out insertBeforeOuter, out insertAfterOuter);
@@ -964,97 +969,8 @@ namespace GlslRewriter
 
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
-                    if (Config.CalcSettingForVariable(p, out var isVariableSetting, out var markValue, out var comment, out var maxLvlForExp, out var maxLenForExp, out var useMultilineComments, out var expandedOnlyOnce)) {
-                        int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
-                        int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
-                        string val = markValue ? cgcn.GetValue() : string.Empty;
-                        string expWithVal = markValue && comment ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, true, true)) : string.Empty;
-                        string exp = comment ? cgcn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, useMultilineComments, expandedOnlyOnce)) : string.Empty;
-                        string singleLineExp = exp;
-                        if (useMultilineComments) {
-                            singleLineExp = comment ? cgcn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true)) : string.Empty;
-
-                            if (!string.IsNullOrEmpty(val) || comment) {
-                                var sb = new StringBuilder(val.Length + exp.Length + 128);
-                                sb.Append("/* ");
-                                if (!string.IsNullOrEmpty(val))
-                                    sb.Append(val);
-                                if (!string.IsNullOrEmpty(val) && comment)
-                                    sb.Append("  <=>  ");
-                                if (comment) {
-                                    if (markValue) {
-                                        sb.AppendLine(expWithVal);
-                                        sb.AppendLine("<=>");
-                                    }
-                                    sb.AppendLine(singleLineExp);
-                                    sb.Append("<=>");
-                                    sb.Append(exp);
-                                }
-                                sb.AppendLine();
-                                sb.Append("*/");
-                                funcData.LastComments.Add(sb.ToString());
-                            }
-                        }
-                        else {
-                            if (!string.IsNullOrEmpty(val) || comment) {
-                                var sb = new StringBuilder(val.Length + exp.Length + 128);
-                                sb.Append("// ");
-                                if (!string.IsNullOrEmpty(val))
-                                    sb.Append(val);
-                                if (!string.IsNullOrEmpty(val) && comment)
-                                    sb.Append("  <=>  ");
-                                if (comment) {
-                                    if (markValue)
-                                        sb.AppendLine(expWithVal);
-                                    sb.Append("// ");
-                                    sb.Append(exp);
-                                }
-                                funcData.LastComments.Add(sb.ToString());
-                            }
-                        }
-
-                        if (comment && isVariableSetting && Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                            var line = s_ExpressionLineBuilder;
-                            if (!string.IsNullOrEmpty(val) || markValue) {
-                                line.Length = 0;
-                                line.Append("// ");
-                                if (!string.IsNullOrEmpty(val)) {
-                                    line.Append(val);
-                                }
-                                if (!string.IsNullOrEmpty(val) && markValue)
-                                    line.Append("  <=>  ");
-                                if (markValue) {
-                                    line.Append(expWithVal);
-                                }
-                                s_ExpressionList.Add(line.ToString());
-                            }
-
-                            string varExp = Config.CalcVariableExpression(p, out var vname);
-
-                            line.Length = 0;
-                            line.Append(varExp);
-                            line.Append(" = ");
-                            line.Append(singleLineExp);
-                            line.Append(";");
-                            s_ExpressionList.Add(line.ToString());
-
-                            if (!string.IsNullOrEmpty(vname)) {
-                                line.Length = 0;
-                                //phi变量需要反向搜索 _phi_ 子串来识别，这里不为phi变量引入变量定义，考虑到phi变量需要人工处理
-                                //有意让编译器报未定义变量可能更合适一些
-                                int len = vname.LastIndexOf('_');
-                                if (len > 0) {
-                                    string oriVarName = vname.Substring(0, len);
-                                    var vinfo = GetVarInfo(oriVarName);
-                                    if (null != vinfo) {
-                                        string type = vinfo.Type;
-                                        if (vinfo.Modifiers.Contains("precise"))
-                                            type = "precise " + vinfo.Type;
-                                        s_ExpressionVariableInitList.Add(type + " " + vname + ";");
-                                    }
-                                }
-                            }
-                        }
+                    if (Config.CalcSettingForVariable(p, out var isVariableSetting, out var markValue, out var markExp, out var maxLvlForExp, out var maxLenForExp, out var multiline, out var expandedOnlyOnce)) {
+                        GenerateValueAndExpression(funcData, p, cgcn, isVariableSetting, markValue, markExp, true, maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce);
                     }
                 }
                 else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!=" && funcId != "<=" && funcId != ">=") {
@@ -1415,12 +1331,21 @@ namespace GlslRewriter
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (ifFunc.IsHighOrder) {
+                int expListCt = s_ExpressionList.Count;
                 var lowerFunc = ifFunc.LowerOrderFunction;
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
+                if (null != semanticInfo.GraphNode) {
+                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                }
                 if (ifFunc.HaveStatement()) {
-                    var suffix = "_phi_" + GenUniqueNumber();
+                    var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     HashSet<string> setVars = new HashSet<string>();
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        ++s_Indent;
+                    }
                     PushBlock(true, false);
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(ifFunc);
@@ -1428,15 +1353,21 @@ namespace GlslRewriter
                         if (!setVars.Contains(vname))
                             setVars.Add(vname);
                         var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
+                        AddPhiVarAssignExpression(assignFunc);
                         ifFunc.AddParam(assignFunc);
                     }
                     PopBlock();
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        --s_Indent;
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                    }
                     //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
                     //2、更新各变量的别名为phi变量别名
                     insertBeforeOuter = new List<ISyntaxComponent>();
                     Debug.Assert(null != insertBeforeOuter);
                     foreach (var vname in setVars) {
                         var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                        AddPhiVarAssignExpression(assignFunc, ref expListCt);
                         insertBeforeOuter.Add(assignFunc);
 
                         var curAliasInfos = CurVarAliasInfos();
@@ -1453,15 +1384,24 @@ namespace GlslRewriter
         {
             insertBeforeOuter = null;
             insertAfterOuter = null;
-            var suffix = "_phi_" + GenUniqueNumber();
+            var suffix = c_PhiTagSeparator + GenUniqueNumber();
             var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
             HashSet<string> setVars = new HashSet<string>();
+            int expListCt = s_ExpressionList.Count;
             foreach (var valOrFunc in ifStatement.Functions) {
                 var f = valOrFunc.AsFunction;
                 if (null != f) {
                     if (f.IsHighOrder) {
                         var semanticInfo = new SemanticInfo();
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
+                        if (null != semanticInfo.GraphNode) {
+                            AddComputeGraphRootNode(semanticInfo.GraphNode);
+                            GenerateValueAndExpression(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false);
+                        }
+                    }
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        ++s_Indent;
                     }
                     PushBlock(true, false);
                     SetCurBlockPhiSuffix(suffix);
@@ -1471,9 +1411,14 @@ namespace GlslRewriter
                         if(!setVars.Contains(vname))
                             setVars.Add(vname);
                         var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
+                        AddPhiVarAssignExpression(assignFunc);
                         f.AddParam(assignFunc);
                     }
                     PopBlock();
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        --s_Indent;
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                    }
                 }
             }
             //1、多分支if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
@@ -1482,6 +1427,7 @@ namespace GlslRewriter
             Debug.Assert(null != insertBeforeOuter);
             foreach (var vname in setVars) {
                 var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                AddPhiVarAssignExpression(assignFunc, ref expListCt);
                 insertBeforeOuter.Add(assignFunc);
 
                 var curAliasInfos = CurVarAliasInfos();
@@ -1505,16 +1451,29 @@ namespace GlslRewriter
             insertAfterOuter = null;
             var semanticInfo = new SemanticInfo();
             if (forFunc.IsHighOrder) {
+                int expListCt = s_ExpressionList.Count;
                 var lowerFunc = forFunc.LowerOrderFunction;
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
+                if (null != semanticInfo.GraphNode) {
+                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                }
                 if (forFunc.HaveStatement()) {
-                    var suffix = "_phi_" + GenUniqueNumber();
+                    var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        ++s_Indent;
+                    }
                     PushBlock(true, true);
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(forFunc);
-                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
                     PopBlock();
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        --s_Indent;
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                    }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
                             foreach (var vd in pair.Value) {
@@ -1532,16 +1491,29 @@ namespace GlslRewriter
             insertAfterOuter = null;
             var semanticInfo = new SemanticInfo();
             if (whileFunc.IsHighOrder) {
+                int expListCt = s_ExpressionList.Count;
                 var lowerFunc = whileFunc.LowerOrderFunction;
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
+                if (null != semanticInfo.GraphNode) {
+                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                }
                 if (whileFunc.HaveStatement()) {
-                    var suffix = "_phi_" + GenUniqueNumber();
+                    var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        ++s_Indent;
+                    }
                     PushBlock(true, true);
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(whileFunc);
-                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
                     PopBlock();
+                    if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                        --s_Indent;
+                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                    }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
                             foreach (var vd in pair.Value) {
@@ -1563,13 +1535,22 @@ namespace GlslRewriter
             Debug.Assert(null != doFunc);
             Debug.Assert(null != whileFunc);
             if (doFunc.HaveStatement()) {
-                var suffix = "_phi_" + GenUniqueNumber();
+                int expListCt = s_ExpressionList.Count;
+                var suffix = c_PhiTagSeparator + GenUniqueNumber();
                 var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
+                if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                    s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "do {");
+                    ++s_Indent;
+                }
                 PushBlock(true, true);
                 SetCurBlockPhiSuffix(suffix);
                 TransformFunctionStatements(doFunc);
-                ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, out var newRefVarValDataOuter, out insertBeforeOuter);
+                ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
                 PopBlock();
+                if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                    --s_Indent;
+                    s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                }
                 if (null != newRefVarValDataOuter) {
                     foreach (var pair in newRefVarValDataOuter) {
                         foreach (var vd in pair.Value) {
@@ -1579,10 +1560,17 @@ namespace GlslRewriter
                 }
             }
             TransformGeneralCall(whileFunc, ref semanticInfo);
+            if (null != semanticInfo.GraphNode) {
+                AddComputeGraphRootNode(semanticInfo.GraphNode);
+                GenerateValueAndExpression(whileFunc, semanticInfo.GraphNode, true, true, true, true);
+            }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
         private static bool TransformBreak(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "break;");
+            }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
             insertBeforeOuter = new List<ISyntaxComponent>();
@@ -1595,6 +1583,9 @@ namespace GlslRewriter
         }
         private static bool TransformContinue(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "continue;");
+            }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
             insertBeforeOuter = new List<ISyntaxComponent>();
@@ -1602,6 +1593,24 @@ namespace GlslRewriter
             foreach (var vname in CurLoopSetVars()) {
                 var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), false);
                 insertBeforeOuter.Add(assignFunc);
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformDiscard(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "discard;");
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformReturn(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "return;");
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1642,7 +1651,7 @@ namespace GlslRewriter
             semanticInfo.ResultType = cgcn.Type;
         }
 
-        private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
+        private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, int expListCountBeforeLoop, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
         {
             newRefVarValDataOuter = new Dictionary<string, List<ValueData>>();
             insertBeforeOuter = new List<ISyntaxComponent>();
@@ -1661,9 +1670,11 @@ namespace GlslRewriter
                 //在循环结束前添加phi变量赋值
                 var assignFunc = BuildPhiVarAliasAssignment(vname, phiSuffix, CurVarAliasInfos(), true);
                 loopFunc.AddParam(assignFunc);
+                AddPhiVarAssignExpression(assignFunc);
 
                 //在循环体前添加phi变量赋值，这里有可能为外层循环引入未决别名
                 var assignFunc2 = BuildPhiVarAliasAssignment(vname, phiSuffix, oldAliasInfos, false, out var refVarData);
+                AddPhiVarAssignExpression(assignFunc2, ref expListCountBeforeLoop);
                 if(newRefVarValDataOuter.TryGetValue(vname, out var list)) {
                     if (list.Contains(refVarData))
                         list.Add(refVarData);
@@ -1687,7 +1698,8 @@ namespace GlslRewriter
             assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
             assignFunc.SetOperatorParamClass();
             assignFunc.SetSemiColonSeparator();
-            assignFunc.AddParam(new Dsl.ValueData(vname + phiSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN));
+            var phiVarName = vname + phiSuffix;
+            assignFunc.AddParam(new Dsl.ValueData(phiVarName, Dsl.AbstractSyntaxComponent.ID_TOKEN));
             if (aliasInfos.TryGetValue(vname, out var aliasInfo)) {
                 refVarValDataOuter = new Dsl.ValueData(vname + aliasInfo.AliasSuffix, Dsl.AbstractSyntaxComponent.ID_TOKEN);
                 if (updateVarAliasInfo) {
@@ -1699,7 +1711,161 @@ namespace GlslRewriter
                 refVarValDataOuter = new Dsl.ValueData(vname, Dsl.AbstractSyntaxComponent.ID_TOKEN);
             }
             assignFunc.AddParam(refVarValDataOuter);
+
+            string nvname = refVarValDataOuter.GetId();
+            if (!nvname.Contains(c_PhiTagSeparator)) {
+                Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
+            }
             return assignFunc;
+        }
+        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc)
+        {
+            int index = -1;
+            AddPhiVarAssignExpression(assignFunc, ref index);
+        }
+        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc, ref int index)
+        {
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                var key = assignFunc.GetParamId(0);
+                var val = assignFunc.GetParamId(1);
+                s_ExpressionLineBuilder.Length = 0;
+                s_ExpressionLineBuilder.Append(Literal.GetIndentString(s_Indent));
+                if (Config.ActiveConfig.SettingInfo.CommentOutPhiVarDefinitionAndAssignment)
+                    s_ExpressionLineBuilder.Append("//");
+                s_ExpressionLineBuilder.Append(key);
+                s_ExpressionLineBuilder.Append(" = ");
+                s_ExpressionLineBuilder.Append(val);
+                s_ExpressionLineBuilder.Append(";");
+                var line = s_ExpressionLineBuilder.ToString();
+                if (index >= 0) {
+                    s_ExpressionList.Insert(index, line);
+                    ++index;
+                }
+                else {
+                    s_ExpressionList.Add(line);
+                }
+            }
+        }
+        private static void GenerateValueAndExpression(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon)
+        {
+            string v1str = SplitInfoForVariable.s_DefMaxLvl;
+            string v2str = SplitInfoForVariable.s_DefMaxLen;
+            string v3str = SplitInfoForVariable.s_DefMultiline;
+            string v4str = SplitInfoForVariable.s_DefExpandOnce;
+            if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
+                && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+                GenerateValueAndExpression(funcData, null, cgn, isVariableSetting, markValue, markExp, addSemiColon, lvlForExp, lenForExp, ml, once);
+            }
+        }
+        private static void GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce)
+        {
+            int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
+            int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
+            string val = markValue ? cgn.GetValue() : string.Empty;
+            string expWithVal = markValue && markExp ? cgn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, true, true)) : string.Empty;
+            string exp = markExp ? cgn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce)) : string.Empty;
+            string singleLineExp = exp;
+            if (multiline) {
+                singleLineExp = markExp ? cgn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true)) : string.Empty;
+
+                if (!string.IsNullOrEmpty(val) || markExp) {
+                    var sb = new StringBuilder(val.Length + exp.Length + 128);
+                    sb.Append("/* ");
+                    if (!string.IsNullOrEmpty(val))
+                        sb.Append(val);
+                    if (!string.IsNullOrEmpty(val) && markExp)
+                        sb.Append("  <=>  ");
+                    if (markExp) {
+                        if (markValue) {
+                            sb.AppendLine(expWithVal);
+                            sb.AppendLine("<=>");
+                        }
+                        sb.AppendLine(singleLineExp);
+                        sb.Append("<=>");
+                        sb.Append(exp);
+                    }
+                    sb.AppendLine();
+                    sb.Append("*/");
+                    funcData.Comments.Add(sb.ToString());
+                }
+            }
+            else {
+                if (!string.IsNullOrEmpty(val) || markExp) {
+                    var sb = new StringBuilder(val.Length + exp.Length + 128);
+                    sb.Append("// ");
+                    if (!string.IsNullOrEmpty(val))
+                        sb.Append(val);
+                    if (!string.IsNullOrEmpty(val) && markExp)
+                        sb.Append("  <=>  ");
+                    if (markExp) {
+                        if (markValue)
+                            sb.AppendLine(expWithVal);
+                        sb.Append("// ");
+                        sb.Append(exp);
+                    }
+                    funcData.Comments.Add(sb.ToString());
+                }
+            }
+
+            if (markExp && isVariableSetting && Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                var line = s_ExpressionLineBuilder;
+                if (!string.IsNullOrEmpty(val) || markValue) {
+                    line.Length = 0;
+                    line.Append(Literal.GetIndentString(s_Indent));
+                    line.Append("// ");
+                    if (!string.IsNullOrEmpty(val)) {
+                        line.Append(val);
+                    }
+                    if (!string.IsNullOrEmpty(val) && markValue)
+                        line.Append("  <=>  ");
+                    if (markValue) {
+                        line.Append(expWithVal);
+                    }
+                    s_ExpressionList.Add(line.ToString());
+                }
+
+                if (null != leftAssignDsl) {
+                    string varExp = Config.CalcVariableExpression(leftAssignDsl, out var vname);
+
+                    line.Length = 0;
+                    line.Append(Literal.GetIndentString(s_Indent));
+                    line.Append(varExp);
+                    line.Append(" = ");
+                    line.Append(singleLineExp);
+                    if (addSemiColon)
+                        line.Append(";");
+                    s_ExpressionList.Add(line.ToString());
+
+                    if (!string.IsNullOrEmpty(vname)) {
+                        line.Length = 0;
+                        int len = vname.LastIndexOf(c_AliasSeparator);
+                        if (len > 0) {
+                            string oriVarName = vname.Substring(0, len);
+                            var vinfo = GetVarInfo(oriVarName);
+                            if (null != vinfo && null != vinfo.OwnFunc) {
+                                line.Append("\t");
+                                if (vinfo.Modifiers.Contains("precise")) {
+                                    line.Append("precise ");
+                                }
+                                string type = vinfo.Type;
+                                line.Append(type);
+                                line.Append(" ");
+                                line.Append(vname);
+                                line.Append(";");
+                                s_ExpressionVariableDefinitionList.Add(line.ToString());
+                            }
+                        }
+                    }
+                }
+                else {
+                    line.Length = 0;
+                    line.Append(Literal.GetIndentString(s_Indent));
+                    line.Append(singleLineExp);
+                    if (addSemiColon)
+                        line.Append(";");
+                    s_ExpressionList.Add(line.ToString());
+                }
+            }
         }
 
         //变量的SSA处理
@@ -1858,11 +2024,11 @@ namespace GlslRewriter
                         if (null != vinfo.OwnFunc) {
                             if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                                 int aliasIndex = GetVarAliasIndex(vid);
-                                string nid = vid + "_" + (aliasIndex + 1).ToString();
+                                string nid = vid + c_AliasSeparator + (aliasIndex + 1).ToString();
                                 valData.SetId(nid);
                             }
                             else {
-                                valData.SetId(vid + "_0");
+                                valData.SetId(vid + c_AliasSeparator + "0");
                             }
                             s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         }
@@ -1973,10 +2139,10 @@ namespace GlslRewriter
                 string vid = s_VarAliasInfoUpdateQueue.Dequeue();
                 if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                     int aliasIndex = IncVarAliasIndex(vid);
-                    info.AliasSuffix = "_" + aliasIndex.ToString();
+                    info.AliasSuffix = c_AliasSeparator + aliasIndex.ToString();
                 }
                 else {
-                    info = new VarAliasInfo { AliasSuffix = "_0" };
+                    info = new VarAliasInfo { AliasSuffix = c_AliasSeparator + "0" };
                     CurVarAliasInfos().Add(vid, info);
                 }
             }
@@ -1990,6 +2156,24 @@ namespace GlslRewriter
             if (null == node) {
                 var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, phiVarAlias);
                 AddComputeGraphVarNode(cgvn);
+
+                if (null != vinfo.OwnFunc) {
+                    //为phi变量引入的变量定义注释掉，考虑到phi变量需要人工处理
+                    //有意让编译器报未定义变量可能更合适一些
+                    var line = s_ExpressionLineBuilder;
+                    line.Length = 0;
+                    line.Append("\t");
+                    if (Config.ActiveConfig.SettingInfo.CommentOutPhiVarDefinitionAndAssignment)
+                        line.Append("//");
+                    if (vinfo.Modifiers.Contains("precise"))
+                        line.Append("precise ");
+                    string type = vinfo.Type;
+                    line.Append(type);
+                    line.Append(" ");
+                    line.Append(phiVarAlias);
+                    line.Append(";");
+                    s_ExpressionVariableDefinitionList.Add(line.ToString());
+                }
             }
         }
 
@@ -3288,8 +3472,9 @@ namespace GlslRewriter
 
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         internal static StringBuilder s_ExpressionLineBuilder = new StringBuilder();
-        internal static SortedSet<string> s_ExpressionVariableInitList = new SortedSet<string>();
+        internal static SortedSet<string> s_ExpressionVariableDefinitionList = new SortedSet<string>();
         internal static List<string> s_ExpressionList = new List<string>();
+        internal static int s_Indent = 1;
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();
         private static SortedDictionary<string, StructInfo> s_StructInfos = new SortedDictionary<string, StructInfo>();
@@ -3314,6 +3499,8 @@ namespace GlslRewriter
         internal static bool s_IsVsShader = false;
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
+        internal const string c_PhiTagSeparator = "_phi_";
+        internal const string c_AliasSeparator = "_";
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
         private static HashSet<string> s_VertExts = new HashSet<string> { ".vert", ".vs", ".vsh" };

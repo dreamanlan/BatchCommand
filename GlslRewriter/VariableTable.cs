@@ -1708,7 +1708,7 @@ namespace GlslRewriter
         {
             bool exists = false;
             varVal = string.Empty;
-            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+            if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
@@ -1803,9 +1803,9 @@ namespace GlslRewriter
             varVal = string.Empty;
             string name = left.VarName;
             string type = left.Type;
-            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+            if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
-            if(Config.ActiveConfig.SettingInfo.InvalidObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
+            if(Config.ActiveConfig.SettingInfo.InvalidatedObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
                 return false;
             }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
@@ -1846,9 +1846,9 @@ namespace GlslRewriter
             }
             string name = left.VarName;
             string type = left.Type;
-            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+            if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
-            if (Config.ActiveConfig.SettingInfo.InvalidArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
+            if (Config.ActiveConfig.SettingInfo.InvalidatedArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
                 return false;
             }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
@@ -1945,15 +1945,15 @@ namespace GlslRewriter
             }
             string name = left.VarName;
             string type = left.Type;
-            if (Config.ActiveConfig.SettingInfo.InvalidVariables.Contains(name))
+            if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
-            if (Config.ActiveConfig.SettingInfo.InvalidArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
-                return false;
-            }
-            if (Config.ActiveConfig.SettingInfo.InvalidObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
+            if (Config.ActiveConfig.SettingInfo.InvalidatedArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
                 return false;
             }
-            if (Config.ActiveConfig.SettingInfo.InvalidObjectArrayMembers.TryGetValue(name, out var list) && list.TryGetValue(index, out var hashSet) && hashSet.Contains(m)) {
+            if (Config.ActiveConfig.SettingInfo.InvalidatedObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
+                return false;
+            }
+            if (Config.ActiveConfig.SettingInfo.InvalidatedObjectArrayMembers.TryGetValue(name, out var list) && list.TryGetValue(index, out var hashSet) && hashSet.Contains(m)) {
                 return false;
             }
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);

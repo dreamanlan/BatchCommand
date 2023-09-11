@@ -732,6 +732,22 @@ namespace GlslRewriter
                     cnode41.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode41);
                     sb.Append(")");
                 }
+                else if(Operator == "for") {
+                    sb.Append("for");
+                    sb.Append("(");
+                    int i = 0;
+                    for(; i < PrevNodes.Count; ++i) {
+                        var p = PrevNodes[i];
+                        if (i > 0)
+                            sb.Append("; ");
+                        p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    }
+                    for (; i < 3; ++i) {
+                        if (i > 0)
+                            sb.Append("; ");
+                    }
+                    sb.Append(")");
+                }
                 else {
                     bool withValue = false;
                     if(setting.WithValue && (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (Operator == "utof" || Operator== "uintBitsToFloat")

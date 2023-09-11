@@ -18,6 +18,7 @@ vs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        //comment_out_phi_var_definition_and_assignment;
 
         auto_split(15){
             split_on("exp2");

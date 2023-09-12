@@ -10,10 +10,11 @@ namespace GlslRewriter
 {
     public static class Calculator
     {
-        public static bool CalcFunc(string func, IList<string> args, ref string type, out string val)
+        public static bool CalcFunc(string func, IList<string> args, ref string type, out string val, out bool supported)
         {
             bool succ = false;
             val = string.Empty;
+            supported = true;
             if (func == "bool") {
                 if (TryParseBool(args[0], out var v)) {
                     val = v.ToString();
@@ -27,14 +28,20 @@ namespace GlslRewriter
                 }
             }
             else if (func == "int") {
-                if (long.TryParse(args[0], out var v)) {
-                    val = v.ToString();
+                if (TryParseNumeric(args[0], out var isFloat, out var dval, out var lval)) {
+                    if (isFloat)
+                        val = ((long)dval).ToString();
+                    else
+                        val = lval.ToString();
                     succ = true;
                 }
             }
             else if (func == "uint") {
-                if (ulong.TryParse(args[0], out var v)) {
-                    val = v.ToString();
+                if (TryParseNumeric(args[0], out var isFloat, out var dval, out var lval)) {
+                    if (isFloat)
+                        val = ((long)dval).ToString();
+                    else
+                        val = ((ulong)lval).ToString();
                     succ = true;
                 }
             }
@@ -520,6 +527,40 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if (func == "bitfieldExtract") {
+                if (uint.TryParse(args[0], out var uval) && int.TryParse(args[1], out var offset) && int.TryParse(args[2], out var bits)) {
+                    if (offset >= 0 && bits >= 0 && offset + bits <= sizeof(uint)) {
+                        if (bits == 0) {
+                            val = "0";
+                        }
+                        else {
+                            int rshift = (32 - (offset + bits));
+                            uint v = (uval >> rshift) & (0xffffffff >> rshift);
+                            val = v.ToString();
+                        }
+                        succ = true;
+                    }
+                }
+            }
+            else if(func== "bitfieldInsert") {
+                if (uint.TryParse(args[0], out var uval) && uint.TryParse(args[1], out var insert) && int.TryParse(args[2], out var offset) && int.TryParse(args[3], out var bits)) {
+                    if (offset >= 0 && bits>=0 && offset + bits <= sizeof(uint)) {
+                        if (bits == 0) {
+                            val = uval.ToString();
+                        }
+                        else {
+                            int rshift = (32 - (offset + bits));
+                            uint v = (insert >> rshift) & (0xffffffff >> rshift);
+                            int lshift = rshift + bits;
+                            int lshift2 = rshift;
+                            int rshift2 = offset + bits;
+                            v = (uval & ((0xffffffff << lshift) | (0xffffffff >> rshift2))) | (v << lshift2);
+                            val = v.ToString();
+                        }
+                        succ = true;
+                    }
+                }
+            }
             else if (func == "isinf") {
                 if (float.TryParse(args[0], out var v)) {
                     val = float.IsInfinity(v).ToString();
@@ -732,6 +773,9 @@ namespace GlslRewriter
                     }
                     succ = true;
                 }
+            }
+            else {
+                supported = false;
             }
             return succ;
         }

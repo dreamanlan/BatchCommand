@@ -353,7 +353,7 @@ namespace GlslRewriter
                     ret = true;
                 }
             }
-            else if(Calculator.CalcFunc(func, args, ref type, out val)) {
+            else if(Calculator.CalcFunc(func, args, ref type, out val, out var supported)) {
                 ret = true;
             }
             else if (ActiveConfig.Calculators.TryGetValue(func, out var infos)) {
@@ -373,6 +373,9 @@ namespace GlslRewriter
                         break;
                     }
                 }
+            }
+            else if (!supported) {
+                Console.WriteLine("api '{0}' is unsupported, please support it.", func);
             }
             return ret;
         }
@@ -1235,7 +1238,7 @@ namespace GlslRewriter
                         string argType = string.Empty;
                         args.Add(DoCalc(p, ref argType));
                     }
-                    if (Calculator.CalcFunc(func, args, ref type, out var val))
+                    if (Calculator.CalcFunc(func, args, ref type, out var val, out var supported))
                         return val;
                 }
                 else if(fd.IsOperatorParamClass()) {

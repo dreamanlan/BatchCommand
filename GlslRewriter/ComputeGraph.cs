@@ -446,7 +446,7 @@ namespace GlslRewriter
                 }
                 else {
                     if (setting.VariableExpandedOnlyOnce && usedVars.TryGetValue(VarName, out var varMaxLevel)) {
-                        if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitLevel <= varMaxLevel - curLevel) {
+                        if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitLevelForRepeatExpression <= varMaxLevel - curLevel) {
                             Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
                         }
                         if (withValue) {

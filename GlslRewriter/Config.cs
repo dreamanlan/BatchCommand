@@ -763,23 +763,35 @@ namespace GlslRewriter
 
             foreach (var fp in dslCfg.Params) {
                 var fd = fp as Dsl.FunctionData;
-                if (null != fd && fd.IsParenthesisParamClass()) {
+                if (null != fd) {
                     string sid = fd.GetId();
-                    if (sid == "split_on") {
-                        string v1type = "int";
-                        string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
-                        string v2type = "int";
-                        string v2str = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1), ref v2type);
-                        if(!string.IsNullOrEmpty(v1str) && int.TryParse(v2str, out var lvl)) {
-                            cfg.SettingInfo.AutoSplitOnFuncs[v1str] = lvl;
+                    if (sid == "=") {
+                        string key = fd.GetParamId(0);
+                        string vtype = "int";
+                        string vstr = DoCalc(fd.GetParam(1), ref vtype);
+                        if (key == "split_level_for_repeat_expression") {
+                            if (int.TryParse(vstr, out var v) && v > 0) {
+                                cfg.SettingInfo.AutoSplitLevelForRepeatExpression = v;
+                            }
                         }
                     }
-                    else if (sid == "skip") {
-                        string v1type = "int";
-                        string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
-                        if (!string.IsNullOrEmpty(v1str)) {
-                            if (!cfg.SettingInfo.AutoSplitSkips.Contains(v1str)) {
-                                cfg.SettingInfo.AutoSplitSkips.Add(v1str);
+                    else if (fd.IsParenthesisParamClass()) {
+                        if (sid == "split_on") {
+                            string v1type = "int";
+                            string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
+                            string v2type = "int";
+                            string v2str = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1), ref v2type);
+                            if (!string.IsNullOrEmpty(v1str) && int.TryParse(v2str, out var lvl)) {
+                                cfg.SettingInfo.AutoSplitOnFuncs[v1str] = lvl;
+                            }
+                        }
+                        else if (sid == "skip") {
+                            string v1type = "int";
+                            string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
+                            if (!string.IsNullOrEmpty(v1str)) {
+                                if (!cfg.SettingInfo.AutoSplitSkips.Contains(v1str)) {
+                                    cfg.SettingInfo.AutoSplitSkips.Add(v1str);
+                                }
                             }
                         }
                     }
@@ -1315,6 +1327,7 @@ namespace GlslRewriter
             internal int MaxIterations = 32;
 
             internal int AutoSplitLevel = -1;
+            internal int AutoSplitLevelForRepeatExpression = 6;
             internal Dictionary<string, int> AutoSplitOnFuncs = new Dictionary<string, int>();
             internal HashSet<string> AutoSplitSkips = new HashSet<string>();
 

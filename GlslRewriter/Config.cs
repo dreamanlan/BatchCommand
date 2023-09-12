@@ -165,8 +165,14 @@ namespace GlslRewriter
     }
     internal static class Config
     {
+        internal static void Reset()
+        {
+            s_ShaderConfigs.Clear();
+            s_ActiveConfig = null;
+        }
         internal static void LoadConfig(string cfgFilePath, string tmpDir)
         {
+            Reset();
             var cfgFile = new Dsl.DslFile();
             if (cfgFile.Load(cfgFilePath, msg => { Console.WriteLine(msg); })) {
                 foreach (var cfg in cfgFile.DslInfos) {
@@ -394,9 +400,26 @@ namespace GlslRewriter
                     else if (id == "calculator") {
                         ParseCalculator(cfgInfo, pfd);
                     }
+                    else if (id == "code_block") {
+                        ParseCodeBlock(cfgInfo, pfd);
+                    }
                 }
             }
             s_ShaderConfigs[shaderType] = cfgInfo;
+        }
+        private static void ParseCodeBlock(ShaderConfig cfgInfo, Dsl.FunctionData dslCfg)
+        {
+            var callCfg = dslCfg;
+            if (dslCfg.IsHighOrder)
+                callCfg = dslCfg.LowerOrderFunction;
+
+            string key = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? "global" : callCfg.GetParamId(0).Trim();
+
+            if (dslCfg.HaveExternScript()) {
+                string code = dslCfg.GetParamId(0);
+
+                cfgInfo.CodeBlocks[key] = code;
+            }
         }
         private static void ParseSetting(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
@@ -489,6 +512,11 @@ namespace GlslRewriter
                             else if(key== "string_buffer_capacity_surplus") {
                                 if (int.TryParse(vstr, out var v)) {
                                     cfg.SettingInfo.StringBufferCapacitySurplus = v;
+                                }
+                            }
+                            else if (key == "max_iterations") {
+                                if (int.TryParse(vstr, out var v)) {
+                                    cfg.SettingInfo.MaxIterations = v;
                                 }
                             }
                         }
@@ -725,7 +753,7 @@ namespace GlslRewriter
                 callCfg = dslCfg.LowerOrderFunction;
 
             string levelType = "int";
-            string levelStr = callCfg.HaveStatement() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0), ref levelType);
+            string levelStr = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0), ref levelType);
             if (int.TryParse(levelStr, out var splitLevel)) {
                 cfg.SettingInfo.AutoSplitLevel = splitLevel;
             }
@@ -1281,6 +1309,7 @@ namespace GlslRewriter
             internal int ComputeGraphNodesCapacity = 10240;
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;
+            internal int MaxIterations = 32;
 
             internal int AutoSplitLevel = -1;
             internal Dictionary<string, int> AutoSplitOnFuncs = new Dictionary<string, int>();
@@ -1397,6 +1426,7 @@ namespace GlslRewriter
             internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
+            internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
         }
 
         internal static ShaderConfig ActiveConfig

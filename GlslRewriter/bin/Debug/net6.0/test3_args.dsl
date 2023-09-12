@@ -396,22 +396,22 @@ vs
             u2_0_1,
         };
     };
-    vs_attr("d:/UC/cloud_1/vs_in.csv", "d:/UC/cloud_1/vs_out.csv", 0);
-    uniform("d:/UC/cloud_1/vs_cbuf8.csv", "uvec4"){
+    vs_attr("d:/UC/vs_in.csv", "d:/UC/vs_out.csv", 0);
+    uniform("d:/UC/vs_cbuf8.csv", "uvec4"){
         add_range(0,7);
         add(29,30);
     };
-    uniform("d:/UC/cloud_1/vs_cbuf9.csv", "uvec4"){
+    uniform("d:/UC/vs_cbuf9.csv", "uvec4"){
         add(11,12,16,141);
         add_range(113,116);
     };
-    uniform("d:/UC/cloud_1/vs_cbuf10.csv", "uvec4"){
+    uniform("d:/UC/vs_cbuf10.csv", "uvec4"){
         add(0,2,3);
     };
-    uniform("d:/UC/cloud_1/vs_cbuf13.csv", "uvec4"){
+    uniform("d:/UC/vs_cbuf13.csv", "uvec4"){
         add(6);
     };
-    uniform("d:/UC/cloud_1/vs_cbuf15.csv", "uvec4"){
+    uniform("d:/UC/vs_cbuf15.csv", "uvec4"){
         add(1,54,55,57,60,61);
         add_range(22,28);
     };
@@ -421,64 +421,6 @@ vs
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
     };
-    code_block
-    {:
-#version 460
-#pragma optionNV(fastmath off)
-#extension GL_ARB_separate_shader_objects : enable
-
-out gl_PerVertex {
-    vec4 gl_Position;
-};
-layout(location = 0) in vec4 in_vertex; //顶点坐标（位于xy平面，z始终为0，w为1）
-layout(location = 1) in vec4 in_texcoord; //UV（xy是UV，z是从6点开始逆时针方向的顶点序号，中心点为12，w为1）
-layout(location = 4) in vec4 in_attr4; //固定值 277.38879	-253.98657	-1225.84583	1000 （xyzw全用）
-layout(location = 5) in vec4 in_attr5; //固定值 0	0	0	1060.5 （只用w）
-layout(location = 6) in vec4 in_attr6; //固定值 256.74911	175.44524	175.44524	1 (用xyz)
-layout(location = 7) in vec4 in_attr7; //固定值 0.33394	0.62269	0.01691	0.7787 （xyzw全用）
-layout(location = 9) in vec4 in_attr9; //固定值 1	0	0	287.3111 （xyzw全用）
-layout(location = 10) in vec4 in_attr10; //固定值 0	1	0	1522.14368 （xyzw全用）
-layout(location = 11) in vec4 in_attr11; //固定值 0	0	1	1396.66956 （xyzw全用）
-
-layout(location = 0) out vec4 out_attr0; //只写w
-layout(location = 1) out vec4 out_attr1; //xyzw全写
-layout(location = 2) out vec4 out_attr2; //xyzw全写
-layout(location = 3) out vec4 out_attr3; //只写x
-layout(location = 4) out vec4 out_attr4; //写xyz
-layout(location = 5) out vec4 out_attr5; //只写y
-layout(location = 6) out vec4 out_attr6; //只写x
-layout(location = 7) out vec4 out_attr7; //写xy
-layout(location = 8) out vec4 out_attr8; //写xz
-layout(location = 9) out vec4 out_attr9; //xyzw全写
-layout(location = 10) out vec4 out_attr10; //xyzw全写
-layout(location = 11) out vec4 out_attr11; //xyzw全写
-
-layout(std140, binding = 0) uniform vs_cbuf_8 {
-    uvec4 vs_cbuf8[4096];
-};
-layout(std140, binding = 1) uniform vs_cbuf_9 {
-    uvec4 vs_cbuf9[4096];
-};
-layout(std140, binding = 2) uniform vs_cbuf_10 {
-    uvec4 vs_cbuf10[4096];
-};
-layout(std140, binding = 3) uniform vs_cbuf_13 {
-    uvec4 vs_cbuf13[4096];
-};
-layout(std140, binding = 4) uniform vs_cbuf_15 {
-    uvec4 vs_cbuf15[4096];
-};
-
-layout(binding = 0) uniform sampler2D tex0; //256*13
-layout(binding = 1) uniform sampler2D tex1; //256*256
-layout(binding = 2) uniform sampler2D tex2; //256*256
-
-#define ftoi floatBitsToInt
-#define ftou floatBitsToUint
-#define itof intBitsToFloat
-#define utof uintBitsToFloat
-
-    :};
 };
 ps
 {
@@ -549,7 +491,7 @@ ps
             pf_6_1,
         };
     };
-    ps_attr("d:/UC/cloud_1/vs_out.csv", 0){
+    ps_attr("d:/UC/vs_out.csv", 0){
         map_in_attr("out_attr0","in_attr0");
         map_in_attr("out_attr1","in_attr1");
         map_in_attr("out_attr2","in_attr2");
@@ -564,13 +506,13 @@ ps
         map_in_attr("out_attr11","in_attr11");
         remove_in_attr("gl_Position");
     };
-    uniform("d:/UC/cloud_1/fs_cbuf8.csv", "uvec4"){
+    uniform("d:/UC/fs_cbuf8.csv", "uvec4"){
         add(29,30);
     };
-    uniform("d:/UC/cloud_1/fs_cbuf9.csv", "uvec4"){
+    uniform("d:/UC/fs_cbuf9.csv", "uvec4"){
         add(139,140,189,190);
     };
-    uniform("d:/UC/cloud_1/fs_cbuf15.csv", "uvec4"){
+    uniform("d:/UC/fs_cbuf15.csv", "uvec4"){
         add(1,25,26,28,42,43,44,57);
     };
     calculator
@@ -581,47 +523,6 @@ ps
         texture(*,*) = vec4(0.5,0.5,0.5,0.75);
         textureQueryLod(*,*) = vec2(4,1);
     };
-    code_block("global")
-    {:
-#version 460
-#pragma optionNV(fastmath off)
-#extension GL_ARB_separate_shader_objects : enable
-
-layout(location = 0) in vec4 in_attr0;
-layout(location = 1) in vec4 in_attr1;
-layout(location = 2) in vec4 in_attr2;
-layout(location = 3) in vec4 in_attr3;
-layout(location = 4) in vec4 in_attr4;
-layout(location = 5) flat in vec4 in_attr5;
-layout(location = 6) flat in vec4 in_attr6;
-layout(location = 7) in vec4 in_attr7;
-layout(location = 8) in vec4 in_attr8;
-layout(location = 9) in vec4 in_attr9;
-layout(location = 10) in vec4 in_attr10;
-layout(location = 11) in vec4 in_attr11;
-
-layout(location = 0) out vec4 frag_color0;
-
-layout(std140, binding = 5) uniform fs_cbuf_8 {
-    uvec4 fs_cbuf8[4096];
-};
-layout(std140, binding = 6) uniform fs_cbuf_9 {
-    uvec4 fs_cbuf9[4096];
-};
-layout(std140, binding = 7) uniform fs_cbuf_15 {
-    uvec4 fs_cbuf15[4096];
-};
-
-layout(binding = 3) uniform sampler2D tex3; //64*64
-layout(binding = 4) uniform sampler2DArray tex4; //64*64
-layout(binding = 5) uniform sampler2D tex5; //512*512
-layout(binding = 6) uniform sampler2D depthTex;
-
-#define ftoi floatBitsToInt
-#define ftou floatBitsToUint
-#define itof intBitsToFloat
-#define utof uintBitsToFloat
-    :};
 };
 cs
 {

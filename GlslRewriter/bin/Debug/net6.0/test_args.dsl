@@ -18,7 +18,6 @@ vs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
-        comment_out_phi_var_definition_and_assignment;
 
         auto_split(15){
             split_on("exp2");
@@ -364,20 +363,27 @@ vs
             u_0_7,
             u_0_8,
             u_0_9,
+            u_0_phi_11,
+            u_0_phi_15,
+            u_0_phi_4,
             u_1_3,
             u_1_4,
+            u_1_phi_16,
             u_2_0,
             u_2_1,
             u_2_2,
             u_2_3,
             u_2_4,
             u_2_5,
+            u_2_phi_2,
             u_3_0,
             u_3_1,
             u_3_2,
             u_3_3,
             u_3_4,
             u_3_5,
+            u_3_phi_15,
+            u_3_phi_9,
             u_3,
             u_4_0,
             u_4_1,

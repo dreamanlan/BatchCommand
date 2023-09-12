@@ -302,7 +302,16 @@ namespace GlslRewriter
             lineList.AddRange(lines);
             if(Config.ActiveConfig.SettingInfo.GenerateExpressionList && s_ExpressionList.Count > 0) {
                 lineList.Add("/*{");
-                lineList.AddRange(s_ExpressionVariableDefinitionList);
+                var line = s_ExpressionLineBuilder;
+                foreach (var pair in Config.ActiveConfig.SettingInfo.UsedVariables) {
+                    line.Length = 0;
+                    line.Append("\t");
+                    line.Append(pair.Value);
+                    line.Append(" ");
+                    line.Append(pair.Key);
+                    line.Append(";");
+                    lineList.Add(line.ToString());
+                }
                 lineList.AddRange(s_ExpressionList);
                 lineList.Add("}*/");
             }
@@ -1712,9 +1721,12 @@ namespace GlslRewriter
             }
             assignFunc.AddParam(refVarValDataOuter);
 
-            string nvname = refVarValDataOuter.GetId();
-            if (!nvname.Contains(c_PhiTagSeparator)) {
-                Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
+            //确定使用的phi变量标记给它赋值的变量为需要拆分表达式的变量（这需要多次生成代码才能标记，不过这样能避免生成多余的赋值语句）
+            if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarName)) {
+                string nvname = refVarValDataOuter.GetId();
+                if (!nvname.Contains(c_PhiTagSeparator)) {
+                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
+                }
             }
             return assignFunc;
         }
@@ -1728,21 +1740,23 @@ namespace GlslRewriter
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 var key = assignFunc.GetParamId(0);
                 var val = assignFunc.GetParamId(1);
-                s_ExpressionLineBuilder.Length = 0;
-                s_ExpressionLineBuilder.Append(Literal.GetIndentString(s_Indent));
-                if (Config.ActiveConfig.SettingInfo.CommentOutPhiVarDefinitionAndAssignment)
-                    s_ExpressionLineBuilder.Append("//");
-                s_ExpressionLineBuilder.Append(key);
-                s_ExpressionLineBuilder.Append(" = ");
-                s_ExpressionLineBuilder.Append(val);
-                s_ExpressionLineBuilder.Append(";");
-                var line = s_ExpressionLineBuilder.ToString();
-                if (index >= 0) {
-                    s_ExpressionList.Insert(index, line);
-                    ++index;
-                }
-                else {
-                    s_ExpressionList.Add(line);
+                //确定使用的phi变量生成赋值语句
+                if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(key)) {
+                    var line = s_ExpressionLineBuilder;
+                    line.Length = 0;
+                    line.Append(Literal.GetIndentString(s_Indent));
+                    line.Append(key);
+                    line.Append(" = ");
+                    line.Append(val);
+                    line.Append(";");
+                    var lineStr = line.ToString();
+                    if (index >= 0) {
+                        s_ExpressionList.Insert(index, lineStr);
+                        ++index;
+                    }
+                    else {
+                        s_ExpressionList.Add(lineStr);
+                    }
                 }
             }
         }
@@ -1837,22 +1851,15 @@ namespace GlslRewriter
                     s_ExpressionList.Add(line.ToString());
 
                     if (!string.IsNullOrEmpty(vname)) {
-                        line.Length = 0;
                         int len = vname.LastIndexOf(c_AliasSeparator);
                         if (len > 0) {
                             string oriVarName = vname.Substring(0, len);
                             var vinfo = GetVarInfo(oriVarName);
                             if (null != vinfo && null != vinfo.OwnFunc) {
-                                line.Append("\t");
-                                if (vinfo.Modifiers.Contains("precise")) {
-                                    line.Append("precise ");
-                                }
                                 string type = vinfo.Type;
-                                line.Append(type);
-                                line.Append(" ");
-                                line.Append(vname);
-                                line.Append(";");
-                                s_ExpressionVariableDefinitionList.Add(line.ToString());
+                                if (vinfo.Modifiers.Contains("precise"))
+                                    type = "precise " + type;
+                                Config.ActiveConfig.SettingInfo.AddUsedVariable(vname, type);
                             }
                         }
                     }
@@ -2158,21 +2165,13 @@ namespace GlslRewriter
                 AddComputeGraphVarNode(cgvn);
 
                 if (null != vinfo.OwnFunc) {
-                    //为phi变量引入的变量定义注释掉，考虑到phi变量需要人工处理
-                    //有意让编译器报未定义变量可能更合适一些
-                    var line = s_ExpressionLineBuilder;
-                    line.Length = 0;
-                    line.Append("\t");
-                    if (Config.ActiveConfig.SettingInfo.CommentOutPhiVarDefinitionAndAssignment)
-                        line.Append("//");
-                    if (vinfo.Modifiers.Contains("precise"))
-                        line.Append("precise ");
-                    string type = vinfo.Type;
-                    line.Append(type);
-                    line.Append(" ");
-                    line.Append(phiVarAlias);
-                    line.Append(";");
-                    s_ExpressionVariableDefinitionList.Add(line.ToString());
+                    //只有已经在使用列表里的phi变量才记录类型
+                    if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarAlias)) {
+                        string type = vinfo.Type;
+                        if (vinfo.Modifiers.Contains("precise"))
+                            type = "precise " + type;
+                        Config.ActiveConfig.SettingInfo.SetUsedVariableType(phiVarAlias, type);
+                    }
                 }
             }
         }
@@ -3058,6 +3057,15 @@ namespace GlslRewriter
 
             var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, varInfo.Type, varInfo.Name);
             AddComputeGraphVarNode(cgvn);
+
+
+            //只有已经在使用列表里的变量才记录类型
+            if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(varInfo.Name)) {
+                string type = varInfo.Type;
+                if (varInfo.Modifiers.Contains("precise"))
+                    type = "precise " + type;
+                Config.ActiveConfig.SettingInfo.SetUsedVariableType(varInfo.Name, type);
+            }
         }
         private static FuncInfo? CurFuncInfo()
         {
@@ -3478,7 +3486,6 @@ namespace GlslRewriter
 
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         internal static StringBuilder s_ExpressionLineBuilder = new StringBuilder();
-        internal static SortedSet<string> s_ExpressionVariableDefinitionList = new SortedSet<string>();
         internal static List<string> s_ExpressionList = new List<string>();
         internal static int s_Indent = 1;
 

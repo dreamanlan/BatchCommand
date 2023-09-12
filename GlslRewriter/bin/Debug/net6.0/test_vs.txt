@@ -5797,33 +5797,6 @@ pf_0_33
 	return;
 } 
 /*{
-	//float f_0_phi_11;
-	//float f_0_phi_13;
-	//float f_0_phi_4;
-	//float f_0_phi_6;
-	//float f_1_phi_15;
-	//float f_1_phi_16;
-	//float f_2_phi_15;
-	//float f_2_phi_16;
-	//precise float pf_0_phi_15;
-	//precise float pf_0_phi_16;
-	//precise float pf_0_phi_4;
-	//precise float pf_1_phi_11;
-	//precise float pf_4_phi_15;
-	//uint u_0_phi_11;
-	//uint u_0_phi_15;
-	//uint u_0_phi_4;
-	//uint u_1_phi_16;
-	//uint u_2_phi_16;
-	//uint u_2_phi_2;
-	//uint u_3_phi_15;
-	//uint u_3_phi_2;
-	//uint u_3_phi_4;
-	//uint u_3_phi_9;
-	//uint u_4_phi_11;
-	//uint u_4_phi_15;
-	//uint u_4_phi_9;
-	//uint u_5_phi_15;
 	bool b_0_1;
 	bool b_0_3;
 	bool b_0_5;
@@ -5915,6 +5888,12 @@ pf_0_33
 	float f_8_1;
 	float f_9_2;
 	float f_9_3;
+	vec2 f2_0_1;
+	vec2 f2_0_3;
+	vec4 f4_0_0;
+	vec4 f4_0_1;
+	vec4 f4_0_3;
+	precise float pf_0;
 	precise float pf_0_0;
 	precise float pf_0_1;
 	precise float pf_0_10;
@@ -5931,6 +5910,7 @@ pf_0_33
 	precise float pf_0_33;
 	precise float pf_0_4;
 	precise float pf_0_5;
+	precise float pf_1;
 	precise float pf_1_0;
 	precise float pf_1_10;
 	precise float pf_1_11;
@@ -6035,6 +6015,7 @@ pf_0_33
 	precise float pf_26_1;
 	precise float pf_3_11;
 	precise float pf_3_7;
+	precise float pf_4;
 	precise float pf_4_0;
 	precise float pf_4_1;
 	precise float pf_4_12;
@@ -6098,32 +6079,37 @@ pf_0_33
 	uint u_0_7;
 	uint u_0_8;
 	uint u_0_9;
+	uint u_0_phi_11;
+	uint u_0_phi_15;
+	uint u_0_phi_4;
 	uint u_1_3;
 	uint u_1_4;
+	uint u_1_phi_16;
 	uint u_2_0;
 	uint u_2_1;
 	uint u_2_2;
 	uint u_2_3;
 	uint u_2_4;
 	uint u_2_5;
+	uint u_2_phi_2;
+	uint u_3;
 	uint u_3_0;
 	uint u_3_1;
 	uint u_3_2;
 	uint u_3_3;
 	uint u_3_4;
 	uint u_3_5;
+	uint u_3_phi_15;
+	uint u_3_phi_9;
+	uint u_4;
 	uint u_4_0;
 	uint u_4_1;
 	uint u_4_2;
 	uint u_4_3;
+	uint u_5;
 	uint u_5_0;
 	uvec2 u2_0_0;
 	uvec2 u2_0_1;
-	vec2 f2_0_1;
-	vec2 f2_0_3;
-	vec4 f4_0_0;
-	vec4 f4_0_1;
-	vec4 f4_0_3;
 	// 166.45822  <=>  float(166.45822)
 	gl_Position.x = float(166.45822);
 	// 777.81085  <=>  float(777.81085)
@@ -6252,8 +6238,7 @@ pf_0_33
 	}
 	// 0  <=>  0u
 	u_2_0 = 0u;
-	//u_3_phi_2 = u_3;
-	//u_2_phi_2 = u_2_0;
+	u_2_phi_2 = u_2_0;
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
 	{
@@ -6261,8 +6246,7 @@ pf_0_33
 		u_3_0 = vs_cbuf8[30].y;
 		// 1187205120  <=>  {u_3_0 : 1187205120}
 		u_2_1 = u_3_0;
-		//u_3_phi_2 = u_3_0;
-		//u_2_phi_2 = u_2_1;
+		u_2_phi_2 = u_2_1;
 	}
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
@@ -6272,10 +6256,7 @@ pf_0_33
 	}
 	// {u_2_phi_2 : }
 	u_0_1 = u_2_phi_2;
-	//f_0_phi_4 = f_0_0;
-	//pf_0_phi_4 = pf_0;
-	//u_3_phi_4 = u_3;
-	//u_0_phi_4 = u_0_1;
+	u_0_phi_4 = u_0_1;
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
 	{
@@ -6287,10 +6268,7 @@ pf_0_33
 		u_3_1 = ftou(pf_0_0);
 		// {u_3_1 : }
 		u_0_2 = u_3_1;
-		//f_0_phi_4 = f_0_1;
-		//pf_0_phi_4 = pf_0_0;
-		//u_3_phi_4 = u_3_1;
-		//u_0_phi_4 = u_0_2;
+		u_0_phi_4 = u_0_2;
 	}
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
@@ -6298,7 +6276,6 @@ pf_0_33
 		// 0.00  <=>  0.
 		out_attr3.x = 0.;
 	}
-	//f_0_phi_6 = f_0_phi_4;
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
 	{
@@ -6306,7 +6283,6 @@ pf_0_33
 		f_0_2 = utof(u_0_phi_4);
 		// {f_0_2 : }
 		gl_Position.z = f_0_2;
-		//f_0_phi_6 = f_0_2;
 	}
 	// False  <=>  if(({b_0_1 : False} ? true : false))
 	if((b_0_1 ? true : false))
@@ -6335,8 +6311,7 @@ pf_0_33
 	b_1_9 = (b_0_3 ? true : false);
 	// 1149538304  <=>  ftou({f_0_3 : 1060.5})
 	u_3_2 = ftou(f_0_3);
-	//u_4_phi_9 = u_4;
-	//u_3_phi_9 = u_3_2;
+	u_3_phi_9 = u_3_2;
 	// False  <=>  if({b_1_9 : False})
 	if(b_1_9)
 	{
@@ -6344,8 +6319,7 @@ pf_0_33
 		u_4_0 = vs_cbuf8[30].y;
 		// 1187205120  <=>  {u_4_0 : 1187205120}
 		u_3_3 = u_4_0;
-		//u_4_phi_9 = u_4_0;
-		//u_3_phi_9 = u_3_3;
+		u_3_phi_9 = u_3_3;
 	}
 	// False  <=>  ({b_0_3 : False} ? true : false)
 	b_1_10 = (b_0_3 ? true : false);
@@ -6359,10 +6333,7 @@ pf_0_33
 	b_1_11 = (b_0_3 ? true : false);
 	// {u_3_phi_9 : }
 	u_0_4 = u_3_phi_9;
-	//f_0_phi_11 = f_0_3;
-	//pf_1_phi_11 = pf_1;
-	//u_4_phi_11 = u_4;
-	//u_0_phi_11 = u_0_4;
+	u_0_phi_11 = u_0_4;
 	// False  <=>  if({b_1_11 : False})
 	if(b_1_11)
 	{
@@ -6374,10 +6345,7 @@ pf_0_33
 		u_4_1 = ftou(pf_1_0);
 		// {u_4_1 : }
 		u_0_5 = u_4_1;
-		//f_0_phi_11 = f_0_4;
-		//pf_1_phi_11 = pf_1_0;
-		//u_4_phi_11 = u_4_1;
-		//u_0_phi_11 = u_0_5;
+		u_0_phi_11 = u_0_5;
 	}
 	// False  <=>  ({b_0_3 : False} ? true : false)
 	b_1_12 = (b_0_3 ? true : false);
@@ -6389,7 +6357,6 @@ pf_0_33
 	}
 	// False  <=>  ({b_0_3 : False} ? true : false)
 	b_1_13 = (b_0_3 ? true : false);
-	//f_0_phi_13 = f_0_phi_11;
 	// False  <=>  if({b_1_13 : False})
 	if(b_1_13)
 	{
@@ -6397,7 +6364,6 @@ pf_0_33
 		f_0_5 = utof(u_0_phi_11);
 		// {f_0_5 : }
 		gl_Position.z = f_0_5;
-		//f_0_phi_13 = f_0_5;
 	}
 	// False  <=>  ({b_0_3 : False} ? true : false)
 	b_1_14 = (b_0_3 ? true : false);
@@ -6418,14 +6384,8 @@ pf_0_33
 	u_0_6 = u_2_2;
 	// 1148846080  <=>  ftou({f_1_2 : 1000})
 	u_3_4 = ftou(f_1_2);
-	//f_1_phi_15 = f_1_6;
-	//pf_4_phi_15 = pf_4;
-	//f_2_phi_15 = f_2_1;
-	//pf_0_phi_15 = pf_0_1;
-	//u_4_phi_15 = u_4;
-	//u_5_phi_15 = u_5;
-	//u_0_phi_15 = u_0_6;
-	//u_3_phi_15 = u_3_4;
+	u_0_phi_15 = u_0_6;
+	u_3_phi_15 = u_3_4;
 	// False  <=>  if(((((0. < {utof(vs_cbuf9[11].y) : 0}) && (! isnan(0.))) && (! isnan({utof(vs_cbuf9[11].y) : 0}))) ? true : false))
 	if(((((0. < utof(vs_cbuf9[11].y)) && (! isnan(0.))) && (! isnan(utof(vs_cbuf9[11].y)))) ? true : false))
 	{
@@ -6447,24 +6407,14 @@ pf_0_33
 		u_0_7 = u_5_0;
 		// {u_4_2 : }
 		u_3_5 = u_4_2;
-		//f_1_phi_15 = f_1_11;
-		//pf_4_phi_15 = pf_4_0;
-		//f_2_phi_15 = f_2_2;
-		//pf_0_phi_15 = pf_0_4;
-		//u_4_phi_15 = u_4_2;
-		//u_5_phi_15 = u_5_0;
-		//u_0_phi_15 = u_0_7;
-		//u_3_phi_15 = u_3_5;
+		u_0_phi_15 = u_0_7;
+		u_3_phi_15 = u_3_5;
 	}
 	// True  <=>  ((! (((0. < {utof(vs_cbuf9[11].y) : 0}) && (! isnan(0.))) && (! isnan({utof(vs_cbuf9[11].y) : 0})))) ? true : false)
 	b_0_5 = ((! (((0. < utof(vs_cbuf9[11].y)) && (! isnan(0.))) && (! isnan(utof(vs_cbuf9[11].y))))) ? true : false);
 	// {u_0_phi_15 : }
 	u_1_3 = u_0_phi_15;
-	//f_1_phi_16 = f_1_phi_15;
-	//f_2_phi_16 = f_2_phi_15;
-	//pf_0_phi_16 = pf_0_phi_15;
-	//u_2_phi_16 = u_2_2;
-	//u_1_phi_16 = u_1_3;
+	u_1_phi_16 = u_1_3;
 	// True  <=>  if({b_0_5 : True})
 	if(b_0_5)
 	{
@@ -6478,11 +6428,7 @@ pf_0_33
 		u_2_3 = ftou(pf_0_5);
 		// {u_2_3 : }
 		u_1_4 = u_2_3;
-		//f_1_phi_16 = f_1_13;
-		//f_2_phi_16 = f_2_3;
-		//pf_0_phi_16 = pf_0_5;
-		//u_2_phi_16 = u_2_3;
-		//u_1_phi_16 = u_1_4;
+		u_1_phi_16 = u_1_4;
 	}
 	// 512  <=>  {uvec4(uvec2(textureSize({tex0 : }, int(0u))), 0u, 0u).x : 512}
 	u_0_8 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x;
@@ -7331,20 +7277,27 @@ pf_0_33
 	u_0_7,
 	u_0_8,
 	u_0_9,
+	u_0_phi_11,
+	u_0_phi_15,
+	u_0_phi_4,
 	u_1_3,
 	u_1_4,
+	u_1_phi_16,
 	u_2_0,
 	u_2_1,
 	u_2_2,
 	u_2_3,
 	u_2_4,
 	u_2_5,
+	u_2_phi_2,
 	u_3_0,
 	u_3_1,
 	u_3_2,
 	u_3_3,
 	u_3_4,
 	u_3_5,
+	u_3_phi_15,
+	u_3_phi_9,
 	u_3,
 	u_4_0,
 	u_4_1,

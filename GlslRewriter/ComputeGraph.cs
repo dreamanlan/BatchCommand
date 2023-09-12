@@ -499,6 +499,10 @@ namespace GlslRewriter
                 if (withValue) {
                     sb.Append("{");
                 }
+                if (null != OwnFunc) {
+                    //未赋值的局部变量，这里一般是phi变量，添加到拆分表达式变量列表记录变量使用
+                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
+                }
                 sb.Append(VarName);
                 if (withValue) {
                     sb.Append(" : ");

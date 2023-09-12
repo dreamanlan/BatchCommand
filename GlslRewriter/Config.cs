@@ -415,9 +415,6 @@ namespace GlslRewriter
                         else if (vid == "generate_expression_list") {
                             cfg.SettingInfo.GenerateExpressionList = true;
                         }
-                        else if (vid == "comment_out_phi_var_definition_and_assignment") {
-                            cfg.SettingInfo.CommentOutPhiVarDefinitionAndAssignment = true;
-                        }
                         else if (vid == "def_multiline") {
                             cfg.SettingInfo.DefMultiline = true;
                         }
@@ -1279,7 +1276,6 @@ namespace GlslRewriter
             internal bool DefSkipValue = false;
             internal bool DefSkipExpression = false;
             internal bool GenerateExpressionList = false;
-            internal bool CommentOutPhiVarDefinitionAndAssignment = false;
             internal int DefMaxLevel = 32;
             internal int DefMaxLength = 512;
             internal int ComputeGraphNodesCapacity = 10240;
@@ -1308,6 +1304,7 @@ namespace GlslRewriter
 
             internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
+            internal SortedList<string, string> UsedVariables = new SortedList<string, string>();
 
             internal void AutoSplitAddVariable(string vname)
             {
@@ -1321,6 +1318,7 @@ namespace GlslRewriter
             {
                 if (!string.IsNullOrEmpty(vname)) {
                     if (!SplitOnVariables.Contains(vname)) {
+                        AddUsedVariable(vname, string.Empty);
                         AutoSplitAddedVariables.Add("\t" + vname + ",");
                     }
 
@@ -1344,6 +1342,27 @@ namespace GlslRewriter
                         lvlInfo.Multiline = ml;
                         lvlInfo.ExpandedOnlyOnce = once;
                     }
+                }
+            }
+            internal void AddUsedVariable(string vname, string type)
+            {
+                if (UsedVariables.TryGetValue(vname, out var curType)) {
+                    if (string.IsNullOrEmpty(curType) && !string.IsNullOrEmpty(type))
+                        UsedVariables[vname] = type;
+                }
+                else {
+                    UsedVariables.Add(vname, type);
+                }
+            }
+            internal void RemoveUsedVariable(string vname)
+            {
+                UsedVariables.Remove(vname);
+            }
+            internal void SetUsedVariableType(string vname, string type)
+            {
+                if (UsedVariables.TryGetValue(vname, out var curType)) {
+                    if (string.IsNullOrEmpty(curType) && !string.IsNullOrEmpty(type))
+                        UsedVariables[vname] = type;
                 }
             }
 

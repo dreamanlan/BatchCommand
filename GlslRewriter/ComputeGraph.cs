@@ -487,9 +487,12 @@ namespace GlslRewriter
                             }
                         }
                         else {
+                            /*
+                            //这里不用拆分变量，通过其它拆分多次迭代应该就可以消除，如果在这里也拆分可能会引入比较多的简单表达式
                             if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0) {
                                 Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
                             }
+                            */
                             sb.Append(VarName + "...");
                         }
                     }

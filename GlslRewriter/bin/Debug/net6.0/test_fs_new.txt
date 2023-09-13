@@ -2,7 +2,7 @@
 #pragma optionNV(fastmath off)
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec4 in_attr0;		//w用作系数
+layout(location = 0) in vec4 in_attr0;		//w用作系数，参与输出alpha与颜色的计算
 layout(location = 1) in vec4 in_attr1;		//zw是tex5的采样坐标，xy是tex3/tex4的采样坐标的基础值
 layout(location = 2) in vec4 in_attr2;		//xy/w是depthTex采样坐标，z/w参与输出alpha的计算，不是很明白
 layout(location = 3) in vec4 in_attr3;		//x用作最终输出alpha的乘数
@@ -10,7 +10,7 @@ layout(location = 4) in vec4 in_attr4;		//xyz是一个坐标，与fs_cbuf8[29]�
 layout(location = 5) flat in vec4 in_attr5;	//y参与计算输出颜色一部分的系数的指数
 layout(location = 6) flat in vec4 in_attr6;	//x用作tex4纹理数组的下标
 layout(location = 7) in vec4 in_attr7;		//x与y用作系数
-layout(location = 8) in vec4 in_attr8;		//x与z用作系数
+layout(location = 8) in vec4 in_attr8;		//x与z用作系数，x参与颜色各分量计算，z参与输出alpha与颜色的计算
 layout(location = 9) in vec4 in_attr9;		//xyz用作颜色，w用作系数
 layout(location = 10) in vec4 in_attr10;	//xyz用作颜色，w用作系数
 layout(location = 11) in vec4 in_attr11;	//xyz用作颜色，w用作系数

@@ -1439,7 +1439,7 @@ namespace GlslRewriter
             }
 
             internal static string s_DefSplitLevel = "15";
-            internal static string s_DefSplitOnLevel = "12";
+            internal static string s_DefSplitOnLevel = "9";
         }
         internal class InOutAttrInfo
         {

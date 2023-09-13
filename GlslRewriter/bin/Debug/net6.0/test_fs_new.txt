@@ -2,18 +2,18 @@
 #pragma optionNV(fastmath off)
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec4 in_attr0;
-layout(location = 1) in vec4 in_attr1;
-layout(location = 2) in vec4 in_attr2;
-layout(location = 3) in vec4 in_attr3;
-layout(location = 4) in vec4 in_attr4;
-layout(location = 5) flat in vec4 in_attr5;
-layout(location = 6) flat in vec4 in_attr6;
-layout(location = 7) in vec4 in_attr7;
-layout(location = 8) in vec4 in_attr8;
-layout(location = 9) in vec4 in_attr9;
-layout(location = 10) in vec4 in_attr10;
-layout(location = 11) in vec4 in_attr11;
+layout(location = 0) in vec4 in_attr0;		//w用作系数
+layout(location = 1) in vec4 in_attr1;		//zw是tex5的采样坐标，xy是tex3/tex4的采样坐标的基础值
+layout(location = 2) in vec4 in_attr2;		//xy/w是depthTex采样坐标，z/w参与输出alpha的计算，不是很明白
+layout(location = 3) in vec4 in_attr3;		//x用作最终输出alpha的乘数
+layout(location = 4) in vec4 in_attr4;		//xyz是一个坐标，与fs_cbuf8[29]一起求单位向量
+layout(location = 5) flat in vec4 in_attr5;	//y参与计算输出颜色一部分的系数的指数
+layout(location = 6) flat in vec4 in_attr6;	//x用作tex4纹理数组的下标
+layout(location = 7) in vec4 in_attr7;		//x与y用作系数
+layout(location = 8) in vec4 in_attr8;		//x与z用作系数
+layout(location = 9) in vec4 in_attr9;		//xyz用作颜色，w用作系数
+layout(location = 10) in vec4 in_attr10;	//xyz用作颜色，w用作系数
+layout(location = 11) in vec4 in_attr11;	//xyz用作颜色，w用作系数
 
 layout(location = 0) out vec4 frag_color0;
 
@@ -39,20 +39,23 @@ layout(binding = 6) uniform sampler2D depthTex;
 
 void main()
 {
-	// fs_cbuf8[29] = vec4(287.31113, 1672.1437, 1396.6694, 0);
-	// fs_cbuf8[30] = vec4(1, 25000, 25000, 24999);
-	// fs_cbuf9[139] = vec4(1, 0, 0, 0);
-	// fs_cbuf9[140] = vec4(3, 5, 0, 0);
-	// fs_cbuf9[189] = vec4(0.035, 3.5, 1, 10);
-	// fs_cbuf9[190] = vec4(0.75, 2.5, 20, 4);
-	// fs_cbuf15[1] = vec4(0, 1, 1.8954816, 1);
-	// fs_cbuf15[25] = vec4(0.68200004, 0.99055004, 0.63965, 0.12);
-	// fs_cbuf15[26] = vec4(1.12035, 1.3145001, 0.66605, 0.45199007);
-	// fs_cbuf15[28] = vec4(0.52265936, -0.57410127, -0.63026583, 0);
-	// fs_cbuf15[42] = vec4(4.4, 3.4596078, 2.6378438, 0.65);
-	// fs_cbuf15[43] = vec4(1, 0.885, 0.65, 1);
-	// fs_cbuf15[44] = vec4(0.9, 0.775, 0.575, 1);
-	// fs_cbuf15[57] = vec4(-4731.44, 907.7282, 3000, 1);
+	// fs_cbuf8[29] = vec4(287.31113, 1672.1437, 1396.6694, 0);			//3D空间坐标
+	// fs_cbuf8[30] = vec4(1, 25000, 25000, 24999);						//不是很明白涵义，参与输出alpha的计算
+	// fs_cbuf9[139] = vec4(1, 0, 0, 0);								//z是有效像素的最小alpha阈值，低于此值不输出
+	// fs_cbuf9[140] = vec4(3, 5, 0, 0);								//y参与alpha的计算，用作alpha其中一部分的除数
+	// fs_cbuf9[189] = vec4(0.035, 3.5, 1, 10);							//x用于tex5采样数据对in_attr1.xy采样坐标影响的权重，最终坐标：tex5.xw * x * 2 - x + in_attr1.xy
+																		//y用于计算指数时的一个参数，具体涵义不太清楚
+	// fs_cbuf9[190] = vec4(0.75, 2.5, 20, 4);							//参与输出颜色之一的各分量的系数，同时用于系数w、z与指数y与上一个189的y
+																		//(in_attr8.x * (fs_cbuf9[190].w - fs_cbuf9[190].z) + fs_cbuf9[190].z) * 
+																		//	exp2((in_attr8.x * (fs_cbuf9[190].y - fs_cbuf9[189].y) + fs_cbuf9[189].y) * log2(abs(tex4.x)))
+	// fs_cbuf15[1] = vec4(0, 1, 1.8954816, 1);							//x用作系数
+	// fs_cbuf15[25] = vec4(0.68200004, 0.99055004, 0.63965, 0.12);		//xyz用作颜色
+	// fs_cbuf15[26] = vec4(1.12035, 1.3145001, 0.66605, 0.45199007);	//xyz用作颜色
+	// fs_cbuf15[28] = vec4(0.52265936, -0.57410127, -0.63026583, 0);	//3D单位向量
+	// fs_cbuf15[42] = vec4(4.4, 3.4596078, 2.6378438, 0.65);			//xyz用作颜色，w用作系数
+	// fs_cbuf15[43] = vec4(1, 0.885, 0.65, 1);							//xyz用作颜色
+	// fs_cbuf15[44] = vec4(0.9, 0.775, 0.575, 1);						//xyz用作颜色
+	// fs_cbuf15[57] = vec4(-4731.44, 907.7282, 3000, 1);				//w用作系数
 
 	bool b_0_0;
 	float f_0_6;
@@ -223,7 +226,7 @@ void main()
 	pf_2_3 = ((clamp(pf_0_12, 0.0, 1.0) + (pf_0_13 * (0. - clamp(pf_0_12, 0.0, 1.0)) + pf_0_13)) * -5.);
 	
 	// 这里使用 in_attr8.x, 整个表达式的值后面作为指数
-	// ((fs_cbuf9[190].y - fs_cbuf9[189].y) * in_attr8.x + fs_cbuf9[189].y) * log2(abs(f4_0_4.x))
+	// (in_attr8.x * (fs_cbuf9[190].y - fs_cbuf9[189].y) + fs_cbuf9[189].y) * log2(abs(f4_0_4.x))
 	// -2.5  <=>  ((((0. - {utof(fs_cbuf9[189].y) : 3.5}) + {utof(fs_cbuf9[190].y) : 2.5}) * {in_attr8.x : 1} + {utof(fs_cbuf9[189].y) : 3.5}) * log2(abs({f4_0_4.x : 0.5})))
 	pf_1_19 = ((((0. - utof(fs_cbuf9[189].y)) + utof(fs_cbuf9[190].y)) * in_attr8.x + utof(fs_cbuf9[189].y)) * log2(abs(f4_0_4.x)));
 	
@@ -296,12 +299,12 @@ void main()
 	// 颜色：fs_cbuf15[26]、fs_cbuf15[42]、fs_cbuf15[43]、fs_cbuf15[44]、in_attr9
 	// 系数：in_attr7.y、fs_cbuf15[42].w、fs_cbuf15[1].x、in_attr9.w
 	/*
-	- ((fs_cbuf15[26] * in_attr7.y + 
+	(fs_cbuf15[26] * in_attr7.y + 
 	pf_3_7 * (
 	pf_3_3 * fs_cbuf15[42] * fs_cbuf15[42].w * (1 - fs_cbuf15[1].x) + 
 	f4_0_4.x * fs_cbuf15[43] + (1 - f4_0_4.x) * ((clamp(f4_0_4.x, 0.1, 0.3) - 0.1) * 3.3499994 + 0.33) * fs_cbuf15[44]
 	) * (1 - in_attr7.y)) * in_attr9.w + 
-	in_attr9)
+	in_attr9
 	*/
 
 	// (fs_cbuf15[26].x * in_attr7.y + pf_3_7* pf_1_23 * (1 - in_attr7.y)) * in_attr9.w + in_attr9.x

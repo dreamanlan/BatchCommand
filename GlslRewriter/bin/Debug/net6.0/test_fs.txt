@@ -63,11 +63,8 @@ void main()
 	float f_3_20;
 	float f_4_3;
 	float f_4_8;
-	float f_5_11;
 	float f_5_2;
 	float f_6_1;
-	float f_6_7;
-	float f_7_5;
 	float f_8_2;
 	float f_9_2;
 	float f_9_3;
@@ -83,15 +80,18 @@ void main()
 	precise float pf_0_16;
 	precise float pf_0_18;
 	precise float pf_0_20;
+	precise float pf_0_23;
 	precise float pf_0_24;
 	precise float pf_0_6;
 	precise float pf_0_8;
 	precise float pf_1_11;
 	precise float pf_1_19;
 	precise float pf_1_23;
+	precise float pf_1_26;
 	precise float pf_1_27;
 	precise float pf_1_5;
 	precise float pf_1_8;
+	precise float pf_2_11;
 	precise float pf_2_12;
 	precise float pf_2_3;
 	precise float pf_2_6;
@@ -218,18 +218,18 @@ void main()
 	f_9_2 = (0. - (pf_3_7 * pf_0_20));
 	// (0. - ({pf_3_7 : } * {pf_2_8 : 1.8249041}))
 	f_9_3 = (0. - (pf_3_7 * pf_2_8));
-	// (0. - ((({f_9_3 : } + {utof(fs_cbuf15[26].z) : 0.66605}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_2_8 : 1.8249041})) * {in_attr9.w : 0.52491} + {in_attr9.z : 0.50397}))
-	f_5_11 = (0. - (((f_9_3 + utof(fs_cbuf15[26].z)) * in_attr7.y + (pf_3_7 * pf_2_8)) * in_attr9.w + in_attr9.z));
-	// (0. - ((({f_9_2 : } + {utof(fs_cbuf15[26].y) : 1.3145001}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_0_20 : 2.4201028})) * {in_attr9.w : 0.52491} + {in_attr9.y : 0.39195}))
-	f_6_7 = (0. - (((f_9_2 + utof(fs_cbuf15[26].y)) * in_attr7.y + (pf_3_7 * pf_0_20)) * in_attr9.w + in_attr9.y));
-	// (0. - ((({f_8_2 : } + {utof(fs_cbuf15[26].x) : 1.12035}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_1_23 : 2.972325})) * {in_attr9.w : 0.52491} + {in_attr9.x : 0.40435}))
-	f_7_5 = (0. - (((f_8_2 + utof(fs_cbuf15[26].x)) * in_attr7.y + (pf_3_7 * pf_1_23)) * in_attr9.w + in_attr9.x));
-	// (({f_5_11 : } + {in_attr11.z : 0.8335}) * {in_attr11.w : 0} + ((({f_9_3 : } + {utof(fs_cbuf15[26].z) : 0.66605}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_2_8 : 1.8249041})) * {in_attr9.w : 0.52491} + {in_attr9.z : 0.50397}))
-	pf_2_12 = ((f_5_11 + in_attr11.z) * in_attr11.w + (((f_9_3 + utof(fs_cbuf15[26].z)) * in_attr7.y + (pf_3_7 * pf_2_8)) * in_attr9.w + in_attr9.z));
-	// (({f_6_7 : } + {in_attr11.y : 0.44214}) * {in_attr11.w : 0} + ((({f_9_2 : } + {utof(fs_cbuf15[26].y) : 1.3145001}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_0_20 : 2.4201028})) * {in_attr9.w : 0.52491} + {in_attr9.y : 0.39195}))
-	pf_0_24 = ((f_6_7 + in_attr11.y) * in_attr11.w + (((f_9_2 + utof(fs_cbuf15[26].y)) * in_attr7.y + (pf_3_7 * pf_0_20)) * in_attr9.w + in_attr9.y));
-	// (({f_7_5 : } + {in_attr11.x : 0.20251}) * {in_attr11.w : 0} + ((({f_8_2 : } + {utof(fs_cbuf15[26].x) : 1.12035}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_1_23 : 2.972325})) * {in_attr9.w : 0.52491} + {in_attr9.x : 0.40435}))
-	pf_1_27 = ((f_7_5 + in_attr11.x) * in_attr11.w + (((f_8_2 + utof(fs_cbuf15[26].x)) * in_attr7.y + (pf_3_7 * pf_1_23)) * in_attr9.w + in_attr9.x));
+	// ((({f_8_2 : } + {utof(fs_cbuf15[26].x) : 1.12035}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_1_23 : 2.972325})) * {in_attr9.w : 0.52491} + {in_attr9.x : 0.40435})
+	pf_1_26 = (((f_8_2 + utof(fs_cbuf15[26].x)) * in_attr7.y + (pf_3_7 * pf_1_23)) * in_attr9.w + in_attr9.x);
+	// ((({f_9_2 : } + {utof(fs_cbuf15[26].y) : 1.3145001}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_0_20 : 2.4201028})) * {in_attr9.w : 0.52491} + {in_attr9.y : 0.39195})
+	pf_0_23 = (((f_9_2 + utof(fs_cbuf15[26].y)) * in_attr7.y + (pf_3_7 * pf_0_20)) * in_attr9.w + in_attr9.y);
+	// ((({f_9_3 : } + {utof(fs_cbuf15[26].z) : 0.66605}) * {in_attr7.y : 0} + ({pf_3_7 : } * {pf_2_8 : 1.8249041})) * {in_attr9.w : 0.52491} + {in_attr9.z : 0.50397})
+	pf_2_11 = (((f_9_3 + utof(fs_cbuf15[26].z)) * in_attr7.y + (pf_3_7 * pf_2_8)) * in_attr9.w + in_attr9.z);
+	// (((0. - {pf_2_11 : }) + {in_attr11.z : 0.8335}) * {in_attr11.w : 0} + {pf_2_11 : })
+	pf_2_12 = (((0. - pf_2_11) + in_attr11.z) * in_attr11.w + pf_2_11);
+	// (((0. - {pf_0_23 : }) + {in_attr11.y : 0.44214}) * {in_attr11.w : 0} + {pf_0_23 : })
+	pf_0_24 = (((0. - pf_0_23) + in_attr11.y) * in_attr11.w + pf_0_23);
+	// (((0. - {pf_1_26 : }) + {in_attr11.x : 0.20251}) * {in_attr11.w : 0} + {pf_1_26 : })
+	pf_1_27 = (((0. - pf_1_26) + in_attr11.x) * in_attr11.w + pf_1_26);
 	// ((0. - (((0. - {pf_1_27 : }) + {utof(fs_cbuf15[25].x) : 0.68200004}) * {in_attr7.x : 0.12} + {pf_1_27 : })) + {in_attr10.x : 4.77344})
 	pf_3_11 = ((0. - (((0. - pf_1_27) + utof(fs_cbuf15[25].x)) * in_attr7.x + pf_1_27)) + in_attr10.x);
 	// ((0. - (((0. - {pf_0_24 : }) + {utof(fs_cbuf15[25].y) : 0.99055004}) * {in_attr7.x : 0.12} + {pf_0_24 : })) + {in_attr10.y : 3.10352})

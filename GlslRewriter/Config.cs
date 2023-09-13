@@ -117,7 +117,7 @@ namespace GlslRewriter
                                             if (i > 0)
                                                 sb.Append(", ");
                                             uint.TryParse(vstrs[i], out var v);
-                                            sb.Append(Calculator.utof(v).ToString());
+                                            sb.Append(Calculator.FloatToString(Calculator.utof(v)));
                                         }
                                         sb.Append(");");
                                         s_UniformUtofOrFtouVals.Add(sb.ToString());
@@ -189,7 +189,7 @@ namespace GlslRewriter
                             AddShaderConfig(id, fd);
                         }
                         else if (id == "vs_code_block") {
-                            ParseCodeBlock("cs", fd);
+                            ParseCodeBlock("vs", fd);
                         }
                         else if (id == "ps_code_block") {
                             ParseCodeBlock("ps", fd);
@@ -572,6 +572,22 @@ namespace GlslRewriter
                         }
                         else if (fid == "object_array_member_assignment") {
                             ParseObjectArrayMemberAssignment(cfg, fd);
+                        }
+                        else if (fid == "add_utof") {
+                            string vtype = "uint";
+                            string vstr = DoCalc(fd.GetParam(0), ref vtype);
+                            if(uint.TryParse(vstr, out var uval)) {
+                                var fvstr = Calculator.FloatToString(Calculator.utof(uval));
+                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + vstr + " = " + fvstr + "f;");
+                            }
+                        }
+                        else if (fid == "add_ftou") {
+                            string vtype = "float";
+                            string vstr = DoCalc(fd.GetParam(0), ref vtype);
+                            if (float.TryParse(vstr, out var fval)) {
+                                var uvstr = Calculator.ftou(fval).ToString();
+                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + vstr + " = " + uvstr + "u;");
+                            }
                         }
                     }
                 }

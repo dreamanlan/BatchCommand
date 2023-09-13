@@ -1188,6 +1188,14 @@ namespace GlslRewriter
             return succ;
         }
 
+        public static string FloatToString(float v)
+        {
+            return v.ToString(s_FloatFormat);
+        }
+        public static string DoubleToString(double v)
+        {
+            return v.ToString(s_DoubleFormat);
+        }
         public static unsafe int ftoi(float v)
         {
             int* p = (int*)&v;
@@ -1246,7 +1254,7 @@ namespace GlslRewriter
             }
             if (val.IndexOfAny(s_FloatExponent) > 0) {
                 if (double.TryParse(val, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
-                    val = v.ToString(s_DoubleFormat);
+                    val = DoubleToString(v);
                 }
                 type = "float";
             }

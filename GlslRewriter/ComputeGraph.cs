@@ -409,7 +409,7 @@ namespace GlslRewriter
                     m_Value = PrevNodes[PrevNodes.Count - 1].CalcValue(visits);
                 }
                 else {
-                    m_Value = string.Empty;
+                    m_Value = VarName;
                 }
             }
         }

@@ -19,9 +19,14 @@ vs
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
 
+        add_utof(1065353216u);
+
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
+            split_on("texture", 3);
+            split_on("textureLod", 3);
+            split_on("texelFetch", 3);
             split_on("log2", 12);
         };
 
@@ -31,9 +36,9 @@ vs
             u_0_phi_4 = 0u;
             u_3_phi_9 = 1149538304u;
             u_0_phi_11 = 1149538304u;
-            u_0_phi_15 = 1148846080u;
-            u_3_phi_15 = 0u;
-            u_1_phi_16 = 1141932032u;
+            u_0_phi_15 = 1141932032u;
+            u_3_phi_15 = 1148846080u;
+            u_1_phi_16 = 1058273231u;
         };
 
         split_object_assignment{
@@ -149,11 +154,18 @@ vs
             f_9_2,
             f2_0_1,
             f2_0_2,
+            f4_0_0,
+            f4_0_1,
+            f4_0_2,
+            f4_0_3,
+            f4_0_4,
+            f4_0_5,
             pf_0_1,
             pf_0_11,
             pf_0_12,
             pf_0_25,
             pf_0_29,
+            pf_0_3,
             pf_0_31,
             pf_0_33,
             pf_0_34,
@@ -342,6 +354,9 @@ vs
     };
     calculator
     {
+        textureSize(tex0,*) = vec2(8,13);
+        textureSize(tex1,*) = vec2(256,256);
+        textureSize(tex2,*) = vec2(256,256);
         textureSize(*,*) = vec2(512,128);
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
@@ -373,7 +388,7 @@ ps
             split_on("inversesqrt");
             split_on("texture", 3);
             split_on("textureLod", 3);
-            split_on("textureFetch", 3);
+            split_on("texelFetch", 3);
             split_on("log2", 12);
         };
 
@@ -472,6 +487,10 @@ ps
     };
     calculator
     {
+        textureSize(tex3,*) = vec2(64,64);
+        textureSize(tex4,*) = vec2(64,64);
+        textureSize(tex5,*) = vec2(512,512);
+        textureSize(depthTex,*) = vec2(800,450);
         textureSize(*,*) = vec2(512,128);
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,0.75);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,0.75);
@@ -549,7 +568,7 @@ layout(std140, binding = 4) uniform vs_cbuf_15 {
     uvec4 vs_cbuf15[4096];
 };
 
-layout(binding = 0) uniform sampler2D tex0; //256*13
+layout(binding = 0) uniform sampler2D tex0; //8*13
 layout(binding = 1) uniform sampler2D tex1; //256*256
 layout(binding = 2) uniform sampler2D tex2; //256*256
 
@@ -593,7 +612,7 @@ layout(std140, binding = 7) uniform fs_cbuf_15 {
 layout(binding = 3) uniform sampler2D tex3; //64*64
 layout(binding = 4) uniform sampler2DArray tex4; //64*64
 layout(binding = 5) uniform sampler2D tex5; //512*512
-layout(binding = 6) uniform sampler2D depthTex;
+layout(binding = 6) uniform sampler2D depthTex; //800*450
 
 #define ftoi floatBitsToInt
 #define ftou floatBitsToUint

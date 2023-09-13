@@ -25,6 +25,17 @@ vs
             split_on("log2", 12);
         };
 
+        variable_assignment
+        {
+            u_2_phi_2 = 0u;
+            u_0_phi_4 = 0u;
+            u_3_phi_9 = 1149538304u;
+            u_0_phi_11 = 1149538304u;
+            u_0_phi_15 = 1148846080u;
+            u_3_phi_15 = 0u;
+            u_1_phi_16 = 1141932032u;
+        };
+
         split_object_assignment{
             set(out_attr0.x, 64, 20480, true, true);
             out_attr0.y,
@@ -335,64 +346,6 @@ vs
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
     };
-    code_block
-    {:
-#version 460
-#pragma optionNV(fastmath off)
-#extension GL_ARB_separate_shader_objects : enable
-
-out gl_PerVertex {
-    vec4 gl_Position;
-};
-layout(location = 0) in vec4 in_attr0; //顶点坐标（位于xy平面，z始终为0，w为1）
-layout(location = 1) in vec4 in_attr1; //UV（xy是UV，z是从6点开始逆时针方向的顶点序号，中心点为12，w为1）
-layout(location = 4) in vec4 in_attr4; //固定值 277.38879	-253.98657	-1225.84583	1000 （xyzw全用）
-layout(location = 5) in vec4 in_attr5; //固定值 0	0	0	1060.5 （只用w）
-layout(location = 6) in vec4 in_attr6; //固定值 256.74911	175.44524	175.44524	1 (用xyz)
-layout(location = 7) in vec4 in_attr7; //固定值 0.33394	0.62269	0.01691	0.7787 （xyzw全用）
-layout(location = 9) in vec4 in_attr9; //固定值 1	0	0	287.3111 （xyzw全用）
-layout(location = 10) in vec4 in_attr10; //固定值 0	1	0	1522.14368 （xyzw全用）
-layout(location = 11) in vec4 in_attr11; //固定值 0	0	1	1396.66956 （xyzw全用）
-
-layout(location = 0) out vec4 out_attr0; //只写w
-layout(location = 1) out vec4 out_attr1; //xyzw全写
-layout(location = 2) out vec4 out_attr2; //xyzw全写
-layout(location = 3) out vec4 out_attr3; //只写x
-layout(location = 4) out vec4 out_attr4; //写xyz
-layout(location = 5) out vec4 out_attr5; //只写y
-layout(location = 6) out vec4 out_attr6; //只写x
-layout(location = 7) out vec4 out_attr7; //写xy
-layout(location = 8) out vec4 out_attr8; //写xz
-layout(location = 9) out vec4 out_attr9; //xyzw全写
-layout(location = 10) out vec4 out_attr10; //xyzw全写
-layout(location = 11) out vec4 out_attr11; //xyzw全写
-
-layout(std140, binding = 0) uniform vs_cbuf_8 {
-    uvec4 vs_cbuf8[4096];
-};
-layout(std140, binding = 1) uniform vs_cbuf_9 {
-    uvec4 vs_cbuf9[4096];
-};
-layout(std140, binding = 2) uniform vs_cbuf_10 {
-    uvec4 vs_cbuf10[4096];
-};
-layout(std140, binding = 3) uniform vs_cbuf_13 {
-    uvec4 vs_cbuf13[4096];
-};
-layout(std140, binding = 4) uniform vs_cbuf_15 {
-    uvec4 vs_cbuf15[4096];
-};
-
-layout(binding = 0) uniform sampler2D tex0; //256*13
-layout(binding = 1) uniform sampler2D tex1; //256*256
-layout(binding = 2) uniform sampler2D tex2; //256*256
-
-#define ftoi floatBitsToInt
-#define ftou floatBitsToUint
-#define itof intBitsToFloat
-#define utof uintBitsToFloat
-
-    :};
 };
 ps
 {
@@ -525,8 +478,89 @@ ps
         texture(*,*) = vec4(0.5,0.5,0.5,0.75);
         textureQueryLod(*,*) = vec2(4,1);
     };
-    code_block("global")
-    {:
+};
+cs
+{
+    setting
+    {
+        debug_mode;
+        //print_graph;
+        //def_multiline;
+        //def_expanded_only_once;
+        //def_multiline_for_variable = false;
+        //def_expanded_only_once_for_variable = false;
+        def_max_level = 32;
+        def_max_length = 512;
+        //def_skip_value;
+        def_skip_expression;
+        def_max_level_for_variable = 256;
+        def_max_length_for_variable = 20480;
+        compute_graph_nodes_capacity = 10240;
+        shader_variables_capacity = 1024;
+        string_buffer_capacity_surplus = 1024;
+        generate_expression_list;
+    };
+};
+vs_code_block
+{:
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+
+out gl_PerVertex {
+    vec4 gl_Position;
+};
+layout(location = 0) in vec4 in_attr0; //顶点坐标（位于xy平面，z始终为0，w为1）
+layout(location = 1) in vec4 in_attr1; //UV（xy是UV，z是从6点开始逆时针方向的顶点序号，中心点为12，w为1）
+layout(location = 4) in vec4 in_attr4; //固定值 277.38879	-253.98657	-1225.84583	1000 （xyzw全用）
+layout(location = 5) in vec4 in_attr5; //固定值 0	0	0	1060.5 （只用w）
+layout(location = 6) in vec4 in_attr6; //固定值 256.74911	175.44524	175.44524	1 (用xyz)
+layout(location = 7) in vec4 in_attr7; //固定值 0.33394	0.62269	0.01691	0.7787 （xyzw全用）
+layout(location = 9) in vec4 in_attr9; //固定值 1	0	0	287.3111 （xyzw全用）
+layout(location = 10) in vec4 in_attr10; //固定值 0	1	0	1522.14368 （xyzw全用）
+layout(location = 11) in vec4 in_attr11; //固定值 0	0	1	1396.66956 （xyzw全用）
+
+layout(location = 0) out vec4 out_attr0; //只写w，用作系数，参与输出颜色与alpha的计算
+layout(location = 1) out vec4 out_attr1; //xyzw全写，zw是大的云纹理采样坐标，xy是小的纹理数组的采样坐标
+layout(location = 2) out vec4 out_attr2; //xyzw全写，xy/w是深度纹理的采样坐标，z/w参与输出alpha的计算
+layout(location = 3) out vec4 out_attr3; //只写x，用作最终alpha值的乘数
+layout(location = 4) out vec4 out_attr4; //写xyz，是一个坐标，用于与一个固定点计算单位向量
+layout(location = 5) out vec4 out_attr5; //只写y，参与计算输出颜色一部分的系数的指数
+layout(location = 6) out vec4 out_attr6; //只写x，用作小的纹理数组的下标
+layout(location = 7) out vec4 out_attr7; //写xy，x与y分别用作系数
+layout(location = 8) out vec4 out_attr8; //写xz，x参与颜色分量的计算，z参与颜色分量与alpha的计算
+layout(location = 9) out vec4 out_attr9; //xyzw全写，xyz是颜色，w用作混合系数
+layout(location = 10) out vec4 out_attr10; //xyzw全写，xyz是颜色，w用作混合系数
+layout(location = 11) out vec4 out_attr11; //xyzw全写，xyz是颜色，w用作混合系数
+
+layout(std140, binding = 0) uniform vs_cbuf_8 {
+    uvec4 vs_cbuf8[4096];
+};
+layout(std140, binding = 1) uniform vs_cbuf_9 {
+    uvec4 vs_cbuf9[4096];
+};
+layout(std140, binding = 2) uniform vs_cbuf_10 {
+    uvec4 vs_cbuf10[4096];
+};
+layout(std140, binding = 3) uniform vs_cbuf_13 {
+    uvec4 vs_cbuf13[4096];
+};
+layout(std140, binding = 4) uniform vs_cbuf_15 {
+    uvec4 vs_cbuf15[4096];
+};
+
+layout(binding = 0) uniform sampler2D tex0; //256*13
+layout(binding = 1) uniform sampler2D tex1; //256*256
+layout(binding = 2) uniform sampler2D tex2; //256*256
+
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+:};
+ps_code_block("global")
+{:
 #version 460
 #pragma optionNV(fastmath off)
 #extension GL_ARB_separate_shader_objects : enable
@@ -565,27 +599,4 @@ layout(binding = 6) uniform sampler2D depthTex;
 #define ftou floatBitsToUint
 #define itof intBitsToFloat
 #define utof uintBitsToFloat
-    :};
-};
-cs
-{
-    setting
-    {
-        debug_mode;
-        //print_graph;
-        //def_multiline;
-        //def_expanded_only_once;
-        //def_multiline_for_variable = false;
-        //def_expanded_only_once_for_variable = false;
-        def_max_level = 32;
-        def_max_length = 512;
-        //def_skip_value;
-        def_skip_expression;
-        def_max_level_for_variable = 256;
-        def_max_length_for_variable = 20480;
-        compute_graph_nodes_capacity = 10240;
-        shader_variables_capacity = 1024;
-        string_buffer_capacity_surplus = 1024;
-        generate_expression_list;
-    };
-};
+:};

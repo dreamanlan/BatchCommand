@@ -1796,7 +1796,7 @@ namespace GlslRewriter
                 }
             }
             if(!exists && Config.ActiveConfig.SettingInfo.VariableAssignments.TryGetValue(name, out var vinfo)) {
-                Debug.Assert(type == vinfo.Type);
+                Debug.Assert(type == vinfo.Type || type == "uint" && vinfo.Type == "int" || type == "int" && vinfo.Type == "uint");
                 varVal = vinfo.Value;
                 exists = true;
             }

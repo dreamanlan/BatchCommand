@@ -188,6 +188,15 @@ namespace GlslRewriter
                         else if (id == "cs") {
                             AddShaderConfig(id, fd);
                         }
+                        else if (id == "vs_code_block") {
+                            ParseCodeBlock("cs", fd);
+                        }
+                        else if (id == "ps_code_block") {
+                            ParseCodeBlock("ps", fd);
+                        }
+                        else if (id == "cs_code_block") {
+                            ParseCodeBlock("cs", fd);
+                        }
                     }
                 }
             }
@@ -403,25 +412,27 @@ namespace GlslRewriter
                     else if (id == "calculator") {
                         ParseCalculator(cfgInfo, pfd);
                     }
-                    else if (id == "code_block") {
-                        ParseCodeBlock(cfgInfo, pfd);
-                    }
                 }
             }
             s_ShaderConfigs[shaderType] = cfgInfo;
         }
-        private static void ParseCodeBlock(ShaderConfig cfgInfo, Dsl.FunctionData dslCfg)
+        private static void ParseCodeBlock(string shaderType, Dsl.FunctionData dslCfg)
         {
-            var callCfg = dslCfg;
-            if (dslCfg.IsHighOrder)
-                callCfg = dslCfg.LowerOrderFunction;
+            if (s_ShaderConfigs.TryGetValue(shaderType, out var cfgInfo)) {
+                var callCfg = dslCfg;
+                if (dslCfg.IsHighOrder)
+                    callCfg = dslCfg.LowerOrderFunction;
 
-            string key = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? "global" : callCfg.GetParamId(0).Trim();
+                string key = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? "global" : callCfg.GetParamId(0).Trim();
 
-            if (dslCfg.HaveExternScript()) {
-                string code = dslCfg.GetParamId(0);
+                if (dslCfg.HaveExternScript()) {
+                    string code = dslCfg.GetParamId(0);
 
-                cfgInfo.CodeBlocks[key] = code;
+                    cfgInfo.CodeBlocks[key] = code;
+                }
+            }
+            else {
+                Console.WriteLine("[Error]: {0}_code_block must be defined after the {0} config !", shaderType);
             }
         }
         private static void ParseSetting(ShaderConfig cfg, Dsl.FunctionData dslCfg)

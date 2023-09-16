@@ -246,15 +246,15 @@ namespace GlslRewriter
         public string GetMember(string m)
         {
             if (m == "x")
-                return x.ToString();
+                return Calculator.FloatToString(x);
             else if (m == "y")
-                return y.ToString();
+                return Calculator.FloatToString(y);
             else if (int.TryParse(m, out var ix)) {
                 switch (ix) {
                     case 0:
-                        return x.ToString();
+                        return Calculator.FloatToString(x);
                     case 1:
-                        return y.ToString();
+                        return Calculator.FloatToString(y);
                 }
             }
             return string.Empty;
@@ -263,9 +263,9 @@ namespace GlslRewriter
         {
             var sb = new StringBuilder();
             sb.Append("vec2(");
-            sb.Append(x);
+            sb.Append(Calculator.FloatToString(x));
             sb.Append(",");
-            sb.Append(y);
+            sb.Append(Calculator.FloatToString(y));
             sb.Append(")");
             return sb.ToString();
         }
@@ -702,19 +702,19 @@ namespace GlslRewriter
         public string GetMember(string m)
         {
             if (m == "x")
-                return x.ToString();
+                return Calculator.FloatToString(x);
             else if (m == "y")
-                return y.ToString();
+                return Calculator.FloatToString(y);
             else if (m == "z")
-                return z.ToString();
+                return Calculator.FloatToString(z);
             else if (int.TryParse(m, out var ix)) {
                 switch (ix) {
                     case 0:
-                        return x.ToString();
+                        return Calculator.FloatToString(x);
                     case 1:
-                        return y.ToString();
+                        return Calculator.FloatToString(y);
                     case 2:
-                        return z.ToString();
+                        return Calculator.FloatToString(z);
                 }
             }
             return string.Empty;
@@ -723,11 +723,11 @@ namespace GlslRewriter
         {
             var sb = new StringBuilder();
             sb.Append("vec3(");
-            sb.Append(x);
+            sb.Append(Calculator.FloatToString(x));
             sb.Append(",");
-            sb.Append(y);
+            sb.Append(Calculator.FloatToString(y));
             sb.Append(",");
-            sb.Append(z);
+            sb.Append(Calculator.FloatToString(z));
             sb.Append(")");
             return sb.ToString();
         }
@@ -1250,23 +1250,23 @@ namespace GlslRewriter
         public string GetMember(string m)
         {
             if (m == "x")
-                return x.ToString();
+                return Calculator.FloatToString(x);
             else if (m == "y")
-                return y.ToString();
+                return Calculator.FloatToString(y);
             else if (m == "z")
-                return z.ToString();
+                return Calculator.FloatToString(z);
             else if (m == "w")
-                return w.ToString();
+                return Calculator.FloatToString(w);
             else if (int.TryParse(m, out var ix)) {
                 switch (ix) {
                     case 0:
-                        return x.ToString();
+                        return Calculator.FloatToString(x);
                     case 1:
-                        return y.ToString();
+                        return Calculator.FloatToString(y);
                     case 2:
-                        return z.ToString();
+                        return Calculator.FloatToString(z);
                     case 3:
-                        return w.ToString();
+                        return Calculator.FloatToString(w);
                 }
             }
             return string.Empty;
@@ -1275,13 +1275,13 @@ namespace GlslRewriter
         {
             var sb = new StringBuilder();
             sb.Append("vec4(");
-            sb.Append(x);
+            sb.Append(Calculator.FloatToString(x));
             sb.Append(",");
-            sb.Append(y);
+            sb.Append(Calculator.FloatToString(y));
             sb.Append(",");
-            sb.Append(z);
+            sb.Append(Calculator.FloatToString(z));
             sb.Append(",");
-            sb.Append(w);
+            sb.Append(Calculator.FloatToString(w));
             sb.Append(")");
             return sb.ToString();
         }
@@ -1773,7 +1773,7 @@ namespace GlslRewriter
                 if (baseType == "float") {
                     if (s_FloatVars.TryGetValue(name, out var val)) {
                         exists = true;
-                        varVal = val.ToString();
+                        varVal = Calculator.FloatToString(val);
                     }
                 }
                 else if (baseType == "int") {
@@ -1896,7 +1896,7 @@ namespace GlslRewriter
                     if (baseType == "float") {
                         if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = vals[index].Value.ToString();
+                            varVal = Calculator.FloatToString(vals[index].Value);
                         }
                     }
                     else if (baseType == "int") {

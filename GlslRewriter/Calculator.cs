@@ -18,12 +18,14 @@ namespace GlslRewriter
             if (func == "bool") {
                 if (TryParseBool(args[0], out var v)) {
                     val = v.ToString();
+                    type = "bool";
                     succ = true;
                 }
             }
             else if (func == "float" || func == "double") {
                 if (double.TryParse(args[0], out var v)) {
-                    val = v.ToString();
+                    val = DoubleToString(v);
+                    type = "float";
                     succ = true;
                 }
             }
@@ -33,6 +35,7 @@ namespace GlslRewriter
                         val = ((long)dval).ToString();
                     else
                         val = lval.ToString();
+                    type = "int";
                     succ = true;
                 }
             }
@@ -42,6 +45,7 @@ namespace GlslRewriter
                         val = ((long)dval).ToString();
                     else
                         val = ((ulong)lval).ToString();
+                    type = "uint";
                     succ = true;
                 }
             }
@@ -51,6 +55,7 @@ namespace GlslRewriter
                         Bool2 tmp = new Bool2();
                         tmp.x = tmp.y = v;
                         val = tmp.ToString();
+                        type = "bvec2";
                         succ = true;
                     }
                 }
@@ -60,6 +65,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         val = tmp.ToString();
+                        type = "bvec2";
                         succ = true;
                     }
                 }
@@ -70,6 +76,7 @@ namespace GlslRewriter
                         Float2 tmp = new Float2();
                         tmp.x = tmp.y = v;
                         val = tmp.ToString();
+                        type = "vec2";
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
@@ -77,6 +84,7 @@ namespace GlslRewriter
                         tmp.x = (float)i2.x;
                         tmp.y = (float)i2.y;
                         val = tmp.ToString();
+                        type = "vec2";
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
@@ -84,6 +92,7 @@ namespace GlslRewriter
                         tmp.x = (float)u2.x;
                         tmp.y = (float)u2.y;
                         val = tmp.ToString();
+                        type = "vec2";
                         succ = true;
                     }
                 }
@@ -93,6 +102,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         val = tmp.ToString();
+                        type = "vec2";
                         succ = true;
                     }
                 }
@@ -103,6 +113,7 @@ namespace GlslRewriter
                         Int2 tmp = new Int2();
                         tmp.x = tmp.y = v;
                         val = tmp.ToString();
+                        type = "ivec2";
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
@@ -110,6 +121,7 @@ namespace GlslRewriter
                         tmp.x = (int)u2.x;
                         tmp.y = (int)u2.y;
                         val = tmp.ToString();
+                        type = "ivec2";
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
@@ -117,6 +129,7 @@ namespace GlslRewriter
                         tmp.x = (int)f2.x;
                         tmp.y = (int)f2.y;
                         val = tmp.ToString();
+                        type = "ivec2";
                         succ = true;
                     }
                 }
@@ -126,6 +139,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         val = tmp.ToString();
+                        type = "ivec2";
                         succ = true;
                     }
                 }
@@ -136,6 +150,7 @@ namespace GlslRewriter
                         Uint2 tmp = new Uint2();
                         tmp.x = tmp.y = v;
                         val = tmp.ToString();
+                        type = "uvec2";
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
@@ -143,6 +158,7 @@ namespace GlslRewriter
                         tmp.x = (uint)i2.x;
                         tmp.y = (uint)i2.y;
                         val = tmp.ToString();
+                        type = "uvec2";
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
@@ -150,6 +166,7 @@ namespace GlslRewriter
                         tmp.x = (uint)f2.x;
                         tmp.y = (uint)f2.y;
                         val = tmp.ToString();
+                        type = "uvec2";
                         succ = true;
                     }
                 }
@@ -159,6 +176,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         val = tmp.ToString();
+                        type = "uvec2";
                         succ = true;
                     }
                 }
@@ -169,6 +187,7 @@ namespace GlslRewriter
                         Bool3 tmp = new Bool3();
                         tmp.x = tmp.y = tmp.z = v;
                         val = tmp.ToString();
+                        type = "bvec3";
                         succ = true;
                     }
                 }
@@ -179,6 +198,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         val = tmp.ToString();
+                        type = "bvec3";
                         succ = true;
                     }
                 }
@@ -189,6 +209,7 @@ namespace GlslRewriter
                         Float3 tmp = new Float3();
                         tmp.x = tmp.y = tmp.z = v;
                         val = tmp.ToString();
+                        type = "bvec3";
                         succ = true;
                     }
                 }
@@ -199,6 +220,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         val = tmp.ToString();
+                        type = "bvec3";
                         succ = true;
                     }
                 }
@@ -209,6 +231,7 @@ namespace GlslRewriter
                         Int3 tmp = new Int3();
                         tmp.x = tmp.y = tmp.z = v;
                         val = tmp.ToString();
+                        type = "ivec3";
                         succ = true;
                     }
                 }
@@ -219,6 +242,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         val = tmp.ToString();
+                        type = "ivec3";
                         succ = true;
                     }
                 }
@@ -229,6 +253,7 @@ namespace GlslRewriter
                         Uint3 tmp = new Uint3();
                         tmp.x = tmp.y = tmp.z = v;
                         val = tmp.ToString();
+                        type = "uvec3";
                         succ = true;
                     }
                 }
@@ -239,6 +264,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         val = tmp.ToString();
+                        type = "uvec3";
                         succ = true;
                     }
                 }
@@ -249,6 +275,7 @@ namespace GlslRewriter
                         Bool4 tmp = new Bool4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
                         val = tmp.ToString();
+                        type = "bvec4";
                         succ = true;
                     }
                 }
@@ -261,6 +288,7 @@ namespace GlslRewriter
                             tmp.z = false;
                             tmp.w = false;
                             val = tmp.ToString();
+                            type = "bvec4";
                             succ = true;
                         }
                         else if (Bool3.TryParse(args[0], out var f3)) {
@@ -270,6 +298,7 @@ namespace GlslRewriter
                             tmp.z = f3.z;
                             tmp.w = v2;
                             val = tmp.ToString();
+                            type = "bvec4";
                             succ = true;
                         }
                     }
@@ -283,6 +312,7 @@ namespace GlslRewriter
                             tmp.z = v3;
                             tmp.w = false;
                             val = tmp.ToString();
+                            type = "bvec4";
                             succ = true;
                         }
                         else if (Bool2.TryParse(args[0], out var f2)) {
@@ -292,6 +322,7 @@ namespace GlslRewriter
                             tmp.z = v2;
                             tmp.w = v3;
                             val = tmp.ToString();
+                            type = "bvec4";
                             succ = true;
                         }
                     }
@@ -304,6 +335,7 @@ namespace GlslRewriter
                         tmp.z = v3;
                         tmp.w = v4;
                         val = tmp.ToString();
+                        type = "bvec4";
                         succ = true;
                     }
                 }
@@ -314,6 +346,7 @@ namespace GlslRewriter
                         Float4 tmp = new Float4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
                         val = tmp.ToString();
+                        type = "vec4";
                         succ = true;
                     }
                 }
@@ -326,6 +359,7 @@ namespace GlslRewriter
                             tmp.z = 0;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "vec4";
                             succ = true;
                         }
                         else if (Float3.TryParse(args[0], out var f3)) {
@@ -335,6 +369,7 @@ namespace GlslRewriter
                             tmp.z = f3.z;
                             tmp.w = v2;
                             val = tmp.ToString();
+                            type = "vec4";
                             succ = true;
                         }
                     }
@@ -348,6 +383,7 @@ namespace GlslRewriter
                             tmp.z = v3;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "vec4";
                             succ = true;
                         }
                         else if (Float2.TryParse(args[0], out var f2)) {
@@ -357,6 +393,7 @@ namespace GlslRewriter
                             tmp.z = v2;
                             tmp.w = v3;
                             val = tmp.ToString();
+                            type = "vec4";
                             succ = true;
                         }
                     }
@@ -369,6 +406,7 @@ namespace GlslRewriter
                         tmp.z = v3;
                         tmp.w = v4;
                         val = tmp.ToString();
+                        type = "vec4";
                         succ = true;
                     }
                 }
@@ -379,6 +417,7 @@ namespace GlslRewriter
                         Int4 tmp = new Int4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
                         val = tmp.ToString();
+                        type = "ivec4";
                         succ = true;
                     }
                 }
@@ -391,6 +430,7 @@ namespace GlslRewriter
                             tmp.z = 0;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "ivec4";
                             succ = true;
                         }
                         else if (Int3.TryParse(args[0], out var i3)) {
@@ -400,6 +440,7 @@ namespace GlslRewriter
                             tmp.z = i3.z;
                             tmp.w = v2;
                             val = tmp.ToString();
+                            type = "ivec4";
                             succ = true;
                         }
                     }
@@ -413,6 +454,7 @@ namespace GlslRewriter
                             tmp.z = v3;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "ivec4";
                             succ = true;
                         }
                         else if (Int2.TryParse(args[0], out var i2)) {
@@ -422,6 +464,7 @@ namespace GlslRewriter
                             tmp.z = v2;
                             tmp.w = v3;
                             val = tmp.ToString();
+                            type = "ivec4";
                             succ = true;
                         }
                     }
@@ -434,6 +477,7 @@ namespace GlslRewriter
                         tmp.z = v3;
                         tmp.w = v4;
                         val = tmp.ToString();
+                        type = "ivec4";
                         succ = true;
                     }
                 }
@@ -444,6 +488,7 @@ namespace GlslRewriter
                         Uint4 tmp = new Uint4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
                         val = tmp.ToString();
+                        type = "uvec4";
                         succ = true;
                     }
                 }
@@ -456,6 +501,7 @@ namespace GlslRewriter
                             tmp.z = 0;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "uvec4";
                             succ = true;
                         }
                         else if (Uint3.TryParse(args[0], out var u3)) {
@@ -465,6 +511,7 @@ namespace GlslRewriter
                             tmp.z = u3.z;
                             tmp.w = v2;
                             val = tmp.ToString();
+                            type = "uvec4";
                             succ = true;
                         }
                     }
@@ -478,6 +525,7 @@ namespace GlslRewriter
                             tmp.z = v3;
                             tmp.w = 0;
                             val = tmp.ToString();
+                            type = "uvec4";
                             succ = true;
                         }
                         else if (Uint2.TryParse(args[0], out var u2)) {
@@ -487,6 +535,7 @@ namespace GlslRewriter
                             tmp.z = v2;
                             tmp.w = v3;
                             val = tmp.ToString();
+                            type = "uvec4";
                             succ = true;
                         }
                     }
@@ -499,6 +548,7 @@ namespace GlslRewriter
                         tmp.z = v3;
                         tmp.w = v4;
                         val = tmp.ToString();
+                        type = "uvec4";
                         succ = true;
                     }
                 }
@@ -517,13 +567,13 @@ namespace GlslRewriter
             }
             else if (func == "itof" || func == "intBitsToFloat") {
                 if (int.TryParse(args[0], out var v)) {
-                    val = itof(v).ToString();
+                    val = FloatToString(itof(v));
                     succ = true;
                 }
             }
             else if (func == "utof" || func == "uintBitsToFloat") {
                 if (uint.TryParse(args[0], out var v)) {
-                    val = utof(v).ToString();
+                    val = FloatToString(utof(v));
                     succ = true;
                 }
             }
@@ -575,67 +625,67 @@ namespace GlslRewriter
             }
             else if (func == "trunc") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Truncate(v).ToString();
+                    val = DoubleToString(MathF.Truncate(v));
                     succ = true;
                 }
             }
             else if (func == "floor") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Floor(v).ToString();
+                    val = FloatToString(MathF.Floor(v));
                     succ = true;
                 }
             }
             else if (func == "ceiling") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Ceiling(v).ToString();
+                    val = FloatToString(MathF.Ceiling(v));
                     succ = true;
                 }
             }
             else if (func == "round") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Round(v).ToString();
+                    val = FloatToString(MathF.Round(v));
                     succ = true;
                 }
             }
             else if(func=="roundEven") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Round(v, MidpointRounding.ToEven).ToString();
+                    val = FloatToString(MathF.Round(v, MidpointRounding.ToEven));
                     succ = true;
                 }
             }
             else if (func == "abs") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Abs(v).ToString();
+                    val = FloatToString(MathF.Abs(v));
                     succ = true;
                 }
             }
             else if (func == "log") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Log(v).ToString();
+                    val = FloatToString(MathF.Log(v));
                     succ = true;
                 }
             }
             else if (func == "exp") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Exp(v).ToString();
+                    val = FloatToString(MathF.Exp(v));
                     succ = true;
                 }
             }
             else if (func == "log2") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Log2(v).ToString();
+                    val = FloatToString(MathF.Log2(v));
                     succ = true;
                 }
             }
             else if (func == "exp2") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Pow(2, v).ToString();
+                    val = FloatToString(MathF.Pow(2, v));
                     succ = true;
                 }
             }
             else if (func == "sqrt") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Sqrt(v).ToString();
+                    val = FloatToString(MathF.Sqrt(v));
                     succ = true;
                 }
             }
@@ -643,104 +693,104 @@ namespace GlslRewriter
                 if (float.TryParse(args[0], out var v)) {
                     float sv = MathF.Sqrt(v);
                     if (sv != 0) {
-                        val = (1.0f / sv).ToString();
+                        val = FloatToString(1.0f / sv);
                         succ = true;
                     }
                 }
             }
             else if (func == "sin") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Sin(v).ToString();
+                    val = FloatToString(MathF.Sin(v));
                     succ = true;
                 }
             }
             else if (func == "cos") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Cos(v).ToString();
+                    val = FloatToString(MathF.Cos(v));
                     succ = true;
                 }
             }
             else if (func == "tan") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Tan(v).ToString();
+                    val = FloatToString(MathF.Tan(v));
                     succ = true;
                 }
             }
             else if (func == "sinh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Sinh(v).ToString();
+                    val = FloatToString(MathF.Sinh(v));
                     succ = true;
                 }
             }
             else if (func == "cosh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Cosh(v).ToString();
+                    val = FloatToString(MathF.Cosh(v));
                     succ = true;
                 }
             }
             else if (func == "tanh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Tanh(v).ToString();
+                    val = FloatToString(MathF.Tanh(v));
                     succ = true;
                 }
             }
             else if (func == "asin") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Asin(v).ToString();
+                    val = FloatToString(MathF.Asin(v));
                     succ = true;
                 }
             }
             else if (func == "acos") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Acos(v).ToString();
+                    val = FloatToString(MathF.Acos(v));
                     succ = true;
                 }
             }
             else if (func == "atan") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Atan(v).ToString();
+                    val = FloatToString(MathF.Atan(v));
                     succ = true;
                 }
             }
             else if (func == "asinh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Asinh(v).ToString();
+                    val = FloatToString(MathF.Asinh(v));
                     succ = true;
                 }
             }
             else if (func == "acosh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Acosh(v).ToString();
+                    val = FloatToString(MathF.Acosh(v));
                     succ = true;
                 }
             }
             else if (func == "atanh") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = MathF.Atanh(v).ToString();
+                    val = FloatToString(MathF.Atanh(v));
                     succ = true;
                 }
             }
             else if (func == "degrees") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = (v * 180.0f / MathF.PI).ToString();
+                    val = FloatToString(v * 180.0f / MathF.PI);
                     succ = true;
                 }
             }
             else if (func == "radians") {
                 if (float.TryParse(args[0], out var v)) {
-                    val = (v * MathF.PI / 180.0f).ToString();
+                    val = FloatToString(v * MathF.PI / 180.0f);
                     succ = true;
                 }
             }
             else if (func == "pow") {
                 if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2)) {
-                    val = MathF.Pow(v1, v2).ToString();
+                    val = FloatToString(MathF.Pow(v1, v2));
                     succ = true;
                 }
             }
             else if (func == "fma") {
                 if (double.TryParse(args[0], out var v1) && double.TryParse(args[1], out var v2) && double.TryParse(args[2], out var v3)) {
-                    val = (v1 * v2 + v3).ToString();
+                    val = DoubleToString(v1 * v2 + v3);
                     succ = true;
                 }
             }
@@ -750,7 +800,7 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         double v = v1 < v2 ? v1 : v2;
-                        val = v.ToString();
+                        val = DoubleToString(v);
                     }
                     else {
                         long v = lval1 < lval2 ? lval1 : lval2;
@@ -765,7 +815,7 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         double v = v1 > v2 ? v1 : v2;
-                        val = v.ToString();
+                        val = DoubleToString(v);
                     }
                     else {
                         long v = lval1 > lval2 ? lval1 : lval2;
@@ -787,7 +837,7 @@ namespace GlslRewriter
                 if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
                     if (bval) {
                         if (isFloat1) {
-                            val = dval1.ToString();
+                            val = DoubleToString(dval1);
                             type = "float";
                         }
                         else {
@@ -798,7 +848,7 @@ namespace GlslRewriter
                     }
                     else {
                         if (isFloat1) {
-                            val = dval2.ToString();
+                            val = DoubleToString(dval2);
                             type = "float";
                         }
                         else {
@@ -831,7 +881,7 @@ namespace GlslRewriter
                     if(isFloat1 || isFloat2) {
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 + v2).ToString();
+                        val = DoubleToString(v1 + v2);
                         type = "float";
                     }
                     else {
@@ -847,7 +897,7 @@ namespace GlslRewriter
                     if (isFloat1 || isFloat2) {
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 - v2).ToString();
+                        val = DoubleToString(v1 - v2);
                         type = "float";
                     }
                     else {
@@ -863,7 +913,7 @@ namespace GlslRewriter
                     if (isFloat1 || isFloat2) {
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 * v2).ToString();
+                        val = DoubleToString(v1 * v2);
                         type = "float";
                     }
                     else {
@@ -880,7 +930,7 @@ namespace GlslRewriter
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
                         if (v2 != 0) {
-                            val = (v1 / v2).ToString();
+                            val = DoubleToString(v1 / v2);
                             succ = true;
                             type = "float";
                         }
@@ -900,7 +950,7 @@ namespace GlslRewriter
                     if (isFloat1 || isFloat2) {
                         double v1 = isFloat1 ? dval1 : lval1;
                         double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 % v2).ToString();
+                        val = DoubleToString(v1 % v2);
                         type = "float";
                     }
                     else {
@@ -1065,7 +1115,7 @@ namespace GlslRewriter
             if (op == "-") {
                 if(TryParseNumeric(opd, out var isFloat, out var dval, out var lval)) {
                     if (isFloat) {
-                        val = (-dval).ToString();
+                        val = DoubleToString(-dval);
                         type = "float";
                     }
                     else {

@@ -5,15 +5,12 @@
 out gl_PerVertex {
     vec4 gl_Position;
 };
-layout(location = 0) in vec4 in_attr0; //顶点坐标（位于xy平面，z始终为0，w为1），只用于计算out_attr1.xy，没用于计算输出顶点的位置
-layout(location = 1) in vec4 in_attr1; //UV（xy是UV，z是从6点开始逆时针方向的顶点序号，中心点为12，w为1），xy配合in_attr0用来计算out_attr1，z用于计算tex0采样y像素坐标
-layout(location = 4) in vec4 in_attr4; //固定值 277.38879	-253.98657	-1225.84583	1000 （xyzw全用），xyz可能是某个原始坐标，使用in_attr9\10\11作为变换矩阵变换到另一个坐标系，w小于0会提前结束shader
-layout(location = 5) in vec4 in_attr5; //固定值 0	0	0	1060.5 （只用w）shader需符合条件 (in_attr5.w > vs_cbuf10[2].x) || (vs_cbuf10[2].x - in_attr5.w) > in_attr4.w 才会继续执行，
-									   //后续会使用 (vs_cbuf10[2].x - in_attr5.w) / in_attr4.w
-									   //或者 (in_attr7.x * vs_cbuf9[12].z * vs_cbuf_9[11].y + vs_cbuf10[2].x - in_attr5.w) * vs_cbuf9[11].y的小数部分
-layout(location = 6) in vec4 in_attr6; //固定值 256.74911	175.44524	175.44524	1 (用xyz)，tex0的纵向12个像素是顶点动画的12个顶点坐标，xyz分别用于缩放坐标的xyz，y也用于计算out_attr5.y
-layout(location = 7) in vec4 in_attr7; //固定值 0.33394	0.62269	0.01691	0.7787 （xyzw全用）,x是序列帧动画进度[0,1], xy分别是计算out_attr1.zw的系数，zw是乘系数前的叠加值
-//下面3个输入参数的xyz构成3x3单位矩阵，代码里用于变换in_attr4.xyz，w分量像是用来计算平移的值（先旋转缩放再平移）
+layout(location = 0) in vec4 in_attr0; //顶点坐标（位于xy平面，z始终为0，w为1）
+layout(location = 1) in vec4 in_attr1; //UV（xy是UV，z是从6点开始逆时针方向的顶点序号，中心点为12，w为1）
+layout(location = 4) in vec4 in_attr4; //固定值 277.38879	-253.98657	-1225.84583	1000 （xyzw全用）
+layout(location = 5) in vec4 in_attr5; //固定值 0	0	0	1060.5 （只用w）
+layout(location = 6) in vec4 in_attr6; //固定值 256.74911	175.44524	175.44524	1 (用xyz)
+layout(location = 7) in vec4 in_attr7; //固定值 0.33394	0.62269	0.01691	0.7787 （xyzw全用）
 layout(location = 9) in vec4 in_attr9; //固定值 1	0	0	287.3111 （xyzw全用）
 layout(location = 10) in vec4 in_attr10; //固定值 0	1	0	1522.14368 （xyzw全用）
 layout(location = 11) in vec4 in_attr11; //固定值 0	0	1	1396.66956 （xyzw全用）
@@ -34,19 +31,15 @@ layout(location = 11) out vec4 out_attr11; //xyzw全写，xyz是颜色，w用作
 layout(std140, binding = 0) uniform vs_cbuf_8 {
     uvec4 vs_cbuf8[4096];
 };
-
 layout(std140, binding = 1) uniform vs_cbuf_9 {
     uvec4 vs_cbuf9[4096];
 };
-
 layout(std140, binding = 2) uniform vs_cbuf_10 {
     uvec4 vs_cbuf10[4096];
 };
-
 layout(std140, binding = 3) uniform vs_cbuf_13 {
     uvec4 vs_cbuf13[4096];
 };
-
 layout(std140, binding = 4) uniform vs_cbuf_15 {
     uvec4 vs_cbuf15[4096];
 };
@@ -60,19 +53,19 @@ layout(binding = 2) uniform sampler2D tex2; //256*256
 #define itof intBitsToFloat
 #define utof uintBitsToFloat
 
+
 void main()
 {
 	// 1065353216 = 1.00f;
-	// 0、1、2、3的xyz用于将原始xyz变换为xyzw
-	// vs_cbuf8[0] = vec4(0.9936762, 0.00, 0.1122834, -442.3171);		//0、1、2、3的w分别是xyzw坐标的加数
+	// vs_cbuf8[0] = vec4(0.9936762, 0.00, 0.1122834, -442.3171);
 	// vs_cbuf8[1] = vec4(0.0627182, 0.829457, -0.5550383, -629.7858);
 	// vs_cbuf8[2] = vec4(-0.0931343, 0.5585706, 0.8242117, -2058.403);
 	// vs_cbuf8[3] = vec4(0.00, 0.00, 0.00, 1.00);
-	// vs_cbuf8[4] = vec4(1.206285, 0.00, 0.00, 0.00);					//4、5、6、7就矩阵的4列
+	// vs_cbuf8[4] = vec4(1.206285, 0.00, 0.00, 0.00);
 	// vs_cbuf8[5] = vec4(0.00, 2.144507, 0.00, 0.00);
 	// vs_cbuf8[6] = vec4(0.00, 0.00, -1.00008, -2.00008);
 	// vs_cbuf8[7] = vec4(0.00, 0.00, -1.00, 0.00);
-	// vs_cbuf8[29] = vec4(287.3111, 1672.144, 1396.669, 0.00);			//可能是相机位置
+	// vs_cbuf8[29] = vec4(287.3111, 1672.144, 1396.669, 0.00);
 	// vs_cbuf8[30] = vec4(1.00, 25000.00, 25000.00, 24999.00);
 	// vs_cbuf9[11] = vec4(0.00, 0.00, 0.00, 0.00);
 	// vs_cbuf9[12] = vec4(0.00, 0.00, 0.00, 0.00);
@@ -93,7 +86,7 @@ void main()
 	// vs_cbuf15[25] = vec4(0.682, 0.99055, 0.63965, 0.12);
 	// vs_cbuf15[26] = vec4(1.12035, 1.3145, 0.66605, 0.4519901);
 	// vs_cbuf15[27] = vec4(-0.0909091, 0.0045455, 250.00, 0.00);
-	// vs_cbuf15[28] = vec4(0.5226594, -0.5741013, -0.6302658, 0.00);	//一个单位向量
+	// vs_cbuf15[28] = vec4(0.5226594, -0.5741013, -0.6302658, 0.00);
 	// vs_cbuf15[54] = vec4(0.8137476, 1.689872, 75.00, 2000.00);
 	// vs_cbuf15[55] = vec4(0.8511029, 0.825, 1.060784, 0.70);
 	// vs_cbuf15[57] = vec4(-4731.44, 907.7282, 3000.00, 1.00);
@@ -474,7 +467,7 @@ void main()
 	// False  <=>  if(((int({u_1_1 : 1000}) <= int(0u)) ? true : false))
 	if(((int(u_1_1) <= int(0u)) ? true : false))
 	{
-		// 0  <=>  ftou(({utof(u_2_phi_2) : 0.00} * 5.))
+		// 0  <=>  {ftou(({utof(u_2_phi_2) : 0.00} * 5.)) : 0}
 		u_0_2 = ftou((utof(u_2_phi_2) * 5.));
 		u_0_phi_4 = u_0_2;
 	}
@@ -509,7 +502,7 @@ void main()
 	}
 	// False  <=>  ((((({in_attr5.w : 1060.50} > {utof(vs_cbuf10[2].x) : 1638.50}) && (! isnan({in_attr5.w : 1060.50}))) && (! isnan({utof(vs_cbuf10[2].x) : 1638.50}))) || {b_0_2 : False}) ? true : false)
 	b_1_9 = (((((in_attr5.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr5.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_2) ? true : false);
-	// 1149538304  <=>  ftou({in_attr5.w : 1060.50})
+	// 1149538304  <=>  {ftou({in_attr5.w : 1060.50}) : 1149538304}
 	u_3_2 = ftou(in_attr5.w);
 	u_3_phi_9 = u_3_2;
 	// False  <=>  if({b_1_9 : False})
@@ -535,7 +528,7 @@ void main()
 	// False  <=>  if({b_1_11 : False})
 	if(b_1_11)
 	{
-		// 1168487424  <=>  ftou(({utof(u_3_phi_9) : 1060.50} * 5.))
+		// 1168487424  <=>  {ftou(({utof(u_3_phi_9) : 1060.50} * 5.)) : 1168487424}
 		u_0_5 = ftou((utof(u_3_phi_9) * 5.));
 		u_0_phi_11 = u_0_5;
 	}
@@ -564,9 +557,9 @@ void main()
 	}
 	// 256.7491  <=>  (clamp((min(0., {in_attr7.x : 0.33394}) + (0. - 0.)), 0.0, 1.0) + {in_attr6.x : 256.7491})
 	pf_2_0 = (clamp((min(0., in_attr7.x) + (0. - 0.)), 0.0, 1.0) + in_attr6.x);
-	// 1141932032  <=>  ftou({pf_0_1 : 578.00})
+	// 1141932032  <=>  {ftou(pf_0_1) : 1141932032}
 	u_0_6 = ftou(pf_0_1);
-	// 1148846080  <=>  ftou(float(int({u_1_1 : 1000})))
+	// 1148846080  <=>  {ftou(float(int({u_1_1 : 1000}))) : 1148846080}
 	u_3_4 = ftou(float(int(u_1_1)));
 	u_0_phi_15 = u_0_6;
 	u_3_phi_15 = u_3_4;
@@ -575,13 +568,13 @@ void main()
 	{
 		// ((({in_attr7.x : 0.33394} * {utof(vs_cbuf9[12].z) : 0.00}) * {utof(vs_cbuf9[11].y) : 0.00} + {pf_0_1 : 578.00}) * (1.0 / {utof(vs_cbuf9[11].y) : 0.00}))
 		pf_0_3 = (((in_attr7.x * utof(vs_cbuf9[12].z)) * utof(vs_cbuf9[11].y) + pf_0_1) * (1.0 / utof(vs_cbuf9[11].y)));
-		// ftou({pf_0_3 : })
+		// {ftou(pf_0_3) : }
 		u_4_2 = ftou(pf_0_3);
 		// floor({pf_0_3 : })
 		f_1_10 = floor(pf_0_3);
 		// ({pf_0_3 : } + (0. - {f_1_10 : }))
 		pf_0_4 = (pf_0_3 + (0. - f_1_10));
-		// ftou({pf_0_4 : })
+		// {ftou(pf_0_4) : }
 		u_0_7 = ftou(pf_0_4);
 		// {u_4_2 : }
 		u_3_5 = u_4_2;
@@ -596,7 +589,7 @@ void main()
 	// True  <=>  if({b_0_5 : True})
 	if(b_0_5)
 	{
-		// 1058273231  <=>  ftou(({utof(u_0_phi_15) : 578.00} * (1.0 / {utof(u_3_phi_15) : 1000.00})))
+		// 1058273231  <=>  {ftou(({utof(u_0_phi_15) : 578.00} * (1.0 / {utof(u_3_phi_15) : 1000.00}))) : 1058273231}
 		u_1_4 = ftou((utof(u_0_phi_15) * (1.0 / utof(u_3_phi_15))));
 		u_1_phi_16 = u_1_4;
 	}

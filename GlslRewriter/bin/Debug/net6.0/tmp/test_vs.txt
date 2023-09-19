@@ -1,3 +1,66 @@
+//000 , new VertexData(new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.50f, 0.50f, 12.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//001 , new VertexData(new Vector4(0.25f, -0.43286f, 0.00f, 1.00f), new Vector4(0.75f, 0.93262f, 1.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//002 , new VertexData(new Vector4(0.00f, -0.50f, 0.00f, 1.00f), new Vector4(0.50f, 1.00f, 0.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//003 , new VertexData(new Vector4(-0.24988f, -0.43286f, 0.00f, 1.00f), new Vector4(0.25f, 0.93262f, 11.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//004 , new VertexData(new Vector4(0.43286f, -0.24988f, 0.00f, 1.00f), new Vector4(0.93262f, 0.75f, 2.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//005 , new VertexData(new Vector4(-0.43286f, -0.24988f, 0.00f, 1.00f), new Vector4(0.06696f, 0.74951f, 10.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//006 , new VertexData(new Vector4(0.50f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.50f, 3.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//007 , new VertexData(new Vector4(-0.50f, 0.00f, 0.00f, 1.00f), new Vector4(0.00f, 0.50f, 9.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//008 , new VertexData(new Vector4(0.43286f, 0.25f, 0.00f, 1.00f), new Vector4(0.93262f, 0.25f, 4.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//009 , new VertexData(new Vector4(-0.43286f, 0.24988f, 0.00f, 1.00f), new Vector4(0.06696f, 0.25f, 8.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//010 , new VertexData(new Vector4(0.25f, 0.43286f, 0.00f, 1.00f), new Vector4(0.75f, 0.06696f, 5.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//011 , new VertexData(new Vector4(-0.25f, 0.43286f, 0.00f, 1.00f), new Vector4(0.24988f, 0.06696f, 7.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//012 , new VertexData(new Vector4(0.00f, 0.50f, 0.00f, 1.00f), new Vector4(0.49976f, 0.00f, 6.00f, 1.00f), new Vector4(277.38879f, -253.98657f, -1225.84583f, 1000.00f), new Vector4(0.00f, 0.00f, 0.00f, 1060.50f), new Vector4(256.74911f, 175.44524f, 175.44524f, 1.00f), new Vector4(0.33394f, 0.62269f, 0.01691f, 0.7787f), new Vector4(1.00f, 0.00f, 0.00f, 287.3111f), new Vector4(0.00f, 1.00f, 0.00f, 1522.14368f), new Vector4(0.00f, 0.00f, 1.00f, 1396.66956f))
+//000 , new VertexData(new Vector4(166.45822f, 777.81085f, 1259.94666f, 1261.84583f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.50f, 0.50f, 1.46396f, 3.26268f), new Vector4(714.15204f, 242.01749f, 1260.89624f, 1261.84583f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(564.69989f, 1268.1571f, 170.82373f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.77344f, 3.10352f, 1.75391f, 0.00f), new Vector4(0.20251f, 0.44214f, 0.8335f, 0.00f))
+//001 , new VertexData(new Vector4(236.82349f, 573.86212f, 1279.5929f, 1281.49048f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.74048f, 1.04115f, 1.72853f, 3.85744f), new Vector4(759.15698f, 353.81418f, 1280.54175f, 1281.49048f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(618.52814f, 1178.30042f, 213.96782f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(5.28516f, 3.31641f, 1.82227f, 0.00f), new Vector4(0.20813f, 0.45215f, 0.84668f, 0.00f))
+//002 , new VertexData(new Vector4(140.55453f, 604.97467f, 1284.29126f, 1286.18848f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.42651f, 0.9834f, 1.38311f, 3.79397f), new Vector4(713.37152f, 340.6069f, 1285.23987f, 1286.18848f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(540.5741f, 1187.71008f, 193.0824f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(5.17188f, 3.25781f, 1.7998f, 0.00f), new Vector4(0.20459f, 0.44556f, 0.83838f, 0.00f))
+//003 , new VertexData(new Vector4(110.29198f, 638.52747f, 1282.74023f, 1284.63757f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.32649f, 0.89946f, 1.27307f, 3.70172f), new Vector4(697.46478f, 323.05505f, 1283.68896f, 1284.63757f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(516.48218f, 1201.55396f, 182.85965f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(5.07422f, 3.21484f, 1.78516f, 0.00f), new Vector4(0.203f, 0.44287f, 0.83447f, 0.00f))
+//004 , new VertexData(new Vector4(291.90979f, 648.14435f, 1265.17566f, 1267.07446f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.9148f, 0.82112f, 1.92031f, 3.61561f), new Vector4(779.49213f, 309.46506f, 1266.125f, 1267.07446f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(664.73523f, 1215.08386f, 211.7516f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(5.11719f, 3.25586f, 1.80762f, 0.00f), new Vector4(0.2085f, 0.45288f, 0.84766f, 0.00f))
+//005 , new VertexData(new Vector4(19.38876f, 653.54309f, 1289.00598f, 1290.90283f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.03095f, 0.88413f, 0.94792f, 3.68487f), new Vector4(655.14581f, 318.67987f, 1289.95435f, 1290.90283f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(442.62338f, 1203.86218f, 165.34795f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.98438f, 3.16406f, 1.76367f, 0.00f), new Vector4(0.19946f, 0.43604f, 0.8252f, 0.00f))
+//006 , new VertexData(new Vector4(319.90643f, 735.70685f, 1251.50415f, 1253.40405f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.57182f, 2.01405f, 3.34161f), new Vector4(786.65527f, 258.8486f, 1252.4541f, 1253.40405f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(689.08514f, 1256.5874f, 202.9621f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.91016f, 3.17969f, 1.78516f, 0.00f), new Vector4(0.20776f, 0.45142f, 0.8457f, 0.00f))
+//007 , new VertexData(new Vector4(0.27238f, 758.85779f, 1277.31189f, 1279.20972f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(-0.03759f, 0.59998f, 0.87251f, 3.37257f), new Vector4(639.74103f, 260.17596f, 1278.26074f, 1279.20972f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(428.86725f, 1251.12744f, 145.94875f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.73047f, 3.05859f, 1.73047f, 0.00f), new Vector4(0.19702f, 0.43164f, 0.81885f, 0.00f))
+//008 , new VertexData(new Vector4(326.39587f, 824.58606f, 1239.59998f, 1241.50073f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(1.01589f, 0.3252f, 2.03153f, 3.07056f), new Vector4(783.9483f, 208.45734f, 1240.55029f, 1241.50073f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(695.92151f, 1297.61316f, 190.37347f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.70703f, 3.09961f, 1.76074f, 0.00f), new Vector4(0.2063f, 0.44873f, 0.84229f, 0.00f))
+//009 , new VertexData(new Vector4(81.96413f, 936.31378f, 1247.35999f, 1249.26013f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.21666f, 0.08769f, 1.15223f, 2.80952f), new Vector4(665.61212f, 156.47318f, 1248.31006f, 1249.26013f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(498.56134f, 1336.49329f, 132.30862f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.39063f, 2.93555f, 1.69629f, 0.00f), new Vector4(0.19678f, 0.43115f, 0.81836f, 0.00f))
+//010 , new VertexData(new Vector4(263.89548f, 848.87512f, 1242.12915f, 1244.02979f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.81156f, 0.2761f, 1.80673f, 3.0166f), new Vector4(753.96265f, 197.57733f, 1243.07947f, 1244.02979f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(645.38275f, 1305.59497f, 176.18486f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.64063f, 3.06445f, 1.74707f, 0.00f), new Vector4(0.20422f, 0.44482f, 0.8374f, 0.00f))
+//011 , new VertexData(new Vector4(153.02711f, 943.28082f, 1240.07922f, 1241.97998f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.44654f, 0.04801f, 1.40515f, 2.76591f), new Vector4(697.50354f, 149.34958f, 1241.02954f, 1241.97998f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(556.62512f, 1343.25439f, 143.12047f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.40625f, 2.95313f, 1.70605f, 0.00f), new Vector4(0.19897f, 0.4353f, 0.82373f, 0.00f))
+//012 , new VertexData(new Vector4(230.01848f, 941.81982f, 1233.33862f, 1235.23999f), new Vector4(0.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.69634f, 0.03008f, 1.67997f, 2.7462f), new Vector4(732.62921f, 146.71008f, 1234.28931f, 1235.23999f), new Vector4(1.00f, 0.00f, 0.00f, 1.00f), new Vector4(619.37628f, 1346.4541f, 156.22038f, 1.00f), new Vector4(0.00f, 175.44524f, 0.00f, 1.00f), new Vector4(2.00f, 0.00f, 0.00f, 1.00f), new Vector4(0.12f, 0.00f, 0.00f, 1.00f), new Vector4(1.00f, 0.00f, 1.00f, 1.00f), new Vector4(0.40435f, 0.39195f, 0.50397f, 0.52491f), new Vector4(4.42969f, 2.97656f, 1.7168f, 0.00f), new Vector4(0.20129f, 0.4397f, 0.83008f, 0.00f))
+
+// vs_cbuf8[0] = new Vector4(0.9936762f, 0.00f, 0.1122834f, -442.3171f);
+// vs_cbuf8[1] = new Vector4(0.0627182f, 0.829457f, -0.5550383f, -629.7858f);
+// vs_cbuf8[2] = new Vector4(-0.0931343f, 0.5585706f, 0.8242117f, -2058.403f);
+// vs_cbuf8[3] = new Vector4(0.00f, 0.00f, 0.00f, 1.00f);
+// vs_cbuf8[4] = new Vector4(1.206285f, 0.00f, 0.00f, 0.00f);
+// vs_cbuf8[5] = new Vector4(0.00f, 2.144507f, 0.00f, 0.00f);
+// vs_cbuf8[6] = new Vector4(0.00f, 0.00f, -1.00008f, -2.00008f);
+// vs_cbuf8[7] = new Vector4(0.00f, 0.00f, -1.00f, 0.00f);
+// vs_cbuf8[29] = new Vector4(287.3111f, 1672.144f, 1396.669f, 0.00f);
+// vs_cbuf8[30] = new Vector4(1.00f, 25000.00f, 25000.00f, 24999.00f);
+// vs_cbuf9[11] = new Vector4(0.00f, 0.00f, 0.00f, 0.00f);
+// vs_cbuf9[12] = new Vector4(0.00f, 0.00f, 0.00f, 0.00f);
+// vs_cbuf9[16] = new Vector4(0.00f, 0.00f, 0.00f, 1.00f);
+// vs_cbuf9[113] = new Vector4(0.00f, 0.00f, 0.00f, 0.00f);
+// vs_cbuf9[114] = new Vector4(1.00f, 1.00f, 1.00f, 0.10f);
+// vs_cbuf9[115] = new Vector4(1.00f, 1.00f, 1.00f, 0.90f);
+// vs_cbuf9[116] = new Vector4(0.00f, 0.00f, 0.00f, 1.00f);
+// vs_cbuf9[141] = new Vector4(1.00f, 1.00f, 1.00f, 0.00f);
+// vs_cbuf10[0] = new Vector4(1.00f, 1.00f, 1.00f, 1.00f);
+// vs_cbuf10[2] = new Vector4(1638.50f, 159.00f, 1.00f, 1.00f);
+// vs_cbuf10[3] = new Vector4(0.999997f, 1.00f, 1.00f, 1.00f);
+// vs_cbuf13[6] = new Vector4(1.00f, 1.00f, 10.00f, 0.00f);
+// vs_cbuf15[1] = new Vector4(0.00f, 1.00f, 1.895482f, 1.00f);
+// vs_cbuf15[22] = new Vector4(0.0000418f, 0.0029252f, 0.00f, 0.00f);
+// vs_cbuf15[23] = new Vector4(42.50f, 2.50f, 0.85f, -0.0229271f);
+// vs_cbuf15[24] = new Vector4(0.0033333f, 0.00f, 0.576f, 4.00f);
+// vs_cbuf15[25] = new Vector4(0.682f, 0.99055f, 0.63965f, 0.12f);
+// vs_cbuf15[26] = new Vector4(1.12035f, 1.3145f, 0.66605f, 0.4519901f);
+// vs_cbuf15[27] = new Vector4(-0.0909091f, 0.0045455f, 250.00f, 0.00f);
+// vs_cbuf15[28] = new Vector4(0.5226594f, -0.5741013f, -0.6302658f, 0.00f);
+// vs_cbuf15[54] = new Vector4(0.8137476f, 1.689872f, 75.00f, 2000.00f);
+// vs_cbuf15[55] = new Vector4(0.8511029f, 0.825f, 1.060784f, 0.70f);
+// vs_cbuf15[57] = new Vector4(-4731.44f, 907.7282f, 3000.00f, 1.00f);
+// vs_cbuf15[60] = new Vector4(0.75f, 0.50f, 4.00f, 1672.144f);
+// vs_cbuf15[61] = new Vector4(1.00f, 0.00f, 0.00f, 0.00f);
+
 // 1065353216 = 1.00f;
 // vs_cbuf8[0] = vec4(0.9936762, 0.00, 0.1122834, -442.3171);
 // vs_cbuf8[1] = vec4(0.0627182, 0.829457, -0.5550383, -629.7858);
@@ -718,7 +781,7 @@ if(((int(u_1_1) <= int(0u)) ? true : false))
 		f_0_1 = utof(u_2_phi_2 );	// 0.00
 		pf_0_0 = f_0_1 * 5.;	// 0.00
 		u_3_1 = ftou(pf_0_0 );	// 0
-		u_0_2 = u_3_1;	/* 0  <=>  ftou(({utof(u_2_phi_2) : 0.00} * 5.))
+		u_0_2 = u_3_1;	/* 0  <=>  {ftou(({utof(u_2_phi_2) : 0.00} * 5.)) : 0}
 <=>
 ftou((utof(u_2_phi_2) * 5.))
 <=>
@@ -868,7 +931,7 @@ if(b_1_8)
 	} ? true : false)
 }
 */
-	u_3_2 = u_0_3;	/* 1149538304  <=>  ftou({in_attr5.w : 1060.50})
+	u_3_2 = u_0_3;	/* 1149538304  <=>  {ftou({in_attr5.w : 1060.50}) : 1149538304}
 <=>
 ftou(in_attr5.w)
 <=>
@@ -964,7 +1027,7 @@ if(b_1_11)
 		f_0_4 = utof(u_3_phi_9 );	// 1060.50
 		pf_1_0 = f_0_4 * 5.;	// 5302.50
 		u_4_1 = ftou(pf_1_0 );	// 1168487424
-		u_0_5 = u_4_1;	/* 1168487424  <=>  ftou(({utof(u_3_phi_9) : 1060.50} * 5.))
+		u_0_5 = u_4_1;	/* 1168487424  <=>  {ftou(({utof(u_3_phi_9) : 1060.50} * 5.)) : 1168487424}
 <=>
 ftou((utof(u_3_phi_9) * 5.))
 <=>
@@ -1105,7 +1168,7 @@ if(b_1_14)
 	pf_2_1 = pf_2_0 * f_1_6;	// 256.7491
 	b_1_15 = ! b_0_4;	// True
 	b_2_0 = b_0_4 ? (true) : (false);	// False
-	u_0_6 = u_2_2;	/* 1141932032  <=>  ftou({pf_0_1 : 578.00})
+	u_0_6 = u_2_2;	/* 1141932032  <=>  {ftou(pf_0_1) : 1141932032}
 <=>
 ftou(pf_0_1)
 <=>
@@ -1114,7 +1177,7 @@ ftou(pf_0_1)
 	}
 }
 */
-	u_3_4 = u_1_2;	/* 1148846080  <=>  ftou(float(int({u_1_1 : 1000})))
+	u_3_4 = u_1_2;	/* 1148846080  <=>  {ftou(float(int({u_1_1 : 1000}))) : 1148846080}
 <=>
 ftou(float(int(u_1_1)))
 <=>
@@ -1172,7 +1235,7 @@ if(((((0. < utof(vs_cbuf9[11].y)) && (! isnan(0.))) && (! isnan(utof(vs_cbuf9[11
 	})
 }
 */
-		u_4_2 = ftou(pf_0_3 );	/* ftou({pf_0_3 : })
+		u_4_2 = ftou(pf_0_3 );	/* {ftou(pf_0_3) : }
 <=>
 ftou(pf_0_3)
 <=>
@@ -1197,7 +1260,7 @@ floor(pf_0_3)
 }
 */
 		u_5_0 = ftou(pf_0_4 );
-		u_0_7 = u_5_0;	/* ftou({pf_0_4 : })
+		u_0_7 = u_5_0;	/* {ftou(pf_0_4) : }
 <=>
 ftou(pf_0_4)
 <=>
@@ -1258,7 +1321,7 @@ if(b_0_5)
 		f_2_3 = utof(u_0_phi_15 );	// 578.00
 		pf_0_5 = f_2_3 * f_1_13;	// 0.578
 		u_2_3 = ftou(pf_0_5 );	// 1058273231
-		u_1_4 = u_2_3;	/* 1058273231  <=>  ftou(({utof(u_0_phi_15) : 578.00} * (1.0 / {utof(u_3_phi_15) : 1000.00})))
+		u_1_4 = u_2_3;	/* 1058273231  <=>  {ftou(({utof(u_0_phi_15) : 578.00} * (1.0 / {utof(u_3_phi_15) : 1000.00}))) : 1058273231}
 <=>
 ftou((utof(u_0_phi_15) * (1.0 / utof(u_3_phi_15))))
 <=>

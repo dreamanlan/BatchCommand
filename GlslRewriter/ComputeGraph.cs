@@ -423,9 +423,8 @@ namespace GlslRewriter
                 }
                 else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
                     //只对数组或成员访问计算结点的叶子结点标注计算值
-                    if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
-                Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
-                        //对于需要类型转换的uniform，值标注在类型转换函数调用上
+                    if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" || calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
+                        //使用类型转换的uniform，值标注在类型转换函数调用上
                     }
                     else {
                         withValue = true;
@@ -752,9 +751,9 @@ namespace GlslRewriter
                 }
                 else {
                     bool withValue = false;
-                    if(setting.WithValue && (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (Operator == "utof" || Operator== "uintBitsToFloat")
-                        || Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (Operator == "ftou" || Operator == "floatBitsToUint"))){
-                        //需要类型的uniform，在转换函数调用上标注计算值
+                    if(setting.WithValue && (Operator == "utof" || Operator== "uintBitsToFloat"
+                        || Operator == "ftou" || Operator == "floatBitsToUint")){
+                        //使用类型转换的uniform，在转换函数调用上标注计算值
                         withValue = true;
                         sb.Append("{");
                     }
@@ -786,9 +785,9 @@ namespace GlslRewriter
                     }
                     else if(fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
                         //只对数组或成员访问计算结点的叶子结点标注计算值
-                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
-                    Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
-                            //对于需要类型转换的uniform，值标注在类型转换函数调用上
+                        if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" ||
+                            calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
+                            //使用类型转换的uniform，值标注在类型转换函数调用上
                         }
                         else {
                             withValue = true;
@@ -815,9 +814,9 @@ namespace GlslRewriter
                     }
                     else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
                         //只对数组或成员访问计算结点的叶子结点标注计算值
-                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals && (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat") ||
-                    Config.ActiveConfig.SettingInfo.NeedUniformFtouVals && (calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint")) {
-                            //对于需要类型转换的uniform，值标注在类型转换函数调用上
+                        if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" ||
+                            calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
+                            //使用类型转换的uniform，值标注在类型转换函数调用上
                         }
                         else {
                             withValue = true;

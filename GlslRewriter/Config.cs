@@ -56,6 +56,33 @@ namespace GlslRewriter
                             }
                         }
                     }
+                    sb.Length = 0;
+                    var idxHashset = new HashSet<int>();
+                    for (ix = 1; ix < lines.Length; ++ix) {
+                        var line = lines[ix];
+                        var cols = SplitCsvLine(line);
+                        Debug.Assert(colNames.Length == cols.Count);
+                        if (int.TryParse(cols[1], out var idx) && !idxHashset.Contains(idx)) {
+                            idxHashset.Add(idx);
+                            sb.Append("//");
+                            sb.Append(idx.ToString("000"));
+                            sb.Append(" , new VertexData(");
+                            for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
+                                if ((i - 2) % 4 == 0) {
+                                    if (i > 2)
+                                        sb.Append("), ");
+                                    sb.Append("new Vector4(");
+                                }
+                                else if (i > 2)
+                                    sb.Append(", ");
+                                sb.Append(cols[i].Trim());
+                                sb.Append("f");
+                            }
+                            sb.Append("))");
+                            s_VertexStructInits.Add(sb.ToString());
+                            sb.Length = 0;
+                        }
+                    }
                 }
             }
             return results;
@@ -87,13 +114,28 @@ namespace GlslRewriter
                                 sb.Length = 0;
 
                                 if (type == "vec4") {
+                                    string vals = cols[1];
+                                    var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                    sb.Append("// ");
+                                    sb.Append(cols[0]);
+                                    sb.Append(" = ");
+                                    sb.Append("new Vector4(");
+                                    for (int i = 0; i < vstrs.Length; ++i) {
+                                        if (i > 0)
+                                            sb.Append(", ");
+                                        float.TryParse(vstrs[i], out var v);
+                                        sb.Append(Calculator.FloatToString(v));
+                                        sb.Append("f");
+                                    }
+                                    sb.Append(");");
+                                    s_UniformInits.Add(sb.ToString());
+                                    sb.Length = 0;
+
                                     if (Config.ActiveConfig.SettingInfo.NeedUniformFtouVals) {
                                         sb.Append("// ");
                                         sb.Append(cols[0]);
                                         sb.Append(" = ");
                                         sb.Append("uvec4(");
-                                        string vals = cols[1];
-                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
                                         for (int i = 0; i < vstrs.Length; ++i) {
                                             if (i > 0)
                                                 sb.Append(", ");
@@ -106,13 +148,28 @@ namespace GlslRewriter
                                     }
                                 }
                                 else {
+                                    string vals = cols[1];
+                                    var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                    sb.Append("// ");
+                                    sb.Append(cols[0]);
+                                    sb.Append(" = ");
+                                    sb.Append("new Vector4(");
+                                    for (int i = 0; i < vstrs.Length; ++i) {
+                                        if (i > 0)
+                                            sb.Append(", ");
+                                        uint.TryParse(vstrs[i], out var v);
+                                        sb.Append(Calculator.FloatToString(Calculator.utof(v)));
+                                        sb.Append("f");
+                                    }
+                                    sb.Append(");");
+                                    s_UniformInits.Add(sb.ToString());
+                                    sb.Length = 0;
+
                                     if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
                                         sb.Append("// ");
                                         sb.Append(cols[0]);
                                         sb.Append(" = ");
                                         sb.Append("vec4(");
-                                        string vals = cols[1];
-                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
                                         for (int i = 0; i < vstrs.Length; ++i) {
                                             if (i > 0)
                                                 sb.Append(", ");
@@ -162,6 +219,8 @@ namespace GlslRewriter
         }
 
         internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
+        internal static List<string> s_VertexStructInits = new List<string>();
+        internal static List<string> s_UniformInits = new List<string>();
     }
     internal static class Config
     {

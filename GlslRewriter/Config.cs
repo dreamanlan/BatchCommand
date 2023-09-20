@@ -56,7 +56,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    sb.Length = 0;
+
                     var idxHashset = new HashSet<int>();
                     for (ix = 1; ix < lines.Length; ++ix) {
                         var line = lines[ix];
@@ -80,6 +80,34 @@ namespace GlslRewriter
                             }
                             sb.Append("))");
                             s_VertexStructInits.Add(sb.ToString());
+                            sb.Length = 0;
+
+                            int j = 0;
+                            for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
+                                if ((i - 2) % 4 == 0) {
+                                    if (i > 2) {
+                                        sb.Append(")");
+                                        if(!s_VertexAttrInits.TryGetValue(j, out var attrs)) {
+                                            attrs = new List<string>();
+                                            s_VertexAttrInits.Add(j, attrs);
+                                        }
+                                        attrs.Add(sb.ToString());
+                                        ++j;
+                                        sb.Length = 0;
+                                    }
+                                    sb.Append(", new Vector4(");
+                                }
+                                else if (i > 2)
+                                    sb.Append(", ");
+                                sb.Append(cols[i].Trim());
+                                sb.Append("f");
+                            }
+                            sb.Append(")");
+                            if (!s_VertexAttrInits.TryGetValue(j, out var attrs2)) {
+                                attrs2 = new List<string>();
+                                s_VertexAttrInits.Add(j, attrs2);
+                            }
+                            attrs2.Add(sb.ToString());
                             sb.Length = 0;
                         }
                     }
@@ -220,6 +248,7 @@ namespace GlslRewriter
 
         internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
         internal static List<string> s_VertexStructInits = new List<string>();
+        internal static Dictionary<int, List<string>> s_VertexAttrInits = new Dictionary<int, List<string>>();
         internal static List<string> s_UniformInits = new List<string>();
     }
     internal static class Config

@@ -319,6 +319,13 @@ namespace GlslRewriter
                 lineList.AddRange(RenderDocImporter.s_VertexStructInits);
                 lineList.Add(string.Empty);
             }
+            if (RenderDocImporter.s_VertexAttrInits.Count > 0) {
+                foreach (var pair in RenderDocImporter.s_VertexAttrInits) {
+                    lineList.Add("// " + pair.Key);
+                    lineList.AddRange(pair.Value);
+                    lineList.Add(string.Empty);
+                }
+            }
             if (RenderDocImporter.s_UniformInits.Count > 0) {
                 lineList.AddRange(RenderDocImporter.s_UniformInits);
                 lineList.Add(string.Empty);

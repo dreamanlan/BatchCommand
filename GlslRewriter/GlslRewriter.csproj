@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\deps\DslCalculator.cs" Link="DslCalculator.cs" />
+    <Compile Include="..\Script\BatchScript.cs" Link="BatchScript.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Dsl">
       <HintPath>..\deps\Dsl.dll</HintPath>
     </Reference>

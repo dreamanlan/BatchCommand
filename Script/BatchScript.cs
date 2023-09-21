@@ -10,6 +10,7 @@ using System.IO;
 using Dsl;
 using DslExpression;
 
+#pragma warning disable 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416
 namespace BatchCommand
 {
     internal sealed class TimeStatisticOnExp : SimpleExpressionBase
@@ -745,7 +746,7 @@ namespace BatchCommand
                 var outLines = new List<string>();
                 if (null != lines && !string.IsNullOrEmpty(script)) {
                     var seps = sepList.ToArray();
-                    var scpId = BatchScript.Eval(script, s_ArgNames);
+                    var scpId = BatchScript.EvalAsFunc(script, s_ArgNames);
                     var args = BatchScript.NewCalculatorValueList();
                     int ct = lines.Count;
                     for (int i = 0; i < ct; ++i) {
@@ -1754,13 +1755,15 @@ namespace BatchCommand
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            if (operands.Count >= 2) {
-                int f = operands[0].GetInt();
-                int d = operands[1].GetInt();
-                Console.Beep(f, d);
-            }
-            else {
-                Console.Beep();
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if (operands.Count >= 2) {
+                    int f = operands[0].GetInt();
+                    int d = operands[1].GetInt();
+                    Console.Beep(f, d);
+                }
+                else {
+                    Console.Beep();
+                }
             }
             return CalculatorValue.NullObject;
         }
@@ -1770,7 +1773,10 @@ namespace BatchCommand
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            return Console.Title;
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                return Console.Title;
+            }
+            return string.Empty;
         }
     }
 
@@ -1808,10 +1814,12 @@ namespace BatchCommand
     {
         protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
         {
-            if (operands.Count >= 2) {
-                int w = operands[0].GetInt();
-                int h = operands[1].GetInt();
-                Console.SetBufferSize(w, h);
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if (operands.Count >= 2) {
+                    int w = operands[0].GetInt();
+                    int h = operands[1].GetInt();
+                    Console.SetBufferSize(w, h);
+                }
             }
             return CalculatorValue.NullObject;
         }
@@ -2182,11 +2190,6 @@ namespace BatchCommand
             var vargs = s_Calculator.NewCalculatorValueList();
             vargs.AddRange(args);
             while (redirect) {
-                if (string.IsNullOrEmpty(scpFile)) {
-                    scpFile = "main.dsl";
-                    vargs.Clear();
-                    vargs.Add(scpFile);
-                }
                 var sdir = Path.GetDirectoryName(scpFile);
                 sdir = Path.Combine(Environment.CurrentDirectory, sdir);
                 s_ScriptDirectory = sdir;
@@ -2216,27 +2219,39 @@ namespace BatchCommand
             s_Calculator.RecycleCalculatorValueList(vargs);
             return r;
         }
-        internal static string Eval(string code, IList<string> argNames)
+        internal static string EvalAsFunc(string code, IList<string> argNames)
         {
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
             if (file.LoadFromString(procCode, msg => { Log(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
+                Debug.Assert(null != func);
                 s_Calculator.LoadDsl(id, argNames, func);
                 return id;
             }
-            return null;
+            return string.Empty;
         }
         internal static CalculatorValue EvalAndRun(string code)
         {
             CalculatorValue r = CalculatorValue.EmptyString;
             var file = new Dsl.DslFile();
             if (file.LoadFromString(code, msg => { Log(msg); })) {
-                List<IExpression> exps = new List<IExpression>();
-                s_Calculator.LoadDsl(file.DslInfos, exps);
-                r = s_Calculator.CalcInCurrentContext(exps);
+                r = EvalAndRun(file.DslInfos);
             }
+            return r;
+        }
+        internal static CalculatorValue EvalAndRun(params ISyntaxComponent[] expressions)
+        {
+            IList<ISyntaxComponent> exps = expressions;
+            return EvalAndRun(exps);
+        }
+        internal static CalculatorValue EvalAndRun(IList<ISyntaxComponent> expressions)
+        {
+            CalculatorValue r = CalculatorValue.EmptyString;
+            List<IExpression> exps = new List<IExpression>();
+            s_Calculator.LoadDsl(expressions, exps);
+            r = s_Calculator.CalcInCurrentContext(exps);
             return r;
         }
         internal static List<CalculatorValue> NewCalculatorValueList()
@@ -2350,23 +2365,25 @@ namespace BatchCommand
                 if (null != option.Verb) {
                     psi.Verb = option.Verb;
                 }
-                if (null != option.Domain) {
-                    psi.Domain = option.Domain;
-                }
                 if (null != option.UserName) {
                     psi.UserName = option.UserName;
                 }
-                if (null != option.Password) {
-                    unsafe {
-                        fixed (char* pchar = option.Password.ToCharArray()) {
-                            psi.Password = new System.Security.SecureString(pchar, option.Password.Length);
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                    if (null != option.Domain) {
+                        psi.Domain = option.Domain;
+                    }
+                    if (null != option.Password) {
+                        unsafe {
+                            fixed (char* pchar = option.Password.ToCharArray()) {
+                                psi.Password = new System.Security.SecureString(pchar, option.Password.Length);
+                            }
                         }
                     }
+                    if (null != option.PasswordInClearText) {
+                        psi.PasswordInClearText = option.PasswordInClearText;
+                    }
+                    psi.LoadUserProfile = option.LoadUserProfile;
                 }
-                if (null != option.PasswordInClearText) {
-                    psi.PasswordInClearText = option.PasswordInClearText;
-                }
-                psi.LoadUserProfile = option.LoadUserProfile;
                 psi.WindowStyle = option.WindowStyle;
                 psi.CreateNoWindow = !option.NewWindow;
                 psi.ErrorDialog = option.ErrorDialog;
@@ -2505,3 +2522,4 @@ namespace BatchCommand
         private static DslCalculator s_Calculator = new DslCalculator();
     }
 }
+#pragma warning restore 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416

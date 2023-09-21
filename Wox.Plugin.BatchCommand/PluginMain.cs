@@ -203,7 +203,7 @@ internal class EvalDslExp : SimpleExpressionBase
                 var arg = operands[i];
                 args.Add(arg);
             }
-            var id = BatchScript.Eval(code, new string[] { "$query", "$result", "$actionContext" });
+            var id = BatchScript.EvalAsFunc(code, new string[] { "$query", "$result", "$actionContext" });
             if (null != id) {
                 r = BatchScript.Call(id, args);
             }

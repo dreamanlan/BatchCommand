@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static GlslRewriter.Config;
 using System.Xml.Linq;
+using BatchCommand;
 
 namespace GlslRewriter
 {
@@ -1324,18 +1325,24 @@ namespace GlslRewriter
                 infos.Add(info);
             }
         }
-        private static string DoCalc(Dsl.ISyntaxComponent exp, ref string type)
+        internal static string DoCalc(Dsl.ISyntaxComponent exp, ref string type)
         {
+            bool supported = false;
             var vd = exp as Dsl.ValueData;
             var fd = exp as Dsl.FunctionData;
             var stm = exp as Dsl.StatementData;
             if (null != vd) {
                 string vstr = vd.GetId();
-                if(ActiveConfig.SettingInfo.SettingVariables.TryGetValue(vstr, out var v)) {
+                if (ActiveConfig.SettingInfo.SettingVariables.TryGetValue(vstr, out var v)) {
                     vstr = v;
                 }
+                else if (VariableTable.TryGetVarType(vstr, out var varType, out var isArray)) {
+                    if (VariableTable.GetVarValue(vstr, varType, out var v2))
+                        vstr = v2;
+                }
                 string val = Calculator.ReStringNumeric(vstr, ref type);
-                return val;
+                if (!string.IsNullOrEmpty(val))
+                    return val;
             }
             else if (null != fd) {
                 if (fd.IsPeriodParamClass()) {
@@ -1343,8 +1350,16 @@ namespace GlslRewriter
                         string objType = string.Empty;
                         string obj = DoCalc(fd.LowerOrderFunction, ref objType);
                         string m = fd.GetParamId(0);
-                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val))
+                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val, out supported))
                             return val;
+                    }
+                    else {
+                        string vname = fd.GetId();
+                        string m = fd.GetParamId(0);
+                        if (VariableTable.TryGetVarType(vname, out var objType, out var isArray)) {
+                            if (VariableTable.ObjectGetValue(vname, objType, m, out var val))
+                                return val;
+                        }
                     }
                 }
                 else if (fd.IsBracketParamClass()) {
@@ -1353,8 +1368,24 @@ namespace GlslRewriter
                         string obj = DoCalc(fd.LowerOrderFunction, ref objType);
                         string ixType = "int";
                         string m = DoCalc(fd.GetParam(0), ref ixType);
-                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val))
+                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val, out supported))
                             return val;
+                    }
+                    else {
+                        string vname = fd.GetId();
+                        string ixType = "int";
+                        string m = DoCalc(fd.GetParam(0), ref ixType);
+                        if (VariableTable.TryGetVarType(vname, out var objType, out var isArray)) {
+                            if (isArray) {
+                                objType = objType + "_x1024";
+                                if (VariableTable.ArrayGetValue(vname, objType, m, out var val))
+                                    return val;
+                            }
+                            else {
+                                if (VariableTable.ObjectGetValue(vname, objType, m, out var val))
+                                    return val;
+                            }
+                        }
                     }
                 }
                 else if(fd.IsParenthesisParamClass())
@@ -1365,7 +1396,7 @@ namespace GlslRewriter
                         string argType = string.Empty;
                         args.Add(DoCalc(p, ref argType));
                     }
-                    if (Calculator.CalcFunc(func, args, ref type, out var val, out var supported))
+                    if (Calculator.CalcFunc(func, args, ref type, out var val, out supported))
                         return val;
                 }
                 else if(fd.IsOperatorParamClass()) {
@@ -1376,14 +1407,14 @@ namespace GlslRewriter
                         string argType = string.Empty;
                         var a1 = DoCalc(arg1, ref argType);
                         var a2 = DoCalc(arg2, ref argType);
-                        if (Calculator.CalcBinary(op, a1, a2, ref type, out var val))
+                        if (Calculator.CalcBinary(op, a1, a2, ref type, out var val, out supported))
                             return val;
                     }
                     else if (fd.GetParamNum() == 1) {
                         var arg1 = fd.GetParam(0);
                         string argType = string.Empty;
                         var a1 = DoCalc(arg1, ref argType);
-                        if (Calculator.CalcUnary(op, a1, ref type, out var val))
+                        if (Calculator.CalcUnary(op, a1, ref type, out var val, out supported))
                             return val;
                     }
                 }
@@ -1399,8 +1430,14 @@ namespace GlslRewriter
                     var vcond = DoCalc(cond, ref argType);
                     var vt = DoCalc(tval, ref type);
                     var vf = DoCalc(fval, ref type);
-                    if (Calculator.CalcCondExp(vcond, vt, vf, ref type, out var val))
+                    if (Calculator.CalcCondExp(vcond, vt, vf, ref type, out var val, out supported))
                         return val;
+                }
+            }
+            if (!supported) {
+                var r = BatchCommand.BatchScript.EvalAndRun(exp);
+                if (!r.IsNullOrEmptyString) {
+                    return r.ToString();
                 }
             }
             return string.Empty;
@@ -1573,5 +1610,30 @@ namespace GlslRewriter
 
         private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
         private static Random s_Random = new Random();
+    }
+
+    internal sealed class ShaderExp : DslExpression.AbstractExpression
+    {
+        protected override DslExpression.CalculatorValue DoCalc()
+        {
+            string val = string.Empty;
+            foreach(var p in m_DslArgs) {
+                string type = "float";
+                val = Config.DoCalc(p, ref type);
+            }
+            return DslExpression.CalculatorValue.From(val);
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if (funcData.IsHighOrder) {
+                Load(funcData.LowerOrderFunction);
+            }
+            foreach(var p in funcData.Params) {
+                m_DslArgs.Add(p);
+            }
+            return true;
+        }
+
+        private List<Dsl.ISyntaxComponent> m_DslArgs = new List<Dsl.ISyntaxComponent>();
     }
 }

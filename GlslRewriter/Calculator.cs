@@ -829,10 +829,11 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcCondExp(string cond, string opd1, string opd2, ref string type, out string val)
+        public static bool CalcCondExp(string cond, string opd1, string opd2, ref string type, out string val, out bool supported)
         {
             bool succ = false;
             val = string.Empty;
+            supported = true;
             if(TryParseBool(cond, out var bval)) {
                 if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
                     if (bval) {
@@ -872,10 +873,11 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcBinary(string op, string opd1, string opd2, ref string type, out string val)
+        public static bool CalcBinary(string op, string opd1, string opd2, ref string type, out string val, out bool supported)
         {
             bool succ = false;
             val = string.Empty;
+            supported = true;
             if (op == "+") {
                 if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
                     if(isFloat1 || isFloat2) {
@@ -1106,12 +1108,16 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else {
+                supported = false;
+            }
             return succ;
         }
-        public static bool CalcUnary(string op, string opd, ref string type, out string val)
+        public static bool CalcUnary(string op, string opd, ref string type, out string val, out bool supported)
         {
             bool succ = false;
             val = string.Empty;
+            supported = true;
             if (op == "-") {
                 if(TryParseNumeric(opd, out var isFloat, out var dval, out var lval)) {
                     if (isFloat) {
@@ -1145,12 +1151,16 @@ namespace GlslRewriter
                 val = opd;
                 succ = true;
             }
+            else {
+                supported = false;
+            }
             return succ;
         }
-        public static bool CalcMember(string objType, string objVal, string m, ref string type, out string oval)
+        public static bool CalcMember(string objType, string objVal, string m, ref string type, out string oval, out bool supported)
         {
             bool succ = false;
             oval = string.Empty;
+            supported = true;
             if (objType == "vec4") {
                 if (Float4.TryParse(objVal, out var val)) {
                     type = "float";
@@ -1234,6 +1244,9 @@ namespace GlslRewriter
                     oval = val.GetMember(m);
                     succ = true;
                 }
+            }
+            else {
+                supported = false;
             }
             return succ;
         }

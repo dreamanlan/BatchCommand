@@ -10,6 +10,8 @@ using System.Xml.Linq;
 using System.Globalization;
 using static GlslRewriter.ComputeGraph;
 using static GlslRewriter.Program;
+using static System.Reflection.Metadata.BlobBuilder;
+using System.Diagnostics.Metrics;
 
 namespace GlslRewriter
 {
@@ -62,145 +64,11 @@ namespace GlslRewriter
             OutNodes.Add(node);
         }
 
-        public void VisitPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
-        {
-            visits.Add(this);
-            bool cont0 = visitorCallback(this);
-            if (!cont0)
-                return;
-            foreach (var node in PrevNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else if (ownFunc == node.OwnFunc) {
-                    node.VisitPrev(ownFunc, visits, visitorCallback);
-                }
-            }
-        }
-        public void VisitNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
-        {
-            visits.Add(this);
-            bool cont0 = visitorCallback(this);
-            if (!cont0)
-                return;
-            foreach (var node in NextNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else if (ownFunc == node.OwnFunc) {
-                    node.VisitNext(ownFunc, visits, visitorCallback);
-                }
-            }
-            foreach (var node in OutNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else if (ownFunc == node.OwnFunc) {
-                    node.VisitNext(ownFunc, visits, visitorCallback);
-                }
-            }
-        }
-
-        public void VisitAllPrev(HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
-        {
-            visits.Add(this);
-            bool cont0 = visitorCallback(this);
-            if (!cont0)
-                return;
-            foreach (var node in PrevNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else {
-                    node.VisitAllPrev(visits, visitorCallback);
-                }
-            }
-        }
-        public void VisitAllNext(HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
-        {
-            visits.Add(this);
-            bool cont0 = visitorCallback(this);
-            if (!cont0)
-                return;
-            foreach (var node in NextNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else {
-                    node.VisitAllNext(visits, visitorCallback);
-                }
-            }
-            foreach (var node in OutNodes) {
-                if (visits.Contains(node)) {
-                    bool cont = visitorCallback(this);
-                    if (!cont)
-                        return;
-                }
-                else {
-                    node.VisitAllNext(visits, visitorCallback);
-                }
-            }
-        }
-
         public void Print(FuncInfo? ownFunc, HashSet<ComputeGraphNode> prevVisits, HashSet<ComputeGraphNode> nextVisits, int indent)
         {
             PrintInfo(indent);
             PrintPrev(ownFunc, prevVisits, indent);
             PrintNext(ownFunc, nextVisits, indent);
-        }
-        public void PrintPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
-        {
-            visits.Add(this);
-            if (PrevNodes.Count > 0) {
-                PrintIndent(indent + 1);
-                Console.WriteLine("[PrevNodes]");
-                foreach (var node in PrevNodes) {
-                    node.PrintInfo(indent + 2);
-                    if (!visits.Contains(node)) {
-                        if (ownFunc == node.OwnFunc) {
-                            node.PrintPrev(ownFunc, visits, indent + 2);
-                        }
-                    }
-                }
-            }
-        }
-        public void PrintNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
-        {
-            visits.Add(this);
-            if (NextNodes.Count > 0) {
-                PrintIndent(indent + 1);
-                Console.WriteLine("[NextNodes]");
-                foreach (var node in NextNodes) {
-                    node.PrintInfo(indent + 2);
-                    if (!visits.Contains(node)) {
-                        if (ownFunc == node.OwnFunc) {
-                            node.PrintNext(ownFunc, visits, indent + 2);
-                        }
-                    }
-                }
-            }
-            if (OutNodes.Count > 0) {
-                PrintIndent(indent + 1);
-                Console.WriteLine("[OutNodes]");
-                foreach (var node in OutNodes) {
-                    node.PrintInfo(indent + 2);
-                    if (!visits.Contains(node)) {
-                        if (ownFunc == node.OwnFunc) {
-                            node.PrintNext(ownFunc, visits, indent + 2);
-                        }
-                    }
-                }
-            }
         }
         public void PrintIndent(int indent)
         {
@@ -211,12 +79,6 @@ namespace GlslRewriter
             PrintIndent(indent);
             Console.WriteLine("[Node:{0}, {1}]", Id, GetType().Name);
             PrintFieldInfo(indent + 1);
-        }
-        public virtual void PrintFieldInfo(int indent)
-        {
-            PrintIndent(indent);
-            Console.Write("Type:");
-            Console.WriteLine(Type);
         }
 
         public string GetValue()
@@ -319,6 +181,68 @@ namespace GlslRewriter
                 mergeMaxLevel = curMaxLevel;
         }
 
+        public void PrintPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            visits.Add(this);
+            PrintChildPrev(ownFunc, visits, indent);
+            if (PrevNodes.Count > 0) {
+                PrintIndent(indent + 1);
+                Console.WriteLine("[PrevNodes]");
+                foreach (var node in PrevNodes) {
+                    node.PrintInfo(indent + 2);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintPrev(ownFunc, visits, indent + 2);
+                        }
+                    }
+                }
+            }
+        }
+        public void PrintNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            visits.Add(this);
+            PrintChildNext(ownFunc, visits, indent);
+            if (NextNodes.Count > 0) {
+                PrintIndent(indent + 1);
+                Console.WriteLine("[NextNodes]");
+                foreach (var node in NextNodes) {
+                    node.PrintInfo(indent + 2);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintNext(ownFunc, visits, indent + 2);
+                        }
+                    }
+                }
+            }
+            if (OutNodes.Count > 0) {
+                PrintIndent(indent + 1);
+                Console.WriteLine("[OutNodes]");
+                foreach (var node in OutNodes) {
+                    node.PrintInfo(indent + 2);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintNext(ownFunc, visits, indent + 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        protected virtual void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+        }
+        protected virtual void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+        }
+        protected virtual void PrintFieldInfo(int indent)
+        {
+            if (!string.IsNullOrEmpty(Type)) {
+                PrintIndent(indent);
+                Console.Write("Type:");
+                Console.WriteLine(Type);
+            }
+        }
+
         protected virtual void TryCalcValue(HashSet<ComputeGraphNode> visits)
         {
         }
@@ -350,7 +274,7 @@ namespace GlslRewriter
         {
             Value = val;
         }
-        public override void PrintFieldInfo(int indent)
+        protected override void PrintFieldInfo(int indent)
         {
             base.PrintFieldInfo(indent);
 
@@ -377,7 +301,7 @@ namespace GlslRewriter
         {
             VarName = name;
         }
-        public override void PrintFieldInfo(int indent)
+        protected override void PrintFieldInfo(int indent)
         {
             base.PrintFieldInfo(indent);
 
@@ -531,7 +455,7 @@ namespace GlslRewriter
         {
             Operator = op;
         }
-        public override void PrintFieldInfo(int indent)
+        protected override void PrintFieldInfo(int indent)
         {
             base.PrintFieldInfo(indent);
 
@@ -576,8 +500,11 @@ namespace GlslRewriter
                     string type = Type;
                     string objVal = PrevNodes[0].CalcValue(visits);
                     string member = PrevNodes[1].CalcValue(visits);
-                    if (Calculator.CalcMember(objType, objVal, member, ref type, out var val)) {
+                    if (Calculator.CalcMember(objType, objVal, member, ref type, out var val, out var supported)) {
                         m_Value = val;
+                    }
+                    else if (!supported) {
+                        Console.WriteLine("member '{0}' is unsupported, please support it.", member);
                     }
                 }
             }
@@ -604,8 +531,11 @@ namespace GlslRewriter
                     string type = Type;
                     string objVal = PrevNodes[0].CalcValue(visits);
                     string ix = PrevNodes[1].CalcValue(visits);
-                    if (Calculator.CalcMember(objType, objVal, ix, ref type, out var val)) {
+                    if (Calculator.CalcMember(objType, objVal, ix, ref type, out var val, out var supported)) {
                         m_Value = val;
+                    }
+                    else if (!supported) {
+                        Console.WriteLine("type {0}'s subscript is unsupported, please support it.", type);
                     }
                 }
             }
@@ -653,23 +583,32 @@ namespace GlslRewriter
                 string cond = PrevNodes[0].CalcValue(visits);
                 string opd1 = PrevNodes[1].CalcValue(visits);
                 string opd2 = PrevNodes[2].CalcValue(visits);
-                if (Calculator.CalcCondExp(cond, opd1, opd2, ref type, out var val)) {
+                if (Calculator.CalcCondExp(cond, opd1, opd2, ref type, out var val, out var supported)) {
                     m_Value = val;
+                }
+                else if (!supported) {
+                    Console.WriteLine("condition expression is unsupported, please support it.");
                 }
             }
             else if (PrevNodes.Count == 2) {
                 string type = Type;
                 string opd1 = PrevNodes[0].CalcValue(visits);
                 string opd2 = PrevNodes[1].CalcValue(visits);
-                if (Calculator.CalcBinary(Operator, opd1, opd2, ref type, out var val)) {
+                if (Calculator.CalcBinary(Operator, opd1, opd2, ref type, out var val, out var supported)) {
                     m_Value = val;
+                }
+                else if (!supported) {
+                    Console.WriteLine("binary operator '{0}' is unsupported, please support it.", Operator);
                 }
             }
             else {
                 string type = Type;
                 string opd = PrevNodes[0].CalcValue(visits);
-                if (Calculator.CalcUnary(Operator, opd, ref type, out var val)) {
+                if (Calculator.CalcUnary(Operator, opd, ref type, out var val, out var supported)) {
                     m_Value = val;
+                }
+                else if (!supported) {
+                    Console.WriteLine("unary operator '{0}' is unsupported, please support it.", Operator);
                 }
             }
         }
@@ -920,6 +859,364 @@ namespace GlslRewriter
         public string Operator = string.Empty;
 
     }
+    public class ComputeGraphBreakNode : ComputeGraphNode
+    {
+        public ComputeGraphBreakNode(FuncInfo? ownFunc, string keyword) : base(ownFunc, string.Empty)
+        {
+            Keyword = keyword;
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Expression) {
+                var node = Expression;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Expression) {
+                var node = Expression;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintFieldInfo(int indent)
+        {
+            base.PrintFieldInfo(indent);
+
+            PrintIndent(indent);
+            Console.WriteLine(Keyword);
+        }
+
+        public string Keyword = string.Empty;
+        public ComputeGraphNode? Expression = null;
+    }
+    public class ComputeGraphBlock : ComputeGraphNode
+    {
+        public ComputeGraphBlock(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        public void AddChild(ComputeGraphNode node)
+        {
+            ChildNodes.Add(node);
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (ChildNodes.Count > 0) {
+                foreach (var node in ChildNodes) {
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintPrev(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (ChildNodes.Count > 0) {
+                foreach (var node in ChildNodes) {
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintNext(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        public List<ComputeGraphNode> ChildNodes = new List<ComputeGraphNode>();
+    }
+    public class ComputeGraphIfStatement : ComputeGraphNode
+    {
+        public ComputeGraphIfStatement(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        public void AddCondition(ComputeGraphNode node)
+        {
+            Conditions.Add(node);
+        }
+        public void AddBlock(ComputeGraphBlock block)
+        {
+            Blocks.Add(block);
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            for (int ix = 0; ix < Conditions.Count || ix < Blocks.Count; ++ix) {
+                if (ix < Conditions.Count) {
+                    var node = Conditions[ix];
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintPrev(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+                if (ix < Blocks.Count) {
+                    var node = Blocks[ix];
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintPrev(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            for (int ix = 0; ix < Conditions.Count || ix < Blocks.Count; ++ix) {
+                if (ix < Conditions.Count) {
+                    var node = Conditions[ix];
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintNext(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+                if (ix < Blocks.Count) {
+                    var node = Blocks[ix];
+                    node.PrintInfo(indent + 1);
+                    if (!visits.Contains(node)) {
+                        if (ownFunc == node.OwnFunc) {
+                            node.PrintNext(ownFunc, visits, indent + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        public List<ComputeGraphNode> Conditions = new List<ComputeGraphNode>();
+        public List<ComputeGraphBlock> Blocks = new List<ComputeGraphBlock>();
+    }
+    public class ComputeGraphForStatement : ComputeGraphNode
+    {
+        public ComputeGraphForStatement(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            PrintIndent(indent);
+            if (null != ForFunc) {
+                var node = ForFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != ForFunc) {
+                var node = ForFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+
+        public ComputeGraphNode? ForFunc = null;
+        public ComputeGraphBlock? Block = null;
+    }
+    public class ComputeGraphWhileStatement : ComputeGraphNode
+    {
+        public ComputeGraphWhileStatement(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != WhileFunc) {
+                var node = WhileFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != WhileFunc) {
+                var node = WhileFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+
+        public ComputeGraphNode? WhileFunc = null;
+        public ComputeGraphBlock? Block = null;
+    }
+    public class ComputeGraphDoWhileStatement : ComputeGraphNode
+    {
+        public ComputeGraphDoWhileStatement(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != WhileFunc) {
+                var node = WhileFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+            if (null != WhileFunc) {
+                var node = WhileFunc;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+
+        public ComputeGraphBlock? Block = null;
+        public ComputeGraphNode? WhileFunc = null;
+    }
+    public class ComputeGraphFunction : ComputeGraphNode
+    {
+        public ComputeGraphFunction(FuncInfo? ownFunc) : base(ownFunc, string.Empty)
+        {
+        }
+        protected override void PrintChildPrev(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintPrev(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintChildNext(FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, int indent)
+        {
+            if (null != Block) {
+                var node = Block;
+                node.PrintInfo(indent + 1);
+                if (!visits.Contains(node)) {
+                    if (ownFunc == node.OwnFunc) {
+                        node.PrintNext(ownFunc, visits, indent + 1);
+                    }
+                }
+            }
+        }
+        protected override void PrintFieldInfo(int indent)
+        {
+            base.PrintFieldInfo(indent);
+
+            if (null != OwnFunc) {
+                PrintIndent(indent);
+                Console.Write("[function:");
+                Console.Write(OwnFunc.Name);
+                Console.WriteLine("]");
+
+                if (!OwnFunc.IsVoid()) {
+                    Debug.Assert(null != OwnFunc.RetInfo);
+                    PrintIndent(indent);
+                    Console.Write("ret:");
+                    Console.WriteLine(OwnFunc.RetInfo.Type);
+                }
+                foreach(var p in OwnFunc.Params) {
+                    PrintIndent(indent);
+                    Console.Write("param:");
+                    Console.Write(p.Type);
+                    Console.Write(" ");
+                    Console.WriteLine(p.Name);
+                }
+            }
+        }
+
+        public ComputeGraphBlock? Block = null;
+    }
+    /// <summary>
+    /// 这里的计算图主要用于shader计算，所以把程序复合语句也考虑进来，这样计算图结点会变复杂（增加了子结点维度）
+    /// 不过我们不需要提供通用的visit机制，所以看起来还好，对于需要通用visit或需要部分重置的计算图，添加这些结
+    /// 构可能是不合适的
+    /// </summary>
     public class ComputeGraph
     {
         public delegate bool VisitDelegation(ComputeGraphNode node);
@@ -927,107 +1224,11 @@ namespace GlslRewriter
         public List<ComputeGraphNode> RootNodes = new List<ComputeGraphNode>();
         public Dictionary<string, ComputeGraphVarNode> VarNodes = new Dictionary<string, ComputeGraphVarNode>();
 
-        public void Reset(FuncInfo? ownFunc)
-        {
-            var nodes = new HashSet<ComputeGraphNode>();
-            var prevVisits = new HashSet<ComputeGraphNode>();
-            var nextVisits = new HashSet<ComputeGraphNode>();
-            foreach (var node in RootNodes) {
-                node.VisitPrev(ownFunc, prevVisits, node => {
-                    if (ownFunc != node.OwnFunc) {
-                        if (!nodes.Contains(node))
-                            nodes.Add(node);
-                    }
-                    return true;
-                });
-            }
-            var tnodes = new HashSet<ComputeGraphNode>();
-            foreach (var node in nodes) {
-                tnodes.Clear();
-                foreach (var tnode in node.PrevNodes) {
-                    if (ownFunc == tnode.OwnFunc) {
-                        tnodes.Add(tnode);
-                    }
-                }
-                foreach (var tnode in tnodes) {
-                    node.PrevNodes.RemoveAll(n => n == tnode);
-                }
-                tnodes.Clear();
-                foreach (var tnode in node.NextNodes) {
-                    if (ownFunc == tnode.OwnFunc) {
-                        tnodes.Add(tnode);
-                    }
-                }
-                foreach (var tnode in tnodes) {
-                    node.NextNodes.RemoveAll(n => n == tnode);
-                }
-                tnodes.Clear();
-                foreach (var tnode in node.OutNodes) {
-                    if (ownFunc == tnode.OwnFunc) {
-                        tnodes.Add(tnode);
-                    }
-                }
-                foreach (var tnode in tnodes) {
-                    node.OutNodes.RemoveAll(n => n == tnode);
-                }
-            }
-            RootNodes.Clear();
-            VarNodes.Clear();
-        }
-        public void VisitPrev(FuncInfo? ownFunc, string vname, VisitDelegation visitorCallback)
-        {
-            if (VarNodes.TryGetValue(vname, out var node)) {
-                var visits = new HashSet<ComputeGraphNode>();
-                node.VisitPrev(ownFunc, visits, visitorCallback);
-            }
-        }
-        public void VisitNext(FuncInfo? ownFunc, string vname, VisitDelegation visitorCallback)
-        {
-            if (VarNodes.TryGetValue(vname, out var node)) {
-                var visits = new HashSet<ComputeGraphNode>();
-                node.VisitNext(ownFunc, visits, visitorCallback);
-            }
-        }
-        public void VisitPrev(FuncInfo? ownFunc, ComputeGraphNode node, VisitDelegation visitorCallback)
-        {
-            var visits = new HashSet<ComputeGraphNode>();
-            node.VisitPrev(ownFunc, visits, visitorCallback);
-        }
-        public void VisitNext(FuncInfo? ownFunc, ComputeGraphNode node, VisitDelegation visitorCallback)
-        {
-            var visits = new HashSet<ComputeGraphNode>();
-            node.VisitNext(ownFunc, visits, visitorCallback);
-        }
-        public void VisitAllPrev(string vname, VisitDelegation visitorCallback)
-        {
-            if (VarNodes.TryGetValue(vname, out var node)) {
-                var visits = new HashSet<ComputeGraphNode>();
-                node.VisitAllPrev(visits, visitorCallback);
-            }
-        }
-        public void VisitAllNext(string vname, VisitDelegation visitorCallback)
-        {
-            if (VarNodes.TryGetValue(vname, out var node)) {
-                var visits = new HashSet<ComputeGraphNode>();
-                node.VisitAllNext(visits, visitorCallback);
-            }
-        }
-        public void VisitAllPrev(ComputeGraphNode node, VisitDelegation visitorCallback)
-        {
-            var visits = new HashSet<ComputeGraphNode>();
-            node.VisitAllPrev(visits, visitorCallback);
-        }
-        public void VisitAllNext(ComputeGraphNode node, VisitDelegation visitorCallback)
-        {
-            var visits = new HashSet<ComputeGraphNode>();
-            node.VisitAllNext(visits, visitorCallback);
-        }
         public void Print(FuncInfo? ownFunc)
         {
             var prevVisits = new HashSet<ComputeGraphNode>();
             var nextVisits = new HashSet<ComputeGraphNode>();
-            foreach (var pair in VarNodes) {
-                var node = pair.Value;
+            foreach (var node in RootNodes) {
                 node.Print(ownFunc, prevVisits, nextVisits, 1);
             }
         }

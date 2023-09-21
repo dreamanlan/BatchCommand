@@ -1704,6 +1704,85 @@ namespace GlslRewriter
             }
             */
         }
+        public static bool TryGetVarType(string name, out string type, out bool isArray)
+        {
+            bool exists = false;
+            type = string.Empty;
+            isArray = false;
+            if (s_Float4ArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "vec4";
+            }
+            else if (s_Int4ArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "ivec4";
+            }
+            else if (s_Uint4ArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "uvec4";
+            }
+            else if (s_Bool4ArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "bvec4";
+            }
+            else if (s_FloatArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "float";
+            }
+            else if (s_IntArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "int";
+            }
+            else if (s_UintArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "uint";
+            }
+            else if (s_BoolArrayVars.ContainsKey(name)) {
+                isArray = true;
+                exists = true;
+                type = "bool";
+            }
+            else if (s_Float4Vars.ContainsKey(name)) {
+                exists = true;
+                type = "vec4";
+            }
+            else if (s_Int4Vars.ContainsKey(name)) {
+                exists = true;
+                type = "ivec4";
+            }
+            else if (s_Uint4Vars.ContainsKey(name)) {
+                exists = true;
+                type = "uvec4";
+            }
+            else if (s_Bool4Vars.ContainsKey(name)) {
+                exists = true;
+                type = "bvec4";
+            }
+            else if (s_FloatVars.ContainsKey(name)) {
+                exists = true;
+                type = "float";
+            }
+            else if (s_IntVars.ContainsKey(name)) {
+                exists = true;
+                type = "int";
+            }
+            else if (s_UintVars.ContainsKey(name)) {
+                exists = true;
+                type = "uint";
+            }
+            else if (s_BoolVars.ContainsKey(name)) {
+                exists = true;
+                type = "bool";
+            }
+            return exists;
+        }
         public static bool GetVarValue(string name, string type, out string varVal)
         {
             bool exists = false;
@@ -1804,10 +1883,14 @@ namespace GlslRewriter
         }
         public static bool ObjectGetValue(ComputeGraphVarNode left, string m, out string varVal)
         {
-            bool exists = false;
-            varVal = string.Empty;
             string name = left.VarName;
             string type = left.Type;
+            return ObjectGetValue(name, type, m, out varVal);
+        }
+        public static bool ObjectGetValue(string name, string type, string m, out string varVal)
+        {
+            bool exists = false;
+            varVal = string.Empty;
             if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
             if(Config.ActiveConfig.SettingInfo.InvalidatedObjectMembers.TryGetValue(name, out var members) && members.Contains(m)) {
@@ -1850,13 +1933,17 @@ namespace GlslRewriter
         }
         public static bool ArrayGetValue(ComputeGraphVarNode left, string ix, out string varVal)
         {
+            string name = left.VarName;
+            string type = left.Type;
+            return ArrayGetValue(name, type, ix, out varVal);
+        }
+        public static bool ArrayGetValue(string name, string type, string ix, out string varVal)
+        {
             bool exists = false;
             varVal = string.Empty;
             if (!int.TryParse(ix, out var index) || index < 0) {
                 return exists;
             }
-            string name = left.VarName;
-            string type = left.Type;
             if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
             if (Config.ActiveConfig.SettingInfo.InvalidatedArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
@@ -1955,13 +2042,17 @@ namespace GlslRewriter
         }
         public static bool ObjectArrayGetValue(ComputeGraphVarNode left, string ix, string m, out string varVal)
         {
+            string name = left.VarName;
+            string type = left.Type;
+            return ObjectArrayGetValue(name, type, ix, m, out varVal);
+        }
+        public static bool ObjectArrayGetValue(string name, string type, string ix, string m, out string varVal)
+        {
             bool exists = false;
             varVal = string.Empty;
             if (!int.TryParse(ix, out var index) || index < 0) {
                 return exists;
             }
-            string name = left.VarName;
-            string type = left.Type;
             if (Config.ActiveConfig.SettingInfo.InvalidatedVariables.Contains(name))
                 return false;
             if (Config.ActiveConfig.SettingInfo.InvalidatedArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
@@ -2017,6 +2108,10 @@ namespace GlslRewriter
         {
             string name = left.VarName;
             string type = left.Type;
+            AssignValue(name, type, right);
+        }
+        public static void AssignValue(string name, string type, string right)
+        {
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);
@@ -2358,6 +2453,10 @@ namespace GlslRewriter
         {
             string name = left.VarName;
             string type = left.Type;
+            ObjectAssignValue(name, type, m, right);
+        }
+        public static void ObjectAssignValue(string name, string type, string m, string right)
+        {
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count == 0 && suffix.Length > 0) {
                 if (baseType == "vec") {
@@ -2416,11 +2515,15 @@ namespace GlslRewriter
         }
         public static void ArrayAssignValue(ComputeGraphVarNode left, string ix, string right)
         {
+            string name = left.VarName;
+            string type = left.Type;
+            ArrayAssignValue(name, type, ix, right);
+        }
+        public static void ArrayAssignValue(string name, string type, string ix, string right)
+        {
             if (!int.TryParse(ix, out var index) || index < 0) {
                 return;
             }
-            string name = left.VarName;
-            string type = left.Type;
             string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);

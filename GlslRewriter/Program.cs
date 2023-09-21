@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.ComponentModel.Design;
 using System.Security;
 using static GlslRewriter.Config;
+using System.Net.Http.Headers;
 
 namespace GlslRewriter
 {
@@ -18,12 +19,7 @@ namespace GlslRewriter
         static void Main(string[] args)
         {
             if (args.Length == 0) {
-                Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-src ] glsl_file");
-                Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
-                Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
-                Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
-                Console.WriteLine(" [-cs] glsl_file is compute shader");
-                Console.WriteLine(" [-src ] glsl_file source glsl file, -src can be omitted when file is the last argument");
+                PrintHelp();
                 return;
             }
             else {
@@ -85,6 +81,12 @@ namespace GlslRewriter
                         s_IsPsShader = false;
 
                         typeByExt = false;
+                    }
+                    else if (0 == string.Compare(args[i], "-i", true)) {
+                        s_InteractiveComputing = true;
+                    }
+                    else if (0 == string.Compare(args[i], "-h", true)) {
+                        PrintHelp();
                     }
                     else if (args[i][0] == '-') {
                         Console.WriteLine("unknown command option ! {0}", args[i]);
@@ -154,6 +156,10 @@ namespace GlslRewriter
                     string outFileName = Path.GetFileName(outFilePath);
                     string studyFilePath = Path.Combine(tmpDir, outFileName);
 
+                    if (s_InteractiveComputing) {
+                        Config.ActiveConfig.SettingInfo.GenerateExpressionList = false;
+                    }
+
                     Transform(srcFilePath, studyFilePath, outFilePath);
 
                     if (Config.ActiveConfig.SettingInfo.PrintGraph) {
@@ -174,14 +180,26 @@ namespace GlslRewriter
                 }
             }
         }
+        static void PrintHelp()
+        {
+            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-i] [-src] glsl_file");
+            Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
+            Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
+            Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
+            Console.WriteLine(" [-cs] glsl_file is compute shader");
+            Console.WriteLine(" [-i] interactive computing mode, don't write outfile.");
+            Console.WriteLine(" [-src] glsl_file source glsl file, -src can be omitted when file is the last argument");
+        }
 
         private static void Transform(string srcFile, string studyFile, string outFile)
         {
-            File.Delete(studyFile);
+            if (!s_InteractiveComputing)
+                File.Delete(studyFile);
             var glslFileLines = File.ReadAllLines(srcFile);
             var glslLines = CompletionAndSkipPP(glslFileLines, out var globalCode);
             string glslTxt = ConvertCondExpAndSkipComments(glslLines);
-            File.WriteAllText(s_SrcFileForDSL, glslTxt);
+            if (!s_InteractiveComputing)
+                File.WriteAllText(s_SrcFileForDSL, glslTxt);
 
             var file = new Dsl.DslFile();
             file.onGetToken = (ref Dsl.Common.DslAction dslAction, ref Dsl.Common.DslToken dslToken, ref string tok, ref short val, ref int line) => {
@@ -301,7 +319,8 @@ namespace GlslRewriter
                     int varCountAfter = Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count;
                     Console.WriteLine("iteration:{0}, split variable count:{1} => {2}.", iterIx, varCountBefore, varCountAfter);
                     if (Config.ActiveConfig.SettingInfo.AutoSplitLevel < 0 || varCountBefore >= varCountAfter || iterIx == maxIterations - 1) {
-                        file.Save(studyFile);
+                        if (!s_InteractiveComputing)
+                            file.Save(studyFile);
                         break;
                     }
                     else if (varCountBefore < varCountAfter) {
@@ -314,65 +333,70 @@ namespace GlslRewriter
                 }
             }
 
-            var lineList = new List<string>();
-            if (RenderDocImporter.s_VertexStructInits.Count > 0) {
-                lineList.AddRange(RenderDocImporter.s_VertexStructInits);
-                lineList.Add(string.Empty);
+            if (s_InteractiveComputing) {
+                InteractiveComputing();
             }
-            if (RenderDocImporter.s_VertexAttrInits.Count > 0) {
-                foreach (var pair in RenderDocImporter.s_VertexAttrInits) {
-                    lineList.Add("// " + pair.Key);
-                    lineList.AddRange(pair.Value);
+            else {
+                var lineList = new List<string>();
+                if (RenderDocImporter.s_VertexStructInits.Count > 0) {
+                    lineList.AddRange(RenderDocImporter.s_VertexStructInits);
                     lineList.Add(string.Empty);
                 }
-            }
-            if (RenderDocImporter.s_UniformInits.Count > 0) {
-                lineList.AddRange(RenderDocImporter.s_UniformInits);
-                lineList.Add(string.Empty);
-            }
-            if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
-                lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
-                lineList.Add(string.Empty);
-            }
-            var lines = File.ReadAllLines(studyFile);
-            lineList.AddRange(lines);
-            if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count > 0) {
-                lineList.Add("/*split_variable_assignment{");
-                lineList.AddRange(Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables);
-                lineList.Add("}*/");
-            }
-            File.WriteAllLines(studyFile, lineList.ToArray());
-
-            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                var outBuilder = s_ExpressionBuilder;
-                outBuilder.Length = 0;
-                if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
-                    outBuilder.AppendLine(gcode);
+                if (RenderDocImporter.s_VertexAttrInits.Count > 0) {
+                    foreach (var pair in RenderDocImporter.s_VertexAttrInits) {
+                        lineList.Add("// " + pair.Key);
+                        lineList.AddRange(pair.Value);
+                        lineList.Add(string.Empty);
+                    }
                 }
-                else {
-                    outBuilder.AppendLine(globalCode);
+                if (RenderDocImporter.s_UniformInits.Count > 0) {
+                    lineList.AddRange(RenderDocImporter.s_UniformInits);
+                    lineList.Add(string.Empty);
                 }
-                outBuilder.AppendLine("void main()");
-                outBuilder.AppendLine("{"); 
                 if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
-                    foreach (var line in RenderDocImporter.s_UniformUtofOrFtouVals) {
+                    lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
+                    lineList.Add(string.Empty);
+                }
+                var lines = File.ReadAllLines(studyFile);
+                lineList.AddRange(lines);
+                if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count > 0) {
+                    lineList.Add("/*split_variable_assignment{");
+                    lineList.AddRange(Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables);
+                    lineList.Add("}*/");
+                }
+                File.WriteAllLines(studyFile, lineList.ToArray());
+
+                if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                    var outBuilder = s_ExpressionBuilder;
+                    outBuilder.Length = 0;
+                    if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
+                        outBuilder.AppendLine(gcode);
+                    }
+                    else {
+                        outBuilder.AppendLine(globalCode);
+                    }
+                    outBuilder.AppendLine("void main()");
+                    outBuilder.AppendLine("{");
+                    if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
+                        foreach (var line in RenderDocImporter.s_UniformUtofOrFtouVals) {
+                            outBuilder.Append("\t");
+                            outBuilder.AppendLine(line);
+                        }
+                        outBuilder.AppendLine();
+                    }
+                    foreach (var pair in Config.ActiveConfig.SettingInfo.UsedVariables) {
                         outBuilder.Append("\t");
+                        outBuilder.Append(pair.Value);
+                        outBuilder.Append(" ");
+                        outBuilder.Append(pair.Key);
+                        outBuilder.AppendLine(";");
+                    }
+                    foreach (var line in s_ExpressionList) {
                         outBuilder.AppendLine(line);
                     }
-                    outBuilder.AppendLine();
+                    outBuilder.AppendLine("}");
+                    File.WriteAllText(outFile, outBuilder.ToString());
                 }
-                foreach (var pair in Config.ActiveConfig.SettingInfo.UsedVariables) {
-                    outBuilder.Append("\t");
-                    outBuilder.Append(pair.Value);
-                    outBuilder.Append(" ");
-                    outBuilder.Append(pair.Key);
-                    outBuilder.AppendLine(";");
-                }
-                foreach(var line in s_ExpressionList) {
-                    outBuilder.AppendLine(line);
-                }
-                outBuilder.AppendLine("}");
-                File.WriteAllText(outFile, outBuilder.ToString());
             }
         }
         private static List<string> CompletionAndSkipPP(IList<string> glslLines, out string globalCode)
@@ -625,6 +649,23 @@ namespace GlslRewriter
         {
             foreach (var dsl in file.DslInfos) {
                 TransformToplevelSyntax(dsl);
+            }
+        }
+        private static void InteractiveComputing()
+        {
+            BatchCommand.BatchScript.Init();
+            BatchCommand.BatchScript.Register("shader", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
+            Console.WriteLine("Enter exit or quit to exit...");
+            for (; ; ) {
+                Console.Write(">");
+                var line = Console.ReadLine();
+                if (line == "exit" || line == "quit")
+                    break;
+                if (null != line) {
+                    var r = BatchCommand.BatchScript.EvalAndRun(line);
+                    Console.Write("result:");
+                    Console.WriteLine(r.ToString());
+                }
             }
         }
 
@@ -928,7 +969,7 @@ namespace GlslRewriter
                 first = true;
             }
             if (first) {
-                AddFuncParamsToComputeGraph(funcInfo);
+                AddFuncToComputeGraph(funcInfo);
 
                 if (!s_FuncOverloads.TryGetValue(funcName, out var overloads)) {
                     overloads = new HashSet<string>();
@@ -1092,6 +1133,8 @@ namespace GlslRewriter
                     funcData.SetParenthesisParamClass();
                     funcData.Params.Clear();
                     funcData.AddParam(v);
+
+                    TransformReturn(funcData, semanticInfo.GraphNode, out insertBeforeOuter, out insertAfterOuter);
                 }
                 else if (funcId == "if") {
                     TransformIfFunction(funcData, out insertBeforeOuter, out insertAfterOuter);
@@ -1221,6 +1264,11 @@ namespace GlslRewriter
                 if (funcData.HaveStatement()) {
                     TransformGeneralFunction(lowerFunc, ref semanticInfo);
                     PushBlock(false, false);
+
+                    var block = new ComputeGraphBlock(CurFuncInfo());
+                    AddComputeGraphRootNode(block);
+                    SetCurBlock(block);
+
                     TransformFunctionStatements(funcData);
                     PopBlock();
                 }
@@ -1230,6 +1278,11 @@ namespace GlslRewriter
             }
             else if (funcData.HaveStatement()) {
                 PushBlock(false, false);
+
+                var block = new ComputeGraphBlock(CurFuncInfo());
+                AddComputeGraphRootNode(block);
+                SetCurBlock(block);
+
                 TransformFunctionStatements(funcData);
                 PopBlock();
             }
@@ -1407,9 +1460,13 @@ namespace GlslRewriter
             if (ifFunc.IsHighOrder) {
                 int expListCt = s_ExpressionList.Count;
                 var lowerFunc = ifFunc.LowerOrderFunction;
+
+                var ifNode = new ComputeGraphIfStatement(CurFuncInfo());
+                AddComputeGraphRootNode(ifNode);
+
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
-                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    ifNode.AddCondition(semanticInfo.GraphNode);
                     GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
                 }
                 if (ifFunc.HaveStatement()) {
@@ -1421,6 +1478,11 @@ namespace GlslRewriter
                         ++s_Indent;
                     }
                     PushBlock(true, false);
+
+                    var block = new ComputeGraphBlock(CurFuncInfo());
+                    ifNode.AddBlock(block);
+                    SetCurBlock(block);
+
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(ifFunc);
                     foreach (var vname in CurSetVars()) {
@@ -1458,6 +1520,10 @@ namespace GlslRewriter
         {
             insertBeforeOuter = null;
             insertAfterOuter = null;
+
+            var ifNode = new ComputeGraphIfStatement(CurFuncInfo());
+            AddComputeGraphRootNode(ifNode);
+
             var suffix = c_PhiTagSeparator + GenUniqueNumber();
             var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
             HashSet<string> setVars = new HashSet<string>();
@@ -1469,7 +1535,7 @@ namespace GlslRewriter
                         var semanticInfo = new SemanticInfo();
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
                         if (null != semanticInfo.GraphNode) {
-                            AddComputeGraphRootNode(semanticInfo.GraphNode);
+                            ifNode.AddCondition(semanticInfo.GraphNode);
                             GenerateValueAndExpression(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false);
                         }
                     }
@@ -1478,6 +1544,11 @@ namespace GlslRewriter
                         ++s_Indent;
                     }
                     PushBlock(true, false);
+
+                    var block = new ComputeGraphBlock(CurFuncInfo());
+                    ifNode.AddBlock(block);
+                    SetCurBlock(block);
+
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(f);
                     //每个分支处理自己赋值过的变量，同时将变量名汇总
@@ -1527,9 +1598,14 @@ namespace GlslRewriter
             if (forFunc.IsHighOrder) {
                 int expListCt = s_ExpressionList.Count;
                 var lowerFunc = forFunc.LowerOrderFunction;
+
+                var forNode = new ComputeGraphForStatement(CurFuncInfo());
+                AddComputeGraphRootNode(forNode);
+
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
-                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    //todo:处理for的初始语句与自增语句
+                    forNode.ForFunc = semanticInfo.GraphNode;
                     GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
                 }
                 if (forFunc.HaveStatement()) {
@@ -1540,6 +1616,11 @@ namespace GlslRewriter
                         ++s_Indent;
                     }
                     PushBlock(true, true);
+
+                    var block = new ComputeGraphBlock(CurFuncInfo());
+                    forNode.Block = block;
+                    SetCurBlock(block);
+
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(forFunc);
                     ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
@@ -1567,9 +1648,13 @@ namespace GlslRewriter
             if (whileFunc.IsHighOrder) {
                 int expListCt = s_ExpressionList.Count;
                 var lowerFunc = whileFunc.LowerOrderFunction;
+
+                var whileNode = new ComputeGraphWhileStatement(CurFuncInfo());
+                AddComputeGraphRootNode(whileNode);
+
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
-                    AddComputeGraphRootNode(semanticInfo.GraphNode);
+                    whileNode.WhileFunc = semanticInfo.GraphNode;
                     GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
                 }
                 if (whileFunc.HaveStatement()) {
@@ -1580,6 +1665,11 @@ namespace GlslRewriter
                         ++s_Indent;
                     }
                     PushBlock(true, true);
+
+                    var block = new ComputeGraphBlock(CurFuncInfo());
+                    whileNode.Block = block;
+                    SetCurBlock(block);
+
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(whileFunc);
                     ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
@@ -1608,6 +1698,10 @@ namespace GlslRewriter
             var whileFunc = stm.Second.AsFunction;
             Debug.Assert(null != doFunc);
             Debug.Assert(null != whileFunc);
+
+            var doWhileNode = new ComputeGraphDoWhileStatement(CurFuncInfo());
+            AddComputeGraphRootNode(doWhileNode);
+
             if (doFunc.HaveStatement()) {
                 int expListCt = s_ExpressionList.Count;
                 var suffix = c_PhiTagSeparator + GenUniqueNumber();
@@ -1617,6 +1711,11 @@ namespace GlslRewriter
                     ++s_Indent;
                 }
                 PushBlock(true, true);
+
+                var block = new ComputeGraphBlock(CurFuncInfo());
+                doWhileNode.Block = block;
+                SetCurBlock(block);
+
                 SetCurBlockPhiSuffix(suffix);
                 TransformFunctionStatements(doFunc);
                 ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
@@ -1635,13 +1734,16 @@ namespace GlslRewriter
             }
             TransformGeneralCall(whileFunc, ref semanticInfo);
             if (null != semanticInfo.GraphNode) {
-                AddComputeGraphRootNode(semanticInfo.GraphNode);
+                doWhileNode.WhileFunc = semanticInfo.GraphNode;
                 GenerateValueAndExpression(whileFunc, semanticInfo.GraphNode, true, true, true, true);
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
         private static bool TransformBreak(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            var breakNode = new ComputeGraphBreakNode(CurFuncInfo(), "break");
+            AddComputeGraphRootNode(breakNode);
+
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "break;");
             }
@@ -1657,6 +1759,9 @@ namespace GlslRewriter
         }
         private static bool TransformContinue(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            var breakNode = new ComputeGraphBreakNode(CurFuncInfo(), "continue");
+            AddComputeGraphRootNode(breakNode);
+
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "continue;");
             }
@@ -1672,6 +1777,9 @@ namespace GlslRewriter
         }
         private static bool TransformDiscard(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            var breakNode = new ComputeGraphBreakNode(CurFuncInfo(), "discard");
+            AddComputeGraphRootNode(breakNode);
+
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
@@ -1681,10 +1789,32 @@ namespace GlslRewriter
         }
         private static bool TransformReturn(Dsl.ValueData valData, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
+            var breakNode = new ComputeGraphBreakNode(CurFuncInfo(), "return");
+            AddComputeGraphRootNode(breakNode);
+
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "return;");
+            }
+            return insertBeforeOuter != null || insertAfterOuter != null;
+        }
+        private static bool TransformReturn(Dsl.FunctionData funcData, ComputeGraphNode? expression, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
+        {
+            var breakNode = new ComputeGraphBreakNode(CurFuncInfo(), "return");
+            AddComputeGraphRootNode(breakNode);
+            breakNode.Expression = expression;
+
+            insertBeforeOuter = null;
+            insertAfterOuter = null;
+            if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                string expStr = string.Empty;
+                if (null != expression) {
+                    int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
+                    int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
+                    expStr = expression.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
+                }
+                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "return " + expStr);
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -3054,7 +3184,7 @@ namespace GlslRewriter
             }
             return newInfos;
         }
-        private static void AddFuncParamsToComputeGraph(FuncInfo funcInfo)
+        private static void AddFuncToComputeGraph(FuncInfo funcInfo)
         {
             var graph = funcInfo.FuncComputeGraph;
             foreach (var p in funcInfo.Params) {
@@ -3072,6 +3202,10 @@ namespace GlslRewriter
                     graph.VarNodes.Add(vgn.VarName, vgn);
                 }
             }
+            graph.RootNodes.Add(funcInfo.ComputeGraphFunc);
+            funcInfo.ComputeGraphFunc.OwnFunc = funcInfo;
+            funcInfo.ComputeGraphFunc.Block = new ComputeGraphBlock(funcInfo);
+            SetCurBlock(funcInfo.ComputeGraphFunc.Block);
         }
 
         //计算图
@@ -3085,8 +3219,14 @@ namespace GlslRewriter
         }
         private static void AddComputeGraphRootNode(ComputeGraphNode gn)
         {
-            var cg = CurComputeGraph();
-            cg.RootNodes.Add(gn);
+            var block = CurBlock();
+            if (null != block) {
+                block.AddChild(gn);
+            }
+            else {
+                var cg = CurComputeGraph();
+                cg.RootNodes.Add(gn);
+            }
         }
         private static void AddComputeGraphVarNode(ComputeGraphVarNode cgvn)
         {
@@ -3244,6 +3384,19 @@ namespace GlslRewriter
                 return s_LexicalScopeStack.Peek().BlockId;
             }
             return s_ToplevelLexicalScopeInfo.BlockId;
+        }
+        private static void SetCurBlock(ComputeGraphBlock block)
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                s_LexicalScopeStack.Peek().Block = block;
+            }
+        }
+        private static ComputeGraphBlock? CurBlock()
+        {
+            if (s_LexicalScopeStack.Count > 0) {
+                return s_LexicalScopeStack.Peek().Block;
+            }
+            return s_ToplevelLexicalScopeInfo.Block;
         }
         private static HashSet<string> CurSetVars()
         {
@@ -3477,6 +3630,7 @@ namespace GlslRewriter
             public List<VarInfo> InOutOrOutParams = new List<VarInfo>();
 
             public ComputeGraph FuncComputeGraph = new ComputeGraph();
+            public ComputeGraphFunction ComputeGraphFunc = new ComputeGraphFunction(null);
 
             public bool IsVoid()
             {
@@ -3555,6 +3709,7 @@ namespace GlslRewriter
             public bool IsBranch = false;
             public bool IsLoop = false;
             public int BlockId = 0;
+            public ComputeGraphBlock? Block = null;
             public string PhiSuffix = string.Empty;
             public VarInfo? LastVarType = null;
             public HashSet<string> SetVars = new HashSet<string>();
@@ -3613,6 +3768,7 @@ namespace GlslRewriter
         internal static bool s_IsVsShader = false;
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
+        internal static bool s_InteractiveComputing = false;
         internal const string c_PhiTagSeparator = "_phi_";
         internal const string c_AliasSeparator = "_";
 

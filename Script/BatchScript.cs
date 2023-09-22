@@ -2183,6 +2183,18 @@ namespace BatchCommand
         {
             s_Calculator.Register(name, factory);
         }
+        internal static void SetOnTryGetVariable(DslCalculator.TryGetVariableDelegation callback)
+        {
+            s_Calculator.OnTryGetVariable = callback;
+        }
+        internal static void SetOnTrySetVariable(DslCalculator.TrySetVariableDelegation callback)
+        {
+            s_Calculator.OnTrySetVariable = callback;
+        }
+        internal static void SetOnLoadFailback(DslCalculator.LoadFailbackDelegation callback)
+        {
+            s_Calculator.OnLoadFailback = callback;
+        }
         internal static CalculatorValue Run(string scpFile, List<CalculatorValue> args)
         {
             var r = CalculatorValue.NullObject;

@@ -534,6 +534,32 @@ namespace DslExpression
                 return Type == c_CharType;
             }
         }
+        public bool IsSignedInteger {
+            get {
+                switch (Type) {
+                    case c_SByteType:
+                    case c_ShortType:
+                    case c_IntType:
+                    case c_LongType:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+        public bool IsUnsignedInteger {
+            get {
+                switch (Type) {
+                    case c_ByteType:
+                    case c_UShortType:
+                    case c_UIntType:
+                    case c_ULongType:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
         public bool IsInteger
         {
             get {
@@ -2036,7 +2062,12 @@ namespace DslExpression
             }
             else if (m_VarId.Length > 0) {
                 m_VarIx = Calculator.AllocGlobalVariableIndex(m_VarId);
-                Calculator.SetGlobalVaraibleByIndex(m_VarIx, v);
+                if (m_VarIx < int.MaxValue) {
+                    Calculator.SetGlobalVaraibleByIndex(m_VarIx, v);
+                }
+                else {
+                    Calculator.SetGlobalVariable(m_VarId, v);
+                }
             }
             if (m_VarId.Length > 0 && m_VarId[0] != '@') {
                 Environment.SetEnvironmentVariable(m_VarId, v.ToString());
@@ -2076,6 +2107,9 @@ namespace DslExpression
                 m_VarIx = Calculator.GetGlobalVariableIndex(m_VarId);
                 if (m_VarIx < int.MaxValue) {
                     ret = Calculator.GetGlobalVaraibleByIndex(m_VarIx);
+                }
+                else if(Calculator.TryGetGlobalVariable(m_VarId, out var val)) {
+                    ret = val;
                 }
                 else {
                     Calculator.Log("unassigned global var '{0}'", m_VarId);
@@ -3919,16 +3953,28 @@ namespace DslExpression
                     }
                 }
                 else {
-                    IEnumerable enumer = obj as IEnumerable;
-                    if (null != enumer && methodObj is int) {
+                    IList list = obj as IList;
+                    if (null != list && methodObj is int) {
                         int index = (int)methodObj;
-                        var e = enumer.GetEnumerator();
-                        for (int i = 0; i <= index; ++i) {
-                            e.MoveNext();
+                        if (index >= 0 && index < list.Count) {
+                            var d = list[index] as Delegate;
+                            if (null != d) {
+                                ret = CalculatorValue.FromObject(d.DynamicInvoke(_args));
+                            }
                         }
-                        var d = e.Current as Delegate;
-                        if (null != d) {
-                            ret = CalculatorValue.FromObject(d.DynamicInvoke(_args));
+                    }
+                    else {
+                        IEnumerable enumer = obj as IEnumerable;
+                        if (null != enumer && methodObj is int) {
+                            int index = (int)methodObj;
+                            var e = enumer.GetEnumerator();
+                            for (int i = 0; i <= index; ++i) {
+                                e.MoveNext();
+                            }
+                            var d = e.Current as Delegate;
+                            if (null != d) {
+                                ret = CalculatorValue.FromObject(d.DynamicInvoke(_args));
+                            }
                         }
                     }
                 }
@@ -4022,14 +4068,24 @@ namespace DslExpression
                     ret = CalculatorValue.FromObject(dict[methodObj]);
                 }
                 else {
-                    IEnumerable enumer = obj as IEnumerable;
-                    if (null != enumer && methodObj is int) {
+                    IList list = obj as IList;
+                    if (null != list && methodObj is int) {
                         int index = (int)methodObj;
-                        var e = enumer.GetEnumerator();
-                        for (int i = 0; i <= index; ++i) {
-                            e.MoveNext();
+                        if (index >= 0 && index < list.Count) {
+                            var d = list[index];
+                            ret = CalculatorValue.FromObject(d);
                         }
-                        ret = CalculatorValue.FromObject(e.Current);
+                    }
+                    else {
+                        IEnumerable enumer = obj as IEnumerable;
+                        if (null != enumer && methodObj is int) {
+                            int index = (int)methodObj;
+                            var e = enumer.GetEnumerator();
+                            for (int i = 0; i <= index; ++i) {
+                                e.MoveNext();
+                            }
+                            ret = CalculatorValue.FromObject(e.Current);
+                        }
                     }
                 }
             }
@@ -5789,8 +5845,8 @@ namespace DslExpression
     }
     public sealed class DslCalculator
     {
-        public delegate bool TryGetVariableValueDelegation(string v, out CalculatorValue result);
-        public delegate bool TrySetVariableValueDelegation(string v, ref CalculatorValue result);
+        public delegate bool TryGetVariableDelegation(string v, out CalculatorValue result);
+        public delegate bool TrySetVariableDelegation(string v, ref CalculatorValue result);
         public delegate bool LoadFailbackDelegation(Dsl.ISyntaxComponent comp, DslCalculator calculator, out IExpression expression);
         public class FuncInfo
         {
@@ -5808,8 +5864,8 @@ namespace DslExpression
         }
 
         public Dsl.DslLogDelegation OnLog;
-        public TryGetVariableValueDelegation OnTryGetVariableValue;
-        public TrySetVariableValueDelegation OnTrySetVariableValue;
+        public TryGetVariableDelegation OnTryGetVariable;
+        public TrySetVariableDelegation OnTrySetVariable;
         public LoadFailbackDelegation OnLoadFailback;
 
         public bool Inited { get { return m_Inited; } }
@@ -6010,7 +6066,7 @@ namespace DslExpression
         }
         public bool TryGetGlobalVariable(string v, out CalculatorValue result)
         {
-            if (null != OnTryGetVariableValue && OnTryGetVariableValue(v, out result)) {
+            if (null != OnTryGetVariable && OnTryGetVariable(v, out result)) {
                 return true;
             }
             else if (m_NamedGlobalVariableIndexes.TryGetValue(v, out var index)) {
@@ -6030,7 +6086,7 @@ namespace DslExpression
         }
         public void SetGlobalVariable(string v, CalculatorValue val)
         {
-            if (null != OnTrySetVariableValue && OnTrySetVariableValue(v, ref val)) {
+            if (null != OnTrySetVariable && OnTrySetVariable(v, ref val)) {
 
             }
             else if (m_NamedGlobalVariableIndexes.TryGetValue(v, out var index)) {
@@ -6572,7 +6628,10 @@ namespace DslExpression
         internal int AllocGlobalVariableIndex(string name)
         {
             int ix;
-            if (!m_NamedGlobalVariableIndexes.TryGetValue(name, out ix)) {
+            if (null != OnTryGetVariable && OnTryGetVariable(name, out var val)) {
+                ix = int.MaxValue;
+            }
+            else if (!m_NamedGlobalVariableIndexes.TryGetValue(name, out ix)) {
                 ix = m_NamedGlobalVariableIndexes.Count;
                 m_NamedGlobalVariableIndexes.Add(name, ix);
                 m_GlobalVariables.Add(CalculatorValue.NullObject);

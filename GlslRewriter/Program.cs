@@ -9,6 +9,7 @@ using System.ComponentModel.Design;
 using System.Security;
 using static GlslRewriter.Config;
 using System.Net.Http.Headers;
+using System.ComponentModel.DataAnnotations;
 
 namespace GlslRewriter
 {
@@ -654,7 +655,14 @@ namespace GlslRewriter
         private static void InteractiveComputing()
         {
             BatchCommand.BatchScript.Init();
-            BatchCommand.BatchScript.Register("shader", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
+            BatchCommand.BatchScript.Register("svar", new DslExpression.ExpressionFactoryHelper<ShaderVarExp>());
+            BatchCommand.BatchScript.Register("addsvar", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
+            BatchCommand.BatchScript.Register("setsvar", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
+            BatchCommand.BatchScript.Register("addunsvar", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
+            BatchCommand.BatchScript.Register("importinout", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
+            BatchCommand.BatchScript.Register("recalc", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
+            BatchCommand.BatchScript.SetOnTryGetVariable(VariableTable.TryGetVariable);
+            BatchCommand.BatchScript.SetOnTrySetVariable(VariableTable.TrySetVariable);
             Console.WriteLine("Enter exit or quit to exit...");
             for (; ; ) {
                 Console.Write(">");
@@ -667,6 +675,33 @@ namespace GlslRewriter
                     Console.WriteLine(r.ToString());
                 }
             }
+        }
+        internal static void ResetValueDependsVar(string vname)
+        {
+            if (s_FuncInfos.TryGetValue("main", out var fi)) {
+                var cg = fi.FuncComputeGraph;
+                if (null != cg) {
+                    cg.ResetValueDependsVar(fi, vname);
+                }
+            }
+        }
+        internal static bool ReCalc(bool full)
+        {
+            bool ret = false;
+            if(s_FuncInfos.TryGetValue("main", out var fi)) {
+                if (full) {
+                    var cg = fi.FuncComputeGraph;
+                    if (null != cg) {
+                        cg.ResetValue(fi);
+                    }
+                }
+                var cgf = fi.ComputeGraphFunc;
+                if (null != cgf) {
+                    cgf.DoCalc();
+                    ret = true;
+                }
+            }
+            return ret;
         }
 
         //顶层语法处理
@@ -1327,6 +1362,7 @@ namespace GlslRewriter
             }
             if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
                 string id = call.GetId();
+                List<string> argTypes = new List<string>();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
                 for (int ix = 0; ix < paramNum; ++ix) {
                     var syntax = call.GetParam(ix);
@@ -1336,15 +1372,18 @@ namespace GlslRewriter
 
                         var agn = tsemanticInfo.GraphNode;
                         Debug.Assert(null != agn);
+                        argTypes.Add(agn.Type);
 
                         cgcn.AddPrev(agn);
                         agn.AddNext(cgcn);
                     }
                 }
+                cgcn.Type = FunctionTypeInference(id, argTypes, out var finfo);
                 semanticInfo.GraphNode = cgcn;
             }
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR) {
                 string id = call.GetId();
+                List<string> argTypes = new List<string>();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
                 for (int ix = 0; ix < paramNum; ++ix) {
                     var syntax = call.GetParam(ix);
@@ -1353,10 +1392,15 @@ namespace GlslRewriter
 
                     var agn = tsemanticInfo.GraphNode;
                     Debug.Assert(null != agn);
+                    argTypes.Add(agn.Type);
 
                     cgcn.AddPrev(agn);
                     agn.AddNext(cgcn);
                 }
+                if (argTypes.Count == 1)
+                    cgcn.Type = OperatorTypeInference(id, argTypes[0]);
+                else if (argTypes.Count == 2)
+                    cgcn.Type = OperatorTypeInference(id, argTypes[1]);
                 semanticInfo.GraphNode = cgcn;
             }
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD) {
@@ -1381,6 +1425,7 @@ namespace GlslRewriter
                 cgcn.AddPrev(agn2);
                 agn2.AddNext(cgcn);
 
+                cgcn.Type = MemberTypeInference(".", agn1.Type, string.Empty, m);
                 semanticInfo.GraphNode = cgcn;
             }
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
@@ -1407,6 +1452,7 @@ namespace GlslRewriter
                 cgcn.AddPrev(agn2);
                 agn2.AddNext(cgcn);
 
+                cgcn.Type = MemberTypeInference("[]", agn1.Type, string.Empty, agn2.Type);
                 semanticInfo.GraphNode = cgcn;
             }
         }
@@ -1604,7 +1650,6 @@ namespace GlslRewriter
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
-                    //todo:处理for的初始语句与自增语句
                     forNode.ForFunc = semanticInfo.GraphNode;
                     GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
                 }
@@ -2863,7 +2908,13 @@ namespace GlslRewriter
                 }
             }
             else if (op == "[]") {
-                resultType = objType;
+                string baseType = GetTypeRemoveSuffix(objType, out var suffix, out var arrNums);
+                if (arrNums.Count > 0)
+                    resultType = baseType + suffix;
+                else if (suffix.Length > 0)
+                    resultType = baseType;
+                else
+                    resultType = objType;
             }
             return resultType;
         }
@@ -3950,6 +4001,9 @@ namespace GlslRewriter
             { "EmitVertex", "void" },
             { "EndPrimitive", "void" },
             { "subpassLoad", "vec4" },
+            { "if", "bool" },
+            { "while", "bool" },
+            { "for", "bool" },
         };
     }
 }

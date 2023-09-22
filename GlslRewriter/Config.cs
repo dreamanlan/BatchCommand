@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using static GlslRewriter.Config;
 using System.Xml.Linq;
 using BatchCommand;
+using System.Collections;
+using DslExpression;
 
 namespace GlslRewriter
 {
@@ -216,6 +218,64 @@ namespace GlslRewriter
                 }
             }
             return results;
+        }
+        internal static bool ImportVsInOutData(string type, int index, Dictionary<string, string> attrMap, string csv_path)
+        {
+            bool ret = false;
+            var lines = File.ReadAllLines(csv_path);
+            if (lines.Length >= 2) {
+                var header = lines[0];
+                var colNames = header.Split(",", StringSplitOptions.TrimEntries);
+                if (colNames.Length >= 2 && colNames[0] == "VTX" && colNames[1] == "IDX") {
+                    int ix = index + 1;
+                    if (ix >= 0 && ix < lines.Length) {
+                        var line = lines[ix];
+                        var cols = SplitCsvLine(line);
+                        Debug.Assert(colNames.Length == cols.Count);
+                        for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
+                            var names = colNames[i].Split(".");
+                            if (names.Length == 2) {
+                                if (attrMap.TryGetValue(names[0], out var newName)) {
+                                    if (string.IsNullOrEmpty(newName)) {
+                                        continue;
+                                    }
+                                    names[0] = newName;
+                                }
+                                DslExpression.CalculatorValue val;
+                                if (type == "float") {
+                                    if (float.TryParse(cols[i], out var v)) {
+                                        val = DslExpression.CalculatorValue.From(v);
+                                    }
+                                    else {
+                                        val = DslExpression.CalculatorValue.From(0.0f);
+                                    }
+                                }
+                                else if (type == "uint") {
+                                    if (uint.TryParse(cols[i], out var v)) {
+                                        val = DslExpression.CalculatorValue.From(v);
+                                    }
+                                    else {
+                                        val = DslExpression.CalculatorValue.From(0u);
+                                    }
+                                }
+                                else {
+                                    if (int.TryParse(cols[i], out var v)) {
+                                        val = DslExpression.CalculatorValue.From(v);
+                                    }
+                                    else {
+                                        val = DslExpression.CalculatorValue.From(0);
+                                    }
+                                }
+                                ret = VariableTable.TrySetObject(names[0], names[1], ref val) && ret;
+                            }
+                            else {
+                                Debug.Assert(false);
+                            }
+                        }
+                    }
+                }
+            }
+            return ret;
         }
         private static List<string> SplitCsvLine(string line)
         {
@@ -622,6 +682,11 @@ namespace GlslRewriter
                                     cfg.SettingInfo.MaxIterations = v;
                                 }
                             }
+                            else if (key == "max_loop") {
+                                if (int.TryParse(vstr, out var v)) {
+                                    cfg.SettingInfo.MaxLoop = v;
+                                }
+                            }
                         }
                         else if (fid == "split_variable_assignment") {
                             ParseSplitVariableAssignment(cfg, fd);
@@ -638,17 +703,17 @@ namespace GlslRewriter
                         else if (fid == "auto_split") {
                             ParseAutoSplit(cfg, fd);
                         }
-                        else if (fid == "invalidate_variable") {
-                            ParseInvalidateVariable(cfg, fd);
+                        else if (fid == "unassignable_variable") {
+                            ParseUnassignableVariable(cfg, fd);
                         }
-                        else if (fid == "invalidate_object_member") {
-                            ParseInvalidateObjectMember(cfg, fd);
+                        else if (fid == "unassignable_object_member") {
+                            ParseUnassignableObjectMember(cfg, fd);
                         }
-                        else if (fid == "invalidate_array_element") {
-                            ParseInvalidateArrayElement(cfg, fd);
+                        else if (fid == "unassignable_array_element") {
+                            ParseUnassignableArrayElement(cfg, fd);
                         }
-                        else if (fid == "invalidate_object_array_member") {
-                            ParseInvalidateObjectArrayMember(cfg, fd);
+                        else if (fid == "unassignable_object_array_member") {
+                            ParseUnassignableObjectArrayMember(cfg, fd);
                         }
                         else if (fid == "variable_assignment") {
                             ParseVariableAssignment(cfg, fd);
@@ -914,73 +979,6 @@ namespace GlslRewriter
                 }
             }
         }
-        private static void ParseInvalidateVariable(ShaderConfig cfg, Dsl.FunctionData dslCfg)
-        {
-            foreach (var fp in dslCfg.Params) {
-                string vname = fp.GetId();
-                if (!cfg.SettingInfo.InvalidatedVariables.Contains(vname))
-                    cfg.SettingInfo.InvalidatedVariables.Add(vname);
-            }
-        }
-        private static void ParseInvalidateObjectMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
-        {
-            foreach (var fp in dslCfg.Params) {
-                var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsPeriodParamClass()) {
-                    string cid = cd.GetId();
-                    string member = cd.GetParamId(0);
-                    if (!cfg.SettingInfo.InvalidatedObjectMembers.TryGetValue(cid, out var memberHashSet)) {
-                        memberHashSet = new HashSet<string>();
-                        cfg.SettingInfo.InvalidatedObjectMembers.Add(cid, memberHashSet);
-                    }
-                    if (!memberHashSet.Contains(member))
-                        memberHashSet.Add(member);
-                }
-            }
-        }
-        private static void ParseInvalidateArrayElement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
-        {
-            foreach (var fp in dslCfg.Params) {
-                var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsBracketParamClass()) {
-                    string cid = cd.GetId();
-                    string ixType = "int";
-                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                    if (int.TryParse(ixStr, out var ix)) {
-                        if (!cfg.SettingInfo.InvalidatedArrayElements.TryGetValue(cid, out var ixHashSet)) {
-                            ixHashSet = new HashSet<int>();
-                            cfg.SettingInfo.InvalidatedArrayElements.Add(cid, ixHashSet);
-                        }
-                        if (!ixHashSet.Contains(ix))
-                            ixHashSet.Add(ix);
-                    }
-                }
-            }
-        }
-        private static void ParseInvalidateObjectArrayMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
-        {
-            foreach (var fp in dslCfg.Params) {
-                var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
-                    string cid = cd.LowerOrderFunction.GetId();
-                    string ixType = "int";
-                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
-                    string member = cd.GetParamId(0);
-                    if (int.TryParse(ixStr, out var ix)) {
-                        if (!cfg.SettingInfo.InvalidatedObjectArrayMembers.TryGetValue(cid, out var elemMemberList)) {
-                            elemMemberList = new Dictionary<int, HashSet<string>>();
-                            cfg.SettingInfo.InvalidatedObjectArrayMembers.Add(cid, elemMemberList);
-                        }
-                        if (!elemMemberList.TryGetValue(ix, out var memberHashSet)) {
-                            memberHashSet = new HashSet<string>();
-                            elemMemberList.Add(ix, memberHashSet);
-                        }
-                        if (!memberHashSet.Contains(member))
-                            memberHashSet.Add(member);
-                    }
-                }
-            }
-        }
         private static void ParseVariableAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             foreach (var fp in dslCfg.Params) {
@@ -1082,6 +1080,33 @@ namespace GlslRewriter
                         }
                     }
                 }
+            }
+        }
+        private static void ParseUnassignableVariable(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                AddUnassignableVariable(cfg, fp as Dsl.ValueData);
+            }
+        }
+        private static void ParseUnassignableObjectMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                AddUnassignableObjectMember(cfg, cd);
+            }
+        }
+        private static void ParseUnassignableArrayElement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                AddUnassignableArrayElement(cfg, cd);
+            }
+        }
+        private static void ParseUnassignableObjectArrayMember(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            foreach (var fp in dslCfg.Params) {
+                var cd = fp as Dsl.FunctionData;
+                AddUnassignableObjectArrayMember(cfg, cd);
             }
         }
         private static void ParseInOutAttr(string id, ShaderConfig cfg, Dsl.FunctionData dslCfg)
@@ -1443,6 +1468,65 @@ namespace GlslRewriter
             return string.Empty;
         }
 
+        internal static void AddUnassignableVariable(ShaderConfig cfg, Dsl.ValueData? vd)
+        {
+            if (null != vd) {
+                string vname = vd.GetId();
+                if (!cfg.SettingInfo.UnassignableVariables.Contains(vname))
+                    cfg.SettingInfo.UnassignableVariables.Add(vname);
+            }
+        }
+        internal static void AddUnassignableObjectMember(ShaderConfig cfg, Dsl.FunctionData? cd)
+        {
+            if (null != cd && cd.IsPeriodParamClass()) {
+                string cid = cd.GetId();
+                string member = cd.GetParamId(0);
+                if (!cfg.SettingInfo.UnassignableObjectMembers.TryGetValue(cid, out var memberHashSet)) {
+                    memberHashSet = new HashSet<string>();
+                    cfg.SettingInfo.UnassignableObjectMembers.Add(cid, memberHashSet);
+                }
+                if (!memberHashSet.Contains(member))
+                    memberHashSet.Add(member);
+            }
+        }
+        internal static void AddUnassignableArrayElement(ShaderConfig cfg, Dsl.FunctionData? cd)
+        {
+            if (null != cd && cd.IsBracketParamClass()) {
+                string cid = cd.GetId();
+                string ixType = "int";
+                string ixStr = DoCalc(cd.GetParam(0), ref ixType);
+                if (int.TryParse(ixStr, out var ix)) {
+                    if (!cfg.SettingInfo.UnassignableArrayElements.TryGetValue(cid, out var ixHashSet)) {
+                        ixHashSet = new HashSet<int>();
+                        cfg.SettingInfo.UnassignableArrayElements.Add(cid, ixHashSet);
+                    }
+                    if (!ixHashSet.Contains(ix))
+                        ixHashSet.Add(ix);
+                }
+            }
+        }
+        internal static void AddUnassignableObjectArrayMember(ShaderConfig cfg, Dsl.FunctionData? cd)
+        {
+            if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
+                string cid = cd.LowerOrderFunction.GetId();
+                string ixType = "int";
+                string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                string member = cd.GetParamId(0);
+                if (int.TryParse(ixStr, out var ix)) {
+                    if (!cfg.SettingInfo.UnassignableObjectArrayMembers.TryGetValue(cid, out var elemMemberList)) {
+                        elemMemberList = new Dictionary<int, HashSet<string>>();
+                        cfg.SettingInfo.UnassignableObjectArrayMembers.Add(cid, elemMemberList);
+                    }
+                    if (!elemMemberList.TryGetValue(ix, out var memberHashSet)) {
+                        memberHashSet = new HashSet<string>();
+                        elemMemberList.Add(ix, memberHashSet);
+                    }
+                    if (!memberHashSet.Contains(member))
+                        memberHashSet.Add(member);
+                }
+            }
+        }
+
         internal class SplitInfoForVariable
         {
             internal int MaxLevel = 0;
@@ -1477,6 +1561,7 @@ namespace GlslRewriter
             internal int ShaderVariablesCapacity = 1024;
             internal int StringBufferCapacitySurplus = 1024;
             internal int MaxIterations = 32;
+            internal int MaxLoop = 256;
 
             internal int AutoSplitLevel = -1;
             internal int AutoSplitLevelForRepeatExpression = 6;
@@ -1489,15 +1574,15 @@ namespace GlslRewriter
             internal Dictionary<string, Dictionary<int, SplitInfoForVariable>> ArraySplitInfos = new Dictionary<string, Dictionary<int, SplitInfoForVariable>>();
             internal Dictionary<string, Dictionary<int, Dictionary<string, SplitInfoForVariable>>> ObjectArraySplitInfos = new Dictionary<string, Dictionary<int, Dictionary<string, SplitInfoForVariable>>>();
 
-            internal HashSet<string> InvalidatedVariables = new HashSet<string>();
-            internal Dictionary<string, HashSet<string>> InvalidatedObjectMembers = new Dictionary<string, HashSet<string>>();
-            internal Dictionary<string, HashSet<int>> InvalidatedArrayElements = new Dictionary<string, HashSet<int>>();
-            internal Dictionary<string, Dictionary<int, HashSet<string>>> InvalidatedObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
-
             internal Dictionary<string, ValueInfo> VariableAssignments = new Dictionary<string, ValueInfo>();
             internal Dictionary<string, Dictionary<string, ValueInfo>> ObjectMemberAssignments = new Dictionary<string, Dictionary<string, ValueInfo>>();
             internal Dictionary<string, Dictionary<int, ValueInfo>> ArrayElementAssignments = new Dictionary<string, Dictionary<int, ValueInfo>>();
             internal Dictionary<string, Dictionary<int, Dictionary<string, ValueInfo>>> ObjectArrayMemberAssignments = new Dictionary<string, Dictionary<int, Dictionary<string, ValueInfo>>>();
+
+            internal HashSet<string> UnassignableVariables = new HashSet<string>();
+            internal Dictionary<string, HashSet<string>> UnassignableObjectMembers = new Dictionary<string, HashSet<string>>();
+            internal Dictionary<string, HashSet<int>> UnassignableArrayElements = new Dictionary<string, HashSet<int>>();
+            internal Dictionary<string, Dictionary<int, HashSet<string>>> UnassignableObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
 
             internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
@@ -1612,7 +1697,7 @@ namespace GlslRewriter
         private static Random s_Random = new Random();
     }
 
-    internal sealed class ShaderExp : DslExpression.AbstractExpression
+    internal sealed class ShaderVarExp : DslExpression.AbstractExpression
     {
         protected override DslExpression.CalculatorValue DoCalc()
         {
@@ -1635,5 +1720,232 @@ namespace GlslRewriter
         }
 
         private List<Dsl.ISyntaxComponent> m_DslArgs = new List<Dsl.ISyntaxComponent>();
+    }
+    internal sealed class AddShaderVarExp : DslExpression.AbstractExpression
+    {
+        protected override DslExpression.CalculatorValue DoCalc()
+        {
+            int ct = 1;
+            if (null != m_CountExp)
+                ct = m_CountExp.Calc();
+            string type = m_Type;
+            if (ct > 1)
+                type = type + "_x" + ct.ToString();
+            VariableTable.AllocVar(m_Name, type);
+            return DslExpression.CalculatorValue.From(true);
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if(funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
+                m_Name = funcData.GetParamId(0);
+                m_Type = funcData.GetParamId(1);
+                if (funcData.GetParamNum() > 2)
+                    m_CountExp = Calculator.Load(funcData.GetParam(2));
+            }
+            return true;
+        }
+
+        private string m_Name = string.Empty;
+        private string m_Type = string.Empty;
+        private DslExpression.IExpression? m_CountExp = null;
+    }
+    internal sealed class SetShaderVarExp : DslExpression.AbstractExpression
+    {
+        protected override DslExpression.CalculatorValue DoCalc()
+        {
+            bool ret = false;
+            Debug.Assert(null != m_ValExp);
+            var val = m_ValExp.Calc();
+            int ix = -1;
+            switch (m_VarType) {
+                case VarTypeEnum.Var:
+                    ret = SetVar(ref val);
+                    break;
+                case VarTypeEnum.Obj:
+                    ret = SetObj(ref val);
+                    break;
+                case VarTypeEnum.Array:
+                    Debug.Assert(null != m_IndexExp);
+                    ix = m_IndexExp.Calc();
+                    ret = SetArray(ix, ref val);
+                    break;
+                case VarTypeEnum.ObjArray:
+                    Debug.Assert(null != m_IndexExp);
+                    ix = m_IndexExp.Calc();
+                    ret = SetObjArray(ix, ref val);
+                    break;
+            }
+            return DslExpression.CalculatorValue.From(ret);
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if (funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
+                var varDsl = funcData.GetParam(0);
+
+                var vd = varDsl as Dsl.ValueData;
+                var fd = varDsl as Dsl.FunctionData;
+                var sd = varDsl as Dsl.StatementData;
+                if (null != sd) {
+                    fd = sd.Last.AsFunction;
+                    if (null == fd) {
+                        vd = sd.Last.AsValue;
+                    }
+                }
+                if (null != vd) {
+                    m_VarType = VarTypeEnum.Var;
+                    m_VarName = vd.GetId();
+                }
+                else if (null != fd) {
+                    if (fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {
+                        m_VarType = VarTypeEnum.ObjArray;
+                        m_VarName = fd.LowerOrderFunction.GetId();
+                        m_IndexExp = Calculator.Load(fd.LowerOrderFunction.GetParam(0));
+                        m_Member = fd.GetParamId(0);
+                    }
+                    else if (fd.IsPeriodParamClass()) {
+                        m_VarType = VarTypeEnum.Obj;
+                        m_VarName = fd.GetId();
+                        m_Member = fd.GetParamId(0);
+                    }
+                    else if (fd.IsBracketParamClass()) {
+                        m_VarType = VarTypeEnum.Array;
+                        m_VarName = fd.GetId();
+                        m_IndexExp = Calculator.Load(fd.GetParam(0));
+                    }
+                }
+
+                m_ValExp = Calculator.Load(funcData.GetParam(1));
+            }
+            return true;
+        }
+        private bool SetVar(ref DslExpression.CalculatorValue val)
+        {
+            bool ret = VariableTable.TrySetVariable(m_VarName, ref val);
+            return ret;
+        }
+        private bool SetObj(ref DslExpression.CalculatorValue val)
+        {
+            bool ret = VariableTable.TrySetObject(m_VarName, m_Member, ref val);
+            return ret;
+        }
+        private bool SetArray(int ix, ref DslExpression.CalculatorValue val)
+        {
+            bool ret = VariableTable.TrySetArray(m_VarName, ix, ref val);
+            return ret;
+        }
+        private bool SetObjArray(int ix, ref DslExpression.CalculatorValue val)
+        {
+            bool ret = VariableTable.TrySetObjArray(m_VarName, ix, m_Member, ref val);
+            return ret;
+        }
+
+        enum VarTypeEnum
+        {
+            Var = 0,
+            Obj,
+            Array,
+            ObjArray
+        }
+
+        private VarTypeEnum m_VarType = VarTypeEnum.Var;
+        private string m_VarName = string.Empty;
+        private IExpression? m_IndexExp = null;
+        private string m_Member = string.Empty;
+        private IExpression? m_ValExp = null;
+    }
+    internal sealed class AddUnassignableShaderVarExp : DslExpression.AbstractExpression
+    {
+        protected override DslExpression.CalculatorValue DoCalc()
+        {
+            bool ret = false;
+            foreach (var varDsl in m_DslArgs) {
+                var vd = varDsl as Dsl.ValueData;
+                var fd = varDsl as Dsl.FunctionData;
+                var sd = varDsl as Dsl.StatementData;
+                if (null != sd) {
+                    fd = sd.Last.AsFunction;
+                    if (null == fd) {
+                        vd = sd.Last.AsValue;
+                    }
+                }
+                if (null != vd) {
+                    Config.AddUnassignableVariable(Config.ActiveConfig, vd);
+                    ret = true;
+                }
+                else if (null != fd) {
+                    if (fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {
+                        Config.AddUnassignableObjectArrayMember(Config.ActiveConfig, fd);
+                        ret = true;
+                    }
+                    else if (fd.IsPeriodParamClass()) {
+                        Config.AddUnassignableObjectMember(Config.ActiveConfig, fd);
+                        ret = true;
+                    }
+                    else if (fd.IsBracketParamClass()) {
+                        Config.AddUnassignableArrayElement(ActiveConfig, fd);
+                        ret = true;
+                    }
+                }
+            }
+            return DslExpression.CalculatorValue.From(ret);
+        }
+        protected override bool Load(Dsl.FunctionData funcData)
+        {
+            if (funcData.IsHighOrder) {
+                Load(funcData.LowerOrderFunction);
+            }
+            foreach (var p in funcData.Params) {
+                m_DslArgs.Add(p);
+            }
+            return true;
+        }
+
+        private List<Dsl.ISyntaxComponent> m_DslArgs = new List<Dsl.ISyntaxComponent>();
+    }
+    internal sealed class ImportInOutExp : DslExpression.SimpleExpressionBase
+    {
+        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        {
+            bool ret = false;
+            if (operands.Count > 0) {
+                bool ret1 = true;
+                bool ret2 = true;
+                int ix = operands[0].GetInt();
+                var cfg = Config.ActiveConfig;
+                var attrCfg = cfg.InOutAttrInfo;
+                if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
+                    if (File.Exists(attrCfg.InAttrImportFile)) {
+                        ret1 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
+                    }
+                    else {
+                        ret1 = false;
+                        Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
+                    }
+                }
+                if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
+                    if (File.Exists(attrCfg.OutAttrImportFile)) {
+                        ret2 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
+                    }
+                    else {
+                        ret2 = false;
+                        Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
+                    }
+                }
+                ret = ret1 && ret2;
+            }
+            return DslExpression.CalculatorValue.From(ret);
+        }
+    }
+    internal sealed class ReCalcExp : DslExpression.SimpleExpressionBase
+    {
+        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        {
+            bool full = false;
+            if (operands.Count > 0) {
+                full = operands[0].GetBool();
+            }
+            var ret = Program.ReCalc(full);
+            return DslExpression.CalculatorValue.From(ret);
+        }
     }
 }

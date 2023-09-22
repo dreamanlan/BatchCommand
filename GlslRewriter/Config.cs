@@ -232,6 +232,7 @@ namespace GlslRewriter
                         var line = lines[ix];
                         var cols = SplitCsvLine(line);
                         Debug.Assert(colNames.Length == cols.Count);
+                        ret = true;
                         for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
                             var names = colNames[i].Split(".");
                             if (names.Length == 2) {

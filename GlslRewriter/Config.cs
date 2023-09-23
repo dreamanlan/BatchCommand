@@ -1698,7 +1698,7 @@ namespace GlslRewriter
         private static Random s_Random = new Random();
     }
 
-    internal sealed class ShaderVarExp : DslExpression.AbstractExpression
+    internal sealed class ShaderExp : DslExpression.AbstractExpression
     {
         protected override DslExpression.CalculatorValue DoCalc()
         {

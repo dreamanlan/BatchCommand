@@ -138,6 +138,9 @@ namespace GlslRewriter
                         }
                     }
 
+                    //在Config加载前初始化批处理脚本，Config里有可能会用到脚本解释器
+                    InitBatchScript();
+
                     if (string.IsNullOrEmpty(argFilePath)) {
                         argFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_args.dsl");
                     }
@@ -652,10 +655,10 @@ namespace GlslRewriter
                 TransformToplevelSyntax(dsl);
             }
         }
-        private static void InteractiveComputing()
+        private static void InitBatchScript()
         {
             BatchCommand.BatchScript.Init();
-            BatchCommand.BatchScript.Register("svar", new DslExpression.ExpressionFactoryHelper<ShaderVarExp>());
+            BatchCommand.BatchScript.Register("shader", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
             BatchCommand.BatchScript.Register("addsvar", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
             BatchCommand.BatchScript.Register("setsvar", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
             BatchCommand.BatchScript.Register("addunsvar", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
@@ -663,6 +666,9 @@ namespace GlslRewriter
             BatchCommand.BatchScript.Register("recalc", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
             BatchCommand.BatchScript.SetOnTryGetVariable(VariableTable.TryGetVariable);
             BatchCommand.BatchScript.SetOnTrySetVariable(VariableTable.TrySetVariable);
+        }
+        private static void InteractiveComputing()
+        {
             Console.WriteLine("Enter exit or quit to exit...");
             for (; ; ) {
                 Console.Write(">");

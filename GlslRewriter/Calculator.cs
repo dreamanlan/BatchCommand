@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 
 namespace GlslRewriter
 {
+    /// <summary>
+    /// 虽然我们在GlslRewriter里引入了BatchCommand的dsl脚本，但这个脚本与glsl的语法包括api的签名都有可能不一样，所以我们不能直接使用
+    /// dsl脚本解释器来执行glsl的计算，不过dsl脚本可以用在Config里来提供glsl函数的替代实现，因为Config是我们基于dsl来解析与解释的，我
+    /// 们可以选择与dsl脚本一致的执行规则。
+    /// 倒是可以考虑使用DslExpression.CalculatorValue来表示计算图上的值，这个类类似c++里的联合，可以容纳glsl所需的数据类型。
+    /// </summary>
     public static class Calculator
     {
         public static bool CalcFunc(string func, IList<string> args, ref string type, out string val, out bool supported)

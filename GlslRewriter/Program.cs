@@ -1421,7 +1421,7 @@ namespace GlslRewriter
                 Debug.Assert(null != agn1);
 
                 string m = call.GetParamId(0);
-                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m);
+                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", DslExpression.CalculatorValue.From(m));
 
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), "float", ".");
 
@@ -2008,12 +2008,12 @@ namespace GlslRewriter
         }
         private static void GenerateValueAndExpression(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon)
         {
-            string v1str = SplitInfoForVariable.s_DefMaxLvl;
-            string v2str = SplitInfoForVariable.s_DefMaxLen;
-            string v3str = SplitInfoForVariable.s_DefMultiline;
-            string v4str = SplitInfoForVariable.s_DefExpandOnce;
-            if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+            var v1str = SplitInfoForVariable.s_DefMaxLvl;
+            var v2str = SplitInfoForVariable.s_DefMaxLen;
+            var v3str = SplitInfoForVariable.s_DefMultiline;
+            var v4str = SplitInfoForVariable.s_DefExpandOnce;
+            if (Calculator.TryGetInt(v1str, out var lvlForExp) && Calculator.TryGetInt(v2str, out var lenForExp)
+                && Calculator.TryGetBool(v3str, out var ml) && Calculator.TryGetBool(v4str, out var once)) {
                 GenerateValueAndExpression(funcData, null, cgn, isVariableSetting, markValue, markExp, addSemiColon, lvlForExp, lenForExp, ml, once);
             }
         }
@@ -2021,7 +2021,7 @@ namespace GlslRewriter
         {
             int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
             int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
-            string val = markValue ? cgn.GetValue() : string.Empty;
+            string val = markValue ? cgn.GetValue().ToString() : string.Empty;
             string expWithVal = markValue && markExp ? cgn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, true, true)) : string.Empty;
             string exp = markExp ? cgn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce)) : string.Empty;
             string singleLineExp = exp;
@@ -2165,13 +2165,20 @@ namespace GlslRewriter
                     }
                 }
                 else {
-                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", valData.GetId());
+                    bool v = Calculator.TryParseBool(valData.GetId(), out var bval);
+                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", v ? DslExpression.CalculatorValue.From(bval) : DslExpression.CalculatorValue.NullObject);
                     semanticInfo.GraphNode = cgcn;
                     semanticInfo.ResultType = cgcn.Type;
                 }
             }
             else {
-                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), valData.GetId().IndexOf('.') >= 0 ? "float" : "int", valData.GetId());
+                string type = string.Empty;
+                string strVal = valData.GetId();
+                if (!Calculator.TryParseNumeric(strVal, ref type, out var numVal)) {
+                    type = "string";
+                    numVal = DslExpression.CalculatorValue.From(strVal);
+                }
+                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), type, numVal);
                 semanticInfo.GraphNode = cgcn;
                 semanticInfo.ResultType = cgcn.Type;
             }

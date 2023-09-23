@@ -16,285 +16,257 @@ namespace GlslRewriter
     /// </summary>
     public static class Calculator
     {
-        public static bool CalcFunc(string func, IList<string> args, ref string type, out string val, out bool supported)
+        public static bool CalcFunc(string func, IList<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
-            val = string.Empty;
+            val = DslExpression.CalculatorValue.NullObject;
             supported = true;
             if (func == "bool") {
-                if (TryParseBool(args[0], out var v)) {
-                    val = v.ToString();
-                    type = "bool";
+                if (IsNumeric(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v.GetBool());
                     succ = true;
                 }
             }
-            else if (func == "float" || func == "double") {
-                if (double.TryParse(args[0], out var v)) {
-                    val = DoubleToString(v);
-                    type = "float";
+            else if (func == "float") {
+                if (IsNumeric(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v.GetFloat());
+                    succ = true;
+                }
+            }
+            else if (func == "double") {
+                if (IsNumeric(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v.GetDouble());
                     succ = true;
                 }
             }
             else if (func == "int") {
-                if (TryParseNumeric(args[0], out var isFloat, out var dval, out var lval)) {
-                    if (isFloat)
-                        val = ((long)dval).ToString();
-                    else
-                        val = lval.ToString();
-                    type = "int";
+                if (IsNumeric(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v.GetInt());
                     succ = true;
                 }
             }
             else if (func == "uint") {
-                if (TryParseNumeric(args[0], out var isFloat, out var dval, out var lval)) {
-                    if (isFloat)
-                        val = ((long)dval).ToString();
-                    else
-                        val = ((ulong)lval).ToString();
-                    type = "uint";
+                if (IsNumeric(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v.GetUInt());
                     succ = true;
                 }
             }
             else if (func == "bvec2") {
                 if (args.Count == 1) {
-                    if (TryParseBool(args[0], out var v)) {
+                    if (TryGetBool(args[0], out var v)) {
                         Bool2 tmp = new Bool2();
                         tmp.x = tmp.y = v;
-                        val = tmp.ToString();
-                        type = "bvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (TryParseBool(args[0], out var v1) && TryParseBool(args[1], out var v2)) {
+                    if (TryGetBool(args[0], out var v1) && TryGetBool(args[1], out var v2)) {
                         Bool2 tmp = new Bool2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = tmp.ToString();
-                        type = "bvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "vec2") {
                 if (args.Count == 1) {
-                    if (float.TryParse(args[0], out var v)) {
+                    if (TryGetFloat(args[0], out var v)) {
                         Float2 tmp = new Float2();
                         tmp.x = tmp.y = v;
-                        val = tmp.ToString();
-                        type = "vec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
                         Float2 tmp = new Float2();
                         tmp.x = (float)i2.x;
                         tmp.y = (float)i2.y;
-                        val = tmp.ToString();
-                        type = "vec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
                         Float2 tmp = new Float2();
                         tmp.x = (float)u2.x;
                         tmp.y = (float)u2.y;
-                        val = tmp.ToString();
-                        type = "vec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2)) {
+                    if (TryGetFloat(args[0], out var v1) && TryGetFloat(args[1], out var v2)) {
                         Float2 tmp = new Float2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = tmp.ToString();
-                        type = "vec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "ivec2") {
                 if (args.Count == 1) {
-                    if (int.TryParse(args[0], out var v)) {
+                    if (TryGetInt(args[0], out var v)) {
                         Int2 tmp = new Int2();
                         tmp.x = tmp.y = v;
-                        val = tmp.ToString();
-                        type = "ivec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
                         Int2 tmp = new Int2();
                         tmp.x = (int)u2.x;
                         tmp.y = (int)u2.y;
-                        val = tmp.ToString();
-                        type = "ivec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
                         Int2 tmp = new Int2();
                         tmp.x = (int)f2.x;
                         tmp.y = (int)f2.y;
-                        val = tmp.ToString();
-                        type = "ivec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (int.TryParse(args[0], out var v1) && int.TryParse(args[1], out var v2)) {
+                    if (TryGetInt(args[0], out var v1) && TryGetInt(args[1], out var v2)) {
                         Int2 tmp = new Int2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = tmp.ToString();
-                        type = "ivec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "uvec2") {
                 if (args.Count == 1) {
-                    if (uint.TryParse(args[0], out var v)) {
+                    if (TryGetUInt(args[0], out var v)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = tmp.y = v;
-                        val = tmp.ToString();
-                        type = "uvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = (uint)i2.x;
                         tmp.y = (uint)i2.y;
-                        val = tmp.ToString();
-                        type = "uvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = (uint)f2.x;
                         tmp.y = (uint)f2.y;
-                        val = tmp.ToString();
-                        type = "uvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (uint.TryParse(args[0], out var v1) && uint.TryParse(args[1], out var v2)) {
+                    if (TryGetUInt(args[0], out var v1) && TryGetUInt(args[1], out var v2)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = tmp.ToString();
-                        type = "uvec2";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "bvec3") {
                 if (args.Count == 1) {
-                    if (TryParseBool(args[0], out var v)) {
+                    if (TryGetBool(args[0], out var v)) {
                         Bool3 tmp = new Bool3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = tmp.ToString();
-                        type = "bvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 3) {
-                    if (TryParseBool(args[0], out var v1) && TryParseBool(args[1], out var v2) && TryParseBool(args[2], out var v3)) {
+                    if (TryGetBool(args[0], out var v1) && TryGetBool(args[1], out var v2) && TryGetBool(args[2], out var v3)) {
                         Bool3 tmp = new Bool3();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = tmp.ToString();
-                        type = "bvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "vec3") {
                 if (args.Count == 1) {
-                    if (float.TryParse(args[0], out var v)) {
+                    if (TryGetFloat(args[0], out var v)) {
                         Float3 tmp = new Float3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = tmp.ToString();
-                        type = "bvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 3) {
-                    if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2) && float.TryParse(args[2], out var v3)) {
+                    if (TryGetFloat(args[0], out var v1) && TryGetFloat(args[1], out var v2) && TryGetFloat(args[2], out var v3)) {
                         Float3 tmp = new Float3();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = tmp.ToString();
-                        type = "bvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "ivec3") {
                 if (args.Count == 1) {
-                    if (int.TryParse(args[0], out var v)) {
+                    if (TryGetInt(args[0], out var v)) {
                         Int3 tmp = new Int3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = tmp.ToString();
-                        type = "ivec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 3) {
-                    if (int.TryParse(args[0], out var v1) && int.TryParse(args[1], out var v2) && int.TryParse(args[2], out var v3)) {
+                    if (TryGetInt(args[0], out var v1) && TryGetInt(args[1], out var v2) && TryGetInt(args[2], out var v3)) {
                         Int3 tmp = new Int3();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = tmp.ToString();
-                        type = "ivec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "uvec3") {
                 if (args.Count == 1) {
-                    if (uint.TryParse(args[0], out var v)) {
+                    if (TryGetUInt(args[0], out var v)) {
                         Uint3 tmp = new Uint3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = tmp.ToString();
-                        type = "uvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 3) {
-                    if (uint.TryParse(args[0], out var v1) && uint.TryParse(args[1], out var v2) && uint.TryParse(args[2], out var v3)) {
+                    if (TryGetUInt(args[0], out var v1) && TryGetUInt(args[1], out var v2) && TryGetUInt(args[2], out var v3)) {
                         Uint3 tmp = new Uint3();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = tmp.ToString();
-                        type = "uvec3";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "bcec4") {
                 if (args.Count == 1) {
-                    if (TryParseBool(args[0], out var v)) {
+                    if (TryGetBool(args[0], out var v)) {
                         Bool4 tmp = new Bool4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = tmp.ToString();
-                        type = "bvec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (TryParseBool(args[1], out var v2)) {
-                        if (TryParseBool(args[0], out var v1)) {
+                    if (TryGetBool(args[1], out var v2)) {
+                        if (TryGetBool(args[0], out var v1)) {
                             Bool4 tmp = new Bool4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = false;
                             tmp.w = false;
-                            val = tmp.ToString();
-                            type = "bvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Bool3.TryParse(args[0], out var f3)) {
@@ -303,22 +275,20 @@ namespace GlslRewriter
                             tmp.y = f3.y;
                             tmp.z = f3.z;
                             tmp.w = v2;
-                            val = tmp.ToString();
-                            type = "bvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 3) {
-                    if (TryParseBool(args[1], out var v2) && TryParseBool(args[2], out var v3)) {
-                        if (TryParseBool(args[0], out var v1)) {
+                    if (TryGetBool(args[1], out var v2) && TryGetBool(args[2], out var v3)) {
+                        if (TryGetBool(args[0], out var v1)) {
                             Bool4 tmp = new Bool4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = false;
-                            val = tmp.ToString();
-                            type = "bvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Bool2.TryParse(args[0], out var f2)) {
@@ -327,45 +297,41 @@ namespace GlslRewriter
                             tmp.y = f2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = tmp.ToString();
-                            type = "bvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 4) {
-                    if (TryParseBool(args[0], out var v1) && TryParseBool(args[1], out var v2) && TryParseBool(args[2], out var v3) && TryParseBool(args[3], out var v4)) {
+                    if (TryGetBool(args[0], out var v1) && TryGetBool(args[1], out var v2) && TryGetBool(args[2], out var v3) && TryGetBool(args[3], out var v4)) {
                         Bool4 tmp = new Bool4();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = tmp.ToString();
-                        type = "bvec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "vec4") {
                 if (args.Count == 1) {
-                    if (float.TryParse(args[0], out var v)) {
+                    if (TryGetFloat(args[0], out var v)) {
                         Float4 tmp = new Float4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = tmp.ToString();
-                        type = "vec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (float.TryParse(args[1], out var v2)) {
-                        if (float.TryParse(args[0], out var v1)) {
+                    if (TryGetFloat(args[1], out var v2)) {
+                        if (TryGetFloat(args[0], out var v1)) {
                             Float4 tmp = new Float4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "vec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Float3.TryParse(args[0], out var f3)) {
@@ -374,22 +340,20 @@ namespace GlslRewriter
                             tmp.y = f3.y;
                             tmp.z = f3.z;
                             tmp.w = v2;
-                            val = tmp.ToString();
-                            type = "vec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 3) {
-                    if (float.TryParse(args[1], out var v2) && float.TryParse(args[2], out var v3)) {
-                        if (float.TryParse(args[0], out var v1)) {
+                    if (TryGetFloat(args[1], out var v2) && TryGetFloat(args[2], out var v3)) {
+                        if (TryGetFloat(args[0], out var v1)) {
                             Float4 tmp = new Float4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "vec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Float2.TryParse(args[0], out var f2)) {
@@ -398,45 +362,41 @@ namespace GlslRewriter
                             tmp.y = f2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = tmp.ToString();
-                            type = "vec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 4) {
-                    if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2) && float.TryParse(args[2], out var v3) && float.TryParse(args[3], out var v4)) {
+                    if (TryGetFloat(args[0], out var v1) && TryGetFloat(args[1], out var v2) && TryGetFloat(args[2], out var v3) && TryGetFloat(args[3], out var v4)) {
                         Float4 tmp = new Float4();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = tmp.ToString();
-                        type = "vec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "ivec4") {
                 if (args.Count == 1) {
-                    if (int.TryParse(args[0], out var v)) {
+                    if (TryGetInt(args[0], out var v)) {
                         Int4 tmp = new Int4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = tmp.ToString();
-                        type = "ivec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (int.TryParse(args[1], out var v2)) {
-                        if (int.TryParse(args[0], out var v1)) {
+                    if (TryGetInt(args[1], out var v2)) {
+                        if (TryGetInt(args[0], out var v1)) {
                             Int4 tmp = new Int4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "ivec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Int3.TryParse(args[0], out var i3)) {
@@ -445,22 +405,20 @@ namespace GlslRewriter
                             tmp.y = i3.y;
                             tmp.z = i3.z;
                             tmp.w = v2;
-                            val = tmp.ToString();
-                            type = "ivec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 3) {
-                    if (int.TryParse(args[1], out var v2) && int.TryParse(args[2], out var v3)) {
-                        if (int.TryParse(args[0], out var v1)) {
+                    if (TryGetInt(args[1], out var v2) && TryGetInt(args[2], out var v3)) {
+                        if (TryGetInt(args[0], out var v1)) {
                             Int4 tmp = new Int4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "ivec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Int2.TryParse(args[0], out var i2)) {
@@ -469,45 +427,41 @@ namespace GlslRewriter
                             tmp.y = i2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = tmp.ToString();
-                            type = "ivec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 4) {
-                    if (int.TryParse(args[0], out var v1) && int.TryParse(args[1], out var v2) && int.TryParse(args[2], out var v3) && int.TryParse(args[3], out var v4)) {
+                    if (TryGetInt(args[0], out var v1) && TryGetInt(args[1], out var v2) && TryGetInt(args[2], out var v3) && TryGetInt(args[3], out var v4)) {
                         Int4 tmp = new Int4();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = tmp.ToString();
-                        type = "ivec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "uvec4") {
                 if (args.Count == 1) {
-                    if (uint.TryParse(args[0], out var v)) {
+                    if (TryGetUInt(args[0], out var v)) {
                         Uint4 tmp = new Uint4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = tmp.ToString();
-                        type = "uvec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
                 else if (args.Count == 2) {
-                    if (uint.TryParse(args[1], out var v2)) {
-                        if (uint.TryParse(args[0], out var v1)) {
+                    if (TryGetUInt(args[1], out var v2)) {
+                        if (TryGetUInt(args[0], out var v1)) {
                             Uint4 tmp = new Uint4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "uvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Uint3.TryParse(args[0], out var u3)) {
@@ -516,22 +470,20 @@ namespace GlslRewriter
                             tmp.y = u3.y;
                             tmp.z = u3.z;
                             tmp.w = v2;
-                            val = tmp.ToString();
-                            type = "uvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 3) {
-                    if (uint.TryParse(args[1], out var v2) && uint.TryParse(args[2], out var v3)) {
-                        if (uint.TryParse(args[0], out var v1)) {
+                    if (TryGetUInt(args[1], out var v2) && TryGetUInt(args[2], out var v3)) {
+                        if (TryGetUInt(args[0], out var v1)) {
                             Uint4 tmp = new Uint4();
                             tmp.x = v1;
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = tmp.ToString();
-                            type = "uvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Uint2.TryParse(args[0], out var u2)) {
@@ -540,69 +492,67 @@ namespace GlslRewriter
                             tmp.y = u2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = tmp.ToString();
-                            type = "uvec4";
+                            val = DslExpression.CalculatorValue.FromObject(tmp);
                             succ = true;
                         }
                     }
                 }
                 else if (args.Count == 4) {
-                    if (uint.TryParse(args[0], out var v1) && uint.TryParse(args[1], out var v2) && uint.TryParse(args[2], out var v3) && uint.TryParse(args[3], out var v4)) {
+                    if (TryGetUInt(args[0], out var v1) && TryGetUInt(args[1], out var v2) && TryGetUInt(args[2], out var v3) && TryGetUInt(args[3], out var v4)) {
                         Uint4 tmp = new Uint4();
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = tmp.ToString();
-                        type = "uvec4";
+                        val = DslExpression.CalculatorValue.FromObject(tmp);
                         succ = true;
                     }
                 }
             }
             else if (func == "ftoi" || func == "floatBitsToInt") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = ftoi(v).ToString();
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(ftoi(v));
                     succ = true;
                 }
             }
             else if (func == "ftou" || func == "floatBitsToUint") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = ftou(v).ToString();
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(ftou(v));
                     succ = true;
                 }
             }
             else if (func == "itof" || func == "intBitsToFloat") {
-                if (int.TryParse(args[0], out var v)) {
-                    val = FloatToString(itof(v));
+                if (TryGetInt(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(itof(v));
                     succ = true;
                 }
             }
             else if (func == "utof" || func == "uintBitsToFloat") {
-                if (uint.TryParse(args[0], out var v)) {
-                    val = FloatToString(utof(v));
+                if (TryGetUInt(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(utof(v));
                     succ = true;
                 }
             }
             else if (func == "bitfieldExtract") {
-                if (uint.TryParse(args[0], out var uval) && int.TryParse(args[1], out var offset) && int.TryParse(args[2], out var bits)) {
+                if (TryGetUInt(args[0], out var uval) && TryGetInt(args[1], out var offset) && TryGetInt(args[2], out var bits)) {
                     if (offset >= 0 && bits >= 0 && offset + bits <= sizeof(uint)) {
                         if (bits == 0) {
-                            val = "0";
+                            val = DslExpression.CalculatorValue.From((uint)0);
                         }
                         else {
                             int rshift = (32 - (offset + bits));
                             uint v = (uval >> rshift) & (0xffffffff >> rshift);
-                            val = v.ToString();
+                            val = DslExpression.CalculatorValue.From(v);
                         }
                         succ = true;
                     }
                 }
             }
             else if(func== "bitfieldInsert") {
-                if (uint.TryParse(args[0], out var uval) && uint.TryParse(args[1], out var insert) && int.TryParse(args[2], out var offset) && int.TryParse(args[3], out var bits)) {
+                if (TryGetUInt(args[0], out var uval) && TryGetUInt(args[1], out var insert) && TryGetInt(args[2], out var offset) && TryGetInt(args[3], out var bits)) {
                     if (offset >= 0 && bits>=0 && offset + bits <= sizeof(uint)) {
                         if (bits == 0) {
-                            val = uval.ToString();
+                            val = DslExpression.CalculatorValue.From(uval);
                         }
                         else {
                             int rshift = (32 - (offset + bits));
@@ -611,221 +561,225 @@ namespace GlslRewriter
                             int lshift2 = rshift;
                             int rshift2 = offset + bits;
                             v = (uval & ((0xffffffff << lshift) | (0xffffffff >> rshift2))) | (v << lshift2);
-                            val = v.ToString();
+                            val = DslExpression.CalculatorValue.From(v);
                         }
                         succ = true;
                     }
                 }
             }
             else if (func == "isinf") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = float.IsInfinity(v).ToString();
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(float.IsInfinity(v));
                     succ = true;
                 }
             }
             else if (func == "isnan") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = float.IsNaN(v).ToString();
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(float.IsNaN(v));
                     succ = true;
                 }
             }
             else if (func == "trunc") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = DoubleToString(MathF.Truncate(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Truncate(v));
                     succ = true;
                 }
             }
             else if (func == "floor") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Floor(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Floor(v));
                     succ = true;
                 }
             }
             else if (func == "ceiling") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Ceiling(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Ceiling(v));
                     succ = true;
                 }
             }
             else if (func == "round") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Round(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Round(v));
                     succ = true;
                 }
             }
             else if(func=="roundEven") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Round(v, MidpointRounding.ToEven));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Round(v, MidpointRounding.ToEven));
                     succ = true;
                 }
             }
             else if (func == "abs") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Abs(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Abs(v));
                     succ = true;
                 }
             }
             else if (func == "log") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Log(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Log(v));
                     succ = true;
                 }
             }
             else if (func == "exp") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Exp(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Exp(v));
                     succ = true;
                 }
             }
             else if (func == "log2") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Log2(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Log2(v));
                     succ = true;
                 }
             }
             else if (func == "exp2") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Pow(2, v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Pow(2, v));
                     succ = true;
                 }
             }
             else if (func == "sqrt") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Sqrt(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Sqrt(v));
                     succ = true;
                 }
             }
             else if (func == "inversesqrt") {
-                if (float.TryParse(args[0], out var v)) {
+                if (TryGetFloat(args[0], out var v)) {
                     float sv = MathF.Sqrt(v);
                     if (sv != 0) {
-                        val = FloatToString(1.0f / sv);
+                        val = DslExpression.CalculatorValue.From(1.0f / sv);
                         succ = true;
                     }
                 }
             }
             else if (func == "sin") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Sin(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Sin(v));
                     succ = true;
                 }
             }
             else if (func == "cos") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Cos(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Cos(v));
                     succ = true;
                 }
             }
             else if (func == "tan") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Tan(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Tan(v));
                     succ = true;
                 }
             }
             else if (func == "sinh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Sinh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Sinh(v));
                     succ = true;
                 }
             }
             else if (func == "cosh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Cosh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Cosh(v));
                     succ = true;
                 }
             }
             else if (func == "tanh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Tanh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Tanh(v));
                     succ = true;
                 }
             }
             else if (func == "asin") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Asin(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Asin(v));
                     succ = true;
                 }
             }
             else if (func == "acos") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Acos(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Acos(v));
                     succ = true;
                 }
             }
             else if (func == "atan") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Atan(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Atan(v));
                     succ = true;
                 }
             }
             else if (func == "asinh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Asinh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Asinh(v));
                     succ = true;
                 }
             }
             else if (func == "acosh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Acosh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Acosh(v));
                     succ = true;
                 }
             }
             else if (func == "atanh") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(MathF.Atanh(v));
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Atanh(v));
                     succ = true;
                 }
             }
             else if (func == "degrees") {
-                if (float.TryParse(args[0], out var v)) {
-                    val = FloatToString(v * 180.0f / MathF.PI);
+                if (TryGetFloat(args[0], out var v)) {
+                    val = DslExpression.CalculatorValue.From(v * 180.0f / MathF.PI);
                     succ = true;
                 }
             }
             else if (func == "radians") {
-                if (float.TryParse(args[0], out var v)) {
+                if (TryGetFloat(args[0], out var v)) {
                     val = FloatToString(v * MathF.PI / 180.0f);
                     succ = true;
                 }
             }
             else if (func == "pow") {
-                if (float.TryParse(args[0], out var v1) && float.TryParse(args[1], out var v2)) {
-                    val = FloatToString(MathF.Pow(v1, v2));
+                if (TryGetFloat(args[0], out var v1) && TryGetFloat(args[1], out var v2)) {
+                    val = DslExpression.CalculatorValue.From(MathF.Pow(v1, v2));
                     succ = true;
                 }
             }
             else if (func == "fma") {
-                if (double.TryParse(args[0], out var v1) && double.TryParse(args[1], out var v2) && double.TryParse(args[2], out var v3)) {
-                    val = DoubleToString(v1 * v2 + v3);
+                if (TryGetDouble(args[0], out var v1) && TryGetDouble(args[1], out var v2) && TryGetDouble(args[2], out var v3)) {
+                    val = DslExpression.CalculatorValue.From((float)(v1 * v2 + v3));
                     succ = true;
                 }
             }
             else if (func == "min") {
-                if (TryParseNumeric(args[0], out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(args[1], out var isFloat2, out var dval2, out var lval2)) {
-                    if(isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
+                if (IsNumeric(args[0], out var val1) && IsNumeric(args[1], out var val2)) {
+                    if(val1.IsNumber || val2.IsNumber) {
+                        double v1 = val1.GetDouble();
+                        double v2 = val2.GetDouble();
                         double v = v1 < v2 ? v1 : v2;
-                        val = DoubleToString(v);
+                        val = DslExpression.CalculatorValue.From((float)v);
                     }
                     else {
-                        long v = lval1 < lval2 ? lval1 : lval2;
-                        val = v.ToString();
+                        long v1 = val1.GetLong();
+                        long v2 = val2.GetLong();
+                        long v = v1 < v2 ? v1 : v2;
+                        val = DslExpression.CalculatorValue.From((int)v);
                     }
                     succ = true;
                 }
             }
             else if (func == "max") {
-                if (TryParseNumeric(args[0], out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(args[1], out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
+                if (IsNumeric(args[0], out var val1) && IsNumeric(args[1], out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        double v1 = val1.GetDouble();
+                        double v2 = val2.GetDouble();
                         double v = v1 > v2 ? v1 : v2;
-                        val = DoubleToString(v);
+                        val = DslExpression.CalculatorValue.From((float)v);
                     }
                     else {
-                        long v = lval1 > lval2 ? lval1 : lval2;
-                        val = v.ToString();
+                        long v1 = val1.GetLong();
+                        long v2 = val2.GetLong();
+                        long v = v1 > v2 ? v1 : v2;
+                        val = DslExpression.CalculatorValue.From((int)v);
                     }
                     succ = true;
                 }
@@ -835,282 +789,289 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcCondExp(string cond, string opd1, string opd2, ref string type, out string val, out bool supported)
+        public static bool CalcCondExp(DslExpression.CalculatorValue cond, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
-            val = string.Empty;
+            val = DslExpression.CalculatorValue.NullObject;
             supported = true;
-            if(TryParseBool(cond, out var bval)) {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
+            if(TryGetBool(cond, out var bval)) {
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
                     if (bval) {
-                        if (isFloat1) {
-                            val = DoubleToString(dval1);
-                            type = "float";
-                        }
-                        else {
-                            val = lval1.ToString();
-                            if (string.IsNullOrEmpty(type))
-                                type = "int";
-                        }
+                        val = val1;
                     }
                     else {
-                        if (isFloat1) {
-                            val = DoubleToString(dval2);
-                            type = "float";
-                        }
-                        else {
-                            val = lval2.ToString();
-                            if (string.IsNullOrEmpty(type))
-                                type = "int";
-                        }
+                        val = val2;
                     }
-                    succ = true;
-                }
-                else if(TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
-                    if (bval) {
-                        val = bval1.ToString();
-                    }
-                    else {
-                        val = bval2.ToString();
-                    }
-                    type = "bool";
                     succ = true;
                 }
             }
             return succ;
         }
-        public static bool CalcBinary(string op, string opd1, string opd2, ref string type, out string val, out bool supported)
+        public static bool CalcBinary(string op, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
-            val = string.Empty;
+            val = DslExpression.CalculatorValue.NullObject;
             supported = true;
             if (op == "+") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if(isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = DoubleToString(v1 + v2);
-                        type = "float";
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if(val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 + v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 + v2);
                     }
                     else {
-                        val = (lval1 + lval2).ToString();
-                        if (string.IsNullOrEmpty(type))
-                            type = "int";
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 + v2);
                     }
                     succ = true;
                 }
             }
             else if (op == "-") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = DoubleToString(v1 - v2);
-                        type = "float";
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 - v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 - v2);
                     }
                     else {
-                        val = (lval1 - lval2).ToString();
-                        if (string.IsNullOrEmpty(type))
-                            type = "int";
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 - v2);
                     }
                     succ = true;
                 }
             }
             else if (op == "*") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = DoubleToString(v1 * v2);
-                        type = "float";
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 * v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 * v2);
                     }
                     else {
-                        val = (lval1 * lval2).ToString();
-                        if (string.IsNullOrEmpty(type))
-                            type = "int";
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 * v2);
                     }
                     succ = true;
                 }
             }
             else if (op == "/") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        if (v2 != 0) {
-                            val = DoubleToString(v1 / v2);
-                            succ = true;
-                            type = "float";
-                        }
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 / v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 / v2);
                     }
                     else {
-                        if (lval2 != 0) {
-                            val = (lval1 / lval2).ToString();
-                            succ = true;
-                            if (string.IsNullOrEmpty(type))
-                                type = "int";
-                        }
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 / v2);
                     }
+                    succ = true;
                 }
             }
             else if (op == "%") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = DoubleToString(v1 % v2);
-                        type = "float";
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 % v2);
                     }
                     else {
-                        val = (lval1 % lval2).ToString();
-                        if (string.IsNullOrEmpty(type))
-                            type = "int";
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 % v2);
                     }
                     succ = true;
                 }
             }
             else if (op == "==") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 == v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 == v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 == v2);
                     }
                     else {
-                        val = (lval1 == lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 == v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "!=") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 != v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 != v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 != v2);
                     }
                     else {
-                        val = (lval1 != lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 != v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == ">=") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 >= v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 >= v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 >= v2);
                     }
                     else {
-                        val = (lval1 >= lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 >= v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "<=") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 <= v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 <= v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 <= v2);
                     }
                     else {
-                        val = (lval1 <= lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 <= v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == ">") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 > v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 > v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 > v2);
                     }
                     else {
-                        val = (lval1 > lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 > v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "<") {
-                if (TryParseNumeric(opd1, out var isFloat1, out var dval1, out var lval1) && TryParseNumeric(opd2, out var isFloat2, out var dval2, out var lval2)) {
-                    if (isFloat1 || isFloat2) {
-                        double v1 = isFloat1 ? dval1 : lval1;
-                        double v2 = isFloat2 ? dval2 : lval2;
-                        val = (v1 < v2).ToString();
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (val1.IsNumber || val2.IsNumber) {
+                        float v1 = val1.GetFloat();
+                        float v2 = val2.GetFloat();
+                        val = DslExpression.CalculatorValue.From(v1 < v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 < v2);
                     }
                     else {
-                        val = (lval1 < lval2).ToString();
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 < v2);
                     }
-                    type = "bool";
                     succ = true;
                 }
             }
             else if (op == "&&") {
-                if(TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
-                    val = (bval1 && bval2).ToString();
-                    type = "bool";
+                if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 && val2);
                     succ = true;
                 }
             }
             else if (op == "||") {
-                if (TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
-                    val = (bval1 || bval2) ? "true" : "false";
-                    type = "bool";
+                if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 || val2);
                     succ = true;
                 }
             }
             else if (op == "^^") {
-                if (TryParseBool(opd1, out var bval1) && TryParseBool(opd2, out var bval2)) {
-                    val = (bval1 != bval2) ? "true" : "false";
-                    type = "bool";
+                if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 != val2);
                     succ = true;
                 }
             }
             else if (op == "&") {
-                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
-                    val = (lval1 & lval2).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 & val2);
                     succ = true;
                 }
             }
             else if (op == "|") {
-                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
-                    val = (lval1 | lval2).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 | val2);
                     succ = true;
                 }
             }
             else if (op == "^") {
-                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
-                    val = (lval1 ^ lval2).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 ^ val2);
                     succ = true;
                 }
             }
             else if (op == "<<") {
-                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
-                    val = (lval1 << (int)lval2).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 << val2);
                     succ = true;
                 }
             }
             else if (op == ">>") {
-                if (long.TryParse(opd1, out var lval1) && long.TryParse(opd2, out var lval2)) {
-                    val = (lval1 >> (int)lval2).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
+                    val = DslExpression.CalculatorValue.From(val1 >> val2);
                     succ = true;
                 }
             }
@@ -1119,37 +1080,30 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcUnary(string op, string opd, ref string type, out string val, out bool supported)
+        public static bool CalcUnary(string op, DslExpression.CalculatorValue opd, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
-            val = string.Empty;
+            val = DslExpression.CalculatorValue.NullObject;
             supported = true;
             if (op == "-") {
-                if(TryParseNumeric(opd, out var isFloat, out var dval, out var lval)) {
-                    if (isFloat) {
-                        val = DoubleToString(-dval);
-                        type = "float";
-                    }
-                    else {
-                        val = (-lval).ToString();
-                        if (string.IsNullOrEmpty(type))
-                            type = "int";
-                    }
+                if (opd.IsNumber) {
+                    val.Set(-opd.GetFloat());
+                    succ = true;
+                }
+                else if (opd.IsInteger) {
+                    val.Set(-opd.GetInt());
                     succ = true;
                 }
             }
             else if (op == "~") {
-                if (long.TryParse(opd, out var lval)) {
-                    val = (~lval).ToString();
-                    if (string.IsNullOrEmpty(type))
-                        type = "int";
+                if (opd.IsInteger) {
+                    val.Set(~opd.GetInt());
                     succ = true;
                 }
             }
             else if (op == "!") {
-                if(TryParseBool(opd, out var bval)) {
-                    val = (!bval).ToString();
-                    type = "bool";
+                if (opd.IsBoolean) {
+                    val.Set(!opd.GetBool());
                     succ = true;
                 }
             }
@@ -1162,93 +1116,116 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcMember(string objType, string objVal, string m, ref string type, out string oval, out bool supported)
+        public static bool CalcMember(DslExpression.CalculatorValue objVal, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue oval, out bool supported)
         {
             bool succ = false;
-            oval = string.Empty;
+            oval = DslExpression.CalculatorValue.NullObject;
             supported = true;
-            if (objType == "vec4") {
-                if (Float4.TryParse(objVal, out var val)) {
-                    type = "float";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            if (objVal.IsNullObject) {
+                // succ=false && supported=true
             }
-            else if (objType == "ivec4") {
-                if (Int4.TryParse(objVal, out var val)) {
-                    type = "int";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Float4.TryParse(objVal, out var f4val)) {
+                oval = f4val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "uvec4") {
-                if (Uint4.TryParse(objVal, out var val)) {
-                    type = "uint";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Int4.TryParse(objVal, out var i4val)) {
+                oval = i4val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "bvec4") {
-                if (Bool4.TryParse(objVal, out var val)) {
-                    type = "bool";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Uint4.TryParse(objVal, out var u4val)) {
+                oval = u4val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "vec3") {
-                if (Float3.TryParse(objVal, out var val)) {
-                    type = "float";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Bool4.TryParse(objVal, out var b4val)) {
+                oval = b4val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "ivec3") {
-                if (Int3.TryParse(objVal, out var val)) {
-                    type = "int";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Float3.TryParse(objVal, out var f3val)) {
+                oval = f3val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "uvec3") {
-                if (Uint3.TryParse(objVal, out var val)) {
-                    type = "uint";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Int3.TryParse(objVal, out var i3val)) {
+                oval = i3val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "bvec3") {
-                if (Bool3.TryParse(objVal, out var val)) {
-                    type = "bool";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Uint3.TryParse(objVal, out var u3val)) {
+                oval = u3val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "vec2") {
-                if (Float2.TryParse(objVal, out var val)) {
-                    type = "float";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Bool3.TryParse(objVal, out var b3val)) {
+                oval = b3val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "ivec2") {
-                if (Int2.TryParse(objVal, out var val)) {
-                    type = "int";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else if (Float2.TryParse(objVal, out var f2val)) {
+                oval = f2val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "uvec2") {
-                if (Uint2.TryParse(objVal, out var val)) {
-                    type = "uint";
-                    oval = val.GetMember(m);
-                    succ = true;
-                }
+            else
+                if (Int2.TryParse(objVal, out var i2val)) {
+                oval = i2val.GetMember(m);
+                succ = true;
             }
-            else if (objType == "bvec2") {
-                if (Bool2.TryParse(objVal, out var val)) {
-                    type = "bool";
-                    oval = val.GetMember(m);
-                    succ = true;
+            else if (Uint2.TryParse(objVal, out var u2val)) {
+                oval = u2val.GetMember(m);
+                succ = true;
+            }
+            else if (Bool2.TryParse(objVal, out var b2val)) {
+                oval = b2val.GetMember(m);
+                succ = true;
+            }
+            else if (TryGetInt(m, out int ix)) {
+                if (ix < 0) {
+                }
+                else if (TryGetList(objVal, out IList<Bool4Val>? b4list)) {
+                    if (null != b4list && ix < b4list.Count) {
+                        oval = DslExpression.CalculatorValue.FromObject(b4list[ix].Value);
+                        succ = b4list[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<Float4Val>? f4list)) {
+                    if (null != f4list && ix < f4list.Count) {
+                        oval = DslExpression.CalculatorValue.FromObject(f4list[ix].Value);
+                        succ = f4list[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<Int4Val>? i4list)) {
+                    if (null != i4list && ix < i4list.Count) {
+                        oval = DslExpression.CalculatorValue.FromObject(i4list[ix].Value);
+                        succ = i4list[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<Uint4Val>? u4list)) {
+                    if (null != u4list && ix < u4list.Count) {
+                        oval = DslExpression.CalculatorValue.FromObject(u4list[ix].Value);
+                        succ = u4list[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<BoolVal>? blist)) {
+                    if (null != blist && ix < blist.Count) {
+                        oval = DslExpression.CalculatorValue.From(blist[ix].Value);
+                        succ = blist[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<FloatVal>? flist)) {
+                    if (null != flist && ix < flist.Count) {
+                        oval = DslExpression.CalculatorValue.From(flist[ix].Value);
+                        succ = flist[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<IntVal>? ilist)) {
+                    if (null != ilist && ix < ilist.Count) {
+                        oval = DslExpression.CalculatorValue.From(ilist[ix].Value);
+                        succ = ilist[ix].IsValid;
+                    }
+                }
+                else if (TryGetList(objVal, out IList<UintVal>? ulist)) {
+                    if (null != ulist && ix < ulist.Count) {
+                        oval = DslExpression.CalculatorValue.From(ulist[ix].Value);
+                        succ = ulist[ix].IsValid;
+                    }
+                }
+                else {
+                    supported = false;
                 }
             }
             else {
@@ -1289,84 +1266,70 @@ namespace GlslRewriter
             var val = *p;
             return val;
         }
-        public static string ReStringNumeric(string val)
+        public static bool TryParseNumeric(string str, out DslExpression.CalculatorValue val)
         {
             string type = string.Empty;
-            return ReStringNumeric(val, ref type);
+            return TryParseNumeric(str, ref type, out val);
         }
-        public static string ReStringNumeric(string val, ref string type)
+        public static bool TryParseNumeric(string str, ref string type, out DslExpression.CalculatorValue val)
         {
-            if (val.Length > 2 && val[0] == '0' && val[1] == 'x') {
-                char c = val[val.Length - 1];
+            bool ret = false;
+            val = DslExpression.CalculatorValue.NullObject;
+            if (str.Length > 2 && str[0] == '0' && str[1] == 'x') {
+                char c = str[str.Length - 1];
                 if (c == 'u' || c == 'U') {
-                    val = val.Substring(0, val.Length - 1);
+                    str = str.Substring(0, str.Length - 1);
                 }
-                if (ulong.TryParse(val.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
-                    val = v.ToString();
+                if (ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
+                    str = v.ToString();
                 }
                 type = "uint";
             }
-            else if (val.Length >= 2) {
-                char c = val[val.Length - 1];
+            else if (str.Length >= 2) {
+                char c = str[str.Length - 1];
                 if (c == 'u' || c == 'U') {
-                    val = val.Substring(0, val.Length - 1);
+                    str = str.Substring(0, str.Length - 1);
                     type = "uint";
                 }
                 else if (c == 'f' || c == 'F') {
-                    val = val.Substring(0, val.Length - 1);
-                    c = val[val.Length - 1];
+                    str = str.Substring(0, str.Length - 1);
+                    c = str[str.Length - 1];
                     if (c == 'l' || c == 'L') {
-                        val = val.Substring(0, val.Length - 1);
+                        str = str.Substring(0, str.Length - 1);
                     }
                     type = "float";
                 }
             }
-            if (val.IndexOfAny(s_FloatExponent) > 0) {
-                if (double.TryParse(val, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
-                    val = DoubleToString(v);
+            if (type == "float" || str.IndexOfAny(s_FloatExponent) > 0) {
+                if (double.TryParse(str, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
+                    val.Set((float)v);
+                    type = "float";
+                    ret = true;
                 }
-                type = "float";
             }
-            else if (val.Length > 1 && val[0] == '0') {
-                ulong v = Convert.ToUInt64(val, 8);
-                val = v.ToString();
+            else if (str.Length > 1 && str[0] == '0') {
+                ulong v = Convert.ToUInt64(str, 8);
+                val.Set((uint)v);
                 type = "uint";
+                ret = true;
             }
-            if (long.TryParse(val, out var lv)) {
-                if (string.IsNullOrEmpty(type))
+            if (long.TryParse(str, out var lv)) {
+                if (lv > int.MaxValue || type == "uint") {
+                    val.Set((uint)lv);
+                    type = "uint";
+                }
+                else {
+                    val.Set((int)lv);
                     type = "int";
+                }
+                ret = true;
             }
-            else if(TryParseBool(val, out var bv)) {
+            else if(TryParseBool(str, out var bv)) {
+                val.Set(bv);
                 type = "bool";
+                ret = true;
             }
-            return val;
-        }
-        public static bool TryParseNumeric(string val, out bool isFloat, out double doubleVal, out long longVal)
-        {
-            isFloat = false;
-            doubleVal = 0;
-            longVal = 0;
-            if (val.IndexOfAny(s_FloatExponent) >= 0 && double.TryParse(val, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out doubleVal)) {
-                isFloat = true;
-                return true;
-            }
-            else if (val.Length > 2 && val[0] == '0' && val[1] == 'x') {
-                if (long.TryParse(val, NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out longVal)) {
-                    return true;
-                }
-            }
-            else if (val.Length > 1 && val[0] == '0') {
-                try {
-                    longVal = Convert.ToInt64(val, 8);
-                    return true;
-                }
-                catch {
-                }
-            }
-            else if (long.TryParse(val, out longVal)) {
-                return true;
-            }
-            return false;
+            return ret;
         }
         public static bool TryParseBool(string v, out bool val)
         {
@@ -1384,6 +1347,118 @@ namespace GlslRewriter
             else if (v == "false") {
                 val = false;
                 return true;
+            }
+            return false;
+        }
+
+        public static string GetValueType(DslExpression.CalculatorValue val)
+        {
+            string valType;
+            if (val.IsNumber)
+                valType = "float";
+            else if (val.IsSignedInteger)
+                valType = "int";
+            else if (val.IsUnsignedInteger)
+                valType = "uint";
+            else if (val.IsBoolean)
+                valType = "bool";
+            else if (val.IsNullObject)
+                valType = "null";
+            else if (val.IsObject)
+                valType = val.ObjectVal.GetType().Name;
+            else
+                valType = "string";
+            return valType;
+        }
+        public static bool IsNumeric(DslExpression.CalculatorValue val, out DslExpression.CalculatorValue oval)
+        {
+            bool ret = val.IsNumber || val.IsInteger || val.IsChar || val.IsBoolean;
+            if (ret) {
+                oval = val;
+            }
+            else {
+                oval = DslExpression.CalculatorValue.NullObject;
+            }
+            return ret;
+        }
+        public static bool TryGetBool(DslExpression.CalculatorValue v, out bool val)
+        {
+            val = false;
+            if(v.IsBoolean || v.IsInteger) {
+                val = v.GetBool();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetFloat(DslExpression.CalculatorValue v, out float val)
+        {
+            val = 0;
+            if (v.IsNumber || v.IsInteger) {
+                val = v.GetFloat();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetDouble(DslExpression.CalculatorValue v, out double val)
+        {
+            val = 0;
+            if (v.IsNumber || v.IsInteger) {
+                val = v.GetDouble();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetInt(DslExpression.CalculatorValue v, out int val)
+        {
+            val = 0;
+            if (v.IsInteger || v.IsChar) {
+                val = v.GetInt();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetLong(DslExpression.CalculatorValue v, out long val)
+        {
+            val = 0;
+            if (v.IsInteger || v.IsChar) {
+                val = v.GetLong();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetUInt(DslExpression.CalculatorValue v, out uint val)
+        {
+            val = 0;
+            if (v.IsInteger || v.IsChar) {
+                val = v.GetUInt();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetULong(DslExpression.CalculatorValue v, out ulong val)
+        {
+            val = 0;
+            if (v.IsInteger || v.IsChar) {
+                val = v.GetULong();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetString(DslExpression.CalculatorValue v, out string val)
+        {
+            val = string.Empty;
+            if (v.IsString) {
+                val = v.GetString();
+                return true;
+            }
+            return false;
+        }
+        public static bool TryGetList<T>(DslExpression.CalculatorValue v, out IList<T>? list)
+        {
+            list = null;
+            if (v.IsObject) {
+                list = v.ObjectVal as IList<T>;
+                return null != list;
             }
             return false;
         }

@@ -491,7 +491,7 @@ namespace GlslRewriter
             }
             return sb.ToString();
         }
-        internal static bool CalcFunc(string func, IList<string> args, ref string type, out string val)
+        internal static bool CalcFunc(string func, IList<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val)
         {
             bool ret = false;
             if (func == "if" || func == "while") {
@@ -508,18 +508,18 @@ namespace GlslRewriter
                     ret = true;
                 }
                 else {
-                    val = string.Empty;
+                    val = DslExpression.CalculatorValue.NullObject;
                     ret = true;
                 }
             }
-            else if(Calculator.CalcFunc(func, args, ref type, out val, out var supported)) {
+            else if(Calculator.CalcFunc(func, args, out val, out var supported)) {
                 ret = true;
             }
             else if (ActiveConfig.Calculators.TryGetValue(func, out var infos)) {
                 foreach(var info in infos) {
                     bool match = true;
                     for (int i = 0; i < args.Count && i < info.Args.Count; ++i) {
-                        if (args[i] == info.Args[i] || info.Args[i]=="*") {
+                        if (args[i].ToString() == info.Args[i] || info.Args[i]=="*") {
                         }
                         else {
                             match = false;
@@ -527,7 +527,7 @@ namespace GlslRewriter
                         }
                     }
                     if (match && null != info.OnGetValue) {
-                        val = info.OnGetValue(ref type);
+                        val = info.OnGetValue();
                         ret = true;
                         break;
                     }
@@ -619,72 +619,71 @@ namespace GlslRewriter
                         string fid = fd.GetId();
                         if (fid == "=") {
                             string key = fd.GetParamId(0);
-                            string vtype = "int";
-                            string vstr = DoCalc(fd.GetParam(1), ref vtype);
-                            cfg.SettingInfo.SettingVariables[key] = vstr;
+                            var val = DoCalc(fd.GetParam(1));
+                            cfg.SettingInfo.SettingVariables[key] = val;
 
                             if (key == "need_uniform_utof_vals") {
-                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                if (Calculator.TryGetBool(val, out var v)) {
                                     cfg.SettingInfo.NeedUniformUtofVals = v;
                                 }
                             }
                             else if (key == "need_uniform_ftou_vals") {
-                                if (Calculator.TryParseBool(vstr, out var v)) {
+                                if (Calculator.TryGetBool(val, out var v)) {
                                     cfg.SettingInfo.NeedUniformFtouVals = v;
                                 }
                             }
                             else if (key == "def_max_level") {
-                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                if (Calculator.TryGetInt(val, out var v) && v > 0) {
                                     cfg.SettingInfo.DefMaxLevel = v;
                                 }
                             }
                             else if (key == "def_max_length") {
-                                if (int.TryParse(vstr, out var v) && v > 0) {
+                                if (Calculator.TryGetInt(val, out var v) && v > 0) {
                                     cfg.SettingInfo.DefMaxLength = v;
                                 }
                             }
                             else if (key == "def_max_level_for_variable") {
-                                if (int.TryParse(vstr, out var v) && v > 0) {
-                                    SplitInfoForVariable.s_DefMaxLvl = v.ToString();
+                                if (Calculator.TryGetInt(val, out var v) && v > 0) {
+                                    SplitInfoForVariable.s_DefMaxLvl = v;
                                 }
                             }
                             else if (key == "def_max_length_for_variable") {
-                                if (int.TryParse(vstr, out var v) && v > 0) {
-                                    SplitInfoForVariable.s_DefMaxLen = v.ToString();
+                                if (Calculator.TryGetInt(val, out var v) && v > 0) {
+                                    SplitInfoForVariable.s_DefMaxLen = v;
                                 }
                             }
                             else if (key == "def_multiline_for_variable") {
-                                if (Calculator.TryParseBool(vstr, out var v)) {
-                                    SplitInfoForVariable.s_DefMultiline = v.ToString();
+                                if (Calculator.TryGetBool(val, out var v)) {
+                                    SplitInfoForVariable.s_DefMultiline = v;
                                 }
                             }
                             else if (key == "def_expanded_only_once_for_variable") {
-                                if (Calculator.TryParseBool(vstr, out var v)) {
-                                    SplitInfoForVariable.s_DefExpandOnce = v.ToString();
+                                if (Calculator.TryGetBool(val, out var v)) {
+                                    SplitInfoForVariable.s_DefExpandOnce = v;
                                 }
                             }
                             else if (key == "compute_graph_nodes_capacity") {
-                                if (int.TryParse(vstr, out var v)) {
+                                if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.ComputeGraphNodesCapacity = v;
                                 }
                             }
                             else if(key== "shader_variables_capacity") {
-                                if (int.TryParse(vstr, out var v)) {
+                                if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.ShaderVariablesCapacity = v;
                                 }
                             }
                             else if(key== "string_buffer_capacity_surplus") {
-                                if (int.TryParse(vstr, out var v)) {
+                                if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.StringBufferCapacitySurplus = v;
                                 }
                             }
                             else if (key == "max_iterations") {
-                                if (int.TryParse(vstr, out var v)) {
+                                if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.MaxIterations = v;
                                 }
                             }
                             else if (key == "max_loop") {
-                                if (int.TryParse(vstr, out var v)) {
+                                if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.MaxLoop = v;
                                 }
                             }
@@ -729,19 +728,17 @@ namespace GlslRewriter
                             ParseObjectArrayMemberAssignment(cfg, fd);
                         }
                         else if (fid == "add_utof") {
-                            string vtype = "uint";
-                            string vstr = DoCalc(fd.GetParam(0), ref vtype);
-                            if(uint.TryParse(vstr, out var uval)) {
+                            var val = DoCalc(fd.GetParam(0));
+                            if(Calculator.TryGetUInt(val, out var uval)) {
                                 var fvstr = Calculator.FloatToString(Calculator.utof(uval));
-                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + vstr + " = " + fvstr + "f;");
+                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + val + " = " + fvstr + "f;");
                             }
                         }
                         else if (fid == "add_ftou") {
-                            string vtype = "float";
-                            string vstr = DoCalc(fd.GetParam(0), ref vtype);
-                            if (float.TryParse(vstr, out var fval)) {
+                            var val = DoCalc(fd.GetParam(0));
+                            if (Calculator.TryGetFloat(val, out var fval)) {
                                 var uvstr = Calculator.ftou(fval).ToString();
-                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + vstr + " = " + uvstr + "u;");
+                                RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + val + " = " + uvstr + "u;");
                             }
                         }
                     }
@@ -751,10 +748,10 @@ namespace GlslRewriter
         private static void ParseSplitVariableAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             foreach (var fp in dslCfg.Params) {
-                string v1str = SplitInfoForVariable.s_DefMaxLvl;
-                string v2str = SplitInfoForVariable.s_DefMaxLen;
-                string v3str = SplitInfoForVariable.s_DefMultiline;
-                string v4str = SplitInfoForVariable.s_DefExpandOnce;
+                var v1val = SplitInfoForVariable.s_DefMaxLvl;
+                var v2val = SplitInfoForVariable.s_DefMaxLen;
+                var v3val = SplitInfoForVariable.s_DefMultiline;
+                var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var vd = fp as Dsl.ValueData;
                 var fd = fp as Dsl.FunctionData;
                 if (null != vd) {
@@ -766,29 +763,25 @@ namespace GlslRewriter
 
                     string sid = fd.GetId();
                     if (sid == "set") {
-                        string v1type = "int";
-                        v1str = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                        string v2type = "int";
-                        v2str = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                        string v3type = "bool";
-                        v3str = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
-                        string v4type = "bool";
-                        v4str = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                        v1val = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1));
+                        v2val = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2));
+                        v3val = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3));
+                        v4val = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4));
                     }
                     else if (sid == "skip") {
-                        v1str = "-1";
+                        v1val = "-1";
                     }
-                    cfg.SettingInfo.AddSplitOnVariable(key, v1str, v2str, v3str, v4str);
+                    cfg.SettingInfo.AddSplitOnVariable(key, v1val, v2val, v3val, v4val);
                 }
             }
         }
         private static void ParseSplitObjectAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             foreach (var fp in dslCfg.Params) {
-                string v1str = SplitInfoForVariable.s_DefMaxLvl;
-                string v2str = SplitInfoForVariable.s_DefMaxLen;
-                string v3str = SplitInfoForVariable.s_DefMultiline;
-                string v4str = SplitInfoForVariable.s_DefExpandOnce;
+                var v1val = SplitInfoForVariable.s_DefMaxLvl;
+                var v2val = SplitInfoForVariable.s_DefMaxLen;
+                var v3val = SplitInfoForVariable.s_DefMultiline;
+                var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
                 if (null != cd && cd.IsParenthesisParamClass()) {
                     var fd = cd;
@@ -796,21 +789,17 @@ namespace GlslRewriter
 
                     string sid = fd.GetId();
                     if (sid == "set") {
-                        string v1type = "int";
-                        v1str = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                        string v2type = "int";
-                        v2str = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                        string v3type = "bool";
-                        v3str = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
-                        string v4type = "bool";
-                        v4str = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                        v1val = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1));
+                        v2val = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2));
+                        v3val = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3));
+                        v4val = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4));
                     }
                     else if (sid == "skip") {
-                        v1str = "-1";
+                        v1val = "-1";
                     }
                 }
-                if (null != cd && cd.IsPeriodParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+                if (null != cd && cd.IsPeriodParamClass() && Calculator.TryGetInt(v1val, out var lvlForExp) && Calculator.TryGetInt(v2val, out var lenForExp)
+                && Calculator.TryGetBool(v3val, out var ml) && Calculator.TryGetBool(v4val, out var once)) {
                     string cid = cd.GetId();
                     string member = cd.GetParamId(0);
                     if (!cfg.SettingInfo.ObjectSplitInfos.TryGetValue(cid, out var objLvlInfo)) {
@@ -831,10 +820,10 @@ namespace GlslRewriter
         private static void ParseSplitArrayAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             foreach (var fp in dslCfg.Params) {
-                string v1str = SplitInfoForVariable.s_DefMaxLvl;
-                string v2str = SplitInfoForVariable.s_DefMaxLen;
-                string v3str = SplitInfoForVariable.s_DefMultiline;
-                string v4str = SplitInfoForVariable.s_DefExpandOnce;
+                var v1val = SplitInfoForVariable.s_DefMaxLvl;
+                var v2val = SplitInfoForVariable.s_DefMaxLen;
+                var v3val = SplitInfoForVariable.s_DefMultiline;
+                var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
                 if (null != cd && cd.IsParenthesisParamClass()) {
                     var fd = cd;
@@ -842,25 +831,20 @@ namespace GlslRewriter
 
                     string sid = fd.GetId();
                     if (sid == "set") {
-                        string v1type = "int";
-                        v1str = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                        string v2type = "int";
-                        v2str = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                        string v3type = "bool";
-                        v3str = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
-                        string v4type = "bool";
-                        v4str = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                        v1val = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1));
+                        v2val = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2));
+                        v3val = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3));
+                        v4val = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4));
                     }
                     else if (sid == "skip") {
-                        v1str = "-1";
+                        v1val = "-1";
                     }
                 }
-                if (null != cd && cd.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+                if (null != cd && cd.IsBracketParamClass() && Calculator.TryGetInt(v1val, out var lvlForExp) && Calculator.TryGetInt(v2val, out var lenForExp)
+                && Calculator.TryGetBool(v3val, out var ml) && Calculator.TryGetBool(v4val, out var once)) {
                     string cid = cd.GetId();
-                    string ixType = "int";
-                    string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                    if (int.TryParse(ixStr, out var index)) {
+                    var ixVal = DoCalc(cd.GetParam(0));
+                    if (Calculator.TryGetInt(ixVal, out var index)) {
                         if (!cfg.SettingInfo.ArraySplitInfos.TryGetValue(cid, out var arrLvlInfo)) {
                             arrLvlInfo = new Dictionary<int, SplitInfoForVariable>();
                             cfg.SettingInfo.ArraySplitInfos.Add(cid, arrLvlInfo);
@@ -880,10 +864,10 @@ namespace GlslRewriter
         private static void ParseSplitObjectArrayAssignment(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             foreach (var fp in dslCfg.Params) {
-                string v1str = SplitInfoForVariable.s_DefMaxLvl;
-                string v2str = SplitInfoForVariable.s_DefMaxLen;
-                string v3str = SplitInfoForVariable.s_DefMultiline;
-                string v4str = SplitInfoForVariable.s_DefExpandOnce;
+                var v1val = SplitInfoForVariable.s_DefMaxLvl;
+                var v2val = SplitInfoForVariable.s_DefMaxLen;
+                var v3val = SplitInfoForVariable.s_DefMultiline;
+                var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
                 if (null != cd && cd.IsParenthesisParamClass()) {
                     var fd = cd;
@@ -891,26 +875,21 @@ namespace GlslRewriter
 
                     string sid = fd.GetId();
                     if (sid == "set") {
-                        string v1type = "int";
-                        v1str = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1), ref v1type);
-                        string v2type = "int";
-                        v2str = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2), ref v2type);
-                        string v3type = "bool";
-                        v3str = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3), ref v3type);
-                        string v4type = "bool";
-                        v4str = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4), ref v4type);
+                        v1val = fd.GetParamNum() <= 1 ? SplitInfoForVariable.s_DefMaxLvl : DoCalc(fd.GetParam(1));
+                        v2val = fd.GetParamNum() <= 2 ? SplitInfoForVariable.s_DefMaxLen : DoCalc(fd.GetParam(2));
+                        v3val = fd.GetParamNum() <= 3 ? SplitInfoForVariable.s_DefMultiline : DoCalc(fd.GetParam(3));
+                        v4val = fd.GetParamNum() <= 4 ? SplitInfoForVariable.s_DefExpandOnce : DoCalc(fd.GetParam(4));
                     }
                     else if (sid == "skip") {
-                        v1str = "-1";
+                        v1val = "-1";
                     }
                 }
-                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && int.TryParse(v1str, out var lvlForExp)
-                && int.TryParse(v2str, out var lenForExp) && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+                if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass() && Calculator.TryGetInt(v1val, out var lvlForExp)
+                && Calculator.TryGetInt(v2val, out var lenForExp) && Calculator.TryGetBool(v3val, out var ml) && Calculator.TryGetBool(v4val, out var once)) {
                     string cid = cd.LowerOrderFunction.GetId();
-                    string ixType = "int";
-                    string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                    var ixVal = DoCalc(cd.LowerOrderFunction.GetParam(0));
                     string member = cd.GetParamId(0);
-                    if (int.TryParse(ixStr, out var index)) {
+                    if (int.TryParse(ixVal, out var index)) {
                         if (!cfg.SettingInfo.ObjectArraySplitInfos.TryGetValue(cid, out var objArrLvlInfo)) {
                             objArrLvlInfo = new Dictionary<int, Dictionary<string, SplitInfoForVariable>>();
                             cfg.SettingInfo.ObjectArraySplitInfos.Add(cid, objArrLvlInfo);
@@ -937,9 +916,8 @@ namespace GlslRewriter
             if (dslCfg.IsHighOrder)
                 callCfg = dslCfg.LowerOrderFunction;
 
-            string levelType = "int";
-            string levelStr = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0), ref levelType);
-            if (int.TryParse(levelStr, out var splitLevel)) {
+            var levelVal = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0));
+            if (Calculator.TryGetInt(levelVal, out var splitLevel)) {
                 cfg.SettingInfo.AutoSplitLevel = splitLevel;
             }
 
@@ -949,28 +927,24 @@ namespace GlslRewriter
                     string sid = fd.GetId();
                     if (sid == "=") {
                         string key = fd.GetParamId(0);
-                        string vtype = "int";
-                        string vstr = DoCalc(fd.GetParam(1), ref vtype);
+                        var val = DoCalc(fd.GetParam(1));
                         if (key == "split_level_for_repeat_expression") {
-                            if (int.TryParse(vstr, out var v) && v > 0) {
+                            if (Calculator.TryGetInt(val, out var v) && v > 0) {
                                 cfg.SettingInfo.AutoSplitLevelForRepeatExpression = v;
                             }
                         }
                     }
                     else if (fd.IsParenthesisParamClass()) {
                         if (sid == "split_on") {
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
-                            string v2type = "int";
-                            string v2str = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1), ref v2type);
-                            if (!string.IsNullOrEmpty(v1str) && int.TryParse(v2str, out var lvl)) {
+                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.CalculatorValue.EmptyString : DoCalc(fd.GetParam(0));
+                            var v2val = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetString(v1val, out var v1str) && !string.IsNullOrEmpty(v1str) && Calculator.TryGetInt(v2val, out var lvl)) {
                                 cfg.SettingInfo.AutoSplitOnFuncs[v1str] = lvl;
                             }
                         }
                         else if (sid == "skip") {
-                            string v1type = "int";
-                            string v1str = fd.GetParamNum() <= 0 ? string.Empty : DoCalc(fd.GetParam(0), ref v1type);
-                            if (!string.IsNullOrEmpty(v1str)) {
+                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.CalculatorValue.EmptyString : DoCalc(fd.GetParam(0));
+                            if (Calculator.TryGetString(v1val, out var v1str) && !string.IsNullOrEmpty(v1str)) {
                                 if (!cfg.SettingInfo.AutoSplitSkips.Contains(v1str)) {
                                     cfg.SettingInfo.AutoSplitSkips.Add(v1str);
                                 }
@@ -988,8 +962,8 @@ namespace GlslRewriter
                     string fid = fd.GetId();
                     if (fid == "=") {
                         string key = fd.GetParamId(0);
-                        string valType = string.Empty;
-                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var val = DoCalc(fd.GetParam(1));
+                        string valType = Calculator.GetValueType(val);
 
                         cfg.SettingInfo.VariableAssignments[key] = new ValueInfo { Type = valType, Value = val };
                     }
@@ -1004,8 +978,8 @@ namespace GlslRewriter
                     string fid = fd.GetId();
                     if (fid == "=") {
                         var cd = fd.GetParam(0) as Dsl.FunctionData;
-                        string valType = string.Empty;
-                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var val = DoCalc(fd.GetParam(1));
+                        string valType = Calculator.GetValueType(val);
                         var vinfo = new ValueInfo { Type = valType, Value = val };
 
                         if (null != cd && cd.IsPeriodParamClass()) {
@@ -1029,15 +1003,14 @@ namespace GlslRewriter
                     string fid = fd.GetId();
                     if (fid == "=") {
                         var cd = fd.GetParam(0) as Dsl.FunctionData;
-                        string valType = string.Empty;
-                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var val = DoCalc(fd.GetParam(1));
+                        string valType = Calculator.GetValueType(val);
                         var vinfo = new ValueInfo { Type = valType, Value = val };
 
                         if (null != cd && cd.IsBracketParamClass()) {
                             string cid = cd.GetId();
-                            string ixType = "int";
-                            string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                            if (int.TryParse(ixStr, out var index)) {
+                            var ixVal = DoCalc(cd.GetParam(0));
+                            if (Calculator.TryGetInt(ixVal, out var index)) {
                                 if (!cfg.SettingInfo.ArrayElementAssignments.TryGetValue(cid, out var elements)) {
                                     elements = new Dictionary<int, ValueInfo>();
                                     cfg.SettingInfo.ArrayElementAssignments.Add(cid, elements);
@@ -1057,17 +1030,16 @@ namespace GlslRewriter
                     string fid = fd.GetId();
                     if (fid == "=") {
                         var cd = fd.GetParam(0) as Dsl.FunctionData;
-                        string valType = string.Empty;
-                        string val = DoCalc(fd.GetParam(1), ref valType);
+                        var val = DoCalc(fd.GetParam(1));
+                        string valType = Calculator.GetValueType(val);
                         var vinfo = new ValueInfo { Type = valType, Value = val };
 
 
                         if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
                             string cid = cd.LowerOrderFunction.GetId();
-                            string ixType = "int";
-                            string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                            var ixVal = DoCalc(cd.LowerOrderFunction.GetParam(0));
                             string member = cd.GetParamId(0);
-                            if (int.TryParse(ixStr, out var index)) {
+                            if (Calculator.TryGetInt(ixVal, out var index)) {
                                 if (!cfg.SettingInfo.ObjectArrayMemberAssignments.TryGetValue(cid, out var objects)) {
                                     objects = new Dictionary<int, Dictionary<string, ValueInfo>>();
                                     cfg.SettingInfo.ObjectArrayMemberAssignments.Add(cid, objects);
@@ -1120,9 +1092,8 @@ namespace GlslRewriter
             if (id == "vs_attr") {
                 string inAttr = callCfg.GetParamId(0).Trim();
                 string outAttr = callCfg.GetParamId(1).Trim();
-                string indexType = "int";
-                string indexStr = DoCalc(callCfg.GetParam(2), ref indexType);
-                if (int.TryParse(indexStr, out var ix)) {
+                var indexVal = DoCalc(callCfg.GetParam(2));
+                if (Calculator.TryGetInt(indexVal, out var ix)) {
                     info.InAttrImportFile = inAttr;
                     info.OutAttrImportFile = outAttr;
                     info.AttrIndex = ix;
@@ -1130,9 +1101,8 @@ namespace GlslRewriter
             }
             else if (id == "ps_attr") {
                 string inAttr = callCfg.GetParamId(0).Trim();
-                string indexType = "int";
-                string indexStr = DoCalc(callCfg.GetParam(1), ref indexType);
-                if (int.TryParse(indexStr, out var ix)) {
+                var indexVal = DoCalc(callCfg.GetParam(1));
+                if (Calculator.TryGetInt(indexVal, out var ix)) {
                     info.InAttrImportFile = inAttr;
                     info.AttrIndex = ix;
                 }
@@ -1180,9 +1150,8 @@ namespace GlslRewriter
                     var vd = p as Dsl.ValueData;
                     var fd = p as Dsl.FunctionData;
                     if (null != vd) {
-                        string ixType = "int";
-                        string ixStr = DoCalc(vd, ref ixType);
-                        if (int.TryParse(ixStr, out var ix)) {
+                        var ixVal = DoCalc(vd);
+                        if (Calculator.TryGetInt(ixVal, out var ix)) {
                             if (!info.UsedIndexes.Contains(ix))
                                 info.UsedIndexes.Add(ix);
                         }
@@ -1191,9 +1160,8 @@ namespace GlslRewriter
                         string fid = fd.GetId();
                         if (fid == "add") {
                             foreach (var fp in fd.Params) {
-                                string ixType = "int";
-                                string ixStr = DoCalc(fp, ref ixType);
-                                if (int.TryParse(ixStr, out var ix)) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
                                     if (!info.UsedIndexes.Contains(ix))
                                         info.UsedIndexes.Add(ix);
                                 }
@@ -1201,19 +1169,16 @@ namespace GlslRewriter
                         }
                         else if (fid == "remove") {
                             foreach (var fp in fd.Params) {
-                                string ixType = "int";
-                                string ixStr = DoCalc(fp, ref ixType);
-                                if (int.TryParse(ixStr, out var ix)) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
                                     info.UsedIndexes.Remove(ix);
                                 }
                             }
                         }
                         else if (fid == "add_range") {
-                            string ix1Type = "int";
-                            string ix1Str = DoCalc(fd.GetParam(0), ref ix1Type);
-                            string ix2Type = "int";
-                            string ix2Str = DoCalc(fd.GetParam(1), ref ix2Type);
-                            if (int.TryParse(ix1Str, out var ix1) && int.TryParse(ix2Str, out var ix2)) {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
                                 for (int i = ix1; i <= ix2; ++i) {
                                     if (!info.UsedIndexes.Contains(i))
                                         info.UsedIndexes.Add(i);
@@ -1221,11 +1186,9 @@ namespace GlslRewriter
                             }
                         }
                         else if (fid == "remove_range") {
-                            string ix1Type = "int";
-                            string ix1Str = DoCalc(fd.GetParam(0), ref ix1Type);
-                            string ix2Type = "int";
-                            string ix2Str = DoCalc(fd.GetParam(1), ref ix2Type);
-                            if (int.TryParse(ix1Str, out var ix1) && int.TryParse(ix2Str, out var ix2)) {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
                                 for (int i = ix1; i <= ix2; ++i) {
                                     info.UsedIndexes.Remove(i);
                                 }
@@ -1269,89 +1232,22 @@ namespace GlslRewriter
                 var vd = val as Dsl.ValueData;
                 var fd = val as Dsl.FunctionData;
                 if (null != vd) {
-                    info.OnGetValue = (ref string type) => { return vd.GetId(); };
+                    info.OnGetValue = () => { return vd.GetId(); };
                 }
                 else if (null != fd) {
-                    string fid = fd.GetId();
-                    if (fid == "rand_color") {
-                        info.OnGetValue = (ref string type) => {
-                            type = "vec4";
-                            var sb = new StringBuilder();
-                            sb.Append("vec4");
-                            sb.Append("(");
-                            sb.Append(s_Random.NextDouble());
-                            sb.Append(",");
-                            sb.Append(s_Random.NextDouble());
-                            sb.Append(",");
-                            sb.Append(s_Random.NextDouble());
-                            sb.Append(",");
-                            sb.Append(s_Random.NextDouble());
-                            sb.Append(")");
-                            return sb.ToString();
-                        };
-                    }
-                    else if (fid == "rand_uv") {
-                        info.OnGetValue = (ref string type) => {
-                            string argType = "int";
-                            string argStr = DoCalc(fd.GetParam(0), ref argType);
-                            int.TryParse(argStr, out var num);
-                            if (num >= 2 && num <= 4) {
-                                type = "vec" + num;
-                                var sb = new StringBuilder();
-                                sb.Append("vec");
-                                sb.Append(num);
-                                sb.Append("(");
-                                sb.Append(s_Random.NextDouble());
-                                for (int i = 0; i < num - 1; ++i) {
-                                    sb.Append(",");
-                                    sb.Append(s_Random.NextDouble());
-                                }
-                                sb.Append(")");
-                                return sb.ToString();
-                            }
-                            else {
-                                type = string.Empty;
-                                return string.Empty;
-                            }
-                        };
-                    }
-                    else if (fid == "rand_size") {
-                        info.OnGetValue = (ref string type) => {
-                            List<int> list = new List<int>();
-                            foreach (var arg in fd.Params) {
-                                string argType = "int";
-                                string argStr = DoCalc(arg, ref argType);
-                                int.TryParse(argStr, out var v);
-                                list.Add(v);
-                            }
-                            var sb = new StringBuilder();
-                            sb.Append("vec");
-                            sb.Append(list.Count);
-                            sb.Append("(");
-                            for (int i = 0; i < list.Count; ++i) {
-                                if (i > 0)
-                                    sb.Append(",");
-                                sb.Append(s_Random.Next(list[i]));
-                            }
-                            sb.Append(")");
-                            return sb.ToString();
-                        };
-                    }
-                    else {
-                        info.OnGetValue = (ref string type) => {
-                            return DoCalc(fd, ref type);
-                        };
-                    }
+                    info.OnGetValue = () => {
+                        return DoCalc(fd);
+                    };
                 }
 
-                if(!cfg.Calculators.TryGetValue(info.Func, out var infos)) {
+                if (!cfg.Calculators.TryGetValue(info.Func, out var infos)) {
                     infos = new List<CalculatorInfo>();
                     cfg.Calculators.Add(info.Func, infos);
                 }
                 infos.Add(info);
             }
         }
-        internal static string DoCalc(Dsl.ISyntaxComponent exp, ref string type)
+        internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp)
         {
             bool supported = false;
             var vd = exp as Dsl.ValueData;
@@ -1366,17 +1262,17 @@ namespace GlslRewriter
                     if (VariableTable.GetVarValue(vstr, varType, out var v2))
                         vstr = v2;
                 }
-                string val = Calculator.ReStringNumeric(vstr, ref type);
-                if (!string.IsNullOrEmpty(val))
+                if (Calculator.TryParseNumeric(vstr, out var val))
                     return val;
+                else if (!string.IsNullOrEmpty(vstr))
+                    return DslExpression.CalculatorValue.From(vstr);
             }
             else if (null != fd) {
                 if (fd.IsPeriodParamClass()) {
                     if (fd.IsHighOrder) {
-                        string objType = string.Empty;
-                        string obj = DoCalc(fd.LowerOrderFunction, ref objType);
-                        string m = fd.GetParamId(0);
-                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val, out supported))
+                        var obj = DoCalc(fd.LowerOrderFunction);
+                        var m = fd.GetParamId(0);
+                        if (Calculator.CalcMember(obj, m, out var val, out supported))
                             return val;
                     }
                     else {
@@ -1390,17 +1286,14 @@ namespace GlslRewriter
                 }
                 else if (fd.IsBracketParamClass()) {
                     if (fd.IsHighOrder) {
-                        string objType = string.Empty;
-                        string obj = DoCalc(fd.LowerOrderFunction, ref objType);
-                        string ixType = "int";
-                        string m = DoCalc(fd.GetParam(0), ref ixType);
-                        if (Calculator.CalcMember(objType, obj, m, ref type, out var val, out supported))
+                        var obj = DoCalc(fd.LowerOrderFunction);
+                        var m = DoCalc(fd.GetParam(0));
+                        if (Calculator.CalcMember(obj, m, out var val, out supported))
                             return val;
                     }
                     else {
                         string vname = fd.GetId();
-                        string ixType = "int";
-                        string m = DoCalc(fd.GetParam(0), ref ixType);
+                        var m = DoCalc(fd.GetParam(0));
                         if (VariableTable.TryGetVarType(vname, out var objType, out var isArray)) {
                             if (isArray) {
                                 objType = objType + "_x1024";
@@ -1417,12 +1310,11 @@ namespace GlslRewriter
                 else if(fd.IsParenthesisParamClass())
                 {
                     string func = fd.GetId();
-                    List<string> args = new List<string>();
+                    var args = new List<DslExpression.CalculatorValue>();
                     foreach(var p in fd.Params) {
-                        string argType = string.Empty;
-                        args.Add(DoCalc(p, ref argType));
+                        args.Add(DoCalc(p));
                     }
-                    if (Calculator.CalcFunc(func, args, ref type, out var val, out supported))
+                    if (Calculator.CalcFunc(func, args, out var val, out supported))
                         return val;
                 }
                 else if(fd.IsOperatorParamClass()) {
@@ -1430,17 +1322,15 @@ namespace GlslRewriter
                     if (fd.GetParamNum() == 2) {
                         var arg1 = fd.GetParam(0);
                         var arg2 = fd.GetParam(1);
-                        string argType = string.Empty;
-                        var a1 = DoCalc(arg1, ref argType);
-                        var a2 = DoCalc(arg2, ref argType);
-                        if (Calculator.CalcBinary(op, a1, a2, ref type, out var val, out supported))
+                        var a1 = DoCalc(arg1);
+                        var a2 = DoCalc(arg2);
+                        if (Calculator.CalcBinary(op, a1, a2, out var val, out supported))
                             return val;
                     }
                     else if (fd.GetParamNum() == 1) {
                         var arg1 = fd.GetParam(0);
-                        string argType = string.Empty;
-                        var a1 = DoCalc(arg1, ref argType);
-                        if (Calculator.CalcUnary(op, a1, ref type, out var val, out supported))
+                        var a1 = DoCalc(arg1);
+                        if (Calculator.CalcUnary(op, a1, out var val, out supported))
                             return val;
                     }
                 }
@@ -1452,21 +1342,18 @@ namespace GlslRewriter
                     var cond = tfun.LowerOrderFunction.GetParam(0);
                     var tval = tfun.GetParam(0);
                     var fval = ffun.GetParam(0);
-                    string argType = "bool";
-                    var vcond = DoCalc(cond, ref argType);
-                    var vt = DoCalc(tval, ref type);
-                    var vf = DoCalc(fval, ref type);
-                    if (Calculator.CalcCondExp(vcond, vt, vf, ref type, out var val, out supported))
+                    var vcond = DoCalc(cond);
+                    var vt = DoCalc(tval);
+                    var vf = DoCalc(fval);
+                    if (Calculator.CalcCondExp(vcond, vt, vf, out var val, out supported))
                         return val;
                 }
             }
             if (!supported) {
                 var r = BatchCommand.BatchScript.EvalAndRun(exp);
-                if (!r.IsNullOrEmptyString) {
-                    return r.ToString();
-                }
+                return r;
             }
-            return string.Empty;
+            return DslExpression.CalculatorValue.NullObject;
         }
 
         internal static void AddUnassignableVariable(ShaderConfig cfg, Dsl.ValueData? vd)
@@ -1494,9 +1381,8 @@ namespace GlslRewriter
         {
             if (null != cd && cd.IsBracketParamClass()) {
                 string cid = cd.GetId();
-                string ixType = "int";
-                string ixStr = DoCalc(cd.GetParam(0), ref ixType);
-                if (int.TryParse(ixStr, out var ix)) {
+                var ixVal = DoCalc(cd.GetParam(0));
+                if (Calculator.TryGetInt(ixVal, out var ix)) {
                     if (!cfg.SettingInfo.UnassignableArrayElements.TryGetValue(cid, out var ixHashSet)) {
                         ixHashSet = new HashSet<int>();
                         cfg.SettingInfo.UnassignableArrayElements.Add(cid, ixHashSet);
@@ -1510,10 +1396,9 @@ namespace GlslRewriter
         {
             if (null != cd && cd.IsPeriodParamClass() && cd.IsHighOrder && cd.LowerOrderFunction.IsBracketParamClass()) {
                 string cid = cd.LowerOrderFunction.GetId();
-                string ixType = "int";
-                string ixStr = DoCalc(cd.LowerOrderFunction.GetParam(0), ref ixType);
+                var ixVal = DoCalc(cd.LowerOrderFunction.GetParam(0));
                 string member = cd.GetParamId(0);
-                if (int.TryParse(ixStr, out var ix)) {
+                if (Calculator.TryGetInt(ixVal, out var ix)) {
                     if (!cfg.SettingInfo.UnassignableObjectArrayMembers.TryGetValue(cid, out var elemMemberList)) {
                         elemMemberList = new Dictionary<int, HashSet<string>>();
                         cfg.SettingInfo.UnassignableObjectArrayMembers.Add(cid, elemMemberList);
@@ -1535,15 +1420,15 @@ namespace GlslRewriter
             internal bool Multiline = false;
             internal bool ExpandedOnlyOnce = false;
 
-            internal static string s_DefMaxLvl = "256";
-            internal static string s_DefMaxLen = "102400";
-            internal static string s_DefMultiline = "True";
-            internal static string s_DefExpandOnce = "True";
+            internal static DslExpression.CalculatorValue s_DefMaxLvl = 256;
+            internal static DslExpression.CalculatorValue s_DefMaxLen = 102400;
+            internal static DslExpression.CalculatorValue s_DefMultiline = true;
+            internal static DslExpression.CalculatorValue s_DefExpandOnce = true;
         }
         internal class ValueInfo
         {
             internal string Type = string.Empty;
-            internal string Value = string.Empty;
+            internal DslExpression.CalculatorValue Value = DslExpression.CalculatorValue.NullObject;
         }
         internal class SettingInfo
         {
@@ -1585,7 +1470,7 @@ namespace GlslRewriter
             internal Dictionary<string, HashSet<int>> UnassignableArrayElements = new Dictionary<string, HashSet<int>>();
             internal Dictionary<string, Dictionary<int, HashSet<string>>> UnassignableObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
 
-            internal Dictionary<string, string> SettingVariables = new Dictionary<string, string>();
+            internal Dictionary<string, DslExpression.CalculatorValue> SettingVariables = new Dictionary<string, DslExpression.CalculatorValue>();
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
             internal SortedList<string, string> UsedVariables = new SortedList<string, string>();
 
@@ -1608,14 +1493,14 @@ namespace GlslRewriter
                     AddSplitOnVariable(vname, SplitInfoForVariable.s_DefMaxLvl, SplitInfoForVariable.s_DefMaxLen, SplitInfoForVariable.s_DefMultiline, SplitInfoForVariable.s_DefExpandOnce);
                 }
             }
-            internal void AddSplitOnVariable(string vname, string v1str, string v2str, string v3str, string v4str)
+            internal void AddSplitOnVariable(string vname, DslExpression.CalculatorValue v1val, DslExpression.CalculatorValue v2val, DslExpression.CalculatorValue v3val, DslExpression.CalculatorValue v4val)
             {
                 if (!string.IsNullOrEmpty(vname)) {
                     if (!SplitOnVariables.Contains(vname))
                         SplitOnVariables.Add(vname);
 
-                    if (int.TryParse(v1str, out var lvlForExp) && int.TryParse(v2str, out var lenForExp)
-                        && Calculator.TryParseBool(v3str, out var ml) && Calculator.TryParseBool(v4str, out var once)) {
+                    if (Calculator.TryGetInt(v1val, out var lvlForExp) && Calculator.TryGetInt(v2val, out var lenForExp)
+                        && Calculator.TryGetBool(v3val, out var ml) && Calculator.TryGetBool(v4val, out var once)) {
                         if (!VariableSplitInfos.TryGetValue(vname, out var lvlInfo)) {
                             lvlInfo = new SplitInfoForVariable();
                             VariableSplitInfos.Add(vname, lvlInfo);
@@ -1649,8 +1534,8 @@ namespace GlslRewriter
                 }
             }
 
-            internal static string s_DefSplitLevel = "15";
-            internal static string s_DefSplitOnLevel = "9";
+            internal static DslExpression.CalculatorValue s_DefSplitLevel = 15;
+            internal static DslExpression.CalculatorValue s_DefSplitOnLevel = 9;
         }
         internal class InOutAttrInfo
         {
@@ -1666,7 +1551,7 @@ namespace GlslRewriter
             internal string Type = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
-        internal delegate string CalculatorValueDelegation(ref string type);
+        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation();
         internal class CalculatorInfo
         {
             internal string Func = string.Empty;
@@ -1702,12 +1587,11 @@ namespace GlslRewriter
     {
         protected override DslExpression.CalculatorValue DoCalc()
         {
-            string val = string.Empty;
+            DslExpression.CalculatorValue val = DslExpression.CalculatorValue.NullObject;
             foreach(var p in m_DslArgs) {
-                string type = "float";
-                val = Config.DoCalc(p, ref type);
+                val = Config.DoCalc(p);
             }
-            return DslExpression.CalculatorValue.From(val);
+            return val;
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {

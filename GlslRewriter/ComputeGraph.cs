@@ -479,8 +479,9 @@ namespace GlslRewriter
     }
     public class ComputeGraphConstNode : ComputeGraphNode
     {
-        public ComputeGraphConstNode(FuncInfo? ownFunc, string type, DslExpression.CalculatorValue val) : base(ownFunc, type)
+        public ComputeGraphConstNode(FuncInfo? ownFunc, string type, string srcString, DslExpression.CalculatorValue val) : base(ownFunc, type)
         {
+            SourceString = srcString;
             Value = val;
         }
         protected override void PrintFieldInfo(int indent)
@@ -497,9 +498,10 @@ namespace GlslRewriter
         }
         protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, ref int curMaxLevel, in ComputeSetting setting, Dictionary<string, int> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
-            sb.Append(Value.ToString());
+            sb.Append(SourceString);
         }
 
+        public string SourceString = string.Empty;
         public DslExpression.CalculatorValue Value = DslExpression.CalculatorValue.NullObject;
     }
     public class ComputeGraphVarNode : ComputeGraphNode

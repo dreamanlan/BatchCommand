@@ -1421,7 +1421,7 @@ namespace GlslRewriter
                 Debug.Assert(null != agn1);
 
                 string m = call.GetParamId(0);
-                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", DslExpression.CalculatorValue.From(m));
+                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m, DslExpression.CalculatorValue.From(m));
 
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), "float", ".");
 
@@ -2165,8 +2165,9 @@ namespace GlslRewriter
                     }
                 }
                 else {
-                    bool v = Calculator.TryParseBool(valData.GetId(), out var bval);
-                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", v ? DslExpression.CalculatorValue.From(bval) : DslExpression.CalculatorValue.NullObject);
+                    string str = valData.GetId();
+                    bool v = Calculator.TryParseBool(str, out var bval);
+                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", str, v ? DslExpression.CalculatorValue.From(bval) : DslExpression.CalculatorValue.NullObject);
                     semanticInfo.GraphNode = cgcn;
                     semanticInfo.ResultType = cgcn.Type;
                 }
@@ -2178,7 +2179,7 @@ namespace GlslRewriter
                     type = "string";
                     numVal = DslExpression.CalculatorValue.From(strVal);
                 }
-                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), type, numVal);
+                var cgcn = new ComputeGraphConstNode(CurFuncInfo(), type, strVal, numVal);
                 semanticInfo.GraphNode = cgcn;
                 semanticInfo.ResultType = cgcn.Type;
             }

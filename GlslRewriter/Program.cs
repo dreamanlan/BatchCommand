@@ -1978,6 +1978,9 @@ namespace GlslRewriter
             //确定使用的phi变量标记给它赋值的变量为需要拆分表达式的变量（这需要多次生成代码才能标记，不过这样能避免生成多余的赋值语句）
             if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarName)) {
                 string nvname = refVarValDataOuter.GetId();
+                //由于我们的标记不能递归，已经进行过SSA处理的代码不能再作为输入进行处理，否则这个判断会丢掉仅用于为phi变量赋值的各变量的赋值表达式
+                //另外在已经进行过SSA处理的代码里，变量的定义与赋值也是分开的，这样再作为输入进行处理也会导致这些变量再被重命名一次。
+                //我们通过命令行参数-nossa来避免这种混淆
                 if (!IsPhiVar(nvname)) {
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
                 }

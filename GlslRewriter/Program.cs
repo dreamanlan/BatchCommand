@@ -86,6 +86,12 @@ namespace GlslRewriter
                     else if (0 == string.Compare(args[i], "-i", true)) {
                         s_InteractiveComputing = true;
                     }
+                    else if (0 == string.Compare(args[i], "-ssa", true)) {
+                        s_SSA = true;
+                    }
+                    else if (0 == string.Compare(args[i], "-nossa", true)) {
+                        s_SSA = false;
+                    }
                     else if (0 == string.Compare(args[i], "-h", true)) {
                         PrintHelp();
                     }
@@ -191,7 +197,9 @@ namespace GlslRewriter
             Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
             Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
             Console.WriteLine(" [-cs] glsl_file is compute shader");
-            Console.WriteLine(" [-i] interactive computing mode, don't write outfile.");
+            Console.WriteLine(" [-i] interactive computing mode, don't write outfile");
+            Console.WriteLine(" [-ssa] transform to SSA (default)");
+            Console.WriteLine(" [-nossa] don't transform to SSA");
             Console.WriteLine(" [-src] glsl_file source glsl file, -src can be omitted when file is the last argument");
         }
 
@@ -1295,29 +1303,12 @@ namespace GlslRewriter
 
         private static void TransformGeneralFunction(Dsl.FunctionData funcData, ref SemanticInfo semanticInfo)
         {
-            if (funcData.IsHighOrder) {
-                var lowerFunc = funcData.LowerOrderFunction;
-                if (lowerFunc.IsBracketParamClass() && funcData.IsParenthesisParamClass()) {
-                    //array init
-                    TransformGeneralFunction(funcData, ref semanticInfo);
-                    return;
-                }
-                if (funcData.HaveStatement()) {
+            if (funcData.HaveStatement()) {
+                if (funcData.IsHighOrder) {
+                    var lowerFunc = funcData.LowerOrderFunction;
                     TransformGeneralFunction(lowerFunc, ref semanticInfo);
-                    PushBlock(false, false);
-
-                    var block = new ComputeGraphBlock(CurFuncInfo());
-                    AddComputeGraphRootNode(block);
-                    SetCurBlock(block);
-
-                    TransformFunctionStatements(funcData);
-                    PopBlock();
                 }
-                else {
-                    TransformGeneralCall(funcData, ref semanticInfo);
-                }
-            }
-            else if (funcData.HaveStatement()) {
+
                 PushBlock(false, false);
 
                 var block = new ComputeGraphBlock(CurFuncInfo());
@@ -1365,6 +1356,13 @@ namespace GlslRewriter
                         break;
                 }
                 return;
+            }
+            if (call.IsHighOrder) {
+                var lowerFunc = call.LowerOrderFunction;
+                if (lowerFunc.IsBracketParamClass() && call.IsParenthesisParamClass()) {
+                    //todo: array init
+                    return;
+                }
             }
             if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
                 string id = call.GetId();
@@ -1540,28 +1538,32 @@ namespace GlslRewriter
                     foreach (var vname in CurSetVars()) {
                         if (!setVars.Contains(vname))
                             setVars.Add(vname);
-                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
-                        AddPhiVarAssignExpression(assignFunc);
-                        ifFunc.AddParam(assignFunc);
+                        if (s_SSA) {
+                            var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
+                            AddPhiVarAssignExpression(assignFunc);
+                            ifFunc.AddParam(assignFunc);
+                        }
                     }
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
                         s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
                     }
-                    //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
-                    //2、更新各变量的别名为phi变量别名
-                    insertBeforeOuter = new List<ISyntaxComponent>();
-                    Debug.Assert(null != insertBeforeOuter);
-                    foreach (var vname in setVars) {
-                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
-                        AddPhiVarAssignExpression(assignFunc, ref expListCt);
-                        insertBeforeOuter.Add(assignFunc);
+                    if (s_SSA) {
+                        //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
+                        //2、更新各变量的别名为phi变量别名
+                        insertBeforeOuter = new List<ISyntaxComponent>();
+                        Debug.Assert(null != insertBeforeOuter);
+                        foreach (var vname in setVars) {
+                            var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                            AddPhiVarAssignExpression(assignFunc, ref expListCt);
+                            insertBeforeOuter.Add(assignFunc);
 
-                        var curAliasInfos = CurVarAliasInfos();
-                        if (curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
-                            varAliasInfo.AliasSuffix = suffix;
-                            TryAddComputeGraphVarNode(vname, suffix);
+                            var curAliasInfos = CurVarAliasInfos();
+                            if (curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
+                                varAliasInfo.AliasSuffix = suffix;
+                                TryAddComputeGraphVarNode(vname, suffix);
+                            }
                         }
                     }
                 }
@@ -1607,9 +1609,11 @@ namespace GlslRewriter
                     foreach (var vname in CurSetVars()) {
                         if (!setVars.Contains(vname))
                             setVars.Add(vname);
-                        var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
-                        AddPhiVarAssignExpression(assignFunc);
-                        f.AddParam(assignFunc);
+                        if (s_SSA) {
+                            var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
+                            AddPhiVarAssignExpression(assignFunc);
+                            f.AddParam(assignFunc);
+                        }
                     }
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
@@ -1618,19 +1622,21 @@ namespace GlslRewriter
                     }
                 }
             }
-            //1、多分支if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
-            //2、更新各变量的别名为phi变量别名
-            insertBeforeOuter = new List<ISyntaxComponent>();
-            Debug.Assert(null != insertBeforeOuter);
-            foreach (var vname in setVars) {
-                var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
-                AddPhiVarAssignExpression(assignFunc, ref expListCt);
-                insertBeforeOuter.Add(assignFunc);
+            if (s_SSA) {
+                //1、多分支if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
+                //2、更新各变量的别名为phi变量别名
+                insertBeforeOuter = new List<ISyntaxComponent>();
+                Debug.Assert(null != insertBeforeOuter);
+                foreach (var vname in setVars) {
+                    var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
+                    AddPhiVarAssignExpression(assignFunc, ref expListCt);
+                    insertBeforeOuter.Add(assignFunc);
 
-                var curAliasInfos = CurVarAliasInfos();
-                if (curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
-                    varAliasInfo.AliasSuffix = suffix;
-                    TryAddComputeGraphVarNode(vname, suffix);
+                    var curAliasInfos = CurVarAliasInfos();
+                    if (curAliasInfos.TryGetValue(vname, out var varAliasInfo)) {
+                        varAliasInfo.AliasSuffix = suffix;
+                        TryAddComputeGraphVarNode(vname, suffix);
+                    }
                 }
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
@@ -1910,6 +1916,8 @@ namespace GlslRewriter
         {
             newRefVarValDataOuter = new Dictionary<string, List<ValueData>>();
             insertBeforeOuter = new List<ISyntaxComponent>();
+            if (!s_SSA)
+                return;
             Debug.Assert(null != insertBeforeOuter);
             var undeterminedAliasTable = CurUndeterminedVarAliasTable();
             foreach (var vname in CurSetVars()) {
@@ -1970,7 +1978,7 @@ namespace GlslRewriter
             //确定使用的phi变量标记给它赋值的变量为需要拆分表达式的变量（这需要多次生成代码才能标记，不过这样能避免生成多余的赋值语句）
             if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarName)) {
                 string nvname = refVarValDataOuter.GetId();
-                if (!nvname.Contains(c_PhiTagSeparator)) {
+                if (!IsPhiVar(nvname)) {
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
                 }
             }
@@ -2096,7 +2104,7 @@ namespace GlslRewriter
                         line.Append(";");
                     s_ExpressionList.Add(line.ToString());
 
-                    if (!string.IsNullOrEmpty(vname)) {
+                    if (s_SSA && !string.IsNullOrEmpty(vname)) {
                         int len = vname.LastIndexOf(c_AliasSeparator);
                         if (len > 0) {
                             string oriVarName = vname.Substring(0, len);
@@ -2149,7 +2157,7 @@ namespace GlslRewriter
                         }
                     }
                     else {
-                        if (null != vinfo.OwnFunc) {
+                        if (s_SSA && null != vinfo.OwnFunc) {
                             if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                                 valData.SetId(vid + info.AliasSuffix);
                             }
@@ -2291,7 +2299,7 @@ namespace GlslRewriter
                         }
                     }
                     else {
-                        if (null != vinfo.OwnFunc) {
+                        if (s_SSA && null != vinfo.OwnFunc) {
                             if (TryGetVarAliasIndex(vid, out var aliasIndex)) {
                                 string nid = vid + c_AliasSeparator + (aliasIndex + 1).ToString();
                                 valData.SetId(nid);
@@ -2303,10 +2311,18 @@ namespace GlslRewriter
                             s_VarAliasInfoUpdateQueue.Enqueue(vid);
                         }
 
-                        var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, valData.GetId());
-                        AddComputeGraphVarNode(cgvn);
-                        semanticInfo.GraphNode = cgvn;
-                        semanticInfo.ResultType = vinfo.Type;
+                        if (s_SSA) {
+                            var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, valData.GetId());
+                            AddComputeGraphVarNode(cgvn);
+                            semanticInfo.GraphNode = cgvn;
+                            semanticInfo.ResultType = vinfo.Type;
+                        }
+                        else {
+                            //类SSA形式的代码里，变量定义与赋值是分开的，在赋值时变量已经在计算图上了
+                            var cgvn = FindComputeGraphVarNode(valData.GetId());
+                            semanticInfo.GraphNode = cgvn;
+                            semanticInfo.ResultType = vinfo.Type;
+                        }
 
                         var setVars = CurSetVars();
                         if (!setVars.Contains(vid)) {
@@ -3240,6 +3256,10 @@ namespace GlslRewriter
             else
                 return GetTypeRemoveSuffix(vm);
         }
+        internal static bool IsPhiVar(string vname)
+        {
+            return vname.Contains(c_PhiTagSeparator);
+        }
 
         private static Dictionary<string, VarAliasInfo> CloneVarAliasInfos(Dictionary<string, VarAliasInfo> infos)
         {
@@ -3336,7 +3356,6 @@ namespace GlslRewriter
 
             var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, varInfo.Type, varInfo.Name);
             AddComputeGraphVarNode(cgvn);
-
 
             //只有已经在使用列表里的变量才记录类型
             if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(varInfo.Name)) {
@@ -3834,6 +3853,7 @@ namespace GlslRewriter
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
         internal static bool s_InteractiveComputing = false;
+        internal static bool s_SSA = true;
         internal const string c_PhiTagSeparator = "_phi_";
         internal const string c_AliasSeparator = "_";
 

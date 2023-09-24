@@ -591,7 +591,11 @@ namespace GlslRewriter
                             //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
                             int start = sb.Length;
                             int tmpMaxLevel = curLevel;
-                            PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel + 1, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, this);
+                            //赋值表达式合并到变量使用的表达式时，记录fromNode为使用的表达式结点
+                            var from = fromNode;
+                            if (null == from)
+                                from = this;
+                            PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel + 1, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, from);
                             if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0) {
                                 if (IsSplitOn(PrevNodes[PrevNodes.Count - 1], varMaxLevel - curLevel)) {
                                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
@@ -704,8 +708,8 @@ namespace GlslRewriter
                     if (Calculator.CalcMember(objVal, member, out var val, out var supported)) {
                         m_Value = val;
                     }
-                    else if (!supported) {
-                        Console.WriteLine("member '{0}' is unsupported, please support it.", member);
+                    else if (objVal.IsObject && !supported) {
+                        Console.WriteLine("type {0}'s member '{1}' is unsupported, please support it.", !objVal.IsNullObject ? objVal.ObjectVal.GetType().FullName : "null", member);
                     }
                 }
             }
@@ -733,22 +737,25 @@ namespace GlslRewriter
                     if (Calculator.CalcMember(objVal, ix, out var val, out var supported)) {
                         m_Value = val;
                     }
-                    else if (!supported) {
-                        Console.WriteLine("type {0}'s subscript is unsupported, please support it.", objVal.IsObject && !objVal.IsNullObject ? objVal.ObjectVal.GetType().FullName : "typeid:" + objVal.Type);
+                    else if (objVal.IsObject && !supported) {
+                        Console.WriteLine("type {0}'s subscript is unsupported, please support it.", !objVal.IsNullObject ? objVal.ObjectVal.GetType().FullName : "null");
                     }
                 }
             }
             else if (Operator == "=") {
                 if (NextNodes[0] is ComputeGraphVarNode vnode) {
                     //var = exp
-                    if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
-                        VariableTable.AssignValue(vnode, vnode2);
-                    }
-                    else if (PrevNodes[0] is ComputeGraphCalcNode calcNode2) {
-                        VariableTable.AssignValue(vnode, calcNode2, visits, ref cinfo);
-                    }
-                    else {
-                        VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo));
+                    //phi变量存在多分支赋值，在计算图上计算时跳过赋值
+                    if (!Program.IsPhiVar(vnode.VarName)) {
+                        if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
+                            VariableTable.AssignValue(vnode, vnode2);
+                        }
+                        else if (PrevNodes[0] is ComputeGraphCalcNode calcNode2) {
+                            VariableTable.AssignValue(vnode, calcNode2, visits, ref cinfo);
+                        }
+                        else {
+                            VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo));
+                        }
                     }
                 }
                 else if (NextNodes[0] is ComputeGraphCalcNode calcNode) {
@@ -814,11 +821,12 @@ namespace GlslRewriter
             if (Operator.Length > 0 && (char.IsLetter(Operator[0]) || Operator[0] == '_')) {
                 if (Operator == "fma") {
                     //fma(a,b,c) => a*b+c
-                    sb.Append("(");
+                    //我们输出时不考虑运算优先级，每个运算都加上括号
+                    sb.Append("((");
                     PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(" * ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                    sb.Append(" + ");
+                    sb.Append(") + ");
                     PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
@@ -844,7 +852,7 @@ namespace GlslRewriter
                     cnode2.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode2);
                     sb.Append(")");
                 }
-                else if (Operator == "min" && PrevNodes[0] is ComputeGraphVarNode vnode && vnode.PrevNodes[vnode.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode3 && cnode3.Operator=="="
+                else if (Operator == "min" && PrevNodes[0] is ComputeGraphVarNode vnode && vnode.PrevNodes.Count > 0 && vnode.PrevNodes[vnode.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode3 && cnode3.Operator=="="
                     && cnode3.PrevNodes[0] is ComputeGraphCalcNode cnode31 && cnode31.Operator == "max") {
                     //min({vname = max(v,a)},b) => clamp(v,a,b)
                     sb.Append("clamp");
@@ -856,7 +864,7 @@ namespace GlslRewriter
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
-                else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
+                else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes.Count > 0 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
                     && cnode4.PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
                     //max({vname = min(v,b)},a) => clamp(v,a,b)
                     sb.Append("clamp");
@@ -977,7 +985,11 @@ namespace GlslRewriter
                     AppendAssignLeft(sb, NextNodes[0]);
                     sb.Append(" = ");
                 }
-                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                //赋值表达式合并到变量使用的表达式时，记录fromNode为使用的表达式结点
+                var from = fromNode;
+                if (setting.UseMultilineComments || null == fromNode)
+                    from = this;
+                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, from);
                 if (setting.UseMultilineComments) {
                     sb.AppendLine();
                     sb.Append(Literal.GetIndentString(indent));

@@ -395,6 +395,9 @@ namespace GlslRewriter
                     isVariableSetting = true;
                     markExpression = lvlInfo.MaxLevel >= 0;
                 }
+                if (Program.IsPhiVar(vname)) {
+                    markValue = false;
+                }
             }
             else if (null != fd) {
                 if(fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {

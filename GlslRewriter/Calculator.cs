@@ -784,6 +784,25 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if (func == "clamp") {
+                if (IsNumeric(args[0], out var val1) && IsNumeric(args[1], out var val2) && IsNumeric(args[2], out var val3)) {
+                    if (val1.IsNumber || val2.IsNumber || val3.IsNumber) {
+                        double v1 = val1.GetDouble();
+                        double v2 = val2.GetDouble();
+                        double v3 = val3.GetDouble();
+                        double v = v1 < v2 ? v2 : (v1 > v3 ? v3 : v1);
+                        val = DslExpression.CalculatorValue.From((float)v);
+                    }
+                    else {
+                        long v1 = val1.GetLong();
+                        long v2 = val2.GetLong();
+                        long v3 = val3.GetLong();
+                        long v = v1 < v2 ? v2 : (v1 > v3 ? v3 : v1);
+                        val = DslExpression.CalculatorValue.From((int)v);
+                    }
+                    succ = true;
+                }
+            }
             else {
                 supported = false;
             }

@@ -858,7 +858,7 @@ namespace GlslRewriter
                     sb.Append("clamp");
                     sb.Append("(");
                     cnode31.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
-                    sb.Append(",  ");
+                    sb.Append(", ");
                     cnode31.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
                     sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);

@@ -1583,7 +1583,7 @@ namespace GlslRewriter
         private static ShaderConfig? s_ActiveConfig = null;
 
         private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
-        private static Random s_Random = new Random();
+        internal static Random s_Random = new Random();
     }
 
     internal sealed class ShaderExp : DslExpression.AbstractExpression
@@ -1834,6 +1834,93 @@ namespace GlslRewriter
             }
             var ret = Program.ReCalc(full);
             return DslExpression.CalculatorValue.From(ret);
+        }
+    }
+    internal sealed class RandColorExp : DslExpression.SimpleExpressionBase
+    {
+        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        {
+            var color = new Float4 {
+                x = Config.s_Random.NextSingle(),
+                y = Config.s_Random.NextSingle(),
+                z = Config.s_Random.NextSingle(),
+                w = Config.s_Random.NextSingle()
+            };
+            return DslExpression.CalculatorValue.FromObject(color);
+        }
+    }
+    internal sealed class RandUVExp : DslExpression.SimpleExpressionBase
+    {
+        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        {
+            var uv = DslExpression.CalculatorValue.NullObject;
+            if (operands.Count > 0) {
+                int num = operands[0].GetInt();
+                switch (num) {
+                    case 2:
+                        uv = DslExpression.CalculatorValue.FromObject(new Float2 {
+                            x = Config.s_Random.NextSingle(),
+                            y = Config.s_Random.NextSingle()
+                        });
+                        break;
+                    case 3:
+                        uv = DslExpression.CalculatorValue.FromObject(new Float3 {
+                            x = Config.s_Random.NextSingle(),
+                            y = Config.s_Random.NextSingle(),
+                            z = Config.s_Random.NextSingle()
+                        });
+                        break;
+                    case 4:
+                        uv = DslExpression.CalculatorValue.FromObject(new Float4 {
+                            x = Config.s_Random.NextSingle(),
+                            y = Config.s_Random.NextSingle(),
+                            z = Config.s_Random.NextSingle(),
+                            w = Config.s_Random.NextSingle()
+                        });
+                        break;
+                }
+            }
+            return uv;
+        }
+    }
+    internal sealed class RandSizeExp : DslExpression.SimpleExpressionBase
+    {
+        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        {
+            var size = DslExpression.CalculatorValue.NullObject;
+            if (operands.Count > 0) {
+                var list = new List<int>();
+                foreach(var v in operands) {
+                    list.Add(v.GetInt());
+                }
+                switch(list.Count) {
+                    case 1:
+                        size = DslExpression.CalculatorValue.From(Config.s_Random.Next(list[0]));
+                        break;
+                    case 2:
+                        size = DslExpression.CalculatorValue.FromObject(new Float2 {
+                            x = Config.s_Random.Next(list[0]),
+                            y = Config.s_Random.Next(list[1])
+                        });
+                        break;
+                    case 3:
+                        size = DslExpression.CalculatorValue.FromObject(new Float3 {
+                            x = Config.s_Random.Next(list[0]),
+                            y = Config.s_Random.Next(list[1]),
+                            z = Config.s_Random.Next(list[2])
+                        });
+                        break;
+                    case 4:
+                        size = DslExpression.CalculatorValue.FromObject(new Float4 {
+                            x = Config.s_Random.Next(list[0]),
+                            y = Config.s_Random.Next(list[1]),
+                            z = Config.s_Random.Next(list[2]),
+                            w = Config.s_Random.Next(list[3])
+                        });
+                        break;
+                }
+            }
+            return size;
         }
     }
 }

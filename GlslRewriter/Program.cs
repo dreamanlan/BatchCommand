@@ -667,11 +667,14 @@ namespace GlslRewriter
         {
             BatchCommand.BatchScript.Init();
             BatchCommand.BatchScript.Register("shader", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
-            BatchCommand.BatchScript.Register("addsvar", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
-            BatchCommand.BatchScript.Register("setsvar", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
-            BatchCommand.BatchScript.Register("addunsvar", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
-            BatchCommand.BatchScript.Register("importinout", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
+            BatchCommand.BatchScript.Register("add_svar", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
+            BatchCommand.BatchScript.Register("set_svar", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
+            BatchCommand.BatchScript.Register("add_unsvar", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
+            BatchCommand.BatchScript.Register("import_inout", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
             BatchCommand.BatchScript.Register("recalc", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
+            BatchCommand.BatchScript.Register("rand_color", new DslExpression.ExpressionFactoryHelper<RandColorExp>());
+            BatchCommand.BatchScript.Register("rand_uv", new DslExpression.ExpressionFactoryHelper<RandUVExp>());
+            BatchCommand.BatchScript.Register("rand_size", new DslExpression.ExpressionFactoryHelper<RandSizeExp>());
             BatchCommand.BatchScript.SetOnTryGetVariable(VariableTable.TryGetVariable);
             BatchCommand.BatchScript.SetOnTrySetVariable(VariableTable.TrySetVariable);
         }

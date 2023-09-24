@@ -364,8 +364,8 @@ vs
         textureSize(tex1,*) = vec2(256,256);
         textureSize(tex2,*) = vec2(256,256);
         textureSize(*,*) = vec2(512,128);
-        texelFetch(*,*,*) = vec4(0.5,0.5,0.5,1.0);
-        textureLod(*,*,*) = vec4(0.5,0.5,0.5,1.0);
+        texelFetch(*,*,*) = rand_color();//vec4(0.5,0.5,0.5,1.0);
+        textureLod(*,*,*) = rand_color();//vec4(0.5,0.5,0.5,1.0);
     };
 };
 ps

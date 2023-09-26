@@ -194,12 +194,13 @@ namespace GlslRewriter
 
         public void ResetValue()
         {
-            m_Value.SetNullObject();
+            m_HaveValue = false;
+            m_CachedValue.SetNullObject();
         }
         public void ResetExpression()
         {
-            m_Expression = string.Empty;
-            m_ExpressionIndent = 0;
+            CachedExpression = string.Empty;
+            ExpressionIndent = 0;
         }
         public DslExpression.CalculatorValue GetValue()
         {
@@ -220,9 +221,9 @@ namespace GlslRewriter
                 result = sb.ToString();
             }
             else {
-                m_Expression = sb.ToString();
-                m_ExpressionIndent = 0;
-                result = m_Expression;
+                CachedExpression = sb.ToString();
+                ExpressionIndent = 0;
+                result = CachedExpression;
             }
             return result;
         }
@@ -235,7 +236,7 @@ namespace GlslRewriter
         }
         public DslExpression.CalculatorValue CalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
-            if (m_Value.IsNullObject) {
+            if (m_HaveValue) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
                     if (visits.Contains(this)) {
                         Debug.Assert(false);
@@ -250,12 +251,12 @@ namespace GlslRewriter
                 TryCalcValue(visits, ref cinfo);
                 visits.Remove(this);
             }
-            return m_Value;
+            return m_CachedValue;
         }
         public void GenerateExpression(StringBuilder sb, int indent, int curLevel, ref int mergeMaxLevel, out int curMaxLevel, in ComputeSetting setting, Dictionary<string, int> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
             curMaxLevel = curLevel;
-            if (setting.DontCacheExpression || setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(m_Expression)) {
+            if (setting.DontCacheExpression || setting.VariableExpandedOnlyOnce || string.IsNullOrEmpty(CachedExpression)) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
                     if (visits.Contains(this)) {
                         Debug.Assert(false);
@@ -276,28 +277,28 @@ namespace GlslRewriter
                 visits.Remove(this);
             }
             else if (setting.UseMultilineComments) {
-                if (indent == m_ExpressionIndent) {
-                    sb.Append(m_Expression);
+                if (indent == ExpressionIndent) {
+                    sb.Append(CachedExpression);
                 }
                 else {
-                    var lines = m_Expression.Split(s_LineSplits, StringSplitOptions.RemoveEmptyEntries);
-                    if (indent > m_ExpressionIndent) {
+                    var lines = CachedExpression.Split(s_LineSplits, StringSplitOptions.RemoveEmptyEntries);
+                    if (indent > ExpressionIndent) {
                         foreach (var line in lines) {
                             sb.AppendLine();
-                            sb.Append(Literal.GetIndentString(indent - m_ExpressionIndent));
+                            sb.Append(Literal.GetIndentString(indent - ExpressionIndent));
                             sb.Append(line);
                         }
                     }
                     else {
                         foreach (var line in lines) {
                             sb.AppendLine();
-                            sb.Append(line.Substring(m_ExpressionIndent - indent));
+                            sb.Append(line.Substring(ExpressionIndent - indent));
                         }
                     }
                 }
             }
             else {
-                sb.Append(m_Expression);
+                sb.Append(CachedExpression);
             }
             if(mergeMaxLevel < curMaxLevel)
                 mergeMaxLevel = curMaxLevel;
@@ -392,9 +393,16 @@ namespace GlslRewriter
         public List<ComputeGraphNode> NextNodes = new List<ComputeGraphNode>();
         public List<ComputeGraphNode> OutNodes = new List<ComputeGraphNode>();
 
-        protected DslExpression.CalculatorValue m_Value = DslExpression.CalculatorValue.NullObject;
-        protected string m_Expression = string.Empty;
-        protected int m_ExpressionIndent = 0;
+        protected DslExpression.CalculatorValue CachedValue
+        {
+            get { return m_CachedValue; }
+            set { m_CachedValue = value;m_HaveValue = true; }
+        }
+        protected string CachedExpression { get; set; } = string.Empty;
+        protected int ExpressionIndent { get; set; } = 0;
+
+        private bool m_HaveValue = false;
+        private DslExpression.CalculatorValue m_CachedValue = DslExpression.CalculatorValue.NullObject;
 
         protected static void VisitChildPrevHelper(ComputeGraphNode? node, FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
         {
@@ -494,7 +502,7 @@ namespace GlslRewriter
         }
         protected override void TryCalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
-            m_Value = Value;
+            CachedValue = Value;
         }
         protected override void TryGenerateExpression(StringBuilder sb, int indent, int curLevel, ref int curMaxLevel, in ComputeSetting setting, Dictionary<string, int> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
         {
@@ -529,15 +537,15 @@ namespace GlslRewriter
         protected override void TryCalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
             if (VariableTable.GetVarValue(VarName, Type, out var val)) {
-                m_Value = val;
+                CachedValue = val;
             }
             else {
                 if (PrevNodes.Count > 0) {
                     //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
-                    m_Value = PrevNodes[PrevNodes.Count - 1].CalcValue(visits, ref cinfo);
+                    CachedValue = PrevNodes[PrevNodes.Count - 1].CalcValue(visits, ref cinfo);
                 }
                 else {
-                    m_Value = DslExpression.CalculatorValue.From(VarName);
+                    CachedValue = DslExpression.CalculatorValue.From(VarName);
                 }
             }
         }
@@ -567,7 +575,7 @@ namespace GlslRewriter
                     sb.Append(VarName);
                     if (withValue) {
                         sb.Append(" : ");
-                        sb.Append(m_Value.ToString());
+                        sb.Append(CachedValue.ToString());
                         sb.Append("}");
                     }
                 }
@@ -582,7 +590,7 @@ namespace GlslRewriter
                         sb.Append(VarName);
                         if (withValue) {
                             sb.Append(" : ");
-                            sb.Append(m_Value.ToString());
+                            sb.Append(CachedValue.ToString());
                             sb.Append("}");
                         }
                     }
@@ -612,8 +620,8 @@ namespace GlslRewriter
                             int end = sb.Length;
                             if (!setting.VariableExpandedOnlyOnce && !setting.DontCacheExpression) {
                                 if (end > start) {
-                                    m_Expression = sb.ToString(start, end - start);
-                                    m_ExpressionIndent = indent;
+                                    CachedExpression = sb.ToString(start, end - start);
+                                    ExpressionIndent = indent;
                                 }
                             }
                         }
@@ -635,7 +643,7 @@ namespace GlslRewriter
                 sb.Append(VarName);
                 if (withValue) {
                     sb.Append(" : ");
-                    sb.Append(m_Value.ToString());
+                    sb.Append(CachedValue.ToString());
                     sb.Append("}");
                 }
             }
@@ -679,7 +687,7 @@ namespace GlslRewriter
                     args.Add(p.CalcValue(visits, ref cinfo));
                 }
                 if (Config.CalcFunc(Operator, args, out var val)) {
-                    m_Value = val;
+                    CachedValue = val;
                 }
             }
             else if (Operator == ".") {
@@ -688,7 +696,7 @@ namespace GlslRewriter
                     if (PrevNodes[0] is ComputeGraphVarNode varNode) {
                         //var.member
                         if(VariableTable.ObjectGetValue(varNode, constNode.Value, out var val)) {
-                            m_Value = val;
+                            CachedValue = val;
                             handled = true;
                         }
                     }
@@ -696,7 +704,7 @@ namespace GlslRewriter
                         if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode2) {
                             //var[ix].member
                             if(VariableTable.ObjectArrayGetValue(vnode2, cnode2.Value, constNode.Value, out var val)) {
-                                m_Value = val;
+                                CachedValue = val;
                                 handled = true;
                             }
                         }
@@ -706,7 +714,7 @@ namespace GlslRewriter
                     var objVal = PrevNodes[0].CalcValue(visits, ref cinfo);
                     var member = PrevNodes[1].CalcValue(visits, ref cinfo);
                     if (Calculator.CalcMember(objVal, member, out var val, out var supported)) {
-                        m_Value = val;
+                        CachedValue = val;
                     }
                     else if (objVal.IsObject && !supported) {
                         Console.WriteLine("type {0}'s member '{1}' is unsupported, please support it.", !objVal.IsNullObject ? objVal.ObjectVal.GetType().FullName : "null", member);
@@ -719,14 +727,14 @@ namespace GlslRewriter
                     //var[ix]
                     if (PrevNodes[1] is ComputeGraphConstNode constNode) {
                         if (VariableTable.ArrayGetValue(varNode, constNode.Value, out var val)) {
-                            m_Value = val;
+                            CachedValue = val;
                             handled = true;
                         }
                     }
                     else {
                         var ix = PrevNodes[1].CalcValue(visits, ref cinfo);
                         if (VariableTable.ArrayGetValue(varNode, ix, out var val)) {
-                            m_Value = val;
+                            CachedValue = val;
                             handled = true;
                         }
                     }
@@ -735,7 +743,7 @@ namespace GlslRewriter
                     var objVal = PrevNodes[0].CalcValue(visits, ref cinfo);
                     var ix = PrevNodes[1].CalcValue(visits, ref cinfo);
                     if (Calculator.CalcMember(objVal, ix, out var val, out var supported)) {
-                        m_Value = val;
+                        CachedValue = val;
                     }
                     else if (objVal.IsObject && !supported) {
                         Console.WriteLine("type {0}'s subscript is unsupported, please support it.", !objVal.IsNullObject ? objVal.ObjectVal.GetType().FullName : "null");
@@ -782,14 +790,14 @@ namespace GlslRewriter
                         }
                     }
                 }
-                m_Value = PrevNodes[0].CalcValue(visits, ref cinfo);
+                CachedValue = PrevNodes[0].CalcValue(visits, ref cinfo);
             }
             else if (PrevNodes.Count == 3) {
                 var cond = PrevNodes[0].CalcValue(visits, ref cinfo);
                 var opd1 = PrevNodes[1].CalcValue(visits, ref cinfo);
                 var opd2 = PrevNodes[2].CalcValue(visits, ref cinfo);
                 if (Calculator.CalcCondExp(cond, opd1, opd2, out var val, out var supported)) {
-                    m_Value = val;
+                    CachedValue = val;
                 }
                 else if (!supported) {
                     Console.WriteLine("condition expression is unsupported, please support it.");
@@ -799,7 +807,7 @@ namespace GlslRewriter
                 var opd1 = PrevNodes[0].CalcValue(visits, ref cinfo);
                 var opd2 = PrevNodes[1].CalcValue(visits, ref cinfo);
                 if (Calculator.CalcBinary(Operator, opd1, opd2, out var val, out var supported)) {
-                    m_Value = val;
+                    CachedValue = val;
                 }
                 else if (!supported) {
                     Console.WriteLine("binary operator '{0}' is unsupported, please support it.", Operator);
@@ -808,7 +816,7 @@ namespace GlslRewriter
             else {
                 var opd = PrevNodes[0].CalcValue(visits, ref cinfo);
                 if (Calculator.CalcUnary(Operator, opd, out var val, out var supported)) {
-                    m_Value = val;
+                    CachedValue = val;
                 }
                 else if (!supported) {
                     Console.WriteLine("unary operator '{0}' is unsupported, please support it.", Operator);
@@ -913,7 +921,7 @@ namespace GlslRewriter
                     sb.Append(")");
                     if (withValue) {
                         sb.Append(" : ");
-                        sb.Append(m_Value.ToString());
+                        sb.Append(CachedValue.ToString());
                         sb.Append("}");
                     }
                 }
@@ -943,7 +951,7 @@ namespace GlslRewriter
                 PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                 if (withValue) {
                     sb.Append(" : ");
-                    sb.Append(m_Value.ToString());
+                    sb.Append(CachedValue.ToString());
                     sb.Append("}");
                 }
             }
@@ -973,7 +981,7 @@ namespace GlslRewriter
                 sb.Append("]");
                 if (withValue) {
                     sb.Append(" : ");
-                    sb.Append(m_Value.ToString());
+                    sb.Append(CachedValue.ToString());
                     sb.Append("}");
                 }
             }

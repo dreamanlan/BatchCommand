@@ -369,6 +369,13 @@ namespace GlslRewriter
                     lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
                     lineList.Add(string.Empty);
                 }
+                if (Config.ActiveConfig.VAOImports.Count > 0) {
+                    foreach (var vaoImp in Config.ActiveConfig.VAOImports) {
+                        var vaos = RenderDocImporter.GenerateVAO(vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File);
+                        lineList.AddRange(vaos);
+                    }
+                    lineList.Add(string.Empty);
+                }
                 var lines = File.ReadAllLines(studyFile);
                 lineList.AddRange(lines);
                 if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count > 0) {

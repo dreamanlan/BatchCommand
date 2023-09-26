@@ -14,6 +14,7 @@ using System.Xml.Linq;
 using BatchCommand;
 using System.Collections;
 using DslExpression;
+using System.Transactions;
 
 namespace GlslRewriter
 {
@@ -60,6 +61,11 @@ namespace GlslRewriter
                         }
                     }
 
+                    sb.Append("var vertexes = new[] {");
+                    s_VertexStructInits.Add(sb.ToString());
+                    sb.Length = 0;
+
+                    int start = s_VertexStructInits.Count;
                     var idxHashset = new HashSet<int>();
                     for (ix = 1; ix < lines.Length; ++ix) {
                         var line = lines[ix];
@@ -67,9 +73,11 @@ namespace GlslRewriter
                         Debug.Assert(colNames.Length == cols.Count);
                         if (int.TryParse(cols[1], out var idx) && !idxHashset.Contains(idx)) {
                             idxHashset.Add(idx);
-                            sb.Append("//");
-                            sb.Append(idx.ToString("000"));
-                            sb.Append(" , new VertexData(");
+                            sb.Append("\t");
+                            if (s_VertexStructInits.Count > start) {
+                                sb.Append(", ");
+                            }
+                            sb.Append("new VertexData(");
                             for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
                                 if ((i - 2) % 4 == 0) {
                                     if (i > 2)
@@ -85,20 +93,30 @@ namespace GlslRewriter
                             s_VertexStructInits.Add(sb.ToString());
                             sb.Length = 0;
 
+                            bool first = true;
                             int j = 0;
+                            sb.Append("\t");
                             for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
                                 if ((i - 2) % 4 == 0) {
                                     if (i > 2) {
                                         sb.Append(")");
-                                        if(!s_VertexAttrInits.TryGetValue(j, out var attrs)) {
+                                        var names = colNames[i - 1].Split(".");
+                                        if (!s_VertexAttrInits.TryGetValue(names[0], out var attrs)) {
                                             attrs = new List<string>();
-                                            s_VertexAttrInits.Add(j, attrs);
+                                            s_VertexAttrInits.Add(names[0], attrs);
+                                            attrs.Add("var " + names[0] + " = new[] {");
+                                            first = true;
                                         }
                                         attrs.Add(sb.ToString());
                                         ++j;
                                         sb.Length = 0;
+                                        sb.Append("\t");
                                     }
-                                    sb.Append(", new Vector4(");
+                                    if (first)
+                                        first = false;
+                                    else
+                                        sb.Append(", ");
+                                    sb.Append("new Vector4(");
                                 }
                                 else if (i > 2)
                                     sb.Append(", ");
@@ -106,13 +124,23 @@ namespace GlslRewriter
                                 sb.Append("f");
                             }
                             sb.Append(")");
-                            if (!s_VertexAttrInits.TryGetValue(j, out var attrs2)) {
+                            var names2 = colNames[colNames.Length - 1].Split(".");
+                            if (!s_VertexAttrInits.TryGetValue(names2[0], out var attrs2)) {
                                 attrs2 = new List<string>();
-                                s_VertexAttrInits.Add(j, attrs2);
+                                s_VertexAttrInits.Add(names2[0], attrs2);
+                                attrs2.Add("var " + names2[0] + " = new[] {");
                             }
                             attrs2.Add(sb.ToString());
                             sb.Length = 0;
                         }
+                    }
+
+                    sb.Append("};");
+                    s_VertexStructInits.Add(sb.ToString());
+                    sb.Length = 0;
+
+                    foreach(var pair in s_VertexAttrInits) {
+                        pair.Value.Add("};");
                     }
                 }
             }
@@ -219,6 +247,73 @@ namespace GlslRewriter
             }
             return results;
         }
+        internal static List<string> GenerateVAO(string attrArrayLeft, string type, HashSet<int> indexes, string csv_path)
+        {
+            var results = new List<string>();
+            var sb = new StringBuilder();
+            var lines = File.ReadAllLines(csv_path);
+            if (lines.Length >= 2) {
+                var header = lines[0];
+                var colNames = header.Split(",", StringSplitOptions.TrimEntries);
+                if (colNames.Length >= 2 && colNames[0] == "Element") {
+                    sb.Append(attrArrayLeft);
+                    sb.Append(" = ");
+                    sb.Append("new[] {");
+                    results.Add(sb.ToString());
+                    sb.Length = 0;
+                    int start = results.Count;
+                    for (int ix = 1; ix < lines.Length; ++ix) {
+                        if (indexes.Count == 0 || indexes.Contains(ix - 1)) {
+                            var line = lines[ix];
+                            var cols = SplitCsvLine(line);
+                            Debug.Assert(colNames.Length == cols.Count);
+                            sb.Append("\t");
+                            if (results.Count > start) {
+                                sb.Append(", ");
+                            }
+                            if (type == "float") {
+                                sb.Append(cols[1]);
+                                sb.Append("f");
+                            }
+                            else {
+                                int colNum = (colNames.Length - 1) / 4;
+                                if (colNum > 1) {
+                                    sb.Append("new[] {");
+                                    for (int index = 1; index < cols.Count; ++index) {
+                                        if ((index - 1) % 4 == 0) {
+                                            if (index > 1)
+                                                sb.Append("), ");
+                                            sb.Append("new Vector4(");
+                                        }
+                                        else if (index > 1)
+                                            sb.Append(", ");
+                                        sb.Append(cols[index]);
+                                        sb.Append("f");
+                                    }
+                                    sb.Append(") }");
+                                }
+                                else {
+                                    sb.Append("new Vector4(");
+                                    for (int index = 1; index < cols.Count; ++index) {
+                                        if (index > 1)
+                                            sb.Append(", ");
+                                        sb.Append(cols[index]);
+                                        sb.Append("f");
+                                    }
+                                    sb.Append(")");
+                                }
+                            }
+                            results.Add(sb.ToString());
+                            sb.Length = 0;
+                        }
+                    }
+                    sb.Append("};");
+                    results.Add(sb.ToString());
+                    sb.Length = 0;
+                }
+            }
+            return results;
+        }
         internal static bool ImportVsInOutData(string type, int index, Dictionary<string, string> attrMap, string csv_path)
         {
             bool ret = false;
@@ -310,7 +405,7 @@ namespace GlslRewriter
 
         internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
         internal static List<string> s_VertexStructInits = new List<string>();
-        internal static Dictionary<int, List<string>> s_VertexAttrInits = new Dictionary<int, List<string>>();
+        internal static SortedDictionary<string, List<string>> s_VertexAttrInits = new SortedDictionary<string, List<string>>();
         internal static List<string> s_UniformInits = new List<string>();
     }
     internal static class Config
@@ -561,6 +656,9 @@ namespace GlslRewriter
                     }
                     else if (id == "uniform") {
                         ParseUniformImport(cfgInfo, pfd);
+                    }
+                    else if (id == "vao_attr") {
+                        ParseVAOImport(cfgInfo, pfd);
                     }
                     else if (id == "calculator") {
                         ParseCalculator(cfgInfo, pfd);
@@ -1203,6 +1301,72 @@ namespace GlslRewriter
 
             cfg.UniformImports.Add(info);
         }
+        private static void ParseVAOImport(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            var callCfg = dslCfg;
+            if (dslCfg.IsHighOrder)
+                callCfg = dslCfg.LowerOrderFunction;
+
+            var csArrayLeft = callCfg.GetParamId(0).Trim();
+            string type = callCfg.GetParamId(1).Trim();
+            string file = callCfg.GetParamId(2).Trim();
+            var info = new VAOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file };
+
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    if (null != vd) {
+                        var ixVal = DoCalc(vd);
+                        if (Calculator.TryGetInt(ixVal, out var ix)) {
+                            if (!info.UsedIndexes.Contains(ix))
+                                info.UsedIndexes.Add(ix);
+                        }
+                    }
+                    else if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "add") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    if (!info.UsedIndexes.Contains(ix))
+                                        info.UsedIndexes.Add(ix);
+                                }
+                            }
+                        }
+                        else if (fid == "remove") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    info.UsedIndexes.Remove(ix);
+                                }
+                            }
+                        }
+                        else if (fid == "add_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    if (!info.UsedIndexes.Contains(i))
+                                        info.UsedIndexes.Add(i);
+                                }
+                            }
+                        }
+                        else if (fid == "remove_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    info.UsedIndexes.Remove(i);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            cfg.VAOImports.Add(info);
+        }
         private static void ParseCalculator(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             if (dslCfg.HaveStatement()) {
@@ -1554,6 +1718,13 @@ namespace GlslRewriter
             internal string Type = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
+        internal class VAOImportInfo
+        {
+            internal string AttrArrayLeft = string.Empty;
+            internal string Type = string.Empty;
+            internal string File = string.Empty;
+            internal HashSet<int> UsedIndexes = new HashSet<int>();
+        }
         internal delegate DslExpression.CalculatorValue CalculatorValueDelegation();
         internal class CalculatorInfo
         {
@@ -1567,6 +1738,7 @@ namespace GlslRewriter
             internal SettingInfo SettingInfo = new SettingInfo();
             internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
+            internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
             internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
         }

@@ -339,7 +339,7 @@ vs
             u2_0_0,
         };
     };
-    vs_attr("d:/UC/cloud_1/vs_in.csv", "d:/UC/cloud_1/vs_out.csv", 0);
+    vs_attr("d:/UC/cloud_1/vs_in.csv", "d:/UC/cloud_1/vs_out.csv", 1);
     uniform("d:/UC/cloud_1/vs_cbuf8.csv", "uvec4"){
         add_range(0,7);
         add(29,30);
@@ -467,7 +467,7 @@ ps
             u_0_0,
         };
     };
-    ps_attr("d:/UC/cloud_1/vs_out.csv", 0){
+    ps_attr("d:/UC/cloud_1/vs_out.csv", 1){
         map_in_attr("out_attr0","in_attr0");
         map_in_attr("out_attr1","in_attr1");
         map_in_attr("out_attr2","in_attr2");
@@ -498,9 +498,9 @@ ps
         textureSize(tex5,*) = vec2(512,512);
         textureSize(depthTex,*) = vec2(800,450);
         textureSize(*,*) = vec2(512,128);
-        texelFetch(*,*,*) = vec4(0.5,0.5,0.5,0.75);
-        textureLod(*,*,*) = vec4(0.5,0.5,0.5,0.75);
-        texture(*,*) = vec4(0.5,0.5,0.5,0.75);
+        texelFetch(*,*,*) = rand_color();//vec4(0.5,0.5,0.5,0.75);
+        textureLod(*,*,*) = rand_color();//vec4(0.5,0.5,0.5,0.75);
+        texture(*,*) = rand_color();//vec4(0.5,0.5,0.5,0.75);
         textureQueryLod(*,*) = vec2(4,1);
     };
 };

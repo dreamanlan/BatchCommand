@@ -250,33 +250,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetBool(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = false;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetBool(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = false;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -400,33 +373,6 @@ namespace GlslRewriter
             }
             else {
                 y = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetFloat(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetFloat(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
             }
             return ret;
         }
@@ -556,33 +502,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -706,33 +625,6 @@ namespace GlslRewriter
             }
             else {
                 y = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetUInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetUInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
             }
             return ret;
         }
@@ -871,44 +763,6 @@ namespace GlslRewriter
             }
             else {
                 z = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetBool(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = false;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetBool(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = false;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetBool(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = false;
             }
             return ret;
         }
@@ -1061,44 +915,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetFloat(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetFloat(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetFloat(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -1248,44 +1064,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetInt(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -1432,44 +1210,6 @@ namespace GlslRewriter
             }
             else {
                 z = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetUInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetUInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetUInt(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
             }
             return ret;
         }
@@ -1628,55 +1368,6 @@ namespace GlslRewriter
             }
             else {
                 w = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetBool(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = false;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetBool(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = false;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetBool(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = false;
-            }
-            if (vs.Count > 3) {
-                if (Calculator.TryGetBool(vs[3], out var val)) {
-                    w = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                w = false;
             }
             return ret;
         }
@@ -1852,55 +1543,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetFloat(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetFloat(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetFloat(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
-            }
-            if (vs.Count > 3) {
-                if (Calculator.TryGetFloat(vs[3], out var val)) {
-                    w = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                w = 0;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -2073,55 +1715,6 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetInt(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
-            }
-            if (vs.Count > 3) {
-                if (Calculator.TryGetInt(vs[3], out var val)) {
-                    w = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                w = 0;
-            }
-            return ret;
-        }
         public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
         {
             bool ret = false;
@@ -2291,55 +1884,6 @@ namespace GlslRewriter
             }
             else {
                 w = val;
-            }
-            return ret;
-        }
-        public bool Assign(IList<DslExpression.CalculatorValue> vs)
-        {
-            bool ret = true;
-            if (vs.Count > 0) {
-                if (Calculator.TryGetUInt(vs[0], out var val)) {
-                    x = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                x = 0;
-            }
-            if (vs.Count > 1) {
-                if (Calculator.TryGetUInt(vs[1], out var val)) {
-                    y = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                y = 0;
-            }
-            if (vs.Count > 2) {
-                if (Calculator.TryGetUInt(vs[2], out var val)) {
-                    z = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                z = 0;
-            }
-            if (vs.Count > 3) {
-                if (Calculator.TryGetUInt(vs[3], out var val)) {
-                    w = val;
-                }
-                else {
-                    ret = false;
-                }
-            }
-            else {
-                w = 0;
             }
             return ret;
         }
@@ -2828,6 +2372,7 @@ namespace GlslRewriter
             if(!exists && Config.ActiveConfig.SettingInfo.VariableAssignments.TryGetValue(name, out var vinfo)) {
                 Debug.Assert(type == vinfo.Type || type == "uint" && vinfo.Type == "int" || type == "int" && vinfo.Type == "uint");
                 varVal = vinfo.Value;
+                AssignValue(name, type, varVal);
                 exists = true;
             }
             return exists;
@@ -2873,6 +2418,7 @@ namespace GlslRewriter
                 objInfo.TryGetValue(m, out var vinfo)) {
                 Debug.Assert(type == vinfo.Type);
                 varVal = vinfo.Value;
+                ObjectAssignValue(name, type, m, varVal);
                 exists = true;
             }
             return exists;
@@ -2977,6 +2523,7 @@ namespace GlslRewriter
                 arrInfo.TryGetValue(index, out var vinfo)) {
                 Debug.Assert(type == vinfo.Type);
                 varVal = vinfo.Value;
+                ArrayAssignValue(name, type, ix, varVal);
                 exists = true;
             }
             return exists;
@@ -3030,6 +2577,7 @@ namespace GlslRewriter
                 objInfo.TryGetValue(m, out var vinfo)) {
                 Debug.Assert(type == vinfo.Type);
                 varVal = vinfo.Value;
+                ObjectArrayAssignValue(name, type, ix, m, varVal);
                 exists = true;
             }
             return exists;
@@ -3312,13 +2860,22 @@ namespace GlslRewriter
                 }
                 else if (suffix.Length > 0) {
                     if (baseType == "vec") {
-                        if (s_Float4Vars.TryGetValue(otherName, out var val)) {
+                        if (s_Float4Vars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_Float4Vars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_Float4Vars[name] = new Float4Val(val.Value);
+                            }
+                        }
+                        else if(GetVarValue(otherName, otherType, out var cv) && Float4.TryParse(cv, out var cval)) {
+                            if (s_Float4Vars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_Float4Vars[name] = new Float4Val(cval);
                             }
                         }
                         else if(s_Float4Vars.TryGetValue(name, out var v)){
@@ -3329,13 +2886,22 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "ivec") {
-                        if (s_Int4Vars.TryGetValue(otherName, out var val)) {
+                        if (s_Int4Vars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_Int4Vars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_Int4Vars[name] = new Int4Val(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Int4.TryParse(cv, out var cval)) {
+                            if (s_Int4Vars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_Int4Vars[name] = new Int4Val(cval);
                             }
                         }
                         else if (s_Int4Vars.TryGetValue(name, out var v)) {
@@ -3346,13 +2912,22 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "uvec") {
-                        if (s_Uint4Vars.TryGetValue(otherName, out var val)) {
+                        if (s_Uint4Vars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_Uint4Vars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_Uint4Vars[name] = new Uint4Val(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Uint4.TryParse(cv, out var cval)) {
+                            if (s_Uint4Vars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_Uint4Vars[name] = new Uint4Val(cval);
                             }
                         }
                         else if (s_Uint4Vars.TryGetValue(name, out var v)) {
@@ -3363,13 +2938,22 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "bvec") {
-                        if (s_Bool4Vars.TryGetValue(otherName, out var val)) {
+                        if (s_Bool4Vars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_Bool4Vars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_Bool4Vars[name] = new Bool4Val(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Bool4.TryParse(cv, out var cval)) {
+                            if (s_Bool4Vars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_Bool4Vars[name] = new Bool4Val(cval);
                             }
                         }
                         else if (s_Bool4Vars.TryGetValue(name, out var v)) {
@@ -3382,13 +2966,22 @@ namespace GlslRewriter
                 }
                 else {
                     if (baseType == "float") {
-                        if (s_FloatVars.TryGetValue(otherName, out var val)) {
+                        if (s_FloatVars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_FloatVars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_FloatVars[name] = new FloatVal(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Calculator.TryGetFloat(cv, out var cval)) {
+                            if (s_FloatVars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_FloatVars[name] = new FloatVal(cval);
                             }
                         }
                         else if (s_FloatVars.TryGetValue(name, out var v)) {
@@ -3399,13 +2992,22 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "int") {
-                        if (s_IntVars.TryGetValue(otherName, out var val)) {
+                        if (s_IntVars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_IntVars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_IntVars[name] = new IntVal(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Calculator.TryGetInt(cv, out var cval)) {
+                            if (s_IntVars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_IntVars[name] = new IntVal(cval);
                             }
                         }
                         else if (s_IntVars.TryGetValue(name, out var v)) {
@@ -3416,13 +3018,22 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "uint") {
-                        if (s_UintVars.TryGetValue(otherName, out var val)) {
+                        if (s_UintVars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_UintVars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
                             }
                             else {
                                 s_UintVars[name] = new UintVal(val.Value);
+                            }
+                        }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Calculator.TryGetUInt(cv, out var cval)) {
+                            if (s_UintVars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_UintVars[name] = new UintVal(cval);
                             }
                         }
                         else if (s_UintVars.TryGetValue(name, out var v)) {
@@ -3433,7 +3044,7 @@ namespace GlslRewriter
                         }
                     }
                     else if (baseType == "bool") {
-                        if (s_BoolVars.TryGetValue(otherName, out var val)) {
+                        if (s_BoolVars.TryGetValue(otherName, out var val) && val.IsValid) {
                             if (s_BoolVars.TryGetValue(name, out var v)) {
                                 v.Value = val.Value;
                                 v.IsValid = true;
@@ -3442,261 +3053,20 @@ namespace GlslRewriter
                                 s_BoolVars[name] = new BoolVal(val.Value);
                             }
                         }
+                        else if (GetVarValue(otherName, otherType, out var cv) && Calculator.TryGetBool(cv, out var cval)) {
+                            if (s_BoolVars.TryGetValue(name, out var v)) {
+                                v.Value = cval;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_BoolVars[name] = new BoolVal(cval);
+                            }
+                        }
                         else if (s_BoolVars.TryGetValue(name, out var v)) {
                             v.IsValid = false;
                         }
                         else {
                             s_BoolVars[name] = new BoolVal();
-                        }
-                    }
-                }
-            }
-        }
-        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphCalcNode right, HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
-        {
-            bool isConst = true;
-            var consts = new List<DslExpression.CalculatorValue>();
-            foreach(var n in right.PrevNodes) {
-                if(n is ComputeGraphConstNode cn) {
-                    consts.Add(cn.Value);
-                }
-                else {
-                    isConst = false;
-                    break;
-                }
-            }
-            if (!isConst) {
-                AssignValue(left, right.CalcValue(visits, ref cinfo));
-                return;
-            }
-            string name = left.VarName;
-            string type = left.Type;
-            if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
-                return;
-            string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
-            if (arrNums.Count > 0) {
-                Debug.Assert(arrNums.Count == 1);
-                int arrNum = arrNums[0];
-                if (suffix.Length > 0) {
-                    if (baseType == "vec") {
-                        if (s_Float4ArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "ivec") {
-                        if (s_Int4ArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "uvec") {
-                        if (s_Uint4ArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "bvec") {
-                        if (s_Bool4ArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                }
-                else {
-                    if (baseType == "float") {
-                        if (s_FloatArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "int") {
-                        if (s_IntArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "uint") {
-                        if (s_UintArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "bool") {
-                        if (s_BoolArrayVars.TryGetValue(name, out var val)) {
-                            foreach (var v in val) {
-                                v.IsValid = false;
-                            }
-                        }
-                    }
-                }
-            }
-            else {
-                if (suffix.Length > 0) {
-                    if (baseType == "vec") {
-                        var val = new Float4();
-                        if (val.Assign(consts)) {
-                            if (s_Float4Vars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_Float4Vars.Add(name, new Float4Val(val));
-                            }
-                        }
-                        else {
-                            if (s_Float4Vars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_Float4Vars.Add(name, new Float4Val());
-                            }
-                        }
-                    }
-                    else if (baseType == "ivec") {
-                        var val = new Int4();
-                        if (val.Assign(consts)) {
-                            if (s_Int4Vars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_Int4Vars.Add(name, new Int4Val(val));
-                            }
-                        }
-                        else {
-                            if (s_Int4Vars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_Int4Vars.Add(name, new Int4Val());
-                            }
-                        }
-                    }
-                    else if (baseType == "uvec") {
-                        var val = new Uint4();
-                        if (val.Assign(consts)) {
-                            if (s_Uint4Vars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_Uint4Vars.Add(name, new Uint4Val(val));
-                            }
-                        }
-                        else {
-                            if (s_Uint4Vars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_Uint4Vars.Add(name, new Uint4Val());
-                            }
-                        }
-                    }
-                    else if (baseType == "bvec") {
-                        var val = new Bool4();
-                        if (val.Assign(consts)) {
-                            if (s_Bool4Vars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_Bool4Vars.Add(name, new Bool4Val(val));
-                            }
-                        }
-                        else {
-                            if (s_Bool4Vars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_Bool4Vars.Add(name, new Bool4Val());
-                            }
-                        }
-                    }
-                }
-                else {
-                    var rightVal = consts[0];
-                    if (baseType == "float") {
-                        if (Calculator.TryGetFloat(rightVal, out var val)) {
-                            if (s_FloatVars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_FloatVars.Add(name, new FloatVal(val));
-                            }
-                        }
-                        else {
-                            if (s_FloatVars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_FloatVars.Add(name, new FloatVal());
-                            }
-                        }
-                    }
-                    else if (baseType == "int") {
-                        if (Calculator.TryGetInt(rightVal, out var val)) {
-                            if (s_IntVars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_IntVars.Add(name, new IntVal(val));
-                            }
-                        }
-                        else {
-                            if (s_IntVars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_IntVars.Add(name, new IntVal());
-                            }
-                        }
-                    }
-                    else if (baseType == "uint") {
-                        if (Calculator.TryGetUInt(rightVal, out var val)) {
-                            if (s_UintVars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_UintVars.Add(name, new UintVal(val));
-                            }
-                        }
-                        else {
-                            if (s_UintVars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_UintVars.Add(name, new UintVal());
-                            }
-                        }
-                    }
-                    else if (baseType == "bool") {
-                        if (Calculator.TryGetBool(rightVal, out var val)) {
-                            if (s_BoolVars.TryGetValue(name, out var v)) {
-                                v.Value = val;
-                                v.IsValid = true;
-                            }
-                            else {
-                                s_BoolVars.Add(name, new BoolVal(val));
-                            }
-                        }
-                        else {
-                            if (s_BoolVars.TryGetValue(name, out var v)) {
-                                v.IsValid = false;
-                            }
-                            else {
-                                s_BoolVars.Add(name, new BoolVal());
-                            }
                         }
                     }
                 }
@@ -3779,7 +3149,53 @@ namespace GlslRewriter
             if (arrNums.Count > 0) {
                 Debug.Assert(arrNums.Count == 1);
                 int arrNum = arrNums[0];
-                if (suffix.Length == 0) {
+                if (suffix.Length > 0) {
+                    if (baseType == "vec") {
+                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
+                            if (Float4.TryParse(right, out var val)) {
+                                vals[index].Value = val;
+                                vals[index].IsValid = true;
+                            }
+                            else {
+                                vals[index].IsValid = false;
+                            }
+                        }
+                    }
+                    else if (baseType == "ivec") {
+                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
+                            if (Int4.TryParse(right, out var val)) {
+                                vals[index].Value = val;
+                                vals[index].IsValid = true;
+                            }
+                            else {
+                                vals[index].IsValid = false;
+                            }
+                        }
+                    }
+                    else if (baseType == "uvec") {
+                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
+                            if (Uint4.TryParse(right, out var val)) {
+                                vals[index].Value = val;
+                                vals[index].IsValid = true;
+                            }
+                            else {
+                                vals[index].IsValid = false;
+                            }
+                        }
+                    }
+                    else if (baseType == "bvec") {
+                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
+                            if (Bool4.TryParse(right, out var val)) {
+                                vals[index].Value = val;
+                                vals[index].IsValid = true;
+                            }
+                            else {
+                                vals[index].IsValid = false;
+                            }
+                        }
+                    }
+                }
+                else {
                     if (baseType == "float") {
                         if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             if (Calculator.TryGetFloat(right, out var val)) {
@@ -3869,323 +3285,11 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void ArrayAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, ComputeGraphVarNode right)
+        public static void ObjectArrayAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
         {
-            if (!Calculator.TryGetInt(ix, out var index) || index < 0) {
-                return;
-            }
             string name = left.VarName;
             string type = left.Type;
-            string otherName = right.VarName;
-            string otherType = right.Type;
-            if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
-                return;
-            if (Config.ActiveConfig.SettingInfo.UnassignableArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
-                return;
-            }
-            string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
-            string baseType2 = Program.GetTypeRemoveSuffix(otherType, out var suffix2, out var arrNums2);
-            if (baseType == baseType2 && suffix == suffix2) {
-                if (arrNums.Count > 0) {
-                    Debug.Assert(arrNums.Count == 1);
-                    int arrNum = arrNums[0];
-                    if (suffix.Length > 0) {
-                        if (baseType == "vec") {
-                            if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_Float4Vars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "ivec") {
-                            if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_Int4Vars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "uvec") {
-                            if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_Uint4Vars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "bvec") {
-                            if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_Bool4Vars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        if (baseType == "float") {
-                            if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_FloatVars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "int") {
-                            if (s_IntArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_IntVars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "uint") {
-                            if (s_UintArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_UintVars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                        else if (baseType == "bool") {
-                            if (s_BoolArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                                if (s_BoolVars.TryGetValue(otherName, out var val)) {
-                                    vals[index].Value = val.Value;
-                                    vals[index].IsValid = true;
-                                }
-                                else {
-                                    vals[index].IsValid = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            else if (suffix.Length > 0) {
-                if (baseType == "vec") {
-                    if (s_Float4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = s_FloatVars.TryGetValue(otherName, out var val2) && val.Value.SetMember(ix, val2.Value);
-                    }
-                    else {
-                        var v = new Float4();
-                        if (s_FloatVars.TryGetValue(otherName, out var val2) && v.SetMember(ix, val2.Value))
-                            s_Float4Vars.Add(name, new Float4Val(v));
-                    }
-                }
-                else if (baseType == "ivec") {
-                    if (s_Int4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = s_IntVars.TryGetValue(otherName, out var val2) && val.Value.SetMember(ix, val2.Value);
-                    }
-                    else {
-                        var v = new Int4();
-                        if (s_IntVars.TryGetValue(otherName, out var val2) && v.SetMember(ix, val2.Value))
-                            s_Int4Vars.Add(name, new Int4Val(v));
-                    }
-                }
-                else if (baseType == "uvec") {
-                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = s_UintVars.TryGetValue(otherName, out var val2) && val.Value.SetMember(ix, val2.Value);
-                    }
-                    else {
-                        var v = new Uint4();
-                        if (s_UintVars.TryGetValue(otherName, out var val2) && v.SetMember(ix, val2.Value))
-                            s_Uint4Vars.Add(name, new Uint4Val(v));
-                    }
-                }
-                else if (baseType == "bvec") {
-                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = s_BoolVars.TryGetValue(otherName, out var val2) && val.Value.SetMember(ix, val2.Value);
-                    }
-                    else {
-                        var v = new Bool4();
-                        if (s_BoolVars.TryGetValue(otherName, out var val2) && v.SetMember(ix, val2.Value))
-                            s_Bool4Vars.Add(name, new Bool4Val(v));
-                    }
-                }
-            }
-        }
-        public static void ArrayAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, ComputeGraphCalcNode right, HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
-        {
-            bool isConst = true;
-            var consts = new List<DslExpression.CalculatorValue>();
-            foreach (var n in right.PrevNodes) {
-                if (n is ComputeGraphConstNode cn) {
-                    consts.Add(cn.Value);
-                }
-                else {
-                    isConst = false;
-                    break;
-                }
-            }
-            if (!isConst) {
-                ArrayAssignValue(left, ix, right.CalcValue(visits, ref cinfo));
-                return;
-            }
-            if (!Calculator.TryGetInt(ix, out var index) || index < 0) {
-                return;
-            }
-            string name = left.VarName;
-            string type = left.Type;
-            if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
-                return;
-            if (Config.ActiveConfig.SettingInfo.UnassignableArrayElements.TryGetValue(name, out var skipIndexes) && skipIndexes.Contains(index)) {
-                return;
-            }
-            string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
-            if (arrNums.Count > 0) {
-                Debug.Assert(arrNums.Count == 1);
-                int arrNum = arrNums[0];
-                if (suffix.Length > 0) {
-                    if (baseType == "vec") {
-                        if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            var val = new Float4();
-                            if (val.Assign(consts)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "ivec") {
-                        if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            var val = new Int4();
-                            if (val.Assign(consts)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "uvec") {
-                        if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            var val = new Uint4();
-                            if (val.Assign(consts)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "bvec") {
-                        if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            var val = new Bool4();
-                            if (val.Assign(consts)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                }
-                else {
-                    if (baseType == "float") {
-                        if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            if (Calculator.TryGetFloat(consts[0], out var val)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "int") {
-                        if (s_IntArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            if (Calculator.TryGetInt(consts[0], out var val)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                    else if (baseType == "uint") {
-                        if (s_UintArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
-                            if (Calculator.TryGetUInt(consts[0], out var val)) {
-                                vals[index].Value = val;
-                                vals[index].IsValid = true;
-                            }
-                            else {
-                                vals[index].IsValid = false;
-                            }
-                        }
-                    }
-                }
-            }
-            else if (suffix.Length > 0) {
-                var rightVal = consts[0];
-                if (baseType == "vec") {
-                    if (s_Float4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = val.Value.SetMember(ix, rightVal);
-                    }
-                    else {
-                        var v = new Float4();
-                        if (v.SetMember(ix, rightVal))
-                            s_Float4Vars.Add(name, new Float4Val(v));
-                    }
-                }
-                else if (baseType == "ivec") {
-                    if (s_Int4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = val.Value.SetMember(ix, rightVal);
-                    }
-                    else {
-                        var v = new Int4();
-                        if (v.SetMember(ix, rightVal))
-                            s_Int4Vars.Add(name, new Int4Val(v));
-                    }
-                }
-                else if (baseType == "uvec") {
-                    if (s_Uint4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = val.Value.SetMember(ix, rightVal);
-                    }
-                    else {
-                        var v = new Uint4();
-                        if (v.SetMember(ix, rightVal))
-                            s_Uint4Vars.Add(name, new Uint4Val(v));
-                    }
-                }
-                else if (baseType == "bvec") {
-                    if (s_Bool4Vars.TryGetValue(name, out var val)) {
-                        val.IsValid = val.Value.SetMember(ix, rightVal);
-                    }
-                    else {
-                        var v = new Bool4();
-                        if (v.SetMember(ix, rightVal))
-                            s_Bool4Vars.Add(name, new Bool4Val(v));
-                    }
-                }
-            }
+            ObjectArrayAssignValue(name, type, ix, m, right);
         }
         public static void ObjectArrayAssignValue(string name, string type, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
         {

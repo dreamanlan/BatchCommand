@@ -1144,7 +1144,7 @@ namespace GlslRewriter
                     //计算总是要执行，输出按配置可能跳过
                     cgcn.DoCalc();
                     if (Config.CalcSettingForVariable(p, out var isVariableSetting, out var markValue, out var markExp, out var maxLvlForExp, out var maxLenForExp, out var multiline, out var expandedOnlyOnce)) {
-                        GenerateValueAndExpression(funcData, p, cgcn, isVariableSetting, markValue, markExp, true, maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce);
+                        GenerateValueAndExpression(funcData, p, cgcn, isVariableSetting, markValue, markExp, true, maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce, out var val);
                     }
                 }
                 else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!=" && funcId != "<=" && funcId != ">=") {
@@ -1523,11 +1523,12 @@ namespace GlslRewriter
 
                 var ifNode = new ComputeGraphIfStatement(CurFuncInfo());
                 AddComputeGraphRootNode(ifNode);
+                DslExpression.CalculatorValue ifVal = DslExpression.CalculatorValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     ifNode.AddCondition(semanticInfo.GraphNode);
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out ifVal);
                 }
                 if (ifFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
@@ -1550,7 +1551,7 @@ namespace GlslRewriter
                             setVars.Add(vname);
                         if (s_SSA) {
                             var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
-                            AddPhiVarAssignExpression(assignFunc);
+                            AddPhiVarAssignExpression(assignFunc, ifVal.IsBoolean && ifVal.GetBool());
                             ifFunc.AddParam(assignFunc);
                         }
                     }
@@ -1566,7 +1567,7 @@ namespace GlslRewriter
                         Debug.Assert(null != insertBeforeOuter);
                         foreach (var vname in setVars) {
                             var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
-                            AddPhiVarAssignExpression(assignFunc, ref expListCt);
+                            AddPhiVarAssignExpression(assignFunc, ifVal.IsBoolean && !ifVal.GetBool(), ref expListCt);
                             insertBeforeOuter.Add(assignFunc);
 
                             var curAliasInfos = CurVarAliasInfos();
@@ -1592,16 +1593,22 @@ namespace GlslRewriter
             var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
             HashSet<string> setVars = new HashSet<string>();
             int expListCt = s_ExpressionList.Count;
+            bool useBranch = false;
             foreach (var valOrFunc in ifStatement.Functions) {
                 var f = valOrFunc.AsFunction;
                 if (null != f) {
+                    DslExpression.CalculatorValue ifVal = DslExpression.CalculatorValue.NullObject;
                     if (f.IsHighOrder) {
                         var semanticInfo = new SemanticInfo();
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
                         if (null != semanticInfo.GraphNode) {
                             ifNode.AddCondition(semanticInfo.GraphNode);
-                            GenerateValueAndExpression(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false);
+                            if (GenerateValueAndExpression(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false, out ifVal))
+                                useBranch = true;
                         }
+                    }
+                    else if (valOrFunc == ifStatement.Last) {
+                        useBranch = true;
                     }
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
@@ -1621,7 +1628,7 @@ namespace GlslRewriter
                             setVars.Add(vname);
                         if (s_SSA) {
                             var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, CurVarAliasInfos(), true);
-                            AddPhiVarAssignExpression(assignFunc);
+                            AddPhiVarAssignExpression(assignFunc, ifVal.IsBoolean && ifVal.GetBool());
                             f.AddParam(assignFunc);
                         }
                     }
@@ -1639,7 +1646,7 @@ namespace GlslRewriter
                 Debug.Assert(null != insertBeforeOuter);
                 foreach (var vname in setVars) {
                     var assignFunc = BuildPhiVarAliasAssignment(vname, suffix, oldAliasInfos, false);
-                    AddPhiVarAssignExpression(assignFunc, ref expListCt);
+                    AddPhiVarAssignExpression(assignFunc, !useBranch, ref expListCt);
                     insertBeforeOuter.Add(assignFunc);
 
                     var curAliasInfos = CurVarAliasInfos();
@@ -1669,11 +1676,12 @@ namespace GlslRewriter
 
                 var forNode = new ComputeGraphForStatement(CurFuncInfo());
                 AddComputeGraphRootNode(forNode);
+                DslExpression.CalculatorValue forVal = DslExpression.CalculatorValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     forNode.ForFunc = semanticInfo.GraphNode;
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out forVal);
                 }
                 if (forFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
@@ -1690,7 +1698,7 @@ namespace GlslRewriter
 
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(forFunc);
-                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, forFunc, expListCt, forVal.IsBoolean && forVal.GetBool(), out var newRefVarValDataOuter, out insertBeforeOuter);
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
@@ -1718,11 +1726,12 @@ namespace GlslRewriter
 
                 var whileNode = new ComputeGraphWhileStatement(CurFuncInfo());
                 AddComputeGraphRootNode(whileNode);
+                DslExpression.CalculatorValue whileVal = DslExpression.CalculatorValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     whileNode.WhileFunc = semanticInfo.GraphNode;
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false);
+                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out whileVal);
                 }
                 if (whileFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
@@ -1739,7 +1748,7 @@ namespace GlslRewriter
 
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(whileFunc);
-                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
+                    ProcessLoopPhiVarAlias(suffix, oldAliasInfos, whileFunc, expListCt, whileVal.IsBoolean && whileVal.GetBool(), out var newRefVarValDataOuter, out insertBeforeOuter);
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
@@ -1785,7 +1794,7 @@ namespace GlslRewriter
 
                 SetCurBlockPhiSuffix(suffix);
                 TransformFunctionStatements(doFunc);
-                ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, expListCt, out var newRefVarValDataOuter, out insertBeforeOuter);
+                ProcessLoopPhiVarAlias(suffix, oldAliasInfos, doFunc, expListCt, true, out var newRefVarValDataOuter, out insertBeforeOuter);
                 PopBlock();
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                     --s_Indent;
@@ -1802,7 +1811,7 @@ namespace GlslRewriter
             TransformGeneralCall(whileFunc, ref semanticInfo);
             if (null != semanticInfo.GraphNode) {
                 doWhileNode.WhileFunc = semanticInfo.GraphNode;
-                GenerateValueAndExpression(whileFunc, semanticInfo.GraphNode, true, true, true, true);
+                GenerateValueAndExpression(whileFunc, semanticInfo.GraphNode, true, true, true, true, out var whileVal);
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1922,7 +1931,7 @@ namespace GlslRewriter
             semanticInfo.ResultType = cgcn.Type;
         }
 
-        private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, int expListCountBeforeLoop, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
+        private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, int expListCountBeforeLoop, bool isLoopTrue, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
         {
             newRefVarValDataOuter = new Dictionary<string, List<ValueData>>();
             insertBeforeOuter = new List<ISyntaxComponent>();
@@ -1943,11 +1952,11 @@ namespace GlslRewriter
                 //在循环结束前添加phi变量赋值
                 var assignFunc = BuildPhiVarAliasAssignment(vname, phiSuffix, CurVarAliasInfos(), true);
                 loopFunc.AddParam(assignFunc);
-                AddPhiVarAssignExpression(assignFunc);
+                AddPhiVarAssignExpression(assignFunc, isLoopTrue);
 
-                //在循环体前添加phi变量赋值，这里有可能为外层循环引入未决别名
+                //在循环体前添加phi变量赋值，这里有可能为外层循环引入未决别名(phi变量在循环前总是计算值)
                 var assignFunc2 = BuildPhiVarAliasAssignment(vname, phiSuffix, oldAliasInfos, false, out var refVarData);
-                AddPhiVarAssignExpression(assignFunc2, ref expListCountBeforeLoop);
+                AddPhiVarAssignExpression(assignFunc2, true, ref expListCountBeforeLoop);
                 if (newRefVarValDataOuter.TryGetValue(vname, out var list)) {
                     if (list.Contains(refVarData))
                         list.Add(refVarData);
@@ -1997,16 +2006,22 @@ namespace GlslRewriter
             }
             return assignFunc;
         }
-        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc)
+        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc, bool useThisValue)
         {
             int index = -1;
-            AddPhiVarAssignExpression(assignFunc, ref index);
+            AddPhiVarAssignExpression(assignFunc, useThisValue, ref index);
         }
-        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc, ref int index)
+        private static void AddPhiVarAssignExpression(Dsl.FunctionData assignFunc, bool useThisValue, ref int index)
         {
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 var key = assignFunc.GetParamId(0);
                 var val = assignFunc.GetParamId(1);
+                if (useThisValue) {
+                    var vnode = FindComputeGraphVarNode(val);
+                    if (null != vnode) {
+                        Config.ActiveConfig.SettingInfo.AddAssignment(key, vnode.Type, vnode.GetValue());
+                    }
+                }
                 //确定使用的phi变量生成赋值语句
                 if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(key)) {
                     var line = s_ExpressionBuilder;
@@ -2027,34 +2042,38 @@ namespace GlslRewriter
                 }
             }
         }
-        private static void GenerateValueAndExpression(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon)
+        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.CalculatorValue val)
         {
+            bool ret = false;
+            val = DslExpression.CalculatorValue.NullObject;
             var v1str = SplitInfoForVariable.s_DefMaxLvl;
             var v2str = SplitInfoForVariable.s_DefMaxLen;
             var v3str = SplitInfoForVariable.s_DefMultiline;
             var v4str = SplitInfoForVariable.s_DefExpandOnce;
             if (Calculator.TryGetInt(v1str, out var lvlForExp) && Calculator.TryGetInt(v2str, out var lenForExp)
                 && Calculator.TryGetBool(v3str, out var ml) && Calculator.TryGetBool(v4str, out var once)) {
-                GenerateValueAndExpression(funcData, null, cgn, isVariableSetting, markValue, markExp, addSemiColon, lvlForExp, lenForExp, ml, once);
+                ret = GenerateValueAndExpression(funcData, null, cgn, isVariableSetting, markValue, markExp, addSemiColon, lvlForExp, lenForExp, ml, once, out val);
             }
+            return ret;
         }
-        private static void GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce)
+        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce, out DslExpression.CalculatorValue val)
         {
             int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
             int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
-            string val = markValue ? cgn.GetValue().ToString() : string.Empty;
+            val = cgn.GetValue();
+            string valStr = markValue ? val.ToString() : string.Empty;
             string expWithVal = markValue && markExp ? cgn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, true, true)) : string.Empty;
             string exp = markExp ? cgn.GetExpression(new ComputeSetting(maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce)) : string.Empty;
             string singleLineExp = exp;
             if (multiline) {
                 singleLineExp = markExp ? cgn.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true)) : string.Empty;
 
-                if (!string.IsNullOrEmpty(val) || markExp) {
-                    var sb = new StringBuilder(val.Length + exp.Length + 128);
+                if (!string.IsNullOrEmpty(valStr) || markExp) {
+                    var sb = new StringBuilder(valStr.Length + exp.Length + 128);
                     sb.Append("/* ");
-                    if (!string.IsNullOrEmpty(val))
-                        sb.Append(val);
-                    if (!string.IsNullOrEmpty(val) && markExp)
+                    if (!string.IsNullOrEmpty(valStr))
+                        sb.Append(valStr);
+                    if (!string.IsNullOrEmpty(valStr) && markExp)
                         sb.Append("  <=>  ");
                     if (markExp) {
                         if (markValue) {
@@ -2071,12 +2090,12 @@ namespace GlslRewriter
                 }
             }
             else {
-                if (!string.IsNullOrEmpty(val) || markExp) {
-                    var sb = new StringBuilder(val.Length + exp.Length + 128);
+                if (!string.IsNullOrEmpty(valStr) || markExp) {
+                    var sb = new StringBuilder(valStr.Length + exp.Length + 128);
                     sb.Append("// ");
-                    if (!string.IsNullOrEmpty(val))
-                        sb.Append(val);
-                    if (!string.IsNullOrEmpty(val) && markExp)
+                    if (!string.IsNullOrEmpty(valStr))
+                        sb.Append(valStr);
+                    if (!string.IsNullOrEmpty(valStr) && markExp)
                         sb.Append("  <=>  ");
                     if (markExp) {
                         if (markValue)
@@ -2090,14 +2109,14 @@ namespace GlslRewriter
 
             if (markExp && isVariableSetting && Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                 var line = s_ExpressionBuilder;
-                if (!string.IsNullOrEmpty(val) || markValue) {
+                if (!string.IsNullOrEmpty(valStr) || markValue) {
                     line.Length = 0;
                     line.Append(Literal.GetIndentString(s_Indent));
                     line.Append("// ");
-                    if (!string.IsNullOrEmpty(val)) {
-                        line.Append(val);
+                    if (!string.IsNullOrEmpty(valStr)) {
+                        line.Append(valStr);
                     }
-                    if (!string.IsNullOrEmpty(val) && markValue)
+                    if (!string.IsNullOrEmpty(valStr) && markValue)
                         line.Append("  <=>  ");
                     if (markValue) {
                         line.Append(expWithVal);
@@ -2140,6 +2159,7 @@ namespace GlslRewriter
                     s_ExpressionList.Add(line.ToString());
                 }
             }
+            return !val.IsNullObject;
         }
 
         //变量的SSA处理

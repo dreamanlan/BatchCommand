@@ -15,6 +15,7 @@ using BatchCommand;
 using System.Collections;
 using DslExpression;
 using System.Transactions;
+using Microsoft.VisualBasic;
 
 namespace GlslRewriter
 {
@@ -1699,6 +1700,10 @@ namespace GlslRewriter
                     if (string.IsNullOrEmpty(curType) && !string.IsNullOrEmpty(type))
                         UsedVariables[vname] = type;
                 }
+            }
+            internal void AddAssignment(string vname, string type, DslExpression.CalculatorValue val)
+            {
+                VariableAssignments[vname] = new ValueInfo { Type = type, Value = val };
             }
 
             internal static DslExpression.CalculatorValue s_DefSplitLevel = 15;

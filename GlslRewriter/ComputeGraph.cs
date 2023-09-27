@@ -236,7 +236,7 @@ namespace GlslRewriter
         }
         public DslExpression.CalculatorValue CalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
-            if (m_HaveValue) {
+            if (!m_HaveValue) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
                     if (visits.Contains(this)) {
                         Debug.Assert(false);
@@ -758,9 +758,6 @@ namespace GlslRewriter
                         if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
                             VariableTable.AssignValue(vnode, vnode2);
                         }
-                        else if (PrevNodes[0] is ComputeGraphCalcNode calcNode2) {
-                            VariableTable.AssignValue(vnode, calcNode2, visits, ref cinfo);
-                        }
                         else {
                             VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo));
                         }
@@ -773,20 +770,13 @@ namespace GlslRewriter
                     }
                     else if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode3 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode3) {
                         //var[ix] = exp
-                        if (PrevNodes[0] is ComputeGraphVarNode varNode) {
-                            VariableTable.ArrayAssignValue(vnode3, cnode3.Value, varNode);
-                        }
-                        else if (PrevNodes[0] is ComputeGraphCalcNode calcNode2) {
-                            VariableTable.ArrayAssignValue(vnode3, cnode3.Value, calcNode2, visits, ref cinfo);
-                        }
-                        else {
-                            VariableTable.ArrayAssignValue(vnode3, cnode3.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
-                        }
+                        VariableTable.ArrayAssignValue(vnode3, cnode3.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                     }
                     else if (calcNode.Operator == "." && calcNode.PrevNodes[0] is ComputeGraphCalcNode calcNode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode4) {
                         if (calcNode2.Operator == "[]" && calcNode2.PrevNodes[0] is ComputeGraphVarNode vnode5 && calcNode2.PrevNodes[1] is ComputeGraphConstNode cnode5) {
                             //var[ix].member = exp
                             //暂未遇到
+                            VariableTable.ObjectArrayAssignValue(vnode5, cnode5.Value, cnode4.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                         }
                     }
                 }

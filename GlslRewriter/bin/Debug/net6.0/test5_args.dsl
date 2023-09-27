@@ -2463,7 +2463,7 @@ vs
     };
     vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 0);
     uniform("d:/UC/cloud_5/vs_cbuf1.csv", "uvec4"){
-        add_range(0,128);
+        add_range(0,15);
     };
     uniform("d:/UC/cloud_5/vs_cbuf8.csv", "uvec4"){
         add_range(0,7);
@@ -2479,7 +2479,7 @@ vs
         add(1,22,23,24,25,26,27,28,54,55,57,60,61);
     };
     uniform("d:/UC/cloud_5/vs_cbuf16.csv", "uvec4"){
-        add_range(0,128);
+        add_range(0,15);
     };
     calculator
     {

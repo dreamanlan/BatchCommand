@@ -352,25 +352,25 @@ vs
         add(1,54,55,57,60,61);
         add_range(22,28);
     };
-    vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO/vertex_in_attr4.csv"){
+    vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_2/vertex_in_attr4.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO/vertex_in_attr5.csv"){
+    vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_2/vertex_in_attr5.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO/vertex_in_attr6.csv"){
+    vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_2/vertex_in_attr6.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO/vertex_in_attr7.csv"){
+    vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_2/vertex_in_attr7.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr9_array", "vec4", "d:/uc/VAO/vertex_in_attr9.csv"){
+    vao_attr("var in_attr9_array", "vec4", "d:/uc/VAO_2/vertex_in_attr9.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr10_array", "vec4", "d:/uc/VAO/vertex_in_attr10.csv"){
+    vao_attr("var in_attr10_array", "vec4", "d:/uc/VAO_2/vertex_in_attr10.csv"){
         add_range(0,35);
     };
-    vao_attr("var in_attr11_array", "vec4", "d:/uc/VAO/vertex_in_attr11.csv"){
+    vao_attr("var in_attr11_array", "vec4", "d:/uc/VAO_2/vertex_in_attr11.csv"){
         add_range(0,35);
     };
     calculator

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.AccessControl;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -534,14 +535,32 @@ namespace GlslRewriter
                 }
             }
             else if (func == "bitfieldExtract") {
-                if (TryGetUInt(args[0], out var uval) && TryGetInt(args[1], out var offset) && TryGetInt(args[2], out var bits)) {
-                    if (offset >= 0 && bits >= 0 && offset + bits <= sizeof(uint)) {
-                        if (bits == 0) {
+                if (args[0].IsUnsignedInteger && TryGetUInt(args[0], out var uval) && TryGetInt(args[1], out var uoffset) && TryGetInt(args[2], out var ubits)) {
+                    if (uoffset >= 0 && ubits >= 0 && uoffset + ubits <= sizeof(uint) * 8) {
+                        if (ubits == 0) {
                             val = DslExpression.CalculatorValue.From((uint)0);
                         }
                         else {
-                            int rshift = (32 - (offset + bits));
-                            uint v = (uval >> rshift) & (0xffffffff >> rshift);
+                            //unsigned
+                            uint mask = (1u << ubits) - 1u;
+                            uint v = (uval >> uoffset) & mask;
+                            val = DslExpression.CalculatorValue.From(v);
+                        }
+                        succ = true;
+                    }
+                }
+                else if (args[0].IsSignedInteger && TryGetInt(args[0], out var ival) && TryGetInt(args[1], out var ioffset) && TryGetInt(args[2], out var ibits)) {
+                    if (ioffset >= 0 && ibits >= 0 && ioffset + ibits <= sizeof(uint) * 8) {
+                        if (ibits == 0) {
+                            val = DslExpression.CalculatorValue.From((uint)0);
+                        }
+                        else {
+                            //signed
+                            int shifted = ival >> ioffset;
+                            int signBit = shifted & (int)(1u << (ibits - 1));
+                            int mask = (int)((1u << ibits) - 1u);
+
+                            int v = -signBit | (shifted & mask);
                             val = DslExpression.CalculatorValue.From(v);
                         }
                         succ = true;
@@ -549,18 +568,16 @@ namespace GlslRewriter
                 }
             }
             else if(func== "bitfieldInsert") {
-                if (TryGetUInt(args[0], out var uval) && TryGetUInt(args[1], out var insert) && TryGetInt(args[2], out var offset) && TryGetInt(args[3], out var bits)) {
-                    if (offset >= 0 && bits>=0 && offset + bits <= sizeof(uint)) {
-                        if (bits == 0) {
+                if (TryGetUInt(args[0], out var uval) && TryGetUInt(args[1], out var uinsert) && TryGetInt(args[2], out var uoffset) && TryGetInt(args[3], out var ubits)) {
+                    if (uoffset >= 0 && ubits>=0 && uoffset + ubits <= sizeof(uint) * 8) {
+                        if (ubits == 0) {
                             val = DslExpression.CalculatorValue.From(uval);
                         }
                         else {
-                            int rshift = (32 - (offset + bits));
-                            uint v = (insert >> rshift) & (0xffffffff >> rshift);
-                            int lshift = rshift + bits;
-                            int lshift2 = rshift;
-                            int rshift2 = offset + bits;
-                            v = (uval & ((0xffffffff << lshift) | (0xffffffff >> rshift2))) | (v << lshift2);
+                            uint maskBits = (1u << ubits) - 1u;
+                            uint mask = maskBits << uoffset;
+                            uint src = uinsert << uoffset;
+                            uint v = (src & mask) | (uval & ~mask);
                             val = DslExpression.CalculatorValue.From(v);
                         }
                         succ = true;

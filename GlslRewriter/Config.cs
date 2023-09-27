@@ -67,6 +67,7 @@ namespace GlslRewriter
                     sb.Length = 0;
 
                     int start = s_VertexStructInits.Count;
+                    bool first = true;
                     var idxHashset = new HashSet<int>();
                     for (ix = 1; ix < lines.Length; ++ix) {
                         var line = lines[ix];
@@ -94,7 +95,6 @@ namespace GlslRewriter
                             s_VertexStructInits.Add(sb.ToString());
                             sb.Length = 0;
 
-                            bool first = true;
                             int j = 0;
                             sb.Append("\t");
                             for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
@@ -136,12 +136,16 @@ namespace GlslRewriter
                         }
                     }
 
-                    sb.Append("};");
+                    const string c_EndStr = "};";
+
+                    sb.Append(c_EndStr);
                     s_VertexStructInits.Add(sb.ToString());
                     sb.Length = 0;
 
                     foreach(var pair in s_VertexAttrInits) {
-                        pair.Value.Add("};");
+                        var list = pair.Value;
+                        if (list.Count > 0 && list[list.Count - 1] != c_EndStr)
+                            pair.Value.Add(c_EndStr);
                     }
                 }
             }

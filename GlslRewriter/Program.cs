@@ -1975,7 +1975,8 @@ namespace GlslRewriter
         }
         private static Dsl.FunctionData BuildPhiVarAliasAssignment(string vname, string phiSuffix, Dictionary<string, VarAliasInfo> aliasInfos, bool updateVarAliasInfo, out Dsl.ValueData refVarValDataOuter)
         {
-            //注：phi变量赋值不生成计算结点，因为phi变量本身不是SSA形式，我们在计算图上phi变量这里断开前后依赖，实际代码需要在最后手动处理
+            //注：phi变量赋值不生成计算结点，因为phi变量本身不是SSA形式，我们在计算图上phi变量这里断开前后依赖，我们在生成phi变量赋值表达式的时候根据条件表达式的值会尝试给phi变量赋一个值，
+            //或者通过variable_assignment手动指定一个值（对if语句，自动赋值应该通常是正确的，手动指定可能主要用于循环情形）
             var assignFunc = new Dsl.FunctionData();
             assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
             assignFunc.SetOperatorParamClass();

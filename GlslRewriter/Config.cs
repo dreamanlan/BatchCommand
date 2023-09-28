@@ -16,6 +16,7 @@ using System.Collections;
 using DslExpression;
 using System.Transactions;
 using Microsoft.VisualBasic;
+using System.Text.RegularExpressions;
 
 namespace GlslRewriter
 {
@@ -461,6 +462,21 @@ namespace GlslRewriter
                 s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
             }
         }
+        internal static string ReplaceString(string txt)
+        {
+            string ret = txt;
+            if (Config.ActiveConfig.StringReplacements.Count > 0) {
+                foreach(var info in Config.ActiveConfig.StringReplacements) {
+                    if (null != info.SrcRegex) {
+                        ret = info.SrcRegex.Replace(ret, info.Dst);
+                    }
+                    else {
+                        ret = ret.Replace(info.Src, info.Dst);
+                    }
+                }
+            }
+            return ret;
+        }
         internal static bool CalcSettingForVariable(Dsl.ISyntaxComponent varDsl, out bool isVariableSetting, out bool markValue, out bool markExpression, out int maxLevelForExp, out int maxLengthForExp, out bool multiline, out bool expandedOnlyOnce)
         {
             var settingInfo = ActiveConfig.SettingInfo;
@@ -664,6 +680,9 @@ namespace GlslRewriter
                     }
                     else if (id == "vao_attr") {
                         ParseVAOImport(cfgInfo, pfd);
+                    }
+                    else if (id == "string_replacement") {
+                        ParseStringReplacement(cfgInfo, pfd);
                     }
                     else if (id == "calculator") {
                         ParseCalculator(cfgInfo, pfd);
@@ -1372,6 +1391,30 @@ namespace GlslRewriter
 
             cfg.VAOImports.Add(info);
         }
+        private static void ParseStringReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "string") {
+                            var src = fd.GetParamId(0);
+                            var dst = fd.GetParamId(1);
+                            var info = new StringReplacement { Src = src, Dst = dst };
+                            cfg.StringReplacements.Add(info);
+                        }
+                        else if (fid == "regex") {
+                            var src = fd.GetParamId(0);
+                            var dst = fd.GetParamId(1);
+                            var regex = new Regex(src, RegexOptions.Compiled);
+                            var info = new StringReplacement { Src = src, Dst = dst, SrcRegex = regex };
+                            cfg.StringReplacements.Add(info);
+                        }
+                    }
+                }
+            }
+        }
         private static void ParseCalculator(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             if (dslCfg.HaveStatement()) {
@@ -1734,6 +1777,12 @@ namespace GlslRewriter
             internal string File = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
+        internal class StringReplacement
+        {
+            internal string Src = string.Empty;
+            internal string Dst = string.Empty;
+            internal Regex? SrcRegex = null;
+        }
         internal delegate DslExpression.CalculatorValue CalculatorValueDelegation();
         internal class CalculatorInfo
         {
@@ -1748,6 +1797,7 @@ namespace GlslRewriter
             internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
             internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
+            internal List<StringReplacement> StringReplacements = new List<StringReplacement>();
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
             internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
         }

@@ -86,6 +86,9 @@ namespace GlslRewriter
                     else if (0 == string.Compare(args[i], "-i", true)) {
                         s_InteractiveComputing = true;
                     }
+                    else if (0 == string.Compare(args[i], "-r", true)) {
+                        s_DoStringReplacement = true;
+                    }
                     else if (0 == string.Compare(args[i], "-ssa", true)) {
                         s_SSA = true;
                     }
@@ -192,12 +195,13 @@ namespace GlslRewriter
         }
         static void PrintHelp()
         {
-            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-i] [-src] glsl_file");
+            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
             Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
             Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
             Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
             Console.WriteLine(" [-cs] glsl_file is compute shader");
             Console.WriteLine(" [-i] interactive computing mode, don't write outfile");
+            Console.WriteLine(" [-r] do string replacement");
             Console.WriteLine(" [-ssa] transform to SSA (default)");
             Console.WriteLine(" [-nossa] don't transform to SSA");
             Console.WriteLine(" [-src] glsl_file source glsl file, -src can be omitted when file is the last argument");
@@ -414,7 +418,11 @@ namespace GlslRewriter
                         outBuilder.AppendLine(line);
                     }
                     outBuilder.AppendLine("}");
-                    File.WriteAllText(outFile, outBuilder.ToString());
+                    string txt = outBuilder.ToString();
+                    if (s_DoStringReplacement) {
+                        txt = Config.ReplaceString(txt);
+                    }
+                    File.WriteAllText(outFile, txt);
                 }
             }
         }
@@ -3887,6 +3895,7 @@ namespace GlslRewriter
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
         internal static bool s_InteractiveComputing = false;
+        internal static bool s_DoStringReplacement = false;
         internal static bool s_SSA = true;
         internal const string c_PhiTagSeparator = "_phi_";
         internal const string c_AliasSeparator = "_";

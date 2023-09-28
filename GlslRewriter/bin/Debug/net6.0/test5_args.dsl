@@ -22,6 +22,11 @@ vs
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
+            split_on("texture", 3);
+            split_on("textureLod", 3);
+            split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 
@@ -505,9 +510,14 @@ vs
             f_9_93,
             f2_0_1,
             f2_0_2,
+            f4_0_0,
             f4_0_1,
             f4_0_2,
+            f4_0_3,
             f4_0_4,
+            f4_0_5,
+            f4_0_6,
+            f4_0_7,
             pf_0_1,
             pf_0_10,
             pf_0_11,
@@ -2458,7 +2468,7 @@ vs
             u_9_phi_40,
             u_9_phi_42,
             u_9_phi_52,
-            u2_0_2            
+            u2_0_2,
         };
     };
     vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 0);
@@ -2496,6 +2506,107 @@ vs
     vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv"){
         add_range(0,35);
     };
+    string_replacement
+    {
+        string("uvec2", "uint2");
+        string("uvec3", "uint3");
+        string("uvec4", "uint4");
+        string("ivec2", "int2");
+        string("ivec3", "int3");
+        string("ivec4", "int4");
+        string("bvec2", "bool2");
+        string("bvec3", "bool3");
+        string("bvec4", "bool4");
+        regex(@"\btexture\b", "textureSample");
+        regex(@"\bvec2\b", "float2");
+        regex(@"\bvec3\b", "float3");
+        regex(@"\bvec4\b", "float4");
+
+        string("in_attr0","v.vertex");
+        string("in_attr2","v.uv");
+        string("in_attr3","uni_attr3");
+        string("in_attr4","uni_attr4");
+        string("in_attr5","uni_attr5");
+        string("in_attr6","uni_attr6");
+        string("in_attr7","uni_attr7");
+
+        string("gl_Position","o.vertex");
+        string("out_attr0","o.fs_attr0");
+        string("out_attr1","o.fs_attr1");
+        string("out_attr2","o.fs_attr2");
+        string("out_attr3","o.fs_attr3");
+        string("out_attr4","o.fs_attr4");
+        string("out_attr5","o.fs_attr5");
+        string("out_attr6","o.fs_attr6");
+        string("out_attr7","o.fs_attr7");
+        string("out_attr8","o.fs_attr8");
+        string("out_attr9","o.fs_attr9");
+        string("out_attr10","o.fs_attr10");
+        string("out_attr11","o.fs_attr11");
+        string("out_attr12","o.fs_attr12");
+        string("out_attr13","o.fs_attr13");
+        string("out_attr14","o.fs_attr14");
+        string("out_attr15","o.fs_attr15");
+        string("out_attr16","o.fs_attr16");
+        string("out_attr17","o.fs_attr17");
+        string("out_attr18","o.fs_attr18");
+        string("out_attr19","o.fs_attr19");
+        string("out_attr20","o.fs_attr20");
+        string("out_attr21","o.fs_attr21");
+        string("out_attr22","o.fs_attr22");
+        string("out_attr23","o.fs_attr23");
+
+        string("vs_cbuf8[0]","view_proj[0]");
+        string("vs_cbuf8[1]","view_proj[1]");
+        string("vs_cbuf8[2]","view_proj[2]");
+        string("vs_cbuf8[3]","view_proj[3]");
+        string("vs_cbuf8[4]","view_proj[4]");
+        string("vs_cbuf8[5]","view_proj[5]");
+        string("vs_cbuf8[6]","view_proj[6]");
+        string("vs_cbuf8[7]","view_proj[7]");
+        string("vs_cbuf8[24]","vs_cbuf8_24");
+        string("vs_cbuf8[25]","vs_cbuf8_25");
+        string("vs_cbuf8[26]","vs_cbuf8_26");
+        string("vs_cbuf8[28]","vs_cbuf8_28");
+        string("vs_cbuf8[29]","camera_wpos");
+        string("vs_cbuf8[30]","vs_cbuf8_30");
+        string("vs_cbuf9[7]","vs_cbuf9_7");
+        string("vs_cbuf9[12]","vs_cbuf9_12");
+        string("vs_cbuf9[13]","vs_cbuf9_13");
+        string("vs_cbuf9[14]","vs_cbuf9_14");
+        string("vs_cbuf9[15]","vs_cbuf9_15");
+        string("vs_cbuf9[16]","vs_cbuf9_16");
+        string("vs_cbuf9[78]","vs_cbuf9_78");
+        string("vs_cbuf9[113]","vs_cbuf9_113");
+        string("vs_cbuf9[129]","vs_cbuf9_129");
+        string("vs_cbuf9[141]","vs_cbuf9_141");
+        string("vs_cbuf9[142]","vs_cbuf9_142");
+        string("vs_cbuf9[143]","vs_cbuf9_143");
+        string("vs_cbuf9[144]","vs_cbuf9_144");
+        string("vs_cbuf9[145]","vs_cbuf9_145");
+        string("vs_cbuf9[146]","vs_cbuf9_146");
+        string("vs_cbuf9[147]","vs_cbuf9_147");
+        string("vs_cbuf10[0]","vs_cbuf10_0");
+        string("vs_cbuf10[1]","vs_cbuf10_1");
+        string("vs_cbuf10[2]","vs_cbuf10_2");
+        string("vs_cbuf10[3]","vs_cbuf10_3");
+        string("vs_cbuf10[4]","vs_cbuf10_4");
+        string("vs_cbuf10[5]","vs_cbuf10_5");
+        string("vs_cbuf10[6]","vs_cbuf10_6");
+        string("vs_cbuf15[1]","vs_cbuf15_1");
+        string("vs_cbuf15[22]","vs_cbuf15_22");
+        string("vs_cbuf15[23]","vs_cbuf15_23");
+        string("vs_cbuf15[24]","vs_cbuf15_24");
+        string("vs_cbuf15[25]","vs_cbuf15_25");
+        string("vs_cbuf15[26]","vs_cbuf15_26");
+        string("vs_cbuf15[27]","vs_cbuf15_27");
+        string("vs_cbuf15[28]","vs_cbuf15_28");
+        string("vs_cbuf15[54]","vs_cbuf15_54");
+        string("vs_cbuf15[55]","vs_cbuf15_55");
+        string("vs_cbuf15[57]","vs_cbuf15_57");
+        string("vs_cbuf15[60]","vs_cbuf15_60");
+        string("vs_cbuf15[61]","vs_cbuf15_61");
+    };
     calculator
     {
         textureSize(*,*) = vec2(512,128);
@@ -2527,6 +2638,11 @@ ps
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
+            split_on("texture", 3);
+            split_on("textureLod", 3);
+            split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 
@@ -2622,8 +2738,12 @@ ps
             f2_0_0,
             f2_0_2,
             f2_0_3,
+            f4_0_0,
             f4_0_10,
             f4_0_11,
+            f4_0_12,
+            f4_0_3,
+            f4_0_4,
             f4_0_5,
             f4_0_6,
             f4_0_7,
@@ -2805,7 +2925,7 @@ ps
             u_8_2,
             u_8_phi_8,
             u_9_0,
-            u_9_1
+            u_9_1,
         };
     };
     ps_attr("d:/UC/cloud_5/vs_out.csv", 0){
@@ -2849,6 +2969,74 @@ ps
     };
     uniform("d:/UC/cloud_5/fs_cbuf16.csv", "uvec4"){
         add(7,10);
+    };
+    string_replacement
+    {
+        string("uvec2", "uint2");
+        string("uvec3", "uint3");
+        string("uvec4", "uint4");
+        string("ivec2", "int2");
+        string("ivec3", "int3");
+        string("ivec4", "int4");
+        string("bvec2", "bool2");
+        string("bvec3", "bool3");
+        string("bvec4", "bool4");
+        regex(@"\btexture\b", "textureSample");
+        regex(@"\bvec2\b", "float2");
+        regex(@"\bvec3\b", "float3");
+        regex(@"\bvec4\b", "float4");
+
+        string("in_attr0","i.fs_attr0");
+        string("in_attr1","i.fs_attr1");
+        string("in_attr2","i.fs_attr2");
+        string("in_attr3","i.fs_attr3");
+        string("in_attr4","i.fs_attr4");
+        string("in_attr5","i.fs_attr5");
+        string("in_attr6","i.fs_attr6");
+        string("in_attr7","i.fs_attr7");
+        string("in_attr8","i.fs_attr8");
+        string("in_attr9","i.fs_attr9");
+        string("in_attr10","i.fs_attr10");
+        string("in_attr11","i.fs_attr11");
+        string("in_attr12","i.fs_attr12");
+        string("in_attr13","i.fs_attr13");
+        string("in_attr14","i.fs_attr14");
+        string("in_attr15","i.fs_attr15");
+        string("in_attr16","i.fs_attr16");
+        string("in_attr17","i.fs_attr17");
+        string("in_attr18","i.fs_attr18");
+        string("in_attr19","i.fs_attr19");
+        string("in_attr20","i.fs_attr20");
+        string("in_attr21","i.fs_attr21");
+        string("in_attr22","i.fs_attr22");
+        string("in_attr23","i.fs_attr23");
+
+        string("fs_cbuf8[1]","fs_cbuf8_1");
+        string("fs_cbuf8[2]","fs_cbuf8_2");
+        string("fs_cbuf8[29]","camera_wpos");
+        string("fs_cbuf8[30]","fs_cbuf8_30");
+        string("fs_cbuf9[78]","fs_cbuf9_78");
+        string("fs_cbuf9[139]","fs_cbuf9_139");
+        string("fs_cbuf9[140]","fs_cbuf9_140");
+        string("fs_cbuf9[189]","fs_cbuf9_189");
+        string("fs_cbuf9[190]","fs_cbuf9_190");
+        string("fs_cbuf9[191]","fs_cbuf9_191");
+        string("fs_cbuf9[192]","fs_cbuf9_192");
+        string("fs_cbuf10[9]","fs_cbuf10_9");
+        string("fs_cbuf10[139]","fs_cbuf10_139");
+        string("fs_cbuf10[140]","fs_cbuf10_140");
+        string("fs_cbuf10[189]","fs_cbuf10_189");
+        string("fs_cbuf10[190]","fs_cbuf10_190");
+        string("fs_cbuf15[1]","fs_cbuf15_1");
+        string("fs_cbuf15[25]","fs_cbuf15_25");
+        string("fs_cbuf15[26]","fs_cbuf15_26");
+        string("fs_cbuf15[28]","fs_cbuf15_28");
+        string("fs_cbuf15[42]","fs_cbuf15_42");
+        string("fs_cbuf15[43]","fs_cbuf15_43");
+        string("fs_cbuf15[44]","fs_cbuf15_44");
+        string("fs_cbuf15[57]","fs_cbuf15_57");
+        string("fs_cbuf16[7]","fs_cbuf16_7");
+        string("fs_cbuf16[10]","fs_cbuf16_10");
     };
     calculator
     {

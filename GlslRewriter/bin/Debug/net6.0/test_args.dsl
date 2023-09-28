@@ -27,6 +27,8 @@ vs
             split_on("texture", 3);
             split_on("textureLod", 3);
             split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 
@@ -416,6 +418,8 @@ ps
             split_on("texture", 3);
             split_on("textureLod", 3);
             split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 

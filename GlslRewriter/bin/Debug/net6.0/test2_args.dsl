@@ -22,6 +22,11 @@ vs
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
+            split_on("texture", 3);
+            split_on("textureLod", 3);
+            split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 
@@ -155,6 +160,11 @@ vs
             f2_0_1,
             f2_0_3,
             f4_0_0,
+            f4_0_1,
+            f4_0_2,
+            f4_0_3,
+            f4_0_4,
+            f4_0_5,
             pf_0_1,
             pf_0_12,
             pf_0_28,
@@ -404,6 +414,11 @@ ps
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
+            split_on("texture", 3);
+            split_on("textureLod", 3);
+            split_on("texelFetch", 3);
+            split_on("texelQueryLod", 3);
+            split_on("texelSize", 3);
             split_on("log2", 12);
         };
 
@@ -434,6 +449,7 @@ ps
             f3_0_0,
             f4_0_1,
             f4_0_3,
+            f4_0_4,
             pf_0_11,
             pf_0_13,
             pf_0_14,

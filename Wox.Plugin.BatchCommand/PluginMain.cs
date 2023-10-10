@@ -19,8 +19,9 @@ public class Main : IPlugin, IContextMenu
         s_StartupThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
         s_Context = context;
         var txtWriter = new StringWriter(s_LogBuilder);
+        var errWriter = new StringWriter(s_ErrorBuilder);
         Console.SetOut(txtWriter);
-        Console.SetError(txtWriter);
+        Console.SetError(errWriter);
         using(var sw = new StreamWriter(s_LogFile, false)) {
             sw.WriteLine("dir:{0} exe:{1}", dir, exe);
             sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
@@ -138,16 +139,20 @@ public class Main : IPlugin, IContextMenu
     }
     internal static void ShowLog(string tag)
     {
-        var txt = s_LogBuilder.ToString();
+        var log = s_LogBuilder.ToString();
         s_LogBuilder.Length = 0;
-        if (!string.IsNullOrEmpty(txt)) {
-            s_Context.API.ShowMsg(txt);
+        var err = s_ErrorBuilder.ToString();
+        s_ErrorBuilder.Length = 0;
+        if (!string.IsNullOrEmpty(err)) {
+            s_Context.API.ShowMsg(err);
         }
         using (var sw = File.AppendText(s_LogFile)) {
             var threadLog = string.Format("{0} Thread {1}.", tag, System.Threading.Thread.CurrentThread.ManagedThreadId);
             sw.WriteLine(threadLog);
-            if (!string.IsNullOrEmpty(txt))
-                sw.WriteLine(txt);
+            if (!string.IsNullOrEmpty(log))
+                sw.WriteLine(log);
+            if (!string.IsNullOrEmpty(err))
+                sw.WriteLine(err);
             sw.Close();
         }
     }
@@ -160,6 +165,7 @@ public class Main : IPlugin, IContextMenu
 
     private static string s_LogFile = "BatchCommand.log";
     private static StringBuilder s_LogBuilder = new StringBuilder();
+    private static StringBuilder s_ErrorBuilder = new StringBuilder();
     private static object s_PluginLock = new object();
 }
 
@@ -501,7 +507,11 @@ internal class EverythingSearchExp : SimpleExpressionBase
                         var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
                         list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
                     }
+                    Console.WriteLine("everything_search '{0}', result:{1}", str, num);
                     return CalculatorValue.FromObject(list);
+                }
+                else {
+                    Console.WriteLine("everything_search '{0}' failed.", str);
                 }
             }
         }

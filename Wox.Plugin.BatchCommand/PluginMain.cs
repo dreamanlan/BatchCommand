@@ -30,6 +30,7 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
         BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
+        BatchScript.Register("showmsg", new ExpressionFactoryHelper<ShowMsgExp>());
         BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
         BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
         BatchScript.Register("addresult", new ExpressionFactoryHelper<AddResultExp>());
@@ -93,14 +94,14 @@ public class Main : IPlugin, IContextMenu
             if (s_ContextMenus[ix].ContextData != menu.ContextData || s_ContextMenus[ix].Action != menu.Action) {
                 return s_ContextMenus[ix].Action(e);
             }
-            object r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
+            var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
             ShowLog("OnMenuAction");
             if (s_NeedReload) {
                 s_NeedReload = false;
                 ReloadDsl();
             }
-            if (null != r) {
-                bool ret = (bool)Convert.ChangeType(r, typeof(bool));
+            if (!r.IsNullObject) {
+                bool ret = r.GetBool();
                 return ret;
             }
             else {
@@ -126,7 +127,7 @@ public class Main : IPlugin, IContextMenu
                 s_NeedReload = false;
                 ReloadDsl();
             }
-            if (r.IsBoolean) {
+            if (!r.IsNullObject) {
                 bool ret = r.GetBool();
                 return ret;
             }
@@ -181,6 +182,19 @@ internal class MetadataExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context.CurrentPluginMetadata);
+    }
+}
+internal class ShowMsgExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (operands.Count > 0) {
+            string title = operands[0].ToString();
+            string subtitle = operands.Count > 1 ? operands[1].ToString() : string.Empty;
+            string icon = operands.Count > 2 ? operands[2].ToString() : string.Empty;
+            Main.s_Context.API.ShowMsg(title, subtitle, icon);
+        }
+        return CalculatorValue.NullObject;
     }
 }
 internal class ReloadDslExp : SimpleExpressionBase
@@ -307,8 +321,8 @@ internal class ShowContextMenuExp : SimpleExpressionBase
     {
         if (operands.Count >= 3) {
             string path = operands[0].AsString;
-            bool ctrl = (bool)Convert.ChangeType(operands[1], typeof(bool));
-            bool shift = (bool)Convert.ChangeType(operands[2], typeof(bool));
+            bool ctrl = operands[1].GetBool();
+            bool shift = operands[2].GetBool();
 
             if (Directory.Exists(path)) {
                 var dis = new DirectoryInfo[] { new DirectoryInfo(path) };
@@ -349,7 +363,7 @@ internal class EverythingMatchPathExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
+            bool val = operands[0].GetBool();
             EveryThingSDK.Everything_SetMatchPath(val);
             return true;
         } else {
@@ -362,7 +376,7 @@ internal class EverythingMatchCaseExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
+            bool val = operands[0].GetBool();
             EveryThingSDK.Everything_SetMatchCase(val);
             return true;
         } else {
@@ -375,7 +389,7 @@ internal class EverythingMatchWholeWordExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
+            bool val = operands[0].GetBool();
             EveryThingSDK.Everything_SetMatchWholeWord(val);
             return true;
         }
@@ -389,7 +403,7 @@ internal class EverythingRegexExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (operands.Count >= 1) {
-            bool val = (bool)Convert.ChangeType(operands[0], typeof(bool));
+            bool val = operands[0].GetBool();
             EveryThingSDK.Everything_SetRegex(val);
             return true;
         }
@@ -406,7 +420,7 @@ internal class EverythingSortExp : SimpleExpressionBase
             string type = operands[0].AsString;
             bool asc = true;
             if (operands.Count >= 2)
-                asc = (bool)Convert.ChangeType(operands[1], typeof(bool));
+                asc = operands[1].GetBool();
             if (type == "path") {
                 if(asc)
                     EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
@@ -429,7 +443,7 @@ internal class EverythingSortExp : SimpleExpressionBase
                 if (null != type) {
                     uint.TryParse(type, out sort);
                 } else {
-                    sort = (uint)Convert.ChangeType(operands[0], typeof(uint));
+                    sort = operands[0].GetUInt();
                 }
                 EveryThingSDK.Everything_SetSort(sort);
                 return sort.ToString();

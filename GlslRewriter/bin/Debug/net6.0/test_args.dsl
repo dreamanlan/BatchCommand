@@ -361,25 +361,25 @@ vs
         add_range(22,28);
     };
     vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_1/vertex_in_attr4.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_1/vertex_in_attr5.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_1/vertex_in_attr6.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_1/vertex_in_attr7.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr9_array", "vec4", "d:/uc/VAO_1/vertex_in_attr9.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr10_array", "vec4", "d:/uc/VAO_1/vertex_in_attr10.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     vao_attr("var in_attr11_array", "vec4", "d:/uc/VAO_1/vertex_in_attr11.csv"){
-        add_range(0,35);
+        add_range(0,157);
     };
     calculator
     {

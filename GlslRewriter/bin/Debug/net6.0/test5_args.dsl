@@ -2492,19 +2492,19 @@ vs
         add_range(0,15);
     };
     vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/vertex_in_attr3.csv"){
-        add_range(0,35);
+        add_range(0,2);
     };
     vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/vertex_in_attr4.csv"){
-        add_range(0,35);
+        add_range(0,2);
     };
     vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/vertex_in_attr5.csv"){
-        add_range(0,35);
+        add_range(0,2);
     };
     vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/vertex_in_attr6.csv"){
-        add_range(0,35);
+        add_range(0,2);
     };
     vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv"){
-        add_range(0,35);
+        add_range(0,2);
     };
     string_replacement
     {

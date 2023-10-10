@@ -374,7 +374,7 @@ script(on_action_app_proj)args($query, $result, $actionContext)
     if($key=="unity" && $path.EndsWith("\\Assets")){
         $path = getdirectoryname($path);
     };
-    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], $path) + " " + $args){
+    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], "\"" + $path + "\"") + " " + $args){
         nowait(true);
     };
     @phase = 0;

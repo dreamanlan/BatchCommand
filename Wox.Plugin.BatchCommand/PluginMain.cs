@@ -18,9 +18,8 @@ public class Main : IPlugin, IContextMenu
         Directory.SetCurrentDirectory(dir);
         s_StartupThreadId = System.Threading.Thread.CurrentThread.ManagedThreadId;
         s_Context = context;
-        var txtWriter = new StringWriter(s_LogBuilder);
         var errWriter = new StringWriter(s_ErrorBuilder);
-        Console.SetOut(txtWriter);
+        Console.SetOut(errWriter);
         Console.SetError(errWriter);
         using(var sw = new StreamWriter(s_LogFile, false)) {
             sw.WriteLine("dir:{0} exe:{1}", dir, exe);
@@ -155,6 +154,18 @@ public class Main : IPlugin, IContextMenu
                 sw.WriteLine(err);
             sw.Close();
         }
+    }
+    public static void Log(string fmt, params object[] args)
+    {
+        if (args.Length == 0)
+            s_LogBuilder.Append(fmt);
+        else
+            s_LogBuilder.AppendFormat(fmt, args);
+    }
+    public static void LogLine(string fmt, params object[] args)
+    {
+        Log(fmt, args);
+        s_LogBuilder.AppendLine();
     }
 
     internal static int s_StartupThreadId = 0;
@@ -507,11 +518,11 @@ internal class EverythingSearchExp : SimpleExpressionBase
                         var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
                         list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
                     }
-                    Console.WriteLine("everything_search '{0}', result:{1}", str, num);
+                    Main.LogLine("everything_search '{0}', result:{1}", str, num);
                     return CalculatorValue.FromObject(list);
                 }
                 else {
-                    Console.WriteLine("everything_search '{0}' failed.", str);
+                    Main.LogLine("everything_search '{0}' failed.", str);
                 }
             }
         }

@@ -99,9 +99,11 @@ public class ActionContext
     public SpecialKeyState SpecialKeyState;
 }
 context() 返回PluginInitContext对象
-api() 返回IPublicAPI对象
+api() 返回IPublicAPI对象，一般不需要使用，有的有限制，比如RestarApp不能在脚本线程调用
 metadata() 返回PluginMetadata对象
 showmsg(title[,subtitle[,icon]]) 显示弹出消息,缺少的参数为string.Empty
+restart() 重启wox
+changequery(query_string, requery) 修改查询，requery是bool类型
 reloaddsl() 重新加载main.dsl
 evaldsl(dsl代码, query, result, actioncontext) 执行dsl代码，代码里可以使用$query,$result,$actioncontext访问相应参数
 addresult(title, subtitle, icopath, action, query) 添加一条结果到列表，query是查询对象，其它都是字符串，action是dsl里的脚本函数名，
@@ -189,6 +191,7 @@ script(on_query)args($query)
         @cmdpath = "";
     };
     if($key=="dsl"){
+        everythingreset();
         $param = $query.FirstSearch;
         if($param=="reload"){
             addresult("reload", "reload main.dsl.", "", "on_action_reload_dsl", $query);
@@ -279,7 +282,7 @@ script(on_menu_action_explore_menu)args($query, $result, $menu, $actionContext)
 
 script(on_action_change)args($query, $result, $actionContext)
 {
-    api().ChangeQuery("dsl " + $result.Title, false);
+    changequery("dsl " + $result.Title, false);
     return(0);
 };
 script(on_action_reload_dsl)args($query, $result, $actionContext)
@@ -339,7 +342,7 @@ script(on_action_cmd)args($query, $result, $actionContext)
         @cmdpath = getdirectoryname(@cmdpath);
     };
     $args = $query.SecondToEndSearch;
-    process("cmd", "/c start /d \"" + @cmdpath + "\" " + $args){
+    process("cmd", "/c start /d " + quotepath(@cmdpath) + " " + $args){
         nowait(true);
         useshellexecute(true);
         verb("open");
@@ -351,14 +354,14 @@ script(on_action_start)args($query, $result, $actionContext)
 {
     @exe = $result.Title;
     @phase = 1;
-    api().ChangeQuery("start " + getfilename(@exe), false);
+    changequery("start " + getfilename(@exe), false);
     return(0);
 };
 script(on_action_start_proj)args($query, $result, $actionContext)
 {
     $path = $result.Title;
     $args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
-    process(@exe, "\"" + $path + "\"" + $args){
+    process(@exe, quotepath($path) + $args){
         nowait(true);
     };
     @phase = 0;
@@ -370,7 +373,7 @@ script(on_action_app)args($query, $result, $actionContext)
     $key = $query.ActionKeyword;
     @exe = $result.Title;
     @phase = 1;
-    api().ChangeQuery(@cfg[$key][1], true);
+    changequery(@cfg[$key][1], true);
     return(0);
 };
 script(on_action_app_proj)args($query, $result, $actionContext)
@@ -382,7 +385,7 @@ script(on_action_app_proj)args($query, $result, $actionContext)
     if($key=="unity" && $path.EndsWith("\\Assets")){
         $path = getdirectoryname($path);
     };
-    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], "\"" + $path + "\"") + " " + $args){
+    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], quotepath($path)) + " " + $args){
         nowait(true);
     };
     @phase = 0;

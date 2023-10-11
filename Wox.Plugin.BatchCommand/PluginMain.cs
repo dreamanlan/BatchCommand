@@ -245,6 +245,7 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("restart", new ExpressionFactoryHelper<RestartExp>());
         BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
         BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
+        BatchScript.Register("changequery", new ExpressionFactoryHelper<ChangeQueryExp>());
         BatchScript.Register("addresult", new ExpressionFactoryHelper<AddResultExp>());
         BatchScript.Register("addcontextmenu", new ExpressionFactoryHelper<AddContextMenuExp>());
         BatchScript.Register("keywordregistered", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
@@ -434,7 +435,17 @@ internal class ShowMsgExp : SimpleExpressionBase
             string title = operands[0].ToString();
             string subtitle = operands.Count > 1 ? operands[1].ToString() : string.Empty;
             string icon = operands.Count > 2 ? operands[2].ToString() : Main.c_IcoPath;
-            Main.s_Context.API.ShowMsg(title, subtitle, icon);
+
+            if (null != Main.s_CurFuncs) {
+                //转到主线程执行（点击列表触发的请求好像都是从主线程发起）
+                Main.s_CurFuncs.Enqueue(() => {
+                    Main.s_Context.API.ShowMsg(title, subtitle, icon);
+                    return false;
+                });
+            }
+            else {
+                Main.s_Context.API.ShowMsg(title, subtitle, icon);
+            }
         }
         return CalculatorValue.NullObject;
     }
@@ -480,6 +491,28 @@ internal class EvalDslExp : SimpleExpressionBase
             BatchScript.RecycleCalculatorValueList(args);
         }
         return r;
+    }
+}
+internal class ChangeQueryExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (operands.Count >= 2) {
+            string queryStr = operands[0].AsString;
+            bool requery = operands[1].GetBool();
+
+            if (null != Main.s_CurFuncs) {
+                //转到主线程执行（点击列表触发的请求好像都是从主线程发起）
+                Main.s_CurFuncs.Enqueue(() => {
+                    Main.s_Context.API.ChangeQuery(queryStr, requery);
+                    return false;
+                });
+            }
+            else {
+                Main.s_Context.API.ChangeQuery(queryStr, requery);
+            }
+        }
+        return CalculatorValue.NullObject;
     }
 }
 internal class AddResultExp : SimpleExpressionBase

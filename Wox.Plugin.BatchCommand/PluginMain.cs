@@ -20,7 +20,8 @@ public class Main : IPlugin, IContextMenu
         s_StartupThread = Thread.CurrentThread;
         s_StartupThreadId = s_StartupThread.ManagedThreadId;
         s_Context = context;
-        string exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+        var p = Process.GetCurrentProcess();
+        string exe = p.MainModule.FileName;
         string dir = Path.GetDirectoryName(exe);
         Directory.SetCurrentDirectory(dir);
         var errWriter = new StringWriterWithLock(s_ErrorBuilder, s_LogLock);
@@ -36,7 +37,7 @@ public class Main : IPlugin, IContextMenu
     public List<Result> Query(Query query)
     {
         Debug.Assert(!IsScriptThread());
-        Log("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
+        LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
         if (s_ScriptQueryQueue.Count == 0) {
             var evt = GetThreadEvent();
             QueueScriptQuery(evt, () => {
@@ -50,7 +51,19 @@ public class Main : IPlugin, IContextMenu
                 s_NewResults = t;
             });
             //wait
-            evt.WaitOne(c_WaitTimeout);
+            Wait(evt);
+        }
+        else if (query.ActionKeyword == "dsl") {
+            if (query.FirstSearch == "killme") {
+                if (Thread.CurrentThread.ManagedThreadId == s_StartupThreadId) {
+                    s_Context.API.RestarApp();
+                }
+                Environment.Exit(0);
+            }
+            else {
+                EveryThingSDK.Everything_Reset();
+                s_Results.Clear();
+            }
         }
         return s_Results;
     }
@@ -58,22 +71,23 @@ public class Main : IPlugin, IContextMenu
     {
         Debug.Assert(!IsScriptThread());
         Query query = selectedResult.ContextData as Query;
-        Log("load context menu for [{0}|{1}], query [{2}], count {3} from thread {4}", selectedResult.Title, selectedResult.SubTitle, query.ToString(), s_ContextMenus.Count, Thread.CurrentThread.ManagedThreadId);
+        LogLine("load context menu for [{0}|{1}], query [{2}], count {3} from thread {4}", selectedResult.Title, selectedResult.SubTitle, query.ToString(), s_ContextMenus.Count, Thread.CurrentThread.ManagedThreadId);
         //这个操作串行执行
         var evt = GetThreadEvent();
+        var funcs = GetThreadFuncs();
         s_ContextMenus.Clear();
-        QueueScriptAction(evt, () => {
+        QueueScriptAction(evt, funcs, () => {
             BatchScript.Call("on_context_menus", CalculatorValue.FromObject(query), CalculatorValue.FromObject(selectedResult));
             FlushLog("LoadContextMenus");
         });
         //wait
-        evt.WaitOne(c_WaitTimeout);
+        WaitAndGetResult(evt, funcs);
         return s_ContextMenus;
     }
     internal static bool OnMenuAction(string action, Query query, Result result, Result menu, ActionContext e)
     {
         Debug.Assert(!IsScriptThread());
-        Log("menu action for [{0}|{1}], query [{2}], result [{3}|{4}] from thread {5}", menu.Title, menu.SubTitle, query.ToString(), result.Title, result.SubTitle, Thread.CurrentThread.ManagedThreadId);
+        LogLine("menu action for [{0}|{1}], query [{2}], result [{3}|{4}] from thread {5}", menu.Title, menu.SubTitle, query.ToString(), result.Title, result.SubTitle, Thread.CurrentThread.ManagedThreadId);
         //由于Wox实现上的缺陷，这里根据menu的Title与SubTitle在菜单列表里查找真正的菜单项再调action
         int ix = s_ContextMenus.IndexOf(menu);
         if (ix < 0) {
@@ -85,8 +99,8 @@ public class Main : IPlugin, IContextMenu
         }
         //这里开始串行执行
         var evt = GetThreadEvent();
-        var queue = GetThreadQueue();
-        QueueScriptAction(evt, () => {
+        var funcs = GetThreadFuncs();
+        QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
             Log("menu action for [{0}|{1}] return {2} from thread {3}", menu.Title, menu.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnMenuAction");
@@ -96,25 +110,19 @@ public class Main : IPlugin, IContextMenu
             }
             if (!r.IsNullObject) {
                 bool ret = r.GetBool();
-                queue.Enqueue(() => ret);
+                funcs.Enqueue(() => ret);
             }
             else {
-                queue.Enqueue(() => false);
+                funcs.Enqueue(() => false);
             }
         });
         //wait
-        evt.WaitOne(c_WaitTimeout);
-        if(queue.TryDequeue(out var func)) {
-            return func();
-        }
-        else {
-            return false;
-        }
+        return WaitAndGetResult(evt, funcs);
     }
     internal static bool OnAction(string action, Query query, Result result, ActionContext e)
     {
         Debug.Assert(!IsScriptThread());
-        Log("action for [{0}|{1}], query [{2}] from thread {3}", result.Title, result.SubTitle, query.ToString(), Thread.CurrentThread.ManagedThreadId);
+        LogLine("action for [{0}|{1}], query [{2}] from thread {3}", result.Title, result.SubTitle, query.ToString(), Thread.CurrentThread.ManagedThreadId);
         //由于Wox实现上的缺陷，这里根据result的Title与SubTitle在结果列表里查找真正的result项再调action
         int ix = s_Results.IndexOf(result);
         if (ix < 0) {
@@ -126,8 +134,8 @@ public class Main : IPlugin, IContextMenu
         }
         //这里开始串行执行
         var evt = GetThreadEvent();
-        var queue = GetThreadQueue();
-        QueueScriptAction(evt, () => {
+        var funcs = GetThreadFuncs();
+        QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(e));
             Log("action for [{0}|{1}] return {2} from thread {3}", result.Title, result.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnAction");
@@ -137,20 +145,14 @@ public class Main : IPlugin, IContextMenu
             }
             if (!r.IsNullObject) {
                 bool ret = r.GetBool();
-                queue.Enqueue(() => ret);
+                funcs.Enqueue(() => ret);
             }
             else {
-                queue.Enqueue(() => false);
+                funcs.Enqueue(() => false);
             }
         });
         //wait
-        evt.WaitOne(c_WaitTimeout);
-        if (queue.TryDequeue(out var func)) {
-            return func();
-        }
-        else {
-            return false;
-        }
+        return WaitAndGetResult(evt, funcs);
     }
 
     internal static void ReloadDsl()
@@ -216,6 +218,7 @@ public class Main : IPlugin, IContextMenu
     private static void StartScriptThread()
     {
         s_ScriptThread = new Thread(ScriptThread);
+        s_ScriptThread.Name = "Script Thread";
         s_ScriptThread.Start();
     }
     private static void ScriptThread()
@@ -239,6 +242,7 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
         BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
         BatchScript.Register("showmsg", new ExpressionFactoryHelper<ShowMsgExp>());
+        BatchScript.Register("restart", new ExpressionFactoryHelper<RestartExp>());
         BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
         BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
         BatchScript.Register("addresult", new ExpressionFactoryHelper<AddResultExp>());
@@ -257,45 +261,15 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("everythingsearch", new ExpressionFactoryHelper<EverythingSearchExp>());
 
         ReloadDsl();
-
-        while (s_StartupThread.IsAlive) {
-            for (int ct = 0; ct < c_ActionNumPerTick && s_ScriptActionQueue.Count > 0; ++ct) {
-                if (s_ScriptActionQueue.TryDequeue(out var action)) {
-                    try {
-                        action.Action();
-                    }
-                    catch (Exception ex) {
-                        Console.WriteLine("exception:{0}", ex.Message);
-                    }
-                    finally {
-                        //notify
-                        action.Event.Set();
-                    }
-                }
-            }
-            for (int ct = 0; ct < c_QueryNumPerTick && s_ScriptQueryQueue.Count > 0; ++ct) {
-                if (s_ScriptQueryQueue.TryDequeue(out var action)) {
-                    try {
-                        action.Action();
-                    }
-                    catch (Exception ex) {
-                        Console.WriteLine("exception:{0}", ex.Message);
-                    }
-                    finally {
-                        //notify
-                        action.Event.Set();
-                    }
-                }
-            }
-            Thread.Sleep(0);
-        }
     }
     private static void ProcessOnce(int maxActionNum, int maxQueryNum)
     {
         for (int ct = 0; ct < maxActionNum && s_ScriptActionQueue.Count > 0; ++ct) {
             if (s_ScriptActionQueue.TryDequeue(out var action)) {
                 try {
+                    s_CurFuncs = action.Funcs;
                     action.Action();
+                    s_CurFuncs = null;
                 }
                 catch (Exception ex) {
                     Console.WriteLine("exception:{0}", ex.Message);
@@ -323,24 +297,47 @@ public class Main : IPlugin, IContextMenu
     }
     private static void QueueScriptQuery(AutoResetEvent evt, Action action)
     {
-        s_ScriptQueryQueue.Enqueue(new ScriptActionInfo { Event = evt, Action = action });
+        s_ScriptQueryQueue.Enqueue(new ScriptQueryInfo { Event = evt, Action = action });
     }
-    private static void QueueScriptAction(AutoResetEvent evt, Action action)
+    private static void QueueScriptAction(AutoResetEvent evt, ConcurrentQueue<Func<bool>> funcs, Action action)
     {
-        s_ScriptActionQueue.Enqueue(new ScriptActionInfo { Event = evt, Action = action });
+        s_ScriptActionQueue.Enqueue(new ScriptActionInfo { Event = evt, Action = action, Funcs = funcs });
+    }
+    private static void Wait(AutoResetEvent evt)
+    {
+        evt.WaitOne(c_WaitTimeout);
+    }
+    private static bool WaitAndGetResult(AutoResetEvent evt, ConcurrentQueue<Func<bool>> funcs)
+    {
+        evt.WaitOne(c_WaitTimeout);
+        bool rt = false;
+        while (funcs.Count > 0) {
+            if (funcs.TryDequeue(out var f)) {
+                rt = f();
+            }
+        }
+        return rt;
     }
 
-    private class ScriptActionInfo
+    private class ScriptQueryInfo
     {
         internal AutoResetEvent Event;
         internal Action Action;
     }
+    private class ScriptActionInfo
+    {
+        internal AutoResetEvent Event;
+        internal Action Action;
+        internal ConcurrentQueue<Func<bool>> Funcs;
+    }
 
+    internal static ShellApi.ShellContextMenu s_ShellCtxMenu = new ShellApi.ShellContextMenu();
     internal static PluginInitContext s_Context = null;
     internal static List<Result> s_Results = new List<Result>();
     internal static List<Result> s_NewResults = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
     internal static bool s_NeedReload = false;
+    internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
     internal const string c_IcoPath = "Images\\dsl.png";
 
     private static int s_StartupThreadId = 0;
@@ -352,7 +349,7 @@ public class Main : IPlugin, IContextMenu
     private static StringBuilder s_LogBuilder = new StringBuilder();
     private static object s_LogLock = new object();
 
-    private static ConcurrentQueue<ScriptActionInfo> s_ScriptQueryQueue = new ConcurrentQueue<ScriptActionInfo>();
+    private static ConcurrentQueue<ScriptQueryInfo> s_ScriptQueryQueue = new ConcurrentQueue<ScriptQueryInfo>();
     private static ConcurrentQueue<ScriptActionInfo> s_ScriptActionQueue = new ConcurrentQueue<ScriptActionInfo>();
 
     private static AutoResetEvent GetThreadEvent()
@@ -361,16 +358,16 @@ public class Main : IPlugin, IContextMenu
             s_Event = new AutoResetEvent(false);
         return s_Event;
     }
-    private static ConcurrentQueue<Func<bool>> GetThreadQueue()
+    private static ConcurrentQueue<Func<bool>> GetThreadFuncs()
     {
-        if (null == s_Queue)
-            s_Queue = new ConcurrentQueue<Func<bool>>();
-        return s_Queue;
+        if (null == s_Funcs)
+            s_Funcs = new ConcurrentQueue<Func<bool>>();
+        return s_Funcs;
     }
     [ThreadStatic]
     private static AutoResetEvent s_Event = null;
     [ThreadStatic]
-    private static ConcurrentQueue<Func<bool>> s_Queue = null;
+    private static ConcurrentQueue<Func<bool>> s_Funcs = null;
 
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;
@@ -438,6 +435,19 @@ internal class ShowMsgExp : SimpleExpressionBase
             string subtitle = operands.Count > 1 ? operands[1].ToString() : string.Empty;
             string icon = operands.Count > 2 ? operands[2].ToString() : Main.c_IcoPath;
             Main.s_Context.API.ShowMsg(title, subtitle, icon);
+        }
+        return CalculatorValue.NullObject;
+    }
+}
+internal class RestartExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (null != Main.s_CurFuncs) {
+            Main.s_CurFuncs.Enqueue(() => {
+                Main.s_Context.API.RestarApp();
+                return false;
+            });
         }
         return CalculatorValue.NullObject;
     }
@@ -575,14 +585,25 @@ internal class ShowContextMenuExp : SimpleExpressionBase
             bool ctrl = operands[1].GetBool();
             bool shift = operands[2].GetBool();
 
+            Debug.Assert(null != Main.s_CurFuncs);
+            //shell操作推到发起请求的线程执行
             if (Directory.Exists(path)) {
-                var dis = new DirectoryInfo[] { new DirectoryInfo(path) };
-                var scm = new ShellApi.ShellContextMenu();
-                scm.ShowContextMenu(dis, ctrl, shift);
-            } else if (File.Exists(path)) {
-                var fis = new FileInfo[] { new FileInfo(path) };
-                var scm = new ShellApi.ShellContextMenu();
-                scm.ShowContextMenu(fis, ctrl, shift);
+                Main.s_CurFuncs.Enqueue(() => {
+                    var dis = new DirectoryInfo[] { new DirectoryInfo(path) };
+                    string errMsg = Main.s_ShellCtxMenu.ShowContextMenu(dis, ctrl, shift);
+                    if (!string.IsNullOrEmpty(errMsg))
+                        Main.LogLine(errMsg);
+                    return false;
+                });
+            }
+            else if (File.Exists(path)) {
+                Main.s_CurFuncs.Enqueue(() => {
+                    var fis = new FileInfo[] { new FileInfo(path) };
+                    string errMsg = Main.s_ShellCtxMenu.ShowContextMenu(fis, ctrl, shift);
+                    if (!string.IsNullOrEmpty(errMsg))
+                        Main.LogLine(errMsg);
+                    return false;
+                });
             }
             return true;
         }

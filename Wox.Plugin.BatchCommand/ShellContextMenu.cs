@@ -2,6 +2,9 @@
 using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace ShellApi
 {
@@ -29,23 +32,27 @@ namespace ShellApi
         #endregion
 
         #region ShowContextMenu()
-
-        public void ShowContextMenu(FileInfo[] files, bool ctrl, bool shift)
+        public void SetHwnd(IntPtr hwnd)
+        {
+            m_Hwnd = hwnd;
+        }
+        public string ShowContextMenu(FileInfo[] files, bool ctrl, bool shift)
         {
             // Release all resources first.
             ReleaseAll();
             m_PIDLs = GetPIDLs(files);
-            this.ShowContextMenu(ctrl, shift);
+            return this.ShowContextMenu(ctrl, shift);
         }
-        public void ShowContextMenu(DirectoryInfo[] dirs, bool ctrl, bool shift)
+        public string ShowContextMenu(DirectoryInfo[] dirs, bool ctrl, bool shift)
         {
             // Release all resources first.
             ReleaseAll();
             m_PIDLs = GetPIDLs(dirs);
-            this.ShowContextMenu(ctrl, shift);
+            return this.ShowContextMenu(ctrl, shift);
         }
-        private void ShowContextMenu(bool ctrl, bool shift)
+        private string ShowContextMenu(bool ctrl, bool shift)
         {
+            string errMsg = string.Empty;
             IntPtr pMenu = IntPtr.Zero,
                 iContextMenuPtr = IntPtr.Zero,
                 iContextMenuPtr2 = IntPtr.Zero,
@@ -54,12 +61,12 @@ namespace ShellApi
             try {
                 if (null == m_PIDLs) {
                     ReleaseAll();
-                    return;
+                    return "PIDLs is null";
                 }
 
                 if (false == GetContextMenuInterfaces(m_ParentFolder, m_PIDLs, out iContextMenuPtr)) {
                     ReleaseAll();
-                    return;
+                    return "GetContextMenuInterfaces failed";
                 }
 
                 pMenu = CreatePopupMenu();
@@ -79,7 +86,30 @@ namespace ShellApi
                 m_ContextMenu2 = (IContextMenu2)Marshal.GetTypedObjectForIUnknown(iContextMenuPtr2, typeof(IContextMenu2));
                 m_ContextMenu3 = (IContextMenu3)Marshal.GetTypedObjectForIUnknown(iContextMenuPtr3, typeof(IContextMenu3));
 
-                IntPtr hwnd = System.Diagnostics.Process.GetCurrentProcess().MainWindowHandle;
+                if (m_Hwnd == IntPtr.Zero || !IsWindow(m_Hwnd)) {
+                    var p = Process.GetCurrentProcess();
+                    //p.MainWindowHandle这个句柄好像不太稳定
+                    //m_Hwnd = p.MainWindowHandle;
+                    if (m_Hwnd == IntPtr.Zero || !IsWindow(m_Hwnd)) {
+                        var hwnds = EnumToplevelWindows();
+                        foreach (var hwnd in hwnds) {
+                            var tid = GetWindowThreadProcessId(hwnd, out var pid);
+                            if (pid == p.Id) {
+                                m_Hwnd = hwnd;
+                                break;
+                            }
+                        }
+                    }
+                    if (m_Hwnd == IntPtr.Zero || !IsWindow(m_Hwnd)) {
+                        var hwnds = EnumProcessWindows(p.Id);
+                        foreach(var hwnd in hwnds) {
+                            if (IsWindow(hwnd)) {
+                                m_Hwnd = hwnd;
+                                break;
+                            }
+                        }
+                    }
+                }
                 POINT pt;
                 GetCursorPos(out pt);
                 uint nSelected = TrackPopupMenuEx(
@@ -87,9 +117,12 @@ namespace ShellApi
                     TPM.RETURNCMD,
                     pt.x,
                     pt.y,
-                    hwnd,
+                    m_Hwnd,
                     IntPtr.Zero);
                 int lastError = GetLastError();
+                if (lastError != 0) {
+                    errMsg = new Win32Exception(lastError).Message;
+                }
 
                 DestroyMenu(pMenu);
                 pMenu = IntPtr.Zero;
@@ -117,8 +150,26 @@ namespace ShellApi
 
                 ReleaseAll();
             }
+            return errMsg;
         }
         #endregion
+
+        public static IList<IntPtr> EnumToplevelWindows()
+        {
+            var handles = new List<IntPtr>();
+            EnumWindows((hWnd, lParam) => { handles.Add(hWnd); return true; }, IntPtr.Zero);
+            return handles;
+        }
+        public static IList<IntPtr> EnumProcessWindows(int processId)
+        {
+            var handles = new List<IntPtr>();
+
+            foreach (ProcessThread thread in Process.GetProcessById(processId).Threads)
+                EnumThreadWindows(thread.Id,
+                    (hWnd, lParam) => { handles.Add(hWnd); return true; }, IntPtr.Zero);
+
+            return handles;
+        }
 
         #region GetContextMenuInterfaces()
         /// <summary>Gets the interfaces to the context menu</summary>
@@ -360,6 +411,7 @@ namespace ShellApi
         #endregion
 
         #region Local variabled
+        private IntPtr m_Hwnd;
         private IContextMenu m_ContextMenu;
         private IContextMenu2 m_ContextMenu2;
         private IContextMenu3 m_ContextMenu3;
@@ -410,6 +462,23 @@ namespace ShellApi
 
         [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern int GetLastError();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        private delegate bool EnumThreadCallback(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        static extern bool EnumThreadWindows(int dwThreadId, EnumThreadCallback lpfn, IntPtr lParam);
+
+        private delegate bool EnumWindowsCallback(IntPtr hwnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern int EnumWindows(EnumWindowsCallback callPtr, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsWindow(IntPtr hWnd);
 
         #endregion
 

@@ -167,6 +167,7 @@ script(main)args($id, $metadata, $context)
     addkeyword($id, "unity");
     addkeyword($id, "notepad");
     addkeyword($id, "vscode");
+    addkeyword($id, "renderdoc");
 
     @curkey = "";
     @phase = 0;
@@ -178,6 +179,7 @@ script(main)args($id, $metadata, $context)
         "unity" => ["\\unity.exe", "unity \\Assets", "{0}", "-projectPath {0}"],
         "notepad" => ["\\notepad++.exe", "notepad *.dsl", "{0}", "{0}"],
         "vscode" => ["\\code.exe", "vscode *.dsl", "{0}", "{0}"],
+        "renderdoc" => ["\\qrenderdoc.exe", "renderdoc *.exe", "{0}", "{0}"],
     };
     return(0);
 };

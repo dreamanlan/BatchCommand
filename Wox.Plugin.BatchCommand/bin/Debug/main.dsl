@@ -203,14 +203,14 @@ script(on_query)args($query)
             addresult("info", "show query state", "", "on_action_info", $query);
         }elseif($param=="clear"){
             addresult("clear", "clear query", "", "on_action_clear", $query);
-        }elseif($param=="killme"){
-            addresult("killme", "terminate app", "", "on_action_killme", $query);
+        }elseif($param=="restart"){
+            addresult("restart", "restart app", "", "on_action_restart", $query);
         }else{
             addresult("reload", "reload main.dsl", "", "on_action_change", $query);
             addresult("eval", "evaluate dsl code", "", "on_action_change", $query);
             addresult("info", "show query state", "", "on_action_change", $query);
             addresult("clear", "clear query", "", "on_action_change", $query);
-            addresult("killme", "terminate app", "", "on_action_change", $query);
+            addresult("restart", "restart app", "", "on_action_change", $query);
         };
     }elseif($key=="menu"){
         everythingreset();
@@ -310,9 +310,9 @@ script(on_action_clear)args($query, $result, $actionContext)
     @cmdpath = "";
     return(0);
 };
-script(on_action_killme)args($query, $result, $actionContext)
+script(on_action_restart)args($query, $result, $actionContext)
 {
-    killme(0);
+    restart();
     return(1);
 };
 

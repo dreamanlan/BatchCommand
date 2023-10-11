@@ -39,8 +39,12 @@
     <Reference Include="Dsl">
       <HintPath>..\deps\Dsl.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="WindowsBase" />
     <Reference Include="Wox.Core">
       <HintPath>..\deps\Wox.Core.dll</HintPath>
     </Reference>

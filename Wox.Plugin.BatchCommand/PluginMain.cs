@@ -10,7 +10,8 @@ using DslExpression;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using static System.Net.Mime.MediaTypeNames;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 //注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
 public class Main : IPlugin, IContextMenu
@@ -32,6 +33,8 @@ public class Main : IPlugin, IContextMenu
             sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
             sw.Close();
         }
+        s_MessageWindow = new MessageWindow();
+        s_MessageWindow.Hide();
         StartScriptThread();
     }
     public List<Result> Query(Query query)
@@ -54,14 +57,12 @@ public class Main : IPlugin, IContextMenu
             Wait(evt);
         }
         else if (query.ActionKeyword == "dsl") {
-            if (query.FirstSearch == "killme") {
-                if (Thread.CurrentThread.ManagedThreadId == s_StartupThreadId) {
+            if (query.FirstSearch == "restart") {
+                System.Windows.Application.Current.Dispatcher.Invoke(() => {
                     s_Context.API.RestarApp();
-                }
-                Environment.Exit(0);
+                });
             }
-            else {
-                EveryThingSDK.Everything_Reset();
+            else if(!s_MessageWindow.EverythingExists()) {
                 s_Results.Clear();
             }
         }
@@ -237,6 +238,8 @@ public class Main : IPlugin, IContextMenu
         Log("Script Thread {0}", s_ScriptThreadId);
         FlushLog("InitScript");
 
+        s_EverythingQueryEvent = new AutoResetEvent(false);
+
         BatchScript.Init();
         BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
@@ -252,6 +255,7 @@ public class Main : IPlugin, IContextMenu
         BatchScript.Register("clearkeywords", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
         BatchScript.Register("addkeyword", new ExpressionFactoryHelper<AddActionKeywordExp>());
         BatchScript.Register("showcontextmenu", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("everythingexists", new ExpressionFactoryHelper<EverythingExistsExp>());
         BatchScript.Register("everythingreset", new ExpressionFactoryHelper<EverythingResetExp>());
         BatchScript.Register("everythingsetdefault", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
         BatchScript.Register("everythingmatchpath", new ExpressionFactoryHelper<EverythingMatchPathExp>());
@@ -333,12 +337,15 @@ public class Main : IPlugin, IContextMenu
     }
 
     internal static ShellApi.ShellContextMenu s_ShellCtxMenu = new ShellApi.ShellContextMenu();
+    internal static MessageWindow s_MessageWindow = null;
     internal static PluginInitContext s_Context = null;
     internal static List<Result> s_Results = new List<Result>();
     internal static List<Result> s_NewResults = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
     internal static bool s_NeedReload = false;
+    internal static AutoResetEvent s_EverythingQueryEvent = null;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
+    internal const int c_WaitTimeout = 10000;
     internal const string c_IcoPath = "Images\\dsl.png";
 
     private static int s_StartupThreadId = 0;
@@ -372,7 +379,6 @@ public class Main : IPlugin, IContextMenu
 
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;
-    private const int c_WaitTimeout = 10000;
 }
 
 public class StringWriterWithLock : StringWriter
@@ -404,6 +410,58 @@ public class StringWriterWithLock : StringWriter
     }
 
     private object m_LockObj;
+}
+
+class MessageWindow : Form
+{
+    public MessageWindow()
+    {
+        var accessHandle = this.Handle;
+    }
+
+    public void Query()
+    {
+        m_CheckReply = true;
+        EveryThingSDK.Everything_SetReplyWindow(this.Handle);
+        EveryThingSDK.Everything_SetReplyID(MY_REPLY_ID);
+        EveryThingSDK.Everything_QueryW(false);
+    }
+    public bool EverythingExists()
+    {
+        var hwnd = FindWindowW(EVERYTHING_IPC_WNDCLASS, null);
+        return hwnd != IntPtr.Zero;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ChangeToMessageOnlyWindow();
+    }
+
+    private void ChangeToMessageOnlyWindow()
+    {
+        IntPtr HWND_MESSAGE = new IntPtr(-3);
+        SetParent(this.Handle, HWND_MESSAGE);
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m_CheckReply && EveryThingSDK.Everything_IsQueryReply(m.Msg, m.WParam, m.LParam, MY_REPLY_ID)) {
+            if (null != Main.s_EverythingQueryEvent) {
+                Main.s_EverythingQueryEvent.Set();
+            }
+        }
+        base.WndProc(ref m);
+    }
+
+    private bool m_CheckReply = false;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindowW(string lpClassName, string lpWindowName);
+    private const string EVERYTHING_IPC_WNDCLASS = "EVERYTHING_TASKBAR_NOTIFICATION";
+    private const int MY_REPLY_ID = 0;
 }
 
 internal class ContextExp : SimpleExpressionBase
@@ -644,6 +702,13 @@ internal class ShowContextMenuExp : SimpleExpressionBase
         return false;
     }
 }
+internal class EverythingExistsExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        return CalculatorValue.From(Main.s_MessageWindow.EverythingExists());
+    }
+}
 internal class EverythingResetExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
@@ -794,12 +859,17 @@ internal class EverythingSearchExp : SimpleExpressionBase
                 EveryThingSDK.Everything_SetOffset(offset);
                 EveryThingSDK.Everything_SetMax(maxCount);
                 EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
-                if (EveryThingSDK.Everything_QueryW(true)) {
+                Main.s_MessageWindow.Query();
+                if (null != Main.s_EverythingQueryEvent) {
+                    Main.s_EverythingQueryEvent.WaitOne(Main.c_WaitTimeout);
+                }
+                uint tot = EveryThingSDK.Everything_GetTotResults();
+                if (tot > 0) {
                     List<object[]> list = new List<object[]>();
                     uint num = EveryThingSDK.Everything_GetNumResults();
                     for (uint i = 0; i < num; ++i) {
                         var sb = new StringBuilder(c_Capacity);
-                        EveryThingSDK.Everything_GetResultFullPathName(i, sb, c_Capacity);
+                        EveryThingSDK.Everything_GetResultFullPathNameW(i, sb, c_Capacity);
                         long size;
                         EveryThingSDK.Everything_GetResultSize(i, out size);
                         long time;
@@ -807,7 +877,7 @@ internal class EverythingSearchExp : SimpleExpressionBase
                         var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
                         list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
                     }
-                    Main.LogLine("everything_search '{0}', result:{1}", str, num);
+                    Main.LogLine("everything_search '{0}', result:{1}, total:{2}", str, num, tot);
                     return CalculatorValue.FromObject(list);
                 }
                 else {

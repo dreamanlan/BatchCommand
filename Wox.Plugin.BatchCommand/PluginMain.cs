@@ -444,6 +444,7 @@ internal class RestartExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (null != Main.s_CurFuncs) {
+            //RestarApp方法需要在主线程执行（点击列表触发的请求好像都是从主线程发起）
             Main.s_CurFuncs.Enqueue(() => {
                 Main.s_Context.API.RestarApp();
                 return false;
@@ -586,7 +587,7 @@ internal class ShowContextMenuExp : SimpleExpressionBase
             bool shift = operands[2].GetBool();
 
             Debug.Assert(null != Main.s_CurFuncs);
-            //shell操作推到发起请求的线程执行
+            //shell操作推到发起请求的线程执行（点击列表触发的请求好像都是从主线程发起）
             if (Directory.Exists(path)) {
                 Main.s_CurFuncs.Enqueue(() => {
                     var dis = new DirectoryInfo[] { new DirectoryInfo(path) };

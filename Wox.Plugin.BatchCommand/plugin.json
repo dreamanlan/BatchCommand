@@ -10,5 +10,6 @@
   "Language": "csharp",
   "Website": "http://www.wox.one/plugin",
   "ExecuteFileName": "Wox.Plugin.BatchCommand.dll",
-  "IcoPath": "Images\\dsl.png"
+  "IcoPath": "Images\\dsl.png",
+  "InitInMainThread": "True"
 }

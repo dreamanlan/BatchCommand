@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 
 public static class EveryThingSDK
 {
+    public const string DLL = "Everything.dll";
+
     public const int EVERYTHING_OK = 0;
     public const int EVERYTHING_ERROR_MEMORY = 1;
     public const int EVERYTHING_ERROR_IPC = 2;
@@ -64,155 +66,165 @@ public static class EveryThingSDK
     public const int EVERYTHING_TARGET_MACHINE_X64 = 2;
     public const int EVERYTHING_TARGET_MACHINE_ARM = 3;
 
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern UInt32 Everything_SetSearchW(string lpSearchString);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern uint Everything_SetSearchW(string lpSearchString);
+    [DllImport(DLL)]
     public static extern void Everything_SetMatchPath(bool bEnable);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_SetMatchCase(bool bEnable);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_SetMatchWholeWord(bool bEnable);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_SetRegex(bool bEnable);
-    [DllImport("Everything.dll")]
-    public static extern void Everything_SetMax(UInt32 dwMax);
-    [DllImport("Everything.dll")]
-    public static extern void Everything_SetOffset(UInt32 dwOffset);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
+    public static extern void Everything_SetMax(uint dwMax);
+    [DllImport(DLL)]
+    public static extern void Everything_SetOffset(uint dwOffset);
+    [DllImport(DLL)]
     public static extern void Everything_SetReplyWindow(IntPtr hWnd);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_SetReplyID(int nId);
 
 
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_GetMatchPath();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_GetMatchCase();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_GetMatchWholeWord();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_GetRegex();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetMax();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetOffset();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
+    public static extern uint Everything_GetMax();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetOffset();
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
     public static extern IntPtr Everything_GetSearchW();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetLastError();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
+    public static extern uint Everything_GetLastError();
+    [DllImport(DLL)]
     public static extern IntPtr Everything_GetReplyWindow();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern int Everything_GetReplyID();
 
-    [DllImport("Everything.dll")]
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
     public static extern bool Everything_QueryW(bool bWait);
 
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_IsQueryReply(int message, IntPtr wParam, IntPtr lParam, uint nId);
 
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_SortResultsByPath();
 
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetNumFileResults();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetNumFolderResults();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetNumResults();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetTotFileResults();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetTotFolderResults();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetTotResults();
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_IsVolumeResult(UInt32 nIndex);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_IsFolderResult(UInt32 nIndex);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_IsFileResult(UInt32 nIndex);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern void Everything_GetResultFullPathNameW(UInt32 nIndex, StringBuilder lpString, UInt32 nMaxCount);
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
+    public static extern uint Everything_GetNumFileResults();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetNumFolderResults();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetNumResults();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetTotFileResults();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetTotFolderResults();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetTotResults();
+    [DllImport(DLL)]
+    public static extern bool Everything_IsVolumeResult(uint nIndex);
+    [DllImport(DLL)]
+    public static extern bool Everything_IsFolderResult(uint nIndex);
+    [DllImport(DLL)]
+    public static extern bool Everything_IsFileResult(uint nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern void Everything_GetResultFullPathNameW(uint nIndex, StringBuilder lpString, uint nMaxCount);
+    [DllImport(DLL)]
     public static extern void Everything_Reset();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern void Everything_CleanUp();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetMajorVersion();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetMinorVersion();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetRevision();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetBuildNumber();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
+    public static extern uint Everything_GetMajorVersion();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetMinorVersion();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetRevision();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetBuildNumber();
+    [DllImport(DLL)]
     public static extern bool Everything_Exit();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_IsDBLoaded();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_IsAdmin();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_IsAppData();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_RebuildDB();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_UpdateAllFolderIndexes();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_SaveDB();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_SaveRunHistory();
-    [DllImport("Everything.dll")]
+    [DllImport(DLL)]
     public static extern bool Everything_DeleteRunHistory();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetTargetMachine();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetTargetMachine();
 
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultFileNameW(UInt32 nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultFileNameW(uint nIndex);
 
     // Everything 1.4
-    [DllImport("Everything.dll")]
-    public static extern void Everything_SetSort(UInt32 dwSortType);
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetSort();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetResultListSort();
-    [DllImport("Everything.dll")]
-    public static extern void Everything_SetRequestFlags(UInt32 dwRequestFlags);
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetRequestFlags();
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetResultListRequestFlags();
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultExtensionW(UInt32 nIndex);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultSize(UInt32 nIndex, out long lpFileSize);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultDateCreated(UInt32 nIndex, out long lpFileTime);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultDateModified(UInt32 nIndex, out long lpFileTime);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultDateAccessed(UInt32 nIndex, out long lpFileTime);
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetResultAttributes(UInt32 nIndex);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultFileListFileNameW(UInt32 nIndex);
-    [DllImport("Everything.dll")]
-    public static extern UInt32 Everything_GetResultRunCount(UInt32 nIndex);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultDateRun(UInt32 nIndex, out long lpFileTime);
-    [DllImport("Everything.dll")]
-    public static extern bool Everything_GetResultDateRecentlyChanged(UInt32 nIndex, out long lpFileTime);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultHighlightedFileNameW(UInt32 nIndex);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultHighlightedPathW(UInt32 nIndex);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern IntPtr Everything_GetResultHighlightedFullPathAndFileNameW(UInt32 nIndex);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern UInt32 Everything_GetRunCountFromFileNameW(string lpFileName);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern bool Everything_SetRunCountFromFileNameW(string lpFileName, UInt32 dwRunCount);
-    [DllImport("Everything.dll", CharSet = CharSet.Unicode)]
-    public static extern UInt32 Everything_IncRunCountFromFileNameW(string lpFileName);
+    [DllImport(DLL)]
+    public static extern void Everything_SetSort(uint dwSortType);
+    [DllImport(DLL)]
+    public static extern uint Everything_GetSort();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetResultListSort();
+    [DllImport(DLL)]
+    public static extern void Everything_SetRequestFlags(uint dwRequestFlags);
+    [DllImport(DLL)]
+    public static extern uint Everything_GetRequestFlags();
+    [DllImport(DLL)]
+    public static extern uint Everything_GetResultListRequestFlags();
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultExtensionW(uint nIndex);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultSize(uint nIndex, out long lpFileSize);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultDateCreated(uint nIndex, out long lpFileTime);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultDateModified(uint nIndex, out long lpFileTime);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultDateAccessed(uint nIndex, out long lpFileTime);
+    [DllImport(DLL)]
+    public static extern uint Everything_GetResultAttributes(uint nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultFileListFileNameW(uint nIndex);
+    [DllImport(DLL)]
+    public static extern uint Everything_GetResultRunCount(uint nIndex);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultDateRun(uint nIndex, out long lpFileTime);
+    [DllImport(DLL)]
+    public static extern bool Everything_GetResultDateRecentlyChanged(uint nIndex, out long lpFileTime);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultHighlightedFileNameW(uint nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultHighlightedPathW(uint nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern IntPtr Everything_GetResultHighlightedFullPathAndFileNameW(uint nIndex);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern uint Everything_GetRunCountFromFileNameW(string lpFileName);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern bool Everything_SetRunCountFromFileNameW(string lpFileName, uint dwRunCount);
+    [DllImport(DLL, CharSet = CharSet.Unicode)]
+    public static extern uint Everything_IncRunCountFromFileNameW(string lpFileName);
+
+    public static bool EverythingExists()
+    {
+        var hwnd = FindWindowW(EVERYTHING_IPC_WNDCLASS, null);
+        return hwnd != IntPtr.Zero;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindowW(string lpClassName, string lpWindowName);
+    private const string EVERYTHING_IPC_WNDCLASS = "EVERYTHING_TASKBAR_NOTIFICATION";
 }

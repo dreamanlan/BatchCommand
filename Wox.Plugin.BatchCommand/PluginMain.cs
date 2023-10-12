@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 //注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
-public class Main : IPlugin, IContextMenu
+public sealed class Main : IPlugin, IContextMenu
 {
     public void Init(PluginInitContext context)
     {
@@ -62,9 +62,11 @@ public class Main : IPlugin, IContextMenu
                     s_Context.API.RestarApp();
                 });
             }
-            else if(!s_MessageWindow.EverythingExists()) {
-                s_Results.Clear();
-            }
+        }
+        else if (!EveryThingSDK.EverythingExists()) {
+            System.Windows.Application.Current.Dispatcher.Invoke(() => {
+                s_Context.API.RestarApp();
+            });
         }
         return s_Results;
     }
@@ -231,14 +233,14 @@ public class Main : IPlugin, IContextMenu
             Thread.Sleep(0);
         }
         ProcessOnce(int.MaxValue, int.MaxValue);
+        LogLine("Script Thread {0} Terminated.", s_ScriptThreadId);
+        FlushLog("ScriptThread");
     }
     private static void InitScript()
     {
         s_ScriptThreadId = Thread.CurrentThread.ManagedThreadId;
         Log("Script Thread {0}", s_ScriptThreadId);
         FlushLog("InitScript");
-
-        s_EverythingQueryEvent = new AutoResetEvent(false);
 
         BatchScript.Init();
         BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
@@ -343,9 +345,7 @@ public class Main : IPlugin, IContextMenu
     internal static List<Result> s_NewResults = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
     internal static bool s_NeedReload = false;
-    internal static AutoResetEvent s_EverythingQueryEvent = null;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
-    internal const int c_WaitTimeout = 10000;
     internal const string c_IcoPath = "Images\\dsl.png";
 
     private static int s_StartupThreadId = 0;
@@ -379,9 +379,10 @@ public class Main : IPlugin, IContextMenu
 
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;
+    private const int c_WaitTimeout = 10000;
 }
 
-public class StringWriterWithLock : StringWriter
+public sealed class StringWriterWithLock : StringWriter
 {
     public StringWriterWithLock(StringBuilder sb, object lockObj):base(sb)
     {
@@ -412,24 +413,24 @@ public class StringWriterWithLock : StringWriter
     private object m_LockObj;
 }
 
-class MessageWindow : Form
+///<remarks>
+///Form好像必须在主线程初始化才会起作用，目前wox调插件Init方法时是在主线程的，但1.4版本之后就不是了
+///</remarks>
+public sealed class MessageWindow : Form
 {
     public MessageWindow()
     {
+        m_EverythingQueryEvent = new AutoResetEvent(false);
         var accessHandle = this.Handle;
     }
 
     public void Query()
     {
         m_CheckReply = true;
-        EveryThingSDK.Everything_SetReplyWindow(this.Handle);
+        EveryThingSDK.Everything_SetReplyWindow(m_Handle);
         EveryThingSDK.Everything_SetReplyID(MY_REPLY_ID);
         EveryThingSDK.Everything_QueryW(false);
-    }
-    public bool EverythingExists()
-    {
-        var hwnd = FindWindowW(EVERYTHING_IPC_WNDCLASS, null);
-        return hwnd != IntPtr.Zero;
+        m_EverythingQueryEvent.WaitOne(WAIT_TIME_OUT);
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -442,50 +443,51 @@ class MessageWindow : Form
     {
         IntPtr HWND_MESSAGE = new IntPtr(-3);
         SetParent(this.Handle, HWND_MESSAGE);
+        m_Handle = this.Handle;
     }
 
     protected override void WndProc(ref Message m)
     {
         if (m_CheckReply && EveryThingSDK.Everything_IsQueryReply(m.Msg, m.WParam, m.LParam, MY_REPLY_ID)) {
-            if (null != Main.s_EverythingQueryEvent) {
-                Main.s_EverythingQueryEvent.Set();
+            if (null != m_EverythingQueryEvent) {
+                m_EverythingQueryEvent.Set();
             }
         }
         base.WndProc(ref m);
     }
 
+    private AutoResetEvent m_EverythingQueryEvent = null;
     private bool m_CheckReply = false;
+    private IntPtr m_Handle = IntPtr.Zero;
 
     [DllImport("user32.dll")]
     private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr FindWindowW(string lpClassName, string lpWindowName);
-    private const string EVERYTHING_IPC_WNDCLASS = "EVERYTHING_TASKBAR_NOTIFICATION";
     private const int MY_REPLY_ID = 0;
+    private const int WAIT_TIME_OUT = 10000;
 }
 
-internal class ContextExp : SimpleExpressionBase
+internal sealed class ContextExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context);
     }
 }
-internal class ApiExp : SimpleExpressionBase
+internal sealed class ApiExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context.API);
     }
 }
-internal class MetadataExp : SimpleExpressionBase
+internal sealed class MetadataExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         return CalculatorValue.FromObject(Main.s_Context.CurrentPluginMetadata);
     }
 }
-internal class ShowMsgExp : SimpleExpressionBase
+internal sealed class ShowMsgExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -508,7 +510,7 @@ internal class ShowMsgExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class RestartExp : SimpleExpressionBase
+internal sealed class RestartExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -522,7 +524,7 @@ internal class RestartExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class ReloadDslExp : SimpleExpressionBase
+internal sealed class ReloadDslExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -530,7 +532,7 @@ internal class ReloadDslExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EvalDslExp : SimpleExpressionBase
+internal sealed class EvalDslExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -551,7 +553,7 @@ internal class EvalDslExp : SimpleExpressionBase
         return r;
     }
 }
-internal class ChangeQueryExp : SimpleExpressionBase
+internal sealed class ChangeQueryExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -573,7 +575,7 @@ internal class ChangeQueryExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class AddResultExp : SimpleExpressionBase
+internal sealed class AddResultExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -594,7 +596,7 @@ internal class AddResultExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class AddContextMenuExp : SimpleExpressionBase
+internal sealed class AddContextMenuExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -616,7 +618,7 @@ internal class AddContextMenuExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class ActionKeywordRegisteredExp : SimpleExpressionBase
+internal sealed class ActionKeywordRegisteredExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -627,7 +629,7 @@ internal class ActionKeywordRegisteredExp : SimpleExpressionBase
         return false;
     }
 }
-internal class ClearActionKeywordsExp : SimpleExpressionBase
+internal sealed class ClearActionKeywordsExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -645,7 +647,7 @@ internal class ClearActionKeywordsExp : SimpleExpressionBase
         return false;
     }
 }
-internal class AddActionKeywordExp : SimpleExpressionBase
+internal sealed class AddActionKeywordExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -668,7 +670,7 @@ internal class AddActionKeywordExp : SimpleExpressionBase
         return false;
     }
 }
-internal class ShowContextMenuExp : SimpleExpressionBase
+internal sealed class ShowContextMenuExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -702,14 +704,14 @@ internal class ShowContextMenuExp : SimpleExpressionBase
         return false;
     }
 }
-internal class EverythingExistsExp : SimpleExpressionBase
+internal sealed class EverythingExistsExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        return CalculatorValue.From(Main.s_MessageWindow.EverythingExists());
+        return CalculatorValue.From(EveryThingSDK.EverythingExists());
     }
 }
-internal class EverythingResetExp : SimpleExpressionBase
+internal sealed class EverythingResetExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -717,7 +719,7 @@ internal class EverythingResetExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EverythingSetDefaultExp : SimpleExpressionBase
+internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -729,7 +731,7 @@ internal class EverythingSetDefaultExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
-internal class EverythingMatchPathExp : SimpleExpressionBase
+internal sealed class EverythingMatchPathExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -742,7 +744,7 @@ internal class EverythingMatchPathExp : SimpleExpressionBase
         }
     }
 }
-internal class EverythingMatchCaseExp : SimpleExpressionBase
+internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -755,7 +757,7 @@ internal class EverythingMatchCaseExp : SimpleExpressionBase
         }
     }
 }
-internal class EverythingMatchWholeWordExp : SimpleExpressionBase
+internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -769,7 +771,7 @@ internal class EverythingMatchWholeWordExp : SimpleExpressionBase
         }
     }
 }
-internal class EverythingRegexExp : SimpleExpressionBase
+internal sealed class EverythingRegexExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -783,7 +785,7 @@ internal class EverythingRegexExp : SimpleExpressionBase
         }
     }
 }
-internal class EverythingSortExp : SimpleExpressionBase
+internal sealed class EverythingSortExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -842,7 +844,7 @@ internal class EverythingSortExp : SimpleExpressionBase
         }
     }
 }
-internal class EverythingSearchExp : SimpleExpressionBase
+internal sealed class EverythingSearchExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
@@ -860,9 +862,6 @@ internal class EverythingSearchExp : SimpleExpressionBase
                 EveryThingSDK.Everything_SetMax(maxCount);
                 EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
                 Main.s_MessageWindow.Query();
-                if (null != Main.s_EverythingQueryEvent) {
-                    Main.s_EverythingQueryEvent.WaitOne(Main.c_WaitTimeout);
-                }
                 uint tot = EveryThingSDK.Everything_GetTotResults();
                 if (tot > 0) {
                     List<object[]> list = new List<object[]>();

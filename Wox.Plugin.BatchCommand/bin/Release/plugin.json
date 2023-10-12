@@ -1,0 +1,14 @@
+{
+  "ID": "bddb2f7306664d819fd0132782efeacb",
+  "ActionKeywords": [
+    "dsl"
+  ],
+  "Name": "Dsl BatchCommand Plugin",
+  "Description": "use DSL extend wox",
+  "Author": "dreamanlan",
+  "Version": "0.0.1",
+  "Language": "csharp",
+  "Website": "http://www.wox.one/plugin",
+  "ExecuteFileName": "Wox.Plugin.BatchCommand.dll",
+  "IcoPath": "Images\\dsl.png"
+}

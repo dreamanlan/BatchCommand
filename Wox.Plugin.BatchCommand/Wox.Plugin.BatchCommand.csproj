@@ -64,5 +64,18 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShellContextMenu.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\dsl.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="main.dsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="plugin.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

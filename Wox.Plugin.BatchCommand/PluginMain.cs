@@ -44,7 +44,13 @@ public sealed class Main : IPlugin, IContextMenu
     {
         Debug.Assert(!IsScriptThread());
         LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
-        if (s_ScriptQueryQueue.Count == 0) {
+        if (!EveryThingSDK.EverythingExists()) {
+            LogLine("query [{0}] can't find everthing, restart Wox from thread {1}", query.ToString(), Thread.CurrentThread.ManagedThreadId);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => {
+                s_Context.API.RestarApp();
+            });
+        }
+        else if (s_ScriptQueryQueue.Count == 0) {
             var evt = GetThreadEvent();
             QueueScriptQuery(evt, () => {
                 //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
@@ -65,11 +71,6 @@ public sealed class Main : IPlugin, IContextMenu
                     s_Context.API.RestarApp();
                 });
             }
-        }
-        else if (!EveryThingSDK.EverythingExists()) {
-            System.Windows.Application.Current.Dispatcher.Invoke(() => {
-                s_Context.API.RestarApp();
-            });
         }
         return s_Results;
     }

@@ -13,7 +13,10 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-//注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
+/// <remarks>
+/// 目前插件只用于1.3.524版本的Wox，更新的版本因为插件初始化不在主线程，MessageWindow的功能会不正常
+/// 注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
+/// </remarks>
 public sealed class Main : IPlugin, IContextMenu
 {
     public void Init(PluginInitContext context)
@@ -715,7 +718,9 @@ internal sealed class EverythingResetExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        EveryThingSDK.Everything_Reset();
+        if (EveryThingSDK.EverythingExists()) {
+            EveryThingSDK.Everything_Reset();
+        }
         return CalculatorValue.NullObject;
     }
 }
@@ -723,11 +728,13 @@ internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
-        EveryThingSDK.Everything_SetMatchPath(false);
-        EveryThingSDK.Everything_SetMatchCase(false);
-        EveryThingSDK.Everything_SetMatchWholeWord(false);
-        EveryThingSDK.Everything_SetRegex(false);
-        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
+        if (EveryThingSDK.EverythingExists()) {
+            EveryThingSDK.Everything_SetMatchPath(false);
+            EveryThingSDK.Everything_SetMatchCase(false);
+            EveryThingSDK.Everything_SetMatchWholeWord(false);
+            EveryThingSDK.Everything_SetRegex(false);
+            EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
+        }
         return CalculatorValue.NullObject;
     }
 }
@@ -737,10 +744,17 @@ internal sealed class EverythingMatchPathExp : SimpleExpressionBase
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
-            EveryThingSDK.Everything_SetMatchPath(val);
-            return true;
-        } else {
+            if (EveryThingSDK.EverythingExists()) {
+                EveryThingSDK.Everything_SetMatchPath(val);
+                return true;
+            }
+            return false;
+        }
+        else if (EveryThingSDK.EverythingExists()) {
             return EveryThingSDK.Everything_GetMatchPath();
+        }
+        else {
+            return false;
         }
     }
 }
@@ -750,10 +764,17 @@ internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
-            EveryThingSDK.Everything_SetMatchCase(val);
-            return true;
-        } else {
+            if (EveryThingSDK.EverythingExists()) {
+                EveryThingSDK.Everything_SetMatchCase(val);
+                return true;
+            }
+            return false;
+        }
+        else if (EveryThingSDK.EverythingExists()) {
             return EveryThingSDK.Everything_GetMatchCase();
+        }
+        else {
+            return false;
         }
     }
 }
@@ -763,11 +784,17 @@ internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
-            EveryThingSDK.Everything_SetMatchWholeWord(val);
-            return true;
+            if (EveryThingSDK.EverythingExists()) {
+                EveryThingSDK.Everything_SetMatchWholeWord(val);
+                return true;
+            }
+            return false;
+        }
+        else if (EveryThingSDK.EverythingExists()) {
+            return EveryThingSDK.Everything_GetMatchWholeWord();
         }
         else {
-            return EveryThingSDK.Everything_GetMatchWholeWord();
+            return false;
         }
     }
 }
@@ -777,11 +804,17 @@ internal sealed class EverythingRegexExp : SimpleExpressionBase
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
-            EveryThingSDK.Everything_SetRegex(val);
-            return true;
+            if (EveryThingSDK.EverythingExists()) {
+                EveryThingSDK.Everything_SetRegex(val);
+                return true;
+            }
+            return false;
+        }
+        else if (EveryThingSDK.EverythingExists()) {
+            return EveryThingSDK.Everything_GetRegex();
         }
         else {
-            return EveryThingSDK.Everything_GetRegex();
+            return false;
         }
     }
 }
@@ -794,36 +827,43 @@ internal sealed class EverythingSortExp : SimpleExpressionBase
             bool asc = true;
             if (operands.Count >= 2)
                 asc = operands[1].GetBool();
-            if (type == "path") {
-                if(asc)
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
-                else
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_DESCENDING);
-            }
-            else if (type == "size") {
-                if (asc)
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_SIZE_ASCENDING);
-                else
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_SIZE_DESCENDING);
-            }
-            else if (type == "time") {
-                if (asc)
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_DATE_MODIFIED_ASCENDING);
-                else
-                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_DATE_MODIFIED_DESCENDING);
-            } else {
-                uint sort = 0;
-                if (null != type) {
-                    uint.TryParse(type, out sort);
-                } else {
-                    sort = operands[0].GetUInt();
+            if (EveryThingSDK.EverythingExists()) {
+                if (type == "path") {
+                    if (asc)
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
+                    else
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_DESCENDING);
                 }
-                EveryThingSDK.Everything_SetSort(sort);
-                return sort.ToString();
+                else if (type == "size") {
+                    if (asc)
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_SIZE_ASCENDING);
+                    else
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_SIZE_DESCENDING);
+                }
+                else if (type == "time") {
+                    if (asc)
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_DATE_MODIFIED_ASCENDING);
+                    else
+                        EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_DATE_MODIFIED_DESCENDING);
+                }
+                else {
+                    uint sort = 0;
+                    if (null != type) {
+                        uint.TryParse(type, out sort);
+                    }
+                    else {
+                        sort = operands[0].GetUInt();
+                    }
+                    EveryThingSDK.Everything_SetSort(sort);
+                    return sort.ToString();
+                }
+                return type + "," + (asc ? "asc" : "desc");
             }
-            return type + "," + (asc ? "asc" : "desc");
+            else {
+                return string.Empty;
+            }
         }
-        else {
+        else if (EveryThingSDK.EverythingExists()) {
             uint sort = EveryThingSDK.Everything_GetSort();
             switch (sort) {
                 case EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING:
@@ -842,6 +882,9 @@ internal sealed class EverythingSortExp : SimpleExpressionBase
                     return sort.ToString();
             }
         }
+        else {
+            return string.Empty;
+        }
     }
 }
 internal sealed class EverythingSearchExp : SimpleExpressionBase
@@ -857,30 +900,35 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
             if (operands.Count >= 3)
                 maxCount = operands[2].GetUInt();
             if (null != str) {
-                EveryThingSDK.Everything_SetSearchW(str);
-                EveryThingSDK.Everything_SetOffset(offset);
-                EveryThingSDK.Everything_SetMax(maxCount);
-                EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
-                Main.s_MessageWindow.Query();
-                uint tot = EveryThingSDK.Everything_GetTotResults();
-                if (tot > 0) {
-                    List<object[]> list = new List<object[]>();
-                    uint num = EveryThingSDK.Everything_GetNumResults();
-                    for (uint i = 0; i < num; ++i) {
-                        var sb = new StringBuilder(c_Capacity);
-                        EveryThingSDK.Everything_GetResultFullPathNameW(i, sb, c_Capacity);
-                        long size;
-                        EveryThingSDK.Everything_GetResultSize(i, out size);
-                        long time;
-                        EveryThingSDK.Everything_GetResultDateModified(i, out time);
-                        var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
-                        list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
+                if (EveryThingSDK.EverythingExists()) {
+                    EveryThingSDK.Everything_SetSearchW(str);
+                    EveryThingSDK.Everything_SetOffset(offset);
+                    EveryThingSDK.Everything_SetMax(maxCount);
+                    EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH | EveryThingSDK.EVERYTHING_REQUEST_SIZE | EveryThingSDK.EVERYTHING_REQUEST_DATE_MODIFIED);
+                    Main.s_MessageWindow.Query();
+                    uint tot = EveryThingSDK.Everything_GetTotResults();
+                    if (tot > 0) {
+                        List<object[]> list = new List<object[]>();
+                        uint num = EveryThingSDK.Everything_GetNumResults();
+                        for (uint i = 0; i < num; ++i) {
+                            var sb = new StringBuilder(c_Capacity);
+                            EveryThingSDK.Everything_GetResultFullPathNameW(i, sb, c_Capacity);
+                            long size;
+                            EveryThingSDK.Everything_GetResultSize(i, out size);
+                            long time;
+                            EveryThingSDK.Everything_GetResultDateModified(i, out time);
+                            var dt = new DateTime(1601, 1, 1, 8, 0, 0, DateTimeKind.Utc) + new TimeSpan(time);
+                            list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
+                        }
+                        Main.LogLine("everything_search '{0}', result:{1}, total:{2}", str, num, tot);
+                        return CalculatorValue.FromObject(list);
                     }
-                    Main.LogLine("everything_search '{0}', result:{1}, total:{2}", str, num, tot);
-                    return CalculatorValue.FromObject(list);
+                    else {
+                        Main.LogLine("everything_search '{0}' failed.", str);
+                    }
                 }
                 else {
-                    Main.LogLine("everything_search '{0}' failed.", str);
+                    Main.LogLine("everything can not be found.", str);
                 }
             }
         }

@@ -63,6 +63,7 @@
     <Compile Include="PluginMain.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShellContextMenu.cs" />
+    <Compile Include="SubclassWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Images\dsl.png">

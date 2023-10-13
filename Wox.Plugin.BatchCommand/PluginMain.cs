@@ -328,9 +328,6 @@ public sealed class Main : IPlugin, IContextMenu
         BatchScript.Register("everythingregex", new ExpressionFactoryHelper<EverythingRegexExp>());
         BatchScript.Register("everythingsort", new ExpressionFactoryHelper<EverythingSortExp>());
         BatchScript.Register("everythingsearch", new ExpressionFactoryHelper<EverythingSearchExp>());
-        BatchScript.Register("regread", new ExpressionFactoryHelper<RegReadExp>());
-        BatchScript.Register("regwrite", new ExpressionFactoryHelper<RegWriteExp>());
-        BatchScript.Register("regdelete", new ExpressionFactoryHelper<RegDeleteExp>());
 
         ReloadDsl();
     }
@@ -1008,107 +1005,4 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
 
     private static List<object[]> s_EmptyList = new List<object[]>();
     private const int c_Capacity = 4096;
-}
-internal sealed class RegReadExp : SimpleExpressionBase
-{
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
-    {
-        if (operands.Count >= 2) {
-            string keyName = operands[0].AsString;
-            string valName = operands[1].AsString;
-            CalculatorValue defVal = CalculatorValue.NullObject;
-            if (operands.Count >= 3)
-                defVal = operands[2];
-            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
-                object val = Registry.GetValue(keyName, valName, defVal.GetObject());
-                return CalculatorValue.FromObject(val);
-            }
-        }
-        return CalculatorValue.NullObject;
-    }
-}
-internal sealed class RegWriteExp : SimpleExpressionBase
-{
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
-    {
-        if (operands.Count >= 3) {
-            string keyName = operands[0].AsString;
-            string valName = operands[1].AsString;
-            object val = operands[2].GetObject();
-            CalculatorValue valKind = CalculatorValue.From((int)RegistryValueKind.Unknown);
-            if (operands.Count >= 4)
-                valKind = operands[3];
-            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
-                Registry.SetValue(keyName, valName, val, (RegistryValueKind)valKind.GetInt());
-                return CalculatorValue.From(true);
-            }
-        }
-        return CalculatorValue.From(false);
-    }
-    /*
-    public enum RegistryValueKind
-    {
-        String = 1,
-        ExpandString = 2,
-        Binary = 3,
-        DWord = 4,
-        MultiString = 7,
-        QWord = 11,
-        Unknown = 0,
-        [ComVisible(false)]
-        None = -1
-    }
-    */
-}
-internal sealed class RegDeleteExp : SimpleExpressionBase
-{
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
-    {
-        if (operands.Count >= 1) {
-            string keyName = operands[0].AsString;
-            bool delVal = false;
-            string valName = string.Empty;
-            if (operands.Count >= 2) {
-                delVal = true;
-                valName = operands[1].AsString;
-            }
-            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
-                var regKey = GetBaseKeyFromKeyName(keyName, out var subKeyName);
-                if (null != regKey) {
-                    if(delVal)
-                        regKey.DeleteValue(valName, false);
-                    else
-                        regKey.DeleteSubKeyTree(subKeyName, false);
-                    return CalculatorValue.From(true);
-                }
-            }
-        }
-        return CalculatorValue.From(false);
-    }
-    private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
-    {
-        if (keyName == null) {
-            throw new ArgumentNullException("keyName");
-        }
-        int num = keyName.IndexOf('\\');
-        string text = ((num == -1) ? keyName.ToUpper(CultureInfo.InvariantCulture) : keyName.Substring(0, num).ToUpper(CultureInfo.InvariantCulture));
-        s_KeyMap.TryGetValue(text, out var regKey);
-        if (num == -1 || num == keyName.Length) {
-            subKeyName = string.Empty;
-        }
-        else {
-            subKeyName = keyName.Substring(num + 1, keyName.Length - num - 1);
-        }
-        return regKey;
-    }
-
-    private static Dictionary<string, RegistryKey> s_KeyMap = new Dictionary<string, RegistryKey> {
-        { "HKEY_CURRENT_USER", Registry.CurrentUser },
-        {"HKEY_LOCAL_MACHINE", Registry.LocalMachine},
-        {"HKEY_CLASSES_ROOT", Registry.ClassesRoot},
-        {"HKEY_USERS", Registry.Users},
-        {"HKEY_PERFORMANCE_DATA", Registry.PerformanceData},
-        {"HKEY_CURRENT_CONFIG", Registry.CurrentConfig},
-        //{"HKEY_DYN_DATA", Registry.DynData},
-    };
 }

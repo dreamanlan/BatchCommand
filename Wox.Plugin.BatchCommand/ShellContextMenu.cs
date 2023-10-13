@@ -5,6 +5,7 @@ using System.IO;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace ShellApi
 {
@@ -14,7 +15,7 @@ namespace ShellApi
     ///    files[0] = new FileInfo(@"c:\windows\notepad.exe");
     ///    scm.ShowContextMenu(files, ctrl, shift, x, y);
     /// </example>
-    public class ShellContextMenu
+    public class ShellContextMenu : SubclassedWindow
     {
         #region Constructor
         /// <summary>Default constructor</summary>
@@ -109,6 +110,9 @@ namespace ShellApi
                             }
                         }
                     }
+                    if (IsWindow(m_Hwnd)) {
+                        AssignHandle(m_Hwnd);
+                    }
                 }
                 POINT pt;
                 GetCursorPos(out pt);
@@ -151,6 +155,29 @@ namespace ShellApi
                 ReleaseAll();
             }
             return errMsg;
+        }
+        protected override void WndProc(ref Message m)
+        {
+            bool handled = false;
+            if (null != m_ContextMenu3) {
+                IntPtr res;
+                int ret;
+                unsafe {
+                    res = new IntPtr(&ret);
+                }
+                if(S_OK == m_ContextMenu3.HandleMenuMsg2((uint)m.Msg, m.WParam, m.LParam, res)) {
+                    m.Result = new IntPtr(ret);
+                    handled = true;
+                }
+            }
+            else if (null != m_ContextMenu2) {
+                if (S_OK == m_ContextMenu2.HandleMenuMsg((uint)m.Msg, m.WParam, m.LParam)) {
+                    m.Result = new IntPtr(0);
+                    handled = true;
+                }
+            }
+            if(!handled)
+                base.WndProc(ref m);
         }
         #endregion
 

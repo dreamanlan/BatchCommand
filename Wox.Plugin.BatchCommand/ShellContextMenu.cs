@@ -33,6 +33,9 @@ namespace ShellApi
         }
         #endregion
 
+        public bool FolderUseDefaultOnly { get; set; } = false;
+        public bool FileUseDefaultOnly { get; set; } = false;
+
         #region ShowContextMenu()
         public void SetHwnd(IntPtr hwnd)
         {
@@ -77,6 +80,9 @@ namespace ShellApi
 
                 pMenu = CreatePopupMenu();
 
+                CMF folderCMF = FolderUseDefaultOnly ? CMF.DEFAULTONLY : CMF.NORMAL | CMF.EXPLORE;
+                CMF fileCMF = FileUseDefaultOnly ? CMF.DEFAULTONLY : CMF.NORMAL | CMF.EXPLORE;
+
                 int nResult = m_ContextMenu.QueryContextMenu(
                     pMenu,
                     0,
@@ -84,9 +90,9 @@ namespace ShellApi
                     CMD_LAST,
                     isFolder
                     ?
-                    (CMF.DEFAULTONLY | (shift ? CMF.EXTENDEDVERBS : 0))
+                    (folderCMF | (shift ? CMF.EXTENDEDVERBS : 0))
                     :
-                    (CMF.EXPLORE | CMF.NORMAL | (shift ? CMF.EXTENDEDVERBS : 0))
+                    (fileCMF | (shift ? CMF.EXTENDEDVERBS : 0))
                     );
 
                 Marshal.QueryInterface(iContextMenuPtr, ref IID_IContextMenu2, out iContextMenuPtr2);

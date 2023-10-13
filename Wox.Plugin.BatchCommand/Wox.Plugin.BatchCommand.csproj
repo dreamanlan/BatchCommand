@@ -48,6 +48,10 @@
     <Reference Include="Wox.Core">
       <HintPath>..\deps\Wox.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Wox.Infrastructure, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\deps\Wox.Infrastructure.dll</HintPath>
+    </Reference>
     <Reference Include="Wox.Plugin">
       <HintPath>..\deps\Wox.Plugin.dll</HintPath>
     </Reference>

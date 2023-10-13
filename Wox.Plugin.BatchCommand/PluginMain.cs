@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Wox.Plugin;
+using Wox.Infrastructure;
+using Wox.Infrastructure.Storage;
 using BatchCommand;
 using DslExpression;
 using System.Threading;
@@ -15,13 +17,27 @@ using System.Windows.Forms;
 using Microsoft.Win32;
 using System.Globalization;
 using System.Windows.Documents;
+using System.Runtime.Remoting.Contexts;
+using Wox.Infrastructure.UserSettings;
+using System.Runtime;
+using System.Threading.Tasks;
 
 /// <remarks>
 /// 目前插件只用于1.3.524版本的Wox，更新的版本因为插件初始化不在主线程，MessageWindow的功能会不正常
 /// 注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
 /// </remarks>
-public sealed class Main : IPlugin, IContextMenu
+public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISavable
 {
+    public Main()
+    {
+        //注：插件构造不是在主线程执行的
+
+        m_Storage = new PluginJsonStorage<PluginSettings>();
+        m_Settings = m_Storage.Load();
+
+        s_ShellCtxMenu.FolderUseDefaultOnly = m_Settings.FolderUseDefaultOnly;
+        s_ShellCtxMenu.FileUseDefaultOnly = m_Settings.FileUseDefaultOnly;
+    }
     public void Init(PluginInitContext context)
     {
         s_StartupThread = Thread.CurrentThread;
@@ -184,6 +200,39 @@ public sealed class Main : IPlugin, IContextMenu
         return WaitAndGetResult(evt, funcs);
     }
 
+    public void ReloadData()
+    {
+        //nothing to do
+    }
+
+    public string GetTranslatedPluginTitle()
+    {
+        //return s_Context.API.GetTranslation("wox_plugin_batchcommand_plugin_name");
+        return "Dsl BatchCommand Plugin";
+    }
+
+    public string GetTranslatedPluginDescription()
+    {
+        //return s_Context.API.GetTranslation("wox_plugin_batchcommand_plugin_description");
+        return "use MetaDSL extend Wox";
+    }
+
+    public void Save()
+    {
+        m_Settings.FolderUseDefaultOnly = s_ShellCtxMenu.FolderUseDefaultOnly;
+        m_Settings.FileUseDefaultOnly = s_ShellCtxMenu.FileUseDefaultOnly;
+        m_Storage.Save();
+    }
+
+    private class PluginSettings
+    {
+        public bool FolderUseDefaultOnly { get; set; } = true;
+        public bool FileUseDefaultOnly { get; set; } = false;
+    }
+
+    private readonly PluginSettings m_Settings;
+    private readonly PluginJsonStorage<PluginSettings> m_Storage;
+
     internal static void ReloadDsl()
     {
         string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
@@ -313,6 +362,7 @@ public sealed class Main : IPlugin, IContextMenu
         FlushLog("InitScript");
 
         BatchScript.Init();
+        BatchScript.Register("contextmenu", new ExpressionFactoryHelper<ShellContextMenuExp>());
         BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
         BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
@@ -540,6 +590,14 @@ public sealed class MessageWindow : Form
     private const int WAIT_TIME_OUT = 10000;
 }
 
+
+internal sealed class ShellContextMenuExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        return CalculatorValue.FromObject(Main.s_ShellCtxMenu);
+    }
+}
 internal sealed class ContextExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)

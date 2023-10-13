@@ -303,7 +303,7 @@ script(on_menu_action_explore_menu)args($query, $result, $menu, $actionContext)
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
     showcontextmenu($path, $ctrl, $shift);
-    return(1);
+    return(0);
 };
 
 script(on_action_change)args($query, $result, $actionContext)

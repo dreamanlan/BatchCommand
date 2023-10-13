@@ -52,6 +52,7 @@ public sealed class Main : IPlugin, IContextMenu
 
             if (s_ScriptQueryQueue.Count == 0) {
                 var evt = GetThreadEvent();
+                evt.Reset();
                 QueueScriptQuery(evt, () => {
                     //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
                     s_NewResults.Clear();
@@ -95,10 +96,16 @@ public sealed class Main : IPlugin, IContextMenu
         //这个操作串行执行
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
-        s_ContextMenus.Clear();
+        evt.Reset();
         QueueScriptAction(evt, funcs, () => {
+            //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
+            s_NewContextMenus.Clear();
             BatchScript.Call("on_context_menus", CalculatorValue.FromObject(query), CalculatorValue.FromObject(selectedResult));
             FlushLog("LoadContextMenus");
+            //swap
+            var t = s_ContextMenus;
+            s_ContextMenus = s_NewContextMenus;
+            s_NewContextMenus = t;
         });
         //wait
         WaitAndGetResult(evt, funcs);
@@ -120,6 +127,7 @@ public sealed class Main : IPlugin, IContextMenu
         //这里开始串行执行
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
+        evt.Reset();
         QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
             Log("menu action for [{0}|{1}] return {2} from thread {3}", menu.Title, menu.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
@@ -155,6 +163,7 @@ public sealed class Main : IPlugin, IContextMenu
         //这里开始串行执行
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
+        evt.Reset();
         QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(e));
             Log("action for [{0}|{1}] return {2} from thread {3}", result.Title, result.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
@@ -406,6 +415,7 @@ public sealed class Main : IPlugin, IContextMenu
     internal static List<Result> s_Results = new List<Result>();
     internal static List<Result> s_NewResults = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
+    internal static List<Result> s_NewContextMenus = new List<Result>();
     internal static string s_EverythingFullPath = string.Empty;
     internal static bool s_NeedReload = false;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
@@ -676,7 +686,7 @@ internal sealed class AddContextMenuExp : SimpleExpressionBase
 
             var item = new Result { Title = title, SubTitle = subTitle, IcoPath = icoPath, ContextData = query };
             item.Action = e => { return Main.OnMenuAction(action, query, result, item, e); };
-            Main.s_ContextMenus.Add(item);
+            Main.s_NewContextMenus.Add(item);
         }
         return CalculatorValue.NullObject;
     }

@@ -12,6 +12,9 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Microsoft.Win32;
+using System.Globalization;
+using System.Windows.Documents;
 
 /// <remarks>
 /// 目前插件只用于1.3.524版本的Wox，更新的版本因为插件初始化不在主线程，MessageWindow的功能会不正常
@@ -44,33 +47,43 @@ public sealed class Main : IPlugin, IContextMenu
     {
         Debug.Assert(!IsScriptThread());
         LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
-        if (!EveryThingSDK.EverythingExists()) {
-            LogLine("query [{0}] can't find everthing, restart Wox from thread {1}", query.ToString(), Thread.CurrentThread.ManagedThreadId);
+        if (EveryThingSDK.EverythingExists()) {
+            TryFindEverything();
+
+            if (s_ScriptQueryQueue.Count == 0) {
+                var evt = GetThreadEvent();
+                QueueScriptQuery(evt, () => {
+                    //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
+                    s_NewResults.Clear();
+                    BatchScript.Call("on_query", CalculatorValue.FromObject(query));
+                    FlushLog("Query");
+                    //swap
+                    var t = s_Results;
+                    s_Results = s_NewResults;
+                    s_NewResults = t;
+                });
+                //wait
+                Wait(evt);
+            }
+            else if (query.ActionKeyword == "dsl") {
+                if (query.FirstSearch == "restart") {
+                    System.Windows.Application.Current.Dispatcher.Invoke(() => {
+                        s_Context.API.RestarApp();
+                    });
+                }
+            }
+        }
+        else {
+            LogLine("query [{0}] can't find everthing, run everything and restart Wox from thread {1}", query.ToString(), Thread.CurrentThread.ManagedThreadId);
+            if (string.IsNullOrEmpty(s_EverythingFullPath)) {
+                LogLine("can't find everything install location!");
+            }
+            else {
+                Process.Start(s_EverythingFullPath);
+            }
             System.Windows.Application.Current.Dispatcher.Invoke(() => {
                 s_Context.API.RestarApp();
             });
-        }
-        else if (s_ScriptQueryQueue.Count == 0) {
-            var evt = GetThreadEvent();
-            QueueScriptQuery(evt, () => {
-                //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
-                s_NewResults.Clear();
-                BatchScript.Call("on_query", CalculatorValue.FromObject(query));
-                FlushLog("Query");
-                //swap
-                var t = s_Results;
-                s_Results = s_NewResults;
-                s_NewResults = t;
-            });
-            //wait
-            Wait(evt);
-        }
-        else if (query.ActionKeyword == "dsl") {
-            if (query.FirstSearch == "restart") {
-                System.Windows.Application.Current.Dispatcher.Invoke(() => {
-                    s_Context.API.RestarApp();
-                });
-            }
         }
         return s_Results;
     }
@@ -221,9 +234,53 @@ public sealed class Main : IPlugin, IContextMenu
     {
         return s_ScriptThreadId == Thread.CurrentThread.ManagedThreadId;
     }
+    internal static void TryFindEverything()
+    {
+        if (string.IsNullOrEmpty(s_EverythingFullPath)) {
+            const int c_Capacity = 4096;
+            const string c_Key = "Everything.exe";
+            var dir = Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\voidtools\\Everything", "InstallLocation", string.Empty) as string;
+            if (!string.IsNullOrEmpty(dir)) {
+                var fullPath = Path.Combine(dir, c_Key);
+                if (File.Exists(fullPath)) {
+                    s_EverythingFullPath = fullPath;
+                }
+            }
+            if (string.IsNullOrEmpty(s_EverythingFullPath)) {
+                if (EveryThingSDK.EverythingExists()) {
+                    EveryThingSDK.Everything_SetMatchPath(false);
+                    EveryThingSDK.Everything_SetMatchCase(false);
+                    EveryThingSDK.Everything_SetMatchWholeWord(true);
+                    EveryThingSDK.Everything_SetRegex(false);
+                    EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING); 
+                    
+                    EveryThingSDK.Everything_SetSearchW(c_Key);
+                    EveryThingSDK.Everything_SetOffset(0);
+                    EveryThingSDK.Everything_SetMax(100);
+                    EveryThingSDK.Everything_SetRequestFlags(EveryThingSDK.EVERYTHING_REQUEST_FILE_NAME | EveryThingSDK.EVERYTHING_REQUEST_PATH);
+                    if (EveryThingSDK.Everything_QueryW(true)) {
+                        uint num = EveryThingSDK.Everything_GetNumResults();
+                        for (uint i = 0; i < num; ++i) {
+                            var sb = new StringBuilder(c_Capacity);
+                            string fileName = Marshal.PtrToStringUni(EveryThingSDK.Everything_GetResultFileNameW(i));
+                            EveryThingSDK.Everything_GetResultFullPathNameW(i, sb, c_Capacity);
+                            if(string.Compare(fileName, c_Key, true) == 0) {
+                                var fullPath = sb.ToString();
+                                if(File.Exists(fullPath)) {
+                                    s_EverythingFullPath = fullPath;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private static void StartScriptThread()
     {
+        TryFindEverything();
+
         s_ScriptThread = new Thread(ScriptThread);
         s_ScriptThread.Name = "Script Thread";
         s_ScriptThread.Start();
@@ -234,7 +291,7 @@ public sealed class Main : IPlugin, IContextMenu
 
         while (s_StartupThread.IsAlive) {
             ProcessOnce(c_ActionNumPerTick, c_QueryNumPerTick);
-            Thread.Sleep(0);
+            Thread.Sleep(10);
         }
         ProcessOnce(int.MaxValue, int.MaxValue);
         LogLine("Script Thread {0} Terminated.", s_ScriptThreadId);
@@ -261,6 +318,7 @@ public sealed class Main : IPlugin, IContextMenu
         BatchScript.Register("clearkeywords", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
         BatchScript.Register("addkeyword", new ExpressionFactoryHelper<AddActionKeywordExp>());
         BatchScript.Register("showcontextmenu", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("tryfindeverything", new ExpressionFactoryHelper<TryFindEverythingExp>());
         BatchScript.Register("everythingexists", new ExpressionFactoryHelper<EverythingExistsExp>());
         BatchScript.Register("everythingreset", new ExpressionFactoryHelper<EverythingResetExp>());
         BatchScript.Register("everythingsetdefault", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
@@ -270,6 +328,9 @@ public sealed class Main : IPlugin, IContextMenu
         BatchScript.Register("everythingregex", new ExpressionFactoryHelper<EverythingRegexExp>());
         BatchScript.Register("everythingsort", new ExpressionFactoryHelper<EverythingSortExp>());
         BatchScript.Register("everythingsearch", new ExpressionFactoryHelper<EverythingSearchExp>());
+        BatchScript.Register("regread", new ExpressionFactoryHelper<RegReadExp>());
+        BatchScript.Register("regwrite", new ExpressionFactoryHelper<RegWriteExp>());
+        BatchScript.Register("regdelete", new ExpressionFactoryHelper<RegDeleteExp>());
 
         ReloadDsl();
     }
@@ -348,6 +409,7 @@ public sealed class Main : IPlugin, IContextMenu
     internal static List<Result> s_Results = new List<Result>();
     internal static List<Result> s_NewResults = new List<Result>();
     internal static List<Result> s_ContextMenus = new List<Result>();
+    internal static string s_EverythingFullPath = string.Empty;
     internal static bool s_NeedReload = false;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
     internal const string c_IcoPath = "Images\\dsl.png";
@@ -708,6 +770,14 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
         return false;
     }
 }
+internal sealed class TryFindEverythingExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        Main.TryFindEverything();
+        return CalculatorValue.From(Main.s_EverythingFullPath);
+    }
+}
 internal sealed class EverythingExistsExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
@@ -938,4 +1008,107 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
 
     private static List<object[]> s_EmptyList = new List<object[]>();
     private const int c_Capacity = 4096;
+}
+internal sealed class RegReadExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (operands.Count >= 2) {
+            string keyName = operands[0].AsString;
+            string valName = operands[1].AsString;
+            CalculatorValue defVal = CalculatorValue.NullObject;
+            if (operands.Count >= 3)
+                defVal = operands[2];
+            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
+                object val = Registry.GetValue(keyName, valName, defVal.GetObject());
+                return CalculatorValue.FromObject(val);
+            }
+        }
+        return CalculatorValue.NullObject;
+    }
+}
+internal sealed class RegWriteExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (operands.Count >= 3) {
+            string keyName = operands[0].AsString;
+            string valName = operands[1].AsString;
+            object val = operands[2].GetObject();
+            CalculatorValue valKind = CalculatorValue.From((int)RegistryValueKind.Unknown);
+            if (operands.Count >= 4)
+                valKind = operands[3];
+            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
+                Registry.SetValue(keyName, valName, val, (RegistryValueKind)valKind.GetInt());
+                return CalculatorValue.From(true);
+            }
+        }
+        return CalculatorValue.From(false);
+    }
+    /*
+    public enum RegistryValueKind
+    {
+        String = 1,
+        ExpandString = 2,
+        Binary = 3,
+        DWord = 4,
+        MultiString = 7,
+        QWord = 11,
+        Unknown = 0,
+        [ComVisible(false)]
+        None = -1
+    }
+    */
+}
+internal sealed class RegDeleteExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        if (operands.Count >= 1) {
+            string keyName = operands[0].AsString;
+            bool delVal = false;
+            string valName = string.Empty;
+            if (operands.Count >= 2) {
+                delVal = true;
+                valName = operands[1].AsString;
+            }
+            if (!string.IsNullOrEmpty(keyName) && !string.IsNullOrEmpty(valName)) {
+                var regKey = GetBaseKeyFromKeyName(keyName, out var subKeyName);
+                if (null != regKey) {
+                    if(delVal)
+                        regKey.DeleteValue(valName, false);
+                    else
+                        regKey.DeleteSubKeyTree(subKeyName, false);
+                    return CalculatorValue.From(true);
+                }
+            }
+        }
+        return CalculatorValue.From(false);
+    }
+    private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
+    {
+        if (keyName == null) {
+            throw new ArgumentNullException("keyName");
+        }
+        int num = keyName.IndexOf('\\');
+        string text = ((num == -1) ? keyName.ToUpper(CultureInfo.InvariantCulture) : keyName.Substring(0, num).ToUpper(CultureInfo.InvariantCulture));
+        s_KeyMap.TryGetValue(text, out var regKey);
+        if (num == -1 || num == keyName.Length) {
+            subKeyName = string.Empty;
+        }
+        else {
+            subKeyName = keyName.Substring(num + 1, keyName.Length - num - 1);
+        }
+        return regKey;
+    }
+
+    private static Dictionary<string, RegistryKey> s_KeyMap = new Dictionary<string, RegistryKey> {
+        { "HKEY_CURRENT_USER", Registry.CurrentUser },
+        {"HKEY_LOCAL_MACHINE", Registry.LocalMachine},
+        {"HKEY_CLASSES_ROOT", Registry.ClassesRoot},
+        {"HKEY_USERS", Registry.Users},
+        {"HKEY_PERFORMANCE_DATA", Registry.PerformanceData},
+        {"HKEY_CURRENT_CONFIG", Registry.CurrentConfig},
+        //{"HKEY_DYN_DATA", Registry.DynData},
+    };
 }

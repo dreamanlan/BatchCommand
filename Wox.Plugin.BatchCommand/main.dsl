@@ -15,6 +15,7 @@ public class PluginMetadata : BaseModel
     public string Description;
     public string Website;
     public bool Disabled;
+    public bool InitInMainThread;
     public string ExecuteFilePath;
     public string ExecuteFileName;
     public string PluginDirectory;
@@ -115,6 +116,7 @@ clearkeywords(id) 清空当前插件所有keyword, id是插件id
 addkeyword(id, keyword) 添加一个keyword, id是插件id, keyword是字符串
 showcontextmenu(path, ctrl, shift) 显示指定路径path关联的上下文菜单，ctrl与shift指明是否像按下ctrl与shift键一样
 
+tryfindeverything() 如果还没有记录everything全路径，尝试查找，返回everything.exe的全路径
 everythingexists() 判断everything是否在运行
 everythingreset() 清空everything搜索
 everythingsetdefault() 设置everythin默认搜索设置，matchpath false, matchcase false, matchwholdword false, regex false, sort by path asc
@@ -126,6 +128,32 @@ everythingsort(type, asc) 设置sort，type可以是path/size/time, asc是bool�
 everythingsort(sort) 设置sort, 参数为整数（参见下面的常量），无参数返回当前设置
 everythingsearch(key[,offset[,maxcount]]) 执行搜索，key为搜索关键字，offset默认为0，maxcount默认为100，返回一个三个元素的数组：full_path, size, file_date_time
 ，size是整数，其它元素是字符串
+
+regread(key_name, val_name[, def_val]) 读取注册表值
+regwrite(key_name, val_name, val[, val_kind]) 写注册表值
+regdelete(key_name[, val_name]) 删除注册表key或val
+
+key_name为路径串，HKey如下：
+HKEY_CURRENT_USER
+HKEY_LOCAL_MACHINE
+HKEY_CLASSES_ROOT
+HKEY_USERS
+HKEY_PERFORMANCE_DATA
+HKEY_CURRENT_CONFIG
+
+val_kind为整数，来自枚举：
+public enum RegistryValueKind
+{
+    String = 1,
+    ExpandString = 2,
+    Binary = 3,
+    DWord = 4,
+    MultiString = 7,
+    QWord = 11,
+    Unknown = 0,
+    [ComVisible(false)]
+    None = -1
+}
 
 public const int EVERYTHING_SORT_NAME_ASCENDING = 1;
 public const int EVERYTHING_SORT_NAME_DESCENDING = 2;
@@ -214,6 +242,7 @@ script(on_query)args($query)
         };
     }elseif($key=="menu"){
         everythingsetdefault();
+        everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query);

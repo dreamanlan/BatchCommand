@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace ShellApi
 {
@@ -1458,7 +1459,7 @@ namespace ShellApi
                 m_hookType,
                 m_filterFunc,
                 IntPtr.Zero,
-                (int)AppDomain.GetCurrentThreadId());
+                Thread.CurrentThread.ManagedThreadId);
         }
         // ************************************************************************
 

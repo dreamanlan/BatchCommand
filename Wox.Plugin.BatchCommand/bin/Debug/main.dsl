@@ -192,6 +192,7 @@ script(main)args($id, $metadata, $context)
     addkeyword($id, "menu");
     addkeyword($id, "file");
     addkeyword($id, "cmd");
+    addkeyword($id, "exe");
     addkeyword($id, "start");
     addkeyword($id, "unity");
     addkeyword($id, "notepad");
@@ -258,6 +259,12 @@ script(on_query)args($query)
         $list = everythingsearch($query.FirstSearch);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_cmd", $query);
+        };
+    }elseif($key=="exe"){
+        everythingsetdefault();
+        $list = everythingsearch($query.FirstSearch);
+        looplist($list){
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_exe", $query);
         };
     }elseif($key=="start"){
         everythingsetdefault();
@@ -372,6 +379,16 @@ script(on_action_cmd)args($query, $result, $actionContext)
         nowait(true);
         useshellexecute(true);
         verb("open");
+    };
+    return(1);
+};
+
+script(on_action_exe)args($query, $result, $actionContext)
+{
+    @exe = $result.Title;
+    $args = $query.SecondToEndSearch;
+    process(@exe, $args){
+        nowait(true);
     };
     return(1);
 };

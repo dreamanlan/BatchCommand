@@ -499,6 +499,7 @@ public sealed class MessageWindow : Form
 
     public void Query()
     {
+        m_EverythingQueryEvent.Reset();
         m_CheckReply = true;
         EveryThingSDK.Everything_SetReplyWindow(m_Handle);
         EveryThingSDK.Everything_SetReplyID(MY_REPLY_ID);

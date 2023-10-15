@@ -669,17 +669,8 @@ namespace GlslRewriter
                     if (id == "setting") {
                         ParseSetting(cfgInfo, pfd);
                     }
-                    else if (id == "vs_attr") {
-                        ParseInOutAttr(id, cfgInfo, pfd);
-                    }
-                    else if (id == "ps_attr") {
-                        ParseInOutAttr(id, cfgInfo, pfd);
-                    }
-                    else if (id == "uniform") {
-                        ParseUniformImport(cfgInfo, pfd);
-                    }
-                    else if (id == "vao_attr") {
-                        ParseVAOImport(cfgInfo, pfd);
+                    else if (id == "shader_arg") {
+                        ParseShaderArg(cfgInfo, pfd);
                     }
                     else if (id == "string_replacement") {
                         ParseStringReplacement(cfgInfo, pfd);
@@ -854,7 +845,7 @@ namespace GlslRewriter
                         }
                         else if (fid == "add_utof") {
                             var val = DoCalc(fd.GetParam(0));
-                            if(Calculator.TryGetUInt(val, out var uval)) {
+                            if (Calculator.TryGetUInt(val, out var uval)) {
                                 var fvstr = Calculator.FloatToString(Calculator.utof(uval));
                                 RenderDocImporter.s_UniformUtofOrFtouVals.Add("// " + val + " = " + fvstr + "f;");
                             }
@@ -1207,7 +1198,41 @@ namespace GlslRewriter
                 AddUnassignableObjectArrayMember(cfg, cd);
             }
         }
-        private static void ParseInOutAttr(string id, ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        private static void ParseShaderArg(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            int cid = 0;
+            if (dslCfg.IsHighOrder) {
+                var callCfg = dslCfg.LowerOrderFunction;
+                var cidStr = callCfg.GetParamId(0).Trim();
+                int.TryParse(cidStr, out cid);
+            }
+
+            var info = new ShaderArgConfig();
+
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    string fid = p.GetId();
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        if (fid == "vs_attr") {
+                            ParseInOutAttr(fid, info, fd);
+                        }
+                        else if (fid == "ps_attr") {
+                            ParseInOutAttr(fid, info, fd);
+                        }
+                        else if (fid == "uniform") {
+                            ParseUniformImport(info, fd);
+                        }
+                        else if (fid == "vao_attr") {
+                            ParseVAOImport(info, fd);
+                        }
+                    }
+                }
+            }
+
+            cfg.ArgConfigs.Add(cid, info);
+        }
+        private static void ParseInOutAttr(string id, ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
             var callCfg = dslCfg;
             if (dslCfg.IsHighOrder)
@@ -1260,7 +1285,7 @@ namespace GlslRewriter
                 }
             }
         }
-        private static void ParseUniformImport(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        private static void ParseUniformImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
             var callCfg = dslCfg;
             if (dslCfg.IsHighOrder)
@@ -1325,7 +1350,7 @@ namespace GlslRewriter
 
             cfg.UniformImports.Add(info);
         }
-        private static void ParseVAOImport(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        private static void ParseVAOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
             var callCfg = dslCfg;
             if (dslCfg.IsHighOrder)
@@ -1777,6 +1802,15 @@ namespace GlslRewriter
             internal string File = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
+        internal class ShaderArgConfig
+        {
+            internal int Id = 0;
+            internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
+            internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
+            internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
+
+            internal static ShaderArgConfig s_Empty = new ShaderArgConfig();
+        }
         internal class StringReplacement
         {
             internal string Src = string.Empty;
@@ -1794,9 +1828,7 @@ namespace GlslRewriter
         {
             internal string ShaderType = string.Empty;
             internal SettingInfo SettingInfo = new SettingInfo();
-            internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
-            internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
-            internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
+            internal Dictionary<int, ShaderArgConfig> ArgConfigs = new Dictionary<int, ShaderArgConfig>();
             internal List<StringReplacement> StringReplacements = new List<StringReplacement>();
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
             internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
@@ -1812,6 +1844,16 @@ namespace GlslRewriter
             }
         }
         private static ShaderConfig? s_ActiveConfig = null;
+        internal static ShaderArgConfig ActiveArgConfig
+        {
+            get {
+                if(ActiveConfig.ArgConfigs.TryGetValue(ActiveArgCfgId, out var config)) {
+                    return config;
+                }
+                return ShaderArgConfig.s_Empty;
+            }
+        }
+        internal static int ActiveArgCfgId { get; set; } = 0;
 
         private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
         internal static Random s_Random = new Random();
@@ -2026,31 +2068,34 @@ namespace GlslRewriter
         protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
         {
             bool ret = false;
-            if (operands.Count > 0) {
+            if (operands.Count > 1) {
                 bool ret1 = true;
                 bool ret2 = true;
-                int ix = operands[0].GetInt();
+                int cfgId = operands[0].GetInt();
+                int ix = operands[1].GetInt();
                 var cfg = Config.ActiveConfig;
-                var attrCfg = cfg.InOutAttrInfo;
-                if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
-                    if (File.Exists(attrCfg.InAttrImportFile)) {
-                        ret1 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
+                if (cfg.ArgConfigs.TryGetValue(cfgId, out var cfgInfo)) {
+                    var attrCfg = cfgInfo.InOutAttrInfo;
+                    if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
+                        if (File.Exists(attrCfg.InAttrImportFile)) {
+                            ret1 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
+                        }
+                        else {
+                            ret1 = false;
+                            Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
+                        }
                     }
-                    else {
-                        ret1 = false;
-                        Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
+                    if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
+                        if (File.Exists(attrCfg.OutAttrImportFile)) {
+                            ret2 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
+                        }
+                        else {
+                            ret2 = false;
+                            Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
+                        }
                     }
+                    ret = ret1 && ret2;
                 }
-                if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
-                    if (File.Exists(attrCfg.OutAttrImportFile)) {
-                        ret2 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
-                    }
-                    else {
-                        ret2 = false;
-                        Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
-                    }
-                }
-                ret = ret1 && ret2;
             }
             return DslExpression.CalculatorValue.From(ret);
         }

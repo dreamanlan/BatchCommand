@@ -2471,40 +2471,119 @@ vs
             u2_0_2,
         };
     };
-    vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 0);
-    uniform("d:/UC/cloud_5/vs_cbuf1.csv", "uvec4"){
-        add_range(0,15);
+    shader_arg
+    {
+        vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 0);
+        uniform("d:/UC/cloud_5/vs_cbuf1.csv", "uvec4"){
+            add_range(0,15);
+        };
+        uniform("d:/UC/cloud_5/vs_cbuf8.csv", "uvec4"){
+            add_range(0,7);
+            add(24,25,26,28,29,30);
+        };
+        uniform("d:/UC/cloud_5/vs_cbuf9.csv", "uvec4"){
+            add(7,12,13,14,15,16,78,113,129,141,142,143,144,145,146,147);
+        };
+        uniform("d:/UC/cloud_5/vs_cbuf10.csv", "uvec4"){
+            add_range(0,6);
+        };
+        uniform("d:/UC/cloud_5/vs_cbuf15.csv", "uvec4"){
+            add(1,22,23,24,25,26,27,28,54,55,57,60,61);
+        };
+        uniform("d:/UC/cloud_5/vs_cbuf16.csv", "uvec4"){
+            add_range(0,15);
+        };
+        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/vertex_in_attr3.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/vertex_in_attr4.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/vertex_in_attr5.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/vertex_in_attr6.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv"){
+            add_range(0,2);
+        };
     };
-    uniform("d:/UC/cloud_5/vs_cbuf8.csv", "uvec4"){
-        add_range(0,7);
-        add(24,25,26,28,29,30);
+    shader_arg(1)
+    {
+        vs_attr("d:/UC/cloud_5/1/c5_1_2_in.csv", "d:/UC/cloud_5/1/c5_1_2_out.csv", 0);
+        uniform("d:/UC/cloud_5/1/vs_cbuf1.csv", "uvec4"){
+            add_range(0,15);
+        };
+        uniform("d:/UC/cloud_5/1/vs_cbuf8.csv", "uvec4"){
+            add_range(0,7);
+            add(24,25,26,28,29,30);
+        };
+        uniform("d:/UC/cloud_5/1/vs_cbuf9.csv", "uvec4"){
+            add(7,12,13,14,15,16,78,113,129,141,142,143,144,145,146,147);
+        };
+        uniform("d:/UC/cloud_5/1/vs_cbuf10.csv", "uvec4"){
+            add_range(0,6);
+        };
+        uniform("d:/UC/cloud_5/1/vs_cbuf15.csv", "uvec4"){
+            add(1,22,23,24,25,26,27,28,54,55,57,60,61);
+        };
+        uniform("d:/UC/cloud_5/1/vs_cbuf16.csv", "uvec4"){
+            add_range(0,15);
+        };
+        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr3.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr4.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr5.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr6.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr7.csv"){
+            add_range(0,2);
+        };
     };
-    uniform("d:/UC/cloud_5/vs_cbuf9.csv", "uvec4"){
-        add(7,12,13,14,15,16,78,113,129,141,142,143,144,145,146,147);
-    };
-    uniform("d:/UC/cloud_5/vs_cbuf10.csv", "uvec4"){
-        add_range(0,6);
-    };
-    uniform("d:/UC/cloud_5/vs_cbuf15.csv", "uvec4"){
-        add(1,22,23,24,25,26,27,28,54,55,57,60,61);
-    };
-    uniform("d:/UC/cloud_5/vs_cbuf16.csv", "uvec4"){
-        add_range(0,15);
-    };
-    vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/vertex_in_attr3.csv"){
-        add_range(0,2);
-    };
-    vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/vertex_in_attr4.csv"){
-        add_range(0,2);
-    };
-    vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/vertex_in_attr5.csv"){
-        add_range(0,2);
-    };
-    vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/vertex_in_attr6.csv"){
-        add_range(0,2);
-    };
-    vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv"){
-        add_range(0,2);
+    shader_arg(2)
+    {
+        vs_attr("d:/UC/cloud_5/2/c5_2_2_in.csv", "d:/UC/cloud_5/2/c5_2_2_out.csv", 0);
+        uniform("d:/UC/cloud_5/2/vs_cbuf1.csv", "uvec4"){
+            add_range(0,15);
+        };
+        uniform("d:/UC/cloud_5/2/vs_cbuf8.csv", "uvec4"){
+            add_range(0,7);
+            add(24,25,26,28,29,30);
+        };
+        uniform("d:/UC/cloud_5/2/vs_cbuf9.csv", "uvec4"){
+            add(7,12,13,14,15,16,78,113,129,141,142,143,144,145,146,147);
+        };
+        uniform("d:/UC/cloud_5/2/vs_cbuf10.csv", "uvec4"){
+            add_range(0,6);
+        };
+        uniform("d:/UC/cloud_5/2/vs_cbuf15.csv", "uvec4"){
+            add(1,22,23,24,25,26,27,28,54,55,57,60,61);
+        };
+        uniform("d:/UC/cloud_5/2/vs_cbuf16.csv", "uvec4"){
+            add_range(0,15);
+        };
+        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr3.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr4.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr5.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr6.csv"){
+            add_range(0,2);
+        };
+        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr7.csv"){
+            add_range(0,2);
+        };
     };
     string_replacement
     {
@@ -2928,47 +3007,140 @@ ps
             u_9_1,
         };
     };
-    ps_attr("d:/UC/cloud_5/vs_out.csv", 0){
-        map_in_attr("out_attr0","in_attr0");
-        map_in_attr("out_attr1","in_attr1");
-        map_in_attr("out_attr2","in_attr2");
-        map_in_attr("out_attr3","in_attr3");
-        map_in_attr("out_attr4","in_attr4");
-        map_in_attr("out_attr5","in_attr5");
-        map_in_attr("out_attr6","in_attr6");
-        map_in_attr("out_attr7","in_attr7");
-        map_in_attr("out_attr8","in_attr8");
-        map_in_attr("out_attr9","in_attr9");
-        map_in_attr("out_attr10","in_attr10");
-        map_in_attr("out_attr11","in_attr11");
-        map_in_attr("out_attr12","in_attr12");
-        map_in_attr("out_attr13","in_attr13");
-        map_in_attr("out_attr14","in_attr14");
-        map_in_attr("out_attr15","in_attr15");
-        map_in_attr("out_attr16","in_attr16");
-        map_in_attr("out_attr17","in_attr17");
-        map_in_attr("out_attr18","in_attr18");
-        map_in_attr("out_attr19","in_attr19");
-        map_in_attr("out_attr20","in_attr20");
-        map_in_attr("out_attr21","in_attr21");
-        map_in_attr("out_attr22","in_attr22");
-        map_in_attr("out_attr23","in_attr23");
-        remove_in_attr("gl_Position");
+    shader_arg
+    {
+        ps_attr("d:/UC/cloud_5/vs_out.csv", 0){
+            map_in_attr("out_attr0","in_attr0");
+            map_in_attr("out_attr1","in_attr1");
+            map_in_attr("out_attr2","in_attr2");
+            map_in_attr("out_attr3","in_attr3");
+            map_in_attr("out_attr4","in_attr4");
+            map_in_attr("out_attr5","in_attr5");
+            map_in_attr("out_attr6","in_attr6");
+            map_in_attr("out_attr7","in_attr7");
+            map_in_attr("out_attr8","in_attr8");
+            map_in_attr("out_attr9","in_attr9");
+            map_in_attr("out_attr10","in_attr10");
+            map_in_attr("out_attr11","in_attr11");
+            map_in_attr("out_attr12","in_attr12");
+            map_in_attr("out_attr13","in_attr13");
+            map_in_attr("out_attr14","in_attr14");
+            map_in_attr("out_attr15","in_attr15");
+            map_in_attr("out_attr16","in_attr16");
+            map_in_attr("out_attr17","in_attr17");
+            map_in_attr("out_attr18","in_attr18");
+            map_in_attr("out_attr19","in_attr19");
+            map_in_attr("out_attr20","in_attr20");
+            map_in_attr("out_attr21","in_attr21");
+            map_in_attr("out_attr22","in_attr22");
+            map_in_attr("out_attr23","in_attr23");
+            remove_in_attr("gl_Position");
+        };
+        uniform("d:/UC/cloud_5/fs_cbuf8.csv", "uvec4"){
+            add(1,2,29,30);
+        };
+        uniform("d:/UC/cloud_5/fs_cbuf9.csv", "uvec4"){
+            add(78,139,140,189,190,191,192);
+        };
+        uniform("d:/UC/cloud_5/fs_cbuf10.csv", "uvec4"){
+            add(9,139,140,189,190);
+        };
+        uniform("d:/UC/cloud_5/fs_cbuf15.csv", "uvec4"){
+            add(1,25,26,28,42,43,44,57);
+        };
+        uniform("d:/UC/cloud_5/fs_cbuf16.csv", "uvec4"){
+            add(7,10);
+        };
     };
-    uniform("d:/UC/cloud_5/fs_cbuf8.csv", "uvec4"){
-        add(1,2,29,30);
+    shader_arg(1)
+    {
+        ps_attr("d:/UC/cloud_5/1/c5_1_2.csv", 0){
+            map_in_attr("out_attr0","in_attr0");
+            map_in_attr("out_attr1","in_attr1");
+            map_in_attr("out_attr2","in_attr2");
+            map_in_attr("out_attr3","in_attr3");
+            map_in_attr("out_attr4","in_attr4");
+            map_in_attr("out_attr5","in_attr5");
+            map_in_attr("out_attr6","in_attr6");
+            map_in_attr("out_attr7","in_attr7");
+            map_in_attr("out_attr8","in_attr8");
+            map_in_attr("out_attr9","in_attr9");
+            map_in_attr("out_attr10","in_attr10");
+            map_in_attr("out_attr11","in_attr11");
+            map_in_attr("out_attr12","in_attr12");
+            map_in_attr("out_attr13","in_attr13");
+            map_in_attr("out_attr14","in_attr14");
+            map_in_attr("out_attr15","in_attr15");
+            map_in_attr("out_attr16","in_attr16");
+            map_in_attr("out_attr17","in_attr17");
+            map_in_attr("out_attr18","in_attr18");
+            map_in_attr("out_attr19","in_attr19");
+            map_in_attr("out_attr20","in_attr20");
+            map_in_attr("out_attr21","in_attr21");
+            map_in_attr("out_attr22","in_attr22");
+            map_in_attr("out_attr23","in_attr23");
+            remove_in_attr("gl_Position");
+        };
+        uniform("d:/UC/cloud_5/1/fs_cbuf8.csv", "uvec4"){
+            add(1,2,29,30);
+        };
+        uniform("d:/UC/cloud_5/1/fs_cbuf9.csv", "uvec4"){
+            add(78,139,140,189,190,191,192);
+        };
+        uniform("d:/UC/cloud_5/1/fs_cbuf10.csv", "uvec4"){
+            add(9,139,140,189,190);
+        };
+        uniform("d:/UC/cloud_5/1/fs_cbuf15.csv", "uvec4"){
+            add(1,25,26,28,42,43,44,57);
+        };
+        uniform("d:/UC/cloud_5/1/fs_cbuf16.csv", "uvec4"){
+            add(7,10);
+        };
     };
-    uniform("d:/UC/cloud_5/fs_cbuf9.csv", "uvec4"){
-        add(78,139,140,189,190,191,192);
-    };
-    uniform("d:/UC/cloud_5/fs_cbuf10.csv", "uvec4"){
-        add(9,139,140,189,190);
-    };
-    uniform("d:/UC/cloud_5/fs_cbuf15.csv", "uvec4"){
-        add(1,25,26,28,42,43,44,57);
-    };
-    uniform("d:/UC/cloud_5/fs_cbuf16.csv", "uvec4"){
-        add(7,10);
+    shader_arg(2)
+    {
+        ps_attr("d:/UC/cloud_5/2/c5_2_2.csv", 0){
+            map_in_attr("out_attr0","in_attr0");
+            map_in_attr("out_attr1","in_attr1");
+            map_in_attr("out_attr2","in_attr2");
+            map_in_attr("out_attr3","in_attr3");
+            map_in_attr("out_attr4","in_attr4");
+            map_in_attr("out_attr5","in_attr5");
+            map_in_attr("out_attr6","in_attr6");
+            map_in_attr("out_attr7","in_attr7");
+            map_in_attr("out_attr8","in_attr8");
+            map_in_attr("out_attr9","in_attr9");
+            map_in_attr("out_attr10","in_attr10");
+            map_in_attr("out_attr11","in_attr11");
+            map_in_attr("out_attr12","in_attr12");
+            map_in_attr("out_attr13","in_attr13");
+            map_in_attr("out_attr14","in_attr14");
+            map_in_attr("out_attr15","in_attr15");
+            map_in_attr("out_attr16","in_attr16");
+            map_in_attr("out_attr17","in_attr17");
+            map_in_attr("out_attr18","in_attr18");
+            map_in_attr("out_attr19","in_attr19");
+            map_in_attr("out_attr20","in_attr20");
+            map_in_attr("out_attr21","in_attr21");
+            map_in_attr("out_attr22","in_attr22");
+            map_in_attr("out_attr23","in_attr23");
+            remove_in_attr("gl_Position");
+        };
+        uniform("d:/UC/cloud_5/2/fs_cbuf8.csv", "uvec4"){
+            add(1,2,29,30);
+        };
+        uniform("d:/UC/cloud_5/2/fs_cbuf9.csv", "uvec4"){
+            add(78,139,140,189,190,191,192);
+        };
+        uniform("d:/UC/cloud_5/2/fs_cbuf10.csv", "uvec4"){
+            add(9,139,140,189,190);
+        };
+        uniform("d:/UC/cloud_5/2/fs_cbuf15.csv", "uvec4"){
+            add(1,25,26,28,42,43,44,57);
+        };
+        uniform("d:/UC/cloud_5/2/fs_cbuf16.csv", "uvec4"){
+            add(7,10);
+        };
     };
     string_replacement
     {

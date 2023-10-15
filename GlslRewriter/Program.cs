@@ -26,7 +26,7 @@ namespace GlslRewriter
             else {
                 string srcFilePath = string.Empty;
                 string outFilePath = string.Empty;
-                string argFilePath = string.Empty;
+                string cfgFilePath = string.Empty;
                 bool typeByExt = true;
                 for (int i = 0; i < args.Length; ++i) {
                     if (0 == string.Compare(args[i], "-out", true)) {
@@ -50,13 +50,27 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (0 == string.Compare(args[i], "-args", true)) {
+                    else if (0 == string.Compare(args[i], "-cfg", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
-                                argFilePath = arg;
-                                if (!File.Exists(argFilePath)) {
-                                    Console.WriteLine("file path not found ! {0}", argFilePath);
+                                cfgFilePath = arg;
+                                if (!File.Exists(cfgFilePath)) {
+                                    Console.WriteLine("file path not found ! {0}", cfgFilePath);
+                                }
+                                ++i;
+                            }
+                        }
+                    }
+                    else if (0 == string.Compare(args[i], "-argcfg", true)) {
+                        if (i < args.Length - 1) {
+                            string arg = args[i + 1];
+                            if (!arg.StartsWith("-")) {
+                                if(int.TryParse(arg, out var ix)) {
+                                    Config.ActiveArgCfgId = ix;
+                                }
+                                else {
+                                    Console.WriteLine("argcfg must be integer ! {0}", arg);
                                 }
                                 ++i;
                             }
@@ -150,11 +164,11 @@ namespace GlslRewriter
                     //在Config加载前初始化批处理脚本，Config里有可能会用到脚本解释器
                     InitBatchScript();
 
-                    if (string.IsNullOrEmpty(argFilePath)) {
-                        argFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_args.dsl");
+                    if (string.IsNullOrEmpty(cfgFilePath)) {
+                        cfgFilePath = Path.Combine(workDir, srcFileNameWithoutExt + "_args.dsl");
                     }
-                    if (File.Exists(argFilePath)) {
-                        Config.LoadConfig(argFilePath, tmpDir);
+                    if (File.Exists(cfgFilePath)) {
+                        Config.LoadConfig(cfgFilePath, tmpDir);
                     }
 
                     if (string.IsNullOrEmpty(outFilePath)) {
@@ -197,7 +211,8 @@ namespace GlslRewriter
         {
             Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
             Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
-            Console.WriteLine(" [-args arg_dsl_file] config file path and name, default is [glsl_file_name]_args.dsl");
+            Console.WriteLine(" [-cfg cfg_dsl_file] config file path and name, default is [glsl_file_name]_cfg.dsl");
+            Console.WriteLine(" [-argcfg id_in_config] arg config id in config file, default is 0");
             Console.WriteLine(" [-vs] glsl_file is vertex shader [-ps] glsl_file is pixel shader (default)");
             Console.WriteLine(" [-cs] glsl_file is compute shader");
             Console.WriteLine(" [-i] interactive computing mode, don't write outfile");
@@ -373,8 +388,9 @@ namespace GlslRewriter
                     lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
                     lineList.Add(string.Empty);
                 }
-                if (Config.ActiveConfig.VAOImports.Count > 0) {
-                    foreach (var vaoImp in Config.ActiveConfig.VAOImports) {
+                var argConfig = Config.ActiveArgConfig;
+                if (argConfig.VAOImports.Count > 0) {
+                    foreach (var vaoImp in argConfig.VAOImports) {
                         var vaos = RenderDocImporter.GenerateVAO(vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File);
                         lineList.AddRange(vaos);
                     }
@@ -505,7 +521,7 @@ namespace GlslRewriter
             if (s_IsPsShader) {
                 stms.Add("gl_FragCoord = vec4(320,240,0.5,1.0);");
             }
-            var cfg = Config.ActiveConfig;
+            var cfg = Config.ActiveArgConfig;
             var attrCfg = cfg.InOutAttrInfo;
             if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
                 if (File.Exists(attrCfg.InAttrImportFile)) {

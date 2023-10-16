@@ -2511,7 +2511,7 @@ vs
     };
     shader_arg(1)
     {
-        vs_attr("d:/UC/cloud_5/1/c5_1_2_in.csv", "d:/UC/cloud_5/1/c5_1_2_out.csv", 0);
+        vs_attr("d:/UC/cloud_5/1/c5_1_1_in.csv", "d:/UC/cloud_5/1/c5_1_1_out.csv", 0);
         uniform("d:/UC/cloud_5/1/vs_cbuf1.csv", "uvec4"){
             add_range(0,15);
         };
@@ -2549,7 +2549,7 @@ vs
     };
     shader_arg(2)
     {
-        vs_attr("d:/UC/cloud_5/2/c5_2_2_in.csv", "d:/UC/cloud_5/2/c5_2_2_out.csv", 0);
+        vs_attr("d:/UC/cloud_5/2/c5_2_1_in.csv", "d:/UC/cloud_5/2/c5_2_1_out.csv", 0);
         uniform("d:/UC/cloud_5/2/vs_cbuf1.csv", "uvec4"){
             add_range(0,15);
         };
@@ -3054,7 +3054,7 @@ ps
     };
     shader_arg(1)
     {
-        ps_attr("d:/UC/cloud_5/1/c5_1_2.csv", 0){
+        ps_attr("d:/UC/cloud_5/1/c5_1_1_out.csv", 0){
             map_in_attr("out_attr0","in_attr0");
             map_in_attr("out_attr1","in_attr1");
             map_in_attr("out_attr2","in_attr2");
@@ -3099,7 +3099,7 @@ ps
     };
     shader_arg(2)
     {
-        ps_attr("d:/UC/cloud_5/2/c5_2_2.csv", 0){
+        ps_attr("d:/UC/cloud_5/2/c5_2_1_out.csv", 0){
             map_in_attr("out_attr0","in_attr0");
             map_in_attr("out_attr1","in_attr1");
             map_in_attr("out_attr2","in_attr2");

@@ -384,6 +384,92 @@ vs
             add_range(0,157);
         };
     };
+    shader_arg(1)
+    {
+        vs_attr("d:/UC/cloud_1/1/c1_1_12_in.csv", "d:/UC/cloud_1/1/c1_1_12_out.csv", 0);
+        uniform("d:/UC/cloud_1/1/vs_cbuf8.csv", "uvec4"){
+            add_range(0,7);
+            add(29,30);
+        };
+        uniform("d:/UC/cloud_1/1/vs_cbuf9.csv", "uvec4"){
+            add(11,12,16,141);
+            add_range(113,116);
+        };
+        uniform("d:/UC/cloud_1/1/vs_cbuf10.csv", "uvec4"){
+            add(0,2,3);
+        };
+        uniform("d:/UC/cloud_1/1/vs_cbuf13.csv", "uvec4"){
+            add(6);
+        };
+        uniform("d:/UC/cloud_1/1/vs_cbuf15.csv", "uvec4"){
+            add(1,54,55,57,60,61);
+            add_range(22,28);
+        };
+        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr4.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr5.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr6.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr7.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr9_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr9.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr10_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr10.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr11_array", "vec4", "d:/uc/VAO_1/1/vertex_in_attr11.csv"){
+            add_range(0,157);
+        };
+    };
+    shader_arg(3)
+    {
+        vs_attr("d:/UC/cloud_1/3/c1_3_12_in.csv", "d:/UC/cloud_1/3/c1_3_12_out.csv", 0);
+        uniform("d:/UC/cloud_1/3/vs_cbuf8.csv", "uvec4"){
+            add_range(0,7);
+            add(29,30);
+        };
+        uniform("d:/UC/cloud_1/3/vs_cbuf9.csv", "uvec4"){
+            add(11,12,16,141);
+            add_range(113,116);
+        };
+        uniform("d:/UC/cloud_1/3/vs_cbuf10.csv", "uvec4"){
+            add(0,2,3);
+        };
+        uniform("d:/UC/cloud_1/3/vs_cbuf13.csv", "uvec4"){
+            add(6);
+        };
+        uniform("d:/UC/cloud_1/3/vs_cbuf15.csv", "uvec4"){
+            add(1,54,55,57,60,61);
+            add_range(22,28);
+        };
+        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr4.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr5.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr6.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr7.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr9_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr9.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr10_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr10.csv"){
+            add_range(0,157);
+        };
+        vao_attr("var in_attr11_array", "vec4", "d:/uc/VAO_1/3/vertex_in_attr11.csv"){
+            add_range(0,157);
+        };
+    };
     calculator
     {
         textureSize(tex0,*) = vec2(8,13);
@@ -519,6 +605,60 @@ ps
             add(139,140,189,190);
         };
         uniform("d:/UC/cloud_1/fs_cbuf15.csv", "uvec4"){
+            add(1,25,26,28,42,43,44,57);
+        };
+    };
+    shader_arg(1)
+    {
+        ps_attr("d:/UC/cloud_1/1/c1_1_12_out.csv", 0){
+            map_in_attr("out_attr0","in_attr0");
+            map_in_attr("out_attr1","in_attr1");
+            map_in_attr("out_attr2","in_attr2");
+            map_in_attr("out_attr3","in_attr3");
+            map_in_attr("out_attr4","in_attr4");
+            map_in_attr("out_attr5","in_attr5");
+            map_in_attr("out_attr6","in_attr6");
+            map_in_attr("out_attr7","in_attr7");
+            map_in_attr("out_attr8","in_attr8");
+            map_in_attr("out_attr9","in_attr9");
+            map_in_attr("out_attr10","in_attr10");
+            map_in_attr("out_attr11","in_attr11");
+            remove_in_attr("gl_Position");
+        };
+        uniform("d:/UC/cloud_1/1/fs_cbuf8.csv", "uvec4"){
+            add(29,30);
+        };
+        uniform("d:/UC/cloud_1/1/fs_cbuf9.csv", "uvec4"){
+            add(139,140,189,190);
+        };
+        uniform("d:/UC/cloud_1/1/fs_cbuf15.csv", "uvec4"){
+            add(1,25,26,28,42,43,44,57);
+        };
+    };
+    shader_arg(3)
+    {
+        ps_attr("d:/UC/cloud_1/3/c1_3_12_out.csv", 0){
+            map_in_attr("out_attr0","in_attr0");
+            map_in_attr("out_attr1","in_attr1");
+            map_in_attr("out_attr2","in_attr2");
+            map_in_attr("out_attr3","in_attr3");
+            map_in_attr("out_attr4","in_attr4");
+            map_in_attr("out_attr5","in_attr5");
+            map_in_attr("out_attr6","in_attr6");
+            map_in_attr("out_attr7","in_attr7");
+            map_in_attr("out_attr8","in_attr8");
+            map_in_attr("out_attr9","in_attr9");
+            map_in_attr("out_attr10","in_attr10");
+            map_in_attr("out_attr11","in_attr11");
+            remove_in_attr("gl_Position");
+        };
+        uniform("d:/UC/cloud_1/3/fs_cbuf8.csv", "uvec4"){
+            add(29,30);
+        };
+        uniform("d:/UC/cloud_1/3/fs_cbuf9.csv", "uvec4"){
+            add(139,140,189,190);
+        };
+        uniform("d:/UC/cloud_1/3/fs_cbuf15.csv", "uvec4"){
             add(1,25,26,28,42,43,44,57);
         };
     };

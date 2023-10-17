@@ -1475,7 +1475,7 @@ namespace GlslRewriter
                     info.OnGetValue = args => { return vd.GetId(); };
                 }
                 else if (null != fd) {
-                    if (fd.IsHighOrder && fd.HaveStatement()) {
+                    if (fd.GetId() == "func" && fd.IsHighOrder && fd.HaveStatement()) {
                         //这种形式用于直接调dsl脚本，构造一个函数
                         var callData = fd.LowerOrderFunction;
                         List<string> argNames = new List<string>();

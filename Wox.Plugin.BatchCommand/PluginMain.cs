@@ -21,6 +21,7 @@ using System.Runtime.Remoting.Contexts;
 using Wox.Infrastructure.UserSettings;
 using System.Runtime;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 /// <remarks>
 /// 目前插件只用于1.3.524版本的Wox，更新的版本因为插件初始化不在主线程，MessageWindow的功能会不正常
@@ -47,9 +48,9 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         string exe = p.MainModule.FileName;
         string dir = Path.GetDirectoryName(exe);
         Directory.SetCurrentDirectory(dir);
-        var errWriter = new StringWriterWithLock(s_ErrorBuilder, s_LogLock);
-        Console.SetOut(errWriter);
-        Console.SetError(errWriter);
+        s_ErrWriter = new StringWriterWithLock(s_ErrorBuilder, s_LogLock);
+        Console.SetOut(s_ErrWriter);
+        Console.SetError(s_ErrWriter);
         using (var sw = new StreamWriter(s_LogFile, false)) {
             sw.WriteLine("dir:{0} exe:{1}", dir, exe);
             sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
@@ -335,6 +336,66 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         }
     }
 
+    internal static void ShowConsole()
+    {
+        var handle = GetConsoleWindow();
+
+        if (handle == IntPtr.Zero) {
+            if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
+                AllocConsole();
+            }
+            IntPtr stdHandle = GetStdHandle(StandardHandle.Output);
+            IntPtr errHandle = GetStdHandle(StandardHandle.Error);
+            SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
+            FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
+            SafeFileHandle safeFileHandle2 = new SafeFileHandle(errHandle, true);
+            FileStream fileStream2 = new FileStream(safeFileHandle2, FileAccess.Write);
+            Encoding encoding = Encoding.UTF8;
+            s_StandardOutput = new StreamWriter(fileStream, encoding);
+            s_StandardError = new StreamWriter(fileStream2, encoding);
+            s_StandardOutput.AutoFlush = true;
+            s_StandardError.AutoFlush = true;
+            s_StandardOutput.Flush();
+            s_StandardError.Flush();
+            Console.SetOut(s_StandardOutput);
+            Console.SetError(s_StandardError);
+            Console.Clear();
+        }
+        else {
+            ShowWindow(handle, SW_SHOW);
+            Console.SetOut(s_StandardOutput);
+            Console.SetError(s_StandardError);
+        }
+    }
+    internal static void HideConsole()
+    {
+        var handle = GetConsoleWindow();
+        ShowWindow(handle, SW_HIDE);
+        Console.SetOut(s_ErrWriter);
+        Console.SetError(s_ErrWriter);
+    }
+    private static bool IsRedirected(IntPtr handle)
+    {
+        FileType fileType = GetFileType(handle);
+        return (fileType == FileType.Disk) || (fileType == FileType.Pipe);
+    }
+    private static void Redirect()
+    {
+        if (IsRedirected(GetStdHandle(StandardHandle.Output))) {
+            var initialiseOut = Console.Out;
+        }
+        bool errorRedirected = IsRedirected(GetStdHandle(StandardHandle.Error));
+        if (errorRedirected) {
+            var initialiseError = Console.Error;
+        }
+        if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
+            AllocConsole();
+        }
+        if (!errorRedirected) {
+            SetStdHandle(StandardHandle.Error, GetStdHandle(StandardHandle.Output));
+        }
+    }
+
     private static void StartScriptThread()
     {
         TryFindEverything();
@@ -354,6 +415,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         ProcessOnce(int.MaxValue, int.MaxValue);
         LogLine("Script Thread {0} Terminated.", s_ScriptThreadId);
         FlushLog("ScriptThread");
+        FreeConsole();
     }
     private static void InitScript()
     {
@@ -368,6 +430,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
         BatchScript.Register("showmsg", new ExpressionFactoryHelper<ShowMsgExp>());
         BatchScript.Register("restart", new ExpressionFactoryHelper<RestartExp>());
+        BatchScript.Register("show", new ExpressionFactoryHelper<ShowConsoleExp>());
+        BatchScript.Register("hide", new ExpressionFactoryHelper<HideConsoleExp>());
         BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
         BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
         BatchScript.Register("changequery", new ExpressionFactoryHelper<ChangeQueryExp>());
@@ -476,6 +540,9 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     private static int s_ScriptThreadId = 0;
     private static Thread s_ScriptThread = null;
     private static string s_LogFile = "BatchCommand.log";
+    private static StringWriterWithLock s_ErrWriter = null;
+    private static StreamWriter s_StandardOutput = null;
+    private static StreamWriter s_StandardError = null;
     private static StringBuilder s_ErrorBuilder = new StringBuilder();
     private static StringBuilder s_LogBuilder = new StringBuilder();
     private static object s_LogLock = new object();
@@ -503,6 +570,41 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;
     private const int c_WaitTimeout = 10000;
+
+    private const int ATTACH_PARENT_PROCESS = -1;
+    private const int SW_HIDE = 0;
+    private const int SW_SHOW = 5;
+
+    private enum StandardHandle : uint
+    {
+        Input = unchecked((uint)-10),
+        Output = unchecked((uint)-11),
+        Error = unchecked((uint)-12)
+    }
+    private enum FileType : uint
+    {
+        Unknown = 0x0000,
+        Disk = 0x0001,
+        Char = 0x0002,
+        Pipe = 0x0003
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetConsoleWindow();
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AllocConsole();
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AttachConsole(int dwProcessId);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool FreeConsole();
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr GetStdHandle(StandardHandle nStdHandle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetStdHandle(StandardHandle nStdHandle, IntPtr handle);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern FileType GetFileType(IntPtr handle);
 }
 
 public sealed class StringWriterWithLock : StringWriter
@@ -590,7 +692,6 @@ public sealed class MessageWindow : Form
     private const int WAIT_TIME_OUT = 10000;
 }
 
-
 internal sealed class ShellContextMenuExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
@@ -656,6 +757,24 @@ internal sealed class RestartExp : SimpleExpressionBase
         return CalculatorValue.NullObject;
     }
 }
+internal sealed class ShowConsoleExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        CalculatorValue r = CalculatorValue.NullObject;
+        Main.ShowConsole();
+        return r;
+    }
+}
+internal sealed class HideConsoleExp : SimpleExpressionBase
+{
+    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    {
+        CalculatorValue r = CalculatorValue.NullObject;
+        Main.HideConsole();
+        return r;
+    }
+}
 internal sealed class ReloadDslExp : SimpleExpressionBase
 {
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
@@ -681,6 +800,9 @@ internal sealed class EvalDslExp : SimpleExpressionBase
                 r = BatchScript.Call(id, args);
             }
             BatchScript.RecycleCalculatorValueList(args);
+            if (!r.IsNullObject) {
+                Console.WriteLine("[evaldsl]:{0}", r.ToString());
+            }
         }
         return r;
     }

@@ -257,7 +257,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         }
         if (!string.IsNullOrEmpty(err)) {
             if (null != s_StandardOutput) {
-                s_StandardOutput.WriteLine(err);
+                s_StandardOutput.Write(err);
             }
         }
         bool logIsEmpty = string.IsNullOrEmpty(log);
@@ -364,14 +364,16 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             s_StandardOutput.Flush();
             Console.Clear();
         }
-        else {
+        else if(!IsWindowVisible(handle)) {
             ShowWindow(handle, SW_SHOW);
         }
     }
     internal static void HideConsole()
     {
         var handle = GetConsoleWindow();
-        ShowWindow(handle, SW_HIDE);
+        if (IsWindowVisible(handle)) {
+            ShowWindow(handle, SW_HIDE);
+        }
     }
     private static bool IsRedirected(IntPtr handle)
     {
@@ -571,6 +573,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         Pipe = 0x0003
     }
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("kernel32.dll")]
@@ -779,12 +783,12 @@ internal sealed class EvalDslExp : SimpleExpressionBase
             }
             var id = BatchScript.EvalAsFunc(code, new string[] { "$query", "$result", "$actionContext" });
             if (null != id) {
+                Main.ShowConsole();
                 r = BatchScript.Call(id, args);
             }
             BatchScript.RecycleCalculatorValueList(args);
             if (!r.IsNullObject) {
-                Console.WriteLine("[evaldsl]:{0}", r.ToString());
-                Main.FlushLog("evaldsl");
+                Console.WriteLine("[result]:{0}", r.ToString());
             }
         }
         return r;

@@ -202,7 +202,8 @@ script(main)args($id, $metadata, $context)
     @curkey = "";
     @phase = 0;
     @exe = "";
-    @cmdpath = "";
+    @path = "";
+    @args = "";
     //配置应用参数：exe查询串，选择exe后的替代查询串（keyword + " " + 新查询），执行的命令格式化串(使用{0}引用第一次选择的结果即exe路径)，
     //执行的命令参数格式化串(使用{0}引用第二次选择的结果，一般是文件路径)
     @cfg = {
@@ -220,7 +221,8 @@ script(on_query)args($query)
         @curkey = $key;
         @phase = 0;
         @exe = "";
-        @cmdpath = "";
+        @path = "";
+        @args = "";
     };
     if($key=="dsl"){
         $param = $query.FirstSearch;
@@ -306,10 +308,10 @@ script(on_context_menus)args($query, $result)
 //$menu也是Result对象
 script(on_menu_action_explore_menu)args($query, $result, $menu, $actionContext)
 {
-    $path = $result.Title;
+    @path = $result.Title;
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
-    showcontextmenu($path, $ctrl, $shift);
+    showcontextmenu(@path, $ctrl, $shift);
     return(0);
 };
 
@@ -330,7 +332,8 @@ script(on_action_eval_dsl)args($query, $result, $actionContext)
 };
 script(on_action_info)args($query, $result, $actionContext)
 {
-    showmsg("key:" + @curkey + " phase:" + @phase, "exe:" + @exe + " cmdpath:" + @cmdpath);
+    show();
+    echo("key:{0} phase:{1} exe:{2} path:{3} args:{4}", @curkey, @phase, @exe, @path, @args);
     return(0);
 };
 script(on_action_clear)args($query, $result, $actionContext)
@@ -338,7 +341,8 @@ script(on_action_clear)args($query, $result, $actionContext)
     @curkey = "";
     @phase = 0;
     @exe = "";
-    @cmdpath = "";
+    @path = "";
+    @args = "";
     return(0);
 };
 script(on_action_restart)args($query, $result, $actionContext)
@@ -349,18 +353,18 @@ script(on_action_restart)args($query, $result, $actionContext)
 
 script(on_action_menu)args($query, $result, $actionContext)
 {
-    $path = $result.Title;
+    @path = $result.Title;
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
-    showcontextmenu($path, $ctrl, $shift);
+    showcontextmenu(@path, $ctrl, $shift);
     return(0);
 };
 
 script(on_action_file)args($query, $result, $actionContext)
 {
-    $path = $result.Title;
-    $args = $query.SecondToEndSearch;
-    process($path, $args){
+    @path = $result.Title;
+    @args = $query.SecondToEndSearch;
+    process(@path, @args){
         nowait(true);
         useshellexecute(true);
         verb("open");
@@ -370,12 +374,12 @@ script(on_action_file)args($query, $result, $actionContext)
 
 script(on_action_cmd)args($query, $result, $actionContext)
 {
-    @cmdpath = $result.Title;
-    if(fileexist(@cmdpath)){
-        @cmdpath = getdirectoryname(@cmdpath);
+    @path = $result.Title;
+    if(fileexist(@path)){
+        @path = getdirectoryname(@path);
     };
-    $args = $query.SecondToEndSearch;
-    process("cmd", "/c start /d " + quotepath(@cmdpath) + " " + $args){
+    @args = $query.SecondToEndSearch;
+    process("cmd", "/c start /d " + quotepath(@path) + " " + @args){
         nowait(true);
         useshellexecute(true);
         verb("open");
@@ -386,8 +390,8 @@ script(on_action_cmd)args($query, $result, $actionContext)
 script(on_action_exe)args($query, $result, $actionContext)
 {
     @exe = $result.Title;
-    $args = $query.SecondToEndSearch;
-    process(@exe, $args){
+    @args = $query.SecondToEndSearch;
+    process(@exe, @args){
         nowait(true);
     };
     return(1);
@@ -402,9 +406,9 @@ script(on_action_start)args($query, $result, $actionContext)
 };
 script(on_action_start_proj)args($query, $result, $actionContext)
 {
-    $path = $result.Title;
-    $args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
-    process(@exe, quotepath($path) + $args){
+    @path = $result.Title;
+    @args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    process(@exe, quotepath(@path) + @args){
         nowait(true);
     };
     @phase = 0;
@@ -422,13 +426,13 @@ script(on_action_app)args($query, $result, $actionContext)
 script(on_action_app_proj)args($query, $result, $actionContext)
 {
     $key = $query.ActionKeyword;
-    $args = $query.SecondToEndSearch;
-    $path = $result.Title;
+    @args = $query.SecondToEndSearch;
+    @path = $result.Title;
     //unity工程可以借助子目录名来筛选
-    if($key=="unity" && $path.EndsWith("\\Assets")){
-        $path = getdirectoryname($path);
+    if($key=="unity" && @path.EndsWith("\\Assets")){
+        @path = getdirectoryname(@path);
     };
-    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], quotepath($path)) + " " + $args){
+    process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], quotepath(@path)) + " " + @args){
         nowait(true);
     };
     @phase = 0;

@@ -2353,6 +2353,13 @@ namespace BatchCommand
             }
             return string.Empty;
         }
+        internal static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
+        {
+            string id = System.Guid.NewGuid().ToString();
+            Debug.Assert(null != func);
+            s_Calculator.LoadDsl(id, argNames, func);
+            return id;
+        }
         internal static CalculatorValue EvalAndRun(string code)
         {
             CalculatorValue r = CalculatorValue.EmptyString;
@@ -2383,52 +2390,52 @@ namespace BatchCommand
         {
             s_Calculator.RecycleCalculatorValueList(list);
         }
-        internal static CalculatorValue Call(string scpFile)
+        internal static CalculatorValue Call(string func)
         {
             var args = NewCalculatorValueList();
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1)
+        internal static CalculatorValue Call(string func, CalculatorValue arg1)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2)
+        internal static CalculatorValue Call(string func, CalculatorValue arg1, CalculatorValue arg2)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
             args.Add(arg2);
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3)
+        internal static CalculatorValue Call(string func, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
             args.Add(arg2);
             args.Add(arg3);
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4)
+        internal static CalculatorValue Call(string func, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
             args.Add(arg2);
             args.Add(arg3);
             args.Add(arg4);
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string scpFile, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4, CalculatorValue arg5)
+        internal static CalculatorValue Call(string func, CalculatorValue arg1, CalculatorValue arg2, CalculatorValue arg3, CalculatorValue arg4, CalculatorValue arg5)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -2436,13 +2443,13 @@ namespace BatchCommand
             args.Add(arg3);
             args.Add(arg4);
             args.Add(arg5);
-            var r = Call(scpFile, args);
+            var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static CalculatorValue Call(string proc, List<CalculatorValue> args)
+        internal static CalculatorValue Call(string func, List<CalculatorValue> args)
         {
-            var r = s_Calculator.Calc(proc, args);
+            var r = s_Calculator.Calc(func, args);
             return r;
         }
         internal static Encoding GetEncoding(CalculatorValue v)

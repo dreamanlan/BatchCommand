@@ -209,7 +209,7 @@ namespace GlslRewriter
         }
         static void PrintHelp()
         {
-            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-args arg_dsl_file] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
+            Console.WriteLine("[usage]GlslRewriter [-out outfile] [-cfg cfg_dsl_file] [-argcfg id_in_cfg] [-vs] [-ps] [-cs] [-i] [-r] [-src] glsl_file");
             Console.WriteLine(" [-out outfile] output file path and name, default is [glsl_file_name]_[glsl_file_ext].txt");
             Console.WriteLine(" [-cfg cfg_dsl_file] config file path and name, default is [glsl_file_name]_cfg.dsl");
             Console.WriteLine(" [-argcfg id_in_config] arg config id in config file, default is 0");

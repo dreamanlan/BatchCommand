@@ -697,6 +697,7 @@ cs
         generate_expression_list;
     };
 };
+#region
 vs_code_block
 {:
 #version 460
@@ -755,6 +756,8 @@ layout(binding = 2) uniform sampler2D tex2; //256*256
 #define utof uintBitsToFloat
 
 :};
+#endregion
+#region
 ps_code_block("global")
 {:
 #version 460
@@ -796,3 +799,4 @@ layout(binding = 6) uniform sampler2D depthTex; //800*450
 #define itof intBitsToFloat
 #define utof uintBitsToFloat
 :};
+#endregion

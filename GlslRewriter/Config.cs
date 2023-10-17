@@ -610,7 +610,7 @@ namespace GlslRewriter
             }
             return sb.ToString();
         }
-        internal static bool CalcFunc(string func, IList<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val)
+        internal static bool CalcFunc(string func, List<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val)
         {
             bool ret = false;
             if (func == "if" || func == "while") {
@@ -646,7 +646,7 @@ namespace GlslRewriter
                         }
                     }
                     if (match && null != info.OnGetValue) {
-                        val = info.OnGetValue();
+                        val = info.OnGetValue(args);
                         ret = true;
                         break;
                     }
@@ -1472,12 +1472,26 @@ namespace GlslRewriter
                 var vd = val as Dsl.ValueData;
                 var fd = val as Dsl.FunctionData;
                 if (null != vd) {
-                    info.OnGetValue = () => { return vd.GetId(); };
+                    info.OnGetValue = args => { return vd.GetId(); };
                 }
                 else if (null != fd) {
-                    info.OnGetValue = () => {
-                        return DoCalc(fd);
-                    };
+                    if (fd.IsHighOrder && fd.HaveStatement()) {
+                        //这种形式用于直接调dsl脚本，构造一个函数
+                        var callData = fd.LowerOrderFunction;
+                        List<string> argNames = new List<string>();
+                        foreach (var p in callData.Params) {
+                            argNames.Add(p.GetId());
+                        }
+                        string funcId = BatchScript.EvalAsFunc(func, argNames);
+                        info.OnGetValue = args => {
+                            return BatchScript.Call(funcId, args);
+                        };
+                    }
+                    else {
+                        info.OnGetValue = args => {
+                            return DoCalc(fd);
+                        };
+                    }
                 }
 
                 if (!cfg.Calculators.TryGetValue(info.Func, out var infos)) {
@@ -1817,7 +1831,7 @@ namespace GlslRewriter
             internal string Dst = string.Empty;
             internal Regex? SrcRegex = null;
         }
-        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation();
+        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation(List<DslExpression.CalculatorValue> args);
         internal class CalculatorInfo
         {
             internal string Func = string.Empty;
@@ -2068,34 +2082,31 @@ namespace GlslRewriter
         protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
         {
             bool ret = false;
-            if (operands.Count > 1) {
+            if (operands.Count > 0) {
                 bool ret1 = true;
                 bool ret2 = true;
-                int cfgId = operands[0].GetInt();
-                int ix = operands[1].GetInt();
-                var cfg = Config.ActiveConfig;
-                if (cfg.ArgConfigs.TryGetValue(cfgId, out var cfgInfo)) {
-                    var attrCfg = cfgInfo.InOutAttrInfo;
-                    if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
-                        if (File.Exists(attrCfg.InAttrImportFile)) {
-                            ret1 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
-                        }
-                        else {
-                            ret1 = false;
-                            Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
-                        }
+                int ix = operands[0].GetInt();
+                var cfg = Config.ActiveArgConfig;
+                var attrCfg = cfg.InOutAttrInfo;
+                if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
+                    if (File.Exists(attrCfg.InAttrImportFile)) {
+                        ret1 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
                     }
-                    if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
-                        if (File.Exists(attrCfg.OutAttrImportFile)) {
-                            ret2 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
-                        }
-                        else {
-                            ret2 = false;
-                            Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
-                        }
+                    else {
+                        ret1 = false;
+                        Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
                     }
-                    ret = ret1 && ret2;
                 }
+                if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
+                    if (File.Exists(attrCfg.OutAttrImportFile)) {
+                        ret2 = RenderDocImporter.ImportVsInOutData("float", ix, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
+                    }
+                    else {
+                        ret2 = false;
+                        Console.WriteLine("Can't find file {0}", attrCfg.OutAttrImportFile);
+                    }
+                }
+                ret = ret1 && ret2;
             }
             return DslExpression.CalculatorValue.From(ret);
         }

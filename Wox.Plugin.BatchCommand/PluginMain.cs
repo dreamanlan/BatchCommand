@@ -256,7 +256,9 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             s_ErrorBuilder.Length = 0;
         }
         if (!string.IsNullOrEmpty(err)) {
-            s_Context.API.ShowMsg(err, tag, c_IcoPath);
+            if (null != s_StandardOutput) {
+                s_StandardOutput.WriteLine(err);
+            }
         }
         bool logIsEmpty = string.IsNullOrEmpty(log);
         bool errIsEmpty = string.IsNullOrEmpty(err);
@@ -346,54 +348,35 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             }
             IntPtr stdHandle = GetStdHandle(StandardHandle.Output);
             IntPtr errHandle = GetStdHandle(StandardHandle.Error);
+
+            if (IsRedirected(stdHandle)) {
+                Console.WriteLine("[ShowConsole] standard output is redirected.");
+            }
+            bool errorRedirected = IsRedirected(errHandle);
+            if (!errorRedirected) {
+                SetStdHandle(StandardHandle.Error, stdHandle);
+            }
             SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
             FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
-            SafeFileHandle safeFileHandle2 = new SafeFileHandle(errHandle, true);
-            FileStream fileStream2 = new FileStream(safeFileHandle2, FileAccess.Write);
-            Encoding encoding = Encoding.UTF8;
+            Encoding encoding = Encoding.Default;
             s_StandardOutput = new StreamWriter(fileStream, encoding);
-            s_StandardError = new StreamWriter(fileStream2, encoding);
             s_StandardOutput.AutoFlush = true;
-            s_StandardError.AutoFlush = true;
             s_StandardOutput.Flush();
-            s_StandardError.Flush();
-            Console.SetOut(s_StandardOutput);
-            Console.SetError(s_StandardError);
             Console.Clear();
         }
         else {
             ShowWindow(handle, SW_SHOW);
-            Console.SetOut(s_StandardOutput);
-            Console.SetError(s_StandardError);
         }
     }
     internal static void HideConsole()
     {
         var handle = GetConsoleWindow();
         ShowWindow(handle, SW_HIDE);
-        Console.SetOut(s_ErrWriter);
-        Console.SetError(s_ErrWriter);
     }
     private static bool IsRedirected(IntPtr handle)
     {
         FileType fileType = GetFileType(handle);
         return (fileType == FileType.Disk) || (fileType == FileType.Pipe);
-    }
-    private static void Redirect()
-    {
-        if (IsRedirected(GetStdHandle(StandardHandle.Output))) {
-            var initialiseOut = Console.Out;
-        }
-        bool errorRedirected = IsRedirected(GetStdHandle(StandardHandle.Error));
-        if (errorRedirected) {
-            var initialiseError = Console.Error;
-        }
-        if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
-            AllocConsole();
-        }
-        if (!errorRedirected) {
-            SetStdHandle(StandardHandle.Error, GetStdHandle(StandardHandle.Output));
-        }
     }
 
     private static void StartScriptThread()
@@ -542,7 +525,6 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     private static string s_LogFile = "BatchCommand.log";
     private static StringWriterWithLock s_ErrWriter = null;
     private static StreamWriter s_StandardOutput = null;
-    private static StreamWriter s_StandardError = null;
     private static StringBuilder s_ErrorBuilder = new StringBuilder();
     private static StringBuilder s_LogBuilder = new StringBuilder();
     private static object s_LogLock = new object();
@@ -802,6 +784,7 @@ internal sealed class EvalDslExp : SimpleExpressionBase
             BatchScript.RecycleCalculatorValueList(args);
             if (!r.IsNullObject) {
                 Console.WriteLine("[evaldsl]:{0}", r.ToString());
+                Main.FlushLog("evaldsl");
             }
         }
         return r;

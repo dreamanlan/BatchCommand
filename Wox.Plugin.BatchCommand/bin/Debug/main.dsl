@@ -104,9 +104,11 @@ api() 返回IPublicAPI对象，一般不需要使用，有的有限制，比如R
 metadata() 返回PluginMetadata对象
 showmsg(title[,subtitle[,icon]]) 显示弹出消息,缺少的参数为string.Empty
 restart() 重启wox
-changequery(query_string, requery) 修改查询，requery是bool类型
+show() 显示console窗口，evaldsl会自动显示窗口
+hide() 隐藏console窗口
 reloaddsl() 重新加载main.dsl
 evaldsl(dsl代码, query, result, actioncontext) 执行dsl代码，代码里可以使用$query,$result,$actioncontext访问相应参数
+changequery(query_string, requery) 修改查询，requery是bool类型
 addresult(title, subtitle, icopath, action, query) 添加一条结果到列表，query是查询对象，其它都是字符串，action是dsl里的脚本函数名，
 用户点击时执行此脚本，向脚本传3个参数query,result,actioncontext
 addcontextmenu(tilte, subtitle, icopath, action, query, result) 添加一个上下文菜单项，query是查询对象，result是结果对象，其它都是字符串
@@ -226,22 +228,21 @@ script(on_query)args($query)
     };
     if($key=="dsl"){
         $param = $query.FirstSearch;
-        if($param=="reload"){
-            addresult("reload", "reload main.dsl.", "", "on_action_reload_dsl", $query);
-        }elseif($param=="eval"){
+        if($param=="eval"){
             addresult("eval", "evaluate dsl code.", "", "on_action_eval_dsl", $query);
         }elseif($param=="info"){
             addresult("info", "show query state", "", "on_action_info", $query);
         }elseif($param=="clear"){
             addresult("clear", "clear query", "", "on_action_clear", $query);
-        }elseif($param=="restart"){
-            addresult("restart", "restart app", "", "on_action_restart", $query);
+        }elseif($param=="reload"){
+            addresult("reload", "reload main.dsl", "", "on_action_reload", $query);
         }else{
-            addresult("reload", "reload main.dsl", "", "on_action_change", $query);
             addresult("eval", "evaluate dsl code", "", "on_action_change", $query);
             addresult("info", "show query state", "", "on_action_change", $query);
             addresult("clear", "clear query", "", "on_action_change", $query);
-            addresult("restart", "restart app", "", "on_action_change", $query);
+            addresult("reload", "reload main.dsl", "", "on_action_change", $query);
+            //restart直接在c#里处理，dsl部分只处理ui显示
+            addresult("restart", "restart Wox", "", "on_action_change", $query);
         };
     }elseif($key=="menu"){
         everythingsetdefault();
@@ -320,11 +321,6 @@ script(on_action_change)args($query, $result, $actionContext)
     changequery("dsl " + $result.Title, false);
     return(0);
 };
-script(on_action_reload_dsl)args($query, $result, $actionContext)
-{
-    reloaddsl();
-    return(0);
-};
 script(on_action_eval_dsl)args($query, $result, $actionContext)
 {
     evaldsl($query.SecondToEndSearch, $query, $result, $actionContext);
@@ -345,9 +341,9 @@ script(on_action_clear)args($query, $result, $actionContext)
     @args = "";
     return(0);
 };
-script(on_action_restart)args($query, $result, $actionContext)
+script(on_action_reload)args($query, $result, $actionContext)
 {
-    restart();
+    reloaddsl();
     return(1);
 };
 

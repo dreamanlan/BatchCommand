@@ -62,12 +62,20 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     }
     public List<Result> Query(Query query)
     {
+        const int c_MaxQueueNum = 3;
         Debug.Assert(!IsScriptThread());
         LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
         if (EveryThingSDK.EverythingExists()) {
             TryFindEverything();
 
-            if (s_ScriptQueryQueue.Count == 0) {
+            if (query.ActionKeyword == "dsl" && query.FirstSearch == "restart") {
+                //重启功能在c#端完成，防止某些功能导致dsl脚本线程卡死后无法重启
+                var item = new Result { Title = "restart", SubTitle = "restart Wox", IcoPath = c_IcoPath, ContextData = query };
+                item.Action = e => { return Main.OnAction("on_action_restart", query, item, e); };
+                s_Results.Clear();
+                s_Results.Add(item);
+            }
+            else if (s_ScriptQueryQueue.Count < c_MaxQueueNum) {
                 var evt = GetThreadEvent();
                 evt.Reset();
                 QueueScriptQuery(evt, () => {
@@ -82,13 +90,6 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                 });
                 //wait
                 Wait(evt);
-            }
-            else if (query.ActionKeyword == "dsl") {
-                if (query.FirstSearch == "restart") {
-                    System.Windows.Application.Current.Dispatcher.Invoke(() => {
-                        s_Context.API.RestarApp();
-                    });
-                }
             }
         }
         else {
@@ -173,6 +174,13 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         if (ix < 0) {
             s_Context.API.ShowMsg("Can't find result " + result.Title, result.SubTitle, result.IcoPath);
             return false;
+        }
+        if (action == "on_action_restart") {
+            //这里应该已经是主线程，还是dispatch一次，下一帧执行
+            System.Windows.Application.Current.Dispatcher.Invoke(() => {
+                s_Context.API.RestarApp();
+            });
+            return true;
         }
         if (s_Results[ix].ContextData != result.ContextData || s_Results[ix].Action != result.Action) {
             return s_Results[ix].Action(e);

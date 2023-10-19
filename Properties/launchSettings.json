@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "BatchCommand": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\GitHub\\GameDemo\\Tools\\Batch\\build.dsl Debug",
+      "workingDirectory": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0"
+    }
+  }
+}

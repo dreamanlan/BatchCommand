@@ -27,20 +27,9 @@ namespace BatchCommand
                 }
             }
             else {
+                bool isScpPart = false;
                 for (int i = 0; i < args.Length; ++i) {
-                    if (0 == string.Compare(args[i], "-src", true)) {
-                        if (i < args.Length - 1) {
-                            string arg = args[i + 1];
-                            if (!arg.StartsWith("-")) {
-                                scpFile = arg;
-                                if (!File.Exists(scpFile)) {
-                                    Console.WriteLine("file path not found ! {0}", scpFile);
-                                }
-                                ++i;
-                            }
-                        }
-                    }
-                    else if (0 == string.Compare(args[i], "-e", true)) {
+                    if (0 == string.Compare(args[i], "-e", true)) {
                         if (i < args.Length - 1) {
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
@@ -55,17 +44,17 @@ namespace BatchCommand
                     else if (0 == string.Compare(args[i], "-h", true)) {
                         PrintHelp();
                     }
-                    else if (args[i][0] == '-') {
+                    else if (!isScpPart && args[i][0] == '-') {
                         Console.WriteLine("unknown command option ! {0}", args[i]);
                     }
-                    else if(string.IsNullOrEmpty(scpFile)) {
-                        scpFile = args[i];
-                        if (!File.Exists(scpFile)) {
-                            Console.WriteLine("file path not found ! {0}", scpFile);
-                        }
-                        break;
-                    }
                     else {
+                        if (string.IsNullOrEmpty(scpFile)) {
+                            scpFile = args[i];
+                            isScpPart = true;
+                            if (!File.Exists(scpFile)) {
+                                Console.WriteLine("file path not found ! {0}", scpFile);
+                            }
+                        }
                         vargs.Add(args[i]);
                     }
                 }
@@ -100,10 +89,12 @@ namespace BatchCommand
         }
         private static void PrintHelp()
         {
-            Console.WriteLine("[usage]BatchCommand [-i] [-e script_string] [-src] [dsl_file arg1 arg2 ...]");
+            Console.WriteLine("[usage]BatchCommand [-h] [-i] [-e script_string] [dsl_file arg1 arg2 ...]");
+            Console.WriteLine(" [-h] show this help");
             Console.WriteLine(" [-i] interactive computing mode");
             Console.WriteLine(" [-e script_string] run script_string");
-            Console.WriteLine(" [-src ] dsl_file source dsl file, -src can be omitted when file is the last argument");
+            Console.WriteLine(" dsl_file source dsl file");
+            Console.WriteLine(" arg1 arg2 ... arguments to dsl file");
         }
         private static void InteractiveComputing()
         {

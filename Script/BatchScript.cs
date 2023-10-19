@@ -2214,6 +2214,11 @@ namespace BatchCommand
         }
         internal static void Init()
         {
+#if NET || NETSTANDARD
+            var provider = CodePagesEncodingProvider.Instance;
+            Encoding.RegisterProvider(provider);
+#endif
+
             s_Calculator.OnLog = msg => { Log(msg); };
             s_Calculator.Init();
 
@@ -2454,15 +2459,20 @@ namespace BatchCommand
         }
         internal static Encoding GetEncoding(CalculatorValue v)
         {
-            var name = v.AsString;
-            if (null != name) {
-                return Encoding.GetEncoding(name);
+            try {
+                var name = v.AsString;
+                if (null != name) {
+                    return Encoding.GetEncoding(name);
+                }
+                else if (v.IsInteger) {
+                    int codePage = v.GetInt();
+                    return Encoding.GetEncoding(codePage);
+                }
+                else {
+                    return Encoding.UTF8;
+                }
             }
-            else if (v.IsInteger) {
-                int codePage = v.GetInt();
-                return Encoding.GetEncoding(codePage);
-            }
-            else {
+            catch {
                 return Encoding.UTF8;
             }
         }

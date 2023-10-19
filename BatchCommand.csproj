@@ -1,53 +1,70 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <TargetFramework>net6.0</TargetFramework>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{A153F8E7-5BC4-4D34-ACB4-5E0E15F0121C}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>BatchCommand</RootNamespace>
-    <AssemblyName>BatchCommand</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>False</GenerateTargetFrameworkAttribute>
+    <AssemblyTitle>BatchCommand</AssemblyTitle>
+    <Copyright>${AuthorCopyright}</Copyright>
+    <AssemblyVersion>1.0.*</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
-    <Optimize>false</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <Optimize>true</Optimize>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <Prefer32Bit>true</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dsl, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\CppLua2Dsl.AssemblyInfo.cs" />
+    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\CppLua2Dsl.GlobalUsings.g.cs" />
+    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\CppLua2Dsl.AssemblyInfo.cs" />
+    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\CppLua2Dsl.GlobalUsings.g.cs" />
+    <Compile Remove="CppLua2Dsl\Program.cs" />
+    <Compile Remove="GlslRewriter\Calculator.cs" />
+    <Compile Remove="GlslRewriter\ComputeGraph.cs" />
+    <Compile Remove="GlslRewriter\Config.cs" />
+    <Compile Remove="GlslRewriter\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslEquivalentTransformation.AssemblyInfo.cs" />
+    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslEquivalentTransformation.GlobalUsings.g.cs" />
+    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslRewriter.AssemblyInfo.cs" />
+    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslRewriter.GlobalUsings.g.cs" />
+    <Compile Remove="GlslRewriter\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="GlslRewriter\obj\Release\net6.0\GlslRewriter.AssemblyInfo.cs" />
+    <Compile Remove="GlslRewriter\obj\Release\net6.0\GlslRewriter.GlobalUsings.g.cs" />
+    <Compile Remove="GlslRewriter\Program.cs" />
+    <Compile Remove="GlslRewriter\StringBuilderPool.cs" />
+    <Compile Remove="GlslRewriter\VariableTable.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\.NETCoreApp,Version=v5.0.AssemblyAttributes.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\UnrealCodeTransform.AssemblyInfo.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\UnrealCodeTransform.GlobalUsings.g.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\UnrealCodeTransform.AssemblyInfo.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\UnrealCodeTransform.GlobalUsings.g.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\UnrealCodeTransform.AssemblyInfo.cs" />
+    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\UnrealCodeTransform.GlobalUsings.g.cs" />
+    <Compile Remove="UnrealCodeTransform\Program.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\EveryThingSDK.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\obj\Debug\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\obj\Release\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\PluginMain.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\Properties\AssemblyInfo.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\ShellContextMenu.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\ShellContextMenu_Reference.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\ShellContextMenu_Reference2.cs" />
+    <Compile Remove="Wox.Plugin.BatchCommand\SubclassWindow.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Dsl">
       <HintPath>deps\Dsl.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Script\BatchScript.cs" />
-    <Compile Include="deps\DslCalculator.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

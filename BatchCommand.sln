@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BatchCommand", "BatchCommand.csproj", "{A153F8E7-5BC4-4D34-ACB4-5E0E15F0121C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BatchCommand", "BatchCommand.csproj", "{A153F8E7-5BC4-4D34-ACB4-5E0E15F0121C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wox.Plugin.BatchCommand", "Wox.Plugin.BatchCommand\Wox.Plugin.BatchCommand.csproj", "{35BA6EE1-38C0-430E-BACC-0CEE08895994}"
 EndProject

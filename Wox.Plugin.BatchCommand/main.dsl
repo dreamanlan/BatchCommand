@@ -192,6 +192,7 @@ script(main)args($id, $metadata, $context)
     clearkeywords($id);
     addkeyword($id, "dsl");
     addkeyword($id, "menu");
+    addkeyword($id, "foldermenu");
     addkeyword($id, "file");
     addkeyword($id, "cmd");
     addkeyword($id, "exe");
@@ -250,6 +251,13 @@ script(on_query)args($query)
         $list = everythingsearch($query.FirstSearch);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query);
+        };
+    }elseif($key=="foldermenu"){
+        everythingsetdefault();
+        everythingmatchpath(true);
+        $list = everythingsearch($query.FirstSearch);
+        looplist($list){
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_foldermenu", $query);
         };
     }elseif($key=="file"){
         everythingsetdefault();
@@ -350,6 +358,18 @@ script(on_action_reload)args($query, $result, $actionContext)
 script(on_action_menu)args($query, $result, $actionContext)
 {
     @path = $result.Title;
+    $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
+    $shift = $actionContext.SpecialKeyState.ShiftPressed;
+    showcontextmenu(@path, $ctrl, $shift);
+    return(0);
+};
+
+script(on_action_foldermenu)args($query, $result, $actionContext)
+{
+    @path = $result.Title;
+    if(fileexist(@path)){
+        @path = getdirectoryname(@path);
+    };
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
     showcontextmenu(@path, $ctrl, $shift);

@@ -62,7 +62,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     }
     public List<Result> Query(Query query)
     {
-        const int c_MaxQueueNum = 3;
+        const int c_MaxQueueNum = 64;
         Debug.Assert(!IsScriptThread());
         LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
         if (EveryThingSDK.EverythingExists()) {
@@ -468,7 +468,10 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         for (int ct = 0; ct < maxQueryNum && s_ScriptQueryQueue.Count > 0; ++ct) {
             if (s_ScriptQueryQueue.TryDequeue(out var action)) {
                 try {
-                    action.Action();
+                    //只执行最后队列里的最后一个查询（相当于连续输入的中间查询不执行）
+                    if (s_ScriptQueryQueue.Count == 0) {
+                        action.Action();
+                    }
                 }
                 catch (Exception ex) {
                     Console.WriteLine("exception:{0}", ex.Message);

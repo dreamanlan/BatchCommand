@@ -2345,26 +2345,6 @@ namespace BatchCommand
             s_Calculator.RecycleCalculatorValueList(vargs);
             return r;
         }
-        internal static string EvalAsFunc(string code, IList<string> argNames)
-        {
-            string id = System.Guid.NewGuid().ToString();
-            string procCode = string.Format("script{{ {0}; }};", code);
-            var file = new Dsl.DslFile();
-            if (file.LoadFromString(procCode, msg => { Log(msg); })) {
-                var func = file.DslInfos[0] as Dsl.FunctionData;
-                Debug.Assert(null != func);
-                s_Calculator.LoadDsl(id, argNames, func);
-                return id;
-            }
-            return string.Empty;
-        }
-        internal static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
-        {
-            string id = System.Guid.NewGuid().ToString();
-            Debug.Assert(null != func);
-            s_Calculator.LoadDsl(id, argNames, func);
-            return id;
-        }
         internal static CalculatorValue EvalAndRun(string code)
         {
             CalculatorValue r = CalculatorValue.EmptyString;
@@ -2386,6 +2366,26 @@ namespace BatchCommand
             s_Calculator.LoadDsl(expressions, exps);
             r = s_Calculator.CalcInCurrentContext(exps);
             return r;
+        }
+        internal static string EvalAsFunc(string code, IList<string> argNames)
+        {
+            string id = System.Guid.NewGuid().ToString();
+            string procCode = string.Format("script{{ {0}; }};", code);
+            var file = new Dsl.DslFile();
+            if (file.LoadFromString(procCode, msg => { Log(msg); })) {
+                var func = file.DslInfos[0] as Dsl.FunctionData;
+                Debug.Assert(null != func);
+                s_Calculator.LoadDsl(id, argNames, func);
+                return id;
+            }
+            return string.Empty;
+        }
+        internal static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
+        {
+            string id = System.Guid.NewGuid().ToString();
+            Debug.Assert(null != func);
+            s_Calculator.LoadDsl(id, argNames, func);
+            return id;
         }
         internal static List<CalculatorValue> NewCalculatorValueList()
         {

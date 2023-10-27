@@ -196,6 +196,7 @@ namespace GlslRewriter
                             cg.Print(funcInfo);
                         }
                     }
+                    Console.Out.Flush();
                 }
                 catch (Exception ex) {
                     Console.WriteLine("{0}", ex.Message);

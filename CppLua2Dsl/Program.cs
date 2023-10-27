@@ -28,6 +28,7 @@ namespace CppLua2Dsl
                 }
 
                 s_ErrorWriter?.Close();
+                Console.Out.Flush();
             }
         }
         private static void CopyDir(string srcDir, string destDir)

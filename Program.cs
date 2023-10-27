@@ -80,6 +80,7 @@ namespace BatchCommand
                 if (!r.IsNullObject) {
                     exitCode = r.GetInt();
                 }
+                Console.Out.Flush();
             } catch (Exception ex) {
                 BatchScript.Log("exception:{0}\n{1}", ex.Message, ex.StackTrace);
                 exitCode = -1;

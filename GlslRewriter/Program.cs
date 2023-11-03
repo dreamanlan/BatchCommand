@@ -392,7 +392,7 @@ namespace GlslRewriter
                 var argConfig = Config.ActiveArgConfig;
                 if (argConfig.VAOImports.Count > 0) {
                     foreach (var vaoImp in argConfig.VAOImports) {
-                        var vaos = RenderDocImporter.GenerateVAO(vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File);
+                        var vaos = RenderDocImporter.GenerateVAO(vaoImp.Attr, vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File);
                         lineList.AddRange(vaos);
                     }
                     lineList.Add(string.Empty);

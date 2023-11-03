@@ -2493,19 +2493,19 @@ vs
         uniform("d:/UC/cloud_5/vs_cbuf16.csv", "uvec4"){
             add_range(0,15);
         };
-        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/vertex_in_attr3.csv"){
+        vao_attr("private Vector4[] in_attr3_array", "vec4", "d:/uc/VAO_5/vertex_in_attr3.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/vertex_in_attr4.csv"){
+        vao_attr("private Vector4[] in_attr4_array", "vec4", "d:/uc/VAO_5/vertex_in_attr4.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/vertex_in_attr5.csv"){
+        vao_attr("private Vector4[] in_attr5_array", "vec4", "d:/uc/VAO_5/vertex_in_attr5.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/vertex_in_attr6.csv"){
+        vao_attr("private Vector4[] in_attr6_array", "vec4", "d:/uc/VAO_5/vertex_in_attr6.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv"){
+        vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_5/vertex_in_attr7.csv", "[NonSerialized]"){
             add_range(0,2);
         };
     };
@@ -2531,19 +2531,19 @@ vs
         uniform("d:/UC/cloud_5/1/vs_cbuf16.csv", "uvec4"){
             add_range(0,15);
         };
-        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr3.csv"){
+        vao_attr("private Vector4[] in_attr3_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr3.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr4.csv"){
+        vao_attr("private Vector4[] in_attr4_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr4.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr5.csv"){
+        vao_attr("private Vector4[] in_attr5_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr5.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr6.csv"){
+        vao_attr("private Vector4[] in_attr6_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr6.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr7.csv"){
+        vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_5/1/vertex_in_attr7.csv", "[NonSerialized]"){
             add_range(0,2);
         };
     };
@@ -2569,19 +2569,19 @@ vs
         uniform("d:/UC/cloud_5/2/vs_cbuf16.csv", "uvec4"){
             add_range(0,15);
         };
-        vao_attr("var in_attr3_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr3.csv"){
+        vao_attr("private Vector4[] in_attr3_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr3.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr4_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr4.csv"){
+        vao_attr("private Vector4[] in_attr4_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr4.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr5_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr5.csv"){
+        vao_attr("private Vector4[] in_attr5_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr5.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr6_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr6.csv"){
+        vao_attr("private Vector4[] in_attr6_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr6.csv", "[NonSerialized]"){
             add_range(0,2);
         };
-        vao_attr("var in_attr7_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr7.csv"){
+        vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_5/2/vertex_in_attr7.csv", "[NonSerialized]"){
             add_range(0,2);
         };
     };

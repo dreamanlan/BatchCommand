@@ -2160,6 +2160,19 @@ namespace GlslRewriter
                     line.Append(singleLineExp);
                     if (addSemiColon)
                         line.Append(";");
+                    if (singleLineExp.IndexOf(' ') > 0) {
+                        //只检查多参数函数与操作符表达式，避免将常量或utof/ftou判断为重复表达式
+                        if (s_Expression2VarList.TryGetValue(singleLineExp, out var varlist)) {
+                            line.Append(" // maybe duplicate expression on the right side of the assignment, vars:{0}", string.Join('|', varlist));
+                            if (!varlist.Contains(varExp))
+                                varlist.Add(varExp);
+                        }
+                        else {
+                            varlist = new List<string>();
+                            varlist.Add(varExp);
+                            s_Expression2VarList.Add(singleLineExp, varlist);
+                        }
+                    }
                     s_ExpressionList.Add(line.ToString());
 
                     if (s_SSA && !string.IsNullOrEmpty(vname)) {
@@ -3885,6 +3898,7 @@ namespace GlslRewriter
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         internal static StringBuilder s_ExpressionBuilder = new StringBuilder();
         internal static List<string> s_ExpressionList = new List<string>();
+        internal static Dictionary<string, List<string>> s_Expression2VarList = new Dictionary<string, List<string>>();
         internal static int s_Indent = 1;
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();

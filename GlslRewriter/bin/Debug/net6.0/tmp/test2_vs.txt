@@ -492,7 +492,8 @@ var out_attr9 = new[] {
 // vs_cbuf15[60] = vec4(0.75, 0.50, 4.00, 1672.144);
 // vs_cbuf15[61] = vec4(1.00, 0.00, 0.00, 0.00);
 
-var in_attr4_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr4_array = new[] {
 	new Vector4(375.33057f, -93.70142f, 542.15509f, 1000.00f)
 	, new Vector4(307.50269f, -122.87927f, 523.68213f, 1000.00f)
 	, new Vector4(478.74054f, -97.58875f, 649.7774f, 1000.00f)
@@ -530,7 +531,8 @@ var in_attr4_array = new[] {
 	, new Vector4(-794.1286f, -89.83691f, 255.08574f, 1000.00f)
 	, new Vector4(-719.48798f, -97.10156f, 216.39655f, 1000.00f)
 };
-var in_attr5_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr5_array = new[] {
 	new Vector4(0.00f, 0.00f, 0.00f, 1461.50f)
 	, new Vector4(0.00f, 0.00f, 0.00f, 1461.50f)
 	, new Vector4(0.00f, 0.00f, 0.00f, 1461.50f)
@@ -568,7 +570,8 @@ var in_attr5_array = new[] {
 	, new Vector4(0.00f, 0.00f, 0.00f, 1341.50f)
 	, new Vector4(0.00f, 0.00f, 0.00f, 1341.50f)
 };
-var in_attr6_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr6_array = new[] {
 	new Vector4(280.61063f, 191.75058f, 191.75058f, 1.00f)
 	, new Vector4(261.58694f, 178.75108f, 178.75108f, 1.00f)
 	, new Vector4(247.91109f, 169.40591f, 169.40591f, 1.00f)
@@ -606,7 +609,8 @@ var in_attr6_array = new[] {
 	, new Vector4(296.29202f, 202.46622f, 202.46622f, 1.00f)
 	, new Vector4(281.81122f, 192.571f, 192.571f, 1.00f)
 };
-var in_attr7_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr7_array = new[] {
 	new Vector4(0.41738f, 0.66172f, 0.59749f, 0.47493f)
 	, new Vector4(0.31123f, 0.49205f, 0.45609f, 0.89893f)
 	, new Vector4(0.94868f, 0.45515f, 0.47392f, 0.31156f)
@@ -644,7 +648,8 @@ var in_attr7_array = new[] {
 	, new Vector4(0.57045f, 0.81042f, 0.16036f, 0.99463f)
 	, new Vector4(0.33618f, 0.79583f, 0.23994f, 0.29411f)
 };
-var in_attr9_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr9_array = new[] {
 	new Vector4(1.00f, 0.00f, 0.00f, 370.32614f)
 	, new Vector4(1.00f, 0.00f, 0.00f, 370.32614f)
 	, new Vector4(1.00f, 0.00f, 0.00f, 370.32614f)
@@ -682,7 +687,8 @@ var in_attr9_array = new[] {
 	, new Vector4(1.00f, 0.00f, 0.00f, 370.32663f)
 	, new Vector4(1.00f, 0.00f, 0.00f, 370.32663f)
 };
-var in_attr10_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr10_array = new[] {
 	new Vector4(0.00f, 1.00f, 0.00f, 1882.86255f)
 	, new Vector4(0.00f, 1.00f, 0.00f, 1882.86255f)
 	, new Vector4(0.00f, 1.00f, 0.00f, 1882.86255f)
@@ -720,7 +726,8 @@ var in_attr10_array = new[] {
 	, new Vector4(0.00f, 1.00f, 0.00f, 1882.86194f)
 	, new Vector4(0.00f, 1.00f, 0.00f, 1882.86194f)
 };
-var in_attr11_array = new[] {
+[NonSerialized]
+private Vector4[] in_attr11_array = new[] {
 	new Vector4(0.00f, 0.00f, 1.00f, -2756.81421f)
 	, new Vector4(0.00f, 0.00f, 1.00f, -2756.81421f)
 	, new Vector4(0.00f, 0.00f, 1.00f, -2756.81421f)

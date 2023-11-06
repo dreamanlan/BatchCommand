@@ -2739,7 +2739,7 @@ void main()
 		u_8_phi_8 = u_8_1;
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_9 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_9 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8
 	// False  <=>  if({b_1_9 : False})
 	if(b_1_9)
 	{
@@ -2747,7 +2747,7 @@ void main()
 		gl_Position.x = 0.f;
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_10 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_10 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8|b_1_9
 	// 0  <=>  {u_8_phi_8 : 0}
 	u_3_1 = u_8_phi_8;
 	u_3_phi_10 = u_3_1;
@@ -2759,7 +2759,7 @@ void main()
 		u_3_phi_10 = u_3_2;
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_11 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_11 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8|b_1_9|b_1_10
 	// False  <=>  if({b_1_11 : False})
 	if(b_1_11)
 	{
@@ -2767,7 +2767,7 @@ void main()
 		gl_Position.y = 0.f;
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_12 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_12 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8|b_1_9|b_1_10|b_1_11
 	// False  <=>  if({b_1_12 : False})
 	if(b_1_12)
 	{
@@ -2775,7 +2775,7 @@ void main()
 		gl_Position.z = utof(u_3_phi_10);
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_13 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_13 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8|b_1_9|b_1_10|b_1_11|b_1_12
 	// False  <=>  if({b_1_13 : False})
 	if(b_1_13)
 	{
@@ -2783,7 +2783,7 @@ void main()
 		out_attr5.x = 0.f;
 	}
 	// False  <=>  ((((({in_attr4.w : 0.00} > {utof(vs_cbuf10[2].x) : 1605.00}) && (! isnan({in_attr4.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 1605.00}))) || {b_0_3 : False}) ? true : false)
-	b_1_14 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false);
+	b_1_14 = (((((in_attr4.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr4.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_3) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_8|b_1_9|b_1_10|b_1_11|b_1_12|b_1_13
 	// False  <=>  if({b_1_14 : False})
 	if(b_1_14)
 	{
@@ -2882,7 +2882,7 @@ void main()
 		u_10_phi_20 = u_10_5;
 	}
 	// True  <=>  ((! ((({utof(vs_cbuf9[15].x) : 0.95} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.95}))) && (! isnan(1.f)))) ? true : false)
-	b_1_21 = ((! (((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f)))) ? true : false);
+	b_1_21 = ((! (((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f)))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_2_0
 	// 1154007040  <=>  {u_8_2 : 1154007040}
 	u_1_3 = u_8_2;
 	u_1_phi_21 = u_1_3;
@@ -2890,7 +2890,7 @@ void main()
 	if(b_1_21)
 	{
 		// -118.845  <=>  (log2(abs({utof(vs_cbuf9[15].x) : 0.95})) * {pf_1_1 : 1606.00})
-		pf_1_2 = (log2(abs(utof(vs_cbuf9[15].x))) * pf_1_1);
+		pf_1_2 = (log2(abs(utof(vs_cbuf9[15].x))) * pf_1_1); // maybe duplicate expression on the right side of the assignment, vars:pf_2_6
 		// -20.00  <=>  (0.f - (1.0f / ((0.f - {utof(vs_cbuf9[15].x) : 0.95}) + 1.f)))
 		f_12_1 = (0.f - (1.0f / ((0.f - utof(vs_cbuf9[15].x)) + 1.f)));
 		// 20.00  <=>  ((exp2({pf_1_2 : -118.845}) * {f_12_1 : -20.00}) + (1.0f / ((0.f - {utof(vs_cbuf9[15].x) : 0.95}) + 1.f)))
@@ -3026,17 +3026,17 @@ void main()
 	// 0.00  <=>  (({f_6_27 : 1.00} * (0.f - {utof(vs_cbuf9[141].y) : 1.00})) + {utof(vs_cbuf9[141].y) : 1.00})
 	pf_25_1 = ((f_6_27 * (0.f - utof(vs_cbuf9[141].y))) + utof(vs_cbuf9[141].y));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[141].w) : 0.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[141].w) : 0.00}))) ? 1065353216u : 0u)) : 1.00}
-	f_6_28 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u));
+	f_6_28 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_6_27
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[141].w) : 0.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[141].w) : 0.00}))) ? 1065353216u : 0u)) : 1.00}
-	f_4_28 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u));
+	f_4_28 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_6_27|f_6_28
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[142].w) : 0.10}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[142].w) : 0.10}))) ? 1065353216u : 0u)) : 1.00}
 	f_5_32 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[142].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[142].w)))) ? 1065353216u : 0u));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[141].w) : 0.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[141].w) : 0.00}))) ? 1065353216u : 0u)) : 1.00}
-	f_6_29 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u));
+	f_6_29 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_6_27|f_6_28|f_4_28
 	// 1.00  <=>  inversesqrt((({pf_7_2 : 0.8526533} * {pf_7_2 : 0.8526533}) + (({pf_6_2 : 0.2275276} * {pf_6_2 : 0.2275276}) + ({pf_3_6 : -0.4703335} * {pf_3_6 : -0.4703335}))))
 	f_4_29 = inversesqrt(((pf_7_2 * pf_7_2) + ((pf_6_2 * pf_6_2) + (pf_3_6 * pf_3_6))));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[141].w) : 0.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[141].w) : 0.00}))) ? 1065353216u : 0u)) : 1.00}
-	f_7_13 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u));
+	f_7_13 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[141].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[141].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_6_27|f_6_28|f_4_28|f_6_29
 	// 1056964608  <=>  {ftou(in_attr0.x) : 1056964608}
 	u_2_14 = ftou(in_attr0.x);
 	u_2_phi_24 = u_2_14;
@@ -3050,11 +3050,11 @@ void main()
 	// 0.00  <=>  (((({pf_8_2 : 0.0180996} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[141].w) : 0.00}))) + {utof(vs_cbuf9[141].y) : 1.00}) * (({f_6_29 : 1.00} * (0.f - {f_5_32 : 1.00})) + {f_4_28 : 1.00})) + {pf_25_1 : 0.00})
 	pf_8_4 = ((((pf_8_2 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[141].w)))) + utof(vs_cbuf9[141].y)) * ((f_6_29 * (0.f - f_5_32)) + f_4_28)) + pf_25_1);
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[142].w) : 0.10}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[142].w) : 0.10}))) ? 1065353216u : 0u)) : 1.00}
-	f_2_12 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[142].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[142].w)))) ? 1065353216u : 0u));
+	f_2_12 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[142].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[142].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_32
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[143].w) : 0.40}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[143].w) : 0.40}))) ? 1065353216u : 0u)) : 1.00}
 	f_5_37 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[143].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[143].w)))) ? 1065353216u : 0u));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[142].w) : 0.10}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[142].w) : 0.10}))) ? 1065353216u : 0u)) : 1.00}
-	f_6_33 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[142].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[142].w)))) ? 1065353216u : 0u));
+	f_6_33 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[142].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[142].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_32|f_2_12
 	// 0.00  <=>  (((({pf_9_1 : 0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[141].w) : 0.00}))) + {utof(vs_cbuf9[141].z) : 1.00}) * (({f_6_29 : 1.00} * (0.f - {f_5_32 : 1.00})) + {f_4_28 : 1.00})) + (({f_6_28 : 1.00} * (0.f - {utof(vs_cbuf9[141].z) : 1.00})) + {utof(vs_cbuf9[141].z) : 1.00}))
 	pf_9_3 = ((((pf_9_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[141].w)))) + utof(vs_cbuf9[141].z)) * ((f_6_29 * (0.f - f_5_32)) + f_4_28)) + ((f_6_28 * (0.f - utof(vs_cbuf9[141].z))) + utof(vs_cbuf9[141].z)));
 	// 1.037012  <=>  (({pf_22_1 : -0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[145].w) : 0.60}))) + {utof(vs_cbuf9[145].x) : 1.04})
@@ -3064,21 +3064,21 @@ void main()
 	// 0.00  <=>  (((({pf_11_1 : 0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[142].w) : 0.10}))) + {utof(vs_cbuf9[142].x) : 1.01}) * (({f_6_33 : 1.00} * (0.f - {f_5_37 : 1.00})) + {f_2_12 : 1.00})) + (({pf_5_9 : 1.062988} * (({f_6_29 : 1.00} * (0.f - {f_5_32 : 1.00})) + {f_4_28 : 1.00})) + (({f_7_13 : 1.00} * (0.f - {utof(vs_cbuf9[141].x) : 1.00})) + {utof(vs_cbuf9[141].x) : 1.00})))
 	pf_5_11 = ((((pf_11_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[142].w)))) + utof(vs_cbuf9[142].x)) * ((f_6_33 * (0.f - f_5_37)) + f_2_12)) + ((pf_5_9 * ((f_6_29 * (0.f - f_5_32)) + f_4_28)) + ((f_7_13 * (0.f - utof(vs_cbuf9[141].x))) + utof(vs_cbuf9[141].x))));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[143].w) : 0.40}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[143].w) : 0.40}))) ? 1065353216u : 0u)) : 1.00}
-	f_2_16 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[143].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[143].w)))) ? 1065353216u : 0u));
+	f_2_16 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[143].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[143].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_37
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[144].w) : 0.50}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[144].w) : 0.50}))) ? 1065353216u : 0u)) : 1.00}
 	f_5_41 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[144].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[144].w)))) ? 1065353216u : 0u));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[143].w) : 0.40}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[143].w) : 0.40}))) ? 1065353216u : 0u)) : 1.00}
-	f_6_34 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[143].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[143].w)))) ? 1065353216u : 0u));
+	f_6_34 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[143].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[143].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_37|f_2_16
 	// 0.00  <=>  (((({pf_10_1 : 0.0206335} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[142].w) : 0.10}))) + {utof(vs_cbuf9[142].y) : 1.00181}) * (({f_6_33 : 1.00} * (0.f - {f_5_37 : 1.00})) + {f_2_12 : 1.00})) + {pf_8_4 : 0.00})
 	pf_8_5 = ((((pf_10_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[142].w)))) + utof(vs_cbuf9[142].y)) * ((f_6_33 * (0.f - f_5_37)) + f_2_12)) + pf_8_4);
 	// 0.2275276  <=>  (abs(({pf_6_2 : 0.2275276} * {f_4_29 : 1.00})) + (0.f - 0.f))
 	pf_10_3 = (abs((pf_6_2 * f_4_29)) + (0.f - 0.f));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[144].w) : 0.50}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[144].w) : 0.50}))) ? 1065353216u : 0u)) : 1.00}
-	f_2_18 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[144].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[144].w)))) ? 1065353216u : 0u));
+	f_2_18 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[144].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[144].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_41
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[145].w) : 0.60}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[145].w) : 0.60}))) ? 1065353216u : 0u)) : 1.00}
 	f_5_44 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[145].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[145].w)))) ? 1065353216u : 0u));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[144].w) : 0.50}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[144].w) : 0.50}))) ? 1065353216u : 0u)) : 1.00}
-	f_6_35 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[144].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[144].w)))) ? 1065353216u : 0u));
+	f_6_35 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[144].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[144].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_41|f_2_18
 	// 0.00  <=>  (((({pf_16_1 : 0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[143].w) : 0.40}))) + {utof(vs_cbuf9[143].x) : 1.04}) * (({f_6_34 : 1.00} * (0.f - {f_5_41 : 1.00})) + {f_2_16 : 1.00})) + {pf_5_11 : 0.00})
 	pf_5_12 = ((((pf_16_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[143].w)))) + utof(vs_cbuf9[143].x)) * ((f_6_34 * (0.f - f_5_41)) + f_2_16)) + pf_5_11);
 	// -0.2275276  <=>  (0.f - abs(({pf_6_2 : 0.2275276} * {f_4_29 : 1.00})))
@@ -3104,11 +3104,11 @@ void main()
 	{
 	}
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[145].w) : 0.60}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[145].w) : 0.60}))) ? 1065353216u : 0u)) : 1.00}
-	f_8_3 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[145].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[145].w)))) ? 1065353216u : 0u));
+	f_8_3 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[145].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[145].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_44
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[146].w) : 0.90}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[146].w) : 0.90}))) ? 1065353216u : 0u)) : 0.00}
 	f_9_2 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[146].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[146].w)))) ? 1065353216u : 0u));
 	// 1.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[145].w) : 0.60}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[145].w) : 0.60}))) ? 1065353216u : 0u)) : 1.00}
-	f_10_25 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[145].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[145].w)))) ? 1065353216u : 0u));
+	f_10_25 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[145].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[145].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_5_44|f_8_3
 	// False  <=>  (((({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) < 0.f) && (! isnan(({pf_6_2 : 0.2275276} * {f_4_29 : 1.00})))) && (! isnan(0.f)))
 	b_2_11 = ((((pf_6_2 * f_4_29) < 0.f) && (! isnan((pf_6_2 * f_4_29)))) && (! isnan(0.f)));
 	// 1056964608  <=>  {ftou(in_attr0.y) : 1056964608}
@@ -3124,11 +3124,11 @@ void main()
 	// 1.037012  <=>  (({pf_21_1 : -0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[146].w) : 0.90}))) + {utof(vs_cbuf9[146].x) : 1.01})
 	pf_14_5 = ((pf_21_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[146].w)))) + utof(vs_cbuf9[146].x));
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[146].w) : 0.90}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[146].w) : 0.90}))) ? 1065353216u : 0u)) : 0.00}
-	f_3_56 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[146].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[146].w)))) ? 1065353216u : 0u));
+	f_3_56 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[146].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[146].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_9_2
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[147].w) : 1.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[147].w) : 1.00}))) ? 1065353216u : 0u)) : 0.00}
 	f_8_4 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u));
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[146].w) : 0.90}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[146].w) : 0.90}))) ? 1065353216u : 0u)) : 0.00}
-	f_9_4 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[146].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[146].w)))) ? 1065353216u : 0u));
+	f_9_4 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[146].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[146].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_9_2|f_3_56
 	// 0.00  <=>  (((((({pf_13_3 : 0.0699996} * {pf_10_3 : 0.2275276}) + -0.2121144f) * {pf_10_3 : 0.2275276}) + 1.5707288f) * sqrt(({f_2_20 : -0.2275276} + 1.f))) * {utof(({b_2_11 : False} ? 1065353216u : 0u)) : 0.00})
 	pf_13_6 = ((((((pf_13_3 * pf_10_3) + -0.2121144f) * pf_10_3) + 1.5707288f) * sqrt((f_2_20 + 1.f))) * utof((b_2_11 ? 1065353216u : 0u)));
 	// 1.007226  <=>  (((({pf_18_6 : -0.0195003} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[146].w) : 0.90}))) + {utof(vs_cbuf9[146].y) : 1.00195}) * (({f_9_4 : 0.00} * (0.f - {f_8_4 : 0.00})) + {f_3_56 : 0.00})) + (({pf_11_4 : 1.007226} * (({f_10_25 : 1.00} * (0.f - {f_9_2 : 0.00})) + {f_8_3 : 1.00})) + {pf_8_7 : 0.00}))
@@ -3138,13 +3138,13 @@ void main()
 	// 1.037012  <=>  (((({pf_26_1 : -0.0999999} * ({utof(u_3_phi_23) : 0.6298838} + (0.f - {utof(vs_cbuf9[146].w) : 0.90}))) + {utof(vs_cbuf9[146].z) : 1.01}) * (({f_9_4 : 0.00} * (0.f - {f_8_4 : 0.00})) + {f_3_56 : 0.00})) + (({pf_12_4 : 1.037012} * (({f_10_25 : 1.00} * (0.f - {f_9_2 : 0.00})) + {f_8_3 : 1.00})) + {pf_9_6 : 0.00}))
 	pf_9_8 = ((((pf_26_1 * (utof(u_3_phi_23) + (0.f - utof(vs_cbuf9[146].w)))) + utof(vs_cbuf9[146].z)) * ((f_9_4 * (0.f - f_8_4)) + f_3_56)) + ((pf_12_4 * ((f_10_25 * (0.f - f_9_2)) + f_8_3)) + pf_9_6));
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[147].w) : 1.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[147].w) : 1.00}))) ? 1065353216u : 0u)) : 0.00}
-	f_6_38 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u));
+	f_6_38 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_8_4
 	// 1.037012  <=>  (({f_6_38 : 0.00} * {utof(vs_cbuf9[147].x) : 1.00}) + (({pf_14_5 : 1.037012} * (({f_9_4 : 0.00} * (0.f - {f_8_4 : 0.00})) + {f_3_56 : 0.00})) + (({pf_22_2 : 1.037012} * (({f_10_25 : 1.00} * (0.f - {f_9_2 : 0.00})) + {f_8_3 : 1.00})) + {pf_5_13 : 0.00})))
 	pf_5_16 = ((f_6_38 * utof(vs_cbuf9[147].x)) + ((pf_14_5 * ((f_9_4 * (0.f - f_8_4)) + f_3_56)) + ((pf_22_2 * ((f_10_25 * (0.f - f_9_2)) + f_8_3)) + pf_5_13)));
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[147].w) : 1.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[147].w) : 1.00}))) ? 1065353216u : 0u)) : 0.00}
-	f_6_39 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u));
+	f_6_39 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_8_4|f_6_38
 	// 0.00  <=>  {utof((((({utof(u_3_phi_23) : 0.6298838} >= {utof(vs_cbuf9[147].w) : 1.00}) && (! isnan({utof(u_3_phi_23) : 0.6298838}))) && (! isnan({utof(vs_cbuf9[147].w) : 1.00}))) ? 1065353216u : 0u)) : 0.00}
-	f_6_40 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u));
+	f_6_40 = utof(((((utof(u_3_phi_23) >= utof(vs_cbuf9[147].w)) && (! isnan(utof(u_3_phi_23)))) && (! isnan(utof(vs_cbuf9[147].w)))) ? 1065353216u : 0u)); // maybe duplicate expression on the right side of the assignment, vars:f_8_4|f_6_38|f_6_39
 	// 1.341287  <=>  (({utof(({b_2_11 : False} ? 1065353216u : 0u)) : 0.00} * 3.1415927f) + (({pf_13_6 : 0.00} * -2.f) + ((((({pf_13_3 : 0.0699996} * {pf_10_3 : 0.2275276}) + -0.2121144f) * {pf_10_3 : 0.2275276}) + 1.5707288f) * sqrt(({f_2_20 : -0.2275276} + 1.f)))))
 	pf_10_7 = ((utof((b_2_11 ? 1065353216u : 0u)) * 3.1415927f) + ((pf_13_6 * -2.f) + (((((pf_13_3 * pf_10_3) + -0.2121144f) * pf_10_3) + 1.5707288f) * sqrt((f_2_20 + 1.f)))));
 	// 1.00  <=>  ({utof(vs_cbuf9[113].x) : 1.00} * {utof(vs_cbuf10[0].w) : 1.00})
@@ -3186,7 +3186,7 @@ void main()
 			u_5_phi_29 = u_5_10;
 		}
 		// 1036831949  <=>  {ftou(({utof(vs_cbuf9[129].x) : 0.10} * {utof(vs_cbuf10[1].w) : 1.00})) : 1036831949}
-		u_1_12 = ftou((utof(vs_cbuf9[129].x) * utof(vs_cbuf10[1].w)));
+		u_1_12 = ftou((utof(vs_cbuf9[129].x) * utof(vs_cbuf10[1].w))); // maybe duplicate expression on the right side of the assignment, vars:u_4_8
 		u_1_phi_30 = u_1_12;
 		// False  <=>  if(({b_5_1 : False} ? true : false))
 		if((b_5_1 ? true : false))
@@ -3220,13 +3220,13 @@ void main()
 			// False  <=>  ((((abs(({pf_3_6 : -0.4703335} * {f_4_29 : 1.00})) == {utof(0x7f800000) : ∞}) && (! isnan(abs(({pf_3_6 : -0.4703335} * {f_4_29 : 1.00}))))) && (! isnan({utof(0x7f800000) : ∞}))) && (((abs(({pf_7_2 : 0.8526533} * {f_4_29 : 1.00})) == {utof(0x7f800000) : ∞}) && (! isnan(abs(({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}))))) && (! isnan({utof(0x7f800000) : ∞}))))
 			b_4_2 = ((((abs((pf_3_6 * f_4_29)) == utof(0x7f800000)) && (! isnan(abs((pf_3_6 * f_4_29))))) && (! isnan(utof(0x7f800000)))) && (((abs((pf_7_2 * f_4_29)) == utof(0x7f800000)) && (! isnan(abs((pf_7_2 * f_4_29))))) && (! isnan(utof(0x7f800000)))));
 			// False  <=>  ({b_5_1 : False} ? true : false)
-			b_7_2 = (b_5_1 ? true : false);
+			b_7_2 = (b_5_1 ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_6_0
 			b_7_phi_33 = b_7_2;
 			// False  <=>  if(({b_4_2 : False} ? true : false))
 			if((b_4_2 ? true : false))
 			{
 				// True  <=>  ((((({pf_3_6 : -0.4703335} * {f_4_29 : 1.00}) < 0.f) && (! isnan(({pf_3_6 : -0.4703335} * {f_4_29 : 1.00})))) && (! isnan(0.f))) ? true : false)
-				b_7_3 = (((((pf_3_6 * f_4_29) < 0.f) && (! isnan((pf_3_6 * f_4_29)))) && (! isnan(0.f))) ? true : false);
+				b_7_3 = (((((pf_3_6 * f_4_29) < 0.f) && (! isnan((pf_3_6 * f_4_29)))) && (! isnan(0.f))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_7_1
 				b_7_phi_33 = b_7_3;
 			}
 			// 1065353216  <=>  {u_7_phi_31 : 1065353216}
@@ -3408,7 +3408,7 @@ void main()
 	// 16  <=>  ((uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(16u), int(16u))) * {u_16_0 : 1})) << 16u) + (({u_14_3 : 65536} << 16u) + uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_12_3 : 1}), int(0u), int(16u)))))))
 	u_13_4 = ((uint((uint(bitfieldExtract(uint(u_2_19), int(16u), int(16u))) * u_16_0)) << 16u) + ((u_14_3 << 16u) + uint((uint(bitfieldExtract(uint(u_2_19), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_12_3), int(0u), int(16u)))))));
 	// 0.0625  <=>  {utof(({ftou((1.0f / float({u_2_19 : 16}))) : 1031798784} + 4294967294u)) : 0.0625}
-	f_4_34 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u));
+	f_4_34 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u)); // maybe duplicate expression on the right side of the assignment, vars:f_4_33
 	// 0.00  <=>  trunc(({f_4_34 : 0.0625} * float(({u_11_7 : 21} + uint((int(0) - int({u_13_4 : 16})))))))
 	f_2_63 = trunc((f_4_34 * float((u_11_7 + uint((int(0) - int(u_13_4)))))));
 	// 0.0625  <=>  (1.0f / float(int({u_2_19 : 16})))
@@ -3418,7 +3418,7 @@ void main()
 	// 0  <=>  uint(bitfieldExtract(uint(({u_12_3 : 1} + uint(clamp({f_2_63 : 0.00}, float(0.f), float(4294967300.f))))), int(16u), int(16u)))
 	u_15_5 = uint(bitfieldExtract(uint((u_12_3 + uint(clamp(f_2_63, float(0.f), float(4294967300.f))))), int(16u), int(16u)));
 	// 1  <=>  uint(bitfieldExtract(uint(({u_12_3 : 1} + uint(clamp({f_2_63 : 0.00}, float(0.f), float(4294967300.f))))), int(0u), int(16u)))
-	u_15_6 = uint(bitfieldExtract(uint((u_12_3 + uint(clamp(f_2_63, float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	u_15_6 = uint(bitfieldExtract(uint((u_12_3 + uint(clamp(f_2_63, float(0.f), float(4294967300.f))))), int(0u), int(16u))); // maybe duplicate expression on the right side of the assignment, vars:u_14_5
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(0u), int(16u))) * {u_15_5 : 0})), {u_15_6 : 1}, int(16u), int(16u))
 	u_14_8 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_19), int(0u), int(16u))) * u_15_5)), u_15_6, int(16u), int(16u));
 	// 1  <=>  uint(bitfieldExtract(uint({u_14_8 : 65536}), int(16u), int(16u)))
@@ -3518,7 +3518,7 @@ void main()
 	// -0.0895083  <=>  ((({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * {f_7_35 : 1.053282}))) + (0.f - (({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * (0.f - ({pf_14_11 : -0.2075762} * {f_7_35 : 1.053282})))))
 	pf_33_1 = (((pf_6_2 * f_4_29) * (0.f - (pf_21_6 * f_7_35))) + (0.f - ((pf_7_2 * f_4_29) * (0.f - (pf_14_11 * f_7_35)))));
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * {f_7_35 : 1.053282}))
-	f_7_43 = (0.f - (pf_23_9 * f_7_35));
+	f_7_43 = (0.f - (pf_23_9 * f_7_35)); // maybe duplicate expression on the right side of the assignment, vars:f_7_41
 	// 0.9489095  <=>  ((({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * {f_7_43 : 0.8779377}) + (0.f - (({pf_3_6 : -0.4703335} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * {f_7_35 : 1.053282})))))
 	pf_34_1 = (((pf_7_2 * f_4_29) * f_7_43) + (0.f - ((pf_3_6 * f_4_29) * (0.f - (pf_21_6 * f_7_35)))));
 	// 0.00  <=>  (({pf_20_6 : -0.565475} * {f_7_32 : 0.9999999}) * (0.f * (0.f - inversesqrt({pf_30_4 : 0.9045086}))))
@@ -3586,7 +3586,7 @@ void main()
 	if(((! (u_17_0 == (u_1_20 + 4294967295u))) ? true : false))
 	{
 		// 4294967295  <=>  ({b_0_30 : False} ? ({u_11_7 : 21} + {u_1_24 : 4294967280}) : 4294967295u)
-		u_20_3 = (b_0_30 ? (u_11_7 + u_1_24) : 4294967295u);
+		u_20_3 = (b_0_30 ? (u_11_7 + u_1_24) : 4294967295u); // maybe duplicate expression on the right side of the assignment, vars:u_11_12
 		u_20_phi_50 = u_20_3;
 	}
 	// 4294967295  <=>  {u_11_phi_49 : 4294967295}
@@ -3646,7 +3646,7 @@ void main()
 	if(((! (u_17_0 == (u_1_20 + 4294967295u))) ? true : false))
 	{
 		// 6  <=>  (isnan((float(int({u_2_19 : 16})) * {pf_13_21 : 0.4315667})) ? 0u : {u_10_13 : 6})
-		u_11_16 = (isnan((float(int(u_2_19)) * pf_13_21)) ? 0u : u_10_13);
+		u_11_16 = (isnan((float(int(u_2_19)) * pf_13_21)) ? 0u : u_10_13); // maybe duplicate expression on the right side of the assignment, vars:u_18_2
 		u_11_phi_56 = u_11_16;
 	}
 	// 3195956426  <=>  {ftou(({pf_29_4 : -0.2484618} * {f_7_52 : 1.00})) : 3195956426}
@@ -3719,7 +3719,7 @@ void main()
 		if((b_3_24 ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_28_1 = ftou((pf_9_10 * 6.2831855f));
+			u_28_1 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9
 			u_28_phi_62 = u_28_1;
 		}
 		// 2147483648  <=>  {u_21_phi_48 : 2147483648}
@@ -3996,7 +3996,7 @@ void main()
 	// 0.00  <=>  (((({utof(u_2_phi_24) : 0.50} * {utof(vs_cbuf9[78].x) : 1.00}) * (1.0f / {utof(vs_cbuf9[78].z) : 16.00})) * float(int({u_2_19 : 16}))) + -0.5f)
 	pf_26_5 = ((((utof(u_2_phi_24) * utof(vs_cbuf9[78].x)) * (1.0f / utof(vs_cbuf9[78].z))) * float(int(u_2_19))) + -0.5f);
 	// 0.3090169  <=>  cos((({f_8_9 : 6.00} * (1.0f / {f_5_49 : 15.00})) * 3.1415927f))
-	f_10_27 = cos(((f_8_9 * (1.0f / f_5_49)) * 3.1415927f));
+	f_10_27 = cos(((f_8_9 * (1.0f / f_5_49)) * 3.1415927f)); // maybe duplicate expression on the right side of the assignment, vars:f_9_6
 	// -0.00  <=>  (({pf_36_1 : -0.302587} * {f_9_14 : 1.00}) * {pf_25_5 : 0.00})
 	pf_25_6 = ((pf_36_1 * f_9_14) * pf_25_5);
 	// -0.6638399  <=>  (((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * {f_7_72 : 6.00}))
@@ -4074,7 +4074,7 @@ void main()
 	// -0.2648302  <=>  (((({pf_29_13 : -0.490081} * {f_11_14 : 1.00}) * {f_10_28 : 1.00}) * (0.f * (0.f - inversesqrt({pf_22_4 : 0.9045086})))) + (0.f - {pf_42_0 : 0.2648302}))
 	pf_22_6 = ((((pf_29_13 * f_11_14) * f_10_28) * (0.f * (0.f - inversesqrt(pf_22_4)))) + (0.f - pf_42_0));
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))
-	f_10_45 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))));
+	f_10_45 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))); // maybe duplicate expression on the right side of the assignment, vars:f_10_34
 	// 0.9489095  <=>  ((({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * {f_10_45 : 0.8779377}) + (0.f - {pf_43_0 : -0.2003331}))
 	pf_40_2 = (((pf_7_2 * f_4_29) * f_10_45) + (0.f - pf_43_0));
 	// 0.0253564  <=>  ({pf_26_11 : 0.1592369} * {pf_26_11 : 0.1592369})
@@ -4098,7 +4098,7 @@ void main()
 	if((b_1_41 ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_0_9 = ftou((pf_9_10 * 6.2831855f));
+		u_0_9 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1
 		u_0_phi_74 = u_0_9;
 	}
 	// 0.9999999  <=>  (({pf_22_6 : -0.2648302} * {pf_22_6 : -0.2648302}) + (({pf_36_5 : 0.9510565} * {pf_36_5 : 0.9510565}) + {pf_43_1 : 0.0253564}))
@@ -4193,7 +4193,7 @@ void main()
 	if(((! b_1_41) ? true : false))
 	{
 		// False  <=>  ((isnan((({pf_10_7 : 1.341287} * 0.31830987f) * {f_5_49 : 15.00})) ? 0u : {u_12_10 : 6}) == ({u_1_20 : 16} + 4294967295u))
-		b_1_43 = ((isnan(((pf_10_7 * 0.31830987f) * f_5_49)) ? 0u : u_12_10) == (u_1_20 + 4294967295u));
+		b_1_43 = ((isnan(((pf_10_7 * 0.31830987f) * f_5_49)) ? 0u : u_12_10) == (u_1_20 + 4294967295u)); // maybe duplicate expression on the right side of the assignment, vars:b_3_24
 		// 6  <=>  (isnan((({pf_10_7 : 1.341287} * 0.31830987f) * {f_5_49 : 15.00})) ? 0u : {u_12_10 : 6})
 		u_26_2 = (isnan(((pf_10_7 * 0.31830987f) * f_5_49)) ? 0u : u_12_10);
 		u_26_phi_82 = u_26_2;
@@ -4201,7 +4201,7 @@ void main()
 		if((b_1_43 ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_26_3 = ftou((pf_9_10 * 6.2831855f));
+			u_26_3 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9
 			u_26_phi_82 = u_26_3;
 		}
 		// 2147483648  <=>  {u_19_phi_73 : 2147483648}
@@ -4296,11 +4296,11 @@ void main()
 		if(((! b_1_43) ? true : false))
 		{
 			// 0.60  <=>  ((0.f - ({f_8_9 : 6.00} * (1.0f / {f_5_49 : 15.00}))) + 1.f)
-			pf_22_11 = ((0.f - (f_8_9 * (1.0f / f_5_49))) + 1.f);
+			pf_22_11 = ((0.f - (f_8_9 * (1.0f / f_5_49))) + 1.f); // maybe duplicate expression on the right side of the assignment, vars:pf_28_11
 			// False  <=>  ((({pf_22_11 : 0.60} < float(1e-05)) && (! isnan({pf_22_11 : 0.60}))) && (! isnan(float(1e-05))))
 			b_3_46 = (((pf_22_11 < float(1e-05)) && (! isnan(pf_22_11))) && (! isnan(float(1e-05))));
 			// False  <=>  ((((({f_8_9 : 6.00} * (1.0f / {f_5_49 : 15.00})) < float(1e-05)) && (! isnan(({f_8_9 : 6.00} * (1.0f / {f_5_49 : 15.00}))))) && (! isnan(float(1e-05)))) ? true : false)
-			b_4_19 = (((((f_8_9 * (1.0f / f_5_49)) < float(1e-05)) && (! isnan((f_8_9 * (1.0f / f_5_49))))) && (! isnan(float(1e-05)))) ? true : false);
+			b_4_19 = (((((f_8_9 * (1.0f / f_5_49)) < float(1e-05)) && (! isnan((f_8_9 * (1.0f / f_5_49))))) && (! isnan(float(1e-05)))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_5_5
 			// 3196557267  <=>  {u_30_phi_89 : 3196557267}
 			u_37_2 = u_30_phi_89;
 			// 1057221327  <=>  {u_26_phi_86 : 1057221327}
@@ -4474,9 +4474,9 @@ void main()
 	// -1.10134  <=>  (((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * float(int(({b_0_30 : False} ? ({u_11_7 : 21} + {u_1_24 : 4294967280}) : 4294967295u)))))
 	pf_16_21 = (((0.f - pf_9_10) + f_2_65) + (f_2_65 * float(int((b_0_30 ? (u_11_7 + u_1_24) : 4294967295u)))));
 	// 0.00  <=>  (((({utof(u_8_phi_26) : 0.50} * {utof(vs_cbuf9[78].y) : 1.00}) * (1.0f / {utof(vs_cbuf9[78].w) : 16.00})) * float(int({u_1_20 : 16}))) + -0.5f)
-	pf_11_8 = ((((utof(u_8_phi_26) * utof(vs_cbuf9[78].y)) * (1.0f / utof(vs_cbuf9[78].w))) * float(int(u_1_20))) + -0.5f);
+	pf_11_8 = ((((utof(u_8_phi_26) * utof(vs_cbuf9[78].y)) * (1.0f / utof(vs_cbuf9[78].w))) * float(int(u_1_20))) + -0.5f); // maybe duplicate expression on the right side of the assignment, vars:pf_25_5
 	// 0.00  <=>  (((({utof(u_2_phi_24) : 0.50} * {utof(vs_cbuf9[78].x) : 1.00}) * (1.0f / {utof(vs_cbuf9[78].z) : 16.00})) * float(int({u_2_19 : 16}))) + -0.5f)
-	pf_12_8 = ((((utof(u_2_phi_24) * utof(vs_cbuf9[78].x)) * (1.0f / utof(vs_cbuf9[78].z))) * float(int(u_2_19))) + -0.5f);
+	pf_12_8 = ((((utof(u_2_phi_24) * utof(vs_cbuf9[78].x)) * (1.0f / utof(vs_cbuf9[78].z))) * float(int(u_2_19))) + -0.5f); // maybe duplicate expression on the right side of the assignment, vars:pf_26_5
 	// 0.4666667  <=>  (float(int({u_17_0 : 7})) * (1.0f / {f_5_49 : 15.00}))
 	pf_20_10 = (float(int(u_17_0)) * (1.0f / f_5_49));
 	// -0.00  <=>  ((({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))) * {pf_12_8 : 0.00}) + (({pf_39_2 : -0.0895083} * inversesqrt((({pf_20_8 : -0.302587} * {pf_20_8 : -0.302587}) + {pf_25_9 : 0.908441}))) * {pf_11_8 : 0.00}))
@@ -4524,11 +4524,11 @@ void main()
 	// 0.00  <=>  ((({pf_25_20 : -0.5913184} * {f_16_5 : 1.00}) * {f_10_71 : 1.00}) * (0.f * (0.f - {f_10_74 : 1.005508})))
 	pf_34_5 = (((pf_25_20 * f_16_5) * f_10_71) * (0.f * (0.f - f_10_74)));
 	// 0.186421  <=>  (({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * (0.f - ({pf_14_11 : -0.2075762} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))))
-	pf_36_8 = ((pf_7_2 * f_4_29) * (0.f - (pf_14_11 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))));
+	pf_36_8 = ((pf_7_2 * f_4_29) * (0.f - (pf_14_11 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))); // maybe duplicate expression on the right side of the assignment, vars:pf_39_1
 	// 0.00  <=>  (({pf_30_7 : 0.8150639} * {pf_19_16 : 0.00}) + (({pf_31_5 : 0.3090169} * (0.f + {pf_18_34 : 0.00})) + (({pf_29_13 : -0.490081} * {f_11_14 : 1.00}) * (0.f + {pf_17_6 : -0.00}))))
 	pf_29_17 = ((pf_30_7 * pf_19_16) + ((pf_31_5 * (0.f + pf_18_34)) + ((pf_29_13 * f_11_14) * (0.f + pf_17_6))));
 	// -0.2003331  <=>  (({pf_3_6 : -0.4703335} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))))
-	pf_30_8 = ((pf_3_6 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))));
+	pf_30_8 = ((pf_3_6 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))); // maybe duplicate expression on the right side of the assignment, vars:pf_43_0
 	// -0.6429385  <=>  ((({pf_24_21 : 0.7996352} * {f_16_5 : 1.00}) * {f_10_71 : 1.00}) * ({pf_35_8 : 0.7996352} * (0.f - {f_10_74 : 1.005508})))
 	pf_37_8 = (((pf_24_21 * f_16_5) * f_10_71) * (pf_35_8 * (0.f - f_10_74)));
 	// -0.0840449  <=>  ((({pf_26_17 : 0.1045283} * {f_10_71 : 1.00}) * ({pf_35_8 : 0.7996352} * (0.f - {f_10_74 : 1.005508}))) + (0.f - {pf_34_5 : 0.00}))
@@ -4536,7 +4536,7 @@ void main()
 	// -0.0895083  <=>  ((({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))) + (0.f - {pf_36_8 : 0.186421}))
 	pf_35_10 = (((pf_6_2 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))) + (0.f - pf_36_8));
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))
-	f_10_80 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))));
+	f_10_80 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))); // maybe duplicate expression on the right side of the assignment, vars:f_10_34|f_10_45
 	// 0.9489095  <=>  ((({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * {f_10_80 : 0.8779377}) + (0.f - {pf_30_8 : -0.2003331}))
 	pf_30_9 = (((pf_7_2 * f_4_29) * f_10_80) + (0.f - pf_30_8));
 	// 0.6429385  <=>  (0.f - {pf_37_8 : -0.6429385})
@@ -4544,7 +4544,7 @@ void main()
 	// 0.9945219  <=>  (((({pf_25_20 : -0.5913184} * {f_16_5 : 1.00}) * {f_10_71 : 1.00}) * ({pf_34_4 : 0.5913184} * (0.f - {f_10_74 : 1.005508}))) + {f_10_81 : 0.6429385})
 	pf_22_21 = ((((pf_25_20 * f_16_5) * f_10_71) * (pf_34_4 * (0.f - f_10_74))) + f_10_81);
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))
-	f_9_24 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))));
+	f_9_24 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))); // maybe duplicate expression on the right side of the assignment, vars:f_10_34|f_10_45|f_10_80
 	// 0.06215  <=>  (((({pf_24_21 : 0.7996352} * {f_16_5 : 1.00}) * {f_10_71 : 1.00}) * (0.f * (0.f - {f_10_74 : 1.005508}))) + (0.f - (({pf_26_17 : 0.1045283} * {f_10_71 : 1.00}) * ({pf_34_4 : 0.5913184} * (0.f - {f_10_74 : 1.005508})))))
 	pf_31_7 = ((((pf_24_21 * f_16_5) * f_10_71) * (0.f * (0.f - f_10_74))) + (0.f - ((pf_26_17 * f_10_71) * (pf_34_4 * (0.f - f_10_74)))));
 	// 0.0080117  <=>  ({pf_35_10 : -0.0895083} * {pf_35_10 : -0.0895083})
@@ -4578,7 +4578,7 @@ void main()
 	if(((u_17_0 == 0u) ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_16_17 = ftou((pf_9_10 * 6.2831855f));
+		u_16_17 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3
 		u_16_phi_94 = u_16_17;
 	}
 	// 1062954223  <=>  {u_23_phi_81 : 1062954223}
@@ -4681,7 +4681,7 @@ void main()
 		if(((u_17_0 == (u_1_20 + 4294967295u)) ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_25_5 = ftou((pf_9_10 * 6.2831855f));
+			u_25_5 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17
 			u_25_phi_102 = u_25_5;
 		}
 		// 1065261309  <=>  {u_19_phi_98 : 1065261309}
@@ -4948,7 +4948,7 @@ void main()
 	// -0.00  <=>  (({pf_12_8 : 0.00} * ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))) + ({pf_11_8 : 0.00} * ({pf_35_10 : -0.0895083} * inversesqrt((({pf_37_10 : -0.302587} * {pf_37_10 : -0.302587}) + {pf_38_7 : 0.908441})))))
 	pf_18_47 = ((pf_12_8 * (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))) + (pf_11_8 * (pf_35_10 * inversesqrt(((pf_37_10 * pf_37_10) + pf_38_7)))));
 	// 0.1045283  <=>  cos(({pf_20_10 : 0.4666667} * 3.1415927f))
-	f_13_3 = cos((pf_20_10 * 3.1415927f));
+	f_13_3 = cos((pf_20_10 * 3.1415927f)); // maybe duplicate expression on the right side of the assignment, vars:f_10_70
 	// 0.3361601  <=>  ((((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * {f_7_72 : 6.00})) + (0.f - {f_11_29 : -1.00}))
 	pf_16_37 = ((((0.f - pf_9_10) + f_2_65) + (f_2_65 * f_7_72)) + (0.f - f_11_29));
 	// -0.1045283  <=>  (0.f - {f_13_3 : 0.1045283})
@@ -4998,7 +4998,7 @@ void main()
 	// 0.00  <=>  (0.f + (({pf_12_8 : 0.00} * ({pf_21_6 : -0.4043915} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))) + {pf_22_23 : -0.00}))
 	pf_22_25 = (0.f + ((pf_12_8 * (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))) + pf_22_23));
 	// 0.186421  <=>  (({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * (0.f - ({pf_14_11 : -0.2075762} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))))
-	pf_34_10 = ((pf_7_2 * f_4_29) * (0.f - (pf_14_11 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))));
+	pf_34_10 = ((pf_7_2 * f_4_29) * (0.f - (pf_14_11 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))); // maybe duplicate expression on the right side of the assignment, vars:pf_39_1|pf_36_8
 	// -0.0895083  <=>  ((({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))) + (0.f - {pf_34_10 : 0.186421}))
 	pf_34_11 = (((pf_6_2 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))) + (0.f - pf_34_10));
 	// 0.0538636  <=>  ((({pf_28_29 : 0.1045283} * inversesqrt({pf_29_24 : 1.00})) * ({pf_34_9 : -0.5124788} * (0.f - {f_11_38 : 1.005508}))) + (0.f - ({pf_30_15 : 0.8523141} * (0.f * (0.f - {f_11_38 : 1.005508})))))
@@ -5008,15 +5008,15 @@ void main()
 	// 0.994522  <=>  (({pf_30_15 : 0.8523141} * ({pf_33_8 : -0.8523141} * (0.f - {f_11_38 : 1.005508}))) + {f_11_43 : 0.2640812})
 	pf_33_10 = ((pf_30_15 * (pf_33_8 * (0.f - f_11_38))) + f_11_43);
 	// -0.2003331  <=>  (({pf_3_6 : -0.4703335} * {f_4_29 : 1.00}) * (0.f - ({pf_21_6 : -0.4043915} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531})))))
-	pf_35_14 = ((pf_3_6 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))));
+	pf_35_14 = ((pf_3_6 * f_4_29) * (0.f - (pf_21_6 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))))); // maybe duplicate expression on the right side of the assignment, vars:pf_43_0|pf_30_8
 	// 0.00  <=>  (((({pf_25_20 : -0.5913184} * {f_16_5 : 1.00}) * {pf_22_25 : 0.00}) + {pf_24_24 : 0.00}) * (1.0f / {pf_32_5 : 0.8565017}))
 	pf_24_26 = ((((pf_25_20 * f_16_5) * pf_22_25) + pf_24_24) * (1.0f / pf_32_5));
 	// -0.0895817  <=>  (({pf_31_10 : -0.5124788} * (0.f * (0.f - {f_11_38 : 1.005508}))) + (0.f - (({pf_28_29 : 0.1045283} * inversesqrt({pf_29_24 : 1.00})) * ({pf_33_8 : -0.8523141} * (0.f - {f_11_38 : 1.005508})))))
 	pf_25_23 = ((pf_31_10 * (0.f * (0.f - f_11_38))) + (0.f - ((pf_28_29 * inversesqrt(pf_29_24)) * (pf_33_8 * (0.f - f_11_38)))));
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))
-	f_11_46 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))));
+	f_11_46 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))); // maybe duplicate expression on the right side of the assignment, vars:f_10_34|f_10_45|f_10_80|f_9_24
 	// 0.8779377  <=>  (0.f - ({pf_23_9 : -0.8335257} * inversesqrt((({pf_21_6 : -0.4043915} * {pf_21_6 : -0.4043915}) + {pf_24_4 : 0.7378531}))))
-	f_11_47 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4))));
+	f_11_47 = (0.f - (pf_23_9 * inversesqrt(((pf_21_6 * pf_21_6) + pf_24_4)))); // maybe duplicate expression on the right side of the assignment, vars:f_10_34|f_10_45|f_10_80|f_9_24|f_11_46
 	// 0.9489095  <=>  ((({pf_7_2 : 0.8526533} * {f_4_29 : 1.00}) * {f_11_47 : 0.8779377}) + (0.f - {pf_35_14 : -0.2003331}))
 	pf_35_15 = (((pf_7_2 * f_4_29) * f_11_47) + (0.f - pf_35_14));
 	// -0.199755  <=>  (0.f - (({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) * {f_11_46 : 0.8779377}))
@@ -5044,7 +5044,7 @@ void main()
 	if(((u_17_0 == 0u) ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_0_20 = ftou((pf_9_10 * 6.2831855f));
+		u_0_20 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5
 		u_0_phi_114 = u_0_20;
 	}
 	// 0.00  <=>  (((({pf_6_2 : 0.2275276} * {f_4_29 : 1.00}) * {pf_24_26 : 0.00}) + (0.f + {pf_19_23 : 0.00})) * {utof(u_22_phi_101) : 0.9945219})
@@ -5154,7 +5154,7 @@ void main()
 		if(((u_17_0 == (u_1_20 + 4294967295u)) ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_25_9 = ftou((pf_9_10 * 6.2831855f));
+			u_25_9 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20
 			u_25_phi_122 = u_25_9;
 		}
 		// 2147483648  <=>  {u_15_phi_113 : 2147483648}
@@ -5228,7 +5228,7 @@ void main()
 			u_29_phi_129 = u_29_11;
 		}
 		// False  <=>  (({u_17_0 : 7} == 0u) ? true : false)
-		b_2_19 = ((u_17_0 == 0u) ? true : false);
+		b_2_19 = ((u_17_0 == 0u) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_3_76
 		// 1065261310  <=>  {u_26_phi_124 : 1065261310}
 		u_30_10 = u_26_phi_124;
 		// 3182917275  <=>  {u_29_phi_129 : 3182917275}
@@ -5254,7 +5254,7 @@ void main()
 			// False  <=>  (((((0.f - {pf_20_10 : 0.4666667}) + 1.f) < float(1e-05)) && (! isnan(((0.f - {pf_20_10 : 0.4666667}) + 1.f)))) && (! isnan(float(1e-05))))
 			b_5_7 = (((((0.f - pf_20_10) + 1.f) < float(1e-05)) && (! isnan(((0.f - pf_20_10) + 1.f)))) && (! isnan(float(1e-05))));
 			// False  <=>  (((({pf_20_10 : 0.4666667} < float(1e-05)) && (! isnan({pf_20_10 : 0.4666667}))) && (! isnan(float(1e-05)))) ? true : false)
-			b_6_9 = ((((pf_20_10 < float(1e-05)) && (! isnan(pf_20_10))) && (! isnan(float(1e-05)))) ? true : false);
+			b_6_9 = ((((pf_20_10 < float(1e-05)) && (! isnan(pf_20_10))) && (! isnan(float(1e-05)))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_5_6
 			// 1065261310  <=>  {u_26_phi_124 : 1065261310}
 			u_36_6 = u_26_phi_124;
 			// 3182917275  <=>  {u_29_phi_129 : 3182917275}
@@ -5524,11 +5524,11 @@ void main()
 	// vec4(0.50,0.50,0.50,1.00)  <=>  texelFetch({tex0 : tex0}, ivec2(uvec2({u_9_20 : 102}, {u_14_33 : 12})), int(0u))
 	f4_0_3 = texelFetch(tex0, ivec2(uvec2(u_9_20, u_14_33)), int(0u));
 	// -250.9389  <=>  ((0.f - {pf_0_9 : 538.25}) + {utof(vs_cbuf8[29].x) : 287.3111})
-	pf_3_17 = ((0.f - pf_0_9) + utof(vs_cbuf8[29].x));
+	pf_3_17 = ((0.f - pf_0_9) + utof(vs_cbuf8[29].x)); // maybe duplicate expression on the right side of the assignment, vars:pf_3_4
 	// 121.3937  <=>  ((0.f - {pf_2_18 : 1550.75}) + {utof(vs_cbuf8[29].y) : 1672.144})
-	pf_6_11 = ((0.f - pf_2_18) + utof(vs_cbuf8[29].y));
+	pf_6_11 = ((0.f - pf_2_18) + utof(vs_cbuf8[29].y)); // maybe duplicate expression on the right side of the assignment, vars:pf_6_0
 	// 454.9194  <=>  ((0.f - ({pf_1_8 : 0.00} + {utof(vs_cbuf10[6].w) : 941.75})) + {utof(vs_cbuf8[29].z) : 1396.669})
-	pf_7_6 = ((0.f - (pf_1_8 + utof(vs_cbuf10[6].w))) + utof(vs_cbuf8[29].z));
+	pf_7_6 = ((0.f - (pf_1_8 + utof(vs_cbuf10[6].w))) + utof(vs_cbuf8[29].z)); // maybe duplicate expression on the right side of the assignment, vars:pf_7_0
 	// 250.9389  <=>  ({pf_0_9 : 538.25} + (0.f - {utof(vs_cbuf8[29].x) : 287.3111}))
 	pf_11_16 = (pf_0_9 + (0.f - utof(vs_cbuf8[29].x)));
 	// -121.3937  <=>  ({pf_2_18 : 1550.75} + (0.f - {utof(vs_cbuf8[29].y) : 1672.144}))
@@ -5780,13 +5780,13 @@ void main()
 			// False  <=>  ((((abs(({pf_3_19 : -0.4703335} * {f_20_18 : 1.00})) == {utof(0x7f800000) : ∞}) && (! isnan(abs(({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}))))) && (! isnan({utof(0x7f800000) : ∞}))) && (((abs(({pf_7_8 : 0.8526533} * {f_20_18 : 1.00})) == {utof(0x7f800000) : ∞}) && (! isnan(abs(({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}))))) && (! isnan({utof(0x7f800000) : ∞}))))
 			b_5_10 = ((((abs((pf_3_19 * f_20_18)) == utof(0x7f800000)) && (! isnan(abs((pf_3_19 * f_20_18))))) && (! isnan(utof(0x7f800000)))) && (((abs((pf_7_8 * f_20_18)) == utof(0x7f800000)) && (! isnan(abs((pf_7_8 * f_20_18))))) && (! isnan(utof(0x7f800000)))));
 			// False  <=>  ({b_6_11 : False} ? true : false)
-			b_8_2 = (b_6_11 ? true : false);
+			b_8_2 = (b_6_11 ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_7_4
 			b_8_phi_140 = b_8_2;
 			// False  <=>  if(({b_5_10 : False} ? true : false))
 			if((b_5_10 ? true : false))
 			{
 				// True  <=>  ((((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) < 0.f) && (! isnan(({pf_3_19 : -0.4703335} * {f_20_18 : 1.00})))) && (! isnan(0.f))) ? true : false)
-				b_8_3 = (((((pf_3_19 * f_20_18) < 0.f) && (! isnan((pf_3_19 * f_20_18)))) && (! isnan(0.f))) ? true : false);
+				b_8_3 = (((((pf_3_19 * f_20_18) < 0.f) && (! isnan((pf_3_19 * f_20_18)))) && (! isnan(0.f))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_8_1
 				b_8_phi_140 = b_8_3;
 			}
 			// 1056964608  <=>  {u_1_phi_138 : 1056964608}
@@ -5946,7 +5946,7 @@ void main()
 	// 21  <=>  (({u_2_19 : 16} + 4294967295u) + (isnan({pf_21_37 : 6.905067}) ? 0u : int(clamp(floor({pf_21_37 : 6.905067}), float(-2147483600.f), float(2147483600.f)))))
 	u_9_25 = ((u_2_19 + 4294967295u) + (isnan(pf_21_37) ? 0u : int(clamp(floor(pf_21_37), float(-2147483600.f), float(2147483600.f)))));
 	// 0.0625  <=>  {utof(({ftou((1.0f / float({u_2_19 : 16}))) : 1031798784} + 4294967294u)) : 0.0625}
-	f_1_25 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u));
+	f_1_25 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u)); // maybe duplicate expression on the right side of the assignment, vars:f_4_33|f_4_34
 	// 1  <=>  uint(clamp(trunc(({f_1_25 : 0.0625} * float({u_9_25 : 21}))), float(0.f), float(4294967300.f)))
 	u_10_36 = uint(clamp(trunc((f_1_25 * float(u_9_25))), float(0.f), float(4294967300.f)));
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_10_36 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_10_36 : 1}), int(0u), int(16u))), int(16u), int(16u))
@@ -5956,7 +5956,7 @@ void main()
 	// 16  <=>  ((uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(16u), int(16u))) * {u_17_17 : 1})) << 16u) + (({u_15_36 : 65536} << 16u) + uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_10_36 : 1}), int(0u), int(16u)))))))
 	u_14_44 = ((uint((uint(bitfieldExtract(uint(u_2_19), int(16u), int(16u))) * u_17_17)) << 16u) + ((u_15_36 << 16u) + uint((uint(bitfieldExtract(uint(u_2_19), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_10_36), int(0u), int(16u)))))));
 	// 0.0625  <=>  {utof(({ftou((1.0f / float({u_2_19 : 16}))) : 1031798784} + 4294967294u)) : 0.0625}
-	f_1_26 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u));
+	f_1_26 = utof((ftou((1.0f / float(u_2_19))) + 4294967294u)); // maybe duplicate expression on the right side of the assignment, vars:f_4_33|f_4_34|f_1_25
 	// 0.00  <=>  trunc(({f_1_26 : 0.0625} * float(({u_9_25 : 21} + uint((int(0) - int({u_14_44 : 16})))))))
 	f_0_46 = trunc((f_1_26 * float((u_9_25 + uint((int(0) - int(u_14_44)))))));
 	// 1  <=>  uint(bitfieldExtract(uint(({u_10_36 : 1} + uint(clamp({f_0_46 : 0.00}, float(0.f), float(4294967300.f))))), int(0u), int(16u)))
@@ -5964,7 +5964,7 @@ void main()
 	// 0  <=>  uint(bitfieldExtract(uint(({u_10_36 : 1} + uint(clamp({f_0_46 : 0.00}, float(0.f), float(4294967300.f))))), int(16u), int(16u)))
 	u_15_38 = uint(bitfieldExtract(uint((u_10_36 + uint(clamp(f_0_46, float(0.f), float(4294967300.f))))), int(16u), int(16u)));
 	// 1  <=>  uint(bitfieldExtract(uint(({u_10_36 : 1} + uint(clamp({f_0_46 : 0.00}, float(0.f), float(4294967300.f))))), int(0u), int(16u)))
-	u_15_39 = uint(bitfieldExtract(uint((u_10_36 + uint(clamp(f_0_46, float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	u_15_39 = uint(bitfieldExtract(uint((u_10_36 + uint(clamp(f_0_46, float(0.f), float(4294967300.f))))), int(0u), int(16u))); // maybe duplicate expression on the right side of the assignment, vars:u_14_47
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_19 : 16}), int(0u), int(16u))) * {u_15_38 : 0})), {u_15_39 : 1}, int(16u), int(16u))
 	u_14_50 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_19), int(0u), int(16u))) * u_15_38)), u_15_39, int(16u), int(16u));
 	// 1  <=>  uint(bitfieldExtract(uint({u_14_50 : 65536}), int(16u), int(16u)))
@@ -6052,11 +6052,11 @@ void main()
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_1_35 : 1.053282}))
 	f_1_38 = (0.f - (pf_23_23 * f_1_35));
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_1_35 : 1.053282}))
-	f_1_39 = (0.f - (pf_30_24 * f_1_35));
+	f_1_39 = (0.f - (pf_30_24 * f_1_35)); // maybe duplicate expression on the right side of the assignment, vars:f_1_37
 	// -0.0895083  <=>  (({pf_6_14 : 0.2275276} * {f_1_39 : 0.4259384}) + (0.f - (({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_1_36 : 0.2186363})))
 	pf_40_4 = ((pf_6_14 * f_1_39) + (0.f - ((pf_7_8 * f_20_18) * f_1_36)));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_1_35 : 1.053282}))
-	f_1_40 = (0.f - (pf_23_23 * f_1_35));
+	f_1_40 = (0.f - (pf_23_23 * f_1_35)); // maybe duplicate expression on the right side of the assignment, vars:f_1_38
 	// 0.9489095  <=>  ((({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_1_40 : 0.8779377}) + (0.f - {pf_41_3 : -0.2003331}))
 	pf_41_4 = (((pf_7_8 * f_20_18) * f_1_40) + (0.f - pf_41_3));
 	// 3206034970  <=>  {ftou(({pf_35_19 : 0.5654749} * (0.f - {f_5_55 : 1.051462}))) : 3206034970}
@@ -6064,7 +6064,7 @@ void main()
 	// 0.0080117  <=>  ({pf_40_4 : -0.0895083} * {pf_40_4 : -0.0895083})
 	pf_44_0 = (pf_40_4 * pf_40_4);
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_1_35 : 1.053282}))
-	f_1_44 = (0.f - (pf_22_44 * f_1_35));
+	f_1_44 = (0.f - (pf_22_44 * f_1_35)); // maybe duplicate expression on the right side of the assignment, vars:f_1_36
 	// -0.302587  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_1_44 : 0.2186363}) + (0.f - ({pf_6_14 : 0.2275276} * {f_1_38 : 0.8779377})))
 	pf_42_4 = (((pf_3_19 * f_20_18) * f_1_44) + (0.f - (pf_6_14 * f_1_38)));
 	// 7  <=>  ((isnan(({f_5_49 : 15.00} * ({pf_16_70 : 1.341287} * 0.31830987f))) ? 0u : {u_10_46 : 6}) + 1u)
@@ -6118,7 +6118,7 @@ void main()
 	if((b_0_31 ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_18_11 = ftou((pf_9_10 * 6.2831855f));
+		u_18_11 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9
 		u_18_phi_155 = u_18_11;
 	}
 	// 0.4041748  <=>  (({f_5_49 : 15.00} * ({pf_16_70 : 1.341287} * 0.31830987f)) + (0.f - floor(({f_5_49 : 15.00} * ({pf_16_70 : 1.341287} * 0.31830987f)))))
@@ -6130,7 +6130,7 @@ void main()
 	if(((! (u_16_39 == (u_1_20 + 4294967295u))) ? true : false))
 	{
 		// 4294967295  <=>  ({b_0_30 : False} ? ({u_9_25 : 21} + {u_2_23 : 4294967280}) : 4294967295u)
-		u_9_29 = (b_0_30 ? (u_9_25 + u_2_23) : 4294967295u);
+		u_9_29 = (b_0_30 ? (u_9_25 + u_2_23) : 4294967295u); // maybe duplicate expression on the right side of the assignment, vars:u_0_34
 		u_9_phi_156 = u_9_29;
 	}
 	// 1031592971  <=>  {u_18_phi_155 : 1031592971}
@@ -6146,7 +6146,7 @@ void main()
 	// 1.00  <=>  inversesqrt((({pf_43_4 : 0.1837339} * {pf_43_4 : 0.1837339}) + (({pf_35_21 : 0.9510565} * {pf_35_21 : 0.9510565}) + ({pf_36_21 : -0.2484618} * {pf_36_21 : -0.2484618}))))
 	f_5_62 = inversesqrt(((pf_43_4 * pf_43_4) + ((pf_35_21 * pf_35_21) + (pf_36_21 * pf_36_21))));
 	// 4294967295  <=>  ({b_0_30 : False} ? ({u_9_25 : 21} + {u_2_23 : 4294967280}) : 4294967295u)
-	u_18_12 = (b_0_30 ? (u_9_25 + u_2_23) : 4294967295u);
+	u_18_12 = (b_0_30 ? (u_9_25 + u_2_23) : 4294967295u); // maybe duplicate expression on the right side of the assignment, vars:u_0_34|u_9_29
 	u_18_phi_158 = u_18_12;
 	// False  <=>  if(({b_0_31 : False} ? true : false))
 	if((b_0_31 ? true : false))
@@ -6198,7 +6198,7 @@ void main()
 	if(((! (u_16_39 == (u_1_20 + 4294967295u))) ? true : false))
 	{
 		// 6  <=>  (isnan({pf_21_37 : 6.905067}) ? 0u : int(clamp(floor({pf_21_37 : 6.905067}), float(-2147483600.f), float(2147483600.f))))
-		u_18_15 = (isnan(pf_21_37) ? 0u : int(clamp(floor(pf_21_37), float(-2147483600.f), float(2147483600.f))));
+		u_18_15 = (isnan(pf_21_37) ? 0u : int(clamp(floor(pf_21_37), float(-2147483600.f), float(2147483600.f)))); // maybe duplicate expression on the right side of the assignment, vars:u_9_31
 		u_18_phi_162 = u_18_15;
 	}
 	// 3195956426  <=>  {ftou(({pf_36_21 : -0.2484618} * {f_5_62 : 1.00})) : 3195956426}
@@ -6273,7 +6273,7 @@ void main()
 		if((b_2_39 ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_26_13 = ftou((pf_9_10 * 6.2831855f));
+			u_26_13 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11
 			u_26_phi_168 = u_26_13;
 		}
 		// 2147483648  <=>  {u_17_phi_152 : 2147483648}
@@ -6538,7 +6538,7 @@ void main()
 	// 6.00  <=>  float(int((isnan({pf_21_37 : 6.905067}) ? 0u : int(clamp(floor({pf_21_37 : 6.905067}), float(-2147483600.f), float(2147483600.f))))))
 	f_1_69 = float(int((isnan(pf_21_37) ? 0u : int(clamp(floor(pf_21_37), float(-2147483600.f), float(2147483600.f))))));
 	// 0.3090169  <=>  cos((({f_0_54 : 6.00} * (1.0f / {f_5_49 : 15.00})) * 3.1415927f))
-	f_3_84 = cos(((f_0_54 * (1.0f / f_5_49)) * 3.1415927f));
+	f_3_84 = cos(((f_0_54 * (1.0f / f_5_49)) * 3.1415927f)); // maybe duplicate expression on the right side of the assignment, vars:f_5_50
 	// 0.1364943  <=>  (({pf_42_4 : -0.302587} * {f_1_47 : 1.00}) * ({pf_44_5 : 0.048909} + -0.5f))
 	pf_32_17 = ((pf_42_4 * f_1_47) * (pf_44_5 + -0.5f));
 	// -0.7646874  <=>  (0.f - ({pf_28_36 : 0.7646873} * {f_1_33 : 1.00}))
@@ -6590,7 +6590,7 @@ void main()
 	// -0.0954435  <=>  ((({pf_30_24 : -0.4043915} * {f_1_35 : 1.053282}) * ({pf_45_3 : 1.044534} + -0.5f)) + {pf_32_17 : 0.1364943})
 	pf_32_18 = (((pf_30_24 * f_1_35) * (pf_45_3 + -0.5f)) + pf_32_17);
 	// 1.053282  <=>  inversesqrt((({pf_30_24 : -0.4043915} * {pf_30_24 : -0.4043915}) + (({pf_22_44 : -0.2075762} * {pf_22_44 : -0.2075762}) + {pf_27_25 : 0.6947652})))
-	f_3_88 = inversesqrt(((pf_30_24 * pf_30_24) + ((pf_22_44 * pf_22_44) + pf_27_25)));
+	f_3_88 = inversesqrt(((pf_30_24 * pf_30_24) + ((pf_22_44 * pf_22_44) + pf_27_25))); // maybe duplicate expression on the right side of the assignment, vars:f_1_35
 	// 0.9045086  <=>  (({pf_49_0 : -0.490081} * {pf_49_0 : -0.490081}) + (({pf_48_0 : -0.8150639} * {pf_48_0 : -0.8150639}) + 0.f))
 	pf_27_29 = ((pf_49_0 * pf_49_0) + ((pf_48_0 * pf_48_0) + 0.f));
 	// 1.051462  <=>  inversesqrt({pf_27_29 : 0.9045086})
@@ -6620,7 +6620,7 @@ void main()
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
 	f_1_75 = (0.f - (pf_30_24 * f_3_88));
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
-	f_1_76 = (0.f - (pf_30_24 * f_3_88));
+	f_1_76 = (0.f - (pf_30_24 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_75
 	// -0.186421  <=>  (0.f - (({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_8_57 : 0.2186363}))
 	f_4_45 = (0.f - ((pf_7_8 * f_20_18) * f_8_57));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
@@ -6630,11 +6630,11 @@ void main()
 	// -0.2648302  <=>  (({pf_46_3 : -0.490081} * (0.f * (0.f - {f_4_42 : 1.051462}))) + (0.f - {pf_39_5 : 0.2648302}))
 	pf_31_19 = ((pf_46_3 * (0.f * (0.f - f_4_42))) + (0.f - pf_39_5));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
-	f_1_79 = (0.f - (pf_23_23 * f_3_88));
+	f_1_79 = (0.f - (pf_23_23 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_77
 	// 0.9489095  <=>  ((({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_1_79 : 0.8779377}) + (0.f - (({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_1_75 : 0.4259384})))
 	pf_39_6 = (((pf_7_8 * f_20_18) * f_1_79) + (0.f - ((pf_3_19 * f_20_18) * f_1_75)));
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282}))
-	f_1_80 = (0.f - (pf_22_44 * f_3_88));
+	f_1_80 = (0.f - (pf_22_44 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_8_57
 	// -0.302587  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_1_80 : 0.2186363}) + (0.f - {pf_51_0 : 0.199755}))
 	pf_51_1 = (((pf_3_19 * f_20_18) * f_1_80) + (0.f - pf_51_0));
 	// 1045204118  <=>  {ftou(pf_51_0) : 1045204118}
@@ -6644,7 +6644,7 @@ void main()
 	if((b_0_31 ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_8_32 = ftou((pf_9_10 * 6.2831855f));
+		u_8_32 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13
 		u_8_phi_179 = u_8_32;
 	}
 	// -0.1634844  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {pf_27_33 : -0.5830032}) + (0.f + {pf_33_17 : -0.4376903}))
@@ -6759,7 +6759,7 @@ void main()
 	if(((! b_0_31) ? true : false))
 	{
 		// False  <=>  ((isnan(({f_5_49 : 15.00} * ({pf_16_70 : 1.341287} * 0.31830987f))) ? 0u : {u_10_46 : 6}) == ({u_1_20 : 16} + 4294967295u))
-		b_0_33 = ((isnan((f_5_49 * (pf_16_70 * 0.31830987f))) ? 0u : u_10_46) == (u_1_20 + 4294967295u));
+		b_0_33 = ((isnan((f_5_49 * (pf_16_70 * 0.31830987f))) ? 0u : u_10_46) == (u_1_20 + 4294967295u)); // maybe duplicate expression on the right side of the assignment, vars:b_2_39
 		// 15  <=>  ({u_1_20 : 16} + 4294967295u)
 		u_10_48 = (u_1_20 + 4294967295u);
 		u_10_phi_188 = u_10_48;
@@ -6767,7 +6767,7 @@ void main()
 		if((b_0_33 ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_10_49 = ftou((pf_9_10 * 6.2831855f));
+			u_10_49 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13|u_8_32
 			u_10_phi_188 = u_10_49;
 		}
 		// 2147483648  <=>  {u_4_phi_182 : 2147483648}
@@ -6862,11 +6862,11 @@ void main()
 		if(((! b_0_33) ? true : false))
 		{
 			// 0.60  <=>  ((0.f - ({f_0_54 : 6.00} * (1.0f / {f_5_49 : 15.00}))) + 1.f)
-			pf_26_52 = ((0.f - (f_0_54 * (1.0f / f_5_49))) + 1.f);
+			pf_26_52 = ((0.f - (f_0_54 * (1.0f / f_5_49))) + 1.f); // maybe duplicate expression on the right side of the assignment, vars:pf_35_27
 			// False  <=>  ((({pf_26_52 : 0.60} < float(1e-05)) && (! isnan({pf_26_52 : 0.60}))) && (! isnan(float(1e-05))))
 			b_2_61 = (((pf_26_52 < float(1e-05)) && (! isnan(pf_26_52))) && (! isnan(float(1e-05))));
 			// False  <=>  ((((({f_0_54 : 6.00} * (1.0f / {f_5_49 : 15.00})) < float(1e-05)) && (! isnan(({f_0_54 : 6.00} * (1.0f / {f_5_49 : 15.00}))))) && (! isnan(float(1e-05)))) ? true : false)
-			b_3_106 = (((((f_0_54 * (1.0f / f_5_49)) < float(1e-05)) && (! isnan((f_0_54 * (1.0f / f_5_49))))) && (! isnan(float(1e-05)))) ? true : false);
+			b_3_106 = (((((f_0_54 * (1.0f / f_5_49)) < float(1e-05)) && (! isnan((f_0_54 * (1.0f / f_5_49))))) && (! isnan(float(1e-05)))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_4_43
 			// 1057221327  <=>  {u_10_phi_192 : 1057221327}
 			u_34_10 = u_10_phi_192;
 			// 3196557267  <=>  {u_27_phi_195 : 3196557267}
@@ -7030,7 +7030,7 @@ void main()
 		u_23_phi_187 = u_23_12;
 	}
 	// -1.10134  <=>  (((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * float(int(({b_0_30 : False} ? ({u_9_25 : 21} + {u_2_23 : 4294967280}) : 4294967295u)))))
-	pf_24_51 = (((0.f - pf_9_10) + f_2_65) + (f_2_65 * float(int((b_0_30 ? (u_9_25 + u_2_23) : 4294967295u)))));
+	pf_24_51 = (((0.f - pf_9_10) + f_2_65) + (f_2_65 * float(int((b_0_30 ? (u_9_25 + u_2_23) : 4294967295u))))); // maybe duplicate expression on the right side of the assignment, vars:pf_27_23
 	// 0.490081  <=>  (0.f - ({pf_34_22 : -0.490081} * {f_4_41 : 1.00}))
 	f_8_77 = (0.f - (pf_34_22 * f_4_41));
 	// -0.2305015  <=>  (({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_8_77 : 0.490081})
@@ -7046,17 +7046,17 @@ void main()
 	// -0.8150639  <=>  (0.f - ({pf_40_7 : 0.8150639} * {f_4_41 : 1.00}))
 	f_3_90 = (0.f - (pf_40_7 * f_4_41));
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
-	f_3_91 = (0.f - (pf_30_24 * f_3_88));
+	f_3_91 = (0.f - (pf_30_24 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_75|f_1_76
 	// -0.0954435  <=>  (0.f + {pf_27_40 : -0.0954435})
 	pf_27_41 = (0.f + pf_27_40);
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
-	f_6_44 = (0.f - (pf_23_23 * f_3_88));
+	f_6_44 = (0.f - (pf_23_23 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_77|f_1_79
 	// 0.199755  <=>  ({pf_6_14 : 0.2275276} * {f_6_44 : 0.8779377})
 	pf_37_20 = (pf_6_14 * f_6_44);
 	// 0.1045283  <=>  cos(({pf_33_29 : 0.4666667} * 3.1415927f))
 	f_6_45 = cos((pf_33_29 * 3.1415927f));
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282}))
-	f_7_91 = (0.f - (pf_22_44 * f_3_88));
+	f_7_91 = (0.f - (pf_22_44 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_8_57|f_1_80
 	// -0.302587  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_7_91 : 0.2186363}) + (0.f - {pf_37_20 : 0.199755}))
 	pf_32_33 = (((pf_3_19 * f_20_18) * f_7_91) + (0.f - pf_37_20));
 	// 0.8040398  <=>  cos(({pf_24_52 : 0.8986601} * 6.2831855f))
@@ -7104,17 +7104,17 @@ void main()
 	// 3206034970  <=>  {ftou(({pf_45_4 : 0.5913184} * (0.f - {f_6_49 : 1.005508}))) : 3206034970}
 	u_8_35 = ftou((pf_45_4 * (0.f - f_6_49)));
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282}))
-	f_6_51 = (0.f - (pf_22_44 * f_3_88));
+	f_6_51 = (0.f - (pf_22_44 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_8_57|f_1_80|f_7_91
 	// -0.0323518  <=>  ((({pf_40_7 : 0.8150639} * {f_4_41 : 1.00}) * {pf_27_41 : -0.0954435}) + (({pf_41_9 : 0.3090169} * {pf_28_40 : -0.5470995}) + {pf_31_22 : 0.2145037}))
 	pf_31_24 = (((pf_40_7 * f_4_41) * pf_27_41) + ((pf_41_9 * pf_28_40) + pf_31_22));
 	// -0.06215  <=>  (({pf_39_10 : 0.1045283} * inversesqrt({pf_42_12 : 1.00})) * ({pf_45_4 : 0.5913184} * (0.f - {f_6_49 : 1.005508})))
 	pf_48_2 = ((pf_39_10 * inversesqrt(pf_42_12)) * (pf_45_4 * (0.f - f_6_49)));
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
-	f_6_52 = (0.f - (pf_30_24 * f_3_88));
+	f_6_52 = (0.f - (pf_30_24 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_75|f_1_76|f_3_91
 	// -0.186421  <=>  (0.f - (({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_6_51 : 0.2186363}))
 	f_9_57 = (0.f - ((pf_7_8 * f_20_18) * f_6_51));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
-	f_6_53 = (0.f - (pf_23_23 * f_3_88));
+	f_6_53 = (0.f - (pf_23_23 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_77|f_1_79|f_6_44
 	// 0.9489095  <=>  ((({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_6_53 : 0.8779377}) + (0.f - (({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_3_91 : 0.4259384})))
 	pf_36_32 = (((pf_7_8 * f_20_18) * f_6_53) + (0.f - ((pf_3_19 * f_20_18) * f_3_91)));
 	// -0.0840449  <=>  ((({pf_39_10 : 0.1045283} * inversesqrt({pf_42_12 : 1.00})) * ({pf_46_4 : 0.7996352} * (0.f - {f_6_49 : 1.005508}))) + (0.f - ({pf_43_11 : -0.5913184} * (0.f * (0.f - {f_6_49 : 1.005508})))))
@@ -7148,7 +7148,7 @@ void main()
 	if(((u_16_39 == 0u) ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_4_24 = ftou((pf_9_10 * 6.2831855f));
+		u_4_24 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13|u_8_32|u_10_49
 		u_4_phi_200 = u_4_24;
 	}
 	// 1.00  <=>  inversesqrt((({pf_32_33 : -0.302587} * {pf_32_33 : -0.302587}) + {pf_45_7 : 0.908441}))
@@ -7255,7 +7255,7 @@ void main()
 		if(((u_16_39 == (u_1_20 + 4294967295u)) ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_22_13 = ftou((pf_9_10 * 6.2831855f));
+			u_22_13 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13|u_8_32|u_10_49|u_4_24
 			u_22_phi_208 = u_22_13;
 		}
 		// 1065261309  <=>  {u_14_phi_204 : 1065261309}
@@ -7518,7 +7518,7 @@ void main()
 		u_21_phi_207 = u_21_15;
 	}
 	// -1.00  <=>  floor((((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * {f_1_69 : 6.00})))
-	f_7_97 = floor((((0.f - pf_9_10) + f_2_65) + (f_2_65 * f_1_69)));
+	f_7_97 = floor((((0.f - pf_9_10) + f_2_65) + (f_2_65 * f_1_69))); // maybe duplicate expression on the right side of the assignment, vars:f_1_71
 	// -0.7996352  <=>  (0.f - ({pf_37_22 : 0.7996352} * {f_9_54 : 1.00}))
 	f_8_81 = (0.f - (pf_37_22 * f_9_54));
 	// 0.3760952  <=>  (({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_8_81 : -0.7996352})
@@ -7526,7 +7526,7 @@ void main()
 	// -0.5470995  <=>  ((({pf_45_3 : 1.044534} + -0.5f) * ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282})) + (({pf_44_5 : 0.048909} + -0.5f) * {pf_28_44 : 0.9489096}))
 	pf_27_54 = (((pf_45_3 + -0.5f) * (pf_22_44 * f_3_88)) + ((pf_44_5 + -0.5f) * pf_28_44));
 	// 0.1045283  <=>  cos(({pf_33_29 : 0.4666667} * 3.1415927f))
-	f_8_82 = cos((pf_33_29 * 3.1415927f));
+	f_8_82 = cos((pf_33_29 * 3.1415927f)); // maybe duplicate expression on the right side of the assignment, vars:f_6_45
 	// 0.3361601  <=>  ((((0.f - {pf_9_10 : 1.10134}) + {f_2_65 : 0.0625}) + ({f_2_65 : 0.0625} * {f_1_69 : 6.00})) + (0.f - {f_7_97 : -1.00}))
 	pf_15_12 = ((((0.f - pf_9_10) + f_2_65) + (f_2_65 * f_1_69)) + (0.f - f_7_97));
 	// 0.5913184  <=>  (0.f - ({pf_38_14 : -0.5913184} * {f_9_54 : 1.00}))
@@ -7572,13 +7572,13 @@ void main()
 	// 1.005508  <=>  inversesqrt({pf_42_15 : 0.9890739})
 	f_8_86 = inversesqrt(pf_42_15);
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
-	f_9_85 = (0.f - (pf_30_24 * f_3_88));
+	f_9_85 = (0.f - (pf_30_24 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_75|f_1_76|f_3_91|f_6_52
 	// -0.3499926  <=>  (({pf_37_22 : 0.7996352} * {f_9_54 : 1.00}) * (0.f + {pf_31_31 : -0.4376903}))
 	pf_37_24 = ((pf_37_22 * f_9_54) * (0.f + pf_31_31));
 	// -0.0954435  <=>  ((({pf_45_3 : 1.044534} + -0.5f) * ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282})) + (({pf_44_5 : 0.048909} + -0.5f) * ({pf_32_33 : -0.302587} * {f_3_97 : 1.00})))
 	pf_32_36 = (((pf_45_3 + -0.5f) * (pf_30_24 * f_3_88)) + ((pf_44_5 + -0.5f) * (pf_32_33 * f_3_97)));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
-	f_9_86 = (0.f - (pf_23_23 * f_3_88));
+	f_9_86 = (0.f - (pf_23_23 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_77|f_1_79|f_6_44|f_6_53
 	// 0.9489095  <=>  ((({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_9_86 : 0.8779377}) + (0.f - (({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_9_85 : 0.4259384})))
 	pf_42_17 = (((pf_7_8 * f_20_18) * f_9_86) + (0.f - ((pf_3_19 * f_20_18) * f_9_85)));
 	// -0.0954435  <=>  (0.f + {pf_32_36 : -0.0954435})
@@ -7592,7 +7592,7 @@ void main()
 	// 0.0538636  <=>  ((({pf_29_53 : 0.1045283} * inversesqrt({pf_34_35 : 1.00})) * ({pf_41_12 : -0.5124788} * (0.f - {f_8_86 : 1.005508}))) + (0.f - ({pf_35_32 : 0.8523141} * (0.f * (0.f - {f_8_86 : 1.005508})))))
 	pf_41_14 = (((pf_29_53 * inversesqrt(pf_34_35)) * (pf_41_12 * (0.f - f_8_86))) + (0.f - (pf_35_32 * (0.f * (0.f - f_8_86)))));
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282}))
-	f_8_89 = (0.f - (pf_22_44 * f_3_88));
+	f_8_89 = (0.f - (pf_22_44 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_8_57|f_1_80|f_7_91|f_6_51
 	// 0.2640812  <=>  (0.f - ({pf_36_38 : -0.5124788} * ({pf_41_12 : -0.5124788} * (0.f - {f_8_86 : 1.005508}))))
 	f_8_90 = (0.f - (pf_36_38 * (pf_41_12 * (0.f - f_8_86))));
 	// 0.994522  <=>  (({pf_35_32 : 0.8523141} * ({pf_40_12 : -0.8523141} * (0.f - {f_8_86 : 1.005508}))) + {f_8_90 : 0.2640812})
@@ -7602,11 +7602,11 @@ void main()
 	// -0.0895817  <=>  (({pf_36_38 : -0.5124788} * (0.f * (0.f - {f_8_86 : 1.005508}))) + (0.f - {pf_38_16 : 0.0895817}))
 	pf_38_17 = ((pf_36_38 * (0.f * (0.f - f_8_86))) + (0.f - pf_38_16));
 	// 0.8779377  <=>  (0.f - ({pf_23_23 : -0.8335257} * {f_3_88 : 1.053282}))
-	f_7_102 = (0.f - (pf_23_23 * f_3_88));
+	f_7_102 = (0.f - (pf_23_23 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_77|f_1_79|f_6_44|f_6_53|f_9_86
 	// 0.199755  <=>  ({pf_6_14 : 0.2275276} * {f_7_102 : 0.8779377})
 	pf_39_12 = (pf_6_14 * f_7_102);
 	// 0.4259384  <=>  (0.f - ({pf_30_24 : -0.4043915} * {f_3_88 : 1.053282}))
-	f_7_103 = (0.f - (pf_30_24 * f_3_88));
+	f_7_103 = (0.f - (pf_30_24 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_1_75|f_1_76|f_3_91|f_6_52|f_9_85
 	// -0.186421  <=>  (0.f - (({pf_7_8 : 0.8526533} * {f_20_18 : 1.00}) * {f_8_89 : 0.2186363}))
 	f_8_91 = (0.f - ((pf_7_8 * f_20_18) * f_8_89));
 	// 2147483648  <=>  {ftou((0.f * (0.f - {f_8_86 : 1.005508}))) : 2147483648}
@@ -7622,7 +7622,7 @@ void main()
 	// -0.245086  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {pf_37_27 : -0.4095059}) + (0.f + {pf_31_31 : -0.4376903}))
 	pf_31_33 = (((pf_3_19 * f_20_18) * pf_37_27) + (0.f + pf_31_31));
 	// 0.2186363  <=>  (0.f - ({pf_22_44 : -0.2075762} * {f_3_88 : 1.053282}))
-	f_7_104 = (0.f - (pf_22_44 * f_3_88));
+	f_7_104 = (0.f - (pf_22_44 * f_3_88)); // maybe duplicate expression on the right side of the assignment, vars:f_8_57|f_1_80|f_7_91|f_6_51|f_8_89
 	// -0.302587  <=>  ((({pf_3_19 : -0.4703335} * {f_20_18 : 1.00}) * {f_7_104 : 0.2186363}) + (0.f - {pf_39_12 : 0.199755}))
 	pf_39_13 = (((pf_3_19 * f_20_18) * f_7_104) + (0.f - pf_39_12));
 	// 2147483648  <=>  {u_21_phi_207 : 2147483648}
@@ -7632,7 +7632,7 @@ void main()
 	if(((u_16_39 == 0u) ? true : false))
 	{
 		// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-		u_1_56 = ftou((pf_9_10 * 6.2831855f));
+		u_1_56 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13|u_8_32|u_10_49|u_4_24|u_22_13
 		u_1_phi_220 = u_1_56;
 	}
 	// 0.908441  <=>  (({pf_42_17 : 0.9489095} * {pf_42_17 : 0.9489095}) + ((({pf_6_14 : 0.2275276} * {f_7_103 : 0.4259384}) + {f_8_91 : -0.186421}) * (({pf_6_14 : 0.2275276} * {f_7_103 : 0.4259384}) + {f_8_91 : -0.186421})))
@@ -7741,7 +7741,7 @@ void main()
 		if(((u_16_39 == (u_1_20 + 4294967295u)) ? true : false))
 		{
 			// 1088253955  <=>  {ftou(({pf_9_10 : 1.10134} * 6.2831855f)) : 1088253955}
-			u_21_17 = ftou((pf_9_10 * 6.2831855f));
+			u_21_17 = ftou((pf_9_10 * 6.2831855f)); // maybe duplicate expression on the right side of the assignment, vars:u_11_9|u_28_1|u_0_9|u_26_3|u_16_17|u_25_5|u_0_20|u_25_9|u_18_11|u_26_13|u_8_32|u_10_49|u_4_24|u_22_13|u_1_56
 			u_21_phi_228 = u_21_17;
 		}
 		// 2147483648  <=>  {u_10_phi_219 : 2147483648}
@@ -7838,7 +7838,7 @@ void main()
 			// False  <=>  (((((0.f - {pf_33_29 : 0.4666667}) + 1.f) < float(1e-05)) && (! isnan(((0.f - {pf_33_29 : 0.4666667}) + 1.f)))) && (! isnan(float(1e-05))))
 			b_1_78 = (((((0.f - pf_33_29) + 1.f) < float(1e-05)) && (! isnan(((0.f - pf_33_29) + 1.f)))) && (! isnan(float(1e-05))));
 			// False  <=>  (((({pf_33_29 : 0.4666667} < float(1e-05)) && (! isnan({pf_33_29 : 0.4666667}))) && (! isnan(float(1e-05)))) ? true : false)
-			b_2_91 = ((((pf_33_29 < float(1e-05)) && (! isnan(pf_33_29))) && (! isnan(float(1e-05)))) ? true : false);
+			b_2_91 = ((((pf_33_29 < float(1e-05)) && (! isnan(pf_33_29))) && (! isnan(float(1e-05)))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_4_44
 			// 3182917275  <=>  {u_25_phi_235 : 3182917275}
 			u_32_15 = u_25_phi_235;
 			// 1065261310  <=>  {u_22_phi_230 : 1065261310}
@@ -8376,14 +8376,14 @@ void main()
 		// 1065353216  <=>  {u_1_phi_239 : 1065353216}
 		u_3_14 = u_1_phi_239;
 		// False  <=>  (false ? true : false)
-		b_2_96 = (false ? true : false);
+		b_2_96 = (false ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_82
 		u_3_phi_242 = u_3_14;
 		b_2_phi_242 = b_2_96;
 		// True  <=>  if((((({u_3_13 : 26704} + 56999552u) == 57026208u) || (! {b_1_phi_241 : False})) ? true : false))
 		if(((((u_3_13 + 56999552u) == 57026208u) || (! b_1_phi_241)) ? true : false))
 		{
 			// False  <=>  (false ? true : false)
-			b_3_112 = (false ? true : false);
+			b_3_112 = (false ? true : false); // maybe duplicate expression on the right side of the assignment, vars:b_1_82|b_2_96
 			b_3_phi_243 = b_3_112;
 			// True  <=>  if(((! (({u_3_13 : 26704} + 56999552u) == 57026208u)) ? true : false))
 			if(((! ((u_3_13 + 56999552u) == 57026208u)) ? true : false))

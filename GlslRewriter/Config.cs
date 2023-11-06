@@ -1236,52 +1236,59 @@ namespace GlslRewriter
         }
         private static void ParseInOutAttr(string id, ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
-            if (dslCfg.IsHighOrder) {
-                var callCfg = dslCfg.LowerOrderFunction;
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
 
-                var info = cfg.InOutAttrInfo;
-                if (id == "vs_attr") {
-                    string inAttr = callCfg.GetParamId(0).Trim();
-                    string outAttr = callCfg.GetParamId(1).Trim();
-                    var indexVal = DoCalc(callCfg.GetParam(2));
-                    if (Calculator.TryGetInt(indexVal, out var ix)) {
-                        info.InAttrImportFile = inAttr;
-                        info.OutAttrImportFile = outAttr;
-                        info.AttrIndex = ix;
-                    }
+            var info = cfg.InOutAttrInfo;
+            if (id == "vs_attr") {
+                string inAttr = callCfg.GetParamId(0).Trim();
+                string outAttr = callCfg.GetParamId(1).Trim();
+                var indexVal = DoCalc(callCfg.GetParam(2));
+                if (Calculator.TryGetInt(indexVal, out var ix)) {
+                    info.InAttrImportFile = inAttr;
+                    info.OutAttrImportFile = outAttr;
+                    info.AttrIndex = ix;
                 }
-                else if (id == "ps_attr") {
-                    string inAttr = callCfg.GetParamId(0).Trim();
-                    var indexVal = DoCalc(callCfg.GetParam(1));
-                    if (Calculator.TryGetInt(indexVal, out var ix)) {
-                        info.InAttrImportFile = inAttr;
-                        info.AttrIndex = ix;
-                    }
+            }
+            else if (id == "ps_attr") {
+                string inAttr = callCfg.GetParamId(0).Trim();
+                var indexVal = DoCalc(callCfg.GetParam(1));
+                if (Calculator.TryGetInt(indexVal, out var ix)) {
+                    info.InAttrImportFile = inAttr;
+                    info.AttrIndex = ix;
                 }
+            }
 
-                if (dslCfg.HaveStatement()) {
-                    foreach (var p in dslCfg.Params) {
-                        var fd = p as Dsl.FunctionData;
-                        if (null != fd) {
-                            string fid = fd.GetId();
-                            if (fid == "map_in_attr") {
-                                string oldAttr = fd.GetParamId(0);
-                                string newAttr = fd.GetParamId(1);
-                                info.InAttrMap[oldAttr] = newAttr;
-                            }
-                            else if (fid == "map_out_attr") {
-                                string oldAttr = fd.GetParamId(0);
-                                string newAttr = fd.GetParamId(1);
-                                info.OutAttrMap[oldAttr] = newAttr;
-                            }
-                            else if (fid == "remove_in_attr") {
-                                string oldAttr = fd.GetParamId(0);
-                                info.InAttrMap[oldAttr] = string.Empty;
-                            }
-                            else if (fid == "remove_out_attr") {
-                                string oldAttr = fd.GetParamId(0);
-                                info.OutAttrMap[oldAttr] = string.Empty;
-                            }
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "map_in_attr") {
+                            string oldAttr = fd.GetParamId(0);
+                            string newAttr = fd.GetParamId(1);
+                            info.InAttrMap[oldAttr] = newAttr;
+                        }
+                        else if (fid == "map_out_attr") {
+                            string oldAttr = fd.GetParamId(0);
+                            string newAttr = fd.GetParamId(1);
+                            info.OutAttrMap[oldAttr] = newAttr;
+                        }
+                        else if (fid == "remove_in_attr") {
+                            string oldAttr = fd.GetParamId(0);
+                            info.InAttrMap[oldAttr] = string.Empty;
+                        }
+                        else if (fid == "remove_out_attr") {
+                            string oldAttr = fd.GetParamId(0);
+                            info.OutAttrMap[oldAttr] = string.Empty;
                         }
                     }
                 }
@@ -1289,140 +1296,155 @@ namespace GlslRewriter
         }
         private static void ParseUniformImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
-            if (dslCfg.IsHighOrder) {
-                var callCfg = dslCfg.LowerOrderFunction;
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
 
-                string file = callCfg.GetParamId(0).Trim();
-                string type = callCfg.GetParamId(1).Trim();
-                var info = new UniformImportInfo { File = file, Type = type };
+            string file = callCfg.GetParamId(0).Trim();
+            string type = callCfg.GetParamId(1).Trim();
+            var info = new UniformImportInfo { File = file, Type = type };
 
-                if (dslCfg.HaveStatement()) {
-                    foreach (var p in dslCfg.Params) {
-                        var vd = p as Dsl.ValueData;
-                        var fd = p as Dsl.FunctionData;
-                        if (null != vd) {
-                            var ixVal = DoCalc(vd);
-                            if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                if (!info.UsedIndexes.Contains(ix))
-                                    info.UsedIndexes.Add(ix);
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    if (null != vd) {
+                        var ixVal = DoCalc(vd);
+                        if (Calculator.TryGetInt(ixVal, out var ix)) {
+                            if (!info.UsedIndexes.Contains(ix))
+                                info.UsedIndexes.Add(ix);
+                        }
+                    }
+                    else if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "add") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    if (!info.UsedIndexes.Contains(ix))
+                                        info.UsedIndexes.Add(ix);
+                                }
                             }
                         }
-                        else if (null != fd) {
-                            string fid = fd.GetId();
-                            if (fid == "add") {
-                                foreach (var fp in fd.Params) {
-                                    var ixVal = DoCalc(fp);
-                                    if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                        if (!info.UsedIndexes.Contains(ix))
-                                            info.UsedIndexes.Add(ix);
-                                    }
+                        else if (fid == "remove") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    info.UsedIndexes.Remove(ix);
                                 }
                             }
-                            else if (fid == "remove") {
-                                foreach (var fp in fd.Params) {
-                                    var ixVal = DoCalc(fp);
-                                    if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                        info.UsedIndexes.Remove(ix);
-                                    }
+                        }
+                        else if (fid == "add_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    if (!info.UsedIndexes.Contains(i))
+                                        info.UsedIndexes.Add(i);
                                 }
                             }
-                            else if (fid == "add_range") {
-                                var ix1Val = DoCalc(fd.GetParam(0));
-                                var ix2Val = DoCalc(fd.GetParam(1));
-                                if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
-                                    for (int i = ix1; i <= ix2; ++i) {
-                                        if (!info.UsedIndexes.Contains(i))
-                                            info.UsedIndexes.Add(i);
-                                    }
-                                }
-                            }
-                            else if (fid == "remove_range") {
-                                var ix1Val = DoCalc(fd.GetParam(0));
-                                var ix2Val = DoCalc(fd.GetParam(1));
-                                if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
-                                    for (int i = ix1; i <= ix2; ++i) {
-                                        info.UsedIndexes.Remove(i);
-                                    }
+                        }
+                        else if (fid == "remove_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    info.UsedIndexes.Remove(i);
                                 }
                             }
                         }
                     }
                 }
-
-                cfg.UniformImports.Add(info);
             }
+
+            cfg.UniformImports.Add(info);
+
         }
         private static void ParseVAOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
-            if (dslCfg.IsHighOrder) {
-                var callCfg = dslCfg.LowerOrderFunction;
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
 
-                int num = callCfg.GetParamNum();
-                var csArrayLeft = callCfg.GetParamId(0).Trim();
-                string type = callCfg.GetParamId(1).Trim();
-                string file = callCfg.GetParamId(2).Trim();
-                string attr = string.Empty;
-                if (num > 3) {
-                    attr = callCfg.GetParamId(3).Trim();
-                }
+            int num = callCfg.GetParamNum();
+            var csArrayLeft = callCfg.GetParamId(0).Trim();
+            string type = callCfg.GetParamId(1).Trim();
+            string file = callCfg.GetParamId(2).Trim();
+            string attr = string.Empty;
+            if (num > 3) {
+                attr = callCfg.GetParamId(3).Trim();
+            }
 
-                var info = new VAOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file, Attr = attr };
+            var info = new VAOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file, Attr = attr };
 
-                if (dslCfg.HaveStatement()) {
-                    foreach (var p in dslCfg.Params) {
-                        var vd = p as Dsl.ValueData;
-                        var fd = p as Dsl.FunctionData;
-                        if (null != vd) {
-                            var ixVal = DoCalc(vd);
-                            if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                if (!info.UsedIndexes.Contains(ix))
-                                    info.UsedIndexes.Add(ix);
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    if (null != vd) {
+                        var ixVal = DoCalc(vd);
+                        if (Calculator.TryGetInt(ixVal, out var ix)) {
+                            if (!info.UsedIndexes.Contains(ix))
+                                info.UsedIndexes.Add(ix);
+                        }
+                    }
+                    else if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "add") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    if (!info.UsedIndexes.Contains(ix))
+                                        info.UsedIndexes.Add(ix);
+                                }
                             }
                         }
-                        else if (null != fd) {
-                            string fid = fd.GetId();
-                            if (fid == "add") {
-                                foreach (var fp in fd.Params) {
-                                    var ixVal = DoCalc(fp);
-                                    if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                        if (!info.UsedIndexes.Contains(ix))
-                                            info.UsedIndexes.Add(ix);
-                                    }
+                        else if (fid == "remove") {
+                            foreach (var fp in fd.Params) {
+                                var ixVal = DoCalc(fp);
+                                if (Calculator.TryGetInt(ixVal, out var ix)) {
+                                    info.UsedIndexes.Remove(ix);
                                 }
                             }
-                            else if (fid == "remove") {
-                                foreach (var fp in fd.Params) {
-                                    var ixVal = DoCalc(fp);
-                                    if (Calculator.TryGetInt(ixVal, out var ix)) {
-                                        info.UsedIndexes.Remove(ix);
-                                    }
+                        }
+                        else if (fid == "add_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    if (!info.UsedIndexes.Contains(i))
+                                        info.UsedIndexes.Add(i);
                                 }
                             }
-                            else if (fid == "add_range") {
-                                var ix1Val = DoCalc(fd.GetParam(0));
-                                var ix2Val = DoCalc(fd.GetParam(1));
-                                if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
-                                    for (int i = ix1; i <= ix2; ++i) {
-                                        if (!info.UsedIndexes.Contains(i))
-                                            info.UsedIndexes.Add(i);
-                                    }
-                                }
-                            }
-                            else if (fid == "remove_range") {
-                                var ix1Val = DoCalc(fd.GetParam(0));
-                                var ix2Val = DoCalc(fd.GetParam(1));
-                                if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
-                                    for (int i = ix1; i <= ix2; ++i) {
-                                        info.UsedIndexes.Remove(i);
-                                    }
+                        }
+                        else if (fid == "remove_range") {
+                            var ix1Val = DoCalc(fd.GetParam(0));
+                            var ix2Val = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(ix1Val, out var ix1) && Calculator.TryGetInt(ix2Val, out var ix2)) {
+                                for (int i = ix1; i <= ix2; ++i) {
+                                    info.UsedIndexes.Remove(i);
                                 }
                             }
                         }
                     }
                 }
-
-                cfg.VAOImports.Add(info);
             }
+
+            cfg.VAOImports.Add(info);
         }
         private static void ParseStringReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {

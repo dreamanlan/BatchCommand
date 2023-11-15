@@ -2164,8 +2164,12 @@ namespace GlslRewriter
                         //只检查多参数函数与操作符表达式，避免将常量或utof/ftou判断为重复表达式
                         if (s_Expression2VarList.TryGetValue(singleLineExp, out var varlist)) {
                             line.Append(" // maybe duplicate expression on the right side of the assignment, vars:{0}", string.Join('|', varlist));
-                            if (!varlist.Contains(varExp))
+                            if (varlist.Contains(varExp)) {
+                                //
+                            }
+                            else {
                                 varlist.Add(varExp);
+                            }
                         }
                         else {
                             varlist = new List<string>();
@@ -3731,6 +3735,7 @@ namespace GlslRewriter
             s_GlobalComputeGraph = new ComputeGraph();
             s_ExpressionBuilder.Length = 0;
             s_ExpressionList.Clear();
+            s_Expression2VarList.Clear();
             s_Indent = 1;
 
             s_CondExpStack.Clear();

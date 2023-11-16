@@ -130,8 +130,8 @@ void main()
 	f4_0_4 = texture(tex6, f2_0_3);
 	// -0.0119471  <=>  (1.0f / ((({in_attr2.z : 297.6915} * (1.0f / {in_attr2.w : 298.6796})) * {utof(fs_cbuf8[30].w) : 24999.00}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00})))
 	f_5_3 = (1.0f / (((in_attr2.z * (1.0f / in_attr2.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y))));
-	// 0.7586284  <=>  (((0.f - {in_attr10.x : 0.03497}) + clamp(({f4_0_3.w : 0.75} * {in_attr0.w : 1.00}), {in_attr10.x : 0.03497}, {in_attr10.y : 0.9775})) * (1.0f / ({in_attr10.y : 0.9775} + (0.f - {in_attr10.x : 0.03497}))))
-	pf_2_2 = (((0.f - in_attr10.x) + clamp((f4_0_3.w * in_attr0.w), in_attr10.x, in_attr10.y)) * (1.0f / (in_attr10.y + (0.f - in_attr10.x))));
+	// 0.7586284  <=>  (((0.f - {in_attr10.x : 0.03497}) + max(min(({f4_0_3.w : 0.75} * {in_attr0.w : 1.00}), {in_attr10.y : 0.9775}), {in_attr10.x : 0.03497})) * (1.0f / ({in_attr10.y : 0.9775} + (0.f - {in_attr10.x : 0.03497}))))
+	pf_2_2 = (((0.f - in_attr10.x) + max(min((f4_0_3.w * in_attr0.w), in_attr10.y), in_attr10.x)) * (1.0f / (in_attr10.y + (0.f - in_attr10.x))));
 	// 2440.365  <=>  ((({f_5_3 : -0.0119471} * {utof(fs_cbuf8[30].z) : 25000.00}) + (({f4_0_4.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.00}) + {utof(fs_cbuf8[30].x) : 1.00})) * (1.0f / {utof(fs_cbuf9[140].y) : 5.00}))
 	pf_1_5 = (((f_5_3 * utof(fs_cbuf8[30].z)) + ((f4_0_4.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y)));
 	// 0.7586284  <=>  ({pf_2_2 : 0.7586284} * {in_attr8.z : 1.00})

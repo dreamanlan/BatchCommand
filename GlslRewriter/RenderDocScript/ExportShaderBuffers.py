@@ -214,12 +214,15 @@ def writeCsv(fileName, csvArray, isVAO):
 	writer.writerows(csvArray)
 	csvFile.close()
 
+	print("save csv {0}".format(outPath))
+
 
 def sampleCode(controller):
 	curAction = pyrenderdoc.CurAction()
 	if curAction is None:
 		return
 	print("cur action:", curAction.eventId, "numIndices:", curAction.numIndices, "numInstances:", curAction.numInstances, curAction.flags) 
+	print("==>", curAction.drawIndex, "baseVertex:", curAction.baseVertex, "vertexOffset:", curAction.vertexOffset, "indexOffset:", curAction.indexOffset, "instanceOffset:", curAction.instanceOffset) 
 	
 	ib = pipestate.GetIBuffer()
 	if ib is not None:
@@ -237,7 +240,7 @@ def sampleCode(controller):
 					csvArray.append(fileHeader)
 
 					for i in range(min(buf.length // ib.byteStride, curAction.numIndices)):
-						off =  i * ib.byteStride
+						off =  (curAction.indexOffset + i) * ib.byteStride
 						bytes = struct.unpack_from("H", bufData, off)
 						row = [i, bytes[0]]
 						csvArray.append(row)
@@ -279,7 +282,7 @@ def sampleCode(controller):
 							bytes = struct.unpack_from("4f", bufData, off)
 							row = [i, bytes[0], bytes[1], bytes[2], bytes[3]]
 							csvArray.append(row)
-						writeCsv(vi.name, csvArray, True)
+						writeCsv("vertex_" + vi.name, csvArray, True)
 						
 	for stage in renderdoc.ShaderStage:
 		bindpointMapping = pipestate.GetBindpointMapping(stage)
@@ -302,10 +305,12 @@ def sampleCode(controller):
 								fileHeader = ["Name", "Value", "Byte Offset", "Type"]
 								csvArray.append(fileHeader)
 
+								csvArray.append([constant.name, "", 0, "uint4[" + str(cbBuf.byteSize // stride) + "]"]);
+
 								for i in range(cbBuf.byteSize // stride):
 									off =  i * stride
 									bytes = struct.unpack_from("4I", bufData, off)
-									row = [cb.name+"["+str(i)+"]", '{0}, {1}, {2}, {3}'.format(bytes[0], bytes[1], bytes[2], bytes[3]), off, "uint4"]
+									row = [constant.name+"["+str(i)+"]", '{0}, {1}, {2}, {3}'.format(bytes[0], bytes[1], bytes[2], bytes[3]), off, "uint4"]
 									csvArray.append(row)
 								writeCsv(constant.name, csvArray, False)
 							

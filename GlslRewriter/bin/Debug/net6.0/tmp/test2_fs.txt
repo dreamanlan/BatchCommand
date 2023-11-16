@@ -716,9 +716,9 @@ texture(tex6, f2_0_3)
 	f_0_14 = in_attr4.x ;	// -503.6197
 	f_4_4 = utof(fs_cbuf8[30 ].z  );	// 25000.00
 	pf_1_4 = fma(f_5_3, f_4_4, pf_1_3 );	// 12201.82
-	pf_2_2 = pf_2_1 * f_8_1;	/* 0.7586284  <=>  (((0.f - {in_attr10.x : 0.03497}) + clamp(({f4_0_3.w : 0.75} * {in_attr0.w : 1.00}), {in_attr10.x : 0.03497}, {in_attr10.y : 0.9775})) * (1.0f / ({in_attr10.y : 0.9775} + (0.f - {in_attr10.x : 0.03497}))))
+	pf_2_2 = pf_2_1 * f_8_1;	/* 0.7586284  <=>  (((0.f - {in_attr10.x : 0.03497}) + max(min(({f4_0_3.w : 0.75} * {in_attr0.w : 1.00}), {in_attr10.y : 0.9775}), {in_attr10.x : 0.03497})) * (1.0f / ({in_attr10.y : 0.9775} + (0.f - {in_attr10.x : 0.03497}))))
 <=>
-(((0.f - in_attr10.x) + clamp((f4_0_3.w * in_attr0.w), in_attr10.x, in_attr10.y)) * (1.0f / (in_attr10.y + (0.f - in_attr10.x))))
+(((0.f - in_attr10.x) + max(min((f4_0_3.w * in_attr0.w), in_attr10.y), in_attr10.x)) * (1.0f / (in_attr10.y + (0.f - in_attr10.x))))
 <=>
 {pf_2_2 = (
 	{pf_2_1 = (
@@ -726,15 +726,17 @@ texture(tex6, f2_0_3)
 			{f_7_0 = in_attr10.x
 			})
 		} + 
-		{f_4_3 = clamp(
-			{pf_0_7 = (
-				{f_3_3 = f4_0_3.w
-				} * 
-				{f_4_1 = in_attr0.w
+		{f_4_3 = max(
+			{f_4_2 = min(
+				{pf_0_7 = (
+					{f_3_3 = f4_0_3.w
+					} * 
+					{f_4_1 = in_attr0.w
+					})
+				}, 
+				{f_6_0 = in_attr10.y
 				})
-			}, f_7_0, 
-			{f_6_0 = in_attr10.y
-			})
+			}, f_7_0)
 		})
 	} * 
 	{f_8_1 = (1.0f / 

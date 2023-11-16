@@ -603,7 +603,8 @@ namespace GlslRewriter
                             var from = fromNode;
                             if (null == from)
                                 from = this;
-                            PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel + 1, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, from);
+                            //变量赋值表达式不增加层级
+                            PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, from);
                             if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0) {
                                 if (IsSplitOn(PrevNodes[PrevNodes.Count - 1], varMaxLevel - curLevel)) {
                                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
@@ -817,6 +818,7 @@ namespace GlslRewriter
         {
             int subMaxLevel = 0;
             if (Operator.Length > 0 && (char.IsLetter(Operator[0]) || Operator[0] == '_')) {
+                bool handled = true;
                 if (Operator == "fma") {
                     //fma(a,b,c) => a*b+c
                     //我们输出时不考虑运算优先级，每个运算都加上括号
@@ -829,50 +831,170 @@ namespace GlslRewriter
                     sb.Append(")");
                 }
                 else if (Operator == "min" && PrevNodes[0] is ComputeGraphCalcNode cnode && cnode.Operator == "max") {
+                    //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
                     //min(max(v,a),b) => clamp(v,a,b)
+                    int v1 = CalcVarLike(cnode.PrevNodes[0]);
+                    int v2 = CalcVarLike(cnode.PrevNodes[1]);
+                    int ix0 = v1 >= v2 ? 0 : 1;
+                    int ix1 = 1 - ix0;
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode);
+                    cnode.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode);
                     sb.Append(", ");
-                    cnode.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode);
-                    sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                    sb.Append(")");
-                }
-                else if (Operator == "max" && PrevNodes[0] is ComputeGraphCalcNode cnode2 && cnode2.Operator == "min") {
-                    //max(min(v,b),a) => clamp(v,a,b)
-                    sb.Append("clamp");
-                    sb.Append("(");
-                    cnode2.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode2);
+                    cnode.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode);
                     sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                    sb.Append(", ");
-                    cnode2.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode2);
                     sb.Append(")");
                 }
                 else if (Operator == "min" && PrevNodes[0] is ComputeGraphVarNode vnode && vnode.PrevNodes.Count > 0 && vnode.PrevNodes[vnode.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode3 && cnode3.Operator=="="
                     && cnode3.PrevNodes[0] is ComputeGraphCalcNode cnode31 && cnode31.Operator == "max") {
+                    //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
                     //min({vname = max(v,a)},b) => clamp(v,a,b)
+                    int v1 = CalcVarLike(cnode31.PrevNodes[0]);
+                    int v2 = CalcVarLike(cnode31.PrevNodes[1]);
+                    int ix0 = v1 >= v2 ? 0 : 1;
+                    int ix1 = 1 - ix0;
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode31.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
+                    cnode31.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
                     sb.Append(", ");
-                    cnode31.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
+                    cnode31.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode31);
                     sb.Append(", ");
                     PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(")");
                 }
-                else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes.Count > 0 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
-                    && cnode4.PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
-                    //max({vname = min(v,b)},a) => clamp(v,a,b)
+                else if (Operator == "min" && PrevNodes[1] is ComputeGraphCalcNode cnode5 && cnode5.Operator == "max") {
+                    //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
+                    //并且min的参数是可交换的，所以下面等式也成立
+                    //min(b,max(v,a)) => clamp(v,a,b)
+                    int v1 = CalcVarLike(cnode5.PrevNodes[0]);
+                    int v2 = CalcVarLike(cnode5.PrevNodes[1]);
+                    int ix0 = v1 >= v2 ? 0 : 1;
+                    int ix1 = 1 - ix0;
                     sb.Append("clamp");
                     sb.Append("(");
-                    cnode41.PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode41);
+                    cnode5.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode5);
                     sb.Append(", ");
-                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    cnode5.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode5);
                     sb.Append(", ");
-                    cnode41.PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode41);
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(")");
+                }
+                else if (Operator == "min" && PrevNodes[1] is ComputeGraphVarNode vnode3 && vnode3.PrevNodes.Count > 0 && vnode3.PrevNodes[vnode3.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode7 && cnode7.Operator == "="
+                    && cnode7.PrevNodes[0] is ComputeGraphCalcNode cnode71 && cnode71.Operator == "max") {
+                    //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
+                    //并且min的参数是可交换的，所以下面等式也成立
+                    //min(b,{vname = max(v,a)}) => clamp(v,a,b)
+                    int v1 = CalcVarLike(cnode71.PrevNodes[0]);
+                    int v2 = CalcVarLike(cnode71.PrevNodes[1]);
+                    int ix0 = v1 >= v2 ? 0 : 1;
+                    int ix1 = 1 - ix0;
+                    sb.Append("clamp");
+                    sb.Append("(");
+                    cnode71.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode71);
+                    sb.Append(", ");
+                    cnode71.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode71);
+                    sb.Append(", ");
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append(")");
+                }
+                else if (Operator == "max" && PrevNodes[0] is ComputeGraphCalcNode cnode2 && cnode2.Operator == "min") {
+                    //下面的等式只在a<=b时成立
+                    //max(min(v,b),a) => clamp(v,a,b)
+                    bool r1 = TryGetConstNumeric(cnode2.PrevNodes[0], out var v1);
+                    bool r2 = TryGetConstNumeric(cnode2.PrevNodes[1], out var v2);
+                    bool r3 = TryGetConstNumeric(PrevNodes[1], out var v3);
+                    bool firstIsVar = r2 && r3 && v3 <= v2;
+                    bool secondIsVar = r1 && r3 && v3 <= v1;
+                    if (firstIsVar || secondIsVar) {
+                        int ix0 = firstIsVar ? 0 : 1;
+                        int ix1 = 1 - ix0;
+                        sb.Append("clamp");
+                        sb.Append("(");
+                        cnode2.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode2);
+                        sb.Append(", ");
+                        PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        sb.Append(", ");
+                        cnode2.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode2);
+                        sb.Append(")");
+                    }
+                    else {
+                        handled = false;
+                    }
+                }
+                else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes.Count > 0 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
+                    && cnode4.PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
+                    //下面的等式只在a<=b时成立
+                    //max({vname = min(v,b)},a) => clamp(v,a,b)
+                    bool r1 = TryGetConstNumeric(cnode41.PrevNodes[0], out var v1);
+                    bool r2 = TryGetConstNumeric(cnode41.PrevNodes[1], out var v2);
+                    bool r3 = TryGetConstNumeric(PrevNodes[1], out var v3);
+                    bool firstIsVar = r2 && r3 && v3 <= v2;
+                    bool secondIsVar = r1 && r3 && v3 <= v1;
+                    if (firstIsVar || secondIsVar) {
+                        int ix0 = firstIsVar ? 0 : 1;
+                        int ix1 = 1 - ix0;
+                        sb.Append("clamp");
+                        sb.Append("(");
+                        cnode41.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode41);
+                        sb.Append(", ");
+                        PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        sb.Append(", ");
+                        cnode41.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode41);
+                        sb.Append(")");
+                    }
+                    else {
+                        handled = false;
+                    }
+                }
+                else if (Operator == "max" && PrevNodes[1] is ComputeGraphCalcNode cnode6 && cnode6.Operator == "min") {
+                    //下面的等式只在a<=b时成立
+                    //max(a,min(v,b)) => clamp(v,a,b)
+                    bool r1 = TryGetConstNumeric(PrevNodes[0], out var v1);
+                    bool r2 = TryGetConstNumeric(cnode6.PrevNodes[0], out var v2);
+                    bool r3 = TryGetConstNumeric(cnode6.PrevNodes[1], out var v3);
+                    bool firstIsVar = r1 && r3 && v1 <= v3;
+                    bool secondIsVar = r1 && r2 && v1 <= v2;
+                    if (firstIsVar || secondIsVar) {
+                        int ix0 = firstIsVar ? 0 : 1;
+                        int ix1 = 1 - ix0;
+                        sb.Append("clamp");
+                        sb.Append("(");
+                        cnode6.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode6);
+                        sb.Append(", ");
+                        PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        sb.Append(", ");
+                        cnode6.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode6);
+                        sb.Append(")");
+                    }
+                    else {
+                        handled = false;
+                    }
+                }
+                else if (Operator == "max" && PrevNodes[1] is ComputeGraphVarNode vnode4 && vnode4.PrevNodes.Count > 0 && vnode4.PrevNodes[vnode4.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode8 && cnode8.Operator == "="
+                    && cnode8.PrevNodes[0] is ComputeGraphCalcNode cnode81 && cnode81.Operator == "min") {
+                    //下面的等式只在a<=b时成立
+                    //max(a,{vname = min(v,b)}) => clamp(v,a,b)
+                    bool r1 = TryGetConstNumeric(PrevNodes[0], out var v1);
+                    bool r2 = TryGetConstNumeric(cnode81.PrevNodes[0], out var v2);
+                    bool r3 = TryGetConstNumeric(cnode81.PrevNodes[1], out var v3);
+                    bool firstIsVar = r1 && r3 && v1 <= v3;
+                    bool secondIsVar = r1 && r2 && v1 <= v2;
+                    if (firstIsVar || secondIsVar) {
+                        int ix0 = firstIsVar ? 0 : 1;
+                        int ix1 = 1 - ix0;
+                        sb.Append("clamp");
+                        sb.Append("(");
+                        cnode81.PrevNodes[ix0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode81);
+                        sb.Append(", ");
+                        PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        sb.Append(", ");
+                        cnode81.PrevNodes[ix1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, cnode81);
+                        sb.Append(")");
+                    }
+                    else {
+                        handled = false;
+                    }
                 }
                 else if(Operator == "for") {
                     sb.Append("for");
@@ -891,6 +1013,9 @@ namespace GlslRewriter
                     sb.Append(")");
                 }
                 else {
+                    handled = false;
+                }
+                if(!handled) {
                     bool withValue = false;
                     if(setting.WithValue && (Operator == "utof" || Operator== "uintBitsToFloat"
                         || Operator == "ftou" || Operator == "floatBitsToUint")){
@@ -987,7 +1112,8 @@ namespace GlslRewriter
                 var from = fromNode;
                 if (setting.UseMultilineComments || null == fromNode)
                     from = this;
-                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, from);
+                //赋值语句不增加层级
+                PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, from);
                 if (setting.UseMultilineComments) {
                     sb.AppendLine();
                     sb.Append(Literal.GetIndentString(indent));
@@ -1060,6 +1186,72 @@ namespace GlslRewriter
             else {
                 Debug.Assert(false);
             }
+        }
+        private int CalcVarLike(ComputeGraphNode node)
+        {
+            int val = 0;
+            if(node is ComputeGraphVarNode) {
+                if (node.PrevNodes.Count > 0)
+                    val = CalcVarLike(node.PrevNodes[node.PrevNodes.Count - 1]);
+                else
+                    val = int.MaxValue;
+            }
+            else if(node is ComputeGraphCalcNode cnode) {
+                if (cnode.Operator == ".") {
+                    val = 10000;
+                    if (cnode.PrevNodes[0] is ComputeGraphVarNode vnode) {
+                        int v = CalcVarLike(vnode);
+                        if (v == int.MaxValue)
+                            val = v;
+                    }
+                }
+                else if (cnode.Operator == "[]") {
+                    val = 5000;
+                    if (cnode.PrevNodes[0] is ComputeGraphVarNode vnode) {
+                        int v = CalcVarLike(vnode);
+                        if (v == int.MaxValue)
+                            val = v;
+                    }
+                }
+                else if (cnode.Operator == "=") {
+                    val = CalcVarLike(node.PrevNodes[0]);
+                }
+                else {
+                    val = int.MinValue;
+                    foreach(var n in node.PrevNodes) {
+                        int v = CalcVarLike(n);
+                        if (val < v)
+                            val = v;
+                        if(val==int.MaxValue)
+                            break;
+                    }
+                }
+            }
+            else if(node is ComputeGraphConstNode) {
+                val = int.MinValue;
+            }
+            return val;
+        }
+        private bool TryGetConstNumeric(ComputeGraphNode node, out double val)
+        {
+            val = 0;
+            bool ret = false;
+            if (node is ComputeGraphVarNode) {
+                if (node.PrevNodes.Count > 0)
+                    ret = TryGetConstNumeric(node.PrevNodes[node.PrevNodes.Count - 1], out val);
+            }
+            else if (node is ComputeGraphCalcNode cnode) {
+                if (cnode.Operator == "=") {
+                    ret = TryGetConstNumeric(node.PrevNodes[0], out val);
+                }
+            }
+            else if (node is ComputeGraphConstNode vnode) {
+                if (vnode.Value.IsNumber || vnode.Value.IsInteger) {
+                    val = vnode.Value.GetDouble();
+                    ret = true;
+                }
+            }
+            return ret;
         }
 
         public string Operator = string.Empty;

@@ -58,12 +58,11 @@ void main()
 	float f_0_23;
 	float f_0_24;
 	float f_0_25;
-	float f_3_2;
+	float f_1_8;
 	float f_4_12;
 	float f_4_13;
 	float f_4_5;
 	float f_4_6;
-	float f_4_8;
 	float f_6_6;
 	float f_8_1;
 	vec2 f2_0_2;
@@ -78,6 +77,7 @@ void main()
 	precise float pf_0_14;
 	precise float pf_0_17;
 	precise float pf_0_21;
+	precise float pf_0_4;
 	precise float pf_0_6;
 	precise float pf_0_9;
 	precise float pf_1_13;
@@ -116,18 +116,18 @@ void main()
 	f_4_5 = (1.0f / (((in_attr4.z * (1.0f / in_attr4.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y))));
 	// -18.42069  <=>  (0.f - (({f_4_5 : -0.0010295} * (0.f - {utof(fs_cbuf8[30].z) : 25000.00})) + (0.f - ({f4_0_1.w : 0.75} * {in_attr8.x : 9.75515}))))
 	f_4_6 = (0.f - ((f_4_5 * (0.f - utof(fs_cbuf8[30].z))) + (0.f - (f4_0_1.w * in_attr8.x))));
-	// 9.75515  <=>  max(0.f, min({in_attr8.x : 9.75515}, ((({f4_0_2.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.00}) + {utof(fs_cbuf8[30].x) : 1.00}) + {f_4_6 : -18.42069})))
-	f_4_8 = max(0.f, min(in_attr8.x, (((f4_0_2.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x)) + f_4_6)));
-	// 0.5625  <=>  (({f4_0_3.w : 0.75} * ({f_4_8 : 9.75515} * (1.0f / {in_attr8.x : 9.75515}))) * {in_attr0.w : 0.75})
-	pf_0_6 = ((f4_0_3.w * (f_4_8 * (1.0f / in_attr8.x))) * in_attr0.w);
+	// 1.00  <=>  (max(0.f, min({in_attr8.x : 9.75515}, ((({f4_0_2.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.00}) + {utof(fs_cbuf8[30].x) : 1.00}) + {f_4_6 : -18.42069}))) * (1.0f / {in_attr8.x : 9.75515}))
+	pf_0_4 = (max(0.f, min(in_attr8.x, (((f4_0_2.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x)) + f_4_6))) * (1.0f / in_attr8.x));
+	// 0.5625  <=>  (({f4_0_3.w : 0.75} * {pf_0_4 : 1.00}) * {in_attr0.w : 0.75})
+	pf_0_6 = ((f4_0_3.w * pf_0_4) * in_attr0.w);
 	// 0.00  <=>  ((0.f - {utof(fs_cbuf10[13].y) : 1.00}) + 1.f)
 	pf_1_4 = ((0.f - utof(fs_cbuf10[13].y)) + 1.f);
-	// 0.10  <=>  min(({pf_1_4 : 0.00} + 0.1f), {f4_0_4.w : 0.75})
-	f_3_2 = min((pf_1_4 + 0.1f), f4_0_4.w);
-	// 0.9166666  <=>  (((0.f - {in_attr5.x : 0.15}) + clamp({pf_0_6 : 0.5625}, {in_attr5.x : 0.15}, {in_attr5.y : 0.60})) * (1.0f / ({in_attr5.y : 0.60} + (0.f - {in_attr5.x : 0.15}))))
-	pf_0_9 = (((0.f - in_attr5.x) + clamp(pf_0_6, in_attr5.x, in_attr5.y)) * (1.0f / (in_attr5.y + (0.f - in_attr5.x))));
-	// 0.10  <=>  ((0.f - {pf_1_4 : 0.00}) + max({pf_1_4 : 0.00}, {f_3_2 : 0.10}))
-	pf_1_5 = ((0.f - pf_1_4) + max(pf_1_4, f_3_2));
+	// 0.10  <=>  max({pf_1_4 : 0.00}, min(({pf_1_4 : 0.00} + 0.1f), {f4_0_4.w : 0.75}))
+	f_1_8 = max(pf_1_4, min((pf_1_4 + 0.1f), f4_0_4.w));
+	// 0.9166666  <=>  (((0.f - {in_attr5.x : 0.15}) + max(min({pf_0_6 : 0.5625}, {in_attr5.y : 0.60}), {in_attr5.x : 0.15})) * (1.0f / ({in_attr5.y : 0.60} + (0.f - {in_attr5.x : 0.15}))))
+	pf_0_9 = (((0.f - in_attr5.x) + max(min(pf_0_6, in_attr5.y), in_attr5.x)) * (1.0f / (in_attr5.y + (0.f - in_attr5.x))));
+	// 0.10  <=>  ((0.f - {pf_1_4 : 0.00}) + {f_1_8 : 0.10})
+	pf_1_5 = ((0.f - pf_1_4) + f_1_8);
 	// 0.8708333  <=>  ({pf_0_9 : 0.9166666} * {utof(fs_cbuf9[189].x) : 0.95})
 	pf_0_10 = (pf_0_9 * utof(fs_cbuf9[189].x));
 	// 6237.381  <=>  ((({f_4_5 : -0.0010295} * {utof(fs_cbuf8[30].z) : 25000.00}) + (({f4_0_2.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.00}) + {utof(fs_cbuf8[30].x) : 1.00})) * (1.0f / {utof(fs_cbuf9[140].y) : 2.00}))

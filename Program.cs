@@ -43,6 +43,7 @@ namespace BatchCommand
                     }
                     else if (0 == string.Compare(args[i], "-h", true)) {
                         PrintHelp();
+                        return;
                     }
                     else if (!isScpPart && args[i][0] == '-') {
                         Console.WriteLine("unknown command option ! {0}", args[i]);

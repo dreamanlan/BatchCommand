@@ -1228,6 +1228,9 @@ namespace GlslRewriter
                         else if (fid == "vao_attr") {
                             ParseVAOImport(info, fd);
                         }
+                        else if (fid == "redirect") {
+                            ParseRedirect(cfg, info, fd);
+                        }
                     }
                 }
 
@@ -1446,6 +1449,69 @@ namespace GlslRewriter
 
             cfg.VAOImports.Add(info);
         }
+        private static void ParseRedirect(ShaderConfig cfg, ShaderArgConfig argCfg, Dsl.FunctionData dslCfg)
+        {
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+
+                int num = callCfg.GetParamNum();
+                string baseCfg = callCfg.GetParamId(0).Trim();
+                string newDir = callCfg.GetParamId(1).Trim();
+                string newDirVAO = newDir;
+                if (num > 2) {
+                    newDirVAO = callCfg.GetParamId(2).Trim();
+                }
+
+                if (int.TryParse(baseCfg, out var baseCfgId)) {
+                    if(cfg.ArgConfigs.TryGetValue(baseCfgId, out var baseCfgInfo)) {
+                        argCfg.InOutAttrInfo.InAttrImportFile = ChangeDir(baseCfgInfo.InOutAttrInfo.InAttrImportFile, newDir);
+                        argCfg.InOutAttrInfo.OutAttrImportFile = ChangeDir(baseCfgInfo.InOutAttrInfo.OutAttrImportFile, newDir);
+                        argCfg.InOutAttrInfo.AttrIndex = baseCfgInfo.InOutAttrInfo.AttrIndex;
+                        foreach(var pair in baseCfgInfo.InOutAttrInfo.InAttrMap) {
+                            argCfg.InOutAttrInfo.InAttrMap.Add(pair.Key, pair.Value);
+                        }
+                        foreach (var pair in baseCfgInfo.InOutAttrInfo.OutAttrMap) {
+                            argCfg.InOutAttrInfo.OutAttrMap.Add(pair.Key, pair.Value);
+                        }
+                        foreach(var uniform in baseCfgInfo.UniformImports) {
+                            var newCfg = new UniformImportInfo();
+                            newCfg.File = ChangeDir(uniform.File, newDir);
+                            newCfg.Type = uniform.Type;
+                            foreach(var ix in uniform.UsedIndexes) {
+                                newCfg.UsedIndexes.Add(ix);
+                            }
+                            argCfg.UniformImports.Add(newCfg);
+                        }
+                        foreach(var vao in baseCfgInfo.VAOImports) {
+                            var newCfg = new VAOImportInfo();
+                            newCfg.File = ChangeDir(vao.File, newDirVAO);
+                            newCfg.Type = vao.Type;
+                            newCfg.Attr = vao.Attr;
+                            newCfg.AttrArrayLeft = vao.AttrArrayLeft;
+                            foreach(var ix in vao.UsedIndexes) {
+                                newCfg.UsedIndexes.Add(ix);
+                            }
+                            argCfg.VAOImports.Add(newCfg);
+                        }
+                    }
+                    else {
+                        Console.WriteLine("base shader arg '{0}' can't be found.", baseCfgId);
+
+                    }
+                }
+            }
+        }
+        private static string ChangeDir(string path, string newDir)
+        {
+            string ret = path;
+            if (!string.IsNullOrEmpty(path)) {
+                string fn = Path.GetFileName(path);
+                ret = Path.Combine(newDir, fn);
+            }
+            return ret;
+        }
+
         private static void ParseStringReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             if (dslCfg.HaveStatement()) {

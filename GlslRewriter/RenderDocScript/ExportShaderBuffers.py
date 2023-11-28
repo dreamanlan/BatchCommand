@@ -8,7 +8,7 @@ import os
 import csv
 import struct
 
-subDir = "/1"
+subDir = ""
 vaoOutputPath = "d:/uc/VAO_smoke"
 uniformOutputPath = "d:/uc/smoke"
 vaoRecordNum = 0
@@ -20,6 +20,7 @@ def bytesToStr(bytes):
 	return str0
 
 pipestate = pyrenderdoc.CurPipelineState();
+glstate = pyrenderdoc.CurGLPipelineState();
 
 print("topology:", pipestate.GetPrimitiveTopology())
 
@@ -174,6 +175,10 @@ print()
 
 for buf in pyrenderdoc.GetBuffers():
     print("buf %s is %s gpu addr:%x len:%d %s" % (buf.resourceId, pyrenderdoc.GetResourceName(buf.resourceId), buf.gpuAddress, buf.length, buf.creationFlags))
+	
+for glBuf in glstate.shaderStorageBuffers:
+	if glBuf.resourceId != renderdoc.ResourceId.Null():
+		print("glBuffer %s byteOffset:%d size:%d" % (glBuf.resourceId, glBuf.byteOffset, glBuf.byteSize))
 
 print()
 
@@ -286,6 +291,7 @@ def sampleCode(controller):
 						
 	for stage in renderdoc.ShaderStage:
 		bindpointMapping = pipestate.GetBindpointMapping(stage)
+		rwBindings = pipestate.GetReadWriteResources(stage)
 		bindings = pipestate.GetReadOnlyResources(stage)
 		shader = pipestate.GetShaderReflection(stage)
 		if shader is not None:
@@ -315,6 +321,47 @@ def sampleCode(controller):
 								writeCsv(constant.name, csvArray, False)
 							
 				cbIx = cbIx + 1
+
+			for rwres in shader.readWriteResources:
+				print("readwrite:", rwres.name, "bind point:", rwres.bindPoint, rwres.resType,
+	"base type:", rwres.variableType.baseType, "elements:", rwres.variableType.elements, "cols:", rwres.variableType.columns, "rows:", rwres.variableType.rows,
+	"type name:", rwres.variableType.name, "arrayByteStride:", rwres.variableType.arrayByteStride, "matrixByteStride:", rwres.variableType.matrixByteStride,
+	"pointerTypeID:", rwres.variableType.pointerTypeID, "member count:", len(rwres.variableType.members))
+				if rwres.resType == renderdoc.TextureType.Buffer:
+					if bindpointMapping is not None:
+						readWriteBindpoint = bindpointMapping.readWriteResources[rwres.bindPoint]
+						bind = readWriteBindpoint.bind
+						bindset = readWriteBindpoint.bindset
+
+						for binding in rwBindings:
+							bp = binding.bindPoint
+							if bp.bind == bind and bp.bindset == bindset:
+								ssboIx = 0
+								for res in binding.resources:
+									csvName = rwres.name
+									if ssboIx != 0:
+										csvName = rwres.name + "_" + str(ssboIx)
+									
+									for glBuf in glstate.shaderStorageBuffers:
+										if glBuf.resourceId != renderdoc.ResourceId.Null() and glBuf.resourceId == res.resourceId:
+											print("glBuffer %s byteOffset:%d size:%d" % (glBuf.resourceId, glBuf.byteOffset, glBuf.byteSize))
+											
+											bufData = controller.GetBufferData(res.resourceId, glBuf.byteOffset, glBuf.byteSize)
+											if bufData is not None:
+												if rwres.variableType.baseType == renderdoc.VarType.UInt:
+													csvArray = []
+													fileHeader = ["Element", rwres.name]
+													csvArray.append(fileHeader)
+
+													for i in range(glBuf.byteSize // 4):
+														off =  i * 4
+														bytes = struct.unpack_from("1I", bufData, off)
+														row = [i, bytes[0]]
+														csvArray.append(row)
+													writeCsv(csvName, csvArray, False)
+											break
+									
+									ssboIx = ssboIx + 1
 				
 			for rres in shader.readOnlyResources:
 				print("readonly:", rres.name, "bind point:", rres.bindPoint, rres.resType,

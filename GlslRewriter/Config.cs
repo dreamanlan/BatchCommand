@@ -322,6 +322,80 @@ namespace GlslRewriter
             }
             return results;
         }
+        internal static List<string> GenerateSSBO(string attr, string attrArrayLeft, string type, string csv_path)
+        {
+            var results = new List<string>();
+            var sb = new StringBuilder();
+            var lines = File.ReadAllLines(csv_path);
+            if (lines.Length >= 2) {
+                var header = lines[0];
+                var colNames = header.Split(",", StringSplitOptions.TrimEntries);
+                if (colNames.Length >= 2 && colNames[0] == "Element") {
+                    if (!string.IsNullOrEmpty(attr))
+                        sb.AppendLine(attr);
+                    sb.Append(attrArrayLeft);
+                    sb.Append(" = ");
+                    sb.Append("new[] {");
+                    results.Add(sb.ToString());
+                    sb.Length = 0;
+                    int start = results.Count;
+                    for (int ix = 1; ix < lines.Length; ++ix) {
+                        var line = lines[ix];
+                        var cols = SplitCsvLine(line);
+                        Debug.Assert(colNames.Length == cols.Count);
+                        sb.Append("\t");
+                        if (results.Count > start) {
+                            sb.Append(", ");
+                        }
+                        if (type == "int") {
+                            sb.Append(cols[1]);
+                        }
+                        else if (type == "uint") {
+                            sb.Append(cols[1]);
+                            sb.Append("u");
+                        }
+                        else if (type == "float") {
+                            sb.Append(cols[1]);
+                            sb.Append("f");
+                        }
+                        else {
+                            int colNum = (colNames.Length - 1) / 4;
+                            if (colNum > 1) {
+                                sb.Append("new[] {");
+                                for (int index = 1; index < cols.Count; ++index) {
+                                    if ((index - 1) % 4 == 0) {
+                                        if (index > 1)
+                                            sb.Append("), ");
+                                        sb.Append("new Vector4(");
+                                    }
+                                    else if (index > 1)
+                                        sb.Append(", ");
+                                    sb.Append(cols[index]);
+                                    sb.Append("f");
+                                }
+                                sb.Append(") }");
+                            }
+                            else {
+                                sb.Append("new Vector4(");
+                                for (int index = 1; index < cols.Count; ++index) {
+                                    if (index > 1)
+                                        sb.Append(", ");
+                                    sb.Append(cols[index]);
+                                    sb.Append("f");
+                                }
+                                sb.Append(")");
+                            }
+                        }
+                        results.Add(sb.ToString());
+                        sb.Length = 0;
+                    }
+                    sb.Append("};");
+                    results.Add(sb.ToString());
+                    sb.Length = 0;
+                }
+            }
+            return results;
+        }
         internal static bool ImportVsInOutData(string type, int index, Dictionary<string, string> attrMap, string csv_path)
         {
             bool ret = false;
@@ -1228,6 +1302,9 @@ namespace GlslRewriter
                         else if (fid == "vao_attr") {
                             ParseVAOImport(info, fd);
                         }
+                        else if (fid == "ssbo_attr") {
+                            ParseSSBOImport(info, fd);
+                        }
                         else if (fid == "redirect") {
                             ParseRedirect(cfg, info, fd);
                         }
@@ -1449,6 +1526,32 @@ namespace GlslRewriter
 
             cfg.VAOImports.Add(info);
         }
+        private static void ParseSSBOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
+
+            int num = callCfg.GetParamNum();
+            var csArrayLeft = callCfg.GetParamId(0).Trim();
+            string type = callCfg.GetParamId(1).Trim();
+            string file = callCfg.GetParamId(2).Trim();
+            string attr = string.Empty;
+            if (num > 3) {
+                attr = callCfg.GetParamId(3).Trim();
+            }
+
+            var info = new SSBOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file, Attr = attr };
+
+            cfg.SSBOImports.Add(info);
+        }
         private static void ParseRedirect(ShaderConfig cfg, ShaderArgConfig argCfg, Dsl.FunctionData dslCfg)
         {
             Dsl.FunctionData callCfg;
@@ -1493,6 +1596,14 @@ namespace GlslRewriter
                                 newCfg.UsedIndexes.Add(ix);
                             }
                             argCfg.VAOImports.Add(newCfg);
+                        }
+                        foreach (var ssbo in baseCfgInfo.SSBOImports) {
+                            var newCfg = new SSBOImportInfo();
+                            newCfg.File = ChangeDir(ssbo.File, newDirVAO);
+                            newCfg.Type = ssbo.Type;
+                            newCfg.Attr = ssbo.Attr;
+                            newCfg.AttrArrayLeft = ssbo.AttrArrayLeft;
+                            argCfg.SSBOImports.Add(newCfg);
                         }
                     }
                     else {
@@ -1913,12 +2024,20 @@ namespace GlslRewriter
             internal string Attr = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
+        internal class SSBOImportInfo
+        {
+            internal string AttrArrayLeft = string.Empty;
+            internal string Type = string.Empty;
+            internal string File = string.Empty;
+            internal string Attr = string.Empty;
+        }
         internal class ShaderArgConfig
         {
             internal int Id = 0;
             internal InOutAttrInfo InOutAttrInfo = new InOutAttrInfo();
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
             internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
+            internal List<SSBOImportInfo> SSBOImports = new List<SSBOImportInfo>();
 
             internal static ShaderArgConfig s_Empty = new ShaderArgConfig();
         }

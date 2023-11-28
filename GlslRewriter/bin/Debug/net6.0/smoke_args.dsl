@@ -830,6 +830,7 @@ vs
         uniform("d:/UC/smoke/vs_cbuf16.csv", "uvec4"){
             add(0,1);
         };
+        ssbo_attr("private uint[] vs_ssbo_0_array", "uint", "d:/uc/smoke/vs_ssbo_0.csv", "[NonSerialized]");
         vao_attr("private Vector4[] in_attr4_array", "vec4", "d:/uc/VAO_smoke/vertex_in_attr4.csv", "[NonSerialized]"){
             add_range(0,65);
         };

@@ -82,7 +82,8 @@ namespace GlslRewriter
                             }
                             sb.Append("new VertexData(");
                             for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
-                                if ((i - 2) % 4 == 0) {
+                                var names = colNames[i].Split(".");
+                                if (names.Length == 2 && names[1] == "x") {
                                     if (i > 2)
                                         sb.Append("), ");
                                     sb.Append("new Vector4(");
@@ -99,14 +100,15 @@ namespace GlslRewriter
                             int j = 0;
                             sb.Append("\t");
                             for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
-                                if ((i - 2) % 4 == 0) {
+                                var names = colNames[i].Split(".");
+                                if (names.Length == 2 && names[1] == "x") {
                                     if (i > 2) {
                                         sb.Append(")");
-                                        var names = colNames[i - 1].Split(".");
-                                        if (!s_VertexAttrInits.TryGetValue(names[0], out var attrs)) {
+                                        var prevNames = colNames[i - 1].Split(".");
+                                        if (!s_VertexAttrInits.TryGetValue(prevNames[0], out var attrs)) {
                                             attrs = new List<string>();
-                                            s_VertexAttrInits.Add(names[0], attrs);
-                                            attrs.Add("var " + names[0] + " = new[] {");
+                                            s_VertexAttrInits.Add(prevNames[0], attrs);
+                                            attrs.Add("var " + prevNames[0] + " = new[] {");
                                             first = true;
                                         }
                                         attrs.Add(sb.ToString());
@@ -126,11 +128,11 @@ namespace GlslRewriter
                                 sb.Append("f");
                             }
                             sb.Append(")");
-                            var names2 = colNames[colNames.Length - 1].Split(".");
-                            if (!s_VertexAttrInits.TryGetValue(names2[0], out var attrs2)) {
+                            var lastNames = colNames[colNames.Length - 1].Split(".");
+                            if (!s_VertexAttrInits.TryGetValue(lastNames[0], out var attrs2)) {
                                 attrs2 = new List<string>();
-                                s_VertexAttrInits.Add(names2[0], attrs2);
-                                attrs2.Add("var " + names2[0] + " = new[] {");
+                                s_VertexAttrInits.Add(lastNames[0], attrs2);
+                                attrs2.Add("var " + lastNames[0] + " = new[] {");
                             }
                             attrs2.Add(sb.ToString());
                             sb.Length = 0;
@@ -1299,11 +1301,11 @@ namespace GlslRewriter
                         else if (fid == "uniform") {
                             ParseUniformImport(info, fd);
                         }
-                        else if (fid == "vao_attr") {
-                            ParseVAOImport(info, fd);
-                        }
                         else if (fid == "ssbo_attr") {
                             ParseSSBOImport(info, fd);
+                        }
+                        else if (fid == "vao_attr") {
+                            ParseVAOImport(info, fd);
                         }
                         else if (fid == "redirect") {
                             ParseRedirect(cfg, info, fd);
@@ -1447,6 +1449,32 @@ namespace GlslRewriter
             cfg.UniformImports.Add(info);
 
         }
+        private static void ParseSSBOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
+
+            int num = callCfg.GetParamNum();
+            var csArrayLeft = callCfg.GetParamId(0).Trim();
+            string type = callCfg.GetParamId(1).Trim();
+            string file = callCfg.GetParamId(2).Trim();
+            string attr = string.Empty;
+            if (num > 3) {
+                attr = callCfg.GetParamId(3).Trim();
+            }
+
+            var info = new SSBOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file, Attr = attr };
+
+            cfg.SSBOImports.Add(info);
+        }
         private static void ParseVAOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
         {
             Dsl.FunctionData callCfg;
@@ -1526,32 +1554,6 @@ namespace GlslRewriter
 
             cfg.VAOImports.Add(info);
         }
-        private static void ParseSSBOImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
-        {
-            Dsl.FunctionData callCfg;
-            if (dslCfg.HaveParam()) {
-                callCfg = dslCfg;
-            }
-            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
-                callCfg = dslCfg.LowerOrderFunction;
-            }
-            else {
-                return;
-            }
-
-            int num = callCfg.GetParamNum();
-            var csArrayLeft = callCfg.GetParamId(0).Trim();
-            string type = callCfg.GetParamId(1).Trim();
-            string file = callCfg.GetParamId(2).Trim();
-            string attr = string.Empty;
-            if (num > 3) {
-                attr = callCfg.GetParamId(3).Trim();
-            }
-
-            var info = new SSBOImportInfo { AttrArrayLeft = csArrayLeft, Type = type, File = file, Attr = attr };
-
-            cfg.SSBOImports.Add(info);
-        }
         private static void ParseRedirect(ShaderConfig cfg, ShaderArgConfig argCfg, Dsl.FunctionData dslCfg)
         {
             Dsl.FunctionData callCfg;
@@ -1586,6 +1588,14 @@ namespace GlslRewriter
                             }
                             argCfg.UniformImports.Add(newCfg);
                         }
+                        foreach (var ssbo in baseCfgInfo.SSBOImports) {
+                            var newCfg = new SSBOImportInfo();
+                            newCfg.File = ChangeDir(ssbo.File, newDir);
+                            newCfg.Type = ssbo.Type;
+                            newCfg.Attr = ssbo.Attr;
+                            newCfg.AttrArrayLeft = ssbo.AttrArrayLeft;
+                            argCfg.SSBOImports.Add(newCfg);
+                        }
                         foreach(var vao in baseCfgInfo.VAOImports) {
                             var newCfg = new VAOImportInfo();
                             newCfg.File = ChangeDir(vao.File, newDirVAO);
@@ -1596,14 +1606,6 @@ namespace GlslRewriter
                                 newCfg.UsedIndexes.Add(ix);
                             }
                             argCfg.VAOImports.Add(newCfg);
-                        }
-                        foreach (var ssbo in baseCfgInfo.SSBOImports) {
-                            var newCfg = new SSBOImportInfo();
-                            newCfg.File = ChangeDir(ssbo.File, newDirVAO);
-                            newCfg.Type = ssbo.Type;
-                            newCfg.Attr = ssbo.Attr;
-                            newCfg.AttrArrayLeft = ssbo.AttrArrayLeft;
-                            argCfg.SSBOImports.Add(newCfg);
                         }
                     }
                     else {

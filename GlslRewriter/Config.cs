@@ -232,6 +232,18 @@ namespace GlslRewriter
                                     s_UniformInits.Add(sb.ToString());
                                     sb.Length = 0;
 
+                                    sb.Append("// ");
+                                    sb.Append(cols[0]);
+                                    sb.Append(" = ");
+                                    for (int i = 0; i < vstrs.Length; ++i) {
+                                        sb.Append(", ");
+                                        uint.TryParse(vstrs[i], out var v);
+                                        sb.Append(v.ToString());
+                                        sb.Append("u");
+                                    }
+                                    s_UniformRawInits.Add(sb.ToString());
+                                    sb.Length = 0;
+
                                     if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
                                         sb.Append("// ");
                                         sb.Append(cols[0]);
@@ -491,6 +503,7 @@ namespace GlslRewriter
         internal static List<string> s_VertexStructInits = new List<string>();
         internal static SortedDictionary<string, List<string>> s_VertexAttrInits = new SortedDictionary<string, List<string>>();
         internal static List<string> s_UniformInits = new List<string>();
+        internal static List<string> s_UniformRawInits = new List<string>();
     }
     internal static class Config
     {

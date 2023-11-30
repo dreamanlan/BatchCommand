@@ -386,6 +386,10 @@ namespace GlslRewriter
                     lineList.AddRange(RenderDocImporter.s_UniformInits);
                     lineList.Add(string.Empty);
                 }
+                if (RenderDocImporter.s_UniformRawInits.Count > 0) {
+                    lineList.AddRange(RenderDocImporter.s_UniformRawInits);
+                    lineList.Add(string.Empty);
+                }
                 if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
                     lineList.AddRange(RenderDocImporter.s_UniformUtofOrFtouVals);
                     lineList.Add(string.Empty);

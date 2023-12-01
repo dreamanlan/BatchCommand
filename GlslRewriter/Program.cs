@@ -437,11 +437,16 @@ namespace GlslRewriter
                         outBuilder.AppendLine();
                     }
                     foreach (var pair in Config.ActiveConfig.SettingInfo.UsedVariables) {
-                        outBuilder.Append("\t");
-                        outBuilder.Append(pair.Value);
-                        outBuilder.Append(" ");
-                        outBuilder.Append(pair.Key);
-                        outBuilder.AppendLine(";");
+                        if (string.IsNullOrEmpty(pair.Value)) {
+                            Console.WriteLine("variable '{0}' isn't used, please remove it from Config !", pair.Key);
+                        }
+                        else {
+                            outBuilder.Append("\t");
+                            outBuilder.Append(pair.Value);
+                            outBuilder.Append(" ");
+                            outBuilder.Append(pair.Key);
+                            outBuilder.AppendLine(";");
+                        }
                     }
                     foreach (var line in s_ExpressionList) {
                         outBuilder.AppendLine(line);
@@ -1162,7 +1167,6 @@ namespace GlslRewriter
                     TransformExpression(v, ref tempValSi);
                     HandleVarAliasInfoUpdate();
 
-                    var tempSi = new SemanticInfo();
                     var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), tempVarSi.ResultType, "=");
 
                     var vgn = tempVarSi.GraphNode;
@@ -1211,7 +1215,7 @@ namespace GlslRewriter
                     var p21 = Dsl.Utility.CloneDsl(p1);
                     p2.AddParam(p21);
                     p2.AddParam(new Dsl.ValueData("1", AbstractSyntaxComponent.NUM_TOKEN));
-                    funcData.Params[1] = p2;
+                    funcData.AddParam(p2);
 
                     return TransformStatement(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
@@ -1336,7 +1340,6 @@ namespace GlslRewriter
                 cgcn.AddNext(vgn);
                 vgn.AddPrev(cgcn);
 
-                AddComputeGraphRootNode(cgcn);
                 semanticInfo.GraphNode = vgn;
             }
             else {
@@ -1548,7 +1551,7 @@ namespace GlslRewriter
             }
         }
 
-        //if语句的SSA处理
+        //if语句与循环语句的SSA处理
         private static bool TransformIfFunction(Dsl.FunctionData ifFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
             var semanticInfo = new SemanticInfo();
@@ -1715,7 +1718,7 @@ namespace GlslRewriter
                 AddComputeGraphRootNode(forNode);
                 DslExpression.CalculatorValue forVal = DslExpression.CalculatorValue.NullObject;
 
-                TransformGeneralCall(lowerFunc, ref semanticInfo);
+                TransformForHeader(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     forNode.ForFunc = semanticInfo.GraphNode;
                     GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out forVal);
@@ -1968,6 +1971,157 @@ namespace GlslRewriter
             semanticInfo.ResultType = cgcn.Type;
         }
 
+        //for语句的for()部分的处理
+        private static void TransformForHeader(Dsl.FunctionData call, ref SemanticInfo semanticInfo)
+        {
+            int paramNum = call.GetParamNum();
+            string id = call.GetId();
+            List<string> argTypes = new List<string>();
+            var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
+            for (int ix = 0; ix < paramNum; ++ix) {
+                var syntax = call.GetParam(ix);
+                if (syntax.IsValid()) {
+                    var tsemanticInfo = new SemanticInfo();
+                    if (ix == 1) {
+                        TransformExpression(syntax, ref tsemanticInfo);
+                    }
+                    else {
+                        TransformStatementOfForHeader(syntax, ref tsemanticInfo);
+                    }
+
+                    var agn = tsemanticInfo.GraphNode;
+                    Debug.Assert(null != agn);
+                    argTypes.Add(agn.Type);
+
+                    cgcn.AddPrev(agn);
+                    agn.AddNext(cgcn);
+                }
+                else {
+                    var agn = new ComputeGraphConstNode(CurFuncInfo(), "string", string.Empty, DslExpression.CalculatorValue.EmptyString);
+                    cgcn.AddPrev(agn);
+                    agn.AddNext(cgcn);
+                }
+            }
+            cgcn.Type = FunctionTypeInference(id, argTypes, out var finfo);
+            semanticInfo.GraphNode = cgcn;
+        }
+        private static void TransformStatementOfForHeader(Dsl.ISyntaxComponent syntax, ref SemanticInfo semanticInfo)
+        {
+            var valData = syntax as Dsl.ValueData;
+            var funcData = syntax as Dsl.FunctionData;
+            var stmData = syntax as Dsl.StatementData;
+            if (null != valData) {
+                TransformVar(valData, ref semanticInfo);
+            }
+            else if (null != funcData) {
+                string funcId = funcData.GetId();
+                if (funcId == "=") {
+                    var p = funcData.GetParam(0);
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    var sd = p as Dsl.StatementData;
+                    var tempVarSi = new SemanticInfo();
+                    if (null != vd) {
+                        TransformAssignLeft(vd, ref tempVarSi);
+                    }
+                    else if (null != fd) {
+                        TransformGeneralCall(fd, ref tempVarSi);
+                    }
+                    else if (null != sd) {
+                        TransformAssignLeft(sd, 0, false, ref tempVarSi);
+                    }
+                    var tempValSi = new SemanticInfo();
+                    var v = funcData.GetParam(1);
+                    TransformExpression(v, ref tempValSi);
+                    HandleVarAliasInfoUpdate();
+
+                    var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), tempVarSi.ResultType, "=");
+
+                    var vgn = tempVarSi.GraphNode;
+                    var agn = tempValSi.GraphNode;
+                    Debug.Assert(null != vgn);
+                    Debug.Assert(null != agn);
+
+                    cgcn.AddPrev(agn);
+                    agn.AddNext(cgcn);
+
+                    cgcn.AddNext(vgn);
+                    vgn.AddPrev(cgcn);
+
+                    semanticInfo.GraphNode = vgn;
+                }
+                else if (funcId.Length >= 2 && funcId[funcId.Length - 1] == '=' && funcId != "==" && funcId != "!=" && funcId != "<=" && funcId != ">=") {
+                    //convert to var = var op val
+                    var p1 = funcData.GetParam(0);
+                    var p22 = funcData.GetParam(1);
+                    funcData.Name.SetId("=");
+
+                    var p2 = new Dsl.FunctionData();
+                    p2.Name = new Dsl.ValueData(funcId.Substring(0, funcId.Length - 1), AbstractSyntaxComponent.ID_TOKEN);
+                    p2.SetOperatorParamClass();
+                    var p21 = Dsl.Utility.CloneDsl(p1);
+                    p2.AddParam(p21);
+                    p2.AddParam(p22);
+                    funcData.Params[1] = p2;
+
+                    var tempVarSi = new SemanticInfo();
+                    TransformExpression(p1, ref tempVarSi);
+
+                    var tempValSi = new SemanticInfo();
+                    TransformExpression(p2, ref tempValSi);
+
+                    var cgn = tempValSi.GraphNode;
+                    if (null != cgn) {
+                        if (null != tempVarSi.GraphNode)
+                            cgn.AddOut(tempVarSi.GraphNode);
+
+                        semanticInfo.GraphNode = cgn;
+                    }
+                }
+                else if (funcId == "++" || funcId == "--") {
+                    //convert to var = var + 1
+                    var p1 = funcData.GetParam(0);
+                    funcData.Name.SetId("=");
+
+                    var p2 = new Dsl.FunctionData();
+                    p2.Name = new Dsl.ValueData(funcId.Substring(0, 1), AbstractSyntaxComponent.ID_TOKEN);
+                    p2.SetOperatorParamClass();
+                    var p21 = Dsl.Utility.CloneDsl(p1);
+                    p2.AddParam(p21);
+                    p2.AddParam(new Dsl.ValueData("1", AbstractSyntaxComponent.NUM_TOKEN));
+                    funcData.AddParam(p2);
+
+                    var tempVarSi = new SemanticInfo();
+                    TransformExpression(p1, ref tempVarSi);
+
+                    var tempValSi = new SemanticInfo();
+                    TransformExpression(p2, ref tempValSi);
+
+                    var cgn = tempValSi.GraphNode;
+                    if (null != cgn) {
+                        if (null != tempVarSi.GraphNode)
+                            cgn.AddOut(tempVarSi.GraphNode);
+
+                        semanticInfo.GraphNode = cgn;
+                    }
+                }
+                else {
+                    TransformGeneralFunction(funcData, ref semanticInfo);
+                }
+            }
+            else if (null != stmData) {
+                var firstValOrFunc = stmData.GetFunction(0);
+                string funcId = firstValOrFunc.GetId();
+                if (funcId == "?") {
+                    Debug.Assert(false);
+                    TransformConditionStatement(stmData, ref semanticInfo);
+                }
+                else {
+                    TransformVar(stmData, 0, false, ref semanticInfo);
+                }
+            }
+        }
+
         private static void ProcessLoopPhiVarAlias(string phiSuffix, Dictionary<string, VarAliasInfo> oldAliasInfos, Dsl.FunctionData loopFunc, int expListCountBeforeLoop, bool isLoopTrue, out Dictionary<string, List<Dsl.ValueData>>? newRefVarValDataOuter, out List<Dsl.ISyntaxComponent>? insertBeforeOuter)
         {
             newRefVarValDataOuter = new Dictionary<string, List<ValueData>>();
@@ -2039,7 +2193,7 @@ namespace GlslRewriter
                 //另外在已经进行过SSA处理的代码里，变量的定义与赋值也是分开的，这样再作为输入进行处理也会导致这些变量再被重命名一次。
                 //我们通过命令行参数-nossa来避免这种混淆
                 if (!IsPhiVar(nvname)) {
-                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname);
+                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname, string.Empty);
                 }
             }
             return assignFunc;
@@ -2211,6 +2365,32 @@ namespace GlslRewriter
                     line.Append(singleLineExp);
                     if (addSemiColon)
                         line.Append(";");
+                    var cnode = cgn as ComputeGraphCalcNode;
+                    var op = cnode.Operator;
+                    if (op == "if" || op == "while") {
+                        var condExp = cnode.PrevNodes[0].GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
+                        if (condExp.IndexOf(' ') > 0) {
+                            if (s_ConditionExpressionSet.Contains(condExp)) {
+                                line.Append(" // maybe duplicate condition expression");
+                            }
+                            else {
+                                s_ConditionExpressionSet.Add(condExp);
+                            }
+                        }
+                    }
+                    else if (op == "for") {
+                        if (cnode.PrevNodes.Count >= 2) {
+                            var condExp = cnode.PrevNodes[1].GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
+                            if (condExp.IndexOf(' ') > 0) {
+                                if (s_ConditionExpressionSet.Contains(condExp)) {
+                                    line.Append(" // maybe duplicate condition expression");
+                                }
+                                else {
+                                    s_ConditionExpressionSet.Add(condExp);
+                                }
+                            }
+                        }
+                    }
                     s_ExpressionList.Add(line.ToString());
                 }
             }
@@ -3748,6 +3928,7 @@ namespace GlslRewriter
             s_ExpressionBuilder.Length = 0;
             s_ExpressionList.Clear();
             s_Expression2VarList.Clear();
+            s_ConditionExpressionSet.Clear();
             s_Indent = 1;
 
             s_CondExpStack.Clear();
@@ -3916,6 +4097,7 @@ namespace GlslRewriter
         internal static StringBuilder s_ExpressionBuilder = new StringBuilder();
         internal static List<string> s_ExpressionList = new List<string>();
         internal static Dictionary<string, List<string>> s_Expression2VarList = new Dictionary<string, List<string>>();
+        internal static HashSet<string> s_ConditionExpressionSet = new HashSet<string>();
         internal static int s_Indent = 1;
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();

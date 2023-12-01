@@ -125,6 +125,7 @@ void main() {
   vec2 f2_0 = vec2(0);
   uvec4 u4_0 = uvec4(0);
   vec4 f4_0 = vec4(0);
+  int i;
   precise float pf_0 = float(0);
   precise float pf_1 = float(0);
   precise float pf_2 = float(0);
@@ -216,6 +217,10 @@ void main() {
   b_1 = b_0 ? true : false;
   if (b_1) {
     return;
+  }
+  for(i=0;b_0 && b_1;++i){
+    f_0 = utof(u_3);
+    gl_Position.z = f_0;
   }
   f_0 = in_attr5.w;
   u_3 = ftou(f_0);

@@ -582,7 +582,7 @@ namespace GlslRewriter
                 else {
                     if (setting.VariableExpandedOnlyOnce && usedVars.TryGetValue(VarName, out var varMaxLevel)) {
                         if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitLevelForRepeatExpression <= varMaxLevel - curLevel) {
-                            Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
+                            Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                         }
                         if (withValue) {
                             sb.Append("{");
@@ -607,11 +607,11 @@ namespace GlslRewriter
                             PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, from);
                             if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0) {
                                 if (IsSplitOn(PrevNodes[PrevNodes.Count - 1], varMaxLevel - curLevel)) {
-                                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
+                                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                                     tmpMaxLevel = curLevel;
                                 }
                                 else if (Config.ActiveConfig.SettingInfo.AutoSplitLevel <= varMaxLevel - curLevel) {
-                                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
+                                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                                     tmpMaxLevel = curLevel;
                                 }
                             }
@@ -639,7 +639,7 @@ namespace GlslRewriter
                 }
                 if (null != OwnFunc) {
                     //未赋值的局部变量，这里一般是phi变量，添加到拆分表达式变量列表记录变量使用
-                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName);
+                    Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                 }
                 sb.Append(VarName);
                 if (withValue) {
@@ -1000,15 +1000,51 @@ namespace GlslRewriter
                     sb.Append("for");
                     sb.Append("(");
                     int i = 0;
-                    for(; i < PrevNodes.Count; ++i) {
+                    for (; i < PrevNodes.Count; ++i) {
                         var p = PrevNodes[i];
-                        if (i > 0)
-                            sb.Append("; ");
-                        p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                    }
-                    for (; i < 3; ++i) {
-                        if (i > 0)
-                            sb.Append("; ");
+                        switch (i) {
+                            case 0: {
+                                    var varnode = p as ComputeGraphVarNode;
+                                    if (null != varnode) {
+                                        Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(varnode.VarName, varnode.Type);
+                                        sb.Append(GetIndentString(indent));
+                                        sb.Append(varnode.VarName);
+                                        sb.Append(" = ");
+                                        p.PrevNodes[0].GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                    }
+                                    else if (p is not ComputeGraphConstNode) {
+                                        //只支持for语句的第一个表达式为单个赋值或空的情形
+                                        Debug.Assert(false);
+                                    }
+                                }
+                                break;
+                            case 1: {
+                                    sb.Append("; ");
+                                    p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                }
+                                break;
+                            case 2: {
+                                    if (p is ComputeGraphConstNode) {
+                                        //空语句
+                                    }
+                                    else if (p.OutNodes.Count == 1) {
+                                        var varnode = p.OutNodes[0] as ComputeGraphVarNode;
+                                        Debug.Assert(null != varnode);
+                                        sb.Append("; ");
+                                        sb.Append(GetIndentString(indent));
+                                        sb.Append(varnode.VarName);
+                                        sb.Append(" = ");
+                                        p.GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                    }
+                                    else {
+                                        //只支持for语句的第三个表达式为单个赋值或空的情形
+                                        Debug.Assert(false);
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     sb.Append(")");
                 }
@@ -1572,7 +1608,6 @@ namespace GlslRewriter
                     }
                     ++condNodeIndex;
                 }
-
             }
             for (int ct = 0; ct < Config.ActiveConfig.SettingInfo.MaxLoop; ++ct) {
                 visits.Clear();

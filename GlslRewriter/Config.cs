@@ -963,7 +963,7 @@ namespace GlslRewriter
                 var fd = fp as Dsl.FunctionData;
                 if (null != vd) {
                     string key = vd.GetId();
-                    cfg.SettingInfo.AddSplitOnVariable(key);
+                    cfg.SettingInfo.AddSplitOnVariable(key, string.Empty);
                 }
                 else if (null != fd && fd.IsParenthesisParamClass()) {
                     string key = fd.GetParamId(0);
@@ -1950,19 +1950,19 @@ namespace GlslRewriter
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
             internal SortedList<string, string> UsedVariables = new SortedList<string, string>();
 
-            internal void AutoSplitAddVariable(string vname)
+            internal void AutoSplitAddVariable(string vname, string type)
             {
                 if (!string.IsNullOrEmpty(vname)) {
                     if (AutoSplitSkips.Contains(vname))
                         return;
-                    AddSplitOnVariable(vname);
+                    AddSplitOnVariable(vname, type);
                 }
             }
-            internal void AddSplitOnVariable(string vname)
+            internal void AddSplitOnVariable(string vname, string type)
             {
                 if (!string.IsNullOrEmpty(vname)) {
                     if (!SplitOnVariables.Contains(vname)) {
-                        AddUsedVariable(vname, string.Empty);
+                        AddUsedVariable(vname, type);
                         AutoSplitAddedVariables.Add("\t" + vname + ",");
                     }
 

@@ -416,7 +416,6 @@ vs_cbuf16[1] = uvec4(3211080317, 0, 3202618212, 1066740629);
   vec2 f2_0 = vec2(0);
   uvec4 u4_0 = uvec4(0);
   vec4 f4_0 = vec4(0);
-  int i;
   precise float pf_0 = float(0);
   precise float pf_1 = float(0);
   precise float pf_2 = float(0);
@@ -509,7 +508,7 @@ vs_cbuf16[1] = uvec4(3211080317, 0, 3202618212, 1066740629);
   if (b_1) {
     return;
   }
-  for(i=0;b_0 && b_1;++i){
+  for(int i=0;b_0 && b_1;++i){
     f_0 = utof(u_3);
     gl_Position.z = f_0;
   }

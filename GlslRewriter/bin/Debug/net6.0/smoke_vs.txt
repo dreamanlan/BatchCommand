@@ -337,7 +337,7 @@ void main()
 	float f_9_37;
 	vec4 f4_0_0;
 	vec4 f4_0_1;
-	int i_0;
+	int i;
 	precise float pf_0_1;
 	precise float pf_0_10;
 	precise float pf_0_13;
@@ -1148,8 +1148,8 @@ void main()
 	{
 		return;
 	}
-	// False  <=>  for(; i_0 = 0; ((int({u_4_1 : 268435008}) <= int(0u)) && ((int({u_4_1 : 268435008}) <= int(0u)) ? true : false)); i_0 = ({i_0 : 0} + 1))
-	for(; i_0 = 0; ((int(u_4_1) <= int(0u)) && ((int(u_4_1) <= int(0u)) ? true : false)); i_0 = (i_0 + 1))
+	// False  <=>  for(i = 0; ((int({u_4_1 : 268435008}) <= int(0u)) && ((int({u_4_1 : 268435008}) <= int(0u)) ? true : false)); i = ({i : 0} + 1))
+	for(i = 0; ((int(u_4_1) <= int(0u)) && ((int(u_4_1) <= int(0u)) ? true : false)); i = (i + 1))
 	{
 		// 0.00  <=>  {utof(u_3_phi_4) : 0.00}
 		gl_Position.z = utof(u_3_phi_4);

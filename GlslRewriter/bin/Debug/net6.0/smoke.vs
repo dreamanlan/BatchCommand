@@ -217,10 +217,12 @@ void main() {
   if (b_1) {
     return;
   }
+  /*
   for(int i=0;b_0 && b_1;++i){
     f_0 = utof(u_3);
     gl_Position.z = f_0;
   }
+  */
   f_0 = in_attr5.w;
   u_3 = ftou(f_0);
   f_1 = float(int(u_4));

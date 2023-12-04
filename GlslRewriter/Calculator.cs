@@ -17,7 +17,7 @@ namespace GlslRewriter
     /// </summary>
     public static class Calculator
     {
-        public static bool CalcFunc(string func, IList<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val, out bool supported)
+        public static bool CalcFunc(string func, IList<DslExpression.CalculatorValue> args, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
             val = DslExpression.CalculatorValue.NullObject;
@@ -511,25 +511,49 @@ namespace GlslRewriter
                 }
             }
             else if (func == "ftoi" || func == "floatBitsToInt") {
-                if (TryGetFloat(args[0], out var v)) {
+                if (args[0].IsSignedInteger) {
+                    val = args[0];
+                    succ = true;
+
+                    argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
+                }
+                else if (TryGetFloat(args[0], out var v)) {
                     val = DslExpression.CalculatorValue.From(ftoi(v));
                     succ = true;
                 }
             }
             else if (func == "ftou" || func == "floatBitsToUint") {
-                if (TryGetFloat(args[0], out var v)) {
+                if (args[0].IsUnsignedInteger) {
+                    val = args[0];
+                    succ = true;
+
+                    argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
+                }
+                else if (TryGetFloat(args[0], out var v)) {
                     val = DslExpression.CalculatorValue.From(ftou(v));
                     succ = true;
                 }
             }
             else if (func == "itof" || func == "intBitsToFloat") {
-                if (TryGetInt(args[0], out var v)) {
+                if (args[0].IsNumber) {
+                    val = args[0];
+                    succ = true;
+
+                    argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
+                }
+                else if (TryGetInt(args[0], out var v)) {
                     val = DslExpression.CalculatorValue.From(itof(v));
                     succ = true;
                 }
             }
             else if (func == "utof" || func == "uintBitsToFloat") {
-                if (TryGetUInt(args[0], out var v)) {
+                if (args[0].IsNumber) {
+                    val = args[0];
+                    succ = true;
+
+                    argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
+                }
+                else if (TryGetUInt(args[0], out var v)) {
                     val = DslExpression.CalculatorValue.From(utof(v));
                     succ = true;
                 }
@@ -627,7 +651,19 @@ namespace GlslRewriter
                 }
             }
             else if (func == "abs") {
-                if (TryGetFloat(args[0], out var v)) {
+                if (args[0].IsUnsignedInteger) {
+                    uint v = args[0].GetUInt();
+                    val = DslExpression.CalculatorValue.From(v);
+                    succ = true;
+                }
+                else if (args[0].IsSignedInteger) {
+                    int v = args[0].GetInt();
+                    if (v < 0)
+                        v = -v;
+                    val = DslExpression.CalculatorValue.From(v);
+                    succ = true;
+                }
+                else if (TryGetFloat(args[0], out var v)) {
                     val = DslExpression.CalculatorValue.From(MathF.Abs(v));
                     succ = true;
                 }
@@ -825,7 +861,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcCondExp(DslExpression.CalculatorValue cond, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, out DslExpression.CalculatorValue val, out bool supported)
+        public static bool CalcCondExp(DslExpression.CalculatorValue cond, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
             val = DslExpression.CalculatorValue.NullObject;
@@ -843,14 +879,50 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcBinary(string op, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, out DslExpression.CalculatorValue val, out bool supported)
+        public static bool CalcBinary(string op, DslExpression.CalculatorValue opd1, DslExpression.CalculatorValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
             val = DslExpression.CalculatorValue.NullObject;
             supported = true;
             if (op == "+") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
-                    if(val1.IsNumber || val2.IsNumber) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 + v2);
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 + v2);
+                    }
+                    else if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
                         val = DslExpression.CalculatorValue.From(v1 + v2);
@@ -870,7 +942,43 @@ namespace GlslRewriter
             }
             else if (op == "-") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
-                    if (val1.IsNumber || val2.IsNumber) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 - v2);
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 - v2);
+                    }
+                    else if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
                         val = DslExpression.CalculatorValue.From(v1 - v2);
@@ -890,7 +998,43 @@ namespace GlslRewriter
             }
             else if (op == "*") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
-                    if (val1.IsNumber || val2.IsNumber) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 * v2);
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 * v2);
+                    }
+                    else if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
                         val = DslExpression.CalculatorValue.From(v1 * v2);
@@ -910,7 +1054,43 @@ namespace GlslRewriter
             }
             else if (op == "/") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
-                    if (val1.IsNumber || val2.IsNumber) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 / v2);
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 / v2);
+                    }
+                    else if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
                         val = DslExpression.CalculatorValue.From(v1 / v2);
@@ -930,7 +1110,43 @@ namespace GlslRewriter
             }
             else if (op == "%") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
-                    if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 % v2);
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 % v2);
+                    }
+                    else if (val1.IsUnsignedInteger || val2.IsUnsignedInteger) {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
                         val = DslExpression.CalculatorValue.From(v1 % v2);
@@ -1082,33 +1298,259 @@ namespace GlslRewriter
                 }
             }
             else if (op == "&") {
-                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
-                    val = DslExpression.CalculatorValue.From(val1 & val2);
-                    succ = true;
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 & v2);
+                        succ = true;
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 & v2);
+                        succ = true;
+                    }
+                    else {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 & v2);
+                        succ = true;
+                    }
                 }
             }
             else if (op == "|") {
-                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
-                    val = DslExpression.CalculatorValue.From(val1 | val2);
-                    succ = true;
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 | v2);
+                        succ = true;
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 | v2);
+                        succ = true;
+                    }
+                    else {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 | v2);
+                        succ = true;
+                    }
                 }
             }
             else if (op == "^") {
-                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
-                    val = DslExpression.CalculatorValue.From(val1 ^ val2);
-                    succ = true;
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftou(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v2 = val2.GetUInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 ^ v2);
+                        succ = true;
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1, v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 ^ v2);
+                        succ = true;
+                    }
+                    else {
+                        uint v1 = val1.GetUInt();
+                        uint v2 = val2.GetUInt();
+                        val = DslExpression.CalculatorValue.From(v1 ^ v2);
+                        succ = true;
+                    }
                 }
             }
             else if (op == "<<") {
-                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
-                    val = DslExpression.CalculatorValue.From(val1 << val2);
-                    succ = true;
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1;
+                        int v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 << v2);
+                        succ = true;
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1;
+                        int v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 << v2);
+                        succ = true;
+                    }
+                    else if (resultType == "uint") {
+                        uint v1 = val1.GetUInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 << v2);
+                        succ = true;
+                    }
+                    else {
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 << v2);
+                        succ = true;
+                    }
                 }
             }
             else if (op == ">>") {
-                if (TryGetInt(opd1, out var val1) && TryGetInt(opd2, out var val2)) {
-                    val = DslExpression.CalculatorValue.From(val1 >> val2);
-                    succ = true;
+                if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
+                    if (resultType == "uint" && (val1.IsNumber || val2.IsNumber)) {
+                        uint v1;
+                        int v2;
+                        if (val1.IsNumber) {
+                            v1 = ftou(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftou;
+                        }
+                        else {
+                            v1 = val1.GetUInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 >> v2);
+                        succ = true;
+                    }
+                    else if (resultType == "int" && (val1.IsNumber || val2.IsNumber)) {
+                        int v1;
+                        int v2;
+                        if (val1.IsNumber) {
+                            v1 = ftoi(val1.GetFloat());
+                            argTypeConversion[0] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v1 = val1.GetInt();
+                        }
+                        if (val2.IsNumber) {
+                            v2 = ftoi(val2.GetFloat());
+                            argTypeConversion[1] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        }
+                        else {
+                            v2 = val2.GetInt();
+                        }
+                        val = DslExpression.CalculatorValue.From(v1 >> v2);
+                        succ = true;
+                    }
+                    else if (resultType == "uint") {
+                        uint v1 = val1.GetUInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 >> v2);
+                        succ = true;
+                    }
+                    else {
+                        int v1 = val1.GetInt();
+                        int v2 = val2.GetInt();
+                        val = DslExpression.CalculatorValue.From(v1 >> v2);
+                        succ = true;
+                    }
                 }
             }
             else {
@@ -1116,7 +1558,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcUnary(string op, DslExpression.CalculatorValue opd, out DslExpression.CalculatorValue val, out bool supported)
+        public static bool CalcUnary(string op, DslExpression.CalculatorValue opd, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val, out bool supported)
         {
             bool succ = false;
             val = DslExpression.CalculatorValue.NullObject;
@@ -1152,7 +1594,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcMember(DslExpression.CalculatorValue objVal, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue oval, out bool supported)
+        public static bool CalcMember(DslExpression.CalculatorValue objVal, DslExpression.CalculatorValue m, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue oval, out bool supported)
         {
             bool succ = false;
             oval = DslExpression.CalculatorValue.NullObject;

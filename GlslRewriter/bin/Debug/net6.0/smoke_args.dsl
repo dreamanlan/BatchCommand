@@ -18,6 +18,7 @@ vs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         add_utof(1065353216u);
 
@@ -873,6 +874,36 @@ vs
     {
         redirect(0, "d:/UC/smoke/5", "d:/uc/VAO_smoke/5");
     };
+    type_replacement
+    {
+        vs_cbuf0 = float;
+        vs_cbuf8 = float;
+        vs_cbuf10 = float;
+        vs_cbuf13 = float;
+        vs_cbuf15 = float;
+        vs_cbuf16 = float;
+    };
+    function_replacement
+    {
+        textureLod = textureLodTest(@arg(0), @arg(1), s_sampler);
+        vs_ssbo0[*] = vs_ssbo0[@arg(1)];
+        vs_cbuf9[*] = vs_cbuf9[@arg(1)];
+        (*)[*] = @join(@arg(0), _, @arg(1));
+    };
+    string_replacement
+    {
+        string("uvec", "uint");
+        string("ivec", "int");
+        string("vec2", "float2");
+        string("vec3", "float3");
+        string("vec4", "float4");
+        string("in_attr", "uni_attr");
+        string("out_attr", "o.fs_attr");
+        string("gl_Position", "o.vertex");
+        regex(@"\buni_attr0\b", "v.vertex");
+        regex(@"\buni_attr1\b", "v.uv");
+        regex(@"\buni_attr2\b", "v.offset");
+    };
     calculator
     {
         textureSize(tex0,*) = vec2(8,13);
@@ -903,6 +934,7 @@ ps
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         auto_split(15){
             split_on("exp2");
@@ -1060,5 +1092,6 @@ cs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
     };
 };

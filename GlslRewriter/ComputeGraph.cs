@@ -13,6 +13,7 @@ using static GlslRewriter.Program;
 using static System.Reflection.Metadata.BlobBuilder;
 using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
+using DslExpression;
 
 namespace GlslRewriter
 {
@@ -687,7 +688,7 @@ namespace GlslRewriter
                 foreach (var p in PrevNodes) {
                     args.Add(p.CalcValue(visits, ref cinfo));
                 }
-                if (Config.CalcFunc(Operator, args, out var val)) {
+                if (Config.CalcFunc(Operator, args, GetResultType(), ArgTypeConversion, out var val)) {
                     CachedValue = val;
                 }
             }
@@ -714,7 +715,7 @@ namespace GlslRewriter
                 if (!handled) {
                     var objVal = PrevNodes[0].CalcValue(visits, ref cinfo);
                     var member = PrevNodes[1].CalcValue(visits, ref cinfo);
-                    if (Calculator.CalcMember(objVal, member, out var val, out var supported)) {
+                    if (Calculator.CalcMember(objVal, member, GetResultType(), ArgTypeConversion, out var val, out var supported)) {
                         CachedValue = val;
                     }
                     else if (objVal.IsObject && !supported) {
@@ -743,7 +744,7 @@ namespace GlslRewriter
                 if (!handled) {
                     var objVal = PrevNodes[0].CalcValue(visits, ref cinfo);
                     var ix = PrevNodes[1].CalcValue(visits, ref cinfo);
-                    if (Calculator.CalcMember(objVal, ix, out var val, out var supported)) {
+                    if (Calculator.CalcMember(objVal, ix, GetResultType(), ArgTypeConversion, out var val, out var supported)) {
                         CachedValue = val;
                     }
                     else if (objVal.IsObject && !supported) {
@@ -757,10 +758,10 @@ namespace GlslRewriter
                     //phi变量存在多分支赋值，在计算图上计算时跳过赋值
                     if (!Program.IsPhiVar(vnode.VarName)) {
                         if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
-                            VariableTable.AssignValue(vnode, vnode2);
+                            VariableTable.AssignValue(vnode, vnode2, ArgTypeConversion, 0);
                         }
                         else {
-                            VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo));
+                            VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo), ArgTypeConversion, 0);
                         }
                     }
                 }
@@ -787,7 +788,7 @@ namespace GlslRewriter
                 var cond = PrevNodes[0].CalcValue(visits, ref cinfo);
                 var opd1 = PrevNodes[1].CalcValue(visits, ref cinfo);
                 var opd2 = PrevNodes[2].CalcValue(visits, ref cinfo);
-                if (Calculator.CalcCondExp(cond, opd1, opd2, out var val, out var supported)) {
+                if (Calculator.CalcCondExp(cond, opd1, opd2, GetResultType(), ArgTypeConversion, out var val, out var supported)) {
                     CachedValue = val;
                 }
                 else if (!supported) {
@@ -797,7 +798,7 @@ namespace GlslRewriter
             else if (PrevNodes.Count == 2) {
                 var opd1 = PrevNodes[0].CalcValue(visits, ref cinfo);
                 var opd2 = PrevNodes[1].CalcValue(visits, ref cinfo);
-                if (Calculator.CalcBinary(Operator, opd1, opd2, out var val, out var supported)) {
+                if (Calculator.CalcBinary(Operator, opd1, opd2, GetResultType(), ArgTypeConversion, out var val, out var supported)) {
                     CachedValue = val;
                 }
                 else if (!supported) {
@@ -806,7 +807,7 @@ namespace GlslRewriter
             }
             else {
                 var opd = PrevNodes[0].CalcValue(visits, ref cinfo);
-                if (Calculator.CalcUnary(Operator, opd, out var val, out var supported)) {
+                if (Calculator.CalcUnary(Operator, opd, GetResultType(), ArgTypeConversion, out var val, out var supported)) {
                     CachedValue = val;
                 }
                 else if (!supported) {
@@ -1059,17 +1060,35 @@ namespace GlslRewriter
                         withValue = true;
                         sb.Append("{");
                     }
-                    sb.Append(Operator);
-                    sb.Append("(");
-                    bool first = true;
-                    foreach (var p in PrevNodes) {
-                        if (first)
-                            first = false;
-                        else
-                            sb.Append(", ");
-                        p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    if (!TryGenerateWithFunctionReplacement(false, Operator, sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this)) {
+                        if (ArgTypeConversion.TryGetValue(0, out var action)) {
+                            if (action == c_action_remove_func) {
+                                sb.Append("(");
+                                bool first = true;
+                                foreach (var p in PrevNodes) {
+                                    if (first)
+                                        first = false;
+                                    else
+                                        sb.Append(", ");
+                                    p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                }
+                                sb.Append(")");
+                            }
+                        }
+                        else {
+                            sb.Append(Operator);
+                            sb.Append("(");
+                            bool first = true;
+                            foreach (var p in PrevNodes) {
+                                if (first)
+                                    first = false;
+                                else
+                                    sb.Append(", ");
+                                p.GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            }
+                            sb.Append(")");
+                        }
                     }
-                    sb.Append(")");
                     if (withValue) {
                         sb.Append(" : ");
                         sb.Append(CachedValue.ToString());
@@ -1097,9 +1116,18 @@ namespace GlslRewriter
                         }
                     }
                 }
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(".");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                bool handled = false;
+                if (PrevNodes[0] is not ComputeGraphCalcNode) {
+                    handled = TryGenerateWithFunctionReplacement(false, ".", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                }
+                else if (PrevNodes[0] is ComputeGraphCalcNode calcNode && calcNode.Operator == "[]") {
+                    handled = TryGenerateWithFunctionReplacement(false, "[].", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                }
+                if (!handled) {
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append(".");
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                }
                 if (withValue) {
                     sb.Append(" : ");
                     sb.Append(CachedValue.ToString());
@@ -1126,10 +1154,16 @@ namespace GlslRewriter
                         }
                     }
                 }
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append("[");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append("]");
+                bool handled = false;
+                if (PrevNodes[0] is not ComputeGraphCalcNode) {
+                    handled = TryGenerateWithFunctionReplacement(false, "[]", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                }
+                if (!handled) {
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append("[");
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append("]");
+                }
                 if (withValue) {
                     sb.Append(" : ");
                     sb.Append(CachedValue.ToString());
@@ -1148,8 +1182,10 @@ namespace GlslRewriter
                 var from = fromNode;
                 if (setting.UseMultilineComments || null == fromNode)
                     from = this;
+                int action = GenConversionBefore(sb, 0);
                 //赋值语句不增加层级
                 PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, from);
+                GenConversionAfter(sb, action);
                 if (setting.UseMultilineComments) {
                     sb.AppendLine();
                     sb.Append(Literal.GetIndentString(indent));
@@ -1157,32 +1193,198 @@ namespace GlslRewriter
                 }
             }
             else if (PrevNodes.Count == 3) {
-                sb.Append("(");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(" ? ");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(" : ");
-                PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(")");
+                if (!TryGenerateWithFunctionReplacement(false, "?:", sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this)) {
+                    sb.Append("(");
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append(" ? ");
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append(" : ");
+                    PrevNodes[2].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    sb.Append(")");
+                }
             }
             else if (PrevNodes.Count == 2) {
-                sb.Append("(");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(" ");
-                sb.Append(Operator);
-                sb.Append(" ");
-                PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(")");
+                if (!TryGenerateWithFunctionReplacement(true, Operator, sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this)) {
+                    sb.Append("(");
+                    int action0 = GenConversionBefore(sb, 0);
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    GenConversionAfter(sb, action0);
+                    sb.Append(" ");
+                    sb.Append(Operator);
+                    sb.Append(" ");
+                    int action1 = GenConversionBefore(sb, 1);
+                    PrevNodes[1].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    GenConversionAfter(sb, action1);
+                    sb.Append(")");
+                }
             }
             else {
-                sb.Append("(");
-                sb.Append(Operator);
-                sb.Append(" ");
-                PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
-                sb.Append(")");
+                if (!TryGenerateWithFunctionReplacement(true, Operator, sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this)) {
+                    sb.Append("(");
+                    sb.Append(Operator);
+                    sb.Append(" ");
+                    int action = GenConversionBefore(sb, 0);
+                    PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                    GenConversionAfter(sb, action);
+                    sb.Append(")");
+                }
             }
         }
 
+        private bool TryGenerateWithFunctionReplacement(bool useArgTypeConversion, string key, StringBuilder sb, int indent, int curLevel, ref int curMaxLevel, in ComputeSetting setting, Dictionary<string, int> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
+        {
+            bool ret = false;
+            if(Program.s_DoReplacement && Config.ActiveConfig.FunctionReplacements.TryGetValue(key, out var repList)) {
+                foreach (var repInfo in repList) {
+                    bool match = true;
+                    for (int ix = 0; ix < repInfo.Args.Count; ++ix) {
+                        string str = repInfo.Args[ix];
+                        Debug.Assert(null != repInfo.ArgGetter);
+                        var node = repInfo.ArgGetter(this, ix);
+                        if(node is ComputeGraphVarNode vnode) {
+                            if (str != "*" && str != vnode.VarName) {
+                                match = false;
+                                break;
+                            }
+                        }
+                        else if(node is ComputeGraphConstNode cnode) {
+                            if (str != "*" && str != cnode.Value) {
+                                match = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (match) {
+                        var dslFunc = repInfo.Replacement as Dsl.FunctionData;
+                        if (null != dslFunc) {
+                            ret = true;
+
+                            string dslFuncId = dslFunc.GetId();
+                            string repTag = key + "=>" + dslFuncId;
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, dslFunc, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                        break;
+                    }
+                }
+            }
+            return ret;
+        }
+        private void TransformSyntax(bool useArgTypeConversion, string repTag, Config.FunctionReplacement repInfo, Dsl.ISyntaxComponent syntax, StringBuilder sb, int curLevel, ref int curMaxLevel, in ComputeSetting setting, Dictionary<string, int> usedVars, HashSet<ComputeGraphNode> visits, ComputeGraphNode? fromNode)
+        {
+            var valData = syntax as Dsl.ValueData;
+            if (null != valData) {
+                if (valData.IsString()) {
+                    sb.Append('"');
+                    sb.Append(valData.GetId());
+                    sb.Append('"');
+                }
+                else {
+                    sb.Append(valData.GetId());
+                }
+            }
+            else {
+                var funcData = syntax as Dsl.FunctionData;
+                if (null != funcData) {
+                    string id = funcData.GetId();
+                    if (id == "@arg") {
+                        string ixStr = funcData.GetParamId(0);
+                        if (int.TryParse(ixStr, out var argIx)) {
+                            Debug.Assert(null != repInfo.ArgGetter);
+                            var p = repInfo.ArgGetter(this, argIx);
+                            int action = GenConversionBefore(sb, argIx);
+                            int subMaxLevel;
+                            p.GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            GenConversionAfter(sb, action);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, @arg's argument must be integer !", repTag);
+                        }
+                    }
+                    else if(id == "@join") {
+                        foreach (var p in funcData.Params) {
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                    }
+                    else if (funcData.IsOperatorParamClass()) {
+                        int num = funcData.GetParamNum();
+                        if (num == 1) {
+                            var p = funcData.GetParam(0);
+                            sb.Append(id);
+                            sb.Append(" ");
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                        else if (num == 2) {
+                            var p1 = funcData.GetParam(0);
+                            var p2 = funcData.GetParam(1);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p1, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            sb.Append(" ");
+                            sb.Append(id);
+                            sb.Append(" ");
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p2, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, invalid argument num for operator {1} !", repTag, id);
+                        }
+                    }
+                    else {
+                        sb.Append(id);
+                        switch (funcData.GetParamClassUnmasked()) {
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                                sb.Append(".");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                                sb.Append("[");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                                sb.Append("(");
+                                break;
+                            default:
+                                Console.WriteLine("function_replacement: {0}, invalid parenthesis !", repTag);
+                                break;
+                        }
+                        string prestr = string.Empty;
+                        foreach (var p in funcData.Params) {
+                            sb.Append(prestr);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            if (string.IsNullOrEmpty(prestr))
+                                prestr = ", ";
+                        }
+                        switch (funcData.GetParamClassUnmasked()) {
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                                sb.Append("]");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                                sb.Append(")");
+                                break;
+                        }
+                    }
+                }
+                else {
+                    var stmData = syntax as Dsl.StatementData;
+                    if (null != stmData) {
+                        var f1 = stmData.First.AsFunction;
+                        var f2 = stmData.Second.AsFunction;
+                        if (null != f1 && null != f2 && f1.GetId() == "?" && f1.IsHighOrder && f1.IsTernaryOperatorParamClass()
+                            && f1.LowerOrderFunction.GetParamNum() == 1 && f1.GetParamNum() == 1
+                            && f2.GetId() == ":" && f2.IsTernaryOperatorParamClass() && f2.GetParamNum() == 1) {
+                            var condExp = f1.LowerOrderFunction.GetParam(0);
+                            var trueExp = f1.GetParam(0);
+                            var falseExp = f2.GetParam(0);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, condExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            sb.Append(" ? ");
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, trueExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            sb.Append(" : ");
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, falseExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, invalid condition expression !", repTag);
+                        }
+                    }
+                }
+            }
+        }
         private void AppendAssignLeft(StringBuilder sb, ComputeGraphNode leftNode)
         {
             if (leftNode is ComputeGraphVarNode vnode) {
@@ -1289,9 +1491,120 @@ namespace GlslRewriter
             }
             return ret;
         }
+        private string GetResultType()
+        {
+            return GetResultType(this);
+        }
+        private int GenConversionBefore(StringBuilder sb, int argIndex)
+        {
+            int action;
+            if (ArgTypeConversion.TryGetValue(0, out action)) {
+                switch (action) {
+                    case c_action_add_ftoi:
+                        sb.Append("ftoi(");
+                        break;
+                    case c_action_add_ftou:
+                        sb.Append("ftou(");
+                        break;
+                    case c_action_add_itof:
+                        sb.Append("itof(");
+                        break;
+                    case c_action_add_utof:
+                        sb.Append("utof(");
+                        break;
+                }
+            }
+            return action;
+        }
+        private void GenConversionAfter(StringBuilder sb, int action)
+        {
+            switch (action) {
+                case c_action_add_ftoi:
+                    sb.Append(")");
+                    break;
+                case c_action_add_ftou:
+                    sb.Append(")");
+                    break;
+                case c_action_add_itof:
+                    sb.Append(")");
+                    break;
+                case c_action_add_utof:
+                    sb.Append(")");
+                    break;
+            }
+        }
 
         public string Operator = string.Empty;
 
+        private Dictionary<int, int> ArgTypeConversion = new Dictionary<int, int>();
+
+        public static string GetResultType(ComputeGraphNode curNode)
+        {
+            foreach (var node in curNode.NextNodes) {
+                if (node is ComputeGraphVarNode vnode) {
+                    return vnode.Type;
+                }
+                else if (node is ComputeGraphCalcNode cnode && cnode.Operator == "=") {
+                    return GetResultType(cnode);
+                }
+            }
+            return string.Empty;
+        }
+        public static ComputeGraphNode GetArgForMember(ComputeGraphNode expNode, int ix)
+        {
+            switch (ix) {
+                case 0:
+                    return expNode.PrevNodes[0];
+                case 1:
+                    return expNode.PrevNodes[1];
+                default:
+                    Debug.Assert(false);
+                    return expNode;
+            }
+        }
+        public static ComputeGraphNode GetArgForArray(ComputeGraphNode expNode, int ix)
+        {
+            switch (ix) {
+                case 0:
+                    return expNode.PrevNodes[0];
+                case 1:
+                    return expNode.PrevNodes[1];
+                default:
+                    Debug.Assert(false);
+                    return expNode;
+            }
+        }
+        public static ComputeGraphNode GetArgForArrayMember(ComputeGraphNode expNode, int ix)
+        {
+            switch (ix) {
+                case 0:
+                    return expNode.PrevNodes[0].PrevNodes[0];
+                case 1:
+                    return expNode.PrevNodes[0].PrevNodes[1];
+                case 2:
+                    return expNode.PrevNodes[1];
+                default:
+                    Debug.Assert(false);
+                    return expNode;
+            }
+        }
+        public static ComputeGraphNode GetArgForFuncOrOper(ComputeGraphNode expNode, int ix)
+        {
+            if(ix>=0 && ix < expNode.PrevNodes.Count) {
+                return expNode.PrevNodes[ix];
+            }
+            else {
+                Debug.Assert(false);
+                return expNode;
+            }
+        }
+
+        public const int c_action_nothing = 0;
+        public const int c_action_remove_func = 1;
+        public const int c_action_add_ftoi = 2;
+        public const int c_action_add_itof = 3;
+        public const int c_action_add_ftou = 4;
+        public const int c_action_add_utof = 5;
     }
     public class ComputeGraphBreakNode : ComputeGraphNode
     {

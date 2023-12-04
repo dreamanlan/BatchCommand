@@ -17,6 +17,7 @@ using DslExpression;
 using System.Transactions;
 using Microsoft.VisualBasic;
 using System.Text.RegularExpressions;
+using Dsl;
 
 namespace GlslRewriter
 {
@@ -169,13 +170,41 @@ namespace GlslRewriter
                             var cols = SplitCsvLine(line);
                             Debug.Assert(colNames.Length == cols.Count);
                             var firstCol = cols[0];
+                            int si = firstCol.IndexOf('[');
+                            var vname = firstCol.Substring(0, si).Trim();
                             if (firstCol.Length > 0 && firstCol[firstCol.Length - 1] == ']') {
                                 sb.Append(cols[0]);
                                 sb.Append(" = ");
-                                sb.Append(type);
-                                sb.Append("(");
-                                sb.Append(cols[1]);
-                                sb.Append(");");
+                                if (Program.s_DoReplacement && Config.ActiveConfig.TypeReplacements.TryGetValue(vname, out var newType)) {
+                                    string vals = cols[1];
+                                    var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                    if (type == "vec4" && newType == "uint") {
+                                        sb.Append("uvec4(");
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            float.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.ftou(v).ToString());
+                                        }
+                                        sb.Append(");");
+                                    }
+                                    else if (type == "uvec4" && newType == "float") {
+                                        sb.Append("vec4(");
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            uint.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.FloatToString(Calculator.utof(v)));
+                                        }
+                                        sb.Append(");");
+                                    }
+                                }
+                                else {
+                                    sb.Append(type);
+                                    sb.Append("(");
+                                    sb.Append(cols[1]);
+                                    sb.Append(");");
+                                }
 
                                 results.Add(sb.ToString());
                                 sb.Length = 0;
@@ -553,10 +582,60 @@ namespace GlslRewriter
                 s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
             }
         }
-        internal static string ReplaceString(string txt)
+        internal static string TryReplaceType(string key, string type)
+        {
+            string ret = type;
+            if (Program.s_DoReplacement && Config.ActiveConfig.TypeReplacements.TryGetValue(key, out string newType)) {
+                string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
+                if (arrNums.Count > 0) {
+                    if (suffix.Length > 0) {
+                        if (baseType == "vec") {
+                            if (newType == "uint")
+                                ret = type.Replace("vec", "uvec");
+                            else if (newType == "int")
+                                ret = type.Replace("vec", "ivec");
+                        }
+                        else if (baseType == "uvec") {
+                            if (newType == "float")
+                                ret = type.Replace("uvec", "vec");
+                        }
+                        else if (baseType == "ivec") {
+                            if (newType == "float")
+                                ret = type.Replace("ivec", "vec");
+                        }
+                    }
+                    else {
+                        ret = type.Replace(baseType, newType);
+                    }
+                }
+                else {
+                    if (suffix.Length > 0) {
+                        if (baseType == "vec") {
+                            if (newType == "uint")
+                                ret = "uvec" + suffix;
+                            else if (newType == "int")
+                                ret = "ivec" + suffix;
+                        }
+                        else if (baseType == "uvec") {
+                            if (newType == "float")
+                                ret = "vec" + suffix;
+                        }
+                        else if (baseType == "ivec") {
+                            if (newType == "float")
+                                ret = "vec" + suffix;
+                        }
+                    }
+                    else {
+                        ret = newType;
+                    }
+                }
+            }
+            return ret;
+        }
+        internal static string TryReplaceString(string txt)
         {
             string ret = txt;
-            if (Config.ActiveConfig.StringReplacements.Count > 0) {
+            if (Program.s_DoReplacement && Config.ActiveConfig.StringReplacements.Count > 0) {
                 foreach(var info in Config.ActiveConfig.StringReplacements) {
                     if (null != info.SrcRegex) {
                         ret = info.SrcRegex.Replace(ret, info.Dst);
@@ -701,7 +780,7 @@ namespace GlslRewriter
             }
             return sb.ToString();
         }
-        internal static bool CalcFunc(string func, List<DslExpression.CalculatorValue> args, out DslExpression.CalculatorValue val)
+        internal static bool CalcFunc(string func, List<DslExpression.CalculatorValue> args, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val)
         {
             bool ret = false;
             if (func == "if" || func == "while") {
@@ -722,14 +801,14 @@ namespace GlslRewriter
                     ret = true;
                 }
             }
-            else if(Calculator.CalcFunc(func, args, out val, out var supported)) {
+            else if(Calculator.CalcFunc(func, args, resultType, argTypeConversion, out val, out var supported)) {
                 ret = true;
             }
             else if (ActiveConfig.Calculators.TryGetValue(func, out var infos)) {
                 foreach(var info in infos) {
                     bool match = true;
                     for (int i = 0; i < args.Count && i < info.Args.Count; ++i) {
-                        if (args[i].ToString() == info.Args[i] || info.Args[i]=="*") {
+                        if (args[i].ToString() == info.Args[i] || info.Args[i]== "*") {
                         }
                         else {
                             match = false;
@@ -737,7 +816,7 @@ namespace GlslRewriter
                         }
                     }
                     if (match && null != info.OnGetValue) {
-                        val = info.OnGetValue(args);
+                        val = info.OnGetValue(args, resultType, argTypeConversion);
                         ret = true;
                         break;
                     }
@@ -762,6 +841,12 @@ namespace GlslRewriter
                     }
                     else if (id == "shader_arg") {
                         ParseShaderArg(cfgInfo, pfd);
+                    }
+                    else if (id == "type_replacement") {
+                        ParseTypeReplacement(cfgInfo, pfd);
+                    }
+                    else if (id == "function_replacement") {
+                        ParseFunctionReplacement(cfgInfo, pfd);
                     }
                     else if (id == "string_replacement") {
                         ParseStringReplacement(cfgInfo, pfd);
@@ -808,6 +893,9 @@ namespace GlslRewriter
                         }
                         else if (vid == "generate_expression_list") {
                             cfg.SettingInfo.GenerateExpressionList = true;
+                        }
+                        else if (vid == "remove_duplicate_expression") {
+                            cfg.SettingInfo.RemoveDuplicateExpression = true;
                         }
                         else if (vid == "def_multiline") {
                             cfg.SettingInfo.DefMultiline = true;
@@ -1638,6 +1726,50 @@ namespace GlslRewriter
             return ret;
         }
 
+        private static void ParseTypeReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "=") {
+                            var vname = fd.GetParamId(0);
+                            var newType = fd.GetParamId(1);
+                            cfg.TypeReplacements.Add(vname, newType);
+                        }
+                    }
+                }
+            }
+        }
+        private static void ParseFunctionReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "=") {
+                            var funcMatch = fd.GetParam(0);
+                            var dstFunc = fd.GetParam(1);
+                            ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc);
+                        }
+                    }
+                }
+            }
+        }
+        private static void ParseFunctionReplacementInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent dstFunc)
+        {
+            var info = new FunctionReplacement();
+            ParseFunctionMatchInfo(info, funcMatch, "function_replacement");
+            info.Replacement = dstFunc;
+
+            if (!cfg.FunctionReplacements.TryGetValue(info.FuncOrOper, out var infos)) {
+                infos = new List<FunctionReplacement>();
+                cfg.FunctionReplacements.Add(info.FuncOrOper, infos);
+            }
+            infos.Add(info);
+        }
         private static void ParseStringReplacement(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             if (dslCfg.HaveStatement()) {
@@ -1670,65 +1802,187 @@ namespace GlslRewriter
                     if (null != fd) {
                         string fid = fd.GetId();
                         if (fid == "=") {
-                            var func = fd.GetParam(0) as Dsl.FunctionData;
+                            var funcMatch = fd.GetParam(0);
                             var val = fd.GetParam(1);
-                            if (null != func) {
-                                ParseCalculatorInfo(cfg, func, val);
-                            }
+                            ParseCalculatorInfo(cfg, funcMatch, val);
                         }
                     }
                 }
             }
         }
-        private static void ParseCalculatorInfo(ShaderConfig cfg, Dsl.FunctionData func, Dsl.ISyntaxComponent val)
+        private static void ParseCalculatorInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent val)
         {
-            if (func.IsHighOrder) {
+            var info = new CalculatorInfo();
+            ParseFunctionMatchInfo(info, funcMatch, "calculator");
+            var vd = val as Dsl.ValueData;
+            var fd = val as Dsl.FunctionData;
+            if (null != vd) {
+                info.OnGetValue = (args, resultType, argTypeConversion) => { return vd.GetId(); };
+            }
+            else if (null != fd) {
+                if (fd.GetId() == "func" && fd.IsHighOrder && fd.HaveStatement()) {
+                    //这种形式用于直接调dsl脚本，构造一个函数
+                    var callData = fd.LowerOrderFunction;
+                    List<string> argNames = new List<string>();
+                    foreach (var p in callData.Params) {
+                        argNames.Add(p.GetId());
+                    }
+                    string funcId = BatchScript.EvalAsFunc(fd, argNames);
+                    info.OnGetValue = (args, resultType, argTypeConversion) => {
+                        return BatchScript.Call(funcId, CalculatorValue.FromObject(args), resultType, CalculatorValue.FromObject(argTypeConversion));
+                    };
+                }
+                else {
+                    info.OnGetValue = (args, resultType, argTypeConversion) => {
+                        return DoCalc(fd, resultType);
+                    };
+                }
+            }
 
+            if (!cfg.Calculators.TryGetValue(info.FuncOrOper, out var infos)) {
+                infos = new List<CalculatorInfo>();
+                cfg.Calculators.Add(info.FuncOrOper, infos);
+            }
+            infos.Add(info);
+        }
+        private static void ParseFunctionMatchInfo(FunctionMatchInfo info, Dsl.ISyntaxComponent funcMatch, string tag)
+        {
+            var val = funcMatch as Dsl.ValueData;
+            if (null != val) {
+                info.FuncOrOper = val.GetId();
+                info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
             }
             else {
-                var info = new CalculatorInfo();
-                info.Func = func.GetId();
-                foreach(var p in func.Params) {
-                    info.Args.Add(p.GetId());
-                }
-                var vd = val as Dsl.ValueData;
-                var fd = val as Dsl.FunctionData;
-                if (null != vd) {
-                    info.OnGetValue = args => { return vd.GetId(); };
-                }
-                else if (null != fd) {
-                    if (fd.GetId() == "func" && fd.IsHighOrder && fd.HaveStatement()) {
-                        //这种形式用于直接调dsl脚本，构造一个函数
-                        var callData = fd.LowerOrderFunction;
-                        List<string> argNames = new List<string>();
-                        foreach (var p in callData.Params) {
-                            argNames.Add(p.GetId());
+                var func = funcMatch as Dsl.FunctionData;
+                if (null != func) {
+                    if (!func.HaveId() && func.IsParenthesisParamClass()) {
+                        if (func.GetParamNum() == 1) {
+                            ParseFunctionMatchInfo(info, func.GetParam(0), tag);
                         }
-                        string funcId = BatchScript.EvalAsFunc(func, argNames);
-                        info.OnGetValue = args => {
-                            return BatchScript.Call(funcId, args);
-                        };
+                        else {
+                            Console.WriteLine("{0}: () left hand, () have and only have one argument !", tag);
+                        }
                     }
                     else {
-                        info.OnGetValue = args => {
-                            return DoCalc(fd);
-                        };
+                        if (func.IsPeriodParamClass()) {
+                            if (func.IsHighOrder && func.LowerOrderFunction.IsBracketParamClass()) {
+                                var bracketObj = func.LowerOrderFunction;
+                                string cid = ConvertMatchString(bracketObj.IsHighOrder ? bracketObj.LowerOrderFunction.GetParamId(0) : bracketObj.GetId());
+                                string ixStr = GetParamMatchString(bracketObj.GetParam(0));
+                                string member = GetParamMatchString(func.GetParam(0));
+
+                                info.FuncOrOper = "[].";
+                                info.ArgGetter = ComputeGraphCalcNode.GetArgForArrayMember;
+                                info.Args.Add(cid);
+                                info.Args.Add(ixStr);
+                                info.Args.Add(member);
+                            }
+                            else {
+                                string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId());
+                                string member = GetParamMatchString(func.GetParam(0));
+
+                                info.FuncOrOper = ".";
+                                info.ArgGetter = ComputeGraphCalcNode.GetArgForMember;
+                                info.Args.Add(cid);
+                                info.Args.Add(member);
+                            }
+                        }
+                        else if (func.IsBracketParamClass()) {
+                            string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId());
+                            string ixStr = GetParamMatchString(func.GetParam(0));
+
+                            info.FuncOrOper = "[]";
+                            info.ArgGetter = ComputeGraphCalcNode.GetArgForArray;
+                            info.Args.Add(cid);
+                            info.Args.Add(ixStr);
+                        }
+                        else if (func.IsOperatorParamClass()) {
+                            string op = func.GetId();
+                            int num = func.GetParamNum();
+                            if (num == 1) {
+                                var p = func.GetParam(0);
+                                var pfd = p as Dsl.FunctionData;
+                                info.FuncOrOper = op;
+                                info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
+                                info.Args.Add(GetParamMatchString(p));
+                            }
+                            else if (num == 2) {
+                                var p1 = func.GetParam(0);
+                                var p2 = func.GetParam(1);
+
+                                info.FuncOrOper = op;
+                                info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
+                                info.Args.Add(GetParamMatchString(p1));
+                                info.Args.Add(GetParamMatchString(p2));
+                            }
+                            else {
+                                Console.WriteLine("{0}: operator {1} left hand, invalid argument number !", tag, op);
+                            }
+                        }
+                        else if (func.IsParenthesisParamClass()) {
+                            info.FuncOrOper = func.GetId();
+                            info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
+                            foreach (var p in func.Params) {
+                                info.Args.Add(GetParamMatchString(p));
+                            }
+                        }
+                        else {
+                            Console.WriteLine("{0}: {1} left hand, invalid parenthesis !", tag, func.GetId());
+                        }
                     }
                 }
+                else {
+                    var stm = funcMatch as Dsl.StatementData;
+                    if (null != stm) {
+                        var f1 = stm.First.AsFunction;
+                        var f2 = stm.Second.AsFunction;
+                        if (null != f1 && null != f2 && f1.GetId() == "?" && f1.IsHighOrder && f1.IsTernaryOperatorParamClass()
+                            && f1.LowerOrderFunction.GetParamNum() == 1 && f1.GetParamNum() == 1
+                            && f2.GetId() == ":" && f2.IsTernaryOperatorParamClass() && f2.GetParamNum() == 1) {
+                            var condExp = f1.LowerOrderFunction.GetParam(0);
+                            var trueExp = f1.GetParam(0);
+                            var falseExp = f2.GetParam(0);
 
-                if (!cfg.Calculators.TryGetValue(info.Func, out var infos)) {
-                    infos = new List<CalculatorInfo>();
-                    cfg.Calculators.Add(info.Func, infos);
+                            info.FuncOrOper = "?:";
+                            info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
+                            info.Args.Add(GetParamMatchString(condExp));
+                            info.Args.Add(GetParamMatchString(trueExp));
+                            info.Args.Add(GetParamMatchString(falseExp));
+                        }
+                        else {
+                            Console.WriteLine("{0}: {1}, invalid condition expression !", tag, info.FuncOrOper);
+                        }
+                    }
                 }
-                infos.Add(info);
             }
         }
+        private static string GetParamMatchString(Dsl.ISyntaxComponent p)
+        {
+            var func = p as Dsl.FunctionData;
+            if (null != func) {
+                if (!func.HaveId() && func.GetParamNum() == 1) {
+                    return GetParamMatchString(func.GetParam(0));
+                }
+            }
+            return ConvertMatchString(p.GetId());
+        }
+        private static string ConvertMatchString(string str)
+        {
+            if (str == "@any")
+                str = "*";
+            return str;
+        }
         internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp)
+        {
+            return DoCalc(exp, string.Empty);
+        }
+        internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp, string resultType)
         {
             bool supported = false;
             var vd = exp as Dsl.ValueData;
             var fd = exp as Dsl.FunctionData;
             var stm = exp as Dsl.StatementData;
+            s_ArgTypeConversion.Clear();
             if (null != vd) {
                 string vstr = vd.GetId();
                 if (ActiveConfig.SettingInfo.SettingVariables.TryGetValue(vstr, out var v)) {
@@ -1748,7 +2002,7 @@ namespace GlslRewriter
                     if (fd.IsHighOrder) {
                         var obj = DoCalc(fd.LowerOrderFunction);
                         var m = fd.GetParamId(0);
-                        if (Calculator.CalcMember(obj, m, out var val, out supported))
+                        if (Calculator.CalcMember(obj, m, resultType, s_ArgTypeConversion, out var val, out supported))
                             return val;
                     }
                     else {
@@ -1764,7 +2018,7 @@ namespace GlslRewriter
                     if (fd.IsHighOrder) {
                         var obj = DoCalc(fd.LowerOrderFunction);
                         var m = DoCalc(fd.GetParam(0));
-                        if (Calculator.CalcMember(obj, m, out var val, out supported))
+                        if (Calculator.CalcMember(obj, m, resultType, s_ArgTypeConversion, out var val, out supported))
                             return val;
                     }
                     else {
@@ -1790,7 +2044,7 @@ namespace GlslRewriter
                     foreach(var p in fd.Params) {
                         args.Add(DoCalc(p));
                     }
-                    if (Calculator.CalcFunc(func, args, out var val, out supported))
+                    if (Calculator.CalcFunc(func, args, resultType, s_ArgTypeConversion, out var val, out supported))
                         return val;
                 }
                 else if(fd.IsOperatorParamClass()) {
@@ -1800,13 +2054,13 @@ namespace GlslRewriter
                         var arg2 = fd.GetParam(1);
                         var a1 = DoCalc(arg1);
                         var a2 = DoCalc(arg2);
-                        if (Calculator.CalcBinary(op, a1, a2, out var val, out supported))
+                        if (Calculator.CalcBinary(op, a1, a2, resultType, s_ArgTypeConversion, out var val, out supported))
                             return val;
                     }
                     else if (fd.GetParamNum() == 1) {
                         var arg1 = fd.GetParam(0);
                         var a1 = DoCalc(arg1);
-                        if (Calculator.CalcUnary(op, a1, out var val, out supported))
+                        if (Calculator.CalcUnary(op, a1, resultType, s_ArgTypeConversion, out var val, out supported))
                             return val;
                     }
                 }
@@ -1821,7 +2075,7 @@ namespace GlslRewriter
                     var vcond = DoCalc(cond);
                     var vt = DoCalc(tval);
                     var vf = DoCalc(fval);
-                    if (Calculator.CalcCondExp(vcond, vt, vf, out var val, out supported))
+                    if (Calculator.CalcCondExp(vcond, vt, vf, resultType, s_ArgTypeConversion, out var val, out supported))
                         return val;
                 }
             }
@@ -1917,6 +2171,7 @@ namespace GlslRewriter
             internal bool DefSkipValue = false;
             internal bool DefSkipExpression = false;
             internal bool GenerateExpressionList = false;
+            internal bool RemoveDuplicateExpression = false;
             internal int DefMaxLevel = 32;
             internal int DefMaxLength = 1024;
             internal int ComputeGraphNodesCapacity = 10240;
@@ -2056,17 +2311,27 @@ namespace GlslRewriter
 
             internal static ShaderArgConfig s_Empty = new ShaderArgConfig();
         }
+        internal class FunctionMatchInfo
+        {
+            internal delegate ComputeGraphNode GetArgDelegation(ComputeGraphNode expNode, int index);
+
+            internal string FuncOrOper = string.Empty;
+            internal GetArgDelegation? ArgGetter = null;
+            internal List<string> Args = new List<string>();
+        }
+        internal class FunctionReplacement : FunctionMatchInfo
+        {
+            internal Dsl.ISyntaxComponent Replacement = Dsl.AbstractSyntaxComponent.NullSyntax;
+        }
         internal class StringReplacement
         {
             internal string Src = string.Empty;
             internal string Dst = string.Empty;
             internal Regex? SrcRegex = null;
         }
-        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation(List<DslExpression.CalculatorValue> args);
-        internal class CalculatorInfo
+        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation(List<DslExpression.CalculatorValue> args, string resultType, Dictionary<int, int> argTypeConversion);
+        internal class CalculatorInfo : FunctionMatchInfo
         {
-            internal string Func = string.Empty;
-            internal List<string> Args = new List<string>();
             internal CalculatorValueDelegation? OnGetValue;
         }
         internal class ShaderConfig
@@ -2074,6 +2339,8 @@ namespace GlslRewriter
             internal string ShaderType = string.Empty;
             internal SettingInfo SettingInfo = new SettingInfo();
             internal Dictionary<int, ShaderArgConfig> ArgConfigs = new Dictionary<int, ShaderArgConfig>();
+            internal Dictionary<string, string> TypeReplacements = new Dictionary<string, string>();
+            internal Dictionary<string, List<FunctionReplacement>> FunctionReplacements = new Dictionary<string, List<FunctionReplacement>>();
             internal List<StringReplacement> StringReplacements = new List<StringReplacement>();
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
             internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
@@ -2102,6 +2369,7 @@ namespace GlslRewriter
 
         private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
         internal static Random s_Random = new Random();
+        internal static Dictionary<int, int> s_ArgTypeConversion = new Dictionary<int, int>();
     }
 
     internal sealed class ShaderExp : DslExpression.AbstractExpression

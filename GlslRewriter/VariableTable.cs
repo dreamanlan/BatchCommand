@@ -2372,7 +2372,7 @@ namespace GlslRewriter
             if(!exists && Config.ActiveConfig.SettingInfo.VariableAssignments.TryGetValue(name, out var vinfo)) {
                 Debug.Assert(type == vinfo.Type || type == "uint" && vinfo.Type == "int" || type == "int" && vinfo.Type == "uint");
                 varVal = vinfo.Value;
-                AssignValue(name, type, varVal);
+                AssignValue(name, type, varVal, Config.s_ArgTypeConversion, 0);
                 exists = true;
             }
             return exists;
@@ -2582,13 +2582,13 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static void AssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue right)
+        public static void AssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue right, Dictionary<int, int> argTypeConversion, int argIx)
         {
             string name = left.VarName;
             string type = left.Type;
-            AssignValue(name, type, right);
+            AssignValue(name, type, right, argTypeConversion, argIx);
         }
-        public static void AssignValue(string name, string type, DslExpression.CalculatorValue right)
+        public static void AssignValue(string name, string type, DslExpression.CalculatorValue right, Dictionary<int, int> argTypeConversion, int argIx)
         {
             if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
                 return;
@@ -2681,7 +2681,51 @@ namespace GlslRewriter
                     }
                 }
                 else {
-                    if (baseType == "float") {
+                    if (baseType == "float" && right.IsSignedInteger) {
+                        float val = Calculator.itof(right.GetInt());
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_itof;
+                        if (s_FloatVars.TryGetValue(name, out var v)) {
+                            v.Value = val;
+                            v.IsValid = true;
+                        }
+                        else {
+                            s_FloatVars.Add(name, new FloatVal(val));
+                        }
+                    }
+                    else if (baseType == "float" && right.IsUnsignedInteger) {
+                        float val = Calculator.utof(right.GetUInt());
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_utof;
+                        if (s_FloatVars.TryGetValue(name, out var v)) {
+                            v.Value = val;
+                            v.IsValid = true;
+                        }
+                        else {
+                            s_FloatVars.Add(name, new FloatVal(val));
+                        }
+                    }
+                    else if (baseType == "int" && right.IsNumber) {
+                        int val = Calculator.ftoi(right.GetFloat());
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_ftoi;
+                        if (s_IntVars.TryGetValue(name, out var v)) {
+                            v.Value = val;
+                            v.IsValid = true;
+                        }
+                        else {
+                            s_IntVars.Add(name, new IntVal(val));
+                        }
+                    }
+                    else if (baseType == "uint" && right.IsNumber) {
+                        uint val = Calculator.ftou(right.GetFloat());
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_ftou;
+                        if (s_UintVars.TryGetValue(name, out var v)) {
+                            v.Value = val;
+                            v.IsValid = true;
+                        }
+                        else {
+                            s_UintVars.Add(name, new UintVal(val));
+                        }
+                    }
+                    else if (baseType == "float") {
                         if (Calculator.TryGetFloat(right, out var val)) {
                             if(s_FloatVars.TryGetValue(name, out var v)){
                                 v.Value = val;
@@ -2760,7 +2804,7 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphVarNode right)
+        public static void AssignValue(ComputeGraphVarNode left, ComputeGraphVarNode right, Dictionary<int, int> argTypeConversion, int argIx)
         {
             string name = left.VarName;
             string type = left.Type;
@@ -3067,6 +3111,91 @@ namespace GlslRewriter
                         }
                         else {
                             s_BoolVars[name] = new BoolVal();
+                        }
+                    }
+                }
+            }
+            else {
+                string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
+                if(arrNums.Count==0 && suffix.Length == 0) {
+                    if (baseType == "float" && otherType == "int") {
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_itof;
+
+                        if (s_IntVars.TryGetValue(otherName, out var val) && val.IsValid) {
+                            float fv = Calculator.itof(val.Value);
+                            if (s_FloatVars.TryGetValue(name, out var v)) {
+                                v.Value = fv;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_FloatVars[name] = new FloatVal(fv);
+                            }
+                        }
+                        else if (s_FloatVars.TryGetValue(name, out var v)) {
+                            v.IsValid = false;
+                        }
+                        else {
+                            s_FloatVars[name] = new FloatVal();
+                        }
+                    }
+                    else if (baseType == "float" && otherType == "uint") {
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_utof;
+
+                        if (s_UintVars.TryGetValue(otherName, out var val) && val.IsValid) {
+                            float fv = Calculator.utof(val.Value);
+                            if (s_FloatVars.TryGetValue(name, out var v)) {
+                                v.Value = fv;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_FloatVars[name] = new FloatVal(fv);
+                            }
+                        }
+                        else if (s_FloatVars.TryGetValue(name, out var v)) {
+                            v.IsValid = false;
+                        }
+                        else {
+                            s_FloatVars[name] = new FloatVal();
+                        }
+                    }
+                    else if (baseType == "int" && otherType == "float") {
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_ftoi;
+
+                        if (s_FloatVars.TryGetValue(otherName, out var val) && val.IsValid) {
+                            int iv = Calculator.ftoi(val.Value);
+                            if (s_IntVars.TryGetValue(name, out var v)) {
+                                v.Value = iv;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_IntVars[name] = new IntVal(iv);
+                            }
+                        }
+                        else if (s_IntVars.TryGetValue(name, out var v)) {
+                            v.IsValid = false;
+                        }
+                        else {
+                            s_IntVars[name] = new IntVal();
+                        }
+                    }
+                    else if (baseType == "uint" && otherType == "float") {
+                        argTypeConversion[argIx] = ComputeGraphCalcNode.c_action_add_ftou;
+
+                        if (s_FloatVars.TryGetValue(otherName, out var val) && val.IsValid) {
+                            uint uv = Calculator.ftou(val.Value);
+                            if (s_UintVars.TryGetValue(name, out var v)) {
+                                v.Value = uv;
+                                v.IsValid = true;
+                            }
+                            else {
+                                s_UintVars[name] = new UintVal(uv);
+                            }
+                        }
+                        else if (s_UintVars.TryGetValue(name, out var v)) {
+                            v.IsValid = false;
+                        }
+                        else {
+                            s_UintVars[name] = new UintVal();
                         }
                     }
                 }

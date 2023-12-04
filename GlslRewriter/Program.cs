@@ -10,6 +10,7 @@ using System.Security;
 using static GlslRewriter.Config;
 using System.Net.Http.Headers;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace GlslRewriter
 {
@@ -101,7 +102,7 @@ namespace GlslRewriter
                         s_InteractiveComputing = true;
                     }
                     else if (0 == string.Compare(args[i], "-r", true)) {
-                        s_DoStringReplacement = true;
+                        s_DoReplacement = true;
                     }
                     else if (0 == string.Compare(args[i], "-ssa", true)) {
                         s_SSA = true;
@@ -285,7 +286,7 @@ namespace GlslRewriter
                 //这里可替换整个语句，但不要修改程序其它部分结构，这里与onBeforeEndStatement的区别是此时语句已经从栈里弹出，后续将化简再加入上层语法单位
                 return false;
             };
-            file.onBeforeBuildOperator = (ref Dsl.Common.DslAction dslAction, string op, Dsl.StatementData statement) => {
+            file.onBeforeBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, Dsl.StatementData statement) => {
                 //这里拆分语句
                 string sid = statement.GetId();
                 var func = statement.Last.AsFunction;
@@ -301,7 +302,7 @@ namespace GlslRewriter
                 }
                 return false;
             };
-            file.onBuildOperator = (ref Dsl.Common.DslAction dslAction, string op, ref Dsl.StatementData statement) => {
+            file.onBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, ref Dsl.StatementData statement) => {
                 //这里可替换语句，不要修改其它语法结构
                 return false;
             };
@@ -327,10 +328,6 @@ namespace GlslRewriter
                         return true;
                     }
                 }
-                return false;
-            };
-            file.onSetMemberId = (ref Dsl.Common.DslAction dslAction, string name, Dsl.StatementData statement, Dsl.FunctionData function) => {
-                //这里可拆分语句
                 return false;
             };
             file.onBeforeBuildHighOrder = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
@@ -419,6 +416,34 @@ namespace GlslRewriter
                 File.WriteAllLines(studyFile, lineList.ToArray());
 
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
+                    if (Config.ActiveConfig.SettingInfo.RemoveDuplicateExpression && s_DuplicateVars.Count > 0) {
+                        bool removeComments = false;
+                        for (int ix = s_ExpressionList.Count - 1; ix >= 0; --ix) {
+                            var tuple = s_ExpressionList[ix];
+                            var line = tuple.Item1;
+                            var vname = tuple.Item2;
+                            if (vname == c_CommentTag && removeComments) {
+                                s_ExpressionList.RemoveAt(ix);
+                            }
+                            else if (!string.IsNullOrEmpty(vname) && s_DuplicateVars.ContainsKey(vname)) {
+                                s_ExpressionList.RemoveAt(ix);
+                                removeComments = true;
+                            }
+                            else {
+                                string s = tuple.Item1;
+                                foreach(var pair in s_DuplicateVars) {
+                                    var reptuple = pair.Value;
+                                    s = reptuple.Item2.Replace(s, reptuple.Item1);
+                                }
+                                s_ExpressionList[ix] = Tuple.Create(s, vname);
+                                removeComments = false;
+                            }
+                        }
+                        foreach (var pair in s_DuplicateVars) {
+                            var vname = pair.Key;
+                            Config.ActiveConfig.SettingInfo.UsedVariables.Remove(vname);
+                        }
+                    }
                     var outBuilder = s_ExpressionBuilder;
                     outBuilder.Length = 0;
                     if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
@@ -448,14 +473,13 @@ namespace GlslRewriter
                             outBuilder.AppendLine(";");
                         }
                     }
-                    foreach (var line in s_ExpressionList) {
+                    foreach (var tuple in s_ExpressionList) {
+                        var line = tuple.Item1;
                         outBuilder.AppendLine(line);
                     }
                     outBuilder.AppendLine("}");
                     string txt = outBuilder.ToString();
-                    if (s_DoStringReplacement) {
-                        txt = Config.ReplaceString(txt);
-                    }
+                    txt = Config.TryReplaceString(txt);
                     File.WriteAllText(outFile, txt);
                 }
             }
@@ -1568,14 +1592,14 @@ namespace GlslRewriter
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     ifNode.AddCondition(semanticInfo.GraphNode);
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out ifVal);
+                    GenerateValueAndExpressionForCondition(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out ifVal);
                 }
                 if (ifFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     HashSet<string> setVars = new HashSet<string>();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
                         ++s_Indent;
                     }
                     PushBlock(true, false);
@@ -1598,7 +1622,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
                     }
                     if (s_SSA) {
                         //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
@@ -1643,7 +1667,7 @@ namespace GlslRewriter
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
                         if (null != semanticInfo.GraphNode) {
                             ifNode.AddCondition(semanticInfo.GraphNode);
-                            if (GenerateValueAndExpression(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false, out ifVal))
+                            if (GenerateValueAndExpressionForCondition(f.LowerOrderFunction, semanticInfo.GraphNode, true, true, true, false, out ifVal))
                                 useBranch = true;
                         }
                     }
@@ -1651,7 +1675,7 @@ namespace GlslRewriter
                         useBranch = true;
                     }
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
                         ++s_Indent;
                     }
                     PushBlock(true, false);
@@ -1675,7 +1699,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
                     }
                 }
             }
@@ -1721,13 +1745,13 @@ namespace GlslRewriter
                 TransformForHeader(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     forNode.ForFunc = semanticInfo.GraphNode;
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out forVal);
+                    GenerateValueAndExpressionForCondition(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out forVal);
                 }
                 if (forFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
                         ++s_Indent;
                     }
                     PushBlock(true, true);
@@ -1742,7 +1766,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
                     }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
@@ -1771,13 +1795,13 @@ namespace GlslRewriter
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
                     whileNode.WhileFunc = semanticInfo.GraphNode;
-                    GenerateValueAndExpression(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out whileVal);
+                    GenerateValueAndExpressionForCondition(lowerFunc, semanticInfo.GraphNode, true, true, true, false, out whileVal);
                 }
                 if (whileFunc.HaveStatement()) {
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "{");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
                         ++s_Indent;
                     }
                     PushBlock(true, true);
@@ -1792,7 +1816,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
                     }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
@@ -1823,7 +1847,7 @@ namespace GlslRewriter
                 var suffix = c_PhiTagSeparator + GenUniqueNumber();
                 var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                    s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "do {");
+                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "do {", string.Empty));
                     ++s_Indent;
                 }
                 PushBlock(true, true);
@@ -1838,7 +1862,7 @@ namespace GlslRewriter
                 PopBlock();
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                     --s_Indent;
-                    s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "}");
+                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
                 }
                 if (null != newRefVarValDataOuter) {
                     foreach (var pair in newRefVarValDataOuter) {
@@ -1851,7 +1875,7 @@ namespace GlslRewriter
             TransformGeneralCall(whileFunc, ref semanticInfo);
             if (null != semanticInfo.GraphNode) {
                 doWhileNode.WhileFunc = semanticInfo.GraphNode;
-                GenerateValueAndExpression(whileFunc, semanticInfo.GraphNode, true, true, true, true, out var whileVal);
+                GenerateValueAndExpressionForCondition(whileFunc, semanticInfo.GraphNode, true, true, true, true, out var whileVal);
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1861,7 +1885,7 @@ namespace GlslRewriter
             AddComputeGraphRootNode(breakNode);
 
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "break;");
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "break;", string.Empty));
             }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
@@ -1879,7 +1903,7 @@ namespace GlslRewriter
             AddComputeGraphRootNode(breakNode);
 
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "continue;");
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "continue;", string.Empty));
             }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
@@ -1899,7 +1923,7 @@ namespace GlslRewriter
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "discard;");
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "discard;", string.Empty));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1911,7 +1935,7 @@ namespace GlslRewriter
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "return;");
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return;", string.Empty));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1930,7 +1954,7 @@ namespace GlslRewriter
                     int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
                     expStr = expression.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
                 }
-                s_ExpressionList.Add(Literal.GetIndentString(s_Indent) + "return " + expStr);
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return " + expStr, string.Empty));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -2225,25 +2249,24 @@ namespace GlslRewriter
                     line.Append(";");
                     var lineStr = line.ToString();
                     if (index >= 0) {
-                        s_ExpressionList.Insert(index, lineStr);
+                        s_ExpressionList.Insert(index, Tuple.Create(lineStr, key));
                         ++index;
                     }
                     else {
-                        s_ExpressionList.Add(lineStr);
+                        s_ExpressionList.Add(Tuple.Create(lineStr, key));
                     }
                 }
             }
         }
-        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.CalculatorValue val)
+        private static bool GenerateValueAndExpressionForCondition(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.CalculatorValue val)
         {
             bool ret = false;
             val = DslExpression.CalculatorValue.NullObject;
-            var v1str = SplitInfoForVariable.s_DefMaxLvl;
-            var v2str = SplitInfoForVariable.s_DefMaxLen;
-            var v3str = SplitInfoForVariable.s_DefMultiline;
-            var v4str = SplitInfoForVariable.s_DefExpandOnce;
-            if (Calculator.TryGetInt(v1str, out var lvlForExp) && Calculator.TryGetInt(v2str, out var lenForExp)
-                && Calculator.TryGetBool(v3str, out var ml) && Calculator.TryGetBool(v4str, out var once)) {
+            int lvlForExp = 1;
+            var v1str = SplitInfoForVariable.s_DefMaxLen;
+            var v2str = SplitInfoForVariable.s_DefMultiline;
+            var v3str = SplitInfoForVariable.s_DefExpandOnce;
+            if (Calculator.TryGetInt(v1str, out var lenForExp) && Calculator.TryGetBool(v2str, out var ml) && Calculator.TryGetBool(v3str, out var once)) {
                 ret = GenerateValueAndExpression(funcData, null, cgn, isVariableSetting, markValue, markExp, addSemiColon, lvlForExp, lenForExp, ml, once, out val);
             }
             return ret;
@@ -2313,7 +2336,7 @@ namespace GlslRewriter
                     if (markValue) {
                         line.Append(expWithVal);
                     }
-                    s_ExpressionList.Add(line.ToString());
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), c_CommentTag));
                 }
 
                 if (null != leftAssignDsl) {
@@ -2330,20 +2353,26 @@ namespace GlslRewriter
                         //只检查多参数函数与操作符表达式，避免将常量或utof/ftou判断为重复表达式
                         if (s_Expression2VarList.TryGetValue(singleLineExp, out var varlist)) {
                             line.Append(" // maybe duplicate expression on the right side of the assignment, vars:{0}", string.Join('|', varlist));
-                            if (varlist.Contains(varExp)) {
+                            var tuple = Tuple.Create(varExp, vname);
+                            if (varlist.Contains(tuple)) {
                                 //
                             }
                             else {
-                                varlist.Add(varExp);
+                                varlist.Add(tuple);
+                            }
+                            string firstVar = varlist[0].Item2;
+                            if (!string.IsNullOrEmpty(firstVar) && !string.IsNullOrEmpty(vname)) {
+                                var regex = new Regex(@"\b" + vname + @"\b", RegexOptions.Singleline | RegexOptions.Compiled);
+                                s_DuplicateVars.Add(vname, Tuple.Create(firstVar, regex));
                             }
                         }
                         else {
-                            varlist = new List<string>();
-                            varlist.Add(varExp);
+                            varlist = new List<Tuple<string, string>>();
+                            varlist.Add(Tuple.Create(varExp, vname));
                             s_Expression2VarList.Add(singleLineExp, varlist);
                         }
                     }
-                    s_ExpressionList.Add(line.ToString());
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), vname));
 
                     if (s_SSA && !string.IsNullOrEmpty(vname)) {
                         int len = vname.LastIndexOf(c_AliasSeparator);
@@ -2365,33 +2394,7 @@ namespace GlslRewriter
                     line.Append(singleLineExp);
                     if (addSemiColon)
                         line.Append(";");
-                    var cnode = cgn as ComputeGraphCalcNode;
-                    var op = cnode.Operator;
-                    if (op == "if" || op == "while") {
-                        var condExp = cnode.PrevNodes[0].GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
-                        if (condExp.IndexOf(' ') > 0) {
-                            if (s_ConditionExpressionSet.Contains(condExp)) {
-                                line.Append(" // maybe duplicate condition expression");
-                            }
-                            else {
-                                s_ConditionExpressionSet.Add(condExp);
-                            }
-                        }
-                    }
-                    else if (op == "for") {
-                        if (cnode.PrevNodes.Count >= 2) {
-                            var condExp = cnode.PrevNodes[1].GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
-                            if (condExp.IndexOf(' ') > 0) {
-                                if (s_ConditionExpressionSet.Contains(condExp)) {
-                                    line.Append(" // maybe duplicate condition expression");
-                                }
-                                else {
-                                    s_ConditionExpressionSet.Add(condExp);
-                                }
-                            }
-                        }
-                    }
-                    s_ExpressionList.Add(line.ToString());
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), string.Empty));
                 }
             }
             return !val.IsNullObject;
@@ -2580,7 +2583,7 @@ namespace GlslRewriter
                         }
 
                         if (s_SSA) {
-                            var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, valData.GetId());
+                            var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, Config.TryReplaceType(vinfo.Name, vinfo.Type), valData.GetId());
                             AddComputeGraphVarNode(cgvn);
                             semanticInfo.GraphNode = cgvn;
                             semanticInfo.ResultType = vinfo.Type;
@@ -2708,7 +2711,7 @@ namespace GlslRewriter
             string phiVarAlias = vname + phiSuffix;
             var node = FindComputeGraphVarNode(phiVarAlias);
             if (null == node) {
-                var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, vinfo.Type, phiVarAlias);
+                var cgvn = new ComputeGraphVarNode(vinfo.OwnFunc, Config.TryReplaceType(vinfo.Name, vinfo.Type), phiVarAlias);
                 AddComputeGraphVarNode(cgvn);
 
                 if (null != vinfo.OwnFunc) {
@@ -3622,7 +3625,7 @@ namespace GlslRewriter
             varInfos[CurBlockId()] = varInfo;
             SetLastVarType(varInfo);
 
-            var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, varInfo.Type, varInfo.Name);
+            var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, Config.TryReplaceType(varInfo.Name, varInfo.Type), varInfo.Name);
             AddComputeGraphVarNode(cgvn);
 
             //只有已经在使用列表里的变量才记录类型
@@ -3928,7 +3931,7 @@ namespace GlslRewriter
             s_ExpressionBuilder.Length = 0;
             s_ExpressionList.Clear();
             s_Expression2VarList.Clear();
-            s_ConditionExpressionSet.Clear();
+            s_DuplicateVars.Clear();
             s_Indent = 1;
 
             s_CondExpStack.Clear();
@@ -4095,9 +4098,9 @@ namespace GlslRewriter
 
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         internal static StringBuilder s_ExpressionBuilder = new StringBuilder();
-        internal static List<string> s_ExpressionList = new List<string>();
-        internal static Dictionary<string, List<string>> s_Expression2VarList = new Dictionary<string, List<string>>();
-        internal static HashSet<string> s_ConditionExpressionSet = new HashSet<string>();
+        internal static List<Tuple<string, string>> s_ExpressionList = new List<Tuple<string, string>>();
+        internal static Dictionary<string, List<Tuple<string, string>>> s_Expression2VarList = new Dictionary<string, List<Tuple<string, string>>>();
+        internal static Dictionary<string, Tuple<string, Regex>> s_DuplicateVars = new Dictionary<string, Tuple<string, Regex>>();
         internal static int s_Indent = 1;
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();
@@ -4125,10 +4128,11 @@ namespace GlslRewriter
         internal static bool s_IsPsShader = true;
         internal static bool s_IsCsShader = false;
         internal static bool s_InteractiveComputing = false;
-        internal static bool s_DoStringReplacement = false;
+        internal static bool s_DoReplacement = false;
         internal static bool s_SSA = true;
         internal const string c_PhiTagSeparator = "_phi_";
         internal const string c_AliasSeparator = "_";
+        internal const string c_CommentTag = "@comment";
 
         private static char[] s_eOrE = new char[] { 'e', 'E' };
         private static HashSet<string> s_VertExts = new HashSet<string> { ".vert", ".vs", ".vsh" };

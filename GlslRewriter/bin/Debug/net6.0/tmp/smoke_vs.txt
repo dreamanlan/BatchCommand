@@ -22859,9 +22859,9 @@ float(int(u_4_19))
 	f_9_6 = float(u_11_13 );	// 4.00
 	b_2_33 = f_25_1 == 0.f && ! isnan(f_25_1 ) && ! isnan(0.f );	// False
 	b_0_6 = b_2_33 && b_0_5;	// False
-	u_4_20 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(32u ) ) );	// 0
-	u_4_21 = uint(bitfieldExtract(uint(u_4_20 ), int(0u ), int(32u ) ) );	// 0
-	b_2_34 = u_4_21 == 0;	// True
+	u_4_20 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(32u ) ) );	// 4
+	u_4_21 = uint(bitfieldExtract(uint(u_4_20 ), int(0u ), int(32u ) ) );	// 4
+	b_2_34 = u_4_21 == 0;	// False
 	b_3_10 = int(u_4_21 ) < 0;	// False
 	f_10_2 = utof(vs_cbuf9[81 ].y  );	// 0.80
 	f_11_1 = utof(vs_cbuf9[81 ].w  );	// 0.05
@@ -22990,7 +22990,7 @@ pf_12_8
 	pf_5_40 = fma(pf_0_1, f_9_10, pf_5_39 );	// 0.8788216
 	f_9_11 = utof(vs_cbuf15[23 ].x  );	// 540.00
 	pf_18_2 = f_2_40 * f_9_11;	// 0.00
-	b_2_35 = ! b_2_34;	/* False  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_35 = ! b_2_34;	/* True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
 (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_11_13), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
@@ -23003,7 +23003,7 @@ pf_12_8
 	})
 }
 */
-	b_2_36 = b_3_10 || b_2_35;	/* False  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_35 : False})
+	b_2_36 = b_3_10 || b_2_35;	/* True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_35 : True})
 <=>
 ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_11_13), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_35)
 <=>
@@ -23424,7 +23424,7 @@ bitfieldInsert(u_21_15, uint(bitfieldExtract(uint((u_17_13 + (b_3_12 ? 429496729
 	pf_10_19 = pf_0_1 * f_8_10;	// 392.00
 	b_3_13 = f_2_47 >= f_8_10 && ! isnan(f_2_47 ) && ! isnan(f_8_10 );	// True
 	u_21_16 = b_3_13 ? (4294967295u) : (0u);	// 4294967295
-	u_21_17 = uint(bitfieldExtract(int(u_21_16 ), int(0u ), int(32u ) ) );	/* 2147483648  <=>  uint(bitfieldExtract(int((((({f_2_47 : 9.00} >= {f_8_10 : 4.00}) && (! isnan({f_2_47 : 9.00}))) && (! isnan({f_8_10 : 4.00}))) ? 4294967295u : 0u)), int(0u), int(32u)))
+	u_21_17 = uint(bitfieldExtract(int(u_21_16 ), int(0u ), int(32u ) ) );	/* 4294967295  <=>  uint(bitfieldExtract(int((((({f_2_47 : 9.00} >= {f_8_10 : 4.00}) && (! isnan({f_2_47 : 9.00}))) && (! isnan({f_8_10 : 4.00}))) ? 4294967295u : 0u)), int(0u), int(32u)))
 <=>
 uint(bitfieldExtract(int(((((f_2_47 >= f_8_10) && (! isnan(f_2_47))) && (! isnan(f_8_10))) ? 4294967295u : 0u)), int(0u), int(32u)))
 <=>
@@ -23435,8 +23435,8 @@ uint(bitfieldExtract(int(((((f_2_47 >= f_8_10) && (! isnan(f_2_47))) && (! isnan
 	}), int(0u), int(32u)))
 }
 */
-	u_21_18 = abs(int(u_21_17 ) );	// -2147483648
-	u_21_19 = uint(bitfieldExtract(uint(u_21_18 ), int(0u ), int(32u ) ) );	// 0
+	u_21_18 = abs(int(u_21_17 ) );	// 1
+	u_21_19 = uint(bitfieldExtract(uint(u_21_18 ), int(0u ), int(32u ) ) );	// 1
 	u_22_13 = uint(bitfieldExtract(uint(u_11_13 ), int(16u ), int(16u ) ) );	// 0
 	u_23_2 = uint(bitfieldExtract(uint(u_17_16 ), int(16u ), int(16u ) ) );	// 65534
 	u_22_14 = uint(u_22_13 * u_23_2 );	// 0
@@ -23522,8 +23522,8 @@ clamp(trunc(((pf_0_1 * f_8_10) * (1.0f / float(int(u_4_1))))), float(-2147483600
 	u_23_3 = b_3_15 ? (0u) : (1u);	// 0
 	b_3_16 = int(u_20_19 ) > int(0u );	// False
 	u_20_20 = b_3_16 ? (4294967295u) : (0u);	// 0
-	u_24_0 = uint(int(0 ) - int(u_21_19 ) );	// 0
-	u_24_1 = u_24_0 + 1u;	/* 1  <=>  (uint((int(0) - int(uint(bitfieldExtract(uint(abs(int({u_21_17 : 2147483648}))), int(0u), int(32u)))))) + 1u)
+	u_24_0 = uint(int(0 ) - int(u_21_19 ) );	// 4294967295
+	u_24_1 = u_24_0 + 1u;	/* 0  <=>  (uint((int(0) - int(uint(bitfieldExtract(uint(abs(int({u_21_17 : 4294967295}))), int(0u), int(32u)))))) + 1u)
 <=>
 (uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(u_21_17))), int(0u), int(32u)))))) + 1u)
 <=>
@@ -23536,13 +23536,13 @@ clamp(trunc(((pf_0_1 * f_8_10) * (1.0f / float(int(u_4_1))))), float(-2147483600
 	} + 1u)
 }
 */
-	u_17_21 = b_2_36 ? (u_17_20) : (4294967295u);	// 4294967295
-	u_25_0 = uint(bitfieldExtract(uint(u_24_1 ), int(0u ), int(16u ) ) );	// 1
-	u_26_0 = uint(bitfieldExtract(uint(u_17_21 ), int(0u ), int(16u ) ) );	// 65535
-	u_25_1 = uint(u_25_0 * u_26_0 );	// 65535
-	u_26_1 = uint(bitfieldExtract(uint(u_24_1 ), int(0u ), int(16u ) ) );	// 1
-	u_27_0 = uint(bitfieldExtract(uint(u_17_21 ), int(16u ), int(16u ) ) );	// 65535
-	u_26_2 = uint(u_26_1 * u_27_0 );	/* 65535  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : False} ? {u_17_20 : 1} : 4294967295u)), int(16u), int(16u)))))
+	u_17_21 = b_2_36 ? (u_17_20) : (4294967295u);	// 1
+	u_25_0 = uint(bitfieldExtract(uint(u_24_1 ), int(0u ), int(16u ) ) );	// 0
+	u_26_0 = uint(bitfieldExtract(uint(u_17_21 ), int(0u ), int(16u ) ) );	// 1
+	u_25_1 = uint(u_25_0 * u_26_0 );	// 0
+	u_26_1 = uint(bitfieldExtract(uint(u_24_1 ), int(0u ), int(16u ) ) );	// 0
+	u_27_0 = uint(bitfieldExtract(uint(u_17_21 ), int(16u ), int(16u ) ) );	// 0
+	u_26_2 = uint(u_26_1 * u_27_0 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 1} : 4294967295u)), int(16u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint(u_24_1), int(0u), int(16u))) * uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(16u), int(16u)))))
 <=>
@@ -23555,8 +23555,8 @@ uint((uint(bitfieldExtract(uint(u_24_1), int(0u), int(16u))) * uint(bitfieldExtr
 	}))
 }
 */
-	u_17_22 = uint(bitfieldExtract(uint(u_17_21 ), int(0u ), int(16u ) ) );	// 65535
-	u_17_23 = bitfieldInsert(u_26_2, u_17_22, int(16u ), int(16u ) );	// 4294967295
+	u_17_22 = uint(bitfieldExtract(uint(u_17_21 ), int(0u ), int(16u ) ) );	// 1
+	u_17_23 = bitfieldInsert(u_26_2, u_17_22, int(16u ), int(16u ) );	// 65536
 	f_1_6 = utof(u_8_phi_71 );	// 1.00
 	pf_10_21 = f_1_6 * f_7_0;	// 0.42813
 	u_8_18 = uint(int(0 ) - int(u_20_20 ) );	/* 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 32u)) > int(0u)) ? 4294967295u : 0u))))
@@ -23608,7 +23608,7 @@ uint((int(0) - int(((int((vs_cbuf9[7].x & 32u)) >= int(0u)) ? 0u : 1u))))
 	u_8_21 = abs(int(u_8_20 ) );	// 0
 	u_8_22 = uint(bitfieldExtract(uint(u_8_21 ), int(0u ), int(32u ) ) );	// 0
 	u_23_4 = uint(bitfieldExtract(uint(u_24_1 ), int(16u ), int(16u ) ) );	// 0
-	u_24_2 = uint(bitfieldExtract(uint(u_17_23 ), int(16u ), int(16u ) ) );	/* 65535  <=>  uint(bitfieldExtract(uint(bitfieldInsert({u_26_2 : 65535}, uint(bitfieldExtract(uint(({b_2_36 : False} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_24_2 = uint(bitfieldExtract(uint(u_17_23 ), int(16u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(bitfieldInsert({u_26_2 : 0}, uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(bitfieldInsert(u_26_2, uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
@@ -23621,7 +23621,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(u_26_2, uint(bitfieldExtract(uint((b_2_
 	}), int(16u), int(16u)))
 }
 */
-	u_23_5 = uint(u_23_4 * u_24_2 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 1}), int(16u), int(16u))) * {u_24_2 : 65535}))
+	u_23_5 = uint(u_23_4 * u_24_2 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(16u), int(16u))) * {u_24_2 : 1}))
 <=>
 uint((uint(bitfieldExtract(uint(u_24_1), int(16u), int(16u))) * u_24_2))
 <=>
@@ -23631,8 +23631,8 @@ uint((uint(bitfieldExtract(uint(u_24_1), int(16u), int(16u))) * u_24_2))
 }
 */
 	u_23_6 = u_23_5 << 16u;	// 0
-	u_17_24 = u_17_23 << 16u;	// 4294901760
-	u_17_25 = u_17_24 + u_25_1;	/* 4294967295  <=>  ((bitfieldInsert({u_26_2 : 65535}, uint(bitfieldExtract(uint(({b_2_36 : False} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u)) << 16u) + uint((uint(bitfieldExtract(uint({u_24_1 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : False} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))))))
+	u_17_24 = u_17_23 << 16u;	// 0
+	u_17_25 = u_17_24 + u_25_1;	/* 0  <=>  ((bitfieldInsert({u_26_2 : 0}, uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u)) << 16u) + uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 1} : 4294967295u)), int(0u), int(16u))))))
 <=>
 ((bitfieldInsert(u_26_2, uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))), int(16u), int(16u)) << 16u) + uint((uint(bitfieldExtract(uint(u_24_1), int(0u), int(16u))) * uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))))))
 <=>
@@ -23653,7 +23653,7 @@ uint((uint(bitfieldExtract(uint(u_24_1), int(16u), int(16u))) * u_24_2))
 	})
 }
 */
-	u_17_26 = u_23_6 + u_17_25;	// 4294967295
+	u_17_26 = u_23_6 + u_17_25;	// 0
 	u_2_7 = uint(bitfieldExtract(int(u_2_6 ), int(0u ), int(32u ) ) );	// 0
 	u_2_8 = abs(int(u_2_7 ) );	// 0
 	u_2_9 = uint(bitfieldExtract(uint(u_2_8 ), int(0u ), int(32u ) ) );	// 0
@@ -23689,8 +23689,8 @@ uint((uint(bitfieldExtract(uint(u_24_1), int(16u), int(16u))) * u_24_2))
 	} & 128u)
 }
 */
-	u_14_8 = uint(u_14_7 * u_21_19 );	// 0
-	u_14_9 = u_14_8 + u_17_26;	/* 4294967295  <=>  (uint((({u_11_13 : 4} + 4294967295u) * uint(bitfieldExtract(uint(abs(int({u_21_17 : 2147483648}))), int(0u), int(32u))))) + (({u_23_5 : 0} << 16u) + {u_17_25 : 4294967295}))
+	u_14_8 = uint(u_14_7 * u_21_19 );	// 3
+	u_14_9 = u_14_8 + u_17_26;	/* 3  <=>  (uint((({u_11_13 : 4} + 4294967295u) * uint(bitfieldExtract(uint(abs(int({u_21_17 : 4294967295}))), int(0u), int(32u))))) + (({u_23_5 : 0} << 16u) + {u_17_25 : 0}))
 <=>
 (uint(((u_11_13 + 4294967295u) * uint(bitfieldExtract(uint(abs(int(u_21_17))), int(0u), int(32u))))) + ((u_23_5 << 16u) + u_17_25))
 <=>
@@ -23771,7 +23771,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_25_2 = uint(bitfieldExtract(uint(u_14_9 ), int(0u ), int(16u ) ) );	// 65535
+	u_25_2 = uint(bitfieldExtract(uint(u_14_9 ), int(0u ), int(16u ) ) );	// 3
 	u_23_9 = uint(u_23_8 * u_25_2 );	// 0
 	u_25_3 = uint(bitfieldExtract(uint(u_8_22 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_8_19 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -23786,10 +23786,10 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_26_3 = uint(bitfieldExtract(uint(u_14_9 ), int(16u ), int(16u ) ) );	// 65535
+	u_26_3 = uint(bitfieldExtract(uint(u_14_9 ), int(16u ), int(16u ) ) );	// 0
 	u_25_4 = uint(u_25_3 * u_26_3 );	// 0
-	u_14_10 = uint(bitfieldExtract(uint(u_14_9 ), int(0u ), int(16u ) ) );	// 65535
-	u_14_11 = bitfieldInsert(u_25_4, u_14_10, int(16u ), int(16u ) );	// 4294901760
+	u_14_10 = uint(bitfieldExtract(uint(u_14_9 ), int(0u ), int(16u ) ) );	// 3
+	u_14_11 = bitfieldInsert(u_25_4, u_14_10, int(16u ), int(16u ) );	// 196608
 	b_3_21 = int(u_24_3 ) >= int(0u );	// True
 	u_24_4 = b_3_21 ? (0u) : (1u);	// 0
 	u_8_23 = uint(bitfieldExtract(uint(u_8_22 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_8_19 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)))
@@ -23805,7 +23805,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(16u), int(16u)))
 }
 */
-	u_25_5 = uint(bitfieldExtract(uint(u_14_11 ), int(16u ), int(16u ) ) );	/* 65535  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint(({u_25_3 : 0} * uint(bitfieldExtract(uint({u_14_9 : 4294967295}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 4294967295}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_25_5 = uint(bitfieldExtract(uint(u_14_11 ), int(16u ), int(16u ) ) );	/* 3  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint(({u_25_3 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(bitfieldInsert(uint((u_25_3 * uint(bitfieldExtract(uint(u_14_9), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
@@ -23822,7 +23822,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((u_25_3 * uint(bitfieldExtract(uin
 */
 	u_8_24 = uint(u_8_23 * u_25_5 );	// 0
 	u_8_25 = u_8_24 << 16u;	// 0
-	u_14_12 = u_14_11 << 16u;	/* 0  <=>  (bitfieldInsert(uint(({u_25_3 : 0} * uint(bitfieldExtract(uint({u_14_9 : 4294967295}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 4294967295}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_14_12 = u_14_11 << 16u;	/* 0  <=>  (bitfieldInsert(uint(({u_25_3 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
 (bitfieldInsert(uint((u_25_3 * uint(bitfieldExtract(uint(u_14_9), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
@@ -23838,7 +23838,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((u_25_3 * uint(bitfieldExtract(uin
 }
 */
 	u_14_13 = u_14_12 + u_23_9;	// 0
-	u_8_26 = u_8_25 + u_14_13;	/* 0  <=>  ((uint(({u_8_23 : 0} * {u_25_5 : 65535})) << 16u) + ({u_14_12 : 0} + uint(({u_23_8 : 0} * uint(bitfieldExtract(uint({u_14_9 : 4294967295}), int(0u), int(16u)))))))
+	u_8_26 = u_8_25 + u_14_13;	/* 0  <=>  ((uint(({u_8_23 : 0} * {u_25_5 : 3})) << 16u) + ({u_14_12 : 0} + uint(({u_23_8 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u)))))))
 <=>
 ((uint((u_8_23 * u_25_5)) << 16u) + (u_14_12 + uint((u_23_8 * uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u)))))))
 <=>
@@ -23983,9 +23983,9 @@ uint((int(0) - int(((int(u_3_7) > int(0u)) ? 4294967295u : 0u))))
 	})
 }
 */
-	u_3_11 = uint(bitfieldExtract(int(u_3_10 ), int(0u ), int(32u ) ) );	// 0
-	u_3_12 = abs(int(u_3_11 ) );	// 0
-	u_3_13 = uint(bitfieldExtract(uint(u_3_12 ), int(0u ), int(32u ) ) );	// 0
+	u_3_11 = uint(bitfieldExtract(int(u_3_10 ), int(0u ), int(32u ) ) );	// 1
+	u_3_12 = abs(int(u_3_11 ) );	// 1
+	u_3_13 = uint(bitfieldExtract(uint(u_3_12 ), int(0u ), int(32u ) ) );	// 1
 	b_3_25 = f_7_0 > 0.5f && ! isnan(f_7_0 ) && ! isnan(0.5f );	// False
 	u_8_28 = b_3_25 ? (4294967295u) : (0u);	// 0
 	f_1_11 = utof(vs_cbuf9[76 ].x  );	// 1.00
@@ -24016,7 +24016,7 @@ uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_20_27), int(0
 	f_1_12 = utof(vs_cbuf9[74 ].w  );	// 0.025
 	f_8_13 = utof(vs_cbuf9[75 ].y  );	// 0.00
 	pf_21_0 = f_8_13 + f_1_12;	// 0.025
-	u_3_14 = uint(u_3_13 * u_21_21 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_10 : 1}), int(0u), int(32u)))))), int(0u), int(32u))) * ({b_3_20 : False} ? 0u : int(clamp(trunc({pf_10_23 : 1.71252}), float(-2147483600.f), float(2147483600.f))))))
+	u_3_14 = uint(u_3_13 * u_21_21 );	/* 1  <=>  uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_10 : 1}), int(0u), int(32u)))))), int(0u), int(32u))) * ({b_3_20 : False} ? 0u : int(clamp(trunc({pf_10_23 : 1.71252}), float(-2147483600.f), float(2147483600.f))))))
 <=>
 uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_10), int(0u), int(32u)))))), int(0u), int(32u))) * (b_3_20 ? 0u : int(clamp(trunc(pf_10_23), float(-2147483600.f), float(2147483600.f))))))
 <=>
@@ -24037,8 +24037,8 @@ uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_10), int(0u
 	}))
 }
 */
-	u_2_13 = u_3_14 + u_2_12;	// 0
-	f_1_13 = float(u_2_13 );	// 0.00
+	u_2_13 = u_3_14 + u_2_12;	// 1
+	f_1_13 = float(u_2_13 );	// 1.00
 	u_3_15 = (vs_cbuf9[7 ].y  );	// 0
 	u_3_16 = 1u & u_3_15;	// 0
 	pf_10_25 = fma(pf_19_1, -2.f, pf_10_24 );	// 0.025
@@ -24075,9 +24075,9 @@ uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_10), int(0u
 }
 */
 	f_8_16 = utof(u_15_6 );	// 0.25
-	pf_19_2 = f_8_16 * f_1_13;	// 0.00
+	pf_19_2 = f_8_16 * f_1_13;	// 0.25
 	f_1_14 = trunc(pf_19_2 );	// 0.00
-	f_1_15 = min(max(f_1_14, float(0.f ) ), float(4294967300.f ) );	/* 0.00  <=>  clamp(trunc(({utof(u_15_6) : 0.25} * float(({u_3_14 : 0} + {u_2_12 : 0})))), float(0.f), float(4294967300.f))
+	f_1_15 = min(max(f_1_14, float(0.f ) ), float(4294967300.f ) );	/* 0.00  <=>  clamp(trunc(({utof(u_15_6) : 0.25} * float(({u_3_14 : 1} + {u_2_12 : 0})))), float(0.f), float(4294967300.f))
 <=>
 clamp(trunc((utof(u_15_6) * float((u_3_14 + u_2_12)))), float(0.f), float(4294967300.f))
 <=>
@@ -24162,9 +24162,9 @@ uint(f_1_15)
 	u_20_31 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(16u ) ) );	// 4
 	u_21_22 = uint(bitfieldExtract(uint(u_17_34 ), int(0u ), int(16u ) ) );	// 0
 	u_20_32 = uint(u_20_31 * u_21_22 );	// 0
-	u_21_23 = uint(bitfieldExtract(int(u_3_21 ), int(0u ), int(32u ) ) );	// 0
-	u_21_24 = uint(bitfieldExtract(uint(u_21_23 ), int(0u ), int(32u ) ) );	// 0
-	b_4_6 = u_21_24 == 0;	// True
+	u_21_23 = uint(bitfieldExtract(int(u_3_21 ), int(0u ), int(32u ) ) );	// 1
+	u_21_24 = uint(bitfieldExtract(uint(u_21_23 ), int(0u ), int(32u ) ) );	// 1
+	b_4_6 = u_21_24 == 0;	// False
 	b_5_21 = int(u_21_24 ) < 0;	// False
 	u_22_18 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(16u ) ) );	// 4
 	u_23_11 = uint(bitfieldExtract(uint(u_17_34 ), int(16u ), int(16u ) ) );	// 0
@@ -24269,8 +24269,8 @@ uint(bitfieldExtract(uint(u_22_20), int(16u), int(16u)))
 }
 */
 	u_1_27 = uint(int(0 ) - int(u_20_34 ) );	// 0
-	u_1_28 = u_2_13 + u_1_27;	// 0
-	f_7_3 = float(u_1_28 );	// 0.00
+	u_1_28 = u_2_13 + u_1_27;	// 1
+	f_7_3 = float(u_1_28 );	// 1.00
 	u_1_29 = (vs_cbuf9[7 ].y  );	// 0
 	u_1_30 = 4u & u_1_29;	// 0
 	f_8_26 = utof(u_10_7 );
@@ -24368,7 +24368,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	b_6_10 = u_22_24 == 8u;	// False
 	u_22_25 = b_6_10 ? (4294967295u) : (0u);	// 0
 	f_9_19 = utof(u_15_6 );	// 0.25
-	pf_25_1 = f_9_19 * f_7_3;	// 0.00
+	pf_25_1 = f_9_19 * f_7_3;	// 0.25
 	f_7_4 = utof(vs_cbuf9[88 ].z  );	// 1.00
 	f_9_20 = trunc(f_7_4 );	// 1.00
 	f_9_21 = min(max(f_9_20, float(-2147483600.f ) ), float(2147483600.f ) );	// 1.00
@@ -24393,7 +24393,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 */
 	b_6_12 = u_23_17 == 2u;	// False
 	u_23_18 = b_6_12 ? (4294967295u) : (0u);	// 0
-	f_7_5 = trunc(pf_25_1 );	/* 0.00  <=>  trunc(({utof(u_15_6) : 0.25} * float((({u_3_14 : 0} + {u_2_12 : 0}) + uint((int(0) - int({u_20_34 : 0})))))))
+	f_7_5 = trunc(pf_25_1 );	/* 0.00  <=>  trunc(({utof(u_15_6) : 0.25} * float((({u_3_14 : 1} + {u_2_12 : 0}) + uint((int(0) - int({u_20_34 : 0})))))))
 <=>
 trunc((utof(u_15_6) * float(((u_3_14 + u_2_12) + uint((int(0) - int(u_20_34)))))))
 <=>
@@ -24510,9 +24510,9 @@ trunc((utof(u_15_6) * float(((u_3_14 + u_2_12) + uint((int(0) - int(u_20_34)))))
 */
 	u_8_32 = u_22_26 | u_8_31;	// 4294967295
 	b_8_0 = u_8_32 != 0u;	// True
-	u_8_33 = uint(bitfieldExtract(int(u_3_21 ), int(0u ), int(32u ) ) );	// 0
-	u_8_34 = abs(int(u_8_33 ) );	// 0
-	u_8_35 = uint(bitfieldExtract(uint(u_8_34 ), int(0u ), int(32u ) ) );	// 0
+	u_8_33 = uint(bitfieldExtract(int(u_3_21 ), int(0u ), int(32u ) ) );	// 1
+	u_8_34 = abs(int(u_8_33 ) );	// 1
+	u_8_35 = uint(bitfieldExtract(uint(u_8_34 ), int(0u ), int(32u ) ) );	// 1
 	b_9_0 = f_13_13 > 0.5f && ! isnan(f_13_13 ) && ! isnan(0.5f );	// True
 	u_22_27 = b_9_0 ? (4294967295u) : (0u);	// 4294967295
 	f_10_8 = utof(vs_cbuf9[76 ].w  );	// 0.00
@@ -24532,7 +24532,7 @@ uint(bitfieldExtract(uint((u_17_34 + uint(clamp(f_7_5, float(0.f), float(4294967
 }
 */
 	u_23_20 = uint(u_23_19 * u_24_7 );	// 0
-	f_10_9 = float(u_8_35 );	/* 0.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_10_9 = float(u_8_35 );	/* 1.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
 float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
@@ -24588,9 +24588,9 @@ if(((! ((u_3_18 | u_8_29) != 0u)) ? true : false))
 	u_27_4 = (vs_cbuf9[7 ].y  );	// 0
 	u_27_5 = 32u & u_27_4;	// 0
 	u_12_8 = u_12_7 & 2097152u;	// 0
-	u_28_0 = uint(bitfieldExtract(int(u_26_6 ), int(0u ), int(32u ) ) );	// 0
-	u_28_1 = abs(int(u_28_0 ) );	// 0
-	u_28_2 = uint(bitfieldExtract(uint(u_28_1 ), int(0u ), int(32u ) ) );	// 0
+	u_28_0 = uint(bitfieldExtract(int(u_26_6 ), int(0u ), int(32u ) ) );	// 1
+	u_28_1 = abs(int(u_28_0 ) );	// 1
+	u_28_2 = uint(bitfieldExtract(uint(u_28_1 ), int(0u ), int(32u ) ) );	// 1
 	b_3_29 = ! b_8_0;	// False
 	b_8_1 = b_3_29 ? (true) : (false);	// False
 	u_29_0 = u_9_15;	/* 1063905846  <=>  {ftou(in_attr1.y) : 1063905846}
@@ -24637,8 +24637,8 @@ ftou(((0.f - in_attr1.y) + 1.f))
 		u_30_phi_74 = u_30_0;
 		u_29_phi_74 = u_29_1;
 	} 
-	f_10_10 = (1.0f ) / f_10_9;	// ∞
-	u_30_1 = ftou(f_10_10 );	// 2139095040
+	f_10_10 = (1.0f ) / f_10_9;	// 1.00
+	u_30_1 = ftou(f_10_10 );	// 1065353216
 	u_31_0 = uint(bitfieldExtract(uint(u_11_13 ), int(16u ), int(16u ) ) );	// 0
 	u_32_0 = uint(bitfieldExtract(uint(u_24_10 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_27_2 : 0})), {u_27_3 : 0}, int(16u), int(16u))), int(16u), int(16u)))
 <=>
@@ -24740,7 +24740,7 @@ if(((! ((u_1_32 | u_10_9) != 0u)) ? true : false))
 	b_8_4 = f_16_1 > 0.5f && ! isnan(f_16_1 ) && ! isnan(0.5f );	// True
 	u_27_6 = b_8_4 ? (4294967295u) : (0u);	// 4294967295
 	u_23_23 = uint(int(0 ) - int(u_23_22 ) );	// 0
-	u_23_24 = u_2_13 + u_23_23;	// 0
+	u_23_24 = u_2_13 + u_23_23;	// 1
 	b_8_5 = int(u_12_8 ) >= int(0u );	// True
 	u_31_3 = b_8_5 ? (0u) : (1u);	// 0
 	b_8_6 = int(u_12_8 ) > int(0u );	// False
@@ -24829,7 +24829,7 @@ utof(u_20_35)
 }
 */
 	pf_25_4 = f_6_4 * f_7_10;	// 0.00
-	b_8_8 = uint(u_23_24 ) >= uint(u_11_13 );	/* False  <=>  (uint((({u_3_14 : 0} + {u_2_12 : 0}) + uint((int(0) - int({u_23_22 : 0}))))) >= uint({u_11_13 : 4}))
+	b_8_8 = uint(u_23_24 ) >= uint(u_11_13 );	/* False  <=>  (uint((({u_3_14 : 1} + {u_2_12 : 0}) + uint((int(0) - int({u_23_22 : 0}))))) >= uint({u_11_13 : 4}))
 <=>
 (uint(((u_3_14 + u_2_12) + uint((int(0) - int(u_23_22))))) >= uint(u_11_13))
 <=>
@@ -24845,7 +24845,7 @@ utof(u_20_35)
 	u_22_32 = b_8_8 ? (4294967295u) : (0u);	// 0
 	f_7_11 = in_attr2.z ;	// 0.62622
 	u_23_25 = ftou(f_7_11 );	// 1059082228
-	u_27_8 = u_30_1 + 4294967294u;	// 2139095038
+	u_27_8 = u_30_1 + 4294967294u;	// 1065353214
 	f_11_5 = trunc(pf_25_4 );	// 0.00
 	f_11_6 = min(max(f_11_5, float(0.f ) ), float(4294967300.f ) );	// 0.00
 	u_30_2 = uint(f_11_6 );	/* 0  <=>  uint(clamp(trunc((float(0u) * {f_7_10 : 0.9999999})), float(0.f), float(4294967300.f)))
@@ -24896,7 +24896,7 @@ uint((int(0) - int(((int((u_12_7 & 2097152u)) >= int(0u)) ? 0u : 1u))))
 {u_12_11 = (u_12_10 + u_31_4)
 }
 */
-	f_11_7 = float(u_28_2 );	/* 0.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_11_7 = float(u_28_2 );	/* 1.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
 float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
@@ -24987,8 +24987,8 @@ uint((int(0) - int((u_17_34 + uint(clamp(f_7_5, float(0.f), float(4294967300.f))
 	} + 4294967294u)
 }
 */
-	f_9_23 = (1.0f ) / f_11_7;	// ∞
-	u_22_33 = ftou(f_9_23 );	// 2139095040
+	f_9_23 = (1.0f ) / f_11_7;	// 1.00
+	u_22_33 = ftou(f_9_23 );	// 1065353216
 	u_24_13 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(16u ) ) );	// 4
 	u_33_2 = uint(bitfieldExtract(uint(u_10_13 ), int(0u ), int(16u ) ) );	// 0
 	u_24_14 = uint(u_24_13 * u_33_2 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_10_12 : 0} + ({b_8_8 : False} ? 4294967295u : 0u))), int(0u), int(16u)))))
@@ -25099,8 +25099,8 @@ utof(u_17_36)
 }
 */
 	pf_25_7 = f_6_4 * f_9_25;	// 0.00
-	f_9_26 = utof(u_27_8 );	// 340282300000000000000000000000000000000.00
-	pf_26_0 = f_9_26 * f_6_4;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 0.00})) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00} * float(0u))
+	f_9_26 = utof(u_27_8 );	// 0.9999999
+	pf_26_0 = f_9_26 * f_6_4;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * float(0u))
 <=>
 (utof((ftou((1.0f / f_10_9)) + 4294967294u)) * float(0u))
 <=>
@@ -25239,7 +25239,7 @@ ftou(((in_attr0.z * (vs_cbuf13_0.x)) + in_attr2.z))
 	f_7_12 = utof(vs_cbuf8[24 ].y  );	// 0.0778961
 	f_9_32 = utof(u_31_phi_77 );	// -1.86859
 	pf_25_9 = f_9_32 * f_7_12;	// -0.1455559
-	u_22_34 = u_22_33 + 4294967294u;	// 2139095038
+	u_22_34 = u_22_33 + 4294967294u;	// 1065353214
 	b_0_9 = ! b_3_30;	// False
 	b_8_12 = b_0_9 ? (true) : (false);	// False
 	if(b_8_12 )	/* False  <=>  if(((! (({u_1_39 : 4294967295} | {u_22_28 : 0}) != 0u)) ? true : false))
@@ -25295,7 +25295,7 @@ ftou(((0.f - in_attr1.y) + 1.f))
 		u_37_phi_81 = u_37_2;
 		u_23_phi_81 = u_23_27;
 	} 
-	u_2_14 = u_2_13 + u_10_18;	// 0
+	u_2_14 = u_2_13 + u_10_18;	// 1
 	u_10_19 = uint(bitfieldExtract(uint(u_3_21 ), int(16u ), int(16u ) ) );	// 0
 	u_37_3 = uint(bitfieldExtract(uint(u_34_5 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_34_5 : 0}), int(16u), int(16u)))
 <=>
@@ -25377,8 +25377,8 @@ ftou(((0.f - in_attr1.y) + 1.f))
 		u_34_phi_82 = u_34_7;
 		u_10_phi_82 = u_10_23;
 	} 
-	f_7_15 = utof(u_22_34 );	// 340282300000000000000000000000000000000.00
-	pf_26_3 = f_6_4 * f_7_15;	/* 0.00  <=>  (float(0u) * {utof(({ftou((1.0f / {f_11_7 : 0.00})) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00})
+	f_7_15 = utof(u_22_34 );	// 0.9999999
+	pf_26_3 = f_6_4 * f_7_15;	/* 0.00  <=>  (float(0u) * {utof(({ftou((1.0f / {f_11_7 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999})
 <=>
 (float(0u) * utof((ftou((1.0f / f_11_7)) + 4294967294u)))
 <=>
@@ -25424,7 +25424,7 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * ui
 }
 */
 	u_38_2 = uint(bitfieldExtract(uint(u_24_15 ), int(0u ), int(16u ) ) );	// 0
-	u_39_0 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_39_0 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -25437,7 +25437,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_38_3 = uint(u_38_2 * u_39_0 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_39_0 : 0}))
+	u_38_3 = uint(u_38_2 * u_39_0 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_39_0 : 1}))
 <=>
 uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_39_0))
 <=>
@@ -25452,7 +25452,7 @@ uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(429
 	} * u_39_0))
 }
 */
-	u_2_15 = b_2_36 ? (u_2_14) : (4294967295u);	// 4294967295
+	u_2_15 = b_2_36 ? (u_2_14) : (4294967295u);	// 1
 	u_39_1 = uint(bitfieldExtract(uint(u_24_15 ), int(0u ), int(16u ) ) );	// 0
 	u_40_0 = uint(bitfieldExtract(uint(u_8_35 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)))
 <=>
@@ -25482,7 +25482,7 @@ uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(429
 	} * u_40_0))
 }
 */
-	u_40_1 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_40_1 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -25495,7 +25495,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_39_3 = bitfieldInsert(u_39_2, u_40_1, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert({u_39_2 : 0}, {u_40_1 : 0}, int(16u), int(16u))
+	u_39_3 = bitfieldInsert(u_39_2, u_40_1, int(16u ), int(16u ) );	/* 65536  <=>  bitfieldInsert({u_39_2 : 0}, {u_40_1 : 1}, int(16u), int(16u))
 <=>
 bitfieldInsert(u_39_2, u_40_1, int(16u), int(16u))
 <=>
@@ -25544,7 +25544,7 @@ uint(bitfieldExtract(uint(u_37_7), int(16u), int(16u)))
 }
 */
 	u_1_46 = uint(int(0 ) - int(u_1_45 ) );	// 0
-	u_34_11 = int(u_2_15 ) >> 31u;	/* 4294967295  <=>  (int(({b_2_36 : False} ? (({u_3_14 : 0} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u)) >> 31u)
+	u_34_11 = int(u_2_15 ) >> 31u;	/* 0  <=>  (int(({b_2_36 : True} ? (({u_3_14 : 1} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u)) >> 31u)
 <=>
 (int((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u)) >> 31u)
 <=>
@@ -25564,8 +25564,8 @@ uint(bitfieldExtract(uint(u_37_7), int(16u), int(16u)))
 }
 */
 	u_37_9 = uint(bitfieldExtract(uint(u_24_15 ), int(16u ), int(16u ) ) );	// 0
-	u_40_3 = uint(bitfieldExtract(uint(u_39_3 ), int(16u ), int(16u ) ) );	// 0
-	u_37_10 = uint(u_37_9 * u_40_3 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_39_3 : 0}), int(16u), int(16u)))))
+	u_40_3 = uint(bitfieldExtract(uint(u_39_3 ), int(16u ), int(16u ) ) );	// 1
+	u_37_10 = uint(u_37_9 * u_40_3 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_39_3 : 65536}), int(16u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_39_3), int(16u), int(16u)))))
 <=>
@@ -25598,9 +25598,9 @@ uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(429
 	f_8_28 = utof(u_36_phi_79 );	// 0.62622
 	pf_25_11 = fma(f_8_28, f_7_21, pf_25_10 );	// -1.127421
 	f_7_22 = float(u_31_11 );	// 0.00
-	u_1_47 = u_34_11 & 3u;	// 3
+	u_1_47 = u_34_11 & 3u;	// 0
 	u_31_12 = uint(bitfieldExtract(uint(u_9_16 ), int(0u ), int(16u ) ) );	// 0
-	u_33_7 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_33_7 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -25613,7 +25613,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_31_13 = uint(u_31_12 * u_33_7 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_33_7 : 0}))
+	u_31_13 = uint(u_31_12 * u_33_7 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_33_7 : 1}))
 <=>
 uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_33_7))
 <=>
@@ -25657,7 +25657,7 @@ uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(429
 	} * u_34_12))
 }
 */
-	u_34_13 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_34_13 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -25670,7 +25670,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_33_10 = bitfieldInsert(u_33_9, u_34_13, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert({u_33_9 : 0}, {u_34_13 : 0}, int(16u), int(16u))
+	u_33_10 = bitfieldInsert(u_33_9, u_34_13, int(16u ), int(16u ) );	/* 65536  <=>  bitfieldInsert({u_33_9 : 0}, {u_34_13 : 1}, int(16u), int(16u))
 <=>
 bitfieldInsert(u_33_9, u_34_13, int(16u), int(16u))
 <=>
@@ -25681,7 +25681,7 @@ bitfieldInsert(u_33_9, u_34_13, int(16u), int(16u))
 	f_8_29 = utof(vs_cbuf8[25 ].z  );	// 0.1506999
 	f_9_33 = utof(u_36_phi_79 );	// 0.62622
 	pf_26_6 = fma(f_9_33, f_8_29, pf_26_5 );	// -1.752878
-	f_8_30 = float(u_34_14 );	/* 0.00  <=>  float(uint((int(0) - int((({u_37_10 : 0} << 16u) + (({u_39_3 : 0} << 16u) + {u_38_3 : 0}))))))
+	f_8_30 = float(u_34_14 );	/* 0.00  <=>  float(uint((int(0) - int((({u_37_10 : 0} << 16u) + (({u_39_3 : 65536} << 16u) + {u_38_3 : 0}))))))
 <=>
 float(uint((int(0) - int(((u_37_10 << 16u) + ((u_39_3 << 16u) + u_38_3))))))
 <=>
@@ -25698,7 +25698,7 @@ float(uint((int(0) - int(((u_37_10 << 16u) + ((u_39_3 << 16u) + u_38_3))))))
 	})
 }
 */
-	u_1_48 = u_2_15 + u_1_47;	/* 2  <=>  (({b_2_36 : False} ? (({u_3_14 : 0} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) + ({u_34_11 : 4294967295} & 3u))
+	u_1_48 = u_2_15 + u_1_47;	/* 1  <=>  (({b_2_36 : True} ? (({u_3_14 : 1} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) + ({u_34_11 : 0} & 3u))
 <=>
 ((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u) + (u_34_11 & 3u))
 <=>
@@ -25723,8 +25723,8 @@ float(uint((int(0) - int(((u_37_10 << 16u) + ((u_39_3 << 16u) + u_38_3))))))
 	f_10_12 = utof(u_36_phi_79 );	// 0.62622
 	pf_27_2 = fma(f_10_12, f_9_34, pf_27_1 );	// 0.3713642
 	u_34_15 = uint(bitfieldExtract(uint(u_9_16 ), int(16u ), int(16u ) ) );	// 0
-	u_36_5 = uint(bitfieldExtract(uint(u_33_10 ), int(16u ), int(16u ) ) );	// 0
-	u_34_16 = uint(u_34_15 * u_36_5 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_33_10 : 0}), int(16u), int(16u)))))
+	u_36_5 = uint(bitfieldExtract(uint(u_33_10 ), int(16u ), int(16u ) ) );	// 1
+	u_34_16 = uint(u_34_15 * u_36_5 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_33_10 : 65536}), int(16u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_33_10), int(16u), int(16u)))))
 <=>
@@ -25767,7 +25767,7 @@ clamp(trunc((utof(u_20_35) * float(uint((int(0) - int(u_1_45)))))), float(0.f), 
 }
 */
 	u_20_36 = uint(f_6_14 );	// 0
-	u_1_49 = int(u_1_48 ) >> 2u;	/* 0  <=>  (int({u_1_48 : 2}) >> 2u)
+	u_1_49 = int(u_1_48 ) >> 2u;	/* 0  <=>  (int({u_1_48 : 1}) >> 2u)
 <=>
 (int(u_1_48) >> 2u)
 <=>
@@ -25777,7 +25777,7 @@ clamp(trunc((utof(u_20_35) * float(uint((int(0) - int(u_1_45)))))), float(0.f), 
 	f_6_15 = utof(u_17_36 );	// 0.9999999
 	pf_28_1 = f_6_15 * f_7_22;	// 0.00
 	u_17_37 = uint(int(0 ) - int(u_31_15 ) );	// 0
-	u_2_16 = u_2_15 & 3u;	/* 3  <=>  (({b_2_36 : False} ? (({u_3_14 : 0} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) & 3u)
+	u_2_16 = u_2_15 & 3u;	/* 1  <=>  (({b_2_36 : True} ? (({u_3_14 : 1} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) & 3u)
 <=>
 ((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u) & 3u)
 <=>
@@ -25796,7 +25796,7 @@ clamp(trunc((utof(u_20_35) * float(uint((int(0) - int(u_1_45)))))), float(0.f), 
 	} & 3u)
 }
 */
-	f_6_16 = float(u_17_37 );	/* 0.00  <=>  float(uint((int(0) - int((({u_34_16 : 0} << 16u) + (({u_33_10 : 0} << 16u) + {u_31_13 : 0}))))))
+	f_6_16 = float(u_17_37 );	/* 0.00  <=>  float(uint((int(0) - int((({u_34_16 : 0} << 16u) + (({u_33_10 : 65536} << 16u) + {u_31_13 : 0}))))))
 <=>
 float(uint((int(0) - int(((u_34_16 << 16u) + ((u_33_10 << 16u) + u_31_13))))))
 <=>
@@ -25813,8 +25813,8 @@ float(uint((int(0) - int(((u_34_16 << 16u) + ((u_33_10 << 16u) + u_31_13))))))
 	})
 }
 */
-	f_7_23 = utof(u_27_8 );	// 340282300000000000000000000000000000000.00
-	pf_29_0 = f_7_23 * f_8_30;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 0.00})) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00} * {f_8_30 : 0.00})
+	f_7_23 = utof(u_27_8 );	// 0.9999999
+	pf_29_0 = f_7_23 * f_8_30;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * {f_8_30 : 0.00})
 <=>
 (utof((ftou((1.0f / f_10_9)) + 4294967294u)) * f_8_30)
 <=>
@@ -25884,9 +25884,9 @@ uint(clamp(trunc((f_7_26 * float(u_16_6))), float(0.f), float(4294967300.f)))
 	f_7_30 = utof(vs_cbuf9[81 ].z  );	// 0.05
 	f_8_32 = utof(vs_cbuf9[81 ].x  );	// 0.80
 	pf_29_2 = f_8_32 + f_7_30;	// 0.85
-	u_34_18 = u_2_16 + 4294967295u;	// 2
-	f_7_31 = utof(u_22_34 );	// 340282300000000000000000000000000000000.00
-	pf_31_0 = f_7_31 * f_6_16;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_11_7 : 0.00})) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00} * {f_6_16 : 0.00})
+	u_34_18 = u_2_16 + 4294967295u;	// 0
+	f_7_31 = utof(u_22_34 );	// 0.9999999
+	pf_31_0 = f_7_31 * f_6_16;	/* 0.00  <=>  ({utof(({ftou((1.0f / {f_11_7 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * {f_6_16 : 0.00})
 <=>
 (utof((ftou((1.0f / f_11_7)) + 4294967294u)) * f_6_16)
 <=>
@@ -25914,8 +25914,8 @@ uint(clamp(trunc((f_7_26 * float(u_16_6))), float(0.f), float(4294967300.f)))
 	u_17_39 = b_0_12 ? (0u) : (1u);	// 0
 	f_6_19 = utof(vs_cbuf9[74 ].y  );	// 0.00
 	pf_19_6 = fma(pf_0_1, f_6_19, pf_19_5 );	// 0.025
-	b_0_13 = int(u_34_18 ) > int(0u );	// True
-	u_22_35 = b_0_13 ? (4294967295u) : (0u);	// 4294967295
+	b_0_13 = int(u_34_18 ) > int(0u );	// False
+	u_22_35 = b_0_13 ? (4294967295u) : (0u);	// 0
 	f_6_20 = trunc(pf_28_1 );	// 0.00
 	f_6_21 = min(max(f_6_20, float(0.f ) ), float(4294967300.f ) );	/* 0.00  <=>  clamp(trunc(({utof(u_17_36) : 0.9999999} * float(uint((int(0) - int({u_31_10 : 0})))))), float(0.f), float(4294967300.f))
 <=>
@@ -25980,7 +25980,7 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u
 	pf_16_5 = fma(pf_16_4, -2.f, pf_30_1 );	// 0.14374
 	f_6_22 = utof(vs_cbuf10[3 ].y  );	// 1.50
 	pf_3_8 = pf_3_7 * f_6_22;	// 1.473082
-	u_22_36 = uint(int(0 ) - int(u_22_35 ) );	/* 1  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967295u)) > int(0u)) ? 4294967295u : 0u))))
+	u_22_36 = uint(int(0 ) - int(u_22_35 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967295u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967295u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
@@ -25993,7 +25993,7 @@ uint((int(0) - int(((int((u_2_16 + 4294967295u)) > int(0u)) ? 4294967295u : 0u))
 	})))
 }
 */
-	u_17_40 = uint(int(0 ) - int(u_17_39 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967295u)) >= int(0u)) ? 0u : 1u))))
+	u_17_40 = uint(int(0 ) - int(u_17_39 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967295u)) >= int(0u)) ? 0u : 1u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967295u)) >= int(0u)) ? 0u : 1u))))
 <=>
@@ -26006,7 +26006,7 @@ uint((int(0) - int(((int((u_2_16 + 4294967295u)) >= int(0u)) ? 0u : 1u))))
 	})))
 }
 */
-	u_17_41 = u_22_36 + u_17_40;	/* 1  <=>  ({u_22_36 : 1} + {u_17_40 : 0})
+	u_17_41 = u_22_36 + u_17_40;	/* 0  <=>  ({u_22_36 : 0} + {u_17_40 : 0})
 <=>
 (u_22_36 + u_17_40)
 <=>
@@ -26075,10 +26075,10 @@ uint(bitfieldExtract(uint(u_36_8), int(16u), int(16u)))
 */
 	u_30_7 = uint(int(0 ) - int(u_30_6 ) );	// 4294967288
 	u_30_8 = u_16_6 + u_30_7;	// 1
-	u_37_16 = u_2_16 + 4294967294u;	// 1
+	u_37_16 = u_2_16 + 4294967294u;	// 4294967295
 	f_6_25 = float(u_30_8 );	// 1.00
 	u_9_17 = u_9_16 + u_22_37;	// 0
-	u_17_45 = uint(int(0 ) - int(u_17_44 ) );	/* 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_17_41 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_17_45 = uint(int(0 ) - int(u_17_44 ) );	/* 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_17_41 : 0}), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
 uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_17_41), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
@@ -26098,7 +26098,7 @@ uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_
 {u_17_46 = (u_17_45 + 1u)
 }
 */
-	u_22_38 = uint(int(0 ) - int(u_36_10 ) );	/* 1  <=>  uint((int(0) - int(((int({u_2_16 : 3}) > int(0u)) ? 4294967295u : 0u))))
+	u_22_38 = uint(int(0 ) - int(u_36_10 ) );	/* 1  <=>  uint((int(0) - int(((int({u_2_16 : 1}) > int(0u)) ? 4294967295u : 0u))))
 <=>
 uint((int(0) - int(((int(u_2_16) > int(0u)) ? 4294967295u : 0u))))
 <=>
@@ -26109,7 +26109,7 @@ uint((int(0) - int(((int(u_2_16) > int(0u)) ? 4294967295u : 0u))))
 	})))
 }
 */
-	u_30_9 = uint(int(0 ) - int(u_35_6 ) );	/* 0  <=>  uint((int(0) - int(((int({u_2_16 : 3}) >= int(0u)) ? 0u : 1u))))
+	u_30_9 = uint(int(0 ) - int(u_35_6 ) );	/* 0  <=>  uint((int(0) - int(((int({u_2_16 : 1}) >= int(0u)) ? 0u : 1u))))
 <=>
 uint((int(0) - int(((int(u_2_16) >= int(0u)) ? 0u : 1u))))
 <=>
@@ -26121,9 +26121,9 @@ uint((int(0) - int(((int(u_2_16) >= int(0u)) ? 0u : 1u))))
 }
 */
 	u_22_39 = u_22_38 + u_30_9;	// 1
-	u_22_40 = uint(bitfieldExtract(int(u_22_39 ), int(0u ), int(32u ) ) );	// 0
-	u_22_41 = abs(int(u_22_40 ) );	// 0
-	u_22_42 = uint(bitfieldExtract(uint(u_22_41 ), int(0u ), int(32u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(({u_22_38 : 1} + {u_30_9 : 0})), int(0u), int(32u)))))), int(0u), int(32u)))
+	u_22_40 = uint(bitfieldExtract(int(u_22_39 ), int(0u ), int(32u ) ) );	// 1
+	u_22_41 = abs(int(u_22_40 ) );	// 1
+	u_22_42 = uint(bitfieldExtract(uint(u_22_41 ), int(0u ), int(32u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(({u_22_38 : 1} + {u_30_9 : 0})), int(0u), int(32u)))))), int(0u), int(32u)))
 <=>
 uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((u_22_38 + u_30_9)), int(0u), int(32u)))))), int(0u), int(32u)))
 <=>
@@ -26136,13 +26136,13 @@ uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((u_22_38 + u_30_9)), 
 	}), int(0u), int(32u)))
 }
 */
-	b_0_16 = int(u_37_16 ) >= int(0u );	// True
-	u_30_10 = b_0_16 ? (0u) : (1u);	// 0
+	b_0_16 = int(u_37_16 ) >= int(0u );	// False
+	u_30_10 = b_0_16 ? (0u) : (1u);	// 1
 	f_7_34 = utof(vs_cbuf9[86 ].y  );	// 0.60
 	f_8_33 = utof(vs_cbuf9[86 ].w  );	// 0.00
 	pf_1_9 = f_8_33 + f_7_34;	// 0.60
-	b_0_17 = int(u_37_16 ) > int(0u );	// True
-	u_35_7 = b_0_17 ? (4294967295u) : (0u);	// 4294967295
+	b_0_17 = int(u_37_16 ) > int(0u );	// False
+	u_35_7 = b_0_17 ? (4294967295u) : (0u);	// 0
 	u_36_11 = uint(bitfieldExtract(uint(u_31_16 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint({uvec2({vs_cbuf9[({u_27_9 : 336} >> 4)][(({u_27_9 : 336} >> 2) % 4)] : 0}, {vs_cbuf9[({u_27_9 : 336} >> 4)][((({u_27_9 : 336} + 4) >> 2) % 4)] : 1}).y : 1}), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uvec2(vs_cbuf9[(u_27_9 >> 4)][((u_27_9 >> 2) % 4)], vs_cbuf9[(u_27_9 >> 4)][(((u_27_9 + 4) >> 2) % 4)]).y), int(0u), int(16u)))
@@ -26183,13 +26183,13 @@ bitfieldInsert(uint((u_37_18 * uint(bitfieldExtract(uint(u_17_46), int(16u), int
 	}, int(16u), int(16u))
 }
 */
-	u_2_17 = u_2_16 + 4294967293u;	// 0
+	u_2_17 = u_2_16 + 4294967293u;	// 4294967294
 	f_7_35 = utof(u_15_6 );	// 0.25
 	pf_3_9 = f_7_35 * f_6_25;	// 0.25
 	f_6_26 = utof(vs_cbuf9[86 ].w  );	// 0.00
 	f_7_36 = utof(u_18_phi_60 );	// 0.57643
 	pf_1_10 = fma(f_7_36, f_6_26, pf_1_9 );	// 0.60
-	u_15_7 = uint(int(0 ) - int(u_35_7 ) );	/* 1  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967294u)) > int(0u)) ? 4294967295u : 0u))))
+	u_15_7 = uint(int(0 ) - int(u_35_7 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967294u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967294u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
@@ -26202,7 +26202,7 @@ uint((int(0) - int(((int((u_2_16 + 4294967294u)) > int(0u)) ? 4294967295u : 0u))
 	})))
 }
 */
-	u_18_12 = uint(int(0 ) - int(u_30_10 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967294u)) >= int(0u)) ? 0u : 1u))))
+	u_18_12 = uint(int(0 ) - int(u_30_10 ) );	/* 4294967295  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967294u)) >= int(0u)) ? 0u : 1u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967294u)) >= int(0u)) ? 0u : 1u))))
 <=>
@@ -26215,7 +26215,7 @@ uint((int(0) - int(((int((u_2_16 + 4294967294u)) >= int(0u)) ? 0u : 1u))))
 	})))
 }
 */
-	u_15_8 = u_15_7 + u_18_12;	/* 1  <=>  ({u_15_7 : 1} + {u_18_12 : 0})
+	u_15_8 = u_15_7 + u_18_12;	/* 4294967295  <=>  ({u_15_7 : 0} + {u_18_12 : 4294967295})
 <=>
 (u_15_7 + u_18_12)
 <=>
@@ -26239,9 +26239,9 @@ uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtr
 	}))
 }
 */
-	u_15_9 = uint(bitfieldExtract(int(u_15_8 ), int(0u ), int(32u ) ) );	// 0
-	u_15_10 = abs(int(u_15_9 ) );	// 0
-	u_15_11 = uint(bitfieldExtract(uint(u_15_10 ), int(0u ), int(32u ) ) );	// 0
+	u_15_9 = uint(bitfieldExtract(int(u_15_8 ), int(0u ), int(32u ) ) );	// 4294967295
+	u_15_10 = abs(int(u_15_9 ) );	// 1
+	u_15_11 = uint(bitfieldExtract(uint(u_15_10 ), int(0u ), int(32u ) ) );	// 1
 	u_30_12 = uint(bitfieldExtract(uint(u_31_16 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({uvec2({vs_cbuf9[({u_27_9 : 336} >> 4)][(({u_27_9 : 336} >> 2) % 4)] : 0}, {vs_cbuf9[({u_27_9 : 336} >> 4)][((({u_27_9 : 336} + 4) >> 2) % 4)] : 1}).y : 1}), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uvec2(vs_cbuf9[(u_27_9 >> 4)][((u_27_9 >> 2) % 4)], vs_cbuf9[(u_27_9 >> 4)][(((u_27_9 + 4) >> 2) % 4)]).y), int(16u), int(16u)))
@@ -26301,12 +26301,12 @@ trunc((utof(u_15_6) * float((u_16_6 + uint((int(0) - int(u_30_6)))))))
 */
 	f_6_29 = min(max(f_6_28, float(0.f ) ), float(4294967300.f ) );	// 0.00
 	u_30_15 = uint(f_6_29 );	// 0
-	u_22_43 = uint(int(0 ) - int(u_22_42 ) );	// 0
-	u_22_44 = u_22_43 + 1u;	// 1
+	u_22_43 = uint(int(0 ) - int(u_22_42 ) );	// 4294967295
+	u_22_44 = u_22_43 + 1u;	// 0
 	b_0_18 = int(u_2_17 ) > int(0u );	// False
 	u_31_18 = b_0_18 ? (4294967295u) : (0u);	// 0
-	b_0_19 = int(u_2_17 ) >= int(0u );	// True
-	u_2_18 = b_0_19 ? (0u) : (1u);	// 0
+	b_0_19 = int(u_2_17 ) >= int(0u );	// False
+	u_2_18 = b_0_19 ? (0u) : (1u);	// 1
 	u_35_8 = uint(bitfieldExtract(uint(u_3_21 ), int(0u ), int(16u ) ) );	// 1
 	u_36_13 = uint(bitfieldExtract(uint(u_20_37 ), int(16u ), int(16u ) ) );	// 0
 	u_35_9 = uint(u_35_8 * u_36_13 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_30_2 : 0} + uint({f_6_14 : 0.00}))), int(16u), int(16u)))))
@@ -26376,7 +26376,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 }
 */
 	u_19_6 = uint(u_19_5 * u_36_15 );	// 0
-	u_36_16 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_36_16 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -26389,7 +26389,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_19_7 = bitfieldInsert(u_19_6, u_36_16, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert(uint(({u_19_5 : 0} * {u_36_15 : 0})), {u_36_16 : 0}, int(16u), int(16u))
+	u_19_7 = bitfieldInsert(u_19_6, u_36_16, int(16u ), int(16u ) );	/* 65536  <=>  bitfieldInsert(uint(({u_19_5 : 0} * {u_36_15 : 0})), {u_36_16 : 1}, int(16u), int(16u))
 <=>
 bitfieldInsert(uint((u_19_5 * u_36_15)), u_36_16, int(16u), int(16u))
 <=>
@@ -26398,7 +26398,7 @@ bitfieldInsert(uint((u_19_5 * u_36_15)), u_36_16, int(16u), int(16u))
 	}, u_36_16, int(16u), int(16u))
 }
 */
-	u_31_19 = uint(int(0 ) - int(u_31_18 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967293u)) > int(0u)) ? 4294967295u : 0u))))
+	u_31_19 = uint(int(0 ) - int(u_31_18 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967293u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967293u)) > int(0u)) ? 4294967295u : 0u))))
 <=>
@@ -26411,7 +26411,7 @@ uint((int(0) - int(((int((u_2_16 + 4294967293u)) > int(0u)) ? 4294967295u : 0u))
 	})))
 }
 */
-	u_2_19 = uint(int(0 ) - int(u_2_18 ) );	/* 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967293u)) >= int(0u)) ? 0u : 1u))))
+	u_2_19 = uint(int(0 ) - int(u_2_18 ) );	/* 4294967295  <=>  uint((int(0) - int(((int(({u_2_16 : 1} + 4294967293u)) >= int(0u)) ? 0u : 1u))))
 <=>
 uint((int(0) - int(((int((u_2_16 + 4294967293u)) >= int(0u)) ? 0u : 1u))))
 <=>
@@ -26424,14 +26424,14 @@ uint((int(0) - int(((int((u_2_16 + 4294967293u)) >= int(0u)) ? 0u : 1u))))
 	})))
 }
 */
-	u_2_20 = u_31_19 + u_2_19;	/* 0  <=>  ({u_31_19 : 0} + {u_2_19 : 0})
+	u_2_20 = u_31_19 + u_2_19;	/* 4294967295  <=>  ({u_31_19 : 0} + {u_2_19 : 4294967295})
 <=>
 (u_31_19 + u_2_19)
 <=>
 {u_2_20 = (u_31_19 + u_2_19)
 }
 */
-	u_15_12 = uint(int(0 ) - int(u_15_11 ) );	/* 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_15_8 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_15_12 = uint(int(0 ) - int(u_15_11 ) );	/* 4294967295  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_15_8 : 4294967295}), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
 uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_15_8), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
@@ -26444,13 +26444,13 @@ uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_
 	})))
 }
 */
-	u_15_13 = u_15_12 + 1u;	// 1
+	u_15_13 = u_15_12 + 1u;	// 0
 	f_6_31 = utof(vs_cbuf9[84 ].w  );	// 0.00
 	f_7_39 = utof(vs_cbuf9[85 ].y  );	// 0.00
 	pf_28_3 = f_7_39 + f_6_31;	// 0.00
 	u_30_16 = u_33_12 + u_30_15;	// 2
 	u_22_45 = uint(u_22_44 * u_27_10 );	// 0
-	u_17_52 = u_22_45 + u_17_51;	/* 1  <=>  (uint(((uint((int(0) - int({u_22_42 : 0}))) + 1u) * {u_27_10 : 0})) + {u_17_51 : 1})
+	u_17_52 = u_22_45 + u_17_51;	/* 1  <=>  (uint(((uint((int(0) - int({u_22_42 : 1}))) + 1u) * {u_27_10 : 0})) + {u_17_51 : 1})
 <=>
 (uint(((uint((int(0) - int(u_22_42))) + 1u) * u_27_10)) + u_17_51)
 <=>
@@ -26463,9 +26463,9 @@ uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_
 	} + u_17_51)
 }
 */
-	u_2_21 = uint(bitfieldExtract(int(u_2_20 ), int(0u ), int(32u ) ) );	// 0
-	u_2_22 = abs(int(u_2_21 ) );	// 0
-	u_2_23 = uint(bitfieldExtract(uint(u_2_22 ), int(0u ), int(32u ) ) );	// 0
+	u_2_21 = uint(bitfieldExtract(int(u_2_20 ), int(0u ), int(32u ) ) );	// 4294967295
+	u_2_22 = abs(int(u_2_21 ) );	// 1
+	u_2_23 = uint(bitfieldExtract(uint(u_2_22 ), int(0u ), int(32u ) ) );	// 1
 	u_22_46 = uint(bitfieldExtract(uint(u_3_21 ), int(16u ), int(16u ) ) );	// 0
 	u_27_11 = uint(bitfieldExtract(uint(u_35_10 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_35_10 : 0}), int(16u), int(16u)))
 <=>
@@ -26516,7 +26516,7 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(42949673
 	}), int(0u), int(16u)))
 }
 */
-	u_27_13 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_27_13 = uint(bitfieldExtract(uint(u_8_35 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -26606,7 +26606,7 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_3), float(0.f), float(42949673
 	}), int(0u), int(16u)))
 }
 */
-	u_35_11 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_35_11 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -26620,7 +26620,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 }
 */
 	u_33_16 = uint(u_33_15 * u_35_11 );	// 0
-	b_0_20 = ! b_4_6;	/* False  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_0_20 = ! b_4_6;	/* True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
 (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
@@ -26633,7 +26633,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	})
 }
 */
-	b_0_21 = b_5_21 || b_0_20;	/* False  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_20 : False})
+	b_0_21 = b_5_21 || b_0_20;	/* True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_20 : True})
 <=>
 ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_0_20)
 <=>
@@ -26646,16 +26646,16 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	} || b_0_20)
 }
 */
-	u_35_12 = uint(bitfieldExtract(uint(u_3_21 ), int(0u ), int(32u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(32u)))
+	u_35_12 = uint(bitfieldExtract(uint(u_3_21 ), int(0u ), int(32u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(32u)))
 <=>
 uint(bitfieldExtract(uint(u_3_21), int(0u), int(32u)))
 <=>
 {u_35_12 = uint(bitfieldExtract(uint(u_3_21), int(0u), int(32u)))
 }
 */
-	u_35_13 = uint(bitfieldExtract(uint(u_35_12 ), int(0u ), int(32u ) ) );	// 0
-	b_4_7 = u_35_13 == 0;	// True
-	b_5_22 = int(u_35_13 ) < 0;	/* False  <=>  (int(uint(bitfieldExtract(uint({u_35_12 : 0}), int(0u), int(32u)))) < 0)
+	u_35_13 = uint(bitfieldExtract(uint(u_35_12 ), int(0u ), int(32u ) ) );	// 1
+	b_4_7 = u_35_13 == 0;	// False
+	b_5_22 = int(u_35_13 ) < 0;	/* False  <=>  (int(uint(bitfieldExtract(uint({u_35_12 : 1}), int(0u), int(32u)))) < 0)
 <=>
 (int(uint(bitfieldExtract(uint(u_35_12), int(0u), int(32u)))) < 0)
 <=>
@@ -26718,12 +26718,12 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(42949673
 	}), int(16u), int(16u)))
 }
 */
-	u_36_20 = uint(bitfieldExtract(uint(u_19_7 ), int(16u ), int(16u ) ) );	// 0
+	u_36_20 = uint(bitfieldExtract(uint(u_19_7 ), int(16u ), int(16u ) ) );	// 1
 	u_31_26 = uint(u_31_25 * u_36_20 );	// 0
 	u_31_27 = u_31_26 << 16u;	// 0
 	u_19_8 = u_19_7 << 16u;	// 0
 	u_19_9 = u_19_8 + u_22_50;	// 0
-	u_19_10 = u_31_27 + u_19_9;	/* 0  <=>  ((uint(({u_31_25 : 0} * uint(bitfieldExtract(uint({u_19_7 : 0}), int(16u), int(16u))))) << 16u) + (({u_19_7 : 0} << 16u) + uint(({u_22_49 : 0} * {u_27_13 : 0}))))
+	u_19_10 = u_31_27 + u_19_9;	/* 0  <=>  ((uint(({u_31_25 : 0} * uint(bitfieldExtract(uint({u_19_7 : 65536}), int(16u), int(16u))))) << 16u) + (({u_19_7 : 65536} << 16u) + uint(({u_22_49 : 0} * {u_27_13 : 1}))))
 <=>
 ((uint((u_31_25 * uint(bitfieldExtract(uint(u_19_7), int(16u), int(16u))))) << 16u) + ((u_19_7 << 16u) + uint((u_22_49 * u_27_13))))
 <=>
@@ -26742,8 +26742,8 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(42949673
 	})
 }
 */
-	u_1_53 = uint(u_15_13 * u_1_52 );	// 2
-	u_1_54 = u_1_53 + u_17_52;	/* 3  <=>  (uint((({u_15_12 : 0} + 1u) * {uvec2({vs_cbuf9[({u_1_51 : 344} >> 4)][(({u_1_51 : 344} >> 2) % 4)] : 2}, {vs_cbuf9[({u_1_51 : 344} >> 4)][((({u_1_51 : 344} + 4) >> 2) % 4)] : 3}).x : 2})) + {u_17_52 : 1})
+	u_1_53 = uint(u_15_13 * u_1_52 );	// 0
+	u_1_54 = u_1_53 + u_17_52;	/* 1  <=>  (uint((({u_15_12 : 4294967295} + 1u) * {uvec2({vs_cbuf9[({u_1_51 : 344} >> 4)][(({u_1_51 : 344} >> 2) % 4)] : 2}, {vs_cbuf9[({u_1_51 : 344} >> 4)][((({u_1_51 : 344} + 4) >> 2) % 4)] : 3}).x : 2})) + {u_17_52 : 1})
 <=>
 (uint(((u_15_12 + 1u) * uvec2(vs_cbuf9[(u_1_51 >> 4)][((u_1_51 >> 2) % 4)], vs_cbuf9[(u_1_51 >> 4)][(((u_1_51 + 4) >> 2) % 4)]).x)) + u_17_52)
 <=>
@@ -26761,7 +26761,7 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(42949673
 	f_6_32 = utof(vs_cbuf9[84 ].z  );	// 0.00
 	f_7_40 = utof(vs_cbuf9[85 ].x  );	// 0.00
 	pf_28_4 = f_7_40 + f_6_32;	// 0.00
-	u_2_24 = uint(int(0 ) - int(u_2_23 ) );	/* 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_2_20 : 0}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_2_24 = uint(int(0 ) - int(u_2_23 ) );	/* 4294967295  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_2_20 : 4294967295}), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
 uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_2_20), int(0u), int(32u)))))), int(0u), int(32u))))))
 <=>
@@ -26774,7 +26774,7 @@ uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_
 	})))
 }
 */
-	u_2_25 = u_2_24 + 1u;	// 1
+	u_2_25 = u_2_24 + 1u;	// 0
 	u_15_14 = uint(bitfieldExtract(uint(u_26_6 ), int(0u ), int(16u ) ) );	// 1
 	u_17_53 = uint(bitfieldExtract(uint(u_24_17 ), int(0u ), int(16u ) ) );	// 0
 	u_15_15 = uint(u_15_14 * u_17_53 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_35_2 : 0} + uint({f_6_21 : 0.00}))), int(0u), int(16u)))))
@@ -26860,7 +26860,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 }
 */
 	u_27_21 = uint(u_27_20 * u_31_28 );	// 0
-	u_31_29 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_31_29 = uint(bitfieldExtract(uint(u_28_2 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
 <=>
@@ -26873,7 +26873,7 @@ uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract
 	}), int(0u), int(16u)))
 }
 */
-	u_27_22 = bitfieldInsert(u_27_21, u_31_29, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert(uint(({u_27_20 : 0} * {u_31_28 : 0})), {u_31_29 : 0}, int(16u), int(16u))
+	u_27_22 = bitfieldInsert(u_27_21, u_31_29, int(16u ), int(16u ) );	/* 65536  <=>  bitfieldInsert(uint(({u_27_20 : 0} * {u_31_28 : 0})), {u_31_29 : 1}, int(16u), int(16u))
 <=>
 bitfieldInsert(uint((u_27_20 * u_31_28)), u_31_29, int(16u), int(16u))
 <=>
@@ -26950,12 +26950,12 @@ uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_3), float(0.f), float(42949673
 	}), int(16u), int(16u)))
 }
 */
-	u_31_33 = uint(bitfieldExtract(uint(u_27_22 ), int(16u ), int(16u ) ) );	// 0
+	u_31_33 = uint(bitfieldExtract(uint(u_27_22 ), int(16u ), int(16u ) ) );	// 1
 	u_22_56 = uint(u_22_55 * u_31_33 );	// 0
 	u_22_57 = u_22_56 << 16u;	// 0
 	u_27_23 = u_27_22 << 16u;	// 0
 	u_27_24 = u_27_23 + u_33_16;	// 0
-	u_22_58 = u_22_57 + u_27_24;	/* 0  <=>  ((uint(({u_22_55 : 0} * uint(bitfieldExtract(uint({u_27_22 : 0}), int(16u), int(16u))))) << 16u) + (({u_27_22 : 0} << 16u) + uint(({u_33_15 : 0} * {u_35_11 : 0}))))
+	u_22_58 = u_22_57 + u_27_24;	/* 0  <=>  ((uint(({u_22_55 : 0} * uint(bitfieldExtract(uint({u_27_22 : 65536}), int(16u), int(16u))))) << 16u) + (({u_27_22 : 65536} << 16u) + uint(({u_33_15 : 0} * {u_35_11 : 1}))))
 <=>
 ((uint((u_22_55 * uint(bitfieldExtract(uint(u_27_22), int(16u), int(16u))))) << 16u) + ((u_27_22 << 16u) + uint((u_33_15 * u_35_11))))
 <=>
@@ -27039,8 +27039,8 @@ uint((int(0) - int((u_33_12 + uint(clamp(f_6_28, float(0.f), float(4294967300.f)
 }
 */
 	u_15_18 = uint(int(0 ) - int(u_15_17 ) );	// 0
-	u_2_26 = uint(u_34_20 * u_2_25 );	// 3
-	u_1_55 = u_2_26 + u_1_54;	// 6
+	u_2_26 = uint(u_34_20 * u_2_25 );	// 0
+	u_1_55 = u_2_26 + u_1_54;	// 1
 	u_2_27 = uint(int(0 ) - int(u_22_58 ) );	/* 0  <=>  uint((int(0) - int({u_22_58 : 0})))
 <=>
 uint((int(0) - int(u_22_58)))
@@ -27048,18 +27048,18 @@ uint((int(0) - int(u_22_58)))
 {u_2_27 = uint((int(0) - int(u_22_58)))
 }
 */
-	b_4_8 = ! b_4_7;	// False
-	b_4_9 = b_5_22 || b_4_8;	// False
-	u_22_59 = uint(bitfieldExtract(uint(u_26_6 ), int(0u ), int(32u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(32u)))
+	b_4_8 = ! b_4_7;	// True
+	b_4_9 = b_5_22 || b_4_8;	// True
+	u_22_59 = uint(bitfieldExtract(uint(u_26_6 ), int(0u ), int(32u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(32u)))
 <=>
 uint(bitfieldExtract(uint(u_26_6), int(0u), int(32u)))
 <=>
 {u_22_59 = uint(bitfieldExtract(uint(u_26_6), int(0u), int(32u)))
 }
 */
-	u_22_60 = uint(bitfieldExtract(uint(u_22_59 ), int(0u ), int(32u ) ) );	// 0
-	b_5_23 = u_22_60 == 0;	// True
-	b_6_18 = int(u_22_60 ) < 0;	/* False  <=>  (int(uint(bitfieldExtract(uint({u_22_59 : 0}), int(0u), int(32u)))) < 0)
+	u_22_60 = uint(bitfieldExtract(uint(u_22_59 ), int(0u ), int(32u ) ) );	// 1
+	b_5_23 = u_22_60 == 0;	// False
+	b_6_18 = int(u_22_60 ) < 0;	/* False  <=>  (int(uint(bitfieldExtract(uint({u_22_59 : 1}), int(0u), int(32u)))) < 0)
 <=>
 (int(uint(bitfieldExtract(uint(u_22_59), int(0u), int(32u)))) < 0)
 <=>
@@ -27104,7 +27104,7 @@ uint(bitfieldExtract(uint((u_27_25 + 1u)), int(0u), int(16u)))
 	}), int(0u), int(16u)))
 }
 */
-	u_34_21 = uint(bitfieldExtract(uint(u_1_55 ), int(0u ), int(16u ) ) );	/* 6  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 0} + 1u))) + {u_1_54 : 3})), int(0u), int(16u)))
+	u_34_21 = uint(bitfieldExtract(uint(u_1_55 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 4294967295} + 1u))) + {u_1_54 : 1})), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(0u), int(16u)))
 <=>
@@ -27117,9 +27117,9 @@ uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(0u), 
 	}), int(0u), int(16u)))
 }
 */
-	u_33_18 = uint(u_33_17 * u_34_21 );	// 6
+	u_33_18 = uint(u_33_17 * u_34_21 );	// 1
 	u_34_22 = uint(bitfieldExtract(uint(u_27_26 ), int(0u ), int(16u ) ) );	// 1
-	u_36_22 = uint(bitfieldExtract(uint(u_1_55 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 0} + 1u))) + {u_1_54 : 3})), int(16u), int(16u)))
+	u_36_22 = uint(bitfieldExtract(uint(u_1_55 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 4294967295} + 1u))) + {u_1_54 : 1})), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(16u), int(16u)))
 <=>
@@ -27143,7 +27143,7 @@ uint((uint(bitfieldExtract(uint((u_27_25 + 1u)), int(0u), int(16u))) * u_36_22))
 	} * u_36_22))
 }
 */
-	u_1_56 = uint(bitfieldExtract(uint(u_1_55 ), int(0u ), int(16u ) ) );	/* 6  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 0} + 1u))) + {u_1_54 : 3})), int(0u), int(16u)))
+	u_1_56 = uint(bitfieldExtract(uint(u_1_55 ), int(0u ), int(16u ) ) );	/* 1  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 4294967295} + 1u))) + {u_1_54 : 1})), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(0u), int(16u)))
 <=>
@@ -27156,7 +27156,7 @@ uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(0u), 
 	}), int(0u), int(16u)))
 }
 */
-	u_1_57 = bitfieldInsert(u_34_23, u_1_56, int(16u ), int(16u ) );	// 393216
+	u_1_57 = bitfieldInsert(u_34_23, u_1_56, int(16u ), int(16u ) );	// 65536
 	u_34_24 = uint(bitfieldExtract(uint(u_11_13 ), int(0u ), int(16u ) ) );	// 4
 	u_36_23 = uint(bitfieldExtract(uint(u_17_57 ), int(16u ), int(16u ) ) );	// 65535
 	u_34_25 = uint(u_34_24 * u_36_23 );	// 262140
@@ -27200,9 +27200,9 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u
 	})
 }
 */
-	u_24_19 = uint(bitfieldExtract(int(u_31_36 ), int(0u ), int(32u ) ) );	// 0
-	u_24_20 = abs(int(u_24_19 ) );	// 0
-	u_24_21 = uint(bitfieldExtract(uint(u_24_20 ), int(0u ), int(32u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))))), int(0u), int(32u)))
+	u_24_19 = uint(bitfieldExtract(int(u_31_36 ), int(0u ), int(32u ) ) );	// 2
+	u_24_20 = abs(int(u_24_19 ) );	// 2
+	u_24_21 = uint(bitfieldExtract(uint(u_24_20 ), int(0u ), int(32u ) ) );	/* 2  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))))), int(0u), int(32u)))
 <=>
 uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))))), int(0u), int(32u)))
 <=>
@@ -27214,8 +27214,8 @@ uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_31_36), int(0u), in
 }
 */
 	u_27_27 = uint(bitfieldExtract(uint(u_27_26 ), int(16u ), int(16u ) ) );	// 0
-	u_34_26 = uint(bitfieldExtract(uint(u_1_57 ), int(16u ), int(16u ) ) );	// 6
-	u_27_28 = uint(u_27_27 * u_34_26 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(({u_27_25 : 0} + 1u)), int(16u), int(16u))) * uint(bitfieldExtract(uint(bitfieldInsert({u_34_23 : 0}, {u_1_56 : 6}, int(16u), int(16u))), int(16u), int(16u)))))
+	u_34_26 = uint(bitfieldExtract(uint(u_1_57 ), int(16u ), int(16u ) ) );	// 1
+	u_27_28 = uint(u_27_27 * u_34_26 );	/* 0  <=>  uint((uint(bitfieldExtract(uint(({u_27_25 : 0} + 1u)), int(16u), int(16u))) * uint(bitfieldExtract(uint(bitfieldInsert({u_34_23 : 0}, {u_1_56 : 1}, int(16u), int(16u))), int(16u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint((u_27_25 + 1u)), int(16u), int(16u))) * uint(bitfieldExtract(uint(bitfieldInsert(u_34_23, u_1_56, int(16u), int(16u))), int(16u), int(16u)))))
 <=>
@@ -27232,8 +27232,8 @@ uint((uint(bitfieldExtract(uint((u_27_25 + 1u)), int(16u), int(16u))) * uint(bit
 */
 	u_27_29 = u_27_28 << 16u;	// 0
 	u_1_58 = u_1_57 << 16u;	// 0
-	u_1_59 = u_1_58 + u_33_18;	// 6
-	u_1_60 = u_27_29 + u_1_59;	// 6
+	u_1_59 = u_1_58 + u_33_18;	// 1
+	u_1_60 = u_27_29 + u_1_59;	// 1
 	u_11_14 = uint(bitfieldExtract(uint(u_11_13 ), int(16u ), int(16u ) ) );	// 0
 	u_27_30 = uint(bitfieldExtract(uint(u_17_59 ), int(16u ), int(16u ) ) );	// 65534
 	u_11_15 = uint(u_11_14 * u_27_30 );	// 0
@@ -27358,7 +27358,7 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * ui
 	}, int(16u), int(16u))
 }
 */
-	b_7_6 = uint(u_2_27 ) >= uint(u_28_2 );	/* True  <=>  (uint({u_2_27 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	b_7_6 = uint(u_2_27 ) >= uint(u_28_2 );	/* False  <=>  (uint({u_2_27 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
 (uint(u_2_27) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
@@ -27371,11 +27371,11 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * ui
 	}))
 }
 */
-	u_2_28 = b_7_6 ? (4294967295u) : (0u);	// 4294967295
+	u_2_28 = b_7_6 ? (4294967295u) : (0u);	// 0
 	u_18_22 = uint(bitfieldExtract(uint(u_26_6 ), int(0u ), int(16u ) ) );	// 1
 	u_20_39 = uint(bitfieldExtract(uint(u_15_20 ), int(0u ), int(16u ) ) );	// 0
 	u_18_23 = uint(u_18_22 * u_20_39 );	// 0
-	u_11_19 = b_2_36 ? (u_11_18) : (4294967295u);	// 4294967295
+	u_11_19 = b_2_36 ? (u_11_18) : (4294967295u);	// 1
 	f_6_50 = utof(vs_cbuf8[10 ].z  );	// -0.8463396
 	pf_4_13 = fma(pf_13_3, f_6_50, pf_4_12 );	// 2259.303
 	u_19_11 = uint(int(0 ) - int(u_19_10 ) );	/* 0  <=>  uint((int(0) - int({u_19_10 : 0})))
@@ -27404,8 +27404,8 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * ui
 	}, int(16u), int(16u))
 }
 */
-	b_2_37 = ! b_5_23;	// False
-	b_2_38 = b_6_18 || b_2_37;	// False
+	b_2_37 = ! b_5_23;	// True
+	b_2_38 = b_6_18 || b_2_37;	// True
 	f_6_51 = utof(vs_cbuf8[11 ].w  );	// -2233.385
 	pf_11_5 = pf_11_4 + f_6_51;	/* 25.73682  <=>  (((({pf_13_2 : 0.00} + {(vs_cbuf10_6.w) : -2779.703}) * {(vs_cbuf8_11.z) : -0.8462719}) + (({pf_11_3 : 1929.04} * {(vs_cbuf8_11.y) : -0.1506999}) + ({pf_4_10 : 386.3924} * {(vs_cbuf8_11.x) : 0.5109925}))) + {(vs_cbuf8_11.w) : -2233.385})
 <=>
@@ -27432,12 +27432,12 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * ui
 	})
 }
 */
-	u_20_42 = uint(bitfieldExtract(int(u_26_6 ), int(0u ), int(32u ) ) );	// 0
-	u_20_43 = uint(bitfieldExtract(uint(u_20_42 ), int(0u ), int(32u ) ) );	// 0
-	b_5_24 = u_20_43 == 0;	// True
+	u_20_42 = uint(bitfieldExtract(int(u_26_6 ), int(0u ), int(32u ) ) );	// 1
+	u_20_43 = uint(bitfieldExtract(uint(u_20_42 ), int(0u ), int(32u ) ) );	// 1
+	b_5_24 = u_20_43 == 0;	// False
 	b_6_19 = int(u_20_43 ) < 0;	// False
-	u_2_29 = uint(int(0 ) - int(u_2_28 ) );	// 1
-	u_2_30 = u_9_17 + u_2_29;	/* 1  <=>  ((uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_31_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_6 : True} ? 4294967295u : 0u)))))
+	u_2_29 = uint(int(0 ) - int(u_2_28 ) );	// 0
+	u_2_30 = u_9_17 + u_2_29;	/* 0  <=>  ((uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_31_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_6 : False} ? 4294967295u : 0u)))))
 <=>
 ((uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_31_0), float(0.f), float(4294967300.f)))) + uint((int(0) - int((b_7_6 ? 4294967295u : 0u)))))
 <=>
@@ -27462,7 +27462,7 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * ui
 	})
 }
 */
-	f_6_52 = float(u_24_21 );	// 0.00
+	f_6_52 = float(u_24_21 );	// 2.00
 	u_9_18 = uint(bitfieldExtract(uint(u_3_21 ), int(16u ), int(16u ) ) );	// 0
 	u_27_32 = uint(bitfieldExtract(uint(u_17_65 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_17_65 : 0}), int(16u), int(16u)))
 <=>
@@ -27524,12 +27524,12 @@ uint(bitfieldExtract(uint(u_17_65), int(16u), int(16u)))
 	})
 }
 */
-	f_6_53 = (1.0f ) / f_6_52;	// ∞
-	u_16_10 = ftou(f_6_53 );	// 2139095040
+	f_6_53 = (1.0f ) / f_6_52;	// 0.50
+	u_16_10 = ftou(f_6_53 );	// 1056964608
 	u_17_67 = u_26_6 >> 31u;	// 0
 	f_6_54 = utof(vs_cbuf9[83 ].z  );	// 1.00
 	f_6_55 = (1.0f ) / f_6_54;	// 1.00
-	b_7_7 = uint(u_19_11 ) >= uint(u_8_35 );	/* True  <=>  (uint({u_19_11 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	b_7_7 = uint(u_19_11 ) >= uint(u_8_35 );	/* False  <=>  (uint({u_19_11 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
 (uint(u_19_11) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
@@ -27542,7 +27542,7 @@ uint(bitfieldExtract(uint(u_17_65), int(16u), int(16u)))
 	}))
 }
 */
-	u_8_36 = b_7_7 ? (4294967295u) : (0u);	// 4294967295
+	u_8_36 = b_7_7 ? (4294967295u) : (0u);	// 0
 	u_19_12 = uint(bitfieldExtract(uint(u_26_6 ), int(16u ), int(16u ) ) );	// 0
 	u_26_7 = uint(bitfieldExtract(uint(u_15_22 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_15_22 : 0}), int(16u), int(16u)))
 <=>
@@ -27581,7 +27581,7 @@ uint(bitfieldExtract(uint(u_15_22), int(16u), int(16u)))
 	f_7_46 = float(u_31_36 );	// 2.00
 	u_3_22 = u_3_21 >> 31u;	// 0
 	pf_13_4 = pf_11_5 * 0.5f;	// 12.86841
-	u_11_20 = uint(u_11_19 * u_12_14 );	/* 0  <=>  uint((({b_2_36 : False} ? ({u_16_6 : 9} + {u_11_17 : 4294967288}) : 4294967295u) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_12_11 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	u_11_20 = uint(u_11_19 * u_12_14 );	/* 0  <=>  uint((({b_2_36 : True} ? ({u_16_6 : 9} + {u_11_17 : 4294967288}) : 4294967295u) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_12_11 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
 uint(((b_2_36 ? (u_16_6 + u_11_17) : 4294967295u) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_12_11), int(0u), int(32u)))))), int(0u), int(32u)))))
 <=>
@@ -27598,7 +27598,7 @@ uint(((b_2_36 ? (u_16_6 + u_11_17) : 4294967295u) * uint(bitfieldExtract(uint(ab
 	}))
 }
 */
-	u_1_61 = u_11_20 + u_1_60;	/* 6  <=>  ({u_11_20 : 0} + (({u_27_28 : 0} << 16u) + ((bitfieldInsert({u_34_23 : 0}, {u_1_56 : 6}, int(16u), int(16u)) << 16u) + uint(({u_33_17 : 1} * {u_34_21 : 6})))))
+	u_1_61 = u_11_20 + u_1_60;	/* 1  <=>  ({u_11_20 : 0} + (({u_27_28 : 0} << 16u) + ((bitfieldInsert({u_34_23 : 0}, {u_1_56 : 1}, int(16u), int(16u)) << 16u) + uint(({u_33_17 : 1} * {u_34_21 : 1})))))
 <=>
 (u_11_20 + ((u_27_28 << 16u) + ((bitfieldInsert(u_34_23, u_1_56, int(16u), int(16u)) << 16u) + uint((u_33_17 * u_34_21)))))
 <=>
@@ -27620,13 +27620,13 @@ uint(((b_2_36 ? (u_16_6 + u_11_17) : 4294967295u) * uint(bitfieldExtract(uint(ab
 	f_8_34 = utof(vs_cbuf9[88 ].z  );	// 1.00
 	f_8_35 = (1.0f ) / f_8_34;	// 1.00
 	pf_11_6 = fma(0.f, pf_4_14, pf_11_5 );	// 25.73682
-	u_11_21 = uint(bitfieldExtract(int(u_1_61 ), int(0u ), int(32u ) ) );	// 0
-	u_11_22 = abs(int(u_11_21 ) );	// 0
-	u_11_23 = uint(bitfieldExtract(uint(u_11_22 ), int(0u ), int(32u ) ) );	// 0
+	u_11_21 = uint(bitfieldExtract(int(u_1_61 ), int(0u ), int(32u ) ) );	// 1
+	u_11_22 = abs(int(u_11_21 ) );	// 1
+	u_11_23 = uint(bitfieldExtract(uint(u_11_22 ), int(0u ), int(32u ) ) );	// 1
 	u_12_15 = uint(int(0 ) - int(u_17_67 ) );	// 0
 	f_9_36 = (1.0f ) / pf_11_6;	// 0.0388548
-	u_8_37 = uint(int(0 ) - int(u_8_36 ) );	// 1
-	u_8_38 = u_13_8 + u_8_37;	/* 1  <=>  ((uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_29_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_7 : True} ? 4294967295u : 0u)))))
+	u_8_37 = uint(int(0 ) - int(u_8_36 ) );	// 0
+	u_8_38 = u_13_8 + u_8_37;	/* 0  <=>  ((uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_29_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_7 : False} ? 4294967295u : 0u)))))
 <=>
 ((uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_29_0), float(0.f), float(4294967300.f)))) + uint((int(0) - int((b_7_7 ? 4294967295u : 0u)))))
 <=>
@@ -27654,7 +27654,7 @@ uint(((b_2_36 ? (u_16_6 + u_11_17) : 4294967295u) * uint(bitfieldExtract(uint(ab
 	f_7_47 = (1.0f ) / f_7_46;	// 0.50
 	u_13_9 = ftou(f_7_47 );	// 1056964608
 	u_3_23 = uint(int(0 ) - int(u_3_22 ) );	// 0
-	f_7_48 = float(u_11_23 );	/* 0.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 6}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_7_48 = float(u_11_23 );	/* 1.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
 float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
@@ -27667,7 +27667,7 @@ float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u
 	})
 }
 */
-	u_9_22 = b_4_9 ? (u_9_21) : (4294967295u);	/* 4294967295  <=>  (({b_5_22 : False} || (! (uint(bitfieldExtract(uint({u_35_12 : 0}), int(0u), int(32u))) == 0))) ? {u_9_21 : 0} : 4294967295u)
+	u_9_22 = b_4_9 ? (u_9_21) : (4294967295u);	/* 0  <=>  (({b_5_22 : False} || (! (uint(bitfieldExtract(uint({u_35_12 : 1}), int(0u), int(32u))) == 0))) ? {u_9_21 : 0} : 4294967295u)
 <=>
 ((b_5_22 || (! (uint(bitfieldExtract(uint(u_35_12), int(0u), int(32u))) == 0))) ? u_9_21 : 4294967295u)
 <=>
@@ -27683,8 +27683,8 @@ float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u
 }
 */
 	pf_4_15 = fma(pf_4_14, 0.5f, pf_13_4 );	// 24.73779
-	f_10_14 = float(int(u_9_22 ) );	// -1.00
-	u_9_23 = b_2_38 ? (u_15_25) : (4294967295u);	/* 4294967295  <=>  (({b_6_18 : False} || (! (uint(bitfieldExtract(uint({u_22_59 : 0}), int(0u), int(32u))) == 0))) ? {u_15_25 : 0} : 4294967295u)
+	f_10_14 = float(int(u_9_22 ) );	// 0.00
+	u_9_23 = b_2_38 ? (u_15_25) : (4294967295u);	/* 0  <=>  (({b_6_18 : False} || (! (uint(bitfieldExtract(uint({u_22_59 : 1}), int(0u), int(32u))) == 0))) ? {u_15_25 : 0} : 4294967295u)
 <=>
 ((b_6_18 || (! (uint(bitfieldExtract(uint(u_22_59), int(0u), int(32u))) == 0))) ? u_15_25 : 4294967295u)
 <=>
@@ -27713,8 +27713,8 @@ float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u
 	})
 }
 */
-	f_6_56 = float(int(u_9_23 ) );	// -1.00
-	u_8_39 = u_8_38 ^ u_3_23;	/* 1  <=>  ({u_8_38 : 1} ^ uint((int(0) - int(({u_3_21 : 1} >> 31u)))))
+	f_6_56 = float(int(u_9_23 ) );	// 0.00
+	u_8_39 = u_8_38 ^ u_3_23;	/* 0  <=>  ({u_8_38 : 0} ^ uint((int(0) - int(({u_3_21 : 1} >> 31u)))))
 <=>
 (u_8_38 ^ uint((int(0) - int((u_3_21 >> 31u)))))
 <=>
@@ -27785,7 +27785,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	})
 }
 */
-	b_2_40 = ! b_5_24;	/* False  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_40 = ! b_5_24;	/* True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
 (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
@@ -27798,7 +27798,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	})
 }
 */
-	b_2_41 = b_6_19 || b_2_40;	/* False  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_40 : False})
+	b_2_41 = b_6_19 || b_2_40;	/* True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_40 : True})
 <=>
 ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_40)
 <=>
@@ -27811,7 +27811,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	} || b_2_40)
 }
 */
-	u_2_31 = u_2_30 ^ u_12_15;	/* 1  <=>  ({u_2_30 : 1} ^ uint((int(0) - int(({u_26_6 : 1} >> 31u)))))
+	u_2_31 = u_2_30 ^ u_12_15;	/* 0  <=>  ({u_2_30 : 0} ^ uint((int(0) - int(({u_26_6 : 1} >> 31u)))))
 <=>
 (u_2_30 ^ uint((int(0) - int((u_26_6 >> 31u)))))
 <=>
@@ -27822,12 +27822,12 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	})
 }
 */
-	u_14_15 = uint(bitfieldExtract(int(u_31_36 ), int(0u ), int(32u ) ) );	// 0
-	u_14_16 = uint(bitfieldExtract(uint(u_14_15 ), int(0u ), int(32u ) ) );	// 0
-	b_3_32 = u_14_16 == 0;	// True
+	u_14_15 = uint(bitfieldExtract(int(u_31_36 ), int(0u ), int(32u ) ) );	// 2
+	u_14_16 = uint(bitfieldExtract(uint(u_14_15 ), int(0u ), int(32u ) ) );	// 2
+	b_3_32 = u_14_16 == 0;	// False
 	b_4_10 = int(u_14_16 ) < 0;	// False
 	u_3_24 = uint(int(0 ) - int(u_3_23 ) );	// 0
-	u_3_25 = u_3_24 + u_8_39;	/* 1  <=>  (uint((int(0) - int(uint((int(0) - int(({u_3_21 : 1} >> 31u))))))) + {u_8_39 : 1})
+	u_3_25 = u_3_24 + u_8_39;	/* 0  <=>  (uint((int(0) - int(uint((int(0) - int(({u_3_21 : 1} >> 31u))))))) + {u_8_39 : 0})
 <=>
 (uint((int(0) - int(uint((int(0) - int((u_3_21 >> 31u))))))) + u_8_39)
 <=>
@@ -27882,14 +27882,14 @@ ftou(((0.f - in_attr1.x) + 1.f))
 */
 	f_2_53 = utof(u_32_phi_76 );	// 0.32941
 	pf_15_24 = fma(pf_11_7, f_2_53, -0.5f );	// -0.17059
-	pf_11_8 = fma(pf_11_7, f_10_14, pf_16_6 );	// -1.29074
+	pf_11_8 = fma(pf_11_7, f_10_14, pf_16_6 );	// -0.29074
 	f_2_54 = utof(u_9_phi_83 );	// 0.32941
 	pf_16_7 = fma(pf_13_6, f_2_54, -0.5f );	// -0.17059
-	pf_13_7 = fma(pf_13_6, f_6_56, pf_17_9 );	// -1.00
-	f_2_55 = float(u_1_61 );	// 6.00
-	u_8_40 = u_16_10 + 4294967294u;	// 2139095038
+	pf_13_7 = fma(pf_13_6, f_6_56, pf_17_9 );	// 0.00
+	f_2_55 = float(u_1_61 );	// 1.00
+	u_8_40 = u_16_10 + 4294967294u;	// 1056964606
 	u_9_26 = uint(int(0 ) - int(u_12_15 ) );	// 0
-	u_2_32 = u_9_26 + u_2_31;	/* 1  <=>  (uint((int(0) - int(uint((int(0) - int(({u_26_6 : 1} >> 31u))))))) + {u_2_31 : 1})
+	u_2_32 = u_9_26 + u_2_31;	/* 0  <=>  (uint((int(0) - int(uint((int(0) - int(({u_26_6 : 1} >> 31u))))))) + {u_2_31 : 0})
 <=>
 (uint((int(0) - int(uint((int(0) - int((u_26_6 >> 31u))))))) + u_2_31)
 <=>
@@ -27905,7 +27905,7 @@ ftou(((0.f - in_attr1.x) + 1.f))
 	f_6_57 = utof(vs_cbuf9[83 ].w  );	// 1.00
 	f_6_58 = (1.0f ) / f_6_57;	// 1.00
 	u_9_27 = u_13_9 + 4294967294u;	// 1056964606
-	f_8_36 = utof(u_8_40 );	/* 340282300000000000000000000000000000000.00  <=>  {utof(({ftou((1.0f / float({u_24_21 : 0}))) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00}
+	f_8_36 = utof(u_8_40 );	/* 0.4999999  <=>  {utof(({ftou((1.0f / float({u_24_21 : 2}))) : 1056964608} + 4294967294u)) : 0.4999999}
 <=>
 utof((ftou((1.0f / float(u_24_21))) + 4294967294u))
 <=>
@@ -27920,15 +27920,15 @@ utof((ftou((1.0f / float(u_24_21))) + 4294967294u))
 	})
 }
 */
-	pf_17_10 = f_8_36 * f_7_48;	// 0.00
+	pf_17_10 = f_8_36 * f_7_48;	// 0.4999999
 	f_7_49 = utof(vs_cbuf9[88 ].w  );	// 1.00
 	f_7_50 = (1.0f ) / f_7_49;	// 1.00
-	u_3_26 = b_0_21 ? (u_3_25) : (4294967295u);	// 4294967295
+	u_3_26 = b_0_21 ? (u_3_25) : (4294967295u);	// 0
 	f_8_37 = trunc(pf_17_10 );	// 0.00
 	f_8_38 = min(max(f_8_37, float(0.f ) ), float(4294967300.f ) );	// 0.00
 	u_12_16 = uint(f_8_38 );	// 0
-	u_2_33 = b_2_41 ? (u_2_32) : (4294967295u);	// 4294967295
-	f_8_39 = float(int(u_3_26 ) );	// -1.00
+	u_2_33 = b_2_41 ? (u_2_32) : (4294967295u);	// 0
+	f_8_39 = float(int(u_3_26 ) );	// 0.00
 	f_9_37 = utof(u_9_27 );	/* 0.4999999  <=>  {utof(({ftou((1.0f / float({u_31_36 : 2}))) : 1056964608} + 4294967294u)) : 0.4999999}
 <=>
 utof((ftou((1.0f / float(u_31_36))) + 4294967294u))
@@ -27944,14 +27944,14 @@ utof((ftou((1.0f / float(u_31_36))) + 4294967294u))
 	})
 }
 */
-	pf_17_11 = f_9_37 * f_2_55;	// 3.00
+	pf_17_11 = f_9_37 * f_2_55;	// 0.4999999
 	f_2_56 = utof(vs_cbuf8[30 ].y  );	// 25000.00
 	f_9_38 = utof(vs_cbuf8[30 ].w  );	// 24999.00
 	f_2_57 = 0.f - (f_2_56 );	// -25000.00
 	pf_4_17 = fma(pf_4_16, f_9_38, f_2_57 );	// -971.3829
-	f_2_58 = trunc(pf_17_11 );	// 2.00
-	f_2_59 = min(max(f_2_58, float(0.f ) ), float(4294967300.f ) );	// 2.00
-	u_3_27 = uint(f_2_59 );	/* 2  <=>  uint(clamp(trunc(({f_9_37 : 0.4999999} * float({u_1_61 : 6}))), float(0.f), float(4294967300.f)))
+	f_2_58 = trunc(pf_17_11 );	// 0.00
+	f_2_59 = min(max(f_2_58, float(0.f ) ), float(4294967300.f ) );	// 0.00
+	u_3_27 = uint(f_2_59 );	/* 0  <=>  uint(clamp(trunc(({f_9_37 : 0.4999999} * float({u_1_61 : 1}))), float(0.f), float(4294967300.f)))
 <=>
 uint(clamp(trunc((f_9_37 * float(u_1_61))), float(0.f), float(4294967300.f)))
 <=>
@@ -27969,8 +27969,8 @@ uint(clamp(trunc((f_9_37 * float(u_1_61))), float(0.f), float(4294967300.f)))
 	f_2_60 = (1.0f ) / pf_4_17;	// -0.0010295
 	f_9_39 = utof(vs_cbuf9[83 ].y  );	// 1.00
 	pf_4_18 = f_6_58 * f_9_39;	// 1.00
-	f_6_59 = float(int(u_2_33 ) );	// -1.00
-	pf_11_9 = fma(pf_29_4, pf_15_24, pf_11_8 );	/* -1.439393  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[80].z) : 0.00}) + (({utof(u_13_phi_50) : 0.42813} * {utof(vs_cbuf9[81].z) : 0.05}) + ({utof(vs_cbuf9[81].x) : 0.80} + {utof(vs_cbuf9[81].z) : 0.05}))) * (({pf_11_7 : 1.00} * {utof(u_32_phi_76) : 0.32941}) + -0.5f)) + (({pf_11_7 : 1.00} * float(int({u_9_22 : 4294967295}))) + {pf_16_6 : -0.29074}))
+	f_6_59 = float(int(u_2_33 ) );	// 0.00
+	pf_11_9 = fma(pf_29_4, pf_15_24, pf_11_8 );	/* -0.4393933  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[80].z) : 0.00}) + (({utof(u_13_phi_50) : 0.42813} * {utof(vs_cbuf9[81].z) : 0.05}) + ({utof(vs_cbuf9[81].x) : 0.80} + {utof(vs_cbuf9[81].z) : 0.05}))) * (({pf_11_7 : 1.00} * {utof(u_32_phi_76) : 0.32941}) + -0.5f)) + (({pf_11_7 : 1.00} * float(int({u_9_22 : 0}))) + {pf_16_6 : -0.29074}))
 <=>
 ((((pf_0_1 * utof(vs_cbuf9[80].z)) + ((utof(u_13_phi_50) * utof(vs_cbuf9[81].z)) + (utof(vs_cbuf9[81].x) + utof(vs_cbuf9[81].z)))) * ((pf_11_7 * utof(u_32_phi_76)) + -0.5f)) + ((pf_11_7 * float(int(u_9_22))) + pf_16_6))
 <=>
@@ -28028,7 +28028,7 @@ uint(clamp(trunc((f_9_37 * float(u_1_61))), float(0.f), float(4294967300.f)))
 	}
 }
 */
-	u_2_34 = uint(bitfieldExtract(uint(u_12_16 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 340282300000000000000000000000000000000.00} * {f_7_48 : 0.00})), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
+	u_2_34 = uint(bitfieldExtract(uint(u_12_16 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 1.00})), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
 <=>
@@ -28043,9 +28043,9 @@ uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float
 	}), int(0u), int(16u)))
 }
 */
-	u_13_10 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 0
+	u_13_10 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 2
 	u_2_35 = uint(u_2_34 * u_13_10 );	// 0
-	u_13_11 = uint(bitfieldExtract(uint(u_12_16 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 340282300000000000000000000000000000000.00} * {f_7_48 : 0.00})), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
+	u_13_11 = uint(bitfieldExtract(uint(u_12_16 ), int(0u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 1.00})), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
 <=>
@@ -28062,8 +28062,8 @@ uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float
 */
 	u_15_27 = uint(bitfieldExtract(uint(u_24_21 ), int(16u ), int(16u ) ) );	// 0
 	u_13_12 = uint(u_13_11 * u_15_27 );	// 0
-	u_15_28 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 0
-	u_13_13 = bitfieldInsert(u_13_12, u_15_28, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert(uint(({u_13_11 : 0} * uint(bitfieldExtract(uint({u_24_21 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_24_21 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_15_28 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 2
+	u_13_13 = bitfieldInsert(u_13_12, u_15_28, int(16u ), int(16u ) );	/* 131072  <=>  bitfieldInsert(uint(({u_13_11 : 0} * uint(bitfieldExtract(uint({u_24_21 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u))), int(16u), int(16u))
 <=>
 bitfieldInsert(uint((u_13_11 * uint(bitfieldExtract(uint(u_24_21), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u))), int(16u), int(16u))
 <=>
@@ -28078,8 +28078,8 @@ bitfieldInsert(uint((u_13_11 * uint(bitfieldExtract(uint(u_24_21), int(16u), int
 */
 	f_7_51 = utof(u_23_phi_81 );	// 0.91373
 	pf_17_12 = fma(pf_4_18, f_7_51, -0.5f );	// 0.41373
-	f_7_52 = 0.f - (f_8_39 );	// 1.00
-	pf_4_19 = fma(pf_4_18, f_7_52, pf_6_31 );	/* 0.74914  <=>  ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * (0.f - float(int(({b_0_21 : False} ? {u_3_25 : 1} : 4294967295u))))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[79].y) : -0.001}) + ((({utof(u_14_phi_50) : 0.57643} * {utof(vs_cbuf9[80].y) : 1.00}) * -2.f) + ({utof(vs_cbuf9[80].y) : 1.00} + {utof(vs_cbuf9[79].w) : 0.00}))))
+	f_7_52 = 0.f - (f_8_39 );	// 0.00
+	pf_4_19 = fma(pf_4_18, f_7_52, pf_6_31 );	/* -0.25086  <=>  ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * (0.f - float(int(({b_0_21 : True} ? {u_3_25 : 0} : 4294967295u))))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[79].y) : -0.001}) + ((({utof(u_14_phi_50) : 0.57643} * {utof(vs_cbuf9[80].y) : 1.00}) * -2.f) + ({utof(vs_cbuf9[80].y) : 1.00} + {utof(vs_cbuf9[79].w) : 0.00}))))
 <=>
 ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * (0.f - float(int((b_0_21 ? u_3_25 : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[79].y)) + (((utof(u_14_phi_50) * utof(vs_cbuf9[80].y)) * -2.f) + (utof(vs_cbuf9[80].y) + utof(vs_cbuf9[79].w)))))
 <=>
@@ -28119,18 +28119,18 @@ bitfieldInsert(uint((u_13_11 * uint(bitfieldExtract(uint(u_24_21), int(16u), int
 }
 */
 	u_15_29 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
-	u_16_11 = uint(bitfieldExtract(uint(u_3_27 ), int(0u ), int(16u ) ) );	// 2
-	u_15_30 = uint(u_15_29 * u_16_11 );	// 4
+	u_16_11 = uint(bitfieldExtract(uint(u_3_27 ), int(0u ), int(16u ) ) );	// 0
+	u_15_30 = uint(u_15_29 * u_16_11 );	// 0
 	u_16_12 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
 	u_17_68 = uint(bitfieldExtract(uint(u_3_27 ), int(16u ), int(16u ) ) );	// 0
 	u_16_13 = uint(u_16_12 * u_17_68 );	// 0
-	u_17_69 = uint(bitfieldExtract(uint(u_3_27 ), int(0u ), int(16u ) ) );	// 2
-	u_16_14 = bitfieldInsert(u_16_13, u_17_69, int(16u ), int(16u ) );	// 131072
+	u_17_69 = uint(bitfieldExtract(uint(u_3_27 ), int(0u ), int(16u ) ) );	// 0
+	u_16_14 = bitfieldInsert(u_16_13, u_17_69, int(16u ), int(16u ) );	// 0
 	f_7_53 = utof(vs_cbuf9[138 ].y  );	// 3.50
 	f_8_40 = utof(vs_cbuf9[138 ].x  );	// 1.50
 	f_8_41 = 0.f - (f_8_40 );	// -1.50
 	pf_6_32 = f_8_41 + f_7_53;	// 2.00
-	u_17_70 = uint(bitfieldExtract(uint(u_12_16 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 340282300000000000000000000000000000000.00} * {f_7_48 : 0.00})), float(0.f), float(4294967300.f)))), int(16u), int(16u)))
+	u_17_70 = uint(bitfieldExtract(uint(u_12_16 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 1.00})), float(0.f), float(4294967300.f)))), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f)))), int(16u), int(16u)))
 <=>
@@ -28145,8 +28145,8 @@ uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float
 	}), int(16u), int(16u)))
 }
 */
-	u_18_24 = uint(bitfieldExtract(uint(u_13_13 ), int(16u ), int(16u ) ) );	// 0
-	u_17_71 = uint(u_17_70 * u_18_24 );	/* 0  <=>  uint(({u_17_70 : 0} * uint(bitfieldExtract(uint({u_13_13 : 0}), int(16u), int(16u)))))
+	u_18_24 = uint(bitfieldExtract(uint(u_13_13 ), int(16u ), int(16u ) ) );	// 2
+	u_17_71 = uint(u_17_70 * u_18_24 );	/* 0  <=>  uint(({u_17_70 : 0} * uint(bitfieldExtract(uint({u_13_13 : 131072}), int(16u), int(16u)))))
 <=>
 uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 <=>
@@ -28158,7 +28158,7 @@ uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 	u_17_72 = u_17_71 << 16u;	// 0
 	u_13_14 = u_13_13 << 16u;	// 0
 	u_2_36 = u_13_14 + u_2_35;	// 0
-	u_2_37 = u_17_72 + u_2_36;	/* 0  <=>  (({u_17_71 : 0} << 16u) + (({u_13_13 : 0} << 16u) + uint(({u_2_34 : 0} * uint(bitfieldExtract(uint({u_24_21 : 0}), int(0u), int(16u)))))))
+	u_2_37 = u_17_72 + u_2_36;	/* 0  <=>  (({u_17_71 : 0} << 16u) + (({u_13_13 : 131072} << 16u) + uint(({u_2_34 : 0} * uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u)))))))
 <=>
 ((u_17_71 << 16u) + ((u_13_13 << 16u) + uint((u_2_34 * uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u)))))))
 <=>
@@ -28207,8 +28207,8 @@ uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 */
 	f_2_61 = utof(u_10_phi_82 );	// 0.91373
 	pf_25_12 = fma(pf_15_25, f_2_61, -0.5f );	// 0.41373
-	f_2_62 = 0.f - (f_6_59 );	// 1.00
-	pf_0_3 = fma(pf_15_25, f_2_62, pf_0_2 );	/* 1.00  <=>  ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * (0.f - float(int(({b_2_41 : False} ? {u_2_32 : 1} : 4294967295u))))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[84].y) : 0.00}) + ((({utof(u_20_phi_60) : 0.57643} * {utof(vs_cbuf9[85].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[85].y) : 0.00} + {utof(vs_cbuf9[84].w) : 0.00}))))
+	f_2_62 = 0.f - (f_6_59 );	// 0.00
+	pf_0_3 = fma(pf_15_25, f_2_62, pf_0_2 );	/* 0.00  <=>  ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * (0.f - float(int(({b_2_41 : True} ? {u_2_32 : 0} : 4294967295u))))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[84].y) : 0.00}) + ((({utof(u_20_phi_60) : 0.57643} * {utof(vs_cbuf9[85].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[85].y) : 0.00} + {utof(vs_cbuf9[84].w) : 0.00}))))
 <=>
 ((((1.0f / utof(vs_cbuf9[88].w)) * utof(vs_cbuf9[88].y)) * (0.f - float(int((b_2_41 ? u_2_32 : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[84].y)) + (((utof(u_20_phi_60) * utof(vs_cbuf9[85].y)) * -2.f) + (utof(vs_cbuf9[85].y) + utof(vs_cbuf9[84].w)))))
 <=>
@@ -28247,7 +28247,7 @@ uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 	})
 }
 */
-	pf_3_12 = fma(pf_3_11, pf_16_7, pf_13_7 );	/* -1.102354  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[85].z) : 0.00}) + (({utof(u_19_phi_60) : 0.42813} * {utof(vs_cbuf9[86].z) : 0.00}) + ({utof(vs_cbuf9[86].x) : 0.60} + {utof(vs_cbuf9[86].z) : 0.00}))) * (({pf_13_6 : 1.00} * {utof(u_9_phi_83) : 0.32941}) + -0.5f)) + (({pf_13_6 : 1.00} * float(int({u_9_23 : 4294967295}))) + {pf_17_9 : 0.00}))
+	pf_3_12 = fma(pf_3_11, pf_16_7, pf_13_7 );	/* -0.102354  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[85].z) : 0.00}) + (({utof(u_19_phi_60) : 0.42813} * {utof(vs_cbuf9[86].z) : 0.00}) + ({utof(vs_cbuf9[86].x) : 0.60} + {utof(vs_cbuf9[86].z) : 0.00}))) * (({pf_13_6 : 1.00} * {utof(u_9_phi_83) : 0.32941}) + -0.5f)) + (({pf_13_6 : 1.00} * float(int({u_9_23 : 0}))) + {pf_17_9 : 0.00}))
 <=>
 ((((pf_0_1 * utof(vs_cbuf9[85].z)) + ((utof(u_19_phi_60) * utof(vs_cbuf9[86].z)) + (utof(vs_cbuf9[86].x) + utof(vs_cbuf9[86].z)))) * ((pf_13_6 * utof(u_9_phi_83)) + -0.5f)) + ((pf_13_6 * float(int(u_9_23))) + pf_17_9))
 <=>
@@ -28278,14 +28278,14 @@ uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 	})
 }
 */
-	f_2_63 = 0.f - (pf_4_19 );	/* -0.74914  <=>  (0.f - {pf_4_19 : 0.74914})
+	f_2_63 = 0.f - (pf_4_19 );	/* 0.25086  <=>  (0.f - {pf_4_19 : -0.25086})
 <=>
 (0.f - pf_4_19)
 <=>
 {f_2_63 = (0.f - pf_4_19)
 }
 */
-	pf_4_20 = fma(pf_5_40, pf_17_12, f_2_63 );	/* -0.3855451  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[80].w) : 0.00}) + (({utof(u_15_phi_50) : 0.57643} * {utof(vs_cbuf9[81].w) : 0.05}) + ({utof(vs_cbuf9[81].w) : 0.05} + {utof(vs_cbuf9[81].y) : 0.80}))) * ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * {utof(u_23_phi_81) : 0.91373}) + -0.5f)) + {f_2_63 : -0.74914})
+	pf_4_20 = fma(pf_5_40, pf_17_12, f_2_63 );	/* 0.6144549  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[80].w) : 0.00}) + (({utof(u_15_phi_50) : 0.57643} * {utof(vs_cbuf9[81].w) : 0.05}) + ({utof(vs_cbuf9[81].w) : 0.05} + {utof(vs_cbuf9[81].y) : 0.80}))) * ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * {utof(u_23_phi_81) : 0.91373}) + -0.5f)) + {f_2_63 : 0.25086})
 <=>
 ((((pf_0_1 * utof(vs_cbuf9[80].w)) + ((utof(u_15_phi_50) * utof(vs_cbuf9[81].w)) + (utof(vs_cbuf9[81].w) + utof(vs_cbuf9[81].y)))) * ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * utof(u_23_phi_81)) + -0.5f)) + f_2_63)
 <=>
@@ -28321,7 +28321,7 @@ uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))))
 }
 */
 	u_10_24 = uint(bitfieldExtract(uint(u_31_36 ), int(16u ), int(16u ) ) );	// 0
-	u_13_15 = uint(bitfieldExtract(uint(u_16_14 ), int(16u ), int(16u ) ) );	/* 2  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 2}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_13_15 = uint(bitfieldExtract(uint(u_16_14 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 0}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
@@ -28340,7 +28340,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 */
 	u_10_25 = uint(u_10_24 * u_13_15 );	// 0
 	u_10_26 = u_10_25 << 16u;	// 0
-	u_13_16 = u_16_14 << 16u;	/* 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 2}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_13_16 = u_16_14 << 16u;	/* 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 0}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
 (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
@@ -28357,8 +28357,8 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 	} << 16u)
 }
 */
-	u_13_17 = u_13_16 + u_15_30;	// 4
-	u_10_27 = u_10_26 + u_13_17;	/* 4  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_13_15 : 2})) << 16u) + ({u_13_16 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 2}), int(0u), int(16u)))))))
+	u_13_17 = u_13_16 + u_15_30;	// 0
+	u_10_27 = u_10_26 + u_13_17;	/* 0  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_13_15 : 0})) << 16u) + ({u_13_16 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 0}), int(0u), int(16u)))))))
 <=>
 ((uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_13_15)) << 16u) + (u_13_16 + uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u)))))))
 <=>
@@ -28380,7 +28380,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 }
 */
 	u_2_38 = uint(int(0 ) - int(u_2_37 ) );	// 0
-	u_2_39 = u_2_38 + u_11_23;	/* 0  <=>  (uint((int(0) - int({u_2_37 : 0}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 6}), int(0u), int(32u)))))), int(0u), int(32u))))
+	u_2_39 = u_2_38 + u_11_23;	/* 1  <=>  (uint((int(0) - int({u_2_37 : 0}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
 (uint((int(0) - int(u_2_37))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
@@ -28395,14 +28395,14 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 	})
 }
 */
-	f_2_64 = 0.f - (pf_0_3 );	/* -1.00  <=>  (0.f - {pf_0_3 : 1.00})
+	f_2_64 = 0.f - (pf_0_3 );	/* 0.00  <=>  (0.f - {pf_0_3 : 0.00})
 <=>
 (0.f - pf_0_3)
 <=>
 {f_2_64 = (0.f - pf_0_3)
 }
 */
-	pf_0_4 = fma(pf_1_11, pf_25_12, f_2_64 );	/* -0.751762  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[85].w) : 0.00}) + (({utof(u_18_phi_60) : 0.57643} * {utof(vs_cbuf9[86].w) : 0.00}) + ({utof(vs_cbuf9[86].w) : 0.00} + {utof(vs_cbuf9[86].y) : 0.60}))) * ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * {utof(u_10_phi_82) : 0.91373}) + -0.5f)) + {f_2_64 : -1.00})
+	pf_0_4 = fma(pf_1_11, pf_25_12, f_2_64 );	/* 0.248238  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[85].w) : 0.00}) + (({utof(u_18_phi_60) : 0.57643} * {utof(vs_cbuf9[86].w) : 0.00}) + ({utof(vs_cbuf9[86].w) : 0.00} + {utof(vs_cbuf9[86].y) : 0.60}))) * ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * {utof(u_10_phi_82) : 0.91373}) + -0.5f)) + {f_2_64 : 0.00})
 <=>
 ((((pf_0_1 * utof(vs_cbuf9[85].w)) + ((utof(u_18_phi_60) * utof(vs_cbuf9[86].w)) + (utof(vs_cbuf9[86].w) + utof(vs_cbuf9[86].y)))) * ((((1.0f / utof(vs_cbuf9[88].w)) * utof(vs_cbuf9[88].y)) * utof(u_10_phi_82)) + -0.5f)) + f_2_64)
 <=>
@@ -28437,7 +28437,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 	}) + f_2_64)
 }
 */
-	f_2_65 = float(u_2_39 );	/* 0.00  <=>  float({u_2_39 : 0})
+	f_2_65 = float(u_2_39 );	/* 1.00  <=>  float({u_2_39 : 1})
 <=>
 float(u_2_39)
 <=>
@@ -28450,14 +28450,14 @@ float(u_2_39)
 	f_6_61 = utof(vs_cbuf10[0 ].w  );	// 1.00
 	f_8_45 = utof(vs_cbuf9[113 ].x  );	// 0.75
 	pf_5_41 = f_8_45 * f_6_61;	// 0.75
-	u_2_40 = uint(int(0 ) - int(u_10_27 ) );	/* 4294967292  <=>  uint((int(0) - int({u_10_27 : 4})))
+	u_2_40 = uint(int(0 ) - int(u_10_27 ) );	/* 0  <=>  uint((int(0) - int({u_10_27 : 0})))
 <=>
 uint((int(0) - int(u_10_27)))
 <=>
 {u_2_40 = uint((int(0) - int(u_10_27)))
 }
 */
-	u_2_41 = u_1_61 + u_2_40;	// 2
+	u_2_41 = u_1_61 + u_2_40;	// 1
 	out_attr0.w  = pf_5_41;	/* 0.75  <=>  ({utof(vs_cbuf9[113].x) : 0.75} * {(vs_cbuf10_0.w) : 1.00})
 <=>
 (utof(vs_cbuf9[113].x) * (vs_cbuf10_0.w))
@@ -28489,9 +28489,9 @@ uint((int(0) - int(u_10_27)))
 }
 */
 	f_6_62 = min(max(pf_5_42, 0.0 ), 1.0 );	// 1.00
-	f_7_55 = float(u_2_41 );	// 2.00
+	f_7_55 = float(u_2_41 );	// 1.00
 	pf_5_43 = pf_8_14 * -0.5f;	// 1.069229
-	f_8_46 = utof(u_8_40 );	/* 340282300000000000000000000000000000000.00  <=>  {utof(({ftou((1.0f / float({u_24_21 : 0}))) : 2139095040} + 4294967294u)) : 340282300000000000000000000000000000000.00}
+	f_8_46 = utof(u_8_40 );	/* 0.4999999  <=>  {utof(({ftou((1.0f / float({u_24_21 : 2}))) : 1056964608} + 4294967294u)) : 0.4999999}
 <=>
 utof((ftou((1.0f / float(u_24_21))) + 4294967294u))
 <=>
@@ -28506,7 +28506,7 @@ utof((ftou((1.0f / float(u_24_21))) + 4294967294u))
 	})
 }
 */
-	pf_6_34 = f_8_46 * f_2_65;	// 0.00
+	pf_6_34 = f_8_46 * f_2_65;	// 0.4999999
 	f_2_66 = trunc(pf_6_34 );	// 0.00
 	f_2_67 = min(max(f_2_66, float(0.f ) ), float(4294967300.f ) );	// 0.00
 	u_2_42 = uint(f_2_67 );	// 0
@@ -28551,12 +28551,12 @@ utof((ftou((1.0f / float(u_31_36))) + 4294967294u))
 	})
 }
 */
-	pf_1_14 = f_2_71 * f_7_55;	// 0.9999999
+	pf_1_14 = f_2_71 * f_7_55;	// 0.4999999
 	f_2_72 = utof(vs_cbuf10[0 ].z  );	// 0.842
 	f_7_56 = utof(vs_cbuf9[105 ].z  );	// 0.842
 	pf_12_9 = f_7_56 * f_2_72;	// 0.708964
 	f_2_73 = trunc(pf_1_14 );	// 0.00
-	f_2_74 = min(max(f_2_73, float(0.f ) ), float(4294967300.f ) );	/* 0.00  <=>  clamp(trunc(({f_2_71 : 0.4999999} * float(({u_1_61 : 6} + {u_2_40 : 4294967292})))), float(0.f), float(4294967300.f))
+	f_2_74 = min(max(f_2_73, float(0.f ) ), float(4294967300.f ) );	/* 0.00  <=>  clamp(trunc(({f_2_71 : 0.4999999} * float(({u_1_61 : 1} + {u_2_40 : 0})))), float(0.f), float(4294967300.f))
 <=>
 clamp(trunc((f_2_71 * float((u_1_61 + u_2_40)))), float(0.f), float(4294967300.f))
 <=>
@@ -28636,7 +28636,7 @@ clamp(trunc((f_2_71 * float((u_1_61 + u_2_40)))), float(0.f), float(4294967300.f
 	}
 }
 */
-	u_2_43 = u_12_16 + u_2_42;	/* 0  <=>  (uint(clamp(trunc(({f_8_36 : 340282300000000000000000000000000000000.00} * {f_7_48 : 0.00})), float(0.f), float(4294967300.f))) + uint(clamp(trunc(({f_8_46 : 340282300000000000000000000000000000000.00} * {f_2_65 : 0.00})), float(0.f), float(4294967300.f))))
+	u_2_43 = u_12_16 + u_2_42;	/* 0  <=>  (uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 1.00})), float(0.f), float(4294967300.f))) + uint(clamp(trunc(({f_8_46 : 0.4999999} * {f_2_65 : 1.00})), float(0.f), float(4294967300.f))))
 <=>
 (uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f))) + uint(clamp(trunc((f_8_46 * f_2_65)), float(0.f), float(4294967300.f))))
 <=>
@@ -28697,7 +28697,7 @@ clamp(trunc((f_2_71 * float((u_1_61 + u_2_40)))), float(0.f), float(4294967300.f
 	}
 }
 */
-	u_3_28 = u_3_27 + u_8_41;	/* 2  <=>  ({u_3_27 : 2} + uint({f_2_74 : 0.00}))
+	u_3_28 = u_3_27 + u_8_41;	/* 0  <=>  ({u_3_27 : 0} + uint({f_2_74 : 0.00}))
 <=>
 (u_3_27 + uint(f_2_74))
 <=>
@@ -28744,10 +28744,10 @@ utof(vs_cbuf9[157].y)
 }
 */
 	u_8_42 = uint(bitfieldExtract(uint(u_2_43 ), int(0u ), int(16u ) ) );	// 0
-	u_9_28 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 0
+	u_9_28 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 2
 	u_8_43 = uint(u_8_42 * u_9_28 );	// 0
 	u_9_29 = uint(bitfieldExtract(uint(u_2_43 ), int(0u ), int(16u ) ) );	// 0
-	u_10_28 = uint(bitfieldExtract(uint(u_24_21 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_24_21 : 0}), int(16u), int(16u)))
+	u_10_28 = uint(bitfieldExtract(uint(u_24_21 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_24_21 : 2}), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(u_24_21), int(16u), int(16u)))
 <=>
@@ -28755,8 +28755,8 @@ uint(bitfieldExtract(uint(u_24_21), int(16u), int(16u)))
 }
 */
 	u_9_30 = uint(u_9_29 * u_10_28 );	// 0
-	u_10_29 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 0
-	u_9_31 = bitfieldInsert(u_9_30, u_10_29, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(0u), int(16u))) * {u_10_28 : 0})), uint(bitfieldExtract(uint({u_24_21 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_10_29 = uint(bitfieldExtract(uint(u_24_21 ), int(0u ), int(16u ) ) );	// 2
+	u_9_31 = bitfieldInsert(u_9_30, u_10_29, int(16u ), int(16u ) );	/* 131072  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(0u), int(16u))) * {u_10_28 : 0})), uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u))), int(16u), int(16u))
 <=>
 bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * u_10_28)), uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u))), int(16u), int(16u))
 <=>
@@ -28772,8 +28772,8 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * u_
 	f_0_71 = utof(vs_cbuf9[104 ].x  );	// 0.50
 	pf_5_47 = pf_6_38 * f_0_71;	// 0.1335
 	u_10_30 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
-	u_12_17 = uint(bitfieldExtract(uint(u_3_28 ), int(0u ), int(16u ) ) );	// 2
-	u_10_31 = uint(u_10_30 * u_12_17 );	// 4
+	u_12_17 = uint(bitfieldExtract(uint(u_3_28 ), int(0u ), int(16u ) ) );	// 0
+	u_10_31 = uint(u_10_30 * u_12_17 );	// 0
 	out_attr1.z  = pf_5_47;	/* 0.1335  <=>  (({utof(vs_cbuf9[121].z) : 0.267} * {(vs_cbuf10_1.z) : 1.00}) * {utof(vs_cbuf9[104].x) : 0.50})
 <=>
 ((utof(vs_cbuf9[121].z) * (vs_cbuf10_1.z)) * utof(vs_cbuf9[104].x))
@@ -28794,8 +28794,8 @@ bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * u_
 	u_12_18 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
 	u_13_18 = uint(bitfieldExtract(uint(u_3_28 ), int(16u ), int(16u ) ) );	// 0
 	u_12_19 = uint(u_12_18 * u_13_18 );	// 0
-	u_13_19 = uint(bitfieldExtract(uint(u_3_28 ), int(0u ), int(16u ) ) );	// 2
-	u_12_20 = bitfieldInsert(u_12_19, u_13_19, int(16u ), int(16u ) );	// 131072
+	u_13_19 = uint(bitfieldExtract(uint(u_3_28 ), int(0u ), int(16u ) ) );	// 0
+	u_12_20 = bitfieldInsert(u_12_19, u_13_19, int(16u ), int(16u ) );	// 0
 	f_0_72 = utof(vs_cbuf15[27 ].x  );	// -0.0909091
 	f_2_82 = utof(vs_cbuf15[27 ].y  );	// 0.0045455
 	pf_2_20 = fma(pf_2_19, f_2_82, f_0_72 );	// -7.706205
@@ -28824,8 +28824,8 @@ clamp(((((0.f - pf_2_18) + min((vs_cbuf8_29.y), (vs_cbuf15_27.z))) * (vs_cbuf15_
 */
 	pf_1_19 = fma(pf_1_18, -0.7f, 0.85f );	// 0.4709187
 	f_2_83 = min(max(pf_1_19, 0.0 ), 1.0 );	// 0.4709187
-	pf_1_20 = pf_11_9 + 0.5f;	// -0.9393933
-	b_0_22 = ! b_3_32;	/* False  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	pf_1_20 = pf_11_9 + 0.5f;	// 0.0606068
+	b_0_22 = ! b_3_32;	/* True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
 (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
@@ -28838,7 +28838,7 @@ clamp(((((0.f - pf_2_18) + min((vs_cbuf8_29.y), (vs_cbuf15_27.z))) * (vs_cbuf15_
 	})
 }
 */
-	b_0_23 = b_4_10 || b_0_22;	/* False  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_22 : False})
+	b_0_23 = b_4_10 || b_0_22;	/* True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_22 : True})
 <=>
 ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_0_22)
 <=>
@@ -28852,7 +28852,7 @@ clamp(((((0.f - pf_2_18) + min((vs_cbuf8_29.y), (vs_cbuf15_27.z))) * (vs_cbuf15_
 }
 */
 	u_13_20 = uint(bitfieldExtract(uint(u_31_36 ), int(16u ), int(16u ) ) );	// 0
-	u_15_31 = uint(bitfieldExtract(uint(u_12_20 ), int(16u ), int(16u ) ) );	/* 2  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 2}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_15_31 = uint(bitfieldExtract(uint(u_12_20 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 0}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
 <=>
@@ -28869,7 +28869,7 @@ uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36
 	}), int(16u), int(16u)))
 }
 */
-	u_13_21 = uint(u_13_20 * u_15_31 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_15_31 : 2}))
+	u_13_21 = uint(u_13_20 * u_15_31 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_15_31 : 0}))
 <=>
 uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_15_31))
 <=>
@@ -28879,7 +28879,7 @@ uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_15_31))
 }
 */
 	u_13_22 = u_13_21 << 16u;	// 0
-	u_12_21 = u_12_20 << 16u;	/* 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 2}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_12_21 = u_12_20 << 16u;	/* 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 0}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
 (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u))), int(16u), int(16u)) << 16u)
 <=>
@@ -28896,8 +28896,8 @@ uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_15_31))
 	} << 16u)
 }
 */
-	u_10_32 = u_12_21 + u_10_31;	// 4
-	u_10_33 = u_13_22 + u_10_32;	/* 4  <=>  (({u_13_21 : 0} << 16u) + ({u_12_21 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 2}), int(0u), int(16u)))))))
+	u_10_32 = u_12_21 + u_10_31;	// 0
+	u_10_33 = u_13_22 + u_10_32;	/* 0  <=>  (({u_13_21 : 0} << 16u) + ({u_12_21 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 0}), int(0u), int(16u)))))))
 <=>
 ((u_13_21 << 16u) + (u_12_21 + uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u)))))))
 <=>
@@ -28914,12 +28914,12 @@ uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_15_31))
 	})
 }
 */
-	u_12_22 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(32u ) ) );	// 0
-	u_12_23 = uint(bitfieldExtract(uint(u_12_22 ), int(0u ), int(32u ) ) );	// 0
-	b_2_42 = u_12_23 == 0;	// True
+	u_12_22 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(32u ) ) );	// 2
+	u_12_23 = uint(bitfieldExtract(uint(u_12_22 ), int(0u ), int(32u ) ) );	// 2
+	b_2_42 = u_12_23 == 0;	// False
 	b_3_33 = int(u_12_23 ) < 0;	// False
 	u_13_23 = uint(bitfieldExtract(uint(u_2_43 ), int(16u ), int(16u ) ) );	// 0
-	u_15_32 = uint(bitfieldExtract(uint(u_9_31 ), int(16u ), int(16u ) ) );	/* 0  <=>  uint(bitfieldExtract(uint({u_9_31 : 0}), int(16u), int(16u)))
+	u_15_32 = uint(bitfieldExtract(uint(u_9_31 ), int(16u ), int(16u ) ) );	/* 2  <=>  uint(bitfieldExtract(uint({u_9_31 : 131072}), int(16u), int(16u)))
 <=>
 uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 <=>
@@ -28930,7 +28930,7 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	u_13_25 = u_13_24 << 16u;	// 0
 	u_9_32 = u_9_31 << 16u;	// 0
 	u_8_44 = u_9_32 + u_8_43;	// 0
-	u_8_45 = u_13_25 + u_8_44;	/* 0  <=>  ((uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(16u), int(16u))) * {u_15_32 : 0})) << 16u) + (({u_9_31 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_24_21 : 0}), int(0u), int(16u)))))))
+	u_8_45 = u_13_25 + u_8_44;	/* 0  <=>  ((uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(16u), int(16u))) * {u_15_32 : 2})) << 16u) + (({u_9_31 : 131072} << 16u) + uint((uint(bitfieldExtract(uint({u_2_43 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u)))))))
 <=>
 ((uint((uint(bitfieldExtract(uint(u_2_43), int(16u), int(16u))) * u_15_32)) << 16u) + ((u_9_31 << 16u) + uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u)))))))
 <=>
@@ -28984,11 +28984,11 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	}) + pf_21_1)
 }
 */
-	pf_0_5 = pf_0_4 + 0.5f;	// -0.251762
-	u_9_33 = uint(int(0 ) - int(u_10_33 ) );	// 4294967292
-	u_9_34 = u_1_61 + u_9_33;	// 2
+	pf_0_5 = pf_0_4 + 0.5f;	// 0.748238
+	u_9_33 = uint(int(0 ) - int(u_10_33 ) );	// 0
+	u_9_34 = u_1_61 + u_9_33;	// 1
 	u_8_46 = uint(int(0 ) - int(u_8_45 ) );	// 0
-	u_8_47 = u_8_46 + u_11_23;	/* 0  <=>  (uint((int(0) - int({u_8_45 : 0}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 6}), int(0u), int(32u)))))), int(0u), int(32u))))
+	u_8_47 = u_8_46 + u_11_23;	/* 1  <=>  (uint((int(0) - int({u_8_45 : 0}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
 (uint((int(0) - int(u_8_45))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))))
 <=>
@@ -29007,7 +29007,7 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	f_8_51 = utof(vs_cbuf13[2 ].w  );	// 30.00
 	pf_7_12 = f_8_51 * f_7_66;	// -2.76306
 	f_7_67 = utof(vs_cbuf9[79 ].y  );	// -0.001
-	pf_1_21 = fma(pf_5_48, f_7_67, pf_1_20 );	// -0.1103672
+	pf_1_21 = fma(pf_5_48, f_7_67, pf_1_20 );	// 0.8896328
 	f_2_84 = 0.f - (f_2_83 );	// -0.4709187
 	pf_8_16 = fma(pf_23_0, f_2_84, pf_23_0 );	/* (({pf_23_0 : } * (0.f - clamp((({pf_1_18 : 0.5415447} * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_23_0 : })
 <=>
@@ -29022,7 +29022,7 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	}) + pf_23_0)
 }
 */
-	out_attr2.z  = pf_1_21;	/* -0.1103672  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_11_9 : -1.439393} + 0.5f))
+	out_attr2.z  = pf_1_21;	/* 0.8896328  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_11_9 : -0.4393933} + 0.5f))
 <=>
 ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[79].y)) + (pf_11_9 + 0.5f))
 <=>
@@ -29041,13 +29041,13 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	}
 }
 */
-	b_4_11 = uint(u_8_47 ) >= uint(u_24_21 );	// True
-	u_8_48 = b_4_11 ? (4294967295u) : (0u);	// 4294967295
+	b_4_11 = uint(u_8_47 ) >= uint(u_24_21 );	// False
+	u_8_48 = b_4_11 ? (4294967295u) : (0u);	// 0
 	f_2_85 = utof(vs_cbuf13[3 ].w  );	// 1.00
 	pf_1_22 = pf_7_12 * f_2_85;	// -2.76306
-	u_10_34 = u_1_61 ^ u_31_36;	// 4
-	pf_3_13 = pf_3_12 + 0.5f;	// -0.602354
-	b_4_12 = uint(u_9_34 ) >= uint(u_31_36 );	/* True  <=>  (uint(({u_1_61 : 6} + uint((int(0) - int({u_10_33 : 4}))))) >= uint({u_31_36 : 2}))
+	u_10_34 = u_1_61 ^ u_31_36;	// 3
+	pf_3_13 = pf_3_12 + 0.5f;	// 0.397646
+	b_4_12 = uint(u_9_34 ) >= uint(u_31_36 );	/* False  <=>  (uint(({u_1_61 : 1} + uint((int(0) - int({u_10_33 : 0}))))) >= uint({u_31_36 : 2}))
 <=>
 (uint((u_1_61 + uint((int(0) - int(u_10_33))))) >= uint(u_31_36))
 <=>
@@ -29058,8 +29058,8 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	}) >= uint(u_31_36))
 }
 */
-	u_9_35 = b_4_12 ? (4294967295u) : (0u);	// 4294967295
-	pf_4_21 = pf_4_20 + 0.5f;	// 0.1144549
+	u_9_35 = b_4_12 ? (4294967295u) : (0u);	// 0
+	pf_4_21 = pf_4_20 + 0.5f;	// 1.114455
 	f_2_86 = utof(u_6_21 );
 	pf_6_40 = f_2_86 + pf_6_39;	/* ({utof(u4_0_0.y) : } + {pf_6_39 : })
 <=>
@@ -29073,9 +29073,9 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 }
 */
 	f_2_87 = utof(vs_cbuf9[84 ].y  );	// 0.00
-	pf_0_6 = fma(pf_1_22, f_2_87, pf_0_5 );	// -0.251762
+	pf_0_6 = fma(pf_1_22, f_2_87, pf_0_5 );	// 0.748238
 	u_6_22 = u_10_34 >> 31u;	// 0
-	out_attr3.y  = pf_0_6;	/* -0.251762  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_0_4 : -0.751762} + 0.5f))
+	out_attr3.y  = pf_0_6;	/* 0.748238  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_0_4 : 0.248238} + 0.5f))
 <=>
 (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[84].y)) + (pf_0_4 + 0.5f))
 <=>
@@ -29098,10 +29098,10 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	}
 }
 */
-	u_3_29 = uint(int(0 ) - int(u_3_28 ) );	// 4294967294
-	u_3_30 = u_3_29 + u_9_35;	// 4294967293
+	u_3_29 = uint(int(0 ) - int(u_3_28 ) );	// 0
+	u_3_30 = u_3_29 + u_9_35;	// 0
 	f_2_88 = utof(vs_cbuf9[84 ].y  );	// 0.00
-	pf_0_7 = fma(pf_5_48, f_2_88, pf_3_13 );	// -0.602354
+	pf_0_7 = fma(pf_5_48, f_2_88, pf_3_13 );	// 0.397646
 	f_2_89 = utof(u_5_24 );
 	pf_2_22 = f_2_89 + pf_2_21;	/* ({utof(u4_0_0.x) : } + {pf_2_21 : })
 <=>
@@ -29114,7 +29114,7 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 	} + pf_2_21)
 }
 */
-	out_attr3.x  = pf_0_7;	/* -0.602354  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_3_12 : -1.102354} + 0.5f))
+	out_attr3.x  = pf_0_7;	/* 0.397646  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_3_12 : -0.102354} + 0.5f))
 <=>
 ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[84].y)) + (pf_3_12 + 0.5f))
 <=>
@@ -29134,13 +29134,13 @@ uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)))
 }
 */
 	f_2_90 = utof(vs_cbuf9[79 ].y  );	// -0.001
-	pf_0_8 = fma(pf_1_22, f_2_90, pf_4_21 );	// 0.117218
+	pf_0_8 = fma(pf_1_22, f_2_90, pf_4_21 );	// 1.117218
 	f_2_91 = utof(vs_cbuf15[58 ].w  );	// 1.00
 	f_7_68 = utof(vs_cbuf15[58 ].x  );	// 1.00
 	f_8_52 = utof(vs_cbuf15[58 ].w  );	// 1.00
 	f_2_92 = 0.f - (f_2_91 );	// -1.00
 	pf_3_14 = fma(f_8_52, f_7_68, f_2_92 );	// 0.00
-	out_attr2.w  = pf_0_8;	/* 0.117218  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_4_20 : -0.3855451} + 0.5f))
+	out_attr2.w  = pf_0_8;	/* 1.117218  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_4_20 : 0.6144549} + 0.5f))
 <=>
 (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[79].y)) + (pf_4_20 + 0.5f))
 <=>
@@ -29182,8 +29182,8 @@ clamp(((pf_9_15 * (vs_cbuf15_24.x)) + (0.f - (vs_cbuf15_24.y))), 0.0, 1.0)
 	}, 0.0, 1.0)
 }
 */
-	u_5_25 = uint(int(0 ) - int(u_8_48 ) );	// 1
-	u_2_44 = u_2_43 + u_5_25;	/* 1  <=>  ({u_2_43 : 0} + uint((int(0) - int(((uint({u_8_47 : 0}) >= uint({u_24_21 : 0})) ? 4294967295u : 0u)))))
+	u_5_25 = uint(int(0 ) - int(u_8_48 ) );	// 0
+	u_2_44 = u_2_43 + u_5_25;	/* 0  <=>  ({u_2_43 : 0} + uint((int(0) - int(((uint({u_8_47 : 1}) >= uint({u_24_21 : 2})) ? 4294967295u : 0u)))))
 <=>
 (u_2_43 + uint((int(0) - int(((uint(u_8_47) >= uint(u_24_21)) ? 4294967295u : 0u)))))
 <=>
@@ -29198,8 +29198,8 @@ clamp(((pf_9_15 * (vs_cbuf15_24.x)) + (0.f - (vs_cbuf15_24.y))), 0.0, 1.0)
 */
 	u_5_26 = uint(int(0 ) - int(u_6_22 ) );	// 0
 	u_6_23 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
-	u_8_49 = uint(bitfieldExtract(uint(u_3_30 ), int(0u ), int(16u ) ) );	// 65533
-	u_6_24 = uint(u_6_23 * u_8_49 );	/* 131066  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 2}))) + ({b_4_12 : True} ? 4294967295u : 0u))), int(0u), int(16u)))))
+	u_8_49 = uint(bitfieldExtract(uint(u_3_30 ), int(0u ), int(16u ) ) );	// 0
+	u_6_24 = uint(u_6_23 * u_8_49 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 0}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(0u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(0u), int(16u)))))
 <=>
@@ -29217,8 +29217,8 @@ uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExt
 }
 */
 	u_8_50 = uint(bitfieldExtract(uint(u_31_36 ), int(0u ), int(16u ) ) );	// 2
-	u_9_36 = uint(bitfieldExtract(uint(u_3_30 ), int(16u ), int(16u ) ) );	// 65535
-	u_8_51 = uint(u_8_50 * u_9_36 );	/* 131070  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 2}))) + ({b_4_12 : True} ? 4294967295u : 0u))), int(16u), int(16u)))))
+	u_9_36 = uint(bitfieldExtract(uint(u_3_30 ), int(16u ), int(16u ) ) );	// 0
+	u_8_51 = uint(u_8_50 * u_9_36 );	/* 0  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 0}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(16u), int(16u)))))
 <=>
 uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(16u), int(16u)))))
 <=>
@@ -29235,8 +29235,8 @@ uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExt
 	}))
 }
 */
-	u_3_31 = uint(bitfieldExtract(uint(u_3_30 ), int(0u ), int(16u ) ) );	// 65533
-	u_3_32 = bitfieldInsert(u_8_51, u_3_31, int(16u ), int(16u ) );	/* 4294836222  <=>  bitfieldInsert({u_8_51 : 131070}, uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 2}))) + ({b_4_12 : True} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))
+	u_3_31 = uint(bitfieldExtract(uint(u_3_30 ), int(0u ), int(16u ) ) );	// 0
+	u_3_32 = bitfieldInsert(u_8_51, u_3_31, int(16u ), int(16u ) );	/* 0  <=>  bitfieldInsert({u_8_51 : 0}, uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 0}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))
 <=>
 bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))
 <=>
@@ -29313,9 +29313,9 @@ bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) +
 	}
 }
 */
-	u_2_45 = u_2_44 ^ u_5_26;	// 1
+	u_2_45 = u_2_44 ^ u_5_26;	// 0
 	f_0_75 = log2(pf_3_15 );	// -0.1293999
-	b_2_43 = ! b_2_42;	/* False  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_43 = ! b_2_42;	/* True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
 (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_31_36), int(0u), int(32u)))), int(0u), int(32u))) == 0))
 <=>
@@ -29328,7 +29328,7 @@ bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) +
 	})
 }
 */
-	b_2_44 = b_3_33 || b_2_43;	/* False  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_43 : False})
+	b_2_44 = b_3_33 || b_2_43;	/* True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_43 : True})
 <=>
 ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_31_36), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_43)
 <=>
@@ -29342,12 +29342,12 @@ bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) +
 }
 */
 	u_7_6 = uint(bitfieldExtract(uint(u_31_36 ), int(16u ), int(16u ) ) );	// 0
-	u_8_52 = uint(bitfieldExtract(uint(u_3_32 ), int(16u ), int(16u ) ) );	// 65533
+	u_8_52 = uint(bitfieldExtract(uint(u_3_32 ), int(16u ), int(16u ) ) );	// 0
 	u_7_7 = uint(u_7_6 * u_8_52 );	// 0
 	u_7_8 = u_7_7 << 16u;	// 0
-	u_3_33 = u_3_32 << 16u;	// 4294836224
-	u_3_34 = u_3_33 + u_6_24;	// 4294967290
-	u_3_35 = u_7_8 + u_3_34;	/* 4294967290  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_3_32 : 4294836222}), int(16u), int(16u))))) << 16u) + (({u_3_32 : 4294836222} << 16u) + {u_6_24 : 131066}))
+	u_3_33 = u_3_32 << 16u;	// 0
+	u_3_34 = u_3_33 + u_6_24;	// 0
+	u_3_35 = u_7_8 + u_3_34;	/* 0  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_3_32 : 0}), int(16u), int(16u))))) << 16u) + (({u_3_32 : 0} << 16u) + {u_6_24 : 0}))
 <=>
 ((uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_3_32), int(16u), int(16u))))) << 16u) + ((u_3_32 << 16u) + u_6_24))
 <=>
@@ -29373,7 +29373,7 @@ bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) +
 	pf_2_24 = fma(f_8_53, f_7_73, f_2_97 );	// 0.00
 	f_2_98 = utof(vs_cbuf9[78 ].w  );	// 2.00
 	f_2_99 = (1.0f ) / f_2_98;	// 0.50
-	u_5_27 = uint(int(0 ) - int(u_5_26 ) );	/* 0  <=>  uint((int(0) - int(uint((int(0) - int((({u_1_61 : 6} ^ {u_31_36 : 2}) >> 31u)))))))
+	u_5_27 = uint(int(0 ) - int(u_5_26 ) );	/* 0  <=>  uint((int(0) - int(uint((int(0) - int((({u_1_61 : 1} ^ {u_31_36 : 2}) >> 31u)))))))
 <=>
 uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))))
 <=>
@@ -29386,7 +29386,7 @@ uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))))
 	})))
 }
 */
-	u_2_46 = u_5_27 + u_2_45;	/* 1  <=>  ({u_5_27 : 0} + ({u_2_44 : 1} ^ uint((int(0) - int((({u_1_61 : 6} ^ {u_31_36 : 2}) >> 31u))))))
+	u_2_46 = u_5_27 + u_2_45;	/* 0  <=>  ({u_5_27 : 0} + ({u_2_44 : 0} ^ uint((int(0) - int((({u_1_61 : 1} ^ {u_31_36 : 2}) >> 31u))))))
 <=>
 (u_5_27 + (u_2_44 ^ uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u))))))
 <=>
@@ -29401,7 +29401,7 @@ uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))))
 	})
 }
 */
-	u_1_62 = u_1_61 + u_3_35;	// 0
+	u_1_62 = u_1_61 + u_3_35;	// 1
 	f_7_74 = utof(vs_cbuf9[78 ].z  );	// 2.00
 	f_7_75 = (1.0f ) / f_7_74;	// 0.50
 	f_8_54 = utof(vs_cbuf15[28 ].y  );	// -0.6704946
@@ -29431,11 +29431,11 @@ uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))))
 	}
 }
 */
-	u_2_47 = b_0_23 ? (u_2_46) : (4294967295u);	// 4294967295
+	u_2_47 = b_0_23 ? (u_2_46) : (4294967295u);	// 0
 	f_8_57 = utof(vs_cbuf15[24 ].w  );	// 4.00
 	pf_2_26 = f_0_75 * f_8_57;	// -0.5175997
-	f_0_76 = float(int(u_2_47 ) );	// -1.00
-	u_1_63 = b_2_44 ? (u_1_62) : (4294967295u);	/* 4294967295  <=>  ({b_2_44 : False} ? ({u_1_61 : 6} + {u_3_35 : 4294967290}) : 4294967295u)
+	f_0_76 = float(int(u_2_47 ) );	// 0.00
+	u_1_63 = b_2_44 ? (u_1_62) : (4294967295u);	/* 1  <=>  ({b_2_44 : True} ? ({u_1_61 : 1} + {u_3_35 : 0}) : 4294967295u)
 <=>
 (b_2_44 ? (u_1_61 + u_3_35) : 4294967295u)
 <=>
@@ -29446,7 +29446,7 @@ uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))))
 */
 	f_8_58 = utof(vs_cbuf9[78 ].y  );	// 1.00
 	pf_6_41 = f_2_99 * f_8_58;	// 0.50
-	f_2_100 = float(int(u_1_63 ) );	// -1.00
+	f_2_100 = float(int(u_1_63 ) );	// 1.00
 	pf_3_17 = pf_3_16 * f_1_19;	/* 50.71497  <=>  (({pf_9_15 : 25.73678} + {(vs_cbuf15_28.y) : -0.6704946}) * (1.0f / clamp((({(vs_cbuf15_28.y) : -0.6704946} * 1.5f) + 1.5f), 0.0, 1.0)))
 <=>
 ((pf_9_15 + (vs_cbuf15_28.y)) * (1.0f / clamp((((vs_cbuf15_28.y) * 1.5f) + 1.5f), 0.0, 1.0)))
@@ -29540,7 +29540,7 @@ exp2((log2(((0.f - f_2_95) + 1.f)) * (vs_cbuf15_24.w)))
 	f_8_60 = utof(u_29_phi_74 );	// 0.91373
 	pf_2_27 = fma(pf_6_41, f_8_60, -0.5f );	// -0.043135
 	f_8_61 = 0.f - (pf_6_41 );	// -0.50
-	pf_6_42 = fma(f_0_76, f_8_61, pf_19_6 );	/* 0.525  <=>  ((float(int(({b_0_23 : False} ? {u_2_46 : 1} : 4294967295u))) * (0.f - ((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[74].y) : 0.00}) + ((({in_attr7.y : 0.57643} * {utof(vs_cbuf9[75].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[75].y) : 0.00} + {utof(vs_cbuf9[74].w) : 0.025}))))
+	pf_6_42 = fma(f_0_76, f_8_61, pf_19_6 );	/* 0.025  <=>  ((float(int(({b_0_23 : True} ? {u_2_46 : 0} : 4294967295u))) * (0.f - ((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}))) + (({pf_0_1 : 98.00} * {utof(vs_cbuf9[74].y) : 0.00}) + ((({in_attr7.y : 0.57643} * {utof(vs_cbuf9[75].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[75].y) : 0.00} + {utof(vs_cbuf9[74].w) : 0.025}))))
 <=>
 ((float(int((b_0_23 ? u_2_46 : 4294967295u))) * (0.f - ((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)))) + ((pf_0_1 * utof(vs_cbuf9[74].y)) + (((in_attr7.y * utof(vs_cbuf9[75].y)) * -2.f) + (utof(vs_cbuf9[75].y) + utof(vs_cbuf9[74].w)))))
 <=>
@@ -29602,15 +29602,15 @@ exp2((log2(((0.f - f_2_95) + 1.f)) * (vs_cbuf15_24.w)))
 	}
 }
 */
-	pf_0_12 = fma(f_2_100, pf_7_14, pf_10_26 );	// -0.525
-	f_0_78 = 0.f - (pf_6_42 );	/* -0.525  <=>  (0.f - {pf_6_42 : 0.525})
+	pf_0_12 = fma(f_2_100, pf_7_14, pf_10_26 );	// 0.475
+	f_0_78 = 0.f - (pf_6_42 );	/* -0.025  <=>  (0.f - {pf_6_42 : 0.025})
 <=>
 (0.f - pf_6_42)
 <=>
 {f_0_78 = (0.f - pf_6_42)
 }
 */
-	pf_2_28 = fma(pf_24_2, pf_2_27, f_0_78 );	/* -0.568135  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[75].w) : 0.00}) + (({in_attr7.y : 0.57643} * {utof(vs_cbuf9[76].w) : 0.00}) + ({utof(vs_cbuf9[76].w) : 0.00} + {utof(vs_cbuf9[76].y) : 1.00}))) * ((((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}) * {utof(u_29_phi_74) : 0.91373}) + -0.5f)) + {f_0_78 : -0.525})
+	pf_2_28 = fma(pf_24_2, pf_2_27, f_0_78 );	/* -0.068135  <=>  (((({pf_0_1 : 98.00} * {utof(vs_cbuf9[75].w) : 0.00}) + (({in_attr7.y : 0.57643} * {utof(vs_cbuf9[76].w) : 0.00}) + ({utof(vs_cbuf9[76].w) : 0.00} + {utof(vs_cbuf9[76].y) : 1.00}))) * ((((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}) * {utof(u_29_phi_74) : 0.91373}) + -0.5f)) + {f_0_78 : -0.025})
 <=>
 ((((pf_0_1 * utof(vs_cbuf9[75].w)) + ((in_attr7.y * utof(vs_cbuf9[76].w)) + (utof(vs_cbuf9[76].w) + utof(vs_cbuf9[76].y)))) * ((((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)) * utof(u_29_phi_74)) + -0.5f)) + f_0_78)
 <=>
@@ -29671,7 +29671,7 @@ clamp(((f_1_20 * (0.f - (vs_cbuf15_23.z))) + (vs_cbuf15_23.z)), 0.0, 1.0)
 	}
 }
 */
-	pf_0_13 = fma(pf_4_24, pf_20_2, pf_0_12 );	/* -0.860295  <=>  (((({pf_7_14 : 0.50} * {utof(u_25_phi_72) : 0.32941}) + -0.5f) * (({pf_0_1 : 98.00} * {utof(vs_cbuf9[75].z) : 0.00}) + (({in_attr7.x : 0.42813} * {utof(vs_cbuf9[76].z) : 0.00}) + ({utof(vs_cbuf9[76].z) : 0.00} + {utof(vs_cbuf9[76].x) : 1.00})))) + ((float(int({u_1_63 : 4294967295})) * {pf_7_14 : 0.50}) + {pf_10_26 : -0.025}))
+	pf_0_13 = fma(pf_4_24, pf_20_2, pf_0_12 );	/* 0.139705  <=>  (((({pf_7_14 : 0.50} * {utof(u_25_phi_72) : 0.32941}) + -0.5f) * (({pf_0_1 : 98.00} * {utof(vs_cbuf9[75].z) : 0.00}) + (({in_attr7.x : 0.42813} * {utof(vs_cbuf9[76].z) : 0.00}) + ({utof(vs_cbuf9[76].z) : 0.00} + {utof(vs_cbuf9[76].x) : 1.00})))) + ((float(int({u_1_63 : 1})) * {pf_7_14 : 0.50}) + {pf_10_26 : -0.025}))
 <=>
 ((((pf_7_14 * utof(u_25_phi_72)) + -0.5f) * ((pf_0_1 * utof(vs_cbuf9[75].z)) + ((in_attr7.x * utof(vs_cbuf9[76].z)) + (utof(vs_cbuf9[76].z) + utof(vs_cbuf9[76].x))))) + ((float(int(u_1_63)) * pf_7_14) + pf_10_26))
 <=>
@@ -29718,15 +29718,15 @@ clamp(((f_1_20 * (0.f - (vs_cbuf15_23.z))) + (vs_cbuf15_23.z)), 0.0, 1.0)
 }
 */
 	f_0_81 = max(pf_3_18, 0.2f );	// 3.380998
-	pf_2_29 = pf_2_28 + 0.5f;	// -0.068135
+	pf_2_29 = pf_2_28 + 0.5f;	// 0.431865
 	b_0_24 = f_6_62 <= 0.f && ! isnan(f_6_62 ) && ! isnan(0.f );	// False
-	pf_0_14 = pf_0_13 + 0.5f;	// -0.360295
+	pf_0_14 = pf_0_13 + 0.5f;	// 0.6397049
 	f_0_82 = min(max(f_0_81, 0.0 ), 1.0 );	// 1.00
 	f_1_22 = utof(vs_cbuf9[74 ].y  );	// 0.00
-	pf_1_23 = fma(pf_1_22, f_1_22, pf_2_29 );	// -0.068135
+	pf_1_23 = fma(pf_1_22, f_1_22, pf_2_29 );	// 0.431865
 	f_1_23 = utof(vs_cbuf9[74 ].y  );	// 0.00
-	pf_0_15 = fma(pf_5_48, f_1_23, pf_0_14 );	// -0.360295
-	out_attr2.y  = pf_1_23;	/* -0.068135  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_2_28 : -0.568135} + 0.5f))
+	pf_0_15 = fma(pf_5_48, f_1_23, pf_0_14 );	// 0.6397049
+	out_attr2.y  = pf_1_23;	/* 0.431865  <=>  (((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.w) : -0.092102}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_2_28 : -0.068135} + 0.5f))
 <=>
 (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[74].y)) + (pf_2_28 + 0.5f))
 <=>
@@ -29750,7 +29750,7 @@ clamp(((f_1_20 * (0.f - (vs_cbuf15_23.z))) + (vs_cbuf15_23.z)), 0.0, 1.0)
 }
 */
 	pf_1_24 = f_0_82 * f_3_29;	// 0.50
-	out_attr2.x  = pf_0_15;	/* -0.360295  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_0_13 : -0.860295} + 0.5f))
+	out_attr2.x  = pf_0_15;	/* 0.6397049  <=>  ((({(vs_cbuf13_2.w) : 30.00} * {(vs_cbuf16_0.z) : -27.6342}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_0_13 : 0.139705} + 0.5f))
 <=>
 ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[74].y)) + (pf_0_13 + 0.5f))
 <=>

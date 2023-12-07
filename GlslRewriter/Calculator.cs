@@ -564,6 +564,9 @@ namespace GlslRewriter
                         if (ubits == 0) {
                             val = DslExpression.CalculatorValue.From((uint)0);
                         }
+                        else if (uoffset == 0 && ubits == sizeof(uint) * 8) {
+                            val = uval;
+                        }
                         else {
                             //unsigned
                             uint mask = (1u << ubits) - 1u;
@@ -577,6 +580,9 @@ namespace GlslRewriter
                     if (ioffset >= 0 && ibits >= 0 && ioffset + ibits <= sizeof(uint) * 8) {
                         if (ibits == 0) {
                             val = DslExpression.CalculatorValue.From((uint)0);
+                        }
+                        else if (ioffset == 0 && ibits == sizeof(uint) * 8) {
+                            val = ival;
                         }
                         else {
                             //signed
@@ -596,6 +602,9 @@ namespace GlslRewriter
                     if (uoffset >= 0 && ubits>=0 && uoffset + ubits <= sizeof(uint) * 8) {
                         if (ubits == 0) {
                             val = DslExpression.CalculatorValue.From(uval);
+                        }
+                        else if (uoffset == 0 && ubits == sizeof(uint) * 8) {
+                            val = uinsert;
                         }
                         else {
                             uint maskBits = (1u << ubits) - 1u;

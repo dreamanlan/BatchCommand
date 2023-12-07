@@ -841,6 +841,11 @@ vs
         vao_attr("private Vector4[] in_attr6_array", "vec4", "d:/uc/VAO_smoke/vertex_in_attr6.csv", "[NonSerialized]"){
             add_range(0,65);
         };
+        /*
+        vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_smoke/ref_data_attr7.csv", "[NonSerialized]"){
+            add_range(0,381);
+        };
+        */
         vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_smoke/vertex_in_attr7.csv", "[NonSerialized]"){
             add_range(0,65);
         };

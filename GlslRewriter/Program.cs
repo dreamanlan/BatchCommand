@@ -422,26 +422,31 @@ namespace GlslRewriter
                             var tuple = s_ExpressionList[ix];
                             var line = tuple.Item1;
                             var vname = tuple.Item2;
+                            var blockId = tuple.Item3;
                             if (vname == c_CommentTag && removeComments) {
                                 s_ExpressionList.RemoveAt(ix);
                             }
-                            else if (!string.IsNullOrEmpty(vname) && s_DuplicateVars.ContainsKey(vname)) {
-                                s_ExpressionList.RemoveAt(ix);
-                                removeComments = true;
-                            }
-                            else {
-                                string s = tuple.Item1;
-                                foreach(var pair in s_DuplicateVars) {
-                                    var reptuple = pair.Value;
-                                    s = reptuple.Item2.Replace(s, reptuple.Item1);
+                            else if (s_DuplicateVars.TryGetValue(blockId, out var dupvars)) {
+                                if (!string.IsNullOrEmpty(vname) && dupvars.ContainsKey(vname)) {
+                                    s_ExpressionList.RemoveAt(ix);
+                                    removeComments = true;
                                 }
-                                s_ExpressionList[ix] = Tuple.Create(s, vname);
-                                removeComments = false;
+                                else {
+                                    string s = tuple.Item1;
+                                    foreach (var pair in dupvars) {
+                                        var reptuple = pair.Value;
+                                        s = reptuple.Item2.Replace(s, reptuple.Item1);
+                                    }
+                                    s_ExpressionList[ix] = Tuple.Create(s, vname, blockId);
+                                    removeComments = false;
+                                }
                             }
                         }
-                        foreach (var pair in s_DuplicateVars) {
-                            var vname = pair.Key;
-                            Config.ActiveConfig.SettingInfo.UsedVariables.Remove(vname);
+                        foreach (var pair0 in s_DuplicateVars) {
+                            foreach (var pair1 in pair0.Value) {
+                                var vname = pair1.Key;
+                                Config.ActiveConfig.SettingInfo.UsedVariables.Remove(vname);
+                            }
                         }
                     }
                     var outBuilder = s_ExpressionBuilder;
@@ -1599,7 +1604,7 @@ namespace GlslRewriter
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     HashSet<string> setVars = new HashSet<string>();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty, CurBlockId()));
                         ++s_Indent;
                     }
                     PushBlock(true, false);
@@ -1622,7 +1627,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                     }
                     if (s_SSA) {
                         //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
@@ -1675,7 +1680,7 @@ namespace GlslRewriter
                         useBranch = true;
                     }
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty, CurBlockId()));
                         ++s_Indent;
                     }
                     PushBlock(true, false);
@@ -1699,7 +1704,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                     }
                 }
             }
@@ -1751,7 +1756,7 @@ namespace GlslRewriter
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty, CurBlockId()));
                         ++s_Indent;
                     }
                     PushBlock(true, true);
@@ -1766,7 +1771,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                     }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
@@ -1801,7 +1806,7 @@ namespace GlslRewriter
                     var suffix = c_PhiTagSeparator + GenUniqueNumber();
                     var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "{", string.Empty, CurBlockId()));
                         ++s_Indent;
                     }
                     PushBlock(true, true);
@@ -1816,7 +1821,7 @@ namespace GlslRewriter
                     PopBlock();
                     if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                         --s_Indent;
-                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
+                        s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                     }
                     if (null != newRefVarValDataOuter) {
                         foreach (var pair in newRefVarValDataOuter) {
@@ -1847,7 +1852,7 @@ namespace GlslRewriter
                 var suffix = c_PhiTagSeparator + GenUniqueNumber();
                 var oldAliasInfos = CloneVarAliasInfos(CurVarAliasInfos());
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "do {", string.Empty));
+                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "do {", string.Empty, CurBlockId()));
                     ++s_Indent;
                 }
                 PushBlock(true, true);
@@ -1862,7 +1867,7 @@ namespace GlslRewriter
                 PopBlock();
                 if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
                     --s_Indent;
-                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty));
+                    s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                 }
                 if (null != newRefVarValDataOuter) {
                     foreach (var pair in newRefVarValDataOuter) {
@@ -1885,7 +1890,7 @@ namespace GlslRewriter
             AddComputeGraphRootNode(breakNode);
 
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "break;", string.Empty));
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "break;", string.Empty, CurBlockId()));
             }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
@@ -1903,7 +1908,7 @@ namespace GlslRewriter
             AddComputeGraphRootNode(breakNode);
 
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "continue;", string.Empty));
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "continue;", string.Empty, CurBlockId()));
             }
             insertAfterOuter = null;
             var suffix = GetCurLoopBlockPhiSuffix();
@@ -1923,7 +1928,7 @@ namespace GlslRewriter
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "discard;", string.Empty));
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "discard;", string.Empty, CurBlockId()));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1935,7 +1940,7 @@ namespace GlslRewriter
             insertBeforeOuter = null;
             insertAfterOuter = null;
             if (Config.ActiveConfig.SettingInfo.GenerateExpressionList) {
-                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return;", string.Empty));
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return;", string.Empty, CurBlockId()));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -1954,7 +1959,7 @@ namespace GlslRewriter
                     int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
                     expStr = expression.GetExpression(new ComputeSetting(defMaxLvl, defMaxLen, false, false, false, true));
                 }
-                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return " + expStr, string.Empty));
+                s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "return " + expStr, string.Empty, CurBlockId()));
             }
             return insertBeforeOuter != null || insertAfterOuter != null;
         }
@@ -2249,11 +2254,11 @@ namespace GlslRewriter
                     line.Append(";");
                     var lineStr = line.ToString();
                     if (index >= 0) {
-                        s_ExpressionList.Insert(index, Tuple.Create(lineStr, key));
+                        s_ExpressionList.Insert(index, Tuple.Create(lineStr, key, CurBlockId()));
                         ++index;
                     }
                     else {
-                        s_ExpressionList.Add(Tuple.Create(lineStr, key));
+                        s_ExpressionList.Add(Tuple.Create(lineStr, key, CurBlockId()));
                     }
                 }
             }
@@ -2336,7 +2341,7 @@ namespace GlslRewriter
                     if (markValue) {
                         line.Append(expWithVal);
                     }
-                    s_ExpressionList.Add(Tuple.Create(line.ToString(), c_CommentTag));
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), c_CommentTag, CurBlockId()));
                 }
 
                 if (null != leftAssignDsl) {
@@ -2350,8 +2355,17 @@ namespace GlslRewriter
                     if (addSemiColon)
                         line.Append(";");
                     if (singleLineExp.IndexOf(' ') > 0) {
+                        int blockId = CurBlockId();
                         //只检查多参数函数与操作符表达式，避免将常量或utof/ftou判断为重复表达式
-                        if (s_Expression2VarList.TryGetValue(singleLineExp, out var varlist)) {
+                        if(!s_Expression2VarList.TryGetValue(blockId, out var exp2vars)) {
+                            exp2vars = new Dictionary<string, List<Tuple<string, string>>>();
+                            s_Expression2VarList.Add(blockId, exp2vars);
+                        }
+                        if(!s_DuplicateVars.TryGetValue(blockId, out var dupvars)) {
+                            dupvars = new Dictionary<string, Tuple<string, Regex>>();
+                            s_DuplicateVars.Add(blockId, dupvars);
+                        }
+                        if (exp2vars.TryGetValue(singleLineExp, out var varlist)) {
                             line.Append(" // maybe duplicate expression on the right side of the assignment, vars:{0}", string.Join('|', varlist));
                             var tuple = Tuple.Create(varExp, vname);
                             if (varlist.Contains(tuple)) {
@@ -2363,16 +2377,16 @@ namespace GlslRewriter
                             string firstVar = varlist[0].Item2;
                             if (!string.IsNullOrEmpty(firstVar) && !string.IsNullOrEmpty(vname)) {
                                 var regex = new Regex(@"\b" + vname + @"\b", RegexOptions.Singleline | RegexOptions.Compiled);
-                                s_DuplicateVars.Add(vname, Tuple.Create(firstVar, regex));
+                                dupvars.Add(vname, Tuple.Create(firstVar, regex));
                             }
                         }
                         else {
                             varlist = new List<Tuple<string, string>>();
                             varlist.Add(Tuple.Create(varExp, vname));
-                            s_Expression2VarList.Add(singleLineExp, varlist);
+                            exp2vars.Add(singleLineExp, varlist);
                         }
                     }
-                    s_ExpressionList.Add(Tuple.Create(line.ToString(), vname));
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), vname, CurBlockId()));
 
                     if (s_SSA && !string.IsNullOrEmpty(vname)) {
                         int len = vname.LastIndexOf(c_AliasSeparator);
@@ -2394,7 +2408,7 @@ namespace GlslRewriter
                     line.Append(singleLineExp);
                     if (addSemiColon)
                         line.Append(";");
-                    s_ExpressionList.Add(Tuple.Create(line.ToString(), string.Empty));
+                    s_ExpressionList.Add(Tuple.Create(line.ToString(), string.Empty, CurBlockId()));
                 }
             }
             return !val.IsNullObject;
@@ -4098,9 +4112,9 @@ namespace GlslRewriter
 
         internal static ComputeGraph s_GlobalComputeGraph = new ComputeGraph();
         internal static StringBuilder s_ExpressionBuilder = new StringBuilder();
-        internal static List<Tuple<string, string>> s_ExpressionList = new List<Tuple<string, string>>();
-        internal static Dictionary<string, List<Tuple<string, string>>> s_Expression2VarList = new Dictionary<string, List<Tuple<string, string>>>();
-        internal static Dictionary<string, Tuple<string, Regex>> s_DuplicateVars = new Dictionary<string, Tuple<string, Regex>>();
+        internal static List<Tuple<string, string, int>> s_ExpressionList = new List<Tuple<string, string, int>>();
+        internal static Dictionary<int, Dictionary<string, List<Tuple<string, string>>>> s_Expression2VarList = new Dictionary<int, Dictionary<string, List<Tuple<string, string>>>>();
+        internal static Dictionary<int, Dictionary<string, Tuple<string, Regex>>> s_DuplicateVars = new Dictionary<int, Dictionary<string, Tuple<string, Regex>>>();
         internal static int s_Indent = 1;
 
         private static Stack<CondExpInfo> s_CondExpStack = new Stack<CondExpInfo>();

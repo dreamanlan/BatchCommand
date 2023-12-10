@@ -230,7 +230,12 @@ namespace GlslRewriter
             if (!s_InteractiveComputing)
                 File.Delete(studyFile);
             var glslFileLines = File.ReadAllLines(srcFile);
-            var glslLines = CompletionAndSkipPP(glslFileLines, out var globalCode);
+            var hlslMergeDatas = new Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>>();
+            foreach(var hlslMerge in Config.ActiveArgConfig.HlslMergeImports) {
+                var datas = RenderDocImporter.ReadHlslMergeInfo(hlslMerge.File);
+                hlslMergeDatas.Add(hlslMerge.File, datas);
+            }
+            var glslLines = CompletionAndSkipPP(glslFileLines, hlslMergeDatas, out var globalCode);
             string glslTxt = ConvertCondExpAndSkipComments(glslLines);
             if (!s_InteractiveComputing)
                 File.WriteAllText(s_SrcFileForDSL, glslTxt);
@@ -401,7 +406,7 @@ namespace GlslRewriter
                 }
                 if (argConfig.VAOImports.Count > 0) {
                     foreach (var vaoImp in argConfig.VAOImports) {
-                        var vaos = RenderDocImporter.GenerateVAO(vaoImp.Attr, vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File);
+                        var vaos = RenderDocImporter.GenerateVAO(vaoImp.Attr, vaoImp.AttrArrayLeft, vaoImp.Type, vaoImp.UsedIndexes, vaoImp.File, hlslMergeDatas);
                         lineList.AddRange(vaos);
                     }
                     lineList.Add(string.Empty);
@@ -489,7 +494,7 @@ namespace GlslRewriter
                 }
             }
         }
-        private static List<string> CompletionAndSkipPP(IList<string> glslLines, out string globalCode)
+        private static List<string> CompletionAndSkipPP(IList<string> glslLines, Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>> hlslMergeDatas, out string globalCode)
         {
             var lines = new List<string>();
             bool attrImported = false;
@@ -512,7 +517,7 @@ namespace GlslRewriter
                     if (ix >= 0) {
                         needFindLBrace = false;
                         attrImported = true;
-                        lines.AddRange(GetImportAttrs());
+                        lines.AddRange(GetImportAttrs(hlslMergeDatas));
                     }
                 }
                 else if (!attrImported) {
@@ -547,7 +552,7 @@ namespace GlslRewriter
                             findMain = true;
                             if (ix5 > ix4 && ix4 > ix3) {
                                 attrImported = true;
-                                lines.AddRange(GetImportAttrs());
+                                lines.AddRange(GetImportAttrs(hlslMergeDatas));
                             }
                             else if (ix5 < 0) {
                                 needFindLBrace = true;
@@ -561,7 +566,7 @@ namespace GlslRewriter
             globalCode = globalBuilder.ToString();
             return lines;
         }
-        private static List<string> GetImportAttrs()
+        private static List<string> GetImportAttrs(Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>> hlslMergeDatas)
         {
             List<string> stms = new List<string>();
             //插入参数初始化
@@ -572,7 +577,7 @@ namespace GlslRewriter
             var attrCfg = cfg.InOutAttrInfo;
             if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
                 if (File.Exists(attrCfg.InAttrImportFile)) {
-                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile);
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile, hlslMergeDatas);
                     stms.AddRange(lines);
                 }
                 else {
@@ -581,7 +586,7 @@ namespace GlslRewriter
             }
             if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
                 if (File.Exists(attrCfg.OutAttrImportFile)) {
-                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile);
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile, hlslMergeDatas);
                     stms.AddRange(lines);
                 }
                 else {
@@ -590,7 +595,7 @@ namespace GlslRewriter
             }
             foreach (var uniform in cfg.UniformImports) {
                 if (File.Exists(uniform.File)) {
-                    var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.UsedIndexes, uniform.File);
+                    var lines = RenderDocImporter.GenerateUniform(uniform.Type, uniform.UsedIndexes, uniform.File, hlslMergeDatas);
                     stms.AddRange(lines);
                 }
                 else {

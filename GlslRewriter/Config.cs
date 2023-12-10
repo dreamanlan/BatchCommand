@@ -23,7 +23,27 @@ namespace GlslRewriter
 {
     internal static class RenderDocImporter
     {
-        internal static List<string> GenenerateVsInOutAttr(string type, int index, Dictionary<string,string> attrMap, string csv_path)
+        internal static Dictionary<string, HlslExportInfo> ReadHlslMergeInfo(string hlslDataFile)
+        {
+            var results = new Dictionary<string, HlslExportInfo>();
+            var lines = File.ReadAllLines(hlslDataFile);
+            if (lines.Length >= 2) {
+                var header = lines[0];
+                var colNames = header.Split(",", StringSplitOptions.TrimEntries);
+                if (colNames.Length >= 4 && colNames[0] == "Name" && colNames[1] == "Value" && colNames[3] == "Type") {
+                    for (int ix = 1; ix < lines.Length; ++ix) {
+                        var line = lines[ix];
+                        var cols = SplitCsvLine(line);
+                        Debug.Assert(colNames.Length == cols.Count);
+
+                        var info = new HlslExportInfo { Name = cols[0], Value = cols[1], Type = cols[3] };
+                        results[info.Name] = info;
+                    }
+                }
+            }
+            return results;
+        }
+        internal static List<string> GenenerateVsInOutAttr(string type, int index, Dictionary<string, string> attrMap, string csv_path, Dictionary<string, Dictionary<string, HlslExportInfo>> hlslMergeDatas)
         {
             var results = new List<string>();
             var sb = new StringBuilder();
@@ -52,7 +72,12 @@ namespace GlslRewriter
                                 sb.Append(" = ");
                                 sb.Append(type);
                                 sb.Append("(");
-                                sb.Append(cols[i].Trim());
+                                if (Config.TryMergeHlslAttr(names[0], names[1], hlslMergeDatas, out var attrData)) {
+                                    sb.Append(attrData.Trim());
+                                }
+                                else {
+                                    sb.Append(cols[i].Trim());
+                                }
                                 sb.Append(");");
 
                                 results.Add(sb.ToString());
@@ -88,6 +113,17 @@ namespace GlslRewriter
                                     if (i > 2)
                                         sb.Append("), ");
                                     sb.Append("new Vector4(");
+                                    if (Config.TryMergeHlslAttr(names[0], string.Empty, hlslMergeDatas, out var attrData)) {
+                                        var vals = attrData.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                        for (int aix = 0; aix < vals.Length; ++aix) {
+                                            if (aix > 0)
+                                                sb.Append(", ");
+                                            sb.Append(vals[aix].Trim());
+                                            sb.Append("f");
+                                        }
+                                        i += 3;
+                                        continue;
+                                    }
                                 }
                                 else if (i > 2)
                                     sb.Append(", ");
@@ -122,6 +158,17 @@ namespace GlslRewriter
                                     else
                                         sb.Append(", ");
                                     sb.Append("new Vector4(");
+                                    if (Config.TryMergeHlslAttr(names[0], string.Empty, hlslMergeDatas, out var attrData)) {
+                                        var vals = attrData.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                        for (int aix = 0; aix < vals.Length; ++aix) {
+                                            if (aix > 0)
+                                                sb.Append(", ");
+                                            sb.Append(vals[aix].Trim());
+                                            sb.Append("f");
+                                        }
+                                        i += 3;
+                                        continue;
+                                    }
                                 }
                                 else if (i > 2)
                                     sb.Append(", ");
@@ -146,7 +193,7 @@ namespace GlslRewriter
                     s_VertexStructInits.Add(sb.ToString());
                     sb.Length = 0;
 
-                    foreach(var pair in s_VertexAttrInits) {
+                    foreach (var pair in s_VertexAttrInits) {
                         var list = pair.Value;
                         if (list.Count > 0 && list[list.Count - 1] != c_EndStr)
                             pair.Value.Add(c_EndStr);
@@ -155,7 +202,7 @@ namespace GlslRewriter
             }
             return results;
         }
-        internal static List<string> GenerateUniform(string type, HashSet<int> indexes, string csv_path)
+        internal static List<string> GenerateUniform(string type, HashSet<int> indexes, string csv_path, Dictionary<string, Dictionary<string, HlslExportInfo>> hlslMergeDatas)
         {
             var results = new List<string>();
             var sb = new StringBuilder();
@@ -172,13 +219,22 @@ namespace GlslRewriter
                             var firstCol = cols[0];
                             int si = firstCol.IndexOf('[');
                             var vname = firstCol.Substring(0, si).Trim();
+                            int ei = firstCol.IndexOf("]");
+                            var ixStr = firstCol.Substring(si + 1, ei - si - 1);
+                            int.TryParse(ixStr, out var index);
                             if (firstCol.Length > 0 && firstCol[firstCol.Length - 1] == ']') {
                                 sb.Append(cols[0]);
                                 sb.Append(" = ");
+                                bool hasHlslData = Config.TryMergeHlslData(vname, index, hlslMergeDatas, out var hlslData);
+                                string vals = cols[1];
+                                string dataType = type;
+                                if (hasHlslData) {
+                                    vals = hlslData.Value;
+                                    dataType = hlslData.Type == "float4" ? "vec4" : "uvec4";
+                                }
                                 if (Program.s_DoReplacement && Config.ActiveConfig.TypeReplacements.TryGetValue(vname, out var newType)) {
-                                    string vals = cols[1];
                                     var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
-                                    if (type == "vec4" && newType == "uint") {
+                                    if (dataType == "vec4" && newType == "uint") {
                                         sb.Append("uvec4(");
                                         for (int i = 0; i < vstrs.Length; ++i) {
                                             if (i > 0)
@@ -188,8 +244,39 @@ namespace GlslRewriter
                                         }
                                         sb.Append(");");
                                     }
-                                    else if (type == "uvec4" && newType == "float") {
+                                    else if (dataType == "uvec4" && newType == "float") {
                                         sb.Append("vec4(");
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            uint.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.FloatToString(Calculator.utof(v)));
+                                        }
+                                        sb.Append(");");
+                                    }
+                                }
+                                else if (hasHlslData) {
+                                    if ((type == "vec4" && hlslData.Type == "float4")
+                                        || (type == "uvec4" && hlslData.Type == "uint4")) {
+                                        sb.Append(type);
+                                        sb.Append("(");
+                                        sb.Append(vals);
+                                        sb.Append(");");
+                                    }
+                                    else if (hlslData.Type == "float4") {
+                                        sb.Append("uvec4(");
+                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
+                                        for (int i = 0; i < vstrs.Length; ++i) {
+                                            if (i > 0)
+                                                sb.Append(", ");
+                                            float.TryParse(vstrs[i], out var v);
+                                            sb.Append(Calculator.ftou(v).ToString());
+                                        }
+                                        sb.Append(");");
+                                    }
+                                    else {
+                                        sb.Append("vec4(");
+                                        var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
                                         for (int i = 0; i < vstrs.Length; ++i) {
                                             if (i > 0)
                                                 sb.Append(", ");
@@ -202,15 +289,14 @@ namespace GlslRewriter
                                 else {
                                     sb.Append(type);
                                     sb.Append("(");
-                                    sb.Append(cols[1]);
+                                    sb.Append(vals);
                                     sb.Append(");");
                                 }
 
                                 results.Add(sb.ToString());
                                 sb.Length = 0;
 
-                                if (type == "vec4") {
-                                    string vals = cols[1];
+                                if (dataType == "vec4") {
                                     var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
                                     sb.Append("// ");
                                     sb.Append(cols[0]);
@@ -227,24 +313,54 @@ namespace GlslRewriter
                                     s_UniformInits.Add(sb.ToString());
                                     sb.Length = 0;
 
-                                    if (Config.ActiveConfig.SettingInfo.NeedUniformFtouVals) {
+                                    if (type == "uvec4") {
                                         sb.Append("// ");
                                         sb.Append(cols[0]);
                                         sb.Append(" = ");
-                                        sb.Append("uvec4(");
                                         for (int i = 0; i < vstrs.Length; ++i) {
-                                            if (i > 0)
-                                                sb.Append(", ");
-                                            float.TryParse(vstrs[i], out var v);
-                                            sb.Append(Calculator.ftou(v).ToString());
+                                            sb.Append(", ");
+                                            uint.TryParse(vstrs[i], out var v);
+                                            sb.Append(v.ToString());
+                                            sb.Append("u");
                                         }
-                                        sb.Append(");");
-                                        s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                        s_UniformRawInits.Add(sb.ToString());
                                         sb.Length = 0;
+
+                                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
+                                            sb.Append("// ");
+                                            sb.Append(cols[0]);
+                                            sb.Append(" = ");
+                                            sb.Append("vec4(");
+                                            for (int i = 0; i < vstrs.Length; ++i) {
+                                                if (i > 0)
+                                                    sb.Append(", ");
+                                                float.TryParse(vstrs[i], out var v);
+                                                sb.Append(Calculator.FloatToString(v));
+                                            }
+                                            sb.Append(");");
+                                            s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                            sb.Length = 0;
+                                        }
+                                    }
+                                    else {
+                                        if (Config.ActiveConfig.SettingInfo.NeedUniformFtouVals) {
+                                            sb.Append("// ");
+                                            sb.Append(cols[0]);
+                                            sb.Append(" = ");
+                                            sb.Append("uvec4(");
+                                            for (int i = 0; i < vstrs.Length; ++i) {
+                                                if (i > 0)
+                                                    sb.Append(", ");
+                                                float.TryParse(vstrs[i], out var v);
+                                                sb.Append(Calculator.ftou(v).ToString());
+                                            }
+                                            sb.Append(");");
+                                            s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                            sb.Length = 0;
+                                        }
                                     }
                                 }
                                 else {
-                                    string vals = cols[1];
                                     var vstrs = vals.Split(",", StringSplitOptions.TrimEntries);
                                     sb.Append("// ");
                                     sb.Append(cols[0]);
@@ -261,32 +377,51 @@ namespace GlslRewriter
                                     s_UniformInits.Add(sb.ToString());
                                     sb.Length = 0;
 
-                                    sb.Append("// ");
-                                    sb.Append(cols[0]);
-                                    sb.Append(" = ");
-                                    for (int i = 0; i < vstrs.Length; ++i) {
-                                        sb.Append(", ");
-                                        uint.TryParse(vstrs[i], out var v);
-                                        sb.Append(v.ToString());
-                                        sb.Append("u");
-                                    }
-                                    s_UniformRawInits.Add(sb.ToString());
-                                    sb.Length = 0;
-
-                                    if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
+                                    if (type == "uvec4") {
                                         sb.Append("// ");
                                         sb.Append(cols[0]);
                                         sb.Append(" = ");
-                                        sb.Append("vec4(");
                                         for (int i = 0; i < vstrs.Length; ++i) {
-                                            if (i > 0)
-                                                sb.Append(", ");
+                                            sb.Append(", ");
                                             uint.TryParse(vstrs[i], out var v);
-                                            sb.Append(Calculator.FloatToString(Calculator.utof(v)));
+                                            sb.Append(v.ToString());
+                                            sb.Append("u");
                                         }
-                                        sb.Append(");");
-                                        s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                        s_UniformRawInits.Add(sb.ToString());
                                         sb.Length = 0;
+
+                                        if (Config.ActiveConfig.SettingInfo.NeedUniformUtofVals) {
+                                            sb.Append("// ");
+                                            sb.Append(cols[0]);
+                                            sb.Append(" = ");
+                                            sb.Append("vec4(");
+                                            for (int i = 0; i < vstrs.Length; ++i) {
+                                                if (i > 0)
+                                                    sb.Append(", ");
+                                                uint.TryParse(vstrs[i], out var v);
+                                                sb.Append(Calculator.FloatToString(Calculator.utof(v)));
+                                            }
+                                            sb.Append(");");
+                                            s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                            sb.Length = 0;
+                                        }
+                                    }
+                                    else {
+                                        if (Config.ActiveConfig.SettingInfo.NeedUniformFtouVals) {
+                                            sb.Append("// ");
+                                            sb.Append(cols[0]);
+                                            sb.Append(" = ");
+                                            sb.Append("uvec4(");
+                                            for (int i = 0; i < vstrs.Length; ++i) {
+                                                if (i > 0)
+                                                    sb.Append(", ");
+                                                uint.TryParse(vstrs[i], out var v);
+                                                sb.Append(v.ToString());
+                                            }
+                                            sb.Append(");");
+                                            s_UniformUtofOrFtouVals.Add(sb.ToString());
+                                            sb.Length = 0;
+                                        }
                                     }
                                 }
                             }
@@ -296,7 +431,7 @@ namespace GlslRewriter
             }
             return results;
         }
-        internal static List<string> GenerateVAO(string attr, string attrArrayLeft, string type, HashSet<int> indexes, string csv_path)
+        internal static List<string> GenerateVAO(string attr, string attrArrayLeft, string type, HashSet<int> indexes, string csv_path, Dictionary<string, Dictionary<string, HlslExportInfo>> hlslMergeDatas)
         {
             var results = new List<string>();
             var sb = new StringBuilder();
@@ -305,6 +440,28 @@ namespace GlslRewriter
                 var header = lines[0];
                 var colNames = header.Split(",", StringSplitOptions.TrimEntries);
                 if (colNames.Length >= 2 && colNames[0] == "Element") {
+                    string[] realColNames;
+                    if (colNames.Length > 5) {
+                        int colNum = (colNames.Length - 1) / 4;
+                        realColNames = new string[colNum];
+                        for (int ix = 0; ix < colNum; ++ix) {
+                            var colName = colNames[1 + ix * 4];
+                            int si = colName.LastIndexOf('.');
+                            if (si > 0) {
+                                colName = colName.Substring(0, si);
+                            }
+                            realColNames[ix] = colName;
+                        }
+                    }
+                    else {
+                        realColNames = new string[1];
+                        var colName = colNames[1];
+                        int si = colName.LastIndexOf('.');
+                        if (si > 0) {
+                            colName = colName.Substring(0, si);
+                        }
+                        realColNames[0] = colName;
+                    }
                     if (!string.IsNullOrEmpty(attr))
                         sb.AppendLine(attr);
                     sb.Append(attrArrayLeft);
@@ -323,8 +480,22 @@ namespace GlslRewriter
                                 sb.Append(", ");
                             }
                             if (type == "float") {
-                                sb.Append(cols[1]);
-                                sb.Append("f");
+                                if (Config.TryMergeHlslData(colNames[1], ix - 1, hlslMergeDatas, out var hlslData)) {
+                                    if (hlslData.Type == "float") {
+                                        sb.Append(hlslData.Value);
+                                        sb.Append("f");
+                                    }
+                                    else {
+                                        uint.TryParse(hlslData.Value, out var uval);
+                                        float fval = Calculator.utof(uval);
+                                        sb.Append(fval);
+                                        sb.Append("u");
+                                    }
+                                }
+                                else {
+                                    sb.Append(cols[1]);
+                                    sb.Append("f");
+                                }
                             }
                             else {
                                 int colNum = (colNames.Length - 1) / 4;
@@ -335,6 +506,17 @@ namespace GlslRewriter
                                             if (index > 1)
                                                 sb.Append("), ");
                                             sb.Append("new Vector4(");
+                                            var colName = realColNames[(index - 1) / 4];
+                                            if (Config.TryMergeHlslData(colName, ix - 1, hlslMergeDatas, out var hlslData)) {
+                                                //VAO目前类型都是float，就不检查类型了
+                                                var vals = hlslData.Value.Split(",", StringSplitOptions.TrimEntries);
+                                                foreach (var v in vals) {
+                                                    sb.Append(v);
+                                                    sb.Append("f");
+                                                }
+                                                index += 3;
+                                                continue;
+                                            }
                                         }
                                         else if (index > 1)
                                             sb.Append(", ");
@@ -345,11 +527,22 @@ namespace GlslRewriter
                                 }
                                 else {
                                     sb.Append("new Vector4(");
-                                    for (int index = 1; index < cols.Count; ++index) {
-                                        if (index > 1)
-                                            sb.Append(", ");
-                                        sb.Append(cols[index]);
-                                        sb.Append("f");
+                                    var colName = realColNames[0];
+                                    if (Config.TryMergeHlslData(colName, ix - 1, hlslMergeDatas, out var hlslData)) {
+                                        //VAO目前类型都是float，就不检查类型了
+                                        var vals = hlslData.Value.Split(",", StringSplitOptions.TrimEntries);
+                                        foreach (var v in vals) {
+                                            sb.Append(v);
+                                            sb.Append("f");
+                                        }
+                                    }
+                                    else {
+                                        for (int index = 1; index < cols.Count; ++index) {
+                                            if (index > 1)
+                                                sb.Append(", ");
+                                            sb.Append(cols[index]);
+                                            sb.Append("f");
+                                        }
                                     }
                                     sb.Append(")");
                                 }
@@ -528,6 +721,15 @@ namespace GlslRewriter
             return cols;
         }
 
+        internal class HlslExportInfo
+        {
+            internal string Name = string.Empty;
+            internal string Value = string.Empty;
+            internal string Type = string.Empty;
+
+            internal static HlslExportInfo s_EmptyInfo = new HlslExportInfo();
+        }
+
         internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
         internal static List<string> s_VertexStructInits = new List<string>();
         internal static SortedDictionary<string, List<string>> s_VertexAttrInits = new SortedDictionary<string, List<string>>();
@@ -575,17 +777,92 @@ namespace GlslRewriter
             if (Program.s_IsVsShader) {
                 s_ShaderConfigs.TryGetValue("vs", out s_ActiveConfig);
             }
-            else if(Program.s_IsPsShader) {
+            else if (Program.s_IsPsShader) {
                 s_ShaderConfigs.TryGetValue("ps", out s_ActiveConfig);
             }
-            else if(Program.s_IsCsShader) {
+            else if (Program.s_IsCsShader) {
                 s_ShaderConfigs.TryGetValue("cs", out s_ActiveConfig);
             }
+        }
+        internal static bool TryMergeHlslData(string name, int index, Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>> hlslFileDatas, out RenderDocImporter.HlslExportInfo hlslData)
+        {
+            hlslData = RenderDocImporter.HlslExportInfo.s_EmptyInfo;
+            foreach (var hlslMerge in ActiveArgConfig.HlslMergeImports) {
+                if (hlslFileDatas.TryGetValue(hlslMerge.File, out var hlslDatas)) {
+                    foreach (var repInfo in hlslMerge.NameReplacements) {
+                        if (("*" == repInfo.Item1 || name == repInfo.Item1) && ("*" == repInfo.Item2 || (int.TryParse(repInfo.Item2, out var v2) && index == v2))) {
+                            var sb = new StringBuilder();
+                            TransformNameReplacement(sb, repInfo.Item3, repInfo.Item4, name, index);
+                            var newKeys = sb.ToString().Split("|", StringSplitOptions.RemoveEmptyEntries);
+                            if (newKeys.Length == 1) {
+                                if (hlslDatas.TryGetValue(newKeys[0], out var data)) {
+                                    hlslData = data;
+                                    return true;
+                                }
+                            }
+                            else if (newKeys.Length > 1) {
+                                string type = string.Empty;
+                                sb.Length = 0;
+                                for (int ix = 0; ix < newKeys.Length; ++ix) {
+                                    var newKey = newKeys[ix];
+                                    if (hlslDatas.TryGetValue(newKey, out var data)) {
+                                        type = data.Type;
+                                        if (ix > 0)
+                                            sb.Append(",");
+                                        sb.Append(data.Value);
+                                    }
+                                }
+                                hlslData = new RenderDocImporter.HlslExportInfo { Name = repInfo.Item1, Value = sb.ToString(), Type = type + newKeys.ToString() };
+                                return true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+        internal static bool TryMergeHlslAttr(string attr, string member, Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>> hlslFileDatas, out string attrData)
+        {
+            attrData = string.Empty;
+            foreach (var hlslMerge in ActiveArgConfig.HlslMergeImports) {
+                if (hlslFileDatas.TryGetValue(hlslMerge.File, out var hlslDatas)) {
+                    if (hlslMerge.AttrHlslMap.TryGetValue(attr, out var vname)) {
+                        if(hlslDatas.TryGetValue(vname, out var info)) {
+                            if (string.IsNullOrEmpty(member)) {
+                                attrData = info.Value;
+                                return true;
+                            }
+                            else {
+                                var vals = info.Value.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                                if (member == "x" && vals.Length > 0) {
+                                    attrData = vals[0];
+                                    return true;
+                                }
+                                else if (member == "y" && vals.Length > 1) {
+                                    attrData = vals[1];
+                                    return true;
+                                }
+                                else if (member == "z" && vals.Length > 2) {
+                                    attrData = vals[2];
+                                    return true;
+                                }
+                                else if (member == "w" && vals.Length > 3) {
+                                    attrData = vals[3];
+                                    return true;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            return false;
         }
         internal static string TryReplaceType(string key, string type)
         {
             string ret = type;
-            if (Program.s_DoReplacement && Config.ActiveConfig.TypeReplacements.TryGetValue(key, out string newType)) {
+            if (Program.s_DoReplacement && Config.ActiveConfig.TypeReplacements.TryGetValue(key, out var newType)) {
                 string baseType = Program.GetTypeRemoveSuffix(type, out var suffix, out var arrNums);
                 if (arrNums.Count > 0) {
                     if (suffix.Length > 0) {
@@ -636,7 +913,7 @@ namespace GlslRewriter
         {
             string ret = txt;
             if (Program.s_DoReplacement && Config.ActiveConfig.StringReplacements.Count > 0) {
-                foreach(var info in Config.ActiveConfig.StringReplacements) {
+                foreach (var info in Config.ActiveConfig.StringReplacements) {
                     if (null != info.SrcRegex) {
                         ret = info.SrcRegex.Replace(ret, info.Dst);
                     }
@@ -672,7 +949,7 @@ namespace GlslRewriter
             }
             if (null != vd) {
                 string vname = vd.GetId();
-                if(settingInfo.VariableSplitInfos.TryGetValue(vname, out var lvlInfo)) {
+                if (settingInfo.VariableSplitInfos.TryGetValue(vname, out var lvlInfo)) {
                     maxLevelForExp = lvlInfo.MaxLevel;
                     maxLengthForExp = lvlInfo.MaxLength;
                     multiline = lvlInfo.Multiline;
@@ -686,11 +963,11 @@ namespace GlslRewriter
                 }
             }
             else if (null != fd) {
-                if(fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {
+                if (fd.IsPeriodParamClass() && fd.IsHighOrder && fd.LowerOrderFunction.IsBracketParamClass()) {
                     string cid = fd.LowerOrderFunction.GetId();
                     string ixStr = fd.LowerOrderFunction.GetParamId(0);
                     string member = fd.GetParamId(0);
-                    if(int.TryParse(ixStr, out var index) && settingInfo.ObjectArraySplitInfos.TryGetValue(cid, out var objArrLvlInfo)
+                    if (int.TryParse(ixStr, out var index) && settingInfo.ObjectArraySplitInfos.TryGetValue(cid, out var objArrLvlInfo)
                         && objArrLvlInfo.TryGetValue(index, out var objLvlInfo)
                         && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
                         maxLevelForExp = lvlInfo.MaxLevel;
@@ -705,7 +982,7 @@ namespace GlslRewriter
                 else if (fd.IsPeriodParamClass()) {
                     string cid = fd.GetId();
                     string member = fd.GetParamId(0);
-                    if(settingInfo.ObjectSplitInfos.TryGetValue(cid, out var objLvlInfo) && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
+                    if (settingInfo.ObjectSplitInfos.TryGetValue(cid, out var objLvlInfo) && objLvlInfo.TryGetValue(member, out var lvlInfo)) {
                         maxLevelForExp = lvlInfo.MaxLevel;
                         maxLengthForExp = lvlInfo.MaxLength;
                         multiline = lvlInfo.Multiline;
@@ -801,14 +1078,14 @@ namespace GlslRewriter
                     ret = true;
                 }
             }
-            else if(Calculator.CalcFunc(func, args, resultType, argTypeConversion, out val, out var supported)) {
+            else if (Calculator.CalcFunc(func, args, resultType, argTypeConversion, out val, out var supported)) {
                 ret = true;
             }
             else if (ActiveConfig.Calculators.TryGetValue(func, out var infos)) {
-                foreach(var info in infos) {
+                foreach (var info in infos) {
                     bool match = true;
                     for (int i = 0; i < args.Count && i < info.Args.Count; ++i) {
-                        if (args[i].ToString() == info.Args[i] || info.Args[i]== "*") {
+                        if (args[i].ToString() == info.Args[i] || info.Args[i] == "*") {
                         }
                         else {
                             match = false;
@@ -962,12 +1239,12 @@ namespace GlslRewriter
                                     cfg.SettingInfo.ComputeGraphNodesCapacity = v;
                                 }
                             }
-                            else if(key== "shader_variables_capacity") {
+                            else if (key == "shader_variables_capacity") {
                                 if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.ShaderVariablesCapacity = v;
                                 }
                             }
-                            else if(key== "string_buffer_capacity_surplus") {
+                            else if (key == "string_buffer_capacity_surplus") {
                                 if (Calculator.TryGetInt(val, out var v)) {
                                     cfg.SettingInfo.StringBufferCapacitySurplus = v;
                                 }
@@ -1253,7 +1530,7 @@ namespace GlslRewriter
         {
             foreach (var fp in dslCfg.Params) {
                 var fd = fp as Dsl.FunctionData;
-                if (null != fd){
+                if (null != fd) {
                     string fid = fd.GetId();
                     if (fid == "=") {
                         string key = fd.GetParamId(0);
@@ -1407,6 +1684,9 @@ namespace GlslRewriter
                         }
                         else if (fid == "vao_attr") {
                             ParseVAOImport(info, fd);
+                        }
+                        else if (fid == "hlsl_merge") {
+                            ParseHlslMergeImport(info, fd);
                         }
                         else if (fid == "redirect") {
                             ParseRedirect(cfg, info, fd);
@@ -1655,6 +1935,97 @@ namespace GlslRewriter
 
             cfg.VAOImports.Add(info);
         }
+        private static void ParseHlslMergeImport(ShaderArgConfig cfg, Dsl.FunctionData dslCfg)
+        {
+            Dsl.FunctionData callCfg;
+            if (dslCfg.HaveParam()) {
+                callCfg = dslCfg;
+            }
+            else if (dslCfg.HaveStatement() && dslCfg.IsHighOrder) {
+                callCfg = dslCfg.LowerOrderFunction;
+            }
+            else {
+                return;
+            }
+
+            string file = callCfg.GetParamId(0).Trim();
+            var info = new HlslMergeImportInfo { File = file };
+
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var fd = p as Dsl.FunctionData;
+                    var sd = p as Dsl.StatementData;
+                    if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "name_replacement") {
+                            var vname = fd.GetParamId(0);
+                            var ixStr = fd.GetParamId(1);
+                            var repName = fd.GetParam(2);
+                            info.NameReplacements.Add(Tuple.Create(vname, ixStr, vname + "|" + ixStr, repName));
+                        }
+                        else if (fid == "attr_hlsl_map") {
+                            string attr = fd.GetParamId(0);
+                            string vname = fd.GetParamId(1);
+                            info.AttrHlslMap[attr] = vname;
+                        }
+                    }
+                    else if (null != sd) {
+                        var firstFunc = sd.First.AsFunction;
+                        var secondFunc = sd.Second.AsFunction;
+                        if (null != firstFunc && null != secondFunc) {
+                            string fid = firstFunc.GetId();
+                            string sid = secondFunc.GetId();
+                            if (fid == "name_replacement") {
+                                if (sid == "for") {
+                                    string stStr = secondFunc.GetParamId(0);
+                                    string edStr = secondFunc.GetParamId(1);
+                                    string incStr = secondFunc.GetParamNum() > 2 ? secondFunc.GetParamId(2) : "1";
+                                    if(int.TryParse(stStr, out var st) &&
+                                        int.TryParse(edStr, out var ed) &&
+                                        int.TryParse(incStr, out var inc)) {
+                                        if (st <= ed && inc > 0) {
+                                            for(int ix = st; ix <= ed; ix += inc) {
+                                                var vname = firstFunc.GetParamId(0);
+                                                var ixStr = firstFunc.GetParamId(1);
+                                                var repName = firstFunc.GetParam(2);
+                                                var strIx = ix.ToString();
+                                                info.NameReplacements.Add(Tuple.Create(vname.Replace("$iter", strIx), ixStr.Replace("$iter", strIx), vname + "|" + ixStr, repName));
+                                            }
+                                        }
+                                        else if (st > ed && inc < 0) {
+                                            for (int ix = st; ix >= ed; ix += inc) {
+                                                var vname = firstFunc.GetParamId(0);
+                                                var ixStr = firstFunc.GetParamId(1);
+                                                var repName = firstFunc.GetParam(2);
+                                                var strIx = ix.ToString();
+                                                info.NameReplacements.Add(Tuple.Create(vname.Replace("$iter", strIx), ixStr.Replace("$iter", strIx), vname + "|" + ixStr, repName));
+                                            }
+                                        }
+                                        else {
+                                            Console.WriteLine("name_replacement(vname, ix, rep)for(start, end, inc), arg of for is illegal, line:{0} !", sd.GetLine());
+                                        }
+                                    }
+                                    else {
+                                        Console.WriteLine("name_replacement(vname, ix, rep)for(start, end, inc), arg of for must be integer, line:{0} !", sd.GetLine());
+                                    }
+                                }
+                                else if (sid == "foreach") {
+                                    foreach(var it in secondFunc.Params) {
+                                        var vname = firstFunc.GetParamId(0);
+                                        var ixStr = firstFunc.GetParamId(1);
+                                        var repName = firstFunc.GetParam(2);
+                                        var strIx = it.GetId();
+                                        info.NameReplacements.Add(Tuple.Create(vname.Replace("$iter", strIx), ixStr.Replace("$iter", strIx), vname + "|" + ixStr, repName));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            cfg.HlslMergeImports.Add(info);
+        }
         private static void ParseRedirect(ShaderConfig cfg, ShaderArgConfig argCfg, Dsl.FunctionData dslCfg)
         {
             Dsl.FunctionData callCfg;
@@ -1665,26 +2036,30 @@ namespace GlslRewriter
                 string baseCfg = callCfg.GetParamId(0).Trim();
                 string newDir = callCfg.GetParamId(1).Trim();
                 string newDirVAO = newDir;
+                string newDirHlsl = newDir;
                 if (num > 2) {
                     newDirVAO = callCfg.GetParamId(2).Trim();
                 }
+                if (num > 3) {
+                    newDirHlsl = callCfg.GetParamId(3).Trim();
+                }
 
                 if (int.TryParse(baseCfg, out var baseCfgId)) {
-                    if(cfg.ArgConfigs.TryGetValue(baseCfgId, out var baseCfgInfo)) {
+                    if (cfg.ArgConfigs.TryGetValue(baseCfgId, out var baseCfgInfo)) {
                         argCfg.InOutAttrInfo.InAttrImportFile = ChangeDir(baseCfgInfo.InOutAttrInfo.InAttrImportFile, newDir);
                         argCfg.InOutAttrInfo.OutAttrImportFile = ChangeDir(baseCfgInfo.InOutAttrInfo.OutAttrImportFile, newDir);
                         argCfg.InOutAttrInfo.AttrIndex = baseCfgInfo.InOutAttrInfo.AttrIndex;
-                        foreach(var pair in baseCfgInfo.InOutAttrInfo.InAttrMap) {
+                        foreach (var pair in baseCfgInfo.InOutAttrInfo.InAttrMap) {
                             argCfg.InOutAttrInfo.InAttrMap.Add(pair.Key, pair.Value);
                         }
                         foreach (var pair in baseCfgInfo.InOutAttrInfo.OutAttrMap) {
                             argCfg.InOutAttrInfo.OutAttrMap.Add(pair.Key, pair.Value);
                         }
-                        foreach(var uniform in baseCfgInfo.UniformImports) {
+                        foreach (var uniform in baseCfgInfo.UniformImports) {
                             var newCfg = new UniformImportInfo();
                             newCfg.File = ChangeDir(uniform.File, newDir);
                             newCfg.Type = uniform.Type;
-                            foreach(var ix in uniform.UsedIndexes) {
+                            foreach (var ix in uniform.UsedIndexes) {
                                 newCfg.UsedIndexes.Add(ix);
                             }
                             argCfg.UniformImports.Add(newCfg);
@@ -1697,16 +2072,27 @@ namespace GlslRewriter
                             newCfg.AttrArrayLeft = ssbo.AttrArrayLeft;
                             argCfg.SSBOImports.Add(newCfg);
                         }
-                        foreach(var vao in baseCfgInfo.VAOImports) {
+                        foreach (var vao in baseCfgInfo.VAOImports) {
                             var newCfg = new VAOImportInfo();
                             newCfg.File = ChangeDir(vao.File, newDirVAO);
                             newCfg.Type = vao.Type;
                             newCfg.Attr = vao.Attr;
                             newCfg.AttrArrayLeft = vao.AttrArrayLeft;
-                            foreach(var ix in vao.UsedIndexes) {
+                            foreach (var ix in vao.UsedIndexes) {
                                 newCfg.UsedIndexes.Add(ix);
                             }
                             argCfg.VAOImports.Add(newCfg);
+                        }
+                        foreach (var hlslMerge in baseCfgInfo.HlslMergeImports) {
+                            var newCfg = new HlslMergeImportInfo();
+                            newCfg.File = ChangeDir(hlslMerge.File, newDirHlsl);
+                            foreach (var repInfo in hlslMerge.NameReplacements) {
+                                newCfg.NameReplacements.Add(repInfo);
+                            }
+                            foreach (var pair in hlslMerge.AttrHlslMap) {
+                                newCfg.AttrHlslMap.Add(pair.Key, pair.Value);
+                            }
+                            argCfg.HlslMergeImports.Add(newCfg);
                         }
                     }
                     else {
@@ -1747,21 +2133,71 @@ namespace GlslRewriter
             if (dslCfg.HaveStatement()) {
                 foreach (var p in dslCfg.Params) {
                     var fd = p as Dsl.FunctionData;
+                    var sd = p as Dsl.StatementData;
                     if (null != fd) {
                         string fid = fd.GetId();
                         if (fid == "=") {
                             var funcMatch = fd.GetParam(0);
                             var dstFunc = fd.GetParam(1);
-                            ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc);
+                            ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc, string.Empty);
+                        }
+                    }
+                    else if (null != sd) {
+                        var firstFunc = sd.First.AsFunction;
+                        var secondFunc = sd.Second.AsFunction;
+                        if (null != firstFunc && null != secondFunc) {
+                            string fid = firstFunc.GetId();
+                            string sid = secondFunc.GetId();
+                            if (fid == "replacement") {
+                                if (sid == "for") {
+                                    string stStr = secondFunc.GetParamId(0);
+                                    string edStr = secondFunc.GetParamId(1);
+                                    string incStr = secondFunc.GetParamNum() > 2 ? secondFunc.GetParamId(2) : "1";
+                                    if (int.TryParse(stStr, out var st) &&
+                                        int.TryParse(edStr, out var ed) &&
+                                        int.TryParse(incStr, out var inc)) {
+                                        if (st <= ed && inc > 0) {
+                                            for (int ix = st; ix <= ed; ix += inc) {
+                                                var funcMatch = firstFunc.GetParam(0);
+                                                var dstFunc = firstFunc.GetParam(1);
+                                                var strIx = ix.ToString();
+                                                ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc, strIx);
+                                            }
+                                        }
+                                        else if (st > ed && inc < 0) {
+                                            for (int ix = st; ix >= ed; ix += inc) {
+                                                var funcMatch = firstFunc.GetParam(0);
+                                                var dstFunc = firstFunc.GetParam(1);
+                                                var strIx = ix.ToString();
+                                                ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc, strIx);
+                                            }
+                                        }
+                                        else {
+                                            Console.WriteLine("function replacement(vname, ix, rep)for(start, end, inc), arg of for is illegal, line:{0} !", sd.GetLine());
+                                        }
+                                    }
+                                    else {
+                                        Console.WriteLine("function replacement(vname, ix, rep)for(start, end, inc), arg of for must be integer, line:{0} !", sd.GetLine());
+                                    }
+                                }
+                                else if (sid == "foreach") {
+                                    foreach (var it in secondFunc.Params) {
+                                        var funcMatch = firstFunc.GetParam(0);
+                                        var dstFunc = firstFunc.GetParam(1);
+                                        var strIx = it.GetId();
+                                        ParseFunctionReplacementInfo(cfg, funcMatch, dstFunc, strIx);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-        private static void ParseFunctionReplacementInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent dstFunc)
+        private static void ParseFunctionReplacementInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent dstFunc, string iter)
         {
             var info = new FunctionReplacement();
-            ParseFunctionMatchInfo(info, funcMatch, "function_replacement");
+            ParseFunctionMatchInfo(info, funcMatch, "function_replacement", iter);
             info.Replacement = dstFunc;
 
             if (!cfg.FunctionReplacements.TryGetValue(info.FuncOrOper, out var infos)) {
@@ -1799,21 +2235,71 @@ namespace GlslRewriter
             if (dslCfg.HaveStatement()) {
                 foreach (var p in dslCfg.Params) {
                     var fd = p as Dsl.FunctionData;
+                    var sd = p as Dsl.StatementData;
                     if (null != fd) {
                         string fid = fd.GetId();
                         if (fid == "=") {
                             var funcMatch = fd.GetParam(0);
                             var val = fd.GetParam(1);
-                            ParseCalculatorInfo(cfg, funcMatch, val);
+                            ParseCalculatorInfo(cfg, funcMatch, val, string.Empty);
+                        }
+                    }
+                    else if (null != sd) {
+                        var firstFunc = sd.First.AsFunction;
+                        var secondFunc = sd.Second.AsFunction;
+                        if (null != firstFunc && null != secondFunc) {
+                            string fid = firstFunc.GetId();
+                            string sid = secondFunc.GetId();
+                            if (fid == "replacement") {
+                                if (sid == "for") {
+                                    string stStr = secondFunc.GetParamId(0);
+                                    string edStr = secondFunc.GetParamId(1);
+                                    string incStr = secondFunc.GetParamNum() > 2 ? secondFunc.GetParamId(2) : "1";
+                                    if (int.TryParse(stStr, out var st) &&
+                                        int.TryParse(edStr, out var ed) &&
+                                        int.TryParse(incStr, out var inc)) {
+                                        if (st <= ed && inc > 0) {
+                                            for (int ix = st; ix <= ed; ix += inc) {
+                                                var funcMatch = firstFunc.GetParam(0);
+                                                var val = firstFunc.GetParam(1);
+                                                var strIx = ix.ToString();
+                                                ParseCalculatorInfo(cfg, funcMatch, val, strIx);
+                                            }
+                                        }
+                                        else if (st > ed && inc < 0) {
+                                            for (int ix = st; ix >= ed; ix += inc) {
+                                                var funcMatch = firstFunc.GetParam(0);
+                                                var val = firstFunc.GetParam(1);
+                                                var strIx = ix.ToString();
+                                                ParseCalculatorInfo(cfg, funcMatch, val, strIx);
+                                            }
+                                        }
+                                        else {
+                                            Console.WriteLine("calculator replacement(vname, ix, rep)for(start, end, inc), arg of for is illegal, line:{0} !", sd.GetLine());
+                                        }
+                                    }
+                                    else {
+                                        Console.WriteLine("calculator replacement(vname, ix, rep)for(start, end, inc), arg of for must be integer, line:{0} !", sd.GetLine());
+                                    }
+                                }
+                                else if (sid == "foreach") {
+                                    foreach (var it in secondFunc.Params) {
+                                        var funcMatch = firstFunc.GetParam(0);
+                                        var val = firstFunc.GetParam(1);
+                                        var strIx = it.GetId();
+                                        ParseCalculatorInfo(cfg, funcMatch, val, strIx);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-        private static void ParseCalculatorInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent val)
+        private static void ParseCalculatorInfo(ShaderConfig cfg, Dsl.ISyntaxComponent funcMatch, Dsl.ISyntaxComponent val, string iter)
         {
             var info = new CalculatorInfo();
-            ParseFunctionMatchInfo(info, funcMatch, "calculator");
+            ParseFunctionMatchInfo(info, funcMatch, "calculator", iter);
             var vd = val as Dsl.ValueData;
             var fd = val as Dsl.FunctionData;
             if (null != vd) {
@@ -1845,7 +2331,7 @@ namespace GlslRewriter
             }
             infos.Add(info);
         }
-        private static void ParseFunctionMatchInfo(FunctionMatchInfo info, Dsl.ISyntaxComponent funcMatch, string tag)
+        private static void ParseFunctionMatchInfo(FunctionMatchInfo info, Dsl.ISyntaxComponent funcMatch, string tag, string iter)
         {
             var val = funcMatch as Dsl.ValueData;
             if (null != val) {
@@ -1857,7 +2343,7 @@ namespace GlslRewriter
                 if (null != func) {
                     if (!func.HaveId() && func.IsParenthesisParamClass()) {
                         if (func.GetParamNum() == 1) {
-                            ParseFunctionMatchInfo(info, func.GetParam(0), tag);
+                            ParseFunctionMatchInfo(info, func.GetParam(0), tag, iter);
                         }
                         else {
                             Console.WriteLine("{0}: () left hand, () have and only have one argument !", tag);
@@ -1867,9 +2353,9 @@ namespace GlslRewriter
                         if (func.IsPeriodParamClass()) {
                             if (func.IsHighOrder && func.LowerOrderFunction.IsBracketParamClass()) {
                                 var bracketObj = func.LowerOrderFunction;
-                                string cid = ConvertMatchString(bracketObj.IsHighOrder ? bracketObj.LowerOrderFunction.GetParamId(0) : bracketObj.GetId());
-                                string ixStr = GetParamMatchString(bracketObj.GetParam(0));
-                                string member = GetParamMatchString(func.GetParam(0));
+                                string cid = ConvertMatchString(bracketObj.IsHighOrder ? bracketObj.LowerOrderFunction.GetParamId(0) : bracketObj.GetId(), iter);
+                                string ixStr = GetParamMatchString(bracketObj.GetParam(0), iter);
+                                string member = GetParamMatchString(func.GetParam(0), iter);
 
                                 info.FuncOrOper = "[].";
                                 info.ArgGetter = ComputeGraphCalcNode.GetArgForArrayMember;
@@ -1878,8 +2364,8 @@ namespace GlslRewriter
                                 info.Args.Add(member);
                             }
                             else {
-                                string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId());
-                                string member = GetParamMatchString(func.GetParam(0));
+                                string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId(), iter);
+                                string member = GetParamMatchString(func.GetParam(0), iter);
 
                                 info.FuncOrOper = ".";
                                 info.ArgGetter = ComputeGraphCalcNode.GetArgForMember;
@@ -1888,8 +2374,8 @@ namespace GlslRewriter
                             }
                         }
                         else if (func.IsBracketParamClass()) {
-                            string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId());
-                            string ixStr = GetParamMatchString(func.GetParam(0));
+                            string cid = ConvertMatchString(func.IsHighOrder ? func.LowerOrderFunction.GetParamId(0) : func.GetId(), iter);
+                            string ixStr = GetParamMatchString(func.GetParam(0), iter);
 
                             info.FuncOrOper = "[]";
                             info.ArgGetter = ComputeGraphCalcNode.GetArgForArray;
@@ -1904,7 +2390,7 @@ namespace GlslRewriter
                                 var pfd = p as Dsl.FunctionData;
                                 info.FuncOrOper = op;
                                 info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
-                                info.Args.Add(GetParamMatchString(p));
+                                info.Args.Add(GetParamMatchString(p, iter));
                             }
                             else if (num == 2) {
                                 var p1 = func.GetParam(0);
@@ -1912,8 +2398,8 @@ namespace GlslRewriter
 
                                 info.FuncOrOper = op;
                                 info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
-                                info.Args.Add(GetParamMatchString(p1));
-                                info.Args.Add(GetParamMatchString(p2));
+                                info.Args.Add(GetParamMatchString(p1, iter));
+                                info.Args.Add(GetParamMatchString(p2, iter));
                             }
                             else {
                                 Console.WriteLine("{0}: operator {1} left hand, invalid argument number !", tag, op);
@@ -1923,7 +2409,7 @@ namespace GlslRewriter
                             info.FuncOrOper = func.GetId();
                             info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
                             foreach (var p in func.Params) {
-                                info.Args.Add(GetParamMatchString(p));
+                                info.Args.Add(GetParamMatchString(p, iter));
                             }
                         }
                         else {
@@ -1945,9 +2431,9 @@ namespace GlslRewriter
 
                             info.FuncOrOper = "?:";
                             info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
-                            info.Args.Add(GetParamMatchString(condExp));
-                            info.Args.Add(GetParamMatchString(trueExp));
-                            info.Args.Add(GetParamMatchString(falseExp));
+                            info.Args.Add(GetParamMatchString(condExp, iter));
+                            info.Args.Add(GetParamMatchString(trueExp, iter));
+                            info.Args.Add(GetParamMatchString(falseExp, iter));
                         }
                         else {
                             Console.WriteLine("{0}: {1}, invalid condition expression !", tag, info.FuncOrOper);
@@ -1956,22 +2442,108 @@ namespace GlslRewriter
                 }
             }
         }
-        private static string GetParamMatchString(Dsl.ISyntaxComponent p)
+        private static string GetParamMatchString(Dsl.ISyntaxComponent p, string iter)
         {
             var func = p as Dsl.FunctionData;
             if (null != func) {
                 if (!func.HaveId() && func.GetParamNum() == 1) {
-                    return GetParamMatchString(func.GetParam(0));
+                    return GetParamMatchString(func.GetParam(0), iter);
                 }
             }
-            return ConvertMatchString(p.GetId());
+            return ConvertMatchString(p.GetId(), iter);
         }
-        private static string ConvertMatchString(string str)
+        private static string ConvertMatchString(string str, string iter)
         {
-            if (str == "@any")
+            if (str == "$any")
                 str = "*";
+            else if (str == "$iter")
+                str = iter;
             return str;
         }
+        private static void TransformNameReplacement(StringBuilder sb, string repTag, Dsl.ISyntaxComponent syntax, string name, int index)
+        {
+            var valData = syntax as Dsl.ValueData;
+            if (null != valData) {
+                sb.Append(valData.GetId());
+            }
+            else {
+                var funcData = syntax as Dsl.FunctionData;
+                if (null != funcData) {
+                    string id = funcData.GetId();
+                    if (id == "@arg") {
+                        string ixStr = funcData.GetParamId(0);
+                        if (int.TryParse(ixStr, out var argIx)) {
+                            if (argIx == 0)
+                                sb.Append(name);
+                            else
+                                sb.Append(index);
+                        }
+                        else {
+                            Console.WriteLine("name_replacement: {0}, @arg's argument must be integer !", repTag);
+                        }
+                    }
+                    else if (id == "@join") {
+                        foreach (var p in funcData.Params) {
+                            TransformNameReplacement(sb, repTag, p, name, index);
+                        }
+                    }
+                    else if (id == "@repeat") {
+                        var p = funcData.GetParam(0);
+                        string numStr = funcData.GetParamId(1);
+                        if (int.TryParse(numStr, out var num)) {
+                            for (int ix = 0; ix < num; ++ix) {
+                                if (ix > 0)
+                                    sb.Append("|");
+                                TransformNameReplacement(sb, repTag, p, name, index);
+                            }
+                        }
+                    }
+                    else if (id == "@list") {
+                        for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
+                            if (ix > 0)
+                                sb.Append("|");
+                            var p = funcData.GetParam(ix);
+                            TransformNameReplacement(sb, repTag, p, name, index);
+                        }
+                    }
+                    else {
+                        sb.Append(id);
+                        switch (funcData.GetParamClassUnmasked()) {
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                                sb.Append(".");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                                sb.Append("[");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                                sb.Append("(");
+                                break;
+                            default:
+                                Console.WriteLine("function_replacement: {0}, invalid parenthesis !", repTag);
+                                break;
+                        }
+                        string prestr = string.Empty;
+                        foreach (var p in funcData.Params) {
+                            sb.Append(prestr);
+                            TransformNameReplacement(sb, repTag, p, name, index);
+                            if (string.IsNullOrEmpty(prestr))
+                                prestr = ", ";
+                        }
+                        switch (funcData.GetParamClassUnmasked()) {
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                                sb.Append("]");
+                                break;
+                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                                sb.Append(")");
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
         internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp)
         {
             return DoCalc(exp, string.Empty);
@@ -2037,17 +2609,16 @@ namespace GlslRewriter
                         }
                     }
                 }
-                else if(fd.IsParenthesisParamClass())
-                {
+                else if (fd.IsParenthesisParamClass()) {
                     string func = fd.GetId();
                     var args = new List<DslExpression.CalculatorValue>();
-                    foreach(var p in fd.Params) {
+                    foreach (var p in fd.Params) {
                         args.Add(DoCalc(p));
                     }
                     if (Calculator.CalcFunc(func, args, resultType, s_ArgTypeConversion, out var val, out supported))
                         return val;
                 }
-                else if(fd.IsOperatorParamClass()) {
+                else if (fd.IsOperatorParamClass()) {
                     string op = fd.GetId();
                     if (fd.GetParamNum() == 2) {
                         var arg1 = fd.GetParam(0);
@@ -2277,21 +2848,13 @@ namespace GlslRewriter
             internal string InAttrImportFile = string.Empty;
             internal string OutAttrImportFile = string.Empty;
             internal int AttrIndex = 0;
-            internal Dictionary<string,string> InAttrMap = new Dictionary<string,string>();
+            internal Dictionary<string, string> InAttrMap = new Dictionary<string, string>();
             internal Dictionary<string, string> OutAttrMap = new Dictionary<string, string>();
         }
         internal class UniformImportInfo
         {
             internal string File = string.Empty;
             internal string Type = string.Empty;
-            internal HashSet<int> UsedIndexes = new HashSet<int>();
-        }
-        internal class VAOImportInfo
-        {
-            internal string AttrArrayLeft = string.Empty;
-            internal string Type = string.Empty;
-            internal string File = string.Empty;
-            internal string Attr = string.Empty;
             internal HashSet<int> UsedIndexes = new HashSet<int>();
         }
         internal class SSBOImportInfo
@@ -2301,6 +2864,20 @@ namespace GlslRewriter
             internal string File = string.Empty;
             internal string Attr = string.Empty;
         }
+        internal class VAOImportInfo
+        {
+            internal string AttrArrayLeft = string.Empty;
+            internal string Type = string.Empty;
+            internal string File = string.Empty;
+            internal string Attr = string.Empty;
+            internal HashSet<int> UsedIndexes = new HashSet<int>();
+        }
+        internal class HlslMergeImportInfo
+        {
+            internal string File = string.Empty;
+            internal Dictionary<string, string> AttrHlslMap = new Dictionary<string, string>();
+            internal List<Tuple<string, string, string, Dsl.ISyntaxComponent>> NameReplacements = new List<Tuple<string, string, string, ISyntaxComponent>>();
+        }
         internal class ShaderArgConfig
         {
             internal int Id = 0;
@@ -2308,6 +2885,7 @@ namespace GlslRewriter
             internal List<UniformImportInfo> UniformImports = new List<UniformImportInfo>();
             internal List<VAOImportInfo> VAOImports = new List<VAOImportInfo>();
             internal List<SSBOImportInfo> SSBOImports = new List<SSBOImportInfo>();
+            internal List<HlslMergeImportInfo> HlslMergeImports = new List<HlslMergeImportInfo>();
 
             internal static ShaderArgConfig s_Empty = new ShaderArgConfig();
         }
@@ -2349,7 +2927,7 @@ namespace GlslRewriter
         internal static ShaderConfig ActiveConfig
         {
             get {
-                if(null == s_ActiveConfig) {
+                if (null == s_ActiveConfig) {
                     s_ActiveConfig = new ShaderConfig();
                 }
                 return s_ActiveConfig;
@@ -2359,7 +2937,7 @@ namespace GlslRewriter
         internal static ShaderArgConfig ActiveArgConfig
         {
             get {
-                if(ActiveConfig.ArgConfigs.TryGetValue(ActiveArgCfgId, out var config)) {
+                if (ActiveConfig.ArgConfigs.TryGetValue(ActiveArgCfgId, out var config)) {
                     return config;
                 }
                 return ShaderArgConfig.s_Empty;
@@ -2377,7 +2955,7 @@ namespace GlslRewriter
         protected override DslExpression.CalculatorValue DoCalc()
         {
             DslExpression.CalculatorValue val = DslExpression.CalculatorValue.NullObject;
-            foreach(var p in m_DslArgs) {
+            foreach (var p in m_DslArgs) {
                 val = Config.DoCalc(p);
             }
             return val;
@@ -2387,7 +2965,7 @@ namespace GlslRewriter
             if (funcData.IsHighOrder) {
                 Load(funcData.LowerOrderFunction);
             }
-            foreach(var p in funcData.Params) {
+            foreach (var p in funcData.Params) {
                 m_DslArgs.Add(p);
             }
             return true;
@@ -2410,7 +2988,7 @@ namespace GlslRewriter
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
-            if(funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
+            if (funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
                 m_Name = funcData.GetParamId(0);
                 m_Type = funcData.GetParamId(1);
                 if (funcData.GetParamNum() > 2)
@@ -2676,10 +3254,10 @@ namespace GlslRewriter
             var size = DslExpression.CalculatorValue.NullObject;
             if (operands.Count > 0) {
                 var list = new List<int>();
-                foreach(var v in operands) {
+                foreach (var v in operands) {
                     list.Add(v.GetInt());
                 }
-                switch(list.Count) {
+                switch (list.Count) {
                     case 1:
                         size = DslExpression.CalculatorValue.From(Config.s_Random.Next(list[0]));
                         break;

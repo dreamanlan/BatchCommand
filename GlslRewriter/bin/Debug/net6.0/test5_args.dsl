@@ -18,6 +18,7 @@ vs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         auto_split(15){
             split_on("exp2");
@@ -2473,7 +2474,7 @@ vs
     };
     shader_arg
     {
-        vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 0);
+        vs_attr("d:/UC/cloud_5/vs_in.csv", "d:/UC/cloud_5/vs_out.csv", 13);
         uniform("d:/UC/cloud_5/vs_cbuf1.csv", "uvec4"){
             add_range(0,15);
         };
@@ -2623,6 +2624,37 @@ vs
             add_range(0,2);
         };
     };
+    shader_arg(4)
+    {
+        redirect(0, "d:/UC/cloud_5/hlsl_cmp/1", "d:/uc/VAO_5");
+        hlsl_merge("d:/UC/cloud_5/hlsl_cmp/1/hlsl_cbuf.csv")
+        {
+            attr_hlsl_map("in_attr3", "uni_attr3_arr[0]");
+            attr_hlsl_map("in_attr4", "uni_attr4_arr[0]");
+            attr_hlsl_map("in_attr5", "uni_attr5_arr[0]");
+            attr_hlsl_map("in_attr6", "uni_attr6_arr[0]");
+            attr_hlsl_map("in_attr7", "uni_attr7_arr[0]");
+            name_replacement("vertex.in_attr3", *, uni_attr3_arr[@arg(1)]);
+            name_replacement("vertex.in_attr4", *, uni_attr4_arr[@arg(1)]);
+            name_replacement("vertex.in_attr5", *, uni_attr5_arr[@arg(1)]);
+            name_replacement("vertex.in_attr6", *, uni_attr6_arr[@arg(1)]);
+            name_replacement("vertex.in_attr7", *, uni_attr7_arr[@arg(1)]);
+            name_replacement(vs_cbuf1, *, dont_merge);
+            name_replacement(vs_cbuf16, *, vs_cbuf16[@arg(1)]);
+            name_replacement(vs_cbuf8, $iter, view_proj[@arg(1)])for(0,7);
+            name_replacement(vs_cbuf8, 29, camera_wpos);
+            name_replacement(vs_cbuf9, 7, @repeat(vs_cbuf9_7_y, 4));
+            name_replacement(*, *, @join(@arg(0),"_",@arg(1)));
+        };
+    };
+    shader_arg(5)
+    {
+        redirect(4, "d:/UC/cloud_5/hlsl_cmp/2", "d:/uc/VAO_5");
+    };
+    shader_arg(6)
+    {
+        redirect(4, "d:/UC/cloud_5/hlsl_cmp/3", "d:/uc/VAO_5");
+    };
     string_replacement
     {
         string("uvec2", "uint2");
@@ -2751,6 +2783,7 @@ ps
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         auto_split(15){
             split_on("exp2");

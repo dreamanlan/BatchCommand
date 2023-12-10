@@ -18,6 +18,7 @@ vs
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         auto_split(15){
             split_on("exp2");
@@ -585,6 +586,7 @@ ps
         shader_variables_capacity = 1024;
         string_buffer_capacity_surplus = 1024;
         generate_expression_list;
+        remove_duplicate_expression;
 
         auto_split(15){
             split_on("exp2");

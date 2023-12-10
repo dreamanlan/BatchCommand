@@ -20,6 +20,21 @@ vs
         generate_expression_list;
         remove_duplicate_expression;
 
+        unassignable_variable
+        {
+            f4_0_0;
+            f4_0_1;
+            f4_0_2;
+            f4_0_3;
+        };
+        variable_assignment
+        {
+            f4_0_0 = vec4(0.00f, 0.00f, 0.00f, 0.00f);
+            f4_0_1 = vec4(0.33154f, 0.00321f, 0.00f, 0.00f);
+            f4_0_2 = vec4(0.00f, 0.00f, 0.00f, 0.00f);
+            f4_0_3 = vec4(0.34668, 0.02272, 0.00, 0.00f);
+        };
+
         auto_split(15){
             split_on("exp2");
             split_on("inversesqrt");
@@ -2643,6 +2658,7 @@ vs
             name_replacement(vs_cbuf16, *, vs_cbuf16[@arg(1)]);
             name_replacement(vs_cbuf8, $iter, view_proj[@arg(1)])for(0,7);
             name_replacement(vs_cbuf8, 29, camera_wpos);
+            name_replacement(vs_cbuf15, 28, lightDir);
             name_replacement(vs_cbuf9, 7, @repeat(vs_cbuf9_7_y, 4));
             name_replacement(*, *, @join(@arg(0),"_",@arg(1)));
         };

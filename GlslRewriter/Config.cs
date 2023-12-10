@@ -812,7 +812,7 @@ namespace GlslRewriter
                                         sb.Append(data.Value);
                                     }
                                 }
-                                hlslData = new RenderDocImporter.HlslExportInfo { Name = repInfo.Item1, Value = sb.ToString(), Type = type + newKeys.ToString() };
+                                hlslData = new RenderDocImporter.HlslExportInfo { Name = repInfo.Item1, Value = sb.ToString(), Type = type + newKeys.Length.ToString() };
                                 return true;
                             }
                             break;
@@ -2097,7 +2097,6 @@ namespace GlslRewriter
                     }
                     else {
                         Console.WriteLine("base shader arg '{0}' can't be found.", baseCfgId);
-
                     }
                 }
             }

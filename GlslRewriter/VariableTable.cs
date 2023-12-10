@@ -2370,7 +2370,7 @@ namespace GlslRewriter
                 }
             }
             if(!exists && Config.ActiveConfig.SettingInfo.VariableAssignments.TryGetValue(name, out var vinfo)) {
-                Debug.Assert(type == vinfo.Type || type == "uint" && vinfo.Type == "int" || type == "int" && vinfo.Type == "uint");
+                Debug.Assert(type == vinfo.Type || type == "vec4" && vinfo.Type == "Float4" || type == "uvec4" && vinfo.Type == "Uint4" || type == "uint" && vinfo.Type == "int" || type == "int" && vinfo.Type == "uint");
                 varVal = vinfo.Value;
                 AssignValue(name, type, varVal, Config.s_ArgTypeConversion, 0);
                 exists = true;

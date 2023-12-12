@@ -879,6 +879,105 @@ vs
     {
         redirect(0, "d:/UC/smoke/5", "d:/uc/VAO_smoke/5");
     };
+    //
+    shader_arg(10)
+    {
+        redirect(0, "d:/UC/smoke/time1/t1", "d:/uc/VAO_smoke/time1/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t2", "d:/uc/VAO_smoke/time1/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t3", "d:/uc/VAO_smoke/time1/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t4", "d:/uc/VAO_smoke/time1/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t5", "d:/uc/VAO_smoke/time1/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t6", "d:/uc/VAO_smoke/time1/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t7", "d:/uc/VAO_smoke/time1/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t8", "d:/uc/VAO_smoke/time1/t8");
+    };
+    //
+    shader_arg(20)
+    {
+        redirect(0, "d:/UC/smoke/time2/t1", "d:/uc/VAO_smoke/time2/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t2", "d:/uc/VAO_smoke/time2/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t3", "d:/uc/VAO_smoke/time2/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t4", "d:/uc/VAO_smoke/time2/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t5", "d:/uc/VAO_smoke/time2/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t6", "d:/uc/VAO_smoke/time2/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t7", "d:/uc/VAO_smoke/time2/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t8", "d:/uc/VAO_smoke/time2/t8");
+    };
+    //
+    shader_arg(30)
+    {
+        redirect(0, "d:/UC/smoke/time3/t1", "d:/uc/VAO_smoke/time3/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t2", "d:/uc/VAO_smoke/time3/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t3", "d:/uc/VAO_smoke/time3/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t4", "d:/uc/VAO_smoke/time3/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t5", "d:/uc/VAO_smoke/time3/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t6", "d:/uc/VAO_smoke/time3/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t7", "d:/uc/VAO_smoke/time3/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t8", "d:/uc/VAO_smoke/time3/t8");
+    };
     type_replacement
     {
         vs_cbuf0 = float;
@@ -1063,6 +1162,105 @@ ps
     shader_arg(5)
     {
         redirect(0, "d:/UC/smoke/5", "d:/uc/VAO_smoke/5");
+    };
+    //
+    shader_arg(10)
+    {
+        redirect(0, "d:/UC/smoke/time1/t1", "d:/uc/VAO_smoke/time1/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t2", "d:/uc/VAO_smoke/time1/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t3", "d:/uc/VAO_smoke/time1/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t4", "d:/uc/VAO_smoke/time1/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t5", "d:/uc/VAO_smoke/time1/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t6", "d:/uc/VAO_smoke/time1/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t7", "d:/uc/VAO_smoke/time1/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time1/t8", "d:/uc/VAO_smoke/time1/t8");
+    };
+    //
+    shader_arg(20)
+    {
+        redirect(0, "d:/UC/smoke/time2/t1", "d:/uc/VAO_smoke/time2/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t2", "d:/uc/VAO_smoke/time2/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t3", "d:/uc/VAO_smoke/time2/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t4", "d:/uc/VAO_smoke/time2/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t5", "d:/uc/VAO_smoke/time2/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t6", "d:/uc/VAO_smoke/time2/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t7", "d:/uc/VAO_smoke/time2/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time2/t8", "d:/uc/VAO_smoke/time2/t8");
+    };
+    //
+    shader_arg(30)
+    {
+        redirect(0, "d:/UC/smoke/time3/t1", "d:/uc/VAO_smoke/time3/t1");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t2", "d:/uc/VAO_smoke/time3/t2");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t3", "d:/uc/VAO_smoke/time3/t3");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t4", "d:/uc/VAO_smoke/time3/t4");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t5", "d:/uc/VAO_smoke/time3/t5");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t6", "d:/uc/VAO_smoke/time3/t6");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t7", "d:/uc/VAO_smoke/time3/t7");
+    };
+    shader_arg
+    {
+        redirect(0, "d:/UC/smoke/time3/t8", "d:/uc/VAO_smoke/time3/t8");
     };
     calculator
     {

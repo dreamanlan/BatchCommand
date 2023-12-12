@@ -585,14 +585,26 @@ namespace GlslRewriter
                         }
                         if (type == "int") {
                             sb.Append(cols[1]);
+                            sb.Append(" //");
+                            if (int.TryParse(cols[1], out var ival)) {
+                                sb.Append(Calculator.itof(ival));
+                            }
                         }
                         else if (type == "uint") {
                             sb.Append(cols[1]);
                             sb.Append("u");
+                            sb.Append(" //");
+                            if (uint.TryParse(cols[1], out var uval)) {
+                                sb.Append(Calculator.utof(uval));
+                            }
                         }
                         else if (type == "float") {
                             sb.Append(cols[1]);
                             sb.Append("f");
+                            sb.Append(" //");
+                            if (float.TryParse(cols[1], out var fval)) {
+                                sb.Append(Calculator.ftou(fval));
+                            }
                         }
                         else {
                             int colNum = (colNames.Length - 1) / 4;
@@ -610,6 +622,23 @@ namespace GlslRewriter
                                     sb.Append("f");
                                 }
                                 sb.Append(") }");
+                                sb.Append(" //");
+                                for (int index = 1; index < cols.Count; ++index) {
+                                    if ((index - 1) % 4 == 0) {
+                                        if (index > 1)
+                                            sb.Append(" | ");
+                                    }
+                                    else if (index > 1)
+                                        sb.Append(", ");
+                                    float.TryParse(cols[index], out var fval);
+                                    sb.Append(Calculator.ftou(fval));
+                                }
+                                for (int index = 1; index < cols.Count; ++index) {
+                                    if (index > 1)
+                                        sb.Append(", ");
+                                    float.TryParse(cols[index], out var fval);
+                                    sb.Append(Calculator.ftou(fval));
+                                }
                             }
                             else {
                                 sb.Append("new Vector4(");
@@ -620,6 +649,13 @@ namespace GlslRewriter
                                     sb.Append("f");
                                 }
                                 sb.Append(")");
+                                sb.Append(" //");
+                                for (int index = 1; index < cols.Count; ++index) {
+                                    if (index > 1)
+                                        sb.Append(", ");
+                                    float.TryParse(cols[index], out var fval);
+                                    sb.Append(Calculator.ftou(fval));
+                                }
                             }
                         }
                         results.Add(sb.ToString());
@@ -1107,6 +1143,8 @@ namespace GlslRewriter
 
         private static void AddShaderConfig(string shaderType, Dsl.FunctionData dslCfg)
         {
+            s_CurMaxShaderArgId = -1;
+
             var cfgInfo = new ShaderConfig();
             cfgInfo.ShaderType = shaderType;
             foreach (var p in dslCfg.Params) {
@@ -1657,11 +1695,17 @@ namespace GlslRewriter
         private static void ParseShaderArg(ShaderConfig cfg, Dsl.FunctionData dslCfg)
         {
             if (dslCfg.HaveStatement()) {
-                int cid = 0;
+                int cid;
                 if (dslCfg.IsHighOrder) {
                     var callCfg = dslCfg.LowerOrderFunction;
                     var cidStr = callCfg.GetParamId(0).Trim();
                     int.TryParse(cidStr, out cid);
+                    if (s_CurMaxShaderArgId < cid)
+                        s_CurMaxShaderArgId = cid;
+                }
+                else {
+                    ++s_CurMaxShaderArgId;
+                    cid = s_CurMaxShaderArgId;
                 }
 
                 var info = new ShaderArgConfig();
@@ -2945,6 +2989,7 @@ namespace GlslRewriter
         internal static int ActiveArgCfgId { get; set; } = 0;
 
         private static Dictionary<string, ShaderConfig> s_ShaderConfigs = new Dictionary<string, ShaderConfig>();
+        private static int s_CurMaxShaderArgId = -1;
         internal static Random s_Random = new Random();
         internal static Dictionary<int, int> s_ArgTypeConversion = new Dictionary<int, int>();
     }

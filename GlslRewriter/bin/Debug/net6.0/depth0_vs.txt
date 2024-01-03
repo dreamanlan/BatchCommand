@@ -1,0 +1,45 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+out gl_PerVertex { vec4 gl_Position; };
+layout(location = 0) in vec4 in_attr0;
+layout(location = 1) in vec4 in_attr1;
+layout(location = 0) out vec4 out_attr0;
+layout(binding = 0) uniform sampler2D tex0;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+
+	// -1.00  <=>  float(-1.00)
+	gl_Position.x = float(-1.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.y = float(1.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.z = float(1.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.w = float(1.00);
+	// -0.0000063  <=>  float(-6.25000E-06)
+	out_attr0.x = float(-6.25000E-06);
+	// -0.00001  <=>  float(-0.00001)
+	out_attr0.y = float(-0.00001);
+	// 0.00  <=>  float(0.00)
+	out_attr0.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr0.w = float(1.00);
+	// 1.00  <=>  1.f
+	gl_Position.z = 1.f;
+	// -1.00  <=>  ({in_attr0.x : -0.50} * 2.f)
+	gl_Position.x = (in_attr0.x * 2.f);
+	// 1.00  <=>  ({in_attr0.y : 0.50} * 2.f)
+	gl_Position.y = (in_attr0.y * 2.f);
+	// -0.00125  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).x : 8}))) * -0.01f) + {in_attr1.x : 0.00})
+	out_attr0.x = (((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x))) * -0.01f) + in_attr1.x);
+	// -0.0007692  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).y : 13}))) * -0.01f) + {in_attr1.y : 0.00})
+	out_attr0.y = (((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).y))) * -0.01f) + in_attr1.y);
+	return;
+}

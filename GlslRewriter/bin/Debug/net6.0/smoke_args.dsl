@@ -814,8 +814,7 @@ vs
             add(10,11,24,25,26,28,29,30);
         };
         uniform("d:/UC/smoke/vs_cbuf9.csv", "uvec4"){
-            //add(7,20,74,75,76,78,79,80,81,83,84,85,86,88,104,105,113,121,138,141,157);
-            //add_range(14,18);
+            //add(7,14,15,16,17,18,20,74,75,76,78,79,80,81,83,84,85,86,88,104,105,113,121,138,141,157);
             add_range(0, 160);
         };
         uniform("d:/UC/smoke/vs_cbuf10.csv", "uvec4"){
@@ -977,6 +976,49 @@ vs
     shader_arg
     {
         redirect(0, "d:/UC/smoke/time3/t8", "d:/uc/VAO_smoke/time3/t8");
+    };
+    //
+    shader_arg(41)
+    {
+        redirect(0, "d:/UC/smoke/fade1", "d:/uc/VAO_smoke/fade1");
+    };
+    shader_arg(42)
+    {
+        redirect(0, "d:/UC/smoke/fade2", "d:/uc/VAO_smoke/fade2");
+    };
+    shader_arg(43)
+    {
+        redirect(0, "d:/UC/smoke/fade3", "d:/uc/VAO_smoke/fade3");
+    };
+    //
+    shader_arg(50)
+    {
+        redirect(0, "d:/UC/smoke/hlsl", "d:/uc/VAO_smoke/hlsl");
+        hlsl_merge("d:/UC/smoke/hlsl/vs_cbuf9_vs.csv")
+        {
+            name_replacement(vs_cbuf9, $iter, vs_cbuf9[@arg(1)])for(0,160);
+        };
+        hlsl_merge("d:/UC/smoke/hlsl/Globals_vs.csv")
+        {
+            attr_hlsl_map("in_attr4", "uni_attr4");
+            attr_hlsl_map("in_attr5", "uni_attr5");
+            attr_hlsl_map("in_attr6", "uni_attr6");
+            attr_hlsl_map("in_attr7", "uni_attr7");
+            attr_hlsl_map("in_attr9", "uni_attr9");
+            attr_hlsl_map("in_attr10", "uni_attr10");
+            attr_hlsl_map("in_attr11", "uni_attr11");
+            name_replacement("vertex.in_attr4", *, uni_attr4);
+            name_replacement("vertex.in_attr5", *, uni_attr5);
+            name_replacement("vertex.in_attr6", *, uni_attr6);
+            name_replacement("vertex.in_attr7", *, uni_attr7);
+            name_replacement("vertex.in_attr9", *, uni_attr9);
+            name_replacement("vertex.in_attr10", *, uni_attr10);
+            name_replacement("vertex.in_attr11", *, uni_attr11);
+            name_replacement(vs_cbuf8, $iter, view_proj[@arg(1)])for(0,7);
+            name_replacement(vs_cbuf8, 29, camera_wpos);
+            name_replacement(vs_cbuf15, 28, lightDir);
+            name_replacement(*, *, @join(@arg(0),"_",@arg(1)));
+        };
     };
     type_replacement
     {
@@ -1262,6 +1304,31 @@ ps
     {
         redirect(0, "d:/UC/smoke/time3/t8", "d:/uc/VAO_smoke/time3/t8");
     };
+    //
+    shader_arg(41)
+    {
+        redirect(0, "d:/UC/smoke/fade1", "d:/uc/VAO_smoke/fade1");
+    };
+    shader_arg(42)
+    {
+        redirect(0, "d:/UC/smoke/fade2", "d:/uc/VAO_smoke/fade2");
+    };
+    shader_arg(43)
+    {
+        redirect(0, "d:/UC/smoke/fade3", "d:/uc/VAO_smoke/fade3");
+    };
+    //
+    shader_arg(50)
+    {
+        redirect(0, "d:/UC/smoke/hlsl", "d:/uc/VAO_smoke/hlsl");
+        hlsl_merge("d:/UC/smoke/hlsl/Globals_fs.csv")
+        {
+            name_replacement(vs_cbuf8, $iter, view_proj[@arg(1)])for(0,7);
+            name_replacement(vs_cbuf8, 29, camera_wpos);
+            name_replacement(vs_cbuf15, 28, lightDir);
+            name_replacement(*, *, @join(@arg(0),"_",@arg(1)));
+        };
+    };
     calculator
     {
         textureSize(tex3,*) = vec2(64,64);
@@ -1271,6 +1338,7 @@ ps
         textureSize(*,*) = vec2(512,128);
         texelFetch(*,*,*) = vec4(0.5,0.5,0.5,0.75);
         textureLod(*,*,*) = vec4(0.5,0.5,0.5,0.75);
+        texture(tex5,*) = vec4(0.00020,0.0002,0.0002,0.0002);
         texture(*,*) = vec4(0.5,0.5,0.5,0.75);
         textureQueryLod(*,*) = vec2(4,1);
     };

@@ -1,0 +1,464 @@
+var vertexes = new[] {
+	new VertexData(new Vector4(-1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f))
+	, new VertexData(new Vector4(-1.00f, -3.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f))
+	, new VertexData(new Vector4(3.00f, 1.00f, 1.00f, 1.00f), new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f))
+};
+
+// gl_Position
+var gl_Position = new[] {
+	new Vector4(-1.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(-1.00f, -3.00f, 1.00f, 1.00f)
+	, new Vector4(3.00f, 1.00f, 1.00f, 1.00f)
+};
+
+// out_attr0
+var out_attr0 = new[] {
+	new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f)
+	, new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f)
+	, new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f)
+};
+
+// fs_cbuf0[81] = new Vector4(0.00f, 0.00f, 0.00f, 0.00f);
+// fs_cbuf3[0] = new Vector4(1.00f, 25000.00f, 1.777778f, 0.99996f);
+// fs_cbuf3[1] = new Vector4(0.00f, 0.00f, 24999.00f, 0.00004f);
+
+// fs_cbuf0[81] = , 675610624u, 6u, 29376u, 0u
+// fs_cbuf3[0] = , 1065353216u, 1187205120u, 1071877691u, 1065352545u
+// fs_cbuf3[1] = , 0u, 0u, 1187204608u, 942131044u
+
+// 1065353216 = 1.00f;
+// fs_cbuf0[81] = vec4(0.00, 0.00, 0.00, 0.00);
+// fs_cbuf3[0] = vec4(1.00, 25000.00, 1.777778, 0.99996);
+// fs_cbuf3[1] = vec4(0.00, 0.00, 24999.00, 0.00004);
+
+vec4 gl_FragCoord;
+layout(location = 0 )in vec4 in_attr0;
+layout(location = 0 )out vec4 frag_color0;
+layout(location = 1 )out vec4 frag_color1;
+layout(location = 2 )out vec4 frag_color2;
+layout(location = 3 )out vec4 frag_color3;
+layout(location = 4 )out vec4 frag_color4;
+layout(location = 5 )out vec4 frag_color5;
+layout(location = 6 )out vec4 frag_color6;
+layout(location = 7 )out vec4 frag_color7;
+layout(std140, binding = 0 )uniform fs_cbuf_0
+{
+	uvec4 fs_cbuf0[4096 ];
+};
+layout(std140, binding = 1 )uniform fs_cbuf_3
+{
+	uvec4 fs_cbuf3[4096 ];
+};
+layout(std430, binding = 0 )buffer fs_ssbo_0
+{
+	uint fs_ssbo0[];
+};
+layout(binding = 1 )uniform sampler2D tex1;
+void main()
+{
+	gl_FragCoord = vec4(320, 240, 0.5, 1.0 );	// vec4(320.00,240.00,0.50,1.00)
+	in_attr0.x  = float(-6.25000E-06 );	// -0.0000063
+	in_attr0.y  = float(-0.00001 );	// -0.00001
+	in_attr0.z  = float(0.00 );	// 0.00
+	in_attr0.w  = float(1.00 );	// 1.00
+	fs_cbuf0[81 ] = uvec4(675610624, 6, 29376, 0 );	// uvec4(675610624,6,29376,0)
+	fs_cbuf3[0 ] = uvec4(1065353216, 1187205120, 1071877691, 1065352545 );	// uvec4(1065353216,1187205120,1071877691,1065352545)
+	fs_cbuf3[1 ] = uvec4(0, 0, 1187204608, 942131044 );	// uvec4(0,0,1187204608,942131044)
+	bool b_0 = bool(0 );	// False
+	bool b_1 = bool(0 );	// False
+	uint u_0 = uint(0 );	// 0
+	uint u_1 = uint(0 );	// 0
+	uint u_2 = uint(0 );	// 0
+	uint u_3 = uint(0 );	// 0
+	uint u_4 = uint(0 );	// 0
+	uint u_ssbo = uint(0 );	// 0
+	float f_0 = float(0 );	// 0.00
+	float f_1 = float(0 );	// 0.00
+	float f_2 = float(0 );	// 0.00
+	float f_3 = float(0 );	// 0.00
+	float f_4 = float(0 );	// 0.00
+	float f_5 = float(0 );	// 0.00
+	float f_6 = float(0 );	// 0.00
+	float f_7 = float(0 );	// 0.00
+	vec2 f2_0 = vec2(0 );	// vec2(0.00,0.00)
+	vec4 f4_0 = vec4(0 );	// vec4(0.00,0.00,0.00,0.00)
+	precise float pf_0 = float(0 );	// 0.00
+	precise float pf_1 = float(0 );	// 0.00
+	f_0_0 = in_attr0.x ;	// -0.0000063
+	f_1_0 = in_attr0.y ;	// -0.00001
+	f2_0_0 = vec2(f_0_0, f_1_0 );	// vec2(-0.0000063,-0.00001)
+	f4_0_0 = textureGather(tex1, f2_0_0, int(0 ) );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureGather({tex1 : tex1}, vec2({in_attr0.x : -0.0000063}, {in_attr0.y : -0.00001}), int(0))
+<=>
+textureGather(tex1, vec2(in_attr0.x, in_attr0.y), int(0))
+<=>
+{f4_0_0 = textureGather(tex1, 
+	{f2_0_0 = vec2(
+		{f_0_0 = in_attr0.x
+		}, 
+		{f_1_0 = in_attr0.y
+		})
+	}, int(0))
+}
+*/
+	f_2_0 = f4_0_0.x ;	// 0.50
+	f_3_0 = f4_0_0.y ;	// 0.50
+	f_4_0 = f4_0_0.z ;	// 0.50
+	f_5_0 = f4_0_0.w ;	// 0.75
+	f_6_0 = gl_FragCoord.x ;	// 320.00
+	f_7_0 = gl_FragCoord.y ;	// 240.00
+	pf_0_0 = f_0_0 * 32.f;	// -0.0002
+	pf_1_0 = f_1_0 * 18.f;	// -0.00018
+	f_0_1 = trunc(pf_0_0 );	// -0.00
+	f_0_2 = min(max(f_0_1, float(-2147483600.f ) ), float(2147483600.f ) );	// -0.00
+	u_0_0 = int(f_0_2 );	// 0
+	b_0_0 = isnan(pf_0_0 );	// False
+	u_0_1 = b_0_0 ? (0u) : (u_0_0);	// 0
+	f_0_3 = trunc(pf_1_0 );	// -0.00
+	f_0_4 = min(max(f_0_3, float(-2147483600.f ) ), float(2147483600.f ) );	// -0.00
+	u_1_0 = int(f_0_4 );	// 0
+	b_0_1 = isnan(pf_1_0 );	// False
+	u_1_1 = b_0_1 ? (0u) : (u_1_0);	// 0
+	u_1_2 = u_1_1 << 5u;	// 0
+	u_0_2 = u_1_2 + u_0_1;	// 0
+	f_0_5 = trunc(f_6_0 );	// 320.00
+	f_0_6 = min(max(f_0_5, float(-2147483600.f ) ), float(2147483600.f ) );	// 320.00
+	u_1_3 = int(f_0_6 );	// 320
+	b_0_2 = isnan(f_6_0 );	// False
+	u_1_4 = b_0_2 ? (0u) : (u_1_3);	// 320
+	f_0_7 = trunc(f_7_0 );	// 240.00
+	f_0_8 = min(max(f_0_7, float(-2147483600.f ) ), float(2147483600.f ) );	// 240.00
+	u_2_0 = int(f_0_8 );	// 240
+	b_0_3 = isnan(f_7_0 );	// False
+	u_2_1 = b_0_3 ? (0u) : (u_2_0);	// 240
+	u_1_5 = u_1_4 & 1u;	// 0
+	u_1_6 = bitfieldInsert(u_1_5, u_2_1, int(1u ), int(1u ) );	// 0
+	u_0_3 = u_0_2 << 2u;	// 0
+	u_0_4 = u_0_3 + u_1_6;	// 0
+	f_0_9 = max(f_2_0, f_3_0 );	// 0.50
+	f_1_1 = max(f_4_0, f_5_0 );	// 0.75
+	f_0_10 = max(f_0_9, f_1_1 );	// 0.75
+	u_0_5 = u_0_4 << 2u;	// 0
+	u_0_6 = u_0_5 + 19264u;	// 19264
+	f_1_2 = utof(fs_cbuf3[0 ].w  );	// 0.99996
+	f_1_3 = 0.f - (f_1_2 );	// -0.99996
+	pf_0_1 = fma(f_0_10, f_1_3, 1.f );	// 0.25003
+	b_0_4 = f_0_10 == 1.f && ! isnan(f_0_10 ) && ! isnan(1.f );	// False
+	f_0_11 = (1.0f ) / pf_0_1;	// 3.99952
+	u_1_7 = (fs_cbuf0[81 ].x  );	// 675610624
+	u_0_7 = u_0_6 + u_1_7;	// 675629888
+	f_1_4 = utof(fs_cbuf3[1 ].w  );	// 0.00004
+	f_2_1 = utof(fs_cbuf3[1 ].w  );	// 0.00004
+	f_1_5 = 0.f - (f_1_4 );	// -0.00004
+	pf_0_2 = fma(f_0_11, f_2_1, f_1_5 );	// 0.00012
+	u_1_8 = ftou(pf_0_2 );	// 956014793
+	f_0_12 = utof(fs_cbuf3[0 ].w  );	// 0.99996
+	f_0_13 = 0.f - (f_0_12 );	// -0.99996
+	pf_0_3 = fma(f_5_0, f_0_13, 1.f );	// 0.25003
+	b_1_0 = b_0_4 ? (true) : (false);	// False
+	u_2_2 = u_1_8;	/* 956014793  <=>  {ftou((((1.0f / ((max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) * (0.f - {utof(fs_cbuf3[0].w) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[1].w) : 0.00004}) + (0.f - {utof(fs_cbuf3[1].w) : 0.00004}))) : 956014793}
+<=>
+ftou((((1.0f / ((max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w)) * (0.f - utof(fs_cbuf3[0].w))) + 1.f)) * utof(fs_cbuf3[1].w)) + (0.f - utof(fs_cbuf3[1].w))))
+<=>
+{u_2_2 = 
+	{u_1_8 = ftou(
+		{pf_0_2 = ((
+			{f_0_11 = (1.0f / 
+				{pf_0_1 = ((
+					{f_0_10 = max(
+						{f_0_9 = max(
+							{f_2_0 = f4_0_0.x
+							}, 
+							{f_3_0 = f4_0_0.y
+							})
+						}, 
+						{f_1_1 = max(
+							{f_4_0 = f4_0_0.z
+							}, 
+							{f_5_0 = f4_0_0.w
+							})
+						})
+					} * 
+					{f_1_3 = (0.f - 
+						{f_1_2 = utof(fs_cbuf3[0].w)
+						})
+					}) + 1.f)
+				})
+			} * 
+			{f_2_1 = utof(fs_cbuf3[1].w)
+			}) + 
+			{f_1_5 = (0.f - 
+				{f_1_4 = utof(fs_cbuf3[1].w)
+				})
+			})
+		})
+	}
+}
+*/
+	u_2_phi_1 = u_2_2;
+	if(b_1_0 )	/* False  <=>  if(((((max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) == 1.f) && (! isnan(max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75}))))) && (! isnan(1.f))) ? true : false))
+<=>
+if(((((max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w)) == 1.f) && (! isnan(max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w))))) && (! isnan(1.f))) ? true : false))
+<=>if(b_1_0...)
+*/
+	{
+		u_2_3 = 1065353216u;	/* 1065353216  <=>  1065353216u
+<=>
+1065353216u
+<=>
+{u_2_3 = 1065353216u
+}
+*/
+		u_2_phi_1 = u_2_3;
+	} 
+	f_0_14 = (1.0f ) / pf_0_3;	// 3.99952
+	b_0_5 = f_5_0 == 1.f && ! isnan(f_5_0 ) && ! isnan(1.f );	// False
+	f_1_6 = utof(u_2_phi_1 );	// 0.00012
+	pf_0_4 = f_1_6 * 16777215.f;	// 2013.024
+	f_1_7 = trunc(pf_0_4 );	// 2013.00
+	f_1_8 = min(max(f_1_7, float(0.f ) ), float(4294967300.f ) );	// 2013.00
+	u_1_9 = uint(f_1_8 );	// 2013
+	f_1_9 = utof(fs_cbuf3[1 ].w  );	// 0.00004
+	f_2_2 = utof(fs_cbuf3[1 ].w  );	// 0.00004
+	f_1_10 = 0.f - (f_1_9 );	// -0.00004
+	pf_0_5 = fma(f_0_14, f_2_2, f_1_10 );	// 0.00012
+	u_3_0 = ftou(pf_0_5 );	// 956014793
+	u_0_8 = u_0_7 + 0u;	// 675629888
+	u_4_0 = (fs_cbuf0[81 ].x  );	// 675610624
+	u_4_1 = u_4_0 & 4294967280u;	// 675610624
+	u_0_9 = u_0_8 - u_4_1;	/* 19264  <=>  ((((((((((isnan(({in_attr0.y : -0.00001} * 18.f)) ? 0u : int(clamp(trunc(({in_attr0.y : -0.00001} * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan(({in_attr0.x : -0.0000063} * 32.f)) ? 0u : int(clamp(trunc(({in_attr0.x : -0.0000063} * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan({gl_FragCoord.x : 320.00}) ? 0u : int(clamp(trunc({gl_FragCoord.x : 320.00}), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan({gl_FragCoord.y : 240.00}) ? 0u : ...), ..., ...)) << ...) + ...) + ...) + ...) - ...)
+<=>
+((((((((((isnan((in_attr0.y * 18.f)) ? 0u : int(clamp(trunc((in_attr0.y * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan((in_attr0.x * 32.f)) ? 0u : int(clamp(trunc((in_attr0.x * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan(gl_FragCoord.x) ? 0u : int(clamp(trunc(gl_FragCoord.x), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan(gl_FragCoord.y) ? 0u : int(clamp(trunc(gl_FragCoord.y), float(-2147483600.f), float(2147483600.f)))), int(1u), ...)) << ...) + ...) + ...) + ...) - ...)
+<=>
+{u_0_9 = (
+	{u_0_8 = (
+		{u_0_7 = (
+			{u_0_6 = (
+				{u_0_5 = (
+					{u_0_4 = (
+						{u_0_3 = (
+							{u_0_2 = (
+								{u_1_2 = (
+									{u_1_1 = (
+										{b_0_1 = isnan(
+											{pf_1_0 = (
+												{f_1_0 = in_attr0.y
+												} * 18.f)
+											})
+										} ? 0u : 
+										{u_1_0 = int(
+											{f_0_4 = clamp(
+												{f_0_3 = trunc(pf_1_0)
+												}, float(-2147483600.f), float(2147483600.f))
+											})
+										})
+									} << 5u)
+								} + 
+								{u_0_1 = (
+									{b_0_0 = isnan(
+										{pf_0_0 = (
+											{f_0_0 = in_attr0.x
+											} * 32.f)
+										})
+									} ? 0u : 
+									{u_0_0 = int(
+										{f_0_2 = clamp(
+											{f_0_1 = trunc(pf_0_0)
+											}, float(-2147483600.f), float(2147483600.f))
+										})
+									})
+								})
+							} << 2u)
+						} + 
+						{u_1_6 = bitfieldInsert(
+							{u_1_5 = (
+								{u_1_4 = (
+									{b_0_2 = isnan(
+										{f_6_0 = gl_FragCoord.x
+										})
+									} ? 0u : 
+									{u_1_3 = int(
+										{f_0_6 = clamp(
+											{f_0_5 = trunc(f_6_0)
+											}, float(-2147483600.f), float(2147483600.f))
+										})
+									})
+								} & 1u)
+							}, 
+							{u_2_1 = (
+								{b_0_3 = isnan(
+									{f_7_0 = gl_FragCoord.y
+									})
+								} ? 0u : 
+								{u_2_0 = int(
+									{f_0_8 = clamp(
+										{f_0_7 = trunc(f_7_0)
+										}, float(-2147483600.f), float(2147483600.f))
+									})
+								})
+							}, int(1u), int(1u))
+						})
+					} << 2u)
+				} + 19264u)
+			} + 
+			{u_1_7 = fs_cbuf0[81].x
+			})
+		} + 0u)
+	} - 
+	{u_4_1 = (
+		{u_4_0 = fs_cbuf0[81].x
+		} & 4294967280u)
+	})
+}
+*/
+	u_ssbo_0 = atomicMax(fs_ssbo0[u_0_9 >> 2 ], u_1_9 );	/* atomicMax({fs_ssbo0[({u_0_9 : 19264} >> 2)] : }, uint(clamp(trunc(({utof(u_2_phi_1) : 0.00012} * 16777215.f)), float(0.f), float(4294967300.f))))
+<=>
+atomicMax(fs_ssbo0[(u_0_9 >> 2)], uint(clamp(trunc((utof(u_2_phi_1) * 16777215.f)), float(0.f), float(4294967300.f))))
+<=>
+{u_ssbo_0 = atomicMax(fs_ssbo0[(u_0_9 >> 2)], 
+	{u_1_9 = uint(
+		{f_1_8 = clamp(
+			{f_1_7 = trunc(
+				{pf_0_4 = (
+					{f_1_6 = utof(u_2_phi_1)
+					} * 16777215.f)
+				})
+			}, float(0.f), float(4294967300.f))
+		})
+	})
+}
+*/
+	b_1_1 = b_0_5 ? (true) : (false);	// False
+	u_0_10 = u_2_phi_1;	/* 956014793  <=>  {u_2_phi_1 : 956014793}
+<=>
+u_2_phi_1
+<=>
+{u_0_10 = u_2_phi_1
+}
+*/
+	u_0_phi_2 = u_0_10;
+	if(b_1_1 )	/* False  <=>  if((((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f))) ? true : false))
+<=>
+if(((((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f))) ? true : false))
+<=>if(b_1_1...)
+*/
+	{
+		u_0_11 = 1065353216u;	/* 1065353216  <=>  1065353216u
+<=>
+1065353216u
+<=>
+{u_0_11 = 1065353216u
+}
+*/
+		u_0_phi_2 = u_0_11;
+	} 
+	b_0_6 = ! b_0_5;	// True
+	b_1_2 = b_0_6 ? (true) : (false);	// True
+	u_1_10 = u_0_phi_2;	/* 956014793  <=>  {u_0_phi_2 : 956014793}
+<=>
+u_0_phi_2
+<=>
+{u_1_10 = u_0_phi_2
+}
+*/
+	u_1_phi_3 = u_1_10;
+	if(b_1_2 )	/* True  <=>  if(((! ((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f)))) ? true : false))
+<=>
+if(((! (((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f)))) ? true : false))
+<=>if(b_1_2...)
+*/
+	{
+		u_1_11 = u_3_0;	/* 956014793  <=>  {ftou((((1.0f / (({f4_0_0.w : 0.75} * (0.f - {utof(fs_cbuf3[0].w) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[1].w) : 0.00004}) + (0.f - {utof(fs_cbuf3[1].w) : 0.00004}))) : 956014793}
+<=>
+ftou((((1.0f / ((f4_0_0.w * (0.f - utof(fs_cbuf3[0].w))) + 1.f)) * utof(fs_cbuf3[1].w)) + (0.f - utof(fs_cbuf3[1].w))))
+<=>
+{u_1_11 = 
+	{u_3_0 = ftou(
+		{pf_0_5 = ((
+			{f_0_14 = (1.0f / 
+				{pf_0_3 = ((
+					{f_5_0 = f4_0_0.w
+					} * 
+					{f_0_13 = (0.f - 
+						{f_0_12 = utof(fs_cbuf3[0].w)
+						})
+					}) + 1.f)
+				})
+			} * 
+			{f_2_2 = utof(fs_cbuf3[1].w)
+			}) + 
+			{f_1_10 = (0.f - 
+				{f_1_9 = utof(fs_cbuf3[1].w)
+				})
+			})
+		})
+	}
+}
+*/
+		u_1_phi_3 = u_1_11;
+	} 
+	f_0_15 = utof(u_1_phi_3 );	// 0.00012
+	frag_color0.x  = f_0_15;	/* 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+<=>
+utof(u_1_phi_3)
+<=>
+{frag_color0.x = 
+	{f_0_15 = utof(u_1_phi_3)
+	}
+}
+*/
+	f_0_16 = utof(u_1_phi_3 );	// 0.00012
+	frag_color0.y  = f_0_16;	/* 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+<=>
+utof(u_1_phi_3)
+<=>
+{frag_color0.y = 
+	{f_0_16 = utof(u_1_phi_3)
+	}
+}
+*/
+	f_0_17 = utof(u_1_phi_3 );	// 0.00012
+	frag_color0.z  = f_0_17;	/* 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+<=>
+utof(u_1_phi_3)
+<=>
+{frag_color0.z = 
+	{f_0_17 = utof(u_1_phi_3)
+	}
+}
+*/
+	f_0_18 = utof(u_1_phi_3 );	// 0.00012
+	frag_color0.w  = f_0_18;	/* 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+<=>
+utof(u_1_phi_3)
+<=>
+{frag_color0.w = 
+	{f_0_18 = utof(u_1_phi_3)
+	}
+}
+*/
+	gl_FragDepth = f_5_0;	/* 0.75  <=>  {f4_0_0.w : 0.75}
+<=>
+f4_0_0.w
+<=>
+{gl_FragDepth = 
+	{f_5_0 = f4_0_0.w
+	}
+}
+*/
+	return;
+} 
+/*split_variable_assignment{
+	f4_0_0,
+	gl_FragDepth,
+	u_0_10,
+	u_0_11,
+	u_0_9,
+	u_0_phi_2,
+	u_1_10,
+	u_1_11,
+	u_1_phi_3,
+	u_2_2,
+	u_2_3,
+	u_2_phi_1,
+	u_ssbo_0,
+}*/

@@ -1,0 +1,2851 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+out gl_PerVertex { vec4 gl_Position; };
+layout(location = 0) in vec4 in_attr0;
+layout(location = 1) in vec4 in_attr1;
+layout(location = 2) in vec4 in_attr2;
+layout(location = 4) in vec4 in_attr4;
+layout(location = 5) in vec4 in_attr5;
+layout(location = 6) in vec4 in_attr6;
+layout(location = 7) in vec4 in_attr7;
+layout(location = 9) in vec4 in_attr9;
+layout(location = 10) in vec4 in_attr10;
+layout(location = 11) in vec4 in_attr11;
+layout(location = 0) out vec4 out_attr0;
+layout(location = 1) out vec4 out_attr1;
+layout(location = 2) out vec4 out_attr2;
+layout(location = 3) out vec4 out_attr3;
+layout(location = 4) out vec4 out_attr4;
+layout(location = 5) out vec4 out_attr5;
+layout(location = 6) out vec4 out_attr6;
+layout(location = 7) out vec4 out_attr7;
+layout(location = 8) out vec4 out_attr8;
+layout(location = 9) out vec4 out_attr9;
+layout(location = 10) out vec4 out_attr10;
+layout(location = 11) out vec4 out_attr11;
+layout(location = 12) out vec4 out_attr12;
+layout(std140, binding = 0) uniform vs_cbuf_0 { uvec4 vs_cbuf0[4096]; };
+layout(std140, binding = 1) uniform vs_cbuf_8 { uvec4 vs_cbuf8[4096]; };
+layout(std140, binding = 2) uniform vs_cbuf_9 { uvec4 vs_cbuf9[4096]; };
+layout(std140, binding = 3) uniform vs_cbuf_10 { uvec4 vs_cbuf10[4096]; };
+layout(std140, binding = 4) uniform vs_cbuf_13 { uvec4 vs_cbuf13[4096]; };
+layout(std140, binding = 5) uniform vs_cbuf_15 { uvec4 vs_cbuf15[4096]; };
+layout(std140, binding = 6) uniform vs_cbuf_16 { uvec4 vs_cbuf16[4096]; };
+layout(std430, binding = 0) buffer vs_ssbo_0 { uint vs_ssbo0[]; };
+layout(binding = 0) uniform sampler2D tex0;
+layout(binding = 1) uniform sampler2D tex1;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+	// vs_cbuf0[21] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf8[0] = vec4(0.3147963, 0.00, 0.9491593, 201.6607);
+	// vs_cbuf8[1] = vec4(0.3106231, 0.944934, -0.1030207, -48.71458);
+	// vs_cbuf8[2] = vec4(-0.8968928, 0.3272613, 0.2974617, -252.0899);
+	// vs_cbuf8[3] = vec4(0.00, 0.00, 0.00, 1.00);
+	// vs_cbuf8[4] = vec4(1.206285, 0.00, 0.00, 0.00);
+	// vs_cbuf8[5] = vec4(0.00, 2.144507, 0.00, 0.00);
+	// vs_cbuf8[6] = vec4(0.00, 0.00, -1.00008, -2.00008);
+	// vs_cbuf8[7] = vec4(0.00, 0.00, -1.00, 0.00);
+	// vs_cbuf8[10] = vec4(0.8969646, -0.3272875, -0.2974855, 250.11);
+	// vs_cbuf8[11] = vec4(0.8968928, -0.3272613, -0.2974617, 252.0899);
+	// vs_cbuf8[24] = vec4(0.3147963, 0.3106231, -0.8968928, 0.00);
+	// vs_cbuf8[25] = vec4(0.00, 0.944934, 0.3272613, 0.00);
+	// vs_cbuf8[26] = vec4(0.9491593, -0.1030207, 0.2974617, 0.00);
+	// vs_cbuf8[28] = vec4(-0.8968928, 0.3272613, 0.2974617, 0.00);
+	// vs_cbuf8[29] = vec4(-274.4478, 128.5313, -121.4396, 0.00);
+	// vs_cbuf8[30] = vec4(1.00, 25000.00, 25000.00, 24999.00);
+	// vs_cbuf9[0] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[1] = vec4(289449500000000000000000000.00, 3997787000.00, 63275730000000000000000000000.00, 0.00);
+	// vs_cbuf9[2] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[3] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[4] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[5] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[6] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[7] = vec4(158458900000000000000000000000.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[8] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[9] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[10] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[11] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[12] = vec4(0.00, 0.00, 0.00, 1.00);
+	// vs_cbuf9[13] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[14] = vec4(0.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[15] = vec4(0.985, 0.00, 0.00, 0.00);
+	// vs_cbuf9[16] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[17] = vec4(0.10, 0.15, 180.00, 40.00);
+	// vs_cbuf9[18] = vec4(1.00, 0.00, 300.00, 20.00);
+	// vs_cbuf9[19] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[20] = vec4(4.00, 10.00, 4.00, 1.00);
+	// vs_cbuf9[21] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[22] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[23] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[24] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[25] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[26] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[27] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[28] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[29] = vec4(2.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[30] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[31] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[32] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[33] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[34] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[35] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[36] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[37] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[38] = vec4(2.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[39] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[40] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[41] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[42] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[43] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[44] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[45] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[46] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[47] = vec4(4.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[48] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[49] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[50] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[51] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[52] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[53] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[54] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[55] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[56] = vec4(4.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[57] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[58] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[59] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[60] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[61] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[62] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[63] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[64] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[65] = vec4(4.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[66] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[67] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[68] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[69] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[70] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[71] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[72] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[73] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[74] = vec4(0.00, 0.00, 0.025, 0.025);
+	// vs_cbuf9[75] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[76] = vec4(1.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[77] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[78] = vec4(1.00, 1.00, 2.00, 2.00);
+	// vs_cbuf9[79] = vec4(0.0015, -0.001, 0.00, 0.00);
+	// vs_cbuf9[80] = vec4(1.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[81] = vec4(0.80, 0.80, 0.05, 0.05);
+	// vs_cbuf9[82] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[83] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[84] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[85] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[86] = vec4(0.60, 0.60, 0.00, 0.00);
+	// vs_cbuf9[87] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[88] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[89] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[90] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[91] = vec4(1.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[92] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[93] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[94] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[95] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[96] = vec4(1.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[97] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[98] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[99] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[100] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[101] = vec4(1.00, 1.00, 0.00, 0.00);
+	// vs_cbuf9[102] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[103] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[104] = vec4(0.50, 0.00, 0.00, 0.00);
+	// vs_cbuf9[105] = vec4(0.95, 0.918, 0.842, 0.00);
+	// vs_cbuf9[106] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[107] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[108] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[109] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[110] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[111] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[112] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[113] = vec4(0.75, 1.25, 1.25, 0.00);
+	// vs_cbuf9[114] = vec4(1.10, 1.10, 1.10, 0.50);
+	// vs_cbuf9[115] = vec4(0.80, 0.80, 0.80, 0.86);
+	// vs_cbuf9[116] = vec4(0.00, 0.00, 0.00, 1.00);
+	// vs_cbuf9[117] = vec4(0.00, 0.00, 0.00, 5.00);
+	// vs_cbuf9[118] = vec4(0.00, 0.00, 0.00, 6.00);
+	// vs_cbuf9[119] = vec4(0.00, 0.00, 0.00, 7.00);
+	// vs_cbuf9[120] = vec4(0.00, 0.00, 0.00, 8.00);
+	// vs_cbuf9[121] = vec4(0.30, 0.291, 0.267, 0.00);
+	// vs_cbuf9[122] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[123] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[124] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[125] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[126] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[127] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[128] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[129] = vec4(20.00, 0.45, 0.45, 0.50);
+	// vs_cbuf9[130] = vec4(0.00, 0.00, 0.00, 1.00);
+	// vs_cbuf9[131] = vec4(0.00, 0.00, 0.00, 3.00);
+	// vs_cbuf9[132] = vec4(0.00, 0.00, 0.00, 4.00);
+	// vs_cbuf9[133] = vec4(0.00, 0.00, 0.00, 5.00);
+	// vs_cbuf9[134] = vec4(0.00, 0.00, 0.00, 6.00);
+	// vs_cbuf9[135] = vec4(0.00, 0.00, 0.00, 7.00);
+	// vs_cbuf9[136] = vec4(0.00, 0.00, 0.00, 8.00);
+	// vs_cbuf9[137] = vec4(0.00, 0.50, 0.00, 1.00);
+	// vs_cbuf9[138] = vec4(1.50, 3.50, 400.00, 500.00);
+	// vs_cbuf9[139] = vec4(1.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[140] = vec4(3.00, 2.00, 0.00, 0.00);
+	// vs_cbuf9[141] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf9[142] = vec4(1.00, 1.00, 1.00, 2.00);
+	// vs_cbuf9[143] = vec4(1.00, 1.00, 1.00, 3.00);
+	// vs_cbuf9[144] = vec4(1.00, 1.00, 1.00, 4.00);
+	// vs_cbuf9[145] = vec4(1.00, 1.00, 1.00, 5.00);
+	// vs_cbuf9[146] = vec4(1.00, 1.00, 1.00, 6.00);
+	// vs_cbuf9[147] = vec4(1.00, 1.00, 1.00, 7.00);
+	// vs_cbuf9[148] = vec4(1.00, 1.00, 1.00, 8.00);
+	// vs_cbuf9[149] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[150] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[151] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[152] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[153] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[154] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[155] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[156] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf9[157] = vec4(0.15, 0.60, 0.50, 0.00);
+	// vs_cbuf9[158] = vec4(0.15, 0.60, 0.50, 1.00);
+	// vs_cbuf9[159] = vec4(0.15, 0.60, 0.50, 2.00);
+	// vs_cbuf9[160] = vec4(0.15, 0.60, 0.50, 3.00);
+	// vs_cbuf10[0] = vec4(0.95, 0.918, 0.842, 1.00);
+	// vs_cbuf10[1] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf10[2] = vec4(224.00, 1.00, 1.50, 1.50);
+	// vs_cbuf10[3] = vec4(0.9529887, 1.50, 1.50, 1.50);
+	// vs_cbuf10[4] = vec4(1.50, 0.0003019, -0.0003692, -268.5887);
+	// vs_cbuf10[5] = vec4(-0.0003018, 1.50, 0.0004641, 127.0516);
+	// vs_cbuf10[6] = vec4(0.0003693, -0.000464, 1.50, -122.3048);
+	// vs_cbuf13[0] = vec4(3.00, 1.00, 0.20, 0.10);
+	// vs_cbuf13[1] = vec4(0.015, 1.00, 0.20, 0.50);
+	// vs_cbuf13[2] = vec4(10.00, 0.00, 4.00, 30.00);
+	// vs_cbuf13[3] = vec4(0.20, 0.25, 0.00, 1.00);
+	// vs_cbuf13[5] = vec4(1.00, 10.00, 1.00, 0.00);
+	// vs_cbuf13[6] = vec4(1.00, 1.00, 10.00, 0.00);
+	// vs_cbuf15[22] = vec4(0.0000333, 0.00, 0.00, 0.00);
+	// vs_cbuf15[23] = vec4(40.00, 2.50, 0.85, -0.006357);
+	// vs_cbuf15[24] = vec4(0.0033333, 0.00, 0.8054669, 4.00);
+	// vs_cbuf15[25] = vec4(0.585, 1.00, 0.806, 0.1678056);
+	// vs_cbuf15[26] = vec4(1.388, 0.994, 0.297, 0.40);
+	// vs_cbuf15[27] = vec4(-0.1428571, 0.0071429, 250.00, 0.00);
+	// vs_cbuf15[28] = vec4(0.2373198, -0.6541618, -0.7181587, 0.00);
+	// vs_cbuf15[49] = vec4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf15[51] = vec4(950.00, 50.00, 1.50, 1.00);
+	// vs_cbuf15[52] = vec4(-468.00, -324.00, 0.0025, 0.00);
+	// vs_cbuf15[58] = vec4(1.00, 1.00, 1.00, 1.00);
+	// vs_cbuf16[0] = vec4(0.00, 0.00, -2.951901, -15.98716);
+	// vs_cbuf16[1] = vec4(-0.7948112, 0.00, 0.6068569, 0.3405924);
+
+	bool b_0_2;
+	bool b_0_20;
+	bool b_0_21;
+	bool b_0_22;
+	bool b_0_23;
+	bool b_0_7;
+	bool b_1_25;
+	bool b_1_33;
+	bool b_1_8;
+	bool b_2_35;
+	bool b_2_36;
+	bool b_2_40;
+	bool b_2_41;
+	bool b_2_43;
+	bool b_2_44;
+	bool b_3_12;
+	bool b_3_20;
+	bool b_4_0;
+	bool b_4_12;
+	bool b_5_22;
+	bool b_6_1;
+	bool b_6_18;
+	bool b_7_6;
+	bool b_7_7;
+	bool b_8_8;
+	float f_0_21;
+	float f_0_24;
+	float f_0_26;
+	float f_0_70;
+	float f_0_73;
+	float f_0_78;
+	float f_0_85;
+	float f_0_87;
+	float f_0_88;
+	float f_1_15;
+	float f_1_20;
+	float f_1_5;
+	float f_10_9;
+	float f_11_7;
+	float f_12_1;
+	float f_12_2;
+	float f_14_1;
+	float f_17_0;
+	float f_19_0;
+	float f_19_1;
+	float f_2_16;
+	float f_2_25;
+	float f_2_39;
+	float f_2_43;
+	float f_2_47;
+	float f_2_63;
+	float f_2_64;
+	float f_2_65;
+	float f_2_74;
+	float f_2_95;
+	float f_21_16;
+	float f_22_0;
+	float f_22_2;
+	float f_22_8;
+	float f_23_14;
+	float f_23_16;
+	float f_3_28;
+	float f_4_19;
+	float f_6_14;
+	float f_6_16;
+	float f_6_21;
+	float f_6_28;
+	float f_7_10;
+	float f_7_26;
+	float f_7_48;
+	float f_7_5;
+	float f_7_76;
+	float f_8_10;
+	float f_8_30;
+	float f_8_36;
+	float f_8_4;
+	float f_9_25;
+	float f_9_37;
+	vec4 f4_0_0;
+	vec4 f4_0_1;
+	precise float pf_0_1;
+	precise float pf_0_10;
+	precise float pf_0_13;
+	precise float pf_0_18;
+	precise float pf_0_19;
+	precise float pf_0_3;
+	precise float pf_0_4;
+	precise float pf_1_18;
+	precise float pf_1_27;
+	precise float pf_1_28;
+	precise float pf_1_3;
+	precise float pf_1_4;
+	precise float pf_1_5;
+	precise float pf_1_7;
+	precise float pf_10_1;
+	precise float pf_10_12;
+	precise float pf_10_18;
+	precise float pf_10_22;
+	precise float pf_10_23;
+	precise float pf_10_26;
+	precise float pf_10_3;
+	precise float pf_10_4;
+	precise float pf_10_5;
+	precise float pf_10_7;
+	precise float pf_11_2;
+	precise float pf_11_3;
+	precise float pf_11_5;
+	precise float pf_11_7;
+	precise float pf_11_9;
+	precise float pf_12_8;
+	precise float pf_13_2;
+	precise float pf_13_6;
+	precise float pf_14_11;
+	precise float pf_14_3;
+	precise float pf_14_7;
+	precise float pf_15_13;
+	precise float pf_15_4;
+	precise float pf_15_6;
+	precise float pf_15_9;
+	precise float pf_16_0;
+	precise float pf_16_1;
+	precise float pf_16_6;
+	precise float pf_17_2;
+	precise float pf_17_9;
+	precise float pf_18_1;
+	precise float pf_2_12;
+	precise float pf_2_13;
+	precise float pf_2_18;
+	precise float pf_2_21;
+	precise float pf_2_22;
+	precise float pf_2_28;
+	precise float pf_2_3;
+	precise float pf_2_5;
+	precise float pf_21_1;
+	precise float pf_22_0;
+	precise float pf_23_0;
+	precise float pf_26_0;
+	precise float pf_26_3;
+	precise float pf_29_0;
+	precise float pf_3_12;
+	precise float pf_3_17;
+	precise float pf_3_5;
+	precise float pf_3_7;
+	precise float pf_31_0;
+	precise float pf_4_10;
+	precise float pf_4_14;
+	precise float pf_4_16;
+	precise float pf_4_19;
+	precise float pf_4_20;
+	precise float pf_4_6;
+	precise float pf_4_9;
+	precise float pf_5_14;
+	precise float pf_5_16;
+	precise float pf_5_24;
+	precise float pf_5_30;
+	precise float pf_5_31;
+	precise float pf_5_33;
+	precise float pf_5_42;
+	precise float pf_6_10;
+	precise float pf_6_11;
+	precise float pf_6_12;
+	precise float pf_6_16;
+	precise float pf_6_19;
+	precise float pf_6_20;
+	precise float pf_6_24;
+	precise float pf_6_25;
+	precise float pf_6_26;
+	precise float pf_6_27;
+	precise float pf_6_33;
+	precise float pf_6_39;
+	precise float pf_6_40;
+	precise float pf_6_42;
+	precise float pf_6_6;
+	precise float pf_7_11;
+	precise float pf_7_14;
+	precise float pf_7_8;
+	precise float pf_8_11;
+	precise float pf_8_14;
+	precise float pf_8_16;
+	precise float pf_8_4;
+	precise float pf_8_7;
+	precise float pf_9_1;
+	precise float pf_9_11;
+	precise float pf_9_13;
+	precise float pf_9_15;
+	precise float pf_9_3;
+	precise float pf_9_9;
+	uint u_0_1;
+	uint u_0_10;
+	uint u_0_11;
+	uint u_0_2;
+	uint u_0_3;
+	uint u_0_4;
+	uint u_0_5;
+	uint u_0_7;
+	uint u_0_8;
+	uint u_0_phi_28;
+	uint u_0_phi_44;
+	uint u_0_phi_67;
+	uint u_0_phi_70;
+	uint u_1_1;
+	uint u_1_10;
+	uint u_1_11;
+	uint u_1_12;
+	uint u_1_13;
+	uint u_1_14;
+	uint u_1_15;
+	uint u_1_16;
+	uint u_1_18;
+	uint u_1_19;
+	uint u_1_2;
+	uint u_1_21;
+	uint u_1_22;
+	uint u_1_25;
+	uint u_1_3;
+	uint u_1_32;
+	uint u_1_34;
+	uint u_1_39;
+	uint u_1_4;
+	uint u_1_45;
+	uint u_1_48;
+	uint u_1_49;
+	uint u_1_5;
+	uint u_1_51;
+	uint u_1_54;
+	uint u_1_6;
+	uint u_1_61;
+	uint u_1_63;
+	uint u_1_7;
+	uint u_1_8;
+	uint u_1_9;
+	uint u_1_phi_23;
+	uint u_1_phi_25;
+	uint u_1_phi_29;
+	uint u_1_phi_32;
+	uint u_1_phi_34;
+	uint u_1_phi_37;
+	uint u_1_phi_40;
+	uint u_1_phi_42;
+	uint u_1_phi_65;
+	uint u_1_phi_68;
+	uint u_10_0;
+	uint u_10_10;
+	uint u_10_12;
+	uint u_10_16;
+	uint u_10_2;
+	uint u_10_22;
+	uint u_10_23;
+	uint u_10_27;
+	uint u_10_28;
+	uint u_10_3;
+	uint u_10_33;
+	uint u_10_4;
+	uint u_10_5;
+	uint u_10_9;
+	uint u_10_phi_47;
+	uint u_10_phi_56;
+	uint u_10_phi_82;
+	uint u_11_1;
+	uint u_11_10;
+	uint u_11_13;
+	uint u_11_17;
+	uint u_11_2;
+	uint u_11_20;
+	uint u_11_5;
+	uint u_11_6;
+	uint u_11_7;
+	uint u_11_8;
+	uint u_11_9;
+	uint u_11_phi_26;
+	uint u_11_phi_39;
+	uint u_11_phi_48;
+	uint u_11_phi_57;
+	uint u_12_0;
+	uint u_12_1;
+	uint u_12_10;
+	uint u_12_11;
+	uint u_12_2;
+	uint u_12_21;
+	uint u_12_3;
+	uint u_12_4;
+	uint u_12_5;
+	uint u_12_6;
+	uint u_12_7;
+	uint u_12_phi_17;
+	uint u_12_phi_49;
+	uint u_12_phi_58;
+	uint u_13_0;
+	uint u_13_13;
+	uint u_13_15;
+	uint u_13_16;
+	uint u_13_2;
+	uint u_13_21;
+	uint u_13_3;
+	uint u_13_4;
+	uint u_13_5;
+	uint u_13_6;
+	uint u_13_7;
+	uint u_13_phi_19;
+	uint u_13_phi_24;
+	uint u_13_phi_50;
+	uint u_14_1;
+	uint u_14_12;
+	uint u_14_2;
+	uint u_14_3;
+	uint u_14_4;
+	uint u_14_5;
+	uint u_14_6;
+	uint u_14_9;
+	uint u_14_phi_16;
+	uint u_14_phi_50;
+	uint u_15_1;
+	uint u_15_12;
+	uint u_15_15;
+	uint u_15_17;
+	uint u_15_2;
+	uint u_15_20;
+	uint u_15_22;
+	uint u_15_25;
+	uint u_15_3;
+	uint u_15_31;
+	uint u_15_32;
+	uint u_15_4;
+	uint u_15_6;
+	uint u_15_7;
+	uint u_15_8;
+	uint u_15_phi_21;
+	uint u_15_phi_50;
+	uint u_16_0;
+	uint u_16_1;
+	uint u_16_2;
+	uint u_16_3;
+	uint u_16_4;
+	uint u_16_6;
+	uint u_16_phi_15;
+	uint u_16_phi_50;
+	uint u_17_11;
+	uint u_17_13;
+	uint u_17_16;
+	uint u_17_19;
+	uint u_17_20;
+	uint u_17_25;
+	uint u_17_27;
+	uint u_17_28;
+	uint u_17_32;
+	uint u_17_33;
+	uint u_17_34;
+	uint u_17_36;
+	uint u_17_4;
+	uint u_17_40;
+	uint u_17_41;
+	uint u_17_45;
+	uint u_17_46;
+	uint u_17_48;
+	uint u_17_5;
+	uint u_17_51;
+	uint u_17_52;
+	uint u_17_56;
+	uint u_17_57;
+	uint u_17_59;
+	uint u_17_6;
+	uint u_17_63;
+	uint u_17_65;
+	uint u_17_7;
+	uint u_17_70;
+	uint u_17_71;
+	uint u_17_8;
+	uint u_17_9;
+	uint u_17_phi_20;
+	uint u_17_phi_52;
+	uint u_17_phi_59;
+	uint u_18_10;
+	uint u_18_11;
+	uint u_18_12;
+	uint u_18_14;
+	uint u_18_16;
+	uint u_18_6;
+	uint u_18_7;
+	uint u_18_8;
+	uint u_18_9;
+	uint u_18_phi_28;
+	uint u_18_phi_53;
+	uint u_18_phi_60;
+	uint u_19_1;
+	uint u_19_10;
+	uint u_19_11;
+	uint u_19_2;
+	uint u_19_3;
+	uint u_19_4;
+	uint u_19_5;
+	uint u_19_7;
+	uint u_19_phi_54;
+	uint u_19_phi_60;
+	uint u_2_10;
+	uint u_2_12;
+	uint u_2_16;
+	uint u_2_19;
+	uint u_2_20;
+	uint u_2_24;
+	uint u_2_27;
+	uint u_2_30;
+	uint u_2_31;
+	uint u_2_32;
+	uint u_2_34;
+	uint u_2_37;
+	uint u_2_39;
+	uint u_2_40;
+	uint u_2_43;
+	uint u_2_44;
+	uint u_2_46;
+	uint u_2_5;
+	uint u_2_6;
+	uint u_20_1;
+	uint u_20_13;
+	uint u_20_15;
+	uint u_20_18;
+	uint u_20_2;
+	uint u_20_21;
+	uint u_20_22;
+	uint u_20_26;
+	uint u_20_27;
+	uint u_20_34;
+	uint u_20_35;
+	uint u_20_6;
+	uint u_20_8;
+	uint u_20_phi_60;
+	uint u_21_1;
+	uint u_21_12;
+	uint u_21_15;
+	uint u_21_17;
+	uint u_21_2;
+	uint u_21_7;
+	uint u_21_8;
+	uint u_21_phi_60;
+	uint u_22_0;
+	uint u_22_1;
+	uint u_22_10;
+	uint u_22_17;
+	uint u_22_20;
+	uint u_22_26;
+	uint u_22_30;
+	uint u_22_36;
+	uint u_22_38;
+	uint u_22_42;
+	uint u_22_52;
+	uint u_22_53;
+	uint u_22_55;
+	uint u_22_58;
+	uint u_22_59;
+	uint u_22_6;
+	uint u_22_7;
+	uint u_22_phi_63;
+	uint u_23_0;
+	uint u_23_1;
+	uint u_23_22;
+	uint u_23_26;
+	uint u_23_27;
+	uint u_23_5;
+	uint u_23_8;
+	uint u_23_phi_81;
+	uint u_24_1;
+	uint u_24_11;
+	uint u_24_14;
+	uint u_24_2;
+	uint u_24_21;
+	uint u_24_5;
+	uint u_24_7;
+	uint u_25_5;
+	uint u_25_6;
+	uint u_25_7;
+	uint u_25_8;
+	uint u_25_phi_72;
+	uint u_26_2;
+	uint u_26_6;
+	uint u_26_7;
+	uint u_27_10;
+	uint u_27_11;
+	uint u_27_17;
+	uint u_27_2;
+	uint u_27_22;
+	uint u_27_25;
+	uint u_27_28;
+	uint u_27_32;
+	uint u_27_9;
+	uint u_29_0;
+	uint u_29_1;
+	uint u_29_phi_74;
+	uint u_3_1;
+	uint u_3_10;
+	uint u_3_14;
+	uint u_3_18;
+	uint u_3_2;
+	uint u_3_21;
+	uint u_3_25;
+	uint u_3_27;
+	uint u_3_28;
+	uint u_3_32;
+	uint u_3_35;
+	uint u_3_4;
+	uint u_3_5;
+	uint u_3_7;
+	uint u_3_9;
+	uint u_3_phi_11;
+	uint u_3_phi_4;
+	uint u_30_12;
+	uint u_30_17;
+	uint u_30_2;
+	uint u_30_6;
+	uint u_30_9;
+	uint u_31_1;
+	uint u_31_10;
+	uint u_31_13;
+	uint u_31_19;
+	uint u_31_20;
+	uint u_31_23;
+	uint u_31_25;
+	uint u_31_36;
+	uint u_31_4;
+	uint u_31_5;
+	uint u_31_6;
+	uint u_31_phi_77;
+	uint u_32_0;
+	uint u_32_1;
+	uint u_32_2;
+	uint u_32_phi_76;
+	uint u_33_10;
+	uint u_33_12;
+	uint u_33_13;
+	uint u_33_15;
+	uint u_33_17;
+	uint u_33_5;
+	uint u_33_6;
+	uint u_33_7;
+	uint u_33_9;
+	uint u_33_phi_78;
+	uint u_34_0;
+	uint u_34_11;
+	uint u_34_12;
+	uint u_34_16;
+	uint u_34_20;
+	uint u_34_21;
+	uint u_34_23;
+	uint u_34_5;
+	uint u_35_10;
+	uint u_35_12;
+	uint u_35_2;
+	uint u_35_9;
+	uint u_36_1;
+	uint u_36_11;
+	uint u_36_21;
+	uint u_36_22;
+	uint u_36_3;
+	uint u_36_4;
+	uint u_36_8;
+	uint u_36_phi_79;
+	uint u_37_0;
+	uint u_37_10;
+	uint u_37_15;
+	uint u_37_20;
+	uint u_37_3;
+	uint u_37_7;
+	uint u_38_3;
+	uint u_39_0;
+	uint u_39_2;
+	uint u_39_3;
+	uint u_4_1;
+	uint u_4_10;
+	uint u_4_11;
+	uint u_4_12;
+	uint u_4_13;
+	uint u_4_14;
+	uint u_4_16;
+	uint u_4_17;
+	uint u_4_19;
+	uint u_4_3;
+	uint u_4_4;
+	uint u_4_5;
+	uint u_4_6;
+	uint u_4_7;
+	uint u_4_8;
+	uint u_4_9;
+	uint u_4_phi_45;
+	uint u_4_phi_51;
+	uint u_4_phi_55;
+	uint u_4_phi_61;
+	uint u_4_phi_65;
+	uint u_4_phi_66;
+	uint u_4_phi_69;
+	uint u_40_0;
+	uint u_40_2;
+	uint u_5_0;
+	uint u_5_1;
+	uint u_5_11;
+	uint u_5_12;
+	uint u_5_14;
+	uint u_5_15;
+	uint u_5_17;
+	uint u_5_18;
+	uint u_5_19;
+	uint u_5_2;
+	uint u_5_23;
+	uint u_5_27;
+	uint u_5_3;
+	uint u_5_6;
+	uint u_5_7;
+	uint u_5_9;
+	uint u_5_phi_2;
+	uint u_5_phi_22;
+	uint u_5_phi_28;
+	uint u_5_phi_41;
+	uint u_5_phi_9;
+	uint u_6_10;
+	uint u_6_11;
+	uint u_6_13;
+	uint u_6_14;
+	uint u_6_15;
+	uint u_6_16;
+	uint u_6_17;
+	uint u_6_18;
+	uint u_6_19;
+	uint u_6_24;
+	uint u_6_8;
+	uint u_6_9;
+	uint u_6_phi_27;
+	uint u_6_phi_30;
+	uint u_6_phi_33;
+	uint u_6_phi_36;
+	uint u_6_phi_43;
+	uint u_7_1;
+	uint u_7_2;
+	uint u_7_3;
+	uint u_7_4;
+	uint u_7_phi_64;
+	uint u_7_phi_65;
+	uint u_8_0;
+	uint u_8_13;
+	uint u_8_14;
+	uint u_8_16;
+	uint u_8_17;
+	uint u_8_18;
+	uint u_8_19;
+	uint u_8_2;
+	uint u_8_23;
+	uint u_8_26;
+	uint u_8_29;
+	uint u_8_3;
+	uint u_8_31;
+	uint u_8_38;
+	uint u_8_39;
+	uint u_8_45;
+	uint u_8_47;
+	uint u_8_5;
+	uint u_8_51;
+	uint u_8_8;
+	uint u_8_9;
+	uint u_8_phi_31;
+	uint u_8_phi_62;
+	uint u_8_phi_71;
+	uint u_9_10;
+	uint u_9_11;
+	uint u_9_2;
+	uint u_9_21;
+	uint u_9_22;
+	uint u_9_23;
+	uint u_9_24;
+	uint u_9_25;
+	uint u_9_3;
+	uint u_9_31;
+	uint u_9_4;
+	uint u_9_6;
+	uint u_9_7;
+	uint u_9_8;
+	uint u_9_9;
+	uint u_9_phi_18;
+	uint u_9_phi_35;
+	uint u_9_phi_38;
+	uint u_9_phi_46;
+	uint u_9_phi_83;
+	uvec4 u4_0_0;
+	uvec4 u4_0_1;
+	// -0.60033  <=>  float(-0.60033)
+	gl_Position.x = float(-0.60033);
+	// -6.77844  <=>  float(-6.77844)
+	gl_Position.y = float(-6.77844);
+	// 3.99698  <=>  float(3.99698)
+	gl_Position.z = float(3.99698);
+	// 5.99658  <=>  float(5.99658)
+	gl_Position.w = float(5.99658);
+	// 0.45125  <=>  float(0.45125)
+	out_attr0.x = float(0.45125);
+	// 0.42136  <=>  float(0.42136)
+	out_attr0.y = float(0.42136);
+	// 0.35448  <=>  float(0.35448)
+	out_attr0.z = float(0.35448);
+	// 0.75  <=>  float(0.75)
+	out_attr0.w = float(0.75);
+	// 0.15  <=>  float(0.15)
+	out_attr1.x = float(0.15);
+	// 0.1455  <=>  float(0.1455)
+	out_attr1.y = float(0.1455);
+	// 0.1335  <=>  float(0.1335)
+	out_attr1.z = float(0.1335);
+	// 1.00  <=>  float(1.00)
+	out_attr1.w = float(1.00);
+	// 0.63971  <=>  float(0.63971)
+	out_attr2.x = float(0.63971);
+	// 0.93186  <=>  float(0.93186)
+	out_attr2.y = float(0.93186);
+	// 0.92137  <=>  float(0.92137)
+	out_attr2.z = float(0.92137);
+	// 2.26162  <=>  float(2.26162)
+	out_attr2.w = float(2.26162);
+	// 0.39765  <=>  float(0.39765)
+	out_attr3.x = float(0.39765);
+	// 0.74824  <=>  float(0.74824)
+	out_attr3.y = float(0.74824);
+	// 0.00  <=>  float(0.00)
+	out_attr3.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr3.w = float(1.00);
+	// 2.69813  <=>  float(2.69813)
+	out_attr4.x = float(2.69813);
+	// 6.38751  <=>  float(6.38751)
+	out_attr4.y = float(6.38751);
+	// 4.99678  <=>  float(4.99678)
+	out_attr4.z = float(4.99678);
+	// 5.99658  <=>  float(5.99658)
+	out_attr4.w = float(5.99658);
+	// 0.15  <=>  float(0.15)
+	out_attr5.x = float(0.15);
+	// 0.60  <=>  float(0.60)
+	out_attr5.y = float(0.60);
+	// 0.00  <=>  float(0.00)
+	out_attr5.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr5.w = float(1.00);
+	// 0.95299  <=>  float(0.95299)
+	out_attr6.x = float(0.95299);
+	// 0.00  <=>  float(0.00)
+	out_attr6.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr6.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr6.w = float(1.00);
+	// -1.38547  <=>  float(-1.38547)
+	out_attr7.x = float(-1.38547);
+	// -1.56076  <=>  float(-1.56076)
+	out_attr7.y = float(-1.56076);
+	// -0.35507  <=>  float(-0.35507)
+	out_attr7.z = float(-0.35507);
+	// 1.00  <=>  float(1.00)
+	out_attr7.w = float(1.00);
+	// 9.59141  <=>  float(9.59141)
+	out_attr8.x = float(9.59141);
+	// 0.00  <=>  float(0.00)
+	out_attr8.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr8.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr8.w = float(1.00);
+	// 1.00  <=>  float(1.00)
+	out_attr9.x = float(1.00);
+	// 0.00  <=>  float(0.00)
+	out_attr9.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr9.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr9.w = float(1.00);
+	// 0.01302  <=>  float(0.01302)
+	out_attr10.x = float(0.01302);
+	// 0.00  <=>  float(0.00)
+	out_attr10.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr10.z = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr10.w = float(0.00);
+	// 0.55678  <=>  float(0.55678)
+	out_attr11.x = float(0.55678);
+	// 0.63358  <=>  float(0.63358)
+	out_attr11.y = float(0.63358);
+	// 0.45282  <=>  float(0.45282)
+	out_attr11.z = float(0.45282);
+	// 1.00  <=>  float(1.00)
+	out_attr11.w = float(1.00);
+	// 0.09688  <=>  float(0.09688)
+	out_attr12.x = float(0.09688);
+	// 0.25579  <=>  float(0.25579)
+	out_attr12.y = float(0.25579);
+	// 0.60712  <=>  float(0.60712)
+	out_attr12.z = float(0.60712);
+	// 0.00677  <=>  float(0.00677)
+	out_attr12.w = float(0.00677);
+	// 268435008  <=>  (isnan({in_attr4.w : 268435000.00}) ? 0u : int(clamp(trunc({in_attr4.w : 268435000.00}), float(-2147483600.f), float(2147483600.f))))
+	u_4_1 = (isnan(in_attr4.w) ? 0u : int(clamp(trunc(in_attr4.w), float(-2147483600.f), float(2147483600.f))));
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 0.00  <=>  0.f
+		gl_Position.x = 0.f;
+	}
+	// 0  <=>  0u
+	u_5_0 = 0u;
+	u_5_phi_2 = u_5_0;
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 1187205120  <=>  {vs_cbuf8[30].y : 1187205120}
+		u_5_1 = vs_cbuf8[30].y;
+		u_5_phi_2 = u_5_1;
+	}
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 0.00  <=>  0.f
+		gl_Position.y = 0.f;
+	}
+	// 0  <=>  {u_5_phi_2 : 0}
+	u_3_1 = u_5_phi_2;
+	u_3_phi_4 = u_3_1;
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_5_phi_2) : 0.00} * 5.f)) : 0}
+		u_3_2 = ftou((utof(u_5_phi_2) * 5.f));
+		u_3_phi_4 = u_3_2;
+	}
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 0.00  <=>  0.f
+		out_attr6.x = 0.f;
+	}
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		// 0.00  <=>  {utof(u_3_phi_4) : 0.00}
+		gl_Position.z = utof(u_3_phi_4);
+	}
+	// False  <=>  if(((int({u_4_1 : 268435008}) <= int(0u)) ? true : false))
+	if(((int(u_4_1) <= int(0u)) ? true : false))
+	{
+		return;
+	}
+	// 224.00  <=>  ((0.f - {in_attr5.w : 0.00}) + {utof(vs_cbuf10[2].x) : 224.00})
+	pf_0_1 = ((0.f - in_attr5.w) + utof(vs_cbuf10[2].x));
+	// False  <=>  ((({pf_0_1 : 224.00} >= float(int({u_4_1 : 268435008}))) && (! isnan({pf_0_1 : 224.00}))) && (! isnan(float(int({u_4_1 : 268435008})))))
+	b_0_2 = (((pf_0_1 >= float(int(u_4_1))) && (! isnan(pf_0_1))) && (! isnan(float(int(u_4_1)))));
+	// False  <=>  ((((({in_attr5.w : 0.00} > {utof(vs_cbuf10[2].x) : 224.00}) && (! isnan({in_attr5.w : 0.00}))) && (! isnan({utof(vs_cbuf10[2].x) : 224.00}))) || {b_0_2 : False}) ? true : false)
+	b_1_8 = (((((in_attr5.w > utof(vs_cbuf10[2].x)) && (! isnan(in_attr5.w))) && (! isnan(utof(vs_cbuf10[2].x)))) || b_0_2) ? true : false);
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 0.00  <=>  0.f
+		gl_Position.x = 0.f;
+	}
+	// 0  <=>  {ftou(in_attr5.w) : 0}
+	u_5_2 = ftou(in_attr5.w);
+	u_5_phi_9 = u_5_2;
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 1187205120  <=>  {vs_cbuf8[30].y : 1187205120}
+		u_5_3 = vs_cbuf8[30].y;
+		u_5_phi_9 = u_5_3;
+	}
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 0.00  <=>  0.f
+		gl_Position.y = 0.f;
+	}
+	// 0  <=>  {u_5_phi_9 : 0}
+	u_3_4 = u_5_phi_9;
+	u_3_phi_11 = u_3_4;
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 0  <=>  {ftou(({utof(u_5_phi_9) : 0.00} * 5.f)) : 0}
+		u_3_5 = ftou((utof(u_5_phi_9) * 5.f));
+		u_3_phi_11 = u_3_5;
+	}
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 0.00  <=>  0.f
+		out_attr6.x = 0.f;
+	}
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		// 0.00  <=>  {utof(u_3_phi_11) : 0.00}
+		gl_Position.z = utof(u_3_phi_11);
+	}
+	// False  <=>  if({b_1_8 : False})
+	if(b_1_8)
+	{
+		return;
+	}
+	// 0  <=>  ({vs_cbuf9[7].x : 1879048329} & 2u)
+	u_8_0 = (vs_cbuf9[7].x & 2u);
+	// 1074790400  <=>  {ftou((({in_attr9.z : 0.00} * {in_attr9.z : 0.00}) + (({in_attr9.y : 0.00} * {in_attr9.y : 0.00}) + ({in_attr9.x : 1.50} * {in_attr9.x : 1.50})))) : 1074790400}
+	u_10_0 = ftou(((in_attr9.z * in_attr9.z) + ((in_attr9.y * in_attr9.y) + (in_attr9.x * in_attr9.x))));
+	// 1.50  <=>  sqrt((({in_attr9.z : 0.00} * {in_attr9.z : 0.00}) + (({in_attr9.y : 0.00} * {in_attr9.y : 0.00}) + ({in_attr9.x : 1.50} * {in_attr9.x : 1.50}))))
+	f_12_1 = sqrt(((in_attr9.z * in_attr9.z) + ((in_attr9.y * in_attr9.y) + (in_attr9.x * in_attr9.x))));
+	// 1074790400  <=>  {ftou((({in_attr10.z : 0.00} * {in_attr10.z : 0.00}) + (({in_attr10.y : 1.50} * {in_attr10.y : 1.50}) + ({in_attr10.x : 0.00} * {in_attr10.x : 0.00})))) : 1074790400}
+	u_12_0 = ftou(((in_attr10.z * in_attr10.z) + ((in_attr10.y * in_attr10.y) + (in_attr10.x * in_attr10.x))));
+	// 1074790400  <=>  {ftou((({in_attr11.z : 1.50} * {in_attr11.z : 1.50}) + (({in_attr11.y : 0.00} * {in_attr11.y : 0.00}) + ({in_attr11.x : 0.00} * {in_attr11.x : 0.00})))) : 1074790400}
+	u_13_0 = ftou(((in_attr11.z * in_attr11.z) + ((in_attr11.y * in_attr11.y) + (in_attr11.x * in_attr11.x))));
+	// 1.50  <=>  sqrt((({in_attr10.z : 0.00} * {in_attr10.z : 0.00}) + (({in_attr10.y : 1.50} * {in_attr10.y : 1.50}) + ({in_attr10.x : 0.00} * {in_attr10.x : 0.00}))))
+	f_17_0 = sqrt(((in_attr10.z * in_attr10.z) + ((in_attr10.y * in_attr10.y) + (in_attr10.x * in_attr10.x))));
+	// 1.50  <=>  sqrt((({in_attr11.z : 1.50} * {in_attr11.z : 1.50}) + (({in_attr11.y : 0.00} * {in_attr11.y : 0.00}) + ({in_attr11.x : 0.00} * {in_attr11.x : 0.00}))))
+	f_12_2 = sqrt(((in_attr11.z * in_attr11.z) + ((in_attr11.y * in_attr11.y) + (in_attr11.x * in_attr11.x))));
+	// -3.00  <=>  (0.f - floor(((({pf_0_1 : 224.00} + {utof(vs_cbuf9[18].z) : 300.00}) * (1.0f / {utof(vs_cbuf9[17].z) : 180.00})) + ({in_attr7.x : 0.91079} * {utof(vs_cbuf9[18].x) : 1.00}))))
+	f_14_1 = (0.f - floor((((pf_0_1 + utof(vs_cbuf9[18].z)) * (1.0f / utof(vs_cbuf9[17].z))) + (in_attr7.x * utof(vs_cbuf9[18].x)))));
+	// 0.8219013  <=>  (((({pf_0_1 : 224.00} + {utof(vs_cbuf9[18].z) : 300.00}) * (1.0f / {utof(vs_cbuf9[17].z) : 180.00})) + ({in_attr7.x : 0.91079} * {utof(vs_cbuf9[18].x) : 1.00})) + {f_14_1 : -3.00})
+	pf_1_3 = ((((pf_0_1 + utof(vs_cbuf9[18].z)) * (1.0f / utof(vs_cbuf9[17].z))) + (in_attr7.x * utof(vs_cbuf9[18].x))) + f_14_1);
+	// 1074790400  <=>  {u_10_0 : 1074790400}
+	u_16_0 = u_10_0;
+	u_16_phi_15 = u_16_0;
+	// True  <=>  if((((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0.6666667  <=>  inversesqrt((({in_attr9.z : 0.00} * {in_attr9.z : 0.00}) + (({in_attr9.y : 0.00} * {in_attr9.y : 0.00}) + ({in_attr9.x : 1.50} * {in_attr9.x : 1.50}))))
+		f_19_0 = inversesqrt(((in_attr9.z * in_attr9.z) + ((in_attr9.y * in_attr9.y) + (in_attr9.x * in_attr9.x))));
+		// 1059760811  <=>  {ftou(f_19_0) : 1059760811}
+		u_16_1 = ftou(f_19_0);
+		u_16_phi_15 = u_16_1;
+	}
+	// 0.4365594  <=>  cos((((({pf_0_1 : 224.00} + {utof(vs_cbuf9[18].z) : 300.00}) * (1.0f / {utof(vs_cbuf9[17].z) : 180.00})) + ({in_attr7.x : 0.91079} * {utof(vs_cbuf9[18].x) : 1.00})) * 6.2831855f))
+	f_19_1 = cos(((((pf_0_1 + utof(vs_cbuf9[18].z)) * (1.0f / utof(vs_cbuf9[17].z))) + (in_attr7.x * utof(vs_cbuf9[18].x))) * 6.2831855f));
+	// 225.50  <=>  ({pf_0_1 : 224.00} + {utof(vs_cbuf10[2].w) : 1.50})
+	pf_2_3 = (pf_0_1 + utof(vs_cbuf10[2].w));
+	// 1  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 1u)) > int(0u)) ? 4294967295u : 0u))))
+	u_5_6 = uint((int(0) - int(((int((vs_cbuf9[7].x & 1u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 1u)) >= int(0u)) ? 0u : 1u))))
+	u_14_1 = uint((int(0) - int(((int((vs_cbuf9[7].x & 1u)) >= int(0u)) ? 0u : 1u))));
+	// 1  <=>  ({u_5_6 : 1} + {u_14_1 : 0})
+	u_5_7 = (u_5_6 + u_14_1);
+	// True  <=>  ((({pf_1_3 : 0.8219013} >= 0.5f) && (! isnan({pf_1_3 : 0.8219013}))) && (! isnan(0.5f)))
+	b_4_0 = (((pf_1_3 >= 0.5f) && (! isnan(pf_1_3))) && (! isnan(0.5f)));
+	// 1065353216  <=>  ({b_4_0 : True} ? 1065353216u : 0u)
+	u_5_9 = (b_4_0 ? 1065353216u : 0u);
+	// 1074790400  <=>  {u_12_0 : 1074790400}
+	u_14_2 = u_12_0;
+	u_14_phi_16 = u_14_2;
+	// True  <=>  if((((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0.6666667  <=>  inversesqrt((({in_attr10.z : 0.00} * {in_attr10.z : 0.00}) + (({in_attr10.y : 1.50} * {in_attr10.y : 1.50}) + ({in_attr10.x : 0.00} * {in_attr10.x : 0.00}))))
+		f_22_0 = inversesqrt(((in_attr10.z * in_attr10.z) + ((in_attr10.y * in_attr10.y) + (in_attr10.x * in_attr10.x))));
+		// 1059760811  <=>  {ftou(f_22_0) : 1059760811}
+		u_14_3 = ftou(f_22_0);
+		u_14_phi_16 = u_14_3;
+	}
+	// 1074790400  <=>  {u_13_0 : 1074790400}
+	u_12_1 = u_13_0;
+	u_12_phi_17 = u_12_1;
+	// True  <=>  if((((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0.6666667  <=>  inversesqrt((({in_attr11.z : 1.50} * {in_attr11.z : 1.50}) + (({in_attr11.y : 0.00} * {in_attr11.y : 0.00}) + ({in_attr11.x : 0.00} * {in_attr11.x : 0.00}))))
+		f_22_2 = inversesqrt(((in_attr11.z * in_attr11.z) + ((in_attr11.y * in_attr11.y) + (in_attr11.x * in_attr11.x))));
+		// 1059760811  <=>  {ftou(f_22_2) : 1059760811}
+		u_12_2 = ftou(f_22_2);
+		u_12_phi_17 = u_12_2;
+	}
+	// 0  <=>  uint((int(0) - int(((int({u_8_0 : 0}) > int(0u)) ? 4294967295u : 0u))))
+	u_8_2 = uint((int(0) - int(((int(u_8_0) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  ({u_8_2 : 0} + uint((int(0) - int(((int({u_8_0 : 0}) >= int(0u)) ? 0u : 1u)))))
+	u_8_3 = (u_8_2 + uint((int(0) - int(((int(u_8_0) >= int(0u)) ? 0u : 1u)))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 4u)) > int(0u)) ? 4294967295u : 0u))))
+	u_8_5 = uint((int(0) - int(((int((vs_cbuf9[7].x & 4u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 4u)) >= int(0u)) ? 0u : 1u))))
+	u_9_2 = uint((int(0) - int(((int((vs_cbuf9[7].x & 4u)) >= int(0u)) ? 0u : 1u))));
+	// 1065353216  <=>  {u_5_9 : 1065353216}
+	u_9_3 = u_5_9;
+	u_9_phi_18 = u_9_3;
+	// True  <=>  if((((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_14_phi_16) : 0.6666667} * {in_attr9.y : 0.00})) : 0}
+		u_9_4 = ftou((utof(u_14_phi_16) * in_attr9.y));
+		u_9_phi_18 = u_9_4;
+	}
+	// 0  <=>  0u
+	u_13_2 = 0u;
+	u_13_phi_19 = u_13_2;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 1195811392  <=>  {ftou(({pf_2_3 : 225.50} * {pf_2_3 : 225.50})) : 1195811392}
+		u_13_3 = ftou((pf_2_3 * pf_2_3));
+		u_13_phi_19 = u_13_3;
+	}
+	// 0.9281721  <=>  ((((({f_19_1 : 0.4365594} * 0.5f) + 0.5f) * (0.f - {utof(vs_cbuf9[17].x) : 0.10})) + 1.f) * float(int(abs(int({u_5_7 : 1})))))
+	pf_3_5 = (((((f_19_1 * 0.5f) + 0.5f) * (0.f - utof(vs_cbuf9[17].x))) + 1.f) * float(int(abs(int(u_5_7)))));
+	// 0.9178098  <=>  (({pf_1_3 : 0.8219013} * (0.f - {utof(vs_cbuf9[17].x) : 0.10})) + 1.f)
+	pf_1_4 = ((pf_1_3 * (0.f - utof(vs_cbuf9[17].x))) + 1.f);
+	// 1062365216  <=>  {ftou(pf_1_3) : 1062365216}
+	u_17_4 = ftou(pf_1_3);
+	u_17_phi_20 = u_17_4;
+	// True  <=>  if((((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_16_phi_15) : 0.6666667} * {in_attr10.x : 0.00})) : 0}
+		u_17_5 = ftou((utof(u_16_phi_15) * in_attr10.x));
+		u_17_phi_20 = u_17_5;
+	}
+	// 1064148143  <=>  {ftou((((({f_19_1 : 0.4365594} * 0.5f) + 0.5f) * (0.f - {utof(vs_cbuf9[17].x) : 0.10})) + 1.f)) : 1064148143}
+	u_15_1 = ftou(((((f_19_1 * 0.5f) + 0.5f) * (0.f - utof(vs_cbuf9[17].x))) + 1.f));
+	u_15_phi_21 = u_15_1;
+	// True  <=>  if((((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_12_phi_17) : 0.6666667} * {in_attr10.z : 0.00})) : 0}
+		u_15_2 = ftou((utof(u_12_phi_17) * in_attr10.z));
+		u_15_phi_21 = u_15_2;
+	}
+	// 0  <=>  0u
+	u_5_11 = 0u;
+	u_5_phi_22 = u_5_11;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_13_phi_19) : 0.00} * {utof(vs_cbuf9[14].w) : 0.00})) : 0}
+		u_5_12 = ftou((utof(u_13_phi_19) * utof(vs_cbuf9[14].w)));
+		u_5_phi_22 = u_5_12;
+	}
+	// 0  <=>  {u_13_phi_19 : 0}
+	u_1_1 = u_13_phi_19;
+	u_1_phi_23 = u_1_1;
+	// True  <=>  if((((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f))) ? true : false))
+	{
+		// 1065353216  <=>  {ftou(({utof(u_14_phi_16) : 0.6666667} * {in_attr10.y : 1.50})) : 1065353216}
+		u_1_2 = ftou((utof(u_14_phi_16) * in_attr10.y));
+		u_1_phi_23 = u_1_2;
+	}
+	// 1065353216  <=>  {u_1_phi_23 : 1065353216}
+	u_13_4 = u_1_phi_23;
+	u_13_phi_24 = u_13_4;
+	// False  <=>  if(((! ((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_13_5 = 0u;
+		u_13_phi_24 = u_13_5;
+	}
+	// 0  <=>  ((int(({vs_cbuf9[7].x : 1879048329} & 4u)) >= int(0u)) ? 0u : 1u)
+	u_1_3 = ((int((vs_cbuf9[7].x & 4u)) >= int(0u)) ? 0u : 1u);
+	u_1_phi_25 = u_1_3;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 0  <=>  {ftou((({utof(u_5_phi_22) : 0.00} * 0.5f) * {utof(vs_cbuf9[14].y) : 1.00})) : 0}
+		u_1_4 = ftou(((utof(u_5_phi_22) * 0.5f) * utof(vs_cbuf9[14].y)));
+		u_1_phi_25 = u_1_4;
+	}
+	// 0  <=>  ((int(({vs_cbuf9[7].x : 1879048329} & 4u)) > int(0u)) ? 4294967295u : 0u)
+	u_11_1 = ((int((vs_cbuf9[7].x & 4u)) > int(0u)) ? 4294967295u : 0u);
+	u_11_phi_26 = u_11_1;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 0  <=>  {ftou((({utof(u_5_phi_22) : 0.00} * 0.5f) * {utof(vs_cbuf9[14].z) : 0.00})) : 0}
+		u_11_2 = ftou(((utof(u_5_phi_22) * 0.5f) * utof(vs_cbuf9[14].z)));
+		u_11_phi_26 = u_11_2;
+	}
+	// 0  <=>  0u
+	u_6_8 = 0u;
+	u_6_phi_27 = u_6_8;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 0  <=>  {ftou((({utof(u_5_phi_22) : 0.00} * 0.5f) * {utof(vs_cbuf9[14].x) : 0.00})) : 0}
+		u_6_9 = ftou(((utof(u_5_phi_22) * 0.5f) * utof(vs_cbuf9[14].x)));
+		u_6_phi_27 = u_6_9;
+	}
+	// True  <=>  ((! ((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f)))) ? true : false)
+	b_6_1 = ((! (((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f)))) ? true : false);
+	// 0  <=>  {u_11_phi_26 : 0}
+	u_0_1 = u_11_phi_26;
+	// 0  <=>  {u_6_phi_27 : 0}
+	u_5_14 = u_6_phi_27;
+	// 0  <=>  {u_1_phi_25 : 0}
+	u_18_6 = u_1_phi_25;
+	u_0_phi_28 = u_0_1;
+	u_5_phi_28 = u_5_14;
+	u_18_phi_28 = u_18_6;
+	// True  <=>  if({b_6_1 : True})
+	if(b_6_1)
+	{
+		// 0.0331033  <=>  exp2(({pf_2_3 : 225.50} * log2(abs({utof(vs_cbuf9[15].x) : 0.985}))))
+		f_23_14 = exp2((pf_2_3 * log2(abs(utof(vs_cbuf9[15].x)))));
+		// 66.16547  <=>  (0.f - ((1.0f / log2({utof(vs_cbuf9[15].x) : 0.985})) * 1.442695f))
+		f_21_16 = (0.f - ((1.0f / log2(utof(vs_cbuf9[15].x))) * 1.442695f));
+		// 63.97517  <=>  ((((1.0f / log2({utof(vs_cbuf9[15].x) : 0.985})) * 1.442695f) * {f_23_14 : 0.0331033}) + {f_21_16 : 66.16547})
+		pf_5_14 = ((((1.0f / log2(utof(vs_cbuf9[15].x))) * 1.442695f) * f_23_14) + f_21_16);
+		// 10768.33  <=>  (({pf_2_3 : 225.50} + (0.f - {pf_5_14 : 63.97517})) * (1.0f / ((0.f - {utof(vs_cbuf9[15].x) : 0.985}) + 1.f)))
+		pf_5_16 = ((pf_2_3 + (0.f - pf_5_14)) * (1.0f / ((0.f - utof(vs_cbuf9[15].x)) + 1.f)));
+		// 0  <=>  {ftou((({pf_5_16 : 10768.33} * {utof(vs_cbuf9[14].w) : 0.00}) * {utof(vs_cbuf9[14].z) : 0.00})) : 0}
+		u_0_2 = ftou(((pf_5_16 * utof(vs_cbuf9[14].w)) * utof(vs_cbuf9[14].z)));
+		// 0  <=>  {ftou((({pf_5_16 : 10768.33} * {utof(vs_cbuf9[14].w) : 0.00}) * {utof(vs_cbuf9[14].x) : 0.00})) : 0}
+		u_5_15 = ftou(((pf_5_16 * utof(vs_cbuf9[14].w)) * utof(vs_cbuf9[14].x)));
+		// 0  <=>  {ftou((({pf_5_16 : 10768.33} * {utof(vs_cbuf9[14].w) : 0.00}) * {utof(vs_cbuf9[14].y) : 1.00})) : 0}
+		u_18_7 = ftou(((pf_5_16 * utof(vs_cbuf9[14].w)) * utof(vs_cbuf9[14].y)));
+		u_0_phi_28 = u_0_2;
+		u_5_phi_28 = u_5_15;
+		u_18_phi_28 = u_18_7;
+	}
+	// 0  <=>  {u_17_phi_20 : 0}
+	u_1_5 = u_17_phi_20;
+	u_1_phi_29 = u_1_5;
+	// False  <=>  if(((! ((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_1_6 = 0u;
+		u_1_phi_29 = u_1_6;
+	}
+	// 0  <=>  {u_15_phi_21 : 0}
+	u_6_10 = u_15_phi_21;
+	u_6_phi_30 = u_6_10;
+	// False  <=>  if(((! ((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_6_11 = 0u;
+		u_6_phi_30 = u_6_11;
+	}
+	// 0  <=>  {u_9_phi_18 : 0}
+	u_8_8 = u_9_phi_18;
+	u_8_phi_31 = u_8_8;
+	// False  <=>  if(((! ((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_8_9 = 0u;
+		u_8_phi_31 = u_8_9;
+	}
+	// 1065353216  <=>  {u_13_phi_24 : 1065353216}
+	u_1_7 = u_13_phi_24;
+	u_1_phi_32 = u_1_7;
+	// True  <=>  if((((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f))) ? true : false))
+	{
+		// 1065353216  <=>  {ftou(({utof(u_16_phi_15) : 0.6666667} * {in_attr9.x : 1.50})) : 1065353216}
+		u_1_8 = ftou((utof(u_16_phi_15) * in_attr9.x));
+		u_1_phi_32 = u_1_8;
+	}
+	// 1065353216  <=>  {u_1_phi_32 : 1065353216}
+	u_6_13 = u_1_phi_32;
+	u_6_phi_33 = u_6_13;
+	// False  <=>  if(((! ((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_6_14 = 0u;
+		u_6_phi_33 = u_6_14;
+	}
+	// 1.00  <=>  ((0.f - (({utof(u_5_9) : 1.00} * (0.f - {utof(vs_cbuf9[17].x) : 0.10})) + {utof(vs_cbuf9[17].x) : 0.10})) + 1.f)
+	pf_1_5 = ((0.f - ((utof(u_5_9) * (0.f - utof(vs_cbuf9[17].x))) + utof(vs_cbuf9[17].x))) + 1.f);
+	// 0  <=>  {u_8_phi_31 : 0}
+	u_1_9 = u_8_phi_31;
+	u_1_phi_34 = u_1_9;
+	// True  <=>  if((((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_12_phi_17) : 0.6666667} * {in_attr9.z : 0.00})) : 0}
+		u_1_10 = ftou((utof(u_12_phi_17) * in_attr9.z));
+		u_1_phi_34 = u_1_10;
+	}
+	// 1059760811  <=>  {u_14_phi_16 : 1059760811}
+	u_9_6 = u_14_phi_16;
+	u_9_phi_35 = u_9_6;
+	// True  <=>  if((((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_14_phi_16) : 0.6666667} * {in_attr11.y : 0.00})) : 0}
+		u_9_7 = ftou((utof(u_14_phi_16) * in_attr11.y));
+		u_9_phi_35 = u_9_7;
+	}
+	// 0  <=>  {u_1_phi_34 : 0}
+	u_6_15 = u_1_phi_34;
+	u_6_phi_36 = u_6_15;
+	// False  <=>  if(((! ((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_6_16 = 0u;
+		u_6_phi_36 = u_6_16;
+	}
+	// 0  <=>  {u_9_phi_35 : 0}
+	u_1_11 = u_9_phi_35;
+	u_1_phi_37 = u_1_11;
+	// False  <=>  if(((! ((({f_17_0 : 1.50} > 0.f) && (! isnan({f_17_0 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_17_0 > 0.f) && (! isnan(f_17_0))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_1_12 = 0u;
+		u_1_phi_37 = u_1_12;
+	}
+	// 1059760811  <=>  {u_16_phi_15 : 1059760811}
+	u_9_8 = u_16_phi_15;
+	u_9_phi_38 = u_9_8;
+	// True  <=>  if((((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f))) ? true : false))
+	{
+		// 0  <=>  {ftou(({utof(u_16_phi_15) : 0.6666667} * {in_attr11.x : 0.00})) : 0}
+		u_9_9 = ftou((utof(u_16_phi_15) * in_attr11.x));
+		u_9_phi_38 = u_9_9;
+	}
+	// 0  <=>  {u_9_phi_38 : 0}
+	u_11_5 = u_9_phi_38;
+	u_11_phi_39 = u_11_5;
+	// False  <=>  if(((! ((({f_12_1 : 1.50} > 0.f) && (! isnan({f_12_1 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_1 > 0.f) && (! isnan(f_12_1))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_11_6 = 0u;
+		u_11_phi_39 = u_11_6;
+	}
+	// 1059760811  <=>  {u_12_phi_17 : 1059760811}
+	u_1_13 = u_12_phi_17;
+	u_1_phi_40 = u_1_13;
+	// True  <=>  if((((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f))) ? true : false))
+	if(((((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f))) ? true : false))
+	{
+		// 1065353216  <=>  {ftou(({utof(u_12_phi_17) : 0.6666667} * {in_attr11.z : 1.50})) : 1065353216}
+		u_1_14 = ftou((utof(u_12_phi_17) * in_attr11.z));
+		u_1_phi_40 = u_1_14;
+	}
+	// 0.9281721  <=>  ((float(int(abs(int(({u_8_5 : 0} + {u_9_2 : 0}))))) * abs({pf_1_5 : 1.00})) + ((float(int(abs(int({u_8_3 : 0})))) * abs({pf_1_4 : 0.9178098})) + {pf_3_5 : 0.9281721}))
+	pf_3_7 = ((float(int(abs(int((u_8_5 + u_9_2))))) * abs(pf_1_5)) + ((float(int(abs(int(u_8_3)))) * abs(pf_1_4)) + pf_3_5));
+	// 6.8891  <=>  ((clamp(min(0.f, {in_attr7.x : 0.91079}), 0.0, 1.0) + {in_attr6.x : 6.8891}) * {utof(vs_cbuf9[141].x) : 1.00})
+	pf_1_7 = ((clamp(min(0.f, in_attr7.x), 0.0, 1.0) + in_attr6.x) * utof(vs_cbuf9[141].x));
+	// 1065353216  <=>  {u_1_phi_40 : 1065353216}
+	u_5_17 = u_1_phi_40;
+	u_5_phi_41 = u_5_17;
+	// False  <=>  if(((! ((({f_12_2 : 1.50} > 0.f) && (! isnan({f_12_2 : 1.50}))) && (! isnan(0.f)))) ? true : false))
+	if(((! (((f_12_2 > 0.f) && (! isnan(f_12_2))) && (! isnan(0.f)))) ? true : false))
+	{
+		// 0  <=>  0u
+		u_5_18 = 0u;
+		u_5_phi_41 = u_5_18;
+	}
+	// 0  <=>  {ftou(clamp(min(0.f, {in_attr7.x : 0.91079}), 0.0, 1.0)) : 0}
+	u_1_15 = ftou(clamp(min(0.f, in_attr7.x), 0.0, 1.0));
+	u_1_phi_42 = u_1_15;
+	// False  <=>  if((((({utof(vs_cbuf9[15].x) : 0.985} == 1.f) && (! isnan({utof(vs_cbuf9[15].x) : 0.985}))) && (! isnan(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[15].x) == 1.f) && (! isnan(utof(vs_cbuf9[15].x)))) && (! isnan(1.f))) ? true : false))
+	{
+		// 1130463232  <=>  {ftou(pf_2_3) : 1130463232}
+		u_1_16 = ftou(pf_2_3);
+		u_1_phi_42 = u_1_16;
+	}
+	// 0  <=>  {u_1_phi_42 : 0}
+	u_6_17 = u_1_phi_42;
+	u_6_phi_43 = u_6_17;
+	// True  <=>  if({b_6_1 : True})
+	if(b_6_1)
+	{
+		// 0.0331033  <=>  exp2(({pf_2_3 : 225.50} * log2(abs({utof(vs_cbuf9[15].x) : 0.985}))))
+		f_22_8 = exp2((pf_2_3 * log2(abs(utof(vs_cbuf9[15].x)))));
+		// -66.66673  <=>  (0.f - (1.0f / ((0.f - {utof(vs_cbuf9[15].x) : 0.985}) + 1.f)))
+		f_23_16 = (0.f - (1.0f / ((0.f - utof(vs_cbuf9[15].x)) + 1.f)));
+		// 64.45985  <=>  (({f_22_8 : 0.0331033} * {f_23_16 : -66.66673}) + (1.0f / ((0.f - {utof(vs_cbuf9[15].x) : 0.985}) + 1.f)))
+		pf_2_5 = ((f_22_8 * f_23_16) + (1.0f / ((0.f - utof(vs_cbuf9[15].x)) + 1.f)));
+		// 1115745137  <=>  {ftou(pf_2_5) : 1115745137}
+		u_6_18 = ftou(pf_2_5);
+		u_6_phi_43 = u_6_18;
+	}
+	// 0.00  <=>  (({utof(u_6_phi_43) : 64.45985} * {in_attr5.x : 0.00}) + (({utof(u_0_phi_28) : 0.00} * {utof(u_11_phi_39) : 0.00}) + (({utof(u_5_phi_28) : 0.00} * {utof(u_6_phi_33) : 1.00}) + ({utof(u_18_phi_28) : 0.00} * {utof(u_1_phi_29) : 0.00}))))
+	pf_5_24 = ((utof(u_6_phi_43) * in_attr5.x) + ((utof(u_0_phi_28) * utof(u_11_phi_39)) + ((utof(u_5_phi_28) * utof(u_6_phi_33)) + (utof(u_18_phi_28) * utof(u_1_phi_29)))));
+	// 0.00  <=>  (({utof(u_6_phi_43) : 64.45985} * {in_attr5.y : 0.00}) + (({utof(u_0_phi_28) : 0.00} * {utof(u_1_phi_37) : 0.00}) + (({utof(u_5_phi_28) : 0.00} * {utof(u_8_phi_31) : 0.00}) + ({utof(u_18_phi_28) : 0.00} * {utof(u_13_phi_24) : 1.00}))))
+	pf_4_6 = ((utof(u_6_phi_43) * in_attr5.y) + ((utof(u_0_phi_28) * utof(u_1_phi_37)) + ((utof(u_5_phi_28) * utof(u_8_phi_31)) + (utof(u_18_phi_28) * utof(u_13_phi_24)))));
+	// 0.00  <=>  (({utof(u_6_phi_43) : 64.45985} * {in_attr5.z : 0.00}) + (({utof(u_0_phi_28) : 0.00} * {utof(u_5_phi_41) : 1.00}) + (({utof(u_5_phi_28) : 0.00} * {utof(u_6_phi_36) : 0.00}) + ({utof(u_18_phi_28) : 0.00} * {utof(u_6_phi_30) : 0.00}))))
+	pf_6_6 = ((utof(u_6_phi_43) * in_attr5.z) + ((utof(u_0_phi_28) * utof(u_5_phi_41)) + ((utof(u_5_phi_28) * utof(u_6_phi_36)) + (utof(u_18_phi_28) * utof(u_6_phi_30)))));
+	// -1.520909  <=>  ((({pf_3_7 : 0.9281721} * {pf_1_7 : 6.8891}) * {utof(vs_cbuf10[3].y) : 1.50}) * ((0.5f * {utof(vs_cbuf9[16].x) : 0.00}) + {in_attr0.x : -0.15857}))
+	pf_9_1 = (((pf_3_7 * pf_1_7) * utof(vs_cbuf10[3].y)) * ((0.5f * utof(vs_cbuf9[16].x)) + in_attr0.x));
+	// -3.671686  <=>  ((({pf_3_7 : 0.9281721} * ({in_attr6.y : 6.8891} * {utof(vs_cbuf9[141].y) : 1.00})) * {utof(vs_cbuf10[3].z) : 1.50}) * ((0.5f * {utof(vs_cbuf9[16].y) : 0.00}) + {in_attr0.y : -0.38281}))
+	pf_10_1 = (((pf_3_7 * (in_attr6.y * utof(vs_cbuf9[141].y))) * utof(vs_cbuf10[3].z)) * ((0.5f * utof(vs_cbuf9[16].y)) + in_attr0.y));
+	// 0.10426  <=>  (1.0f / (({pf_3_7 : 0.9281721} * ({in_attr6.y : 6.8891} * {utof(vs_cbuf9[141].y) : 1.00})) * {utof(vs_cbuf10[3].z) : 1.50}))
+	f_2_16 = (1.0f / ((pf_3_7 * (in_attr6.y * utof(vs_cbuf9[141].y))) * utof(vs_cbuf10[3].z)));
+	// 0.00  <=>  ((({pf_3_7 : 0.9281721} * ({in_attr6.z : 6.8891} * {utof(vs_cbuf9[141].z) : 1.00})) * {utof(vs_cbuf10[3].w) : 1.50}) * ((0.5f * {utof(vs_cbuf9[16].z) : 0.00}) + {in_attr0.z : 0.00}))
+	pf_8_4 = (((pf_3_7 * (in_attr6.z * utof(vs_cbuf9[141].z))) * utof(vs_cbuf10[3].w)) * ((0.5f * utof(vs_cbuf9[16].z)) + in_attr0.z));
+	// 0.00  <=>  (((({pf_6_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.z : 0.00}) * {in_attr10.z : 0.00}) + (((({pf_4_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.y : 0.00}) * {in_attr10.y : 1.50}) + ((({pf_5_24 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.x : 0.00}) * {in_attr10.x : 0.00})))
+	pf_11_2 = ((((pf_6_6 * in_attr6.w) + in_attr4.z) * in_attr10.z) + ((((pf_4_6 * in_attr6.w) + in_attr4.y) * in_attr10.y) + (((pf_5_24 * in_attr6.w) + in_attr4.x) * in_attr10.x)));
+	// 127.0516  <=>  ({pf_11_2 : 0.00} + {utof(vs_cbuf10[5].w) : 127.0516})
+	pf_11_3 = (pf_11_2 + utof(vs_cbuf10[5].w));
+	// 0.00  <=>  (((({pf_6_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.z : 0.00}) * {in_attr11.z : 1.50}) + (((({pf_4_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.y : 0.00}) * {in_attr11.y : 0.00}) + ((({pf_5_24 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.x : 0.00}) * {in_attr11.x : 0.00})))
+	pf_13_2 = ((((pf_6_6 * in_attr6.w) + in_attr4.z) * in_attr11.z) + ((((pf_4_6 * in_attr6.w) + in_attr4.y) * in_attr11.y) + (((pf_5_24 * in_attr6.w) + in_attr4.x) * in_attr11.x)));
+	// -3.469501  <=>  ((({pf_8_4 : 0.00} * {utof(vs_cbuf8[25].z) : 0.3272613}) + (({pf_10_1 : -3.671686} * {utof(vs_cbuf8[25].y) : 0.944934}) + ({pf_9_1 : -1.520909} * {utof(vs_cbuf8[25].x) : 0.00}))) + {utof(vs_cbuf8[25].w) : 0.00})
+	pf_2_12 = (((pf_8_4 * utof(vs_cbuf8[25].z)) + ((pf_10_1 * utof(vs_cbuf8[25].y)) + (pf_9_1 * utof(vs_cbuf8[25].x)))) + utof(vs_cbuf8[25].w));
+	// 123.5821  <=>  ({pf_11_3 : 127.0516} + {pf_2_12 : -3.469501})
+	pf_16_0 = (pf_11_3 + pf_2_12);
+	// 0.00  <=>  (((({pf_6_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.z : 0.00}) * {in_attr9.z : 0.00}) + (((({pf_4_6 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.y : 0.00}) * {in_attr9.y : 0.00}) + ((({pf_5_24 : 0.00} * {in_attr6.w : 1.00}) + {in_attr4.x : 0.00}) * {in_attr9.x : 1.50})))
+	pf_4_9 = ((((pf_6_6 * in_attr6.w) + in_attr4.z) * in_attr9.z) + ((((pf_4_6 * in_attr6.w) + in_attr4.y) * in_attr9.y) + (((pf_5_24 * in_attr6.w) + in_attr4.x) * in_attr9.x)));
+	// -1.065325  <=>  (({pf_10_1 : -3.671686} * {utof(vs_cbuf8[26].y) : -0.1030207}) + ({pf_9_1 : -1.520909} * {utof(vs_cbuf8[26].x) : 0.9491593}))
+	pf_9_3 = ((pf_10_1 * utof(vs_cbuf8[26].y)) + (pf_9_1 * utof(vs_cbuf8[26].x)));
+	// -268.5887  <=>  ({pf_4_9 : 0.00} + {utof(vs_cbuf10[4].w) : -268.5887})
+	pf_4_10 = (pf_4_9 + utof(vs_cbuf10[4].w));
+	// -1.619287  <=>  ((({pf_8_4 : 0.00} * {utof(vs_cbuf8[24].z) : -0.8968928}) + (({pf_10_1 : -3.671686} * {utof(vs_cbuf8[24].y) : 0.3106231}) + ({pf_9_1 : -1.520909} * {utof(vs_cbuf8[24].x) : 0.3147963}))) + {utof(vs_cbuf8[24].w) : 0.00})
+	pf_5_30 = (((pf_8_4 * utof(vs_cbuf8[24].z)) + ((pf_10_1 * utof(vs_cbuf8[24].y)) + (pf_9_1 * utof(vs_cbuf8[24].x)))) + utof(vs_cbuf8[24].w));
+	// 94.67412  <=>  (((({in_attr7.y : 0.84444} + 1.f) * {utof(vs_cbuf13[2].x) : 10.00}) + {pf_16_0 : 123.5821}) * (1.0f / (({utof(vs_cbuf10[5].y) : 1.50} + {utof(vs_cbuf10[5].x) : -0.0003018}) + {utof(vs_cbuf10[5].z) : 0.0004641})))
+	pf_10_3 = ((((in_attr7.y + 1.f) * utof(vs_cbuf13[2].x)) + pf_16_0) * (1.0f / ((utof(vs_cbuf10[5].y) + utof(vs_cbuf10[5].x)) + utof(vs_cbuf10[5].z))));
+	// -270.208  <=>  ({pf_4_10 : -268.5887} + {pf_5_30 : -1.619287})
+	pf_5_31 = (pf_4_10 + pf_5_30);
+	// False  <=>  ((({pf_0_1 : 224.00} == 0.f) && (! isnan({pf_0_1 : 224.00}))) && (! isnan(0.f)))
+	b_1_25 = (((pf_0_1 == 0.f) && (! isnan(pf_0_1))) && (! isnan(0.f)));
+	// -72.73345  <=>  ((((({in_attr7.x : 0.91079} + 1.f) * {utof(vs_cbuf13[2].x) : 10.00}) + {pf_5_31 : -270.208}) * (1.0f / (({utof(vs_cbuf10[4].y) : 0.0003019} + {utof(vs_cbuf10[4].x) : 1.50}) + {utof(vs_cbuf10[4].z) : -0.0003692}))) + {pf_10_3 : 94.67412})
+	pf_10_4 = (((((in_attr7.x + 1.f) * utof(vs_cbuf13[2].x)) + pf_5_31) * (1.0f / ((utof(vs_cbuf10[4].y) + utof(vs_cbuf10[4].x)) + utof(vs_cbuf10[4].z)))) + pf_10_3);
+	// -123.3701  <=>  (({pf_13_2 : 0.00} + {utof(vs_cbuf10[6].w) : -122.3048}) + ((({pf_8_4 : 0.00} * {utof(vs_cbuf8[26].z) : 0.2974617}) + {pf_9_3 : -1.065325}) + {utof(vs_cbuf8[26].w) : 0.00}))
+	pf_8_7 = ((pf_13_2 + utof(vs_cbuf10[6].w)) + (((pf_8_4 * utof(vs_cbuf8[26].z)) + pf_9_3) + utof(vs_cbuf8[26].w)));
+	// 1130364928  <=>  {ftou(pf_0_1) : 1130364928}
+	u_0_3 = ftou(pf_0_1);
+	u_0_phi_44 = u_0_3;
+	// False  <=>  if(({b_1_25 : False} ? true : false))
+	if((b_1_25 ? true : false))
+	{
+		// 1065353216  <=>  1065353216u
+		u_0_4 = 1065353216u;
+		u_0_phi_44 = u_0_4;
+	}
+	// 0  <=>  0u
+	u_4_3 = 0u;
+	u_4_phi_45 = u_4_3;
+	// False  <=>  if((((1u & {vs_cbuf9[7].z : 300033}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
+	{
+		// 1  <=>  1u
+		u_4_4 = 1u;
+		u_4_phi_45 = u_4_4;
+	}
+	// -103.5974  <=>  ((({in_attr7.z : 0.97727} + 1.f) * {utof(vs_cbuf13[2].x) : 10.00}) + {pf_8_7 : -123.3701})
+	pf_14_3 = (((in_attr7.z + 1.f) * utof(vs_cbuf13[2].x)) + pf_8_7);
+	// 0.0000017  <=>  clamp(((1.0f / (float(int({u_4_1 : 268435008})) * {utof(vs_cbuf13[1].w) : 0.50})) * {utof(u_0_phi_44) : 224.00}), 0.0, 1.0)
+	f_0_21 = clamp(((1.0f / (float(int(u_4_1)) * utof(vs_cbuf13[1].w))) * utof(u_0_phi_44)), 0.0, 1.0);
+	// -141.8027  <=>  (({pf_14_3 : -103.5974} * (1.0f / (({utof(vs_cbuf10[6].y) : -0.000464} + {utof(vs_cbuf10[6].x) : 0.0003693}) + {utof(vs_cbuf10[6].z) : 1.50}))) + {pf_10_4 : -72.73345})
+	pf_10_5 = ((pf_14_3 * (1.0f / ((utof(vs_cbuf10[6].y) + utof(vs_cbuf10[6].x)) + utof(vs_cbuf10[6].z)))) + pf_10_4);
+	// 908590628  <=>  {ftou(((({utof(vs_cbuf10[4].y) : 0.0003019} + {utof(vs_cbuf10[4].x) : 1.50}) + {utof(vs_cbuf10[4].z) : -0.0003692}) * {f_0_21 : 0.0000017})) : 908590628}
+	u_0_5 = ftou((((utof(vs_cbuf10[4].y) + utof(vs_cbuf10[4].x)) + utof(vs_cbuf10[4].z)) * f_0_21));
+	// 908592312  <=>  {ftou(((({utof(vs_cbuf10[5].y) : 1.50} + {utof(vs_cbuf10[5].x) : -0.0003018}) + {utof(vs_cbuf10[5].z) : 0.0004641}) * {f_0_21 : 0.0000017})) : 908592312}
+	u_5_19 = ftou((((utof(vs_cbuf10[5].y) + utof(vs_cbuf10[5].x)) + utof(vs_cbuf10[5].z)) * f_0_21));
+	// 908590426  <=>  {ftou(((({utof(vs_cbuf10[6].y) : -0.000464} + {utof(vs_cbuf10[6].x) : 0.0003693}) + {utof(vs_cbuf10[6].z) : 1.50}) * {f_0_21 : 0.0000017})) : 908590426}
+	u_6_19 = ftou((((utof(vs_cbuf10[6].y) + utof(vs_cbuf10[6].x)) + utof(vs_cbuf10[6].z)) * f_0_21));
+	// -3.469501  <=>  ({pf_2_12 : -3.469501} + (((0.f - abs({utof(vs_cbuf8[28].y) : 0.3272613})) * {utof(vs_cbuf13[6].w) : 0.00}) + {utof(vs_cbuf13[6].w) : 0.00}))
+	pf_2_13 = (pf_2_12 + (((0.f - abs(utof(vs_cbuf8[28].y))) * utof(vs_cbuf13[6].w)) + utof(vs_cbuf13[6].w)));
+	// -263.8419  <=>  (({utof(vs_cbuf10[4].w) : -268.5887} + {utof(vs_cbuf10[5].w) : 127.0516}) + {utof(vs_cbuf10[6].w) : -122.3048})
+	pf_15_4 = ((utof(vs_cbuf10[4].w) + utof(vs_cbuf10[5].w)) + utof(vs_cbuf10[6].w));
+	// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+	u_9_10 = ftou(in_attr7.x);
+	u_9_phi_46 = u_9_10;
+	// False  <=>  if((({u_4_phi_45 : 0} == 1u) ? true : false))
+	if(((u_4_phi_45 == 1u) ? true : false))
+	{
+		// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+		u_9_11 = ftou(in_attr7.y);
+		u_9_phi_46 = u_9_11;
+	}
+	// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+	u_10_2 = ftou(in_attr7.y);
+	u_10_phi_47 = u_10_2;
+	// False  <=>  if((({u_4_phi_45 : 0} == 1u) ? true : false))
+	if(((u_4_phi_45 == 1u) ? true : false))
+	{
+		// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+		u_10_3 = ftou(in_attr7.z);
+		u_10_phi_47 = u_10_3;
+	}
+	// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+	u_11_7 = ftou(in_attr7.x);
+	u_11_phi_48 = u_11_7;
+	// False  <=>  if((({u_4_phi_45 : 0} == 1u) ? true : false))
+	if(((u_4_phi_45 == 1u) ? true : false))
+	{
+		// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+		u_11_8 = ftou(in_attr7.y);
+		u_11_phi_48 = u_11_8;
+	}
+	// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+	u_12_3 = ftou(in_attr7.y);
+	u_12_phi_49 = u_12_3;
+	// False  <=>  if((({u_4_phi_45 : 0} == 1u) ? true : false))
+	if(((u_4_phi_45 == 1u) ? true : false))
+	{
+		// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+		u_12_4 = ftou(in_attr7.z);
+		u_12_phi_49 = u_12_4;
+	}
+	// 1063856521  <=>  {u_11_phi_48 : 1063856521}
+	u_13_6 = u_11_phi_48;
+	// 1062743352  <=>  {u_10_phi_47 : 1062743352}
+	u_14_4 = u_10_phi_47;
+	// 1062743352  <=>  {u_12_phi_49 : 1062743352}
+	u_15_3 = u_12_phi_49;
+	// 1063856521  <=>  {u_9_phi_46 : 1063856521}
+	u_16_2 = u_9_phi_46;
+	u_13_phi_50 = u_13_6;
+	u_14_phi_50 = u_14_4;
+	u_15_phi_50 = u_15_3;
+	u_16_phi_50 = u_16_2;
+	// True  <=>  if(((! ({u_4_phi_45 : 0} == 1u)) ? true : false))
+	if(((! (u_4_phi_45 == 1u)) ? true : false))
+	{
+		// 1063856521  <=>  {u_9_phi_46 : 1063856521}
+		u_4_5 = u_9_phi_46;
+		u_4_phi_51 = u_4_5;
+		// False  <=>  if((({u_4_phi_45 : 0} == 2u) ? true : false))
+		if(((u_4_phi_45 == 2u) ? true : false))
+		{
+			// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+			u_4_6 = ftou(in_attr7.z);
+			u_4_phi_51 = u_4_6;
+		}
+		// 1062743352  <=>  {u_10_phi_47 : 1062743352}
+		u_17_6 = u_10_phi_47;
+		u_17_phi_52 = u_17_6;
+		// False  <=>  if((({u_4_phi_45 : 0} == 2u) ? true : false))
+		if(((u_4_phi_45 == 2u) ? true : false))
+		{
+			// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+			u_17_7 = ftou(in_attr7.x);
+			u_17_phi_52 = u_17_7;
+		}
+		// 1063856521  <=>  {u_11_phi_48 : 1063856521}
+		u_18_8 = u_11_phi_48;
+		u_18_phi_53 = u_18_8;
+		// False  <=>  if((({u_4_phi_45 : 0} == 2u) ? true : false))
+		if(((u_4_phi_45 == 2u) ? true : false))
+		{
+			// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+			u_18_9 = ftou(in_attr7.x);
+			u_18_phi_53 = u_18_9;
+		}
+		// 1062743352  <=>  {u_12_phi_49 : 1062743352}
+		u_19_1 = u_12_phi_49;
+		u_19_phi_54 = u_19_1;
+		// False  <=>  if((({u_4_phi_45 : 0} == 2u) ? true : false))
+		if(((u_4_phi_45 == 2u) ? true : false))
+		{
+			// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+			u_19_2 = ftou(in_attr7.y);
+			u_19_phi_54 = u_19_2;
+		}
+		// 1063856521  <=>  {u_18_phi_53 : 1063856521}
+		u_13_7 = u_18_phi_53;
+		// 1062743352  <=>  {u_17_phi_52 : 1062743352}
+		u_14_5 = u_17_phi_52;
+		// 1062743352  <=>  {u_19_phi_54 : 1062743352}
+		u_15_4 = u_19_phi_54;
+		// 1063856521  <=>  {u_4_phi_51 : 1063856521}
+		u_16_3 = u_4_phi_51;
+		u_13_phi_50 = u_13_7;
+		u_14_phi_50 = u_14_5;
+		u_15_phi_50 = u_15_4;
+		u_16_phi_50 = u_16_3;
+	}
+	// 0  <=>  0u
+	u_4_7 = 0u;
+	u_4_phi_55 = u_4_7;
+	// False  <=>  if((((1u & {vs_cbuf9[7].z : 300033}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
+	{
+		// 2  <=>  2u
+		u_4_8 = 2u;
+		u_4_phi_55 = u_4_8;
+	}
+	// -38.52367  <=>  (({pf_15_4 : -263.8419} * 0.105f) + (({pf_10_5 : -141.8027} * {utof(vs_cbuf13[0].w) : 0.10}) + ({utof(vs_cbuf13[1].x) : 0.015} * {utof(vs_cbuf10[2].x) : 224.00})))
+	pf_10_7 = ((pf_15_4 * 0.105f) + ((pf_10_5 * utof(vs_cbuf13[0].w)) + (utof(vs_cbuf13[1].x) * utof(vs_cbuf10[2].x))));
+	// 10.00  <=>  {utof(vs_cbuf13[5].y) : 10.00}
+	f_0_24 = utof(vs_cbuf13[5].y);
+	// -0.8888755  <=>  sin((({pf_15_4 : -263.8419} * 0.105f) + (({pf_10_5 : -141.8027} * ({utof(vs_cbuf13[0].w) : 0.10} * {utof(vs_cbuf13[1].z) : 0.20})) + ({utof(vs_cbuf13[1].x) : 0.015} * {utof(vs_cbuf10[2].x) : 224.00}))))
+	f_0_26 = sin(((pf_15_4 * 0.105f) + ((pf_10_5 * (utof(vs_cbuf13[0].w) * utof(vs_cbuf13[1].z))) + (utof(vs_cbuf13[1].x) * utof(vs_cbuf10[2].x)))));
+	// -0.0445661  <=>  ((({pf_2_13 : -3.469501} * {f_2_16 : 0.10426}) * {utof(vs_cbuf16[1].w) : 0.3405924}) * abs(({pf_2_13 : -3.469501} * {f_2_16 : 0.10426})))
+	pf_14_7 = (((pf_2_13 * f_2_16) * utof(vs_cbuf16[1].w)) * abs((pf_2_13 * f_2_16)));
+	// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+	u_10_4 = ftou(in_attr7.x);
+	u_10_phi_56 = u_10_4;
+	// False  <=>  if((({u_4_phi_55 : 0} == 1u) ? true : false))
+	if(((u_4_phi_55 == 1u) ? true : false))
+	{
+		// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+		u_10_5 = ftou(in_attr7.y);
+		u_10_phi_56 = u_10_5;
+	}
+	// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+	u_11_9 = ftou(in_attr7.y);
+	u_11_phi_57 = u_11_9;
+	// False  <=>  if((({u_4_phi_55 : 0} == 1u) ? true : false))
+	if(((u_4_phi_55 == 1u) ? true : false))
+	{
+		// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+		u_11_10 = ftou(in_attr7.z);
+		u_11_phi_57 = u_11_10;
+	}
+	// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+	u_12_5 = ftou(in_attr7.x);
+	u_12_phi_58 = u_12_5;
+	// False  <=>  if((({u_4_phi_55 : 0} == 1u) ? true : false))
+	if(((u_4_phi_55 == 1u) ? true : false))
+	{
+		// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+		u_12_6 = ftou(in_attr7.y);
+		u_12_phi_58 = u_12_6;
+	}
+	// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+	u_17_8 = ftou(in_attr7.y);
+	u_17_phi_59 = u_17_8;
+	// False  <=>  if((({u_4_phi_55 : 0} == 1u) ? true : false))
+	if(((u_4_phi_55 == 1u) ? true : false))
+	{
+		// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+		u_17_9 = ftou(in_attr7.z);
+		u_17_phi_59 = u_17_9;
+	}
+	// 1062743352  <=>  {u_17_phi_59 : 1062743352}
+	u_18_10 = u_17_phi_59;
+	// 1063856521  <=>  {u_12_phi_58 : 1063856521}
+	u_19_3 = u_12_phi_58;
+	// 1062743352  <=>  {u_11_phi_57 : 1062743352}
+	u_20_1 = u_11_phi_57;
+	// 1063856521  <=>  {u_10_phi_56 : 1063856521}
+	u_21_1 = u_10_phi_56;
+	u_18_phi_60 = u_18_10;
+	u_19_phi_60 = u_19_3;
+	u_20_phi_60 = u_20_1;
+	u_21_phi_60 = u_21_1;
+	// True  <=>  if(((! ({u_4_phi_55 : 0} == 1u)) ? true : false))
+	if(((! (u_4_phi_55 == 1u)) ? true : false))
+	{
+		// 1063856521  <=>  {u_10_phi_56 : 1063856521}
+		u_4_9 = u_10_phi_56;
+		u_4_phi_61 = u_4_9;
+		// False  <=>  if((({u_4_phi_55 : 0} == 2u) ? true : false))
+		if(((u_4_phi_55 == 2u) ? true : false))
+		{
+			// 1064971870  <=>  {ftou(in_attr7.z) : 1064971870}
+			u_4_10 = ftou(in_attr7.z);
+			u_4_phi_61 = u_4_10;
+		}
+		// 1062743352  <=>  {u_11_phi_57 : 1062743352}
+		u_8_13 = u_11_phi_57;
+		u_8_phi_62 = u_8_13;
+		// False  <=>  if((({u_4_phi_55 : 0} == 2u) ? true : false))
+		if(((u_4_phi_55 == 2u) ? true : false))
+		{
+			// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+			u_8_14 = ftou(in_attr7.x);
+			u_8_phi_62 = u_8_14;
+		}
+		// 1063856521  <=>  {u_12_phi_58 : 1063856521}
+		u_22_0 = u_12_phi_58;
+		u_22_phi_63 = u_22_0;
+		// False  <=>  if((({u_4_phi_55 : 0} == 2u) ? true : false))
+		if(((u_4_phi_55 == 2u) ? true : false))
+		{
+			// 1063856521  <=>  {ftou(in_attr7.x) : 1063856521}
+			u_22_1 = ftou(in_attr7.x);
+			u_22_phi_63 = u_22_1;
+		}
+		// 1062743352  <=>  {u_17_phi_59 : 1062743352}
+		u_7_1 = u_17_phi_59;
+		u_7_phi_64 = u_7_1;
+		// False  <=>  if((({u_4_phi_55 : 0} == 2u) ? true : false))
+		if(((u_4_phi_55 == 2u) ? true : false))
+		{
+			// 1062743352  <=>  {ftou(in_attr7.y) : 1062743352}
+			u_7_2 = ftou(in_attr7.y);
+			u_7_phi_64 = u_7_2;
+		}
+		// 1062743352  <=>  {u_7_phi_64 : 1062743352}
+		u_18_11 = u_7_phi_64;
+		// 1063856521  <=>  {u_22_phi_63 : 1063856521}
+		u_19_4 = u_22_phi_63;
+		// 1062743352  <=>  {u_8_phi_62 : 1062743352}
+		u_20_2 = u_8_phi_62;
+		// 1063856521  <=>  {u_4_phi_61 : 1063856521}
+		u_21_2 = u_4_phi_61;
+		u_18_phi_60 = u_18_11;
+		u_19_phi_60 = u_19_4;
+		u_20_phi_60 = u_20_2;
+		u_21_phi_60 = u_21_2;
+	}
+	// 908590426  <=>  {u_6_19 : 908590426}
+	u_1_18 = u_6_19;
+	// 908592312  <=>  {u_5_19 : 908592312}
+	u_4_11 = u_5_19;
+	// 908590628  <=>  {u_0_5 : 908590628}
+	u_7_3 = u_0_5;
+	u_1_phi_65 = u_1_18;
+	u_4_phi_65 = u_4_11;
+	u_7_phi_65 = u_7_3;
+	// True  <=>  if(((((0.f != {f_0_24 : 10.00}) || isnan(0.f)) || isnan({f_0_24 : 10.00})) ? true : false))
+	if(((((0.f != f_0_24) || isnan(0.f)) || isnan(f_0_24)) ? true : false))
+	{
+		// 1.619293  <=>  ((0.f - {pf_5_31 : -270.208}) + {utof(vs_cbuf10[4].w) : -268.5887})
+		pf_15_6 = ((0.f - pf_5_31) + utof(vs_cbuf10[4].w));
+		// 3.469498  <=>  ((0.f - {pf_16_0 : 123.5821}) + {utof(vs_cbuf10[5].w) : 127.0516})
+		pf_17_2 = ((0.f - pf_16_0) + utof(vs_cbuf10[5].w));
+		// 1.065323  <=>  ((0.f - {pf_8_7 : -123.3701}) + {utof(vs_cbuf10[6].w) : -122.3048})
+		pf_18_1 = ((0.f - pf_8_7) + utof(vs_cbuf10[6].w));
+		// 15.79444  <=>  (({pf_18_1 : 1.065323} * {pf_18_1 : 1.065323}) + (({pf_17_2 : 3.469498} * {pf_17_2 : 3.469498}) + ({pf_15_6 : 1.619293} * {pf_15_6 : 1.619293})))
+		pf_15_9 = ((pf_18_1 * pf_18_1) + ((pf_17_2 * pf_17_2) + (pf_15_6 * pf_15_6)));
+		// 0.000001  <=>  (clamp(((1.0f / {utof(vs_cbuf13[5].y) : 10.00}) * sqrt({pf_15_9 : 15.79444})), 0.0, 1.0) * ((({utof(vs_cbuf10[4].y) : 0.0003019} + {utof(vs_cbuf10[4].x) : 1.50}) + {utof(vs_cbuf10[4].z) : -0.0003692}) * {f_0_21 : 0.0000017}))
+		pf_6_10 = (clamp(((1.0f / utof(vs_cbuf13[5].y)) * sqrt(pf_15_9)), 0.0, 1.0) * (((utof(vs_cbuf10[4].y) + utof(vs_cbuf10[4].x)) + utof(vs_cbuf10[4].z)) * f_0_21));
+		// 0.000001  <=>  (clamp(((1.0f / {utof(vs_cbuf13[5].y) : 10.00}) * sqrt({pf_15_9 : 15.79444})), 0.0, 1.0) * ((({utof(vs_cbuf10[5].y) : 1.50} + {utof(vs_cbuf10[5].x) : -0.0003018}) + {utof(vs_cbuf10[5].z) : 0.0004641}) * {f_0_21 : 0.0000017}))
+		pf_6_11 = (clamp(((1.0f / utof(vs_cbuf13[5].y)) * sqrt(pf_15_9)), 0.0, 1.0) * (((utof(vs_cbuf10[5].y) + utof(vs_cbuf10[5].x)) + utof(vs_cbuf10[5].z)) * f_0_21));
+		// 0.000001  <=>  (clamp(((1.0f / {utof(vs_cbuf13[5].y) : 10.00}) * sqrt({pf_15_9 : 15.79444})), 0.0, 1.0) * ((({utof(vs_cbuf10[6].y) : -0.000464} + {utof(vs_cbuf10[6].x) : 0.0003693}) + {utof(vs_cbuf10[6].z) : 1.50}) * {f_0_21 : 0.0000017}))
+		pf_6_12 = (clamp(((1.0f / utof(vs_cbuf13[5].y)) * sqrt(pf_15_9)), 0.0, 1.0) * (((utof(vs_cbuf10[6].y) + utof(vs_cbuf10[6].x)) + utof(vs_cbuf10[6].z)) * f_0_21));
+		// 897943183  <=>  {ftou(pf_6_12) : 897943183}
+		u_1_19 = ftou(pf_6_12);
+		// 897944682  <=>  {ftou(pf_6_11) : 897944682}
+		u_4_12 = ftou(pf_6_11);
+		// 897943344  <=>  {ftou(pf_6_10) : 897943344}
+		u_7_4 = ftou(pf_6_10);
+		u_1_phi_65 = u_1_19;
+		u_4_phi_65 = u_4_12;
+		u_7_phi_65 = u_7_4;
+	}
+	// 0.6788841  <=>  cos({pf_10_7 : -38.52367})
+	f_2_25 = cos(pf_10_7);
+	// 0.00  <=>  {utof(vs_cbuf15[49].x) : 0.00}
+	f_4_19 = utof(vs_cbuf15[49].x);
+	// -270.208  <=>  (((({pf_3_7 : 0.9281721} * {pf_1_7 : 6.8891}) * {utof(vs_cbuf10[3].y) : 1.50}) * (({pf_14_7 : -0.0445661} * {utof(vs_cbuf13[2].y) : 0.00}) * {utof(vs_cbuf16[1].x) : -0.7948112})) + ((sin({pf_10_7 : -38.52367}) * ({utof(u_7_phi_65) : 0.000001} * {utof(vs_cbuf13[0].z) : 0.20})) + {pf_5_31 : -270.208}))
+	pf_5_33 = ((((pf_3_7 * pf_1_7) * utof(vs_cbuf10[3].y)) * ((pf_14_7 * utof(vs_cbuf13[2].y)) * utof(vs_cbuf16[1].x))) + ((sin(pf_10_7) * (utof(u_7_phi_65) * utof(vs_cbuf13[0].z))) + pf_5_31));
+	// 123.5821  <=>  (((({pf_3_7 : 0.9281721} * {pf_1_7 : 6.8891}) * {utof(vs_cbuf10[3].y) : 1.50}) * (({pf_14_7 : -0.0445661} * {utof(vs_cbuf13[2].y) : 0.00}) * {utof(vs_cbuf16[1].y) : 0.00})) + (((({utof(vs_cbuf13[0].z) : 0.20} * {utof(vs_cbuf13[1].y) : 1.00}) * {utof(u_4_phi_65) : 0.000001}) * {f_0_26 : -0.8888755}) + {pf_16_0 : 123.5821}))
+	pf_2_18 = ((((pf_3_7 * pf_1_7) * utof(vs_cbuf10[3].y)) * ((pf_14_7 * utof(vs_cbuf13[2].y)) * utof(vs_cbuf16[1].y))) + ((((utof(vs_cbuf13[0].z) * utof(vs_cbuf13[1].y)) * utof(u_4_phi_65)) * f_0_26) + pf_16_0));
+	// -123.3701  <=>  (((({pf_3_7 : 0.9281721} * {pf_1_7 : 6.8891}) * {utof(vs_cbuf10[3].y) : 1.50}) * (({pf_14_7 : -0.0445661} * {utof(vs_cbuf13[2].y) : 0.00}) * {utof(vs_cbuf16[1].z) : 0.6068569})) + ((({utof(u_1_phi_65) : 0.000001} * {utof(vs_cbuf13[0].z) : 0.20}) * {f_2_25 : 0.6788841}) + {pf_8_7 : -123.3701}))
+	pf_6_16 = ((((pf_3_7 * pf_1_7) * utof(vs_cbuf10[3].y)) * ((pf_14_7 * utof(vs_cbuf13[2].y)) * utof(vs_cbuf16[1].z))) + (((utof(u_1_phi_65) * utof(vs_cbuf13[0].z)) * f_2_25) + pf_8_7));
+	// 242.3476  <=>  ({pf_5_33 : -270.208} * {utof(vs_cbuf8[2].x) : -0.8968928})
+	pf_9_9 = (pf_5_33 * utof(vs_cbuf8[2].x));
+	// -0.4976807  <=>  ((({pf_6_16 : -123.3701} * {utof(vs_cbuf8[0].z) : 0.9491593}) + (({pf_2_18 : 123.5821} * {utof(vs_cbuf8[0].y) : 0.00}) + ({pf_5_33 : -270.208} * {utof(vs_cbuf8[0].x) : 0.3147963}))) + {utof(vs_cbuf8[0].w) : 201.6607})
+	pf_8_11 = (((pf_6_16 * utof(vs_cbuf8[0].z)) + ((pf_2_18 * utof(vs_cbuf8[0].y)) + (pf_5_33 * utof(vs_cbuf8[0].x)))) + utof(vs_cbuf8[0].w));
+	// 246.0934  <=>  (({pf_6_16 : -123.3701} * {utof(vs_cbuf8[2].z) : 0.2974617}) + (({pf_2_18 : 123.5821} * {utof(vs_cbuf8[2].y) : 0.3272613}) + {pf_9_9 : 242.3476}))
+	pf_9_11 = ((pf_6_16 * utof(vs_cbuf8[2].z)) + ((pf_2_18 * utof(vs_cbuf8[2].y)) + pf_9_9));
+	// -3.160812  <=>  ((({pf_6_16 : -123.3701} * {utof(vs_cbuf8[1].z) : -0.1030207}) + (({pf_2_18 : 123.5821} * {utof(vs_cbuf8[1].y) : 0.944934}) + ({pf_5_33 : -270.208} * {utof(vs_cbuf8[1].x) : 0.3106231}))) + {utof(vs_cbuf8[1].w) : -48.71458})
+	pf_7_8 = (((pf_6_16 * utof(vs_cbuf8[1].z)) + ((pf_2_18 * utof(vs_cbuf8[1].y)) + (pf_5_33 * utof(vs_cbuf8[1].x)))) + utof(vs_cbuf8[1].w));
+	// 1.00  <=>  ((({pf_6_16 : -123.3701} * {utof(vs_cbuf8[3].z) : 0.00}) + (({pf_2_18 : 123.5821} * {utof(vs_cbuf8[3].y) : 0.00}) + ({pf_5_33 : -270.208} * {utof(vs_cbuf8[3].x) : 0.00}))) + {utof(vs_cbuf8[3].w) : 1.00})
+	pf_10_12 = (((pf_6_16 * utof(vs_cbuf8[3].z)) + ((pf_2_18 * utof(vs_cbuf8[3].y)) + (pf_5_33 * utof(vs_cbuf8[3].x)))) + utof(vs_cbuf8[3].w));
+	// -6.778384  <=>  (({pf_10_12 : 1.00} * {utof(vs_cbuf8[5].w) : 0.00}) + ((({pf_9_11 : 246.0934} + {utof(vs_cbuf8[2].w) : -252.0899}) * {utof(vs_cbuf8[5].z) : 0.00}) + (({pf_7_8 : -3.160812} * {utof(vs_cbuf8[5].y) : 2.144507}) + ({pf_8_11 : -0.4976807} * {utof(vs_cbuf8[5].x) : 0.00}))))
+	pf_8_14 = ((pf_10_12 * utof(vs_cbuf8[5].w)) + (((pf_9_11 + utof(vs_cbuf8[2].w)) * utof(vs_cbuf8[5].z)) + ((pf_7_8 * utof(vs_cbuf8[5].y)) + (pf_8_11 * utof(vs_cbuf8[5].x)))));
+	// 4.949226  <=>  ((0.f - {pf_2_18 : 123.5821}) + {utof(vs_cbuf8[29].y) : 128.5313})
+	pf_9_13 = ((0.f - pf_2_18) + utof(vs_cbuf8[29].y));
+	// -0.6003447  <=>  (({pf_10_12 : 1.00} * {utof(vs_cbuf8[4].w) : 0.00}) + ((({pf_9_11 : 246.0934} + {utof(vs_cbuf8[2].w) : -252.0899}) * {utof(vs_cbuf8[4].z) : 0.00}) + (({pf_7_8 : -3.160812} * {utof(vs_cbuf8[4].y) : 0.00}) + ({pf_8_11 : -0.4976807} * {utof(vs_cbuf8[4].x) : 1.206285}))))
+	pf_12_8 = ((pf_10_12 * utof(vs_cbuf8[4].w)) + (((pf_9_11 + utof(vs_cbuf8[2].w)) * utof(vs_cbuf8[4].z)) + ((pf_7_8 * utof(vs_cbuf8[4].y)) + (pf_8_11 * utof(vs_cbuf8[4].x)))));
+	// 3.996982  <=>  (({pf_10_12 : 1.00} * {utof(vs_cbuf8[6].w) : -2.00008}) + ((({pf_9_11 : 246.0934} + {utof(vs_cbuf8[2].w) : -252.0899}) * {utof(vs_cbuf8[6].z) : -1.00008}) + (({pf_7_8 : -3.160812} * {utof(vs_cbuf8[6].y) : 0.00}) + ({pf_8_11 : -0.4976807} * {utof(vs_cbuf8[6].x) : 0.00}))))
+	pf_14_11 = ((pf_10_12 * utof(vs_cbuf8[6].w)) + (((pf_9_11 + utof(vs_cbuf8[2].w)) * utof(vs_cbuf8[6].z)) + ((pf_7_8 * utof(vs_cbuf8[6].y)) + (pf_8_11 * utof(vs_cbuf8[6].x)))));
+	// 5.996582  <=>  (({pf_10_12 : 1.00} * {utof(vs_cbuf8[7].w) : 0.00}) + ((({pf_9_11 : 246.0934} + {utof(vs_cbuf8[2].w) : -252.0899}) * {utof(vs_cbuf8[7].z) : -1.00}) + (({pf_7_8 : -3.160812} * {utof(vs_cbuf8[7].y) : 0.00}) + ({pf_8_11 : -0.4976807} * {utof(vs_cbuf8[7].x) : 0.00}))))
+	pf_7_11 = ((pf_10_12 * utof(vs_cbuf8[7].w)) + (((pf_9_11 + utof(vs_cbuf8[2].w)) * utof(vs_cbuf8[7].z)) + ((pf_7_8 * utof(vs_cbuf8[7].y)) + (pf_8_11 * utof(vs_cbuf8[7].x)))));
+	// -4.239838  <=>  ((0.f - {pf_5_33 : -270.208}) + {utof(vs_cbuf8[29].x) : -274.4478})
+	pf_15_13 = ((0.f - pf_5_33) + utof(vs_cbuf8[29].x));
+	// 1.930496  <=>  ((0.f - {pf_6_16 : -123.3701}) + {utof(vs_cbuf8[29].z) : -121.4396})
+	pf_16_1 = ((0.f - pf_6_16) + utof(vs_cbuf8[29].z));
+	// 3280411295  <=>  {ftou(pf_5_33) : 3280411295}
+	u_4_13 = ftou(pf_5_33);
+	u_4_phi_66 = u_4_13;
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// 1128647362  <=>  {ftou(({pf_5_33 : -270.208} + (0.f - {utof(vs_cbuf15[52].x) : -468.00}))) : 1128647362}
+		u_4_14 = ftou((pf_5_33 + (0.f - utof(vs_cbuf15[52].x))));
+		u_4_phi_66 = u_4_14;
+	}
+	// 3270950268  <=>  {ftou(pf_6_16) : 3270950268}
+	u_0_7 = ftou(pf_6_16);
+	u_0_phi_67 = u_0_7;
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// 1128833346  <=>  {ftou(({pf_6_16 : -123.3701} + (0.f - {utof(vs_cbuf15[52].y) : -324.00}))) : 1128833346}
+		u_0_8 = ftou((pf_6_16 + (0.f - utof(vs_cbuf15[52].y))));
+		u_0_phi_67 = u_0_8;
+	}
+	// 3256490044  <=>  {ftou(pf_10_7) : 3256490044}
+	u_1_21 = ftou(pf_10_7);
+	u_1_phi_68 = u_1_21;
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// 3207392992  <=>  {ftou(({utof(u_4_phi_66) : -270.208} * {utof(vs_cbuf15[52].z) : 0.0025})) : 3207392992}
+		u_1_22 = ftou((utof(u_4_phi_66) * utof(vs_cbuf15[52].z)));
+		u_1_phi_68 = u_1_22;
+	}
+	// 1063974294  <=>  {ftou(pf_1_4) : 1063974294}
+	u_4_16 = ftou(pf_1_4);
+	u_4_phi_69 = u_4_16;
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// 3198020073  <=>  {ftou(({utof(u_0_phi_67) : -123.3701} * {utof(vs_cbuf15[52].z) : 0.0025})) : 3198020073}
+		u_4_17 = ftou((utof(u_0_phi_67) * utof(vs_cbuf15[52].z)));
+		u_4_phi_69 = u_4_17;
+	}
+	// 0.1667617  <=>  (1.0f / ({pf_7_11 : 5.996582} + ((0.f * {pf_14_11 : 3.996982}) + ((0.f * {pf_12_8 : -0.6003447}) + (0.f * {pf_8_14 : -6.778384})))))
+	f_0_70 = (1.0f / (pf_7_11 + ((0.f * pf_14_11) + ((0.f * pf_12_8) + (0.f * pf_8_14)))));
+	// 46.19788  <=>  (({pf_16_1 : 1.930496} * {pf_16_1 : 1.930496}) + (({pf_9_13 : 4.949226} * {pf_9_13 : 4.949226}) + ({pf_15_13 : -4.239838} * {pf_15_13 : -4.239838})))
+	pf_6_19 = ((pf_16_1 * pf_16_1) + ((pf_9_13 * pf_9_13) + (pf_15_13 * pf_15_13)));
+	// 0.8332717  <=>  ((({pf_7_11 : 5.996582} * 0.5f) + (({pf_14_11 : 3.996982} * 0.5f) + ((0.f * {pf_12_8 : -0.6003447}) + (0.f * {pf_8_14 : -6.778384})))) * {f_0_70 : 0.1667617})
+	pf_6_20 = (((pf_7_11 * 0.5f) + ((pf_14_11 * 0.5f) + ((0.f * pf_12_8) + (0.f * pf_8_14)))) * f_0_70);
+	// 5.996583  <=>  ((1.0f / (({pf_6_20 : 0.8332717} * {utof(vs_cbuf8[30].w) : 24999.00}) + (0.f - {utof(vs_cbuf8[30].y) : 25000.00}))) * (0.f - {utof(vs_cbuf8[30].z) : 25000.00}))
+	pf_9_15 = ((1.0f / ((pf_6_20 * utof(vs_cbuf8[30].w)) + (0.f - utof(vs_cbuf8[30].y)))) * (0.f - utof(vs_cbuf8[30].z)));
+	// -0.8283473  <=>  ((({pf_16_1 : 1.930496} * inversesqrt({pf_6_19 : 46.19788})) * {utof(vs_cbuf15[28].z) : -0.7181587}) + ((({pf_9_13 : 4.949226} * inversesqrt({pf_6_19 : 46.19788})) * {utof(vs_cbuf15[28].y) : -0.6541618}) + (({pf_15_13 : -4.239838} * inversesqrt({pf_6_19 : 46.19788})) * {utof(vs_cbuf15[28].x) : 0.2373198})))
+	pf_6_24 = (((pf_16_1 * inversesqrt(pf_6_19)) * utof(vs_cbuf15[28].z)) + (((pf_9_13 * inversesqrt(pf_6_19)) * utof(vs_cbuf15[28].y)) + ((pf_15_13 * inversesqrt(pf_6_19)) * utof(vs_cbuf15[28].x))));
+	// 0.0858264  <=>  (({pf_6_24 : -0.8283473} * 0.5f) + 0.5f)
+	pf_6_25 = ((pf_6_24 * 0.5f) + 0.5f);
+	// -0.0001999  <=>  (0.f - clamp((({pf_9_15 : 5.996583} * {utof(vs_cbuf15[22].x) : 0.0000333}) + (0.f - {utof(vs_cbuf15[22].y) : 0.00})), 0.0, 1.0))
+	f_2_39 = (0.f - clamp(((pf_9_15 * utof(vs_cbuf15[22].x)) + (0.f - utof(vs_cbuf15[22].y))), 0.0, 1.0));
+	// 1.553059  <=>  (({pf_6_25 : 0.0858264} * (({pf_6_25 : 0.0858264} * (({pf_6_25 : 0.0858264} * -0.0187293f) + 0.074260995f)) + -0.2121144f)) + 1.5707288f)
+	pf_6_26 = ((pf_6_25 * ((pf_6_25 * ((pf_6_25 * -0.0187293f) + 0.074260995f)) + -0.2121144f)) + 1.5707288f);
+	// -1.484917  <=>  ({pf_6_26 : 1.553059} * (0.f - sqrt(((0.f - {pf_6_25 : 0.0858264}) + 1.f))))
+	pf_6_27 = (pf_6_26 * (0.f - sqrt(((0.f - pf_6_25) + 1.f))));
+	// 0.9995003  <=>  exp2((log2(({f_2_39 : -0.0001999} + 1.f)) * {utof(vs_cbuf15[23].y) : 2.50}))
+	f_3_28 = exp2((log2((f_2_39 + 1.f)) * utof(vs_cbuf15[23].y)));
+	// vec4(0.50,0.50,0.50,1.00)  <=>  textureLod({tex0 : tex0}, vec2((({pf_6_27 : -1.484917} * 0.63661975f) + 1.f), (({f_3_28 : 0.9995003} * 0.5f) + 0.5f)), 0.0)
+	f4_0_0 = textureLod(tex0, vec2(((pf_6_27 * 0.63661975f) + 1.f), ((f_3_28 * 0.5f) + 0.5f)), 0.0);
+	// 3256490044  <=>  {u_1_phi_68 : 3256490044}
+	u_0_10 = u_1_phi_68;
+	u_0_phi_70 = u_0_10;
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// vec4(0.50,0.50,0.50,1.00)  <=>  textureLod({tex1 : tex1}, vec2({utof(u_1_phi_68) : -38.52367}, {utof(u_4_phi_69) : 0.9178098}), 0.0)
+		f4_0_1 = textureLod(tex1, vec2(utof(u_1_phi_68), utof(u_4_phi_69)), 0.0);
+		// 1065353216  <=>  {ftou(f4_0_1.w) : 1065353216}
+		u_0_11 = ftou(f4_0_1.w);
+		u_0_phi_70 = u_0_11;
+	}
+	// 10  <=>  (isnan({utof(vs_cbuf9[20].y) : 10.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[20].y) : 10.00}), float(-2147483600.f), float(2147483600.f))))
+	u_4_19 = (isnan(utof(vs_cbuf9[20].y)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[20].y)), float(-2147483600.f), float(2147483600.f))));
+	// 176  <=>  (({vs_cbuf0[21].x : 675217408} + 176u) - {vs_cbuf0[21].x : 675217408})
+	u_5_23 = ((vs_cbuf0[21].x + 176u) - vs_cbuf0[21].x);
+	// uvec4({vs_ssbo0[({u_5_23 : 176} >> 2)] : }, {vs_ssbo0[(({u_5_23 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_5_23 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_5_23 : 176} + 12) >> 2)] : })
+	u4_0_0 = uvec4(vs_ssbo0[(u_5_23 >> 2)], vs_ssbo0[((u_5_23 + 4) >> 2)], vs_ssbo0[((u_5_23 + 8) >> 2)], vs_ssbo0[((u_5_23 + 12) >> 2)]);
+	// 1065353216  <=>  1065353216u
+	u_8_16 = 1065353216u;
+	u_8_phi_71 = u_8_16;
+	// False  <=>  if((((1u & {vs_cbuf9[7].z : 300033}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
+	{
+		// 1089146433  <=>  1089146433u
+		u_8_17 = 1089146433u;
+		u_8_phi_71 = u_8_17;
+	}
+	// 192  <=>  (({vs_cbuf0[21].x : 675217408} + 192u) - {vs_cbuf0[21].x : 675217408})
+	u_1_25 = ((vs_cbuf0[21].x + 192u) - vs_cbuf0[21].x);
+	// uvec4({vs_ssbo0[({u_1_25 : 192} >> 2)] : }, {vs_ssbo0[(({u_1_25 : 192} + 4) >> 2)] : }, {vs_ssbo0[(({u_1_25 : 192} + 8) >> 2)] : }, {vs_ssbo0[(({u_1_25 : 192} + 12) >> 2)] : })
+	u4_0_1 = uvec4(vs_ssbo0[(u_1_25 >> 2)], vs_ssbo0[((u_1_25 + 4) >> 2)], vs_ssbo0[((u_1_25 + 8) >> 2)], vs_ssbo0[((u_1_25 + 12) >> 2)]);
+	// 4  <=>  (isnan({utof(vs_cbuf9[20].x) : 4.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[20].x) : 4.00}), float(-2147483600.f), float(2147483600.f))))
+	u_11_13 = (isnan(utof(vs_cbuf9[20].x)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[20].x)), float(-2147483600.f), float(2147483600.f))));
+	// 0  <=>  {vs_cbuf9[7].y : 0}
+	u_12_7 = vs_cbuf9[7].y;
+	// 1.00  <=>  1.f
+	out_attr9.x = 1.f;
+	// 5.996582  <=>  {pf_7_11 : 5.996582}
+	gl_Position.w = pf_7_11;
+	// 3.996982  <=>  {pf_14_11 : 3.996982}
+	gl_Position.z = pf_14_11;
+	// 10.00  <=>  float(int({u_4_19 : 10}))
+	f_8_4 = float(int(u_4_19));
+	// -6.778384  <=>  {pf_8_14 : -6.778384}
+	gl_Position.y = pf_8_14;
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 16u)) > int(0u)) ? 4294967295u : 0u))))
+	u_14_6 = uint((int(0) - int(((int((vs_cbuf9[7].x & 16u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 16u)) >= int(0u)) ? 0u : 1u))))
+	u_2_5 = uint((int(0) - int(((int((vs_cbuf9[7].x & 16u)) >= int(0u)) ? 0u : 1u))));
+	// 0  <=>  ({u_14_6 : 0} + {u_2_5 : 0})
+	u_2_6 = (u_14_6 + u_2_5);
+	// -0.6003447  <=>  {pf_12_8 : -0.6003447}
+	gl_Position.x = pf_12_8;
+	// 4.996782  <=>  (({pf_7_11 : 5.996582} * 0.5f) + (({pf_14_11 : 3.996982} * 0.5f) + ((0.f * {pf_12_8 : -0.6003447}) + (0.f * {pf_8_14 : -6.778384}))))
+	out_attr4.z = ((pf_7_11 * 0.5f) + ((pf_14_11 * 0.5f) + ((0.f * pf_12_8) + (0.f * pf_8_14))));
+	// False  <=>  (((({in_attr0.z : 0.00} == 0.f) && (! isnan({in_attr0.z : 0.00}))) && (! isnan(0.f))) && (((({in_attr0.x : -0.15857} == 0.f) && (! isnan({in_attr0.x : -0.15857}))) && (! isnan(0.f))) && ((({in_attr0.y : -0.38281} == 0.f) && (! isnan({in_attr0.y : -0.38281}))) && (! isnan(0.f)))))
+	b_0_7 = ((((in_attr0.z == 0.f) && (! isnan(in_attr0.z))) && (! isnan(0.f))) && ((((in_attr0.x == 0.f) && (! isnan(in_attr0.x))) && (! isnan(0.f))) && (((in_attr0.y == 0.f) && (! isnan(in_attr0.y))) && (! isnan(0.f)))));
+	// 5.996582  <=>  ({pf_7_11 : 5.996582} + ((0.f * {pf_14_11 : 3.996982}) + ((0.f * {pf_12_8 : -0.6003447}) + (0.f * {pf_8_14 : -6.778384}))))
+	out_attr4.w = (pf_7_11 + ((0.f * pf_14_11) + ((0.f * pf_12_8) + (0.f * pf_8_14))));
+	// True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_35 = (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_11_13), int(0u), int(32u)))), int(0u), int(32u))) == 0));
+	// True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_35 : True})
+	b_2_36 = ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_11_13), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_35);
+	// 22  <=>  int(clamp(trunc(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))), float(-2147483600.f), float(2147483600.f)))
+	u_16_4 = int(clamp(trunc((pf_0_1 * (1.0f / f_8_4))), float(-2147483600.f), float(2147483600.f)));
+	// 1048575998  <=>  ({ftou((1.0f / float({u_11_13 : 4}))) : 1048576000} + 4294967294u)
+	u_15_6 = (ftou((1.0f / float(u_11_13))) + 4294967294u);
+	// 22.00  <=>  float((isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22}))
+	f_2_43 = float((isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4));
+	// 2.698119  <=>  (({pf_7_11 : 5.996582} * 0.5f) + ((0.f * {pf_14_11 : 3.996982}) + (({pf_12_8 : -0.6003447} * 0.5f) + (0.f * {pf_8_14 : -6.778384}))))
+	out_attr4.x = ((pf_7_11 * 0.5f) + ((0.f * pf_14_11) + ((pf_12_8 * 0.5f) + (0.f * pf_8_14))));
+	// 5  <=>  uint(clamp(trunc(({utof(u_15_6) : 0.25} * {f_2_43 : 22.00})), float(0.f), float(4294967300.f)))
+	u_17_11 = uint(clamp(trunc((utof(u_15_6) * f_2_43)), float(0.f), float(4294967300.f)));
+	// 5  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_11 : 5}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_11 : 5}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_23_0 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_11), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_11), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  (uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_23_0 : 5})) << 16u)
+	u_22_6 = (uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_23_0)) << 16u);
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_11 : 5}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_11 : 5}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_21_7 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_11), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_11), int(0u), int(16u))), int(16u), int(16u)) << 16u);
+	// 20  <=>  ({u_22_6 : 0} + ({u_21_7 : 0} + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_11 : 5}), int(0u), int(16u)))))))
+	u_20_6 = (u_22_6 + (u_21_7 + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_11), int(0u), int(16u)))))));
+	// 2  <=>  ((isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22}) + uint((int(0) - int({u_20_6 : 20}))))
+	u_20_8 = ((isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4) + uint((int(0) - int(u_20_6))));
+	// 0.4999999  <=>  ({utof(u_15_6) : 0.25} * float({u_20_8 : 2}))
+	pf_10_18 = (utof(u_15_6) * float(u_20_8));
+	// 22.00  <=>  float(int((isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22})))
+	f_2_47 = float(int((isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4)));
+	// 5  <=>  uint(bitfieldExtract(uint(({u_17_11 : 5} + uint(clamp(trunc({pf_10_18 : 0.4999999}), float(0.f), float(4294967300.f))))), int(0u), int(16u)))
+	u_21_8 = uint(bitfieldExtract(uint((u_17_11 + uint(clamp(trunc(pf_10_18), float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	// 0  <=>  uint(bitfieldExtract(uint(({u_17_11 : 5} + uint(clamp(trunc({pf_10_18 : 0.4999999}), float(0.f), float(4294967300.f))))), int(16u), int(16u)))
+	u_22_7 = uint(bitfieldExtract(uint((u_17_11 + uint(clamp(trunc(pf_10_18), float(0.f), float(4294967300.f))))), int(16u), int(16u)));
+	// 5  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_22_7 : 0})), {u_21_8 : 5}, int(16u), int(16u))), int(16u), int(16u)))
+	u_23_1 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_22_7)), u_21_8, int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_23_1 : 5}))
+	u_22_10 = uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_23_1));
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_22_7 : 0})), {u_21_8 : 5}, int(16u), int(16u)) << 16u)
+	u_21_12 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_22_7)), u_21_8, int(16u), int(16u)) << 16u);
+	// 20  <=>  (({u_22_10 : 0} << 16u) + ({u_21_12 : 0} + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_21_8 : 5}))))
+	u_20_13 = ((u_22_10 << 16u) + (u_21_12 + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_21_8))));
+	// 2  <=>  ((isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22}) + uint((int(0) - int({u_20_13 : 20}))))
+	u_20_15 = ((isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4) + uint((int(0) - int(u_20_13))));
+	// False  <=>  (uint({u_20_15 : 2}) >= uint({u_11_13 : 4}))
+	b_3_12 = (uint(u_20_15) >= uint(u_11_13));
+	// 4.00  <=>  float(int({u_11_13 : 4}))
+	f_8_10 = float(int(u_11_13));
+	// 4294967291  <=>  uint((int(0) - int(({u_17_11 : 5} + uint(clamp(trunc({pf_10_18 : 0.4999999}), float(0.f), float(4294967300.f)))))))
+	u_17_13 = uint((int(0) - int((u_17_11 + uint(clamp(trunc(pf_10_18), float(0.f), float(4294967300.f)))))));
+	// 262124  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_17_13 : 4294967291} + ({b_3_12 : False} ? 4294967295u : 0u))), int(0u), int(16u)))))
+	u_20_18 = uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_17_13 + (b_3_12 ? 4294967295u : 0u))), int(0u), int(16u)))));
+	// 262140  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_17_13 : 4294967291} + ({b_3_12 : False} ? 4294967295u : 0u))), int(16u), int(16u)))))
+	u_21_15 = uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_17_13 + (b_3_12 ? 4294967295u : 0u))), int(16u), int(16u)))));
+	// 4294705148  <=>  bitfieldInsert({u_21_15 : 262140}, uint(bitfieldExtract(uint(({u_17_13 : 4294967291} + ({b_3_12 : False} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))
+	u_17_16 = bitfieldInsert(u_21_15, uint(bitfieldExtract(uint((u_17_13 + (b_3_12 ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u));
+	// 4294967295  <=>  uint(bitfieldExtract(int((((({f_2_47 : 22.00} >= {f_8_10 : 4.00}) && (! isnan({f_2_47 : 22.00}))) && (! isnan({f_8_10 : 4.00}))) ? 4294967295u : 0u)), int(0u), int(32u)))
+	u_21_17 = uint(bitfieldExtract(int(((((f_2_47 >= f_8_10) && (! isnan(f_2_47))) && (! isnan(f_8_10))) ? 4294967295u : 0u)), int(0u), int(32u)));
+	// 4294967276  <=>  ((uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_17_16 : 4294705148}), int(16u), int(16u))))) << 16u) + (({u_17_16 : 4294705148} << 16u) + {u_20_18 : 262124}))
+	u_17_19 = ((uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_17_16), int(16u), int(16u))))) << 16u) + ((u_17_16 << 16u) + u_20_18));
+	// 0.00  <=>  clamp(trunc((({pf_0_1 : 224.00} * {f_8_10 : 4.00}) * (1.0f / float(int({u_4_1 : 268435008}))))), float(-2147483600.f), float(2147483600.f))
+	f_1_5 = clamp(trunc(((pf_0_1 * f_8_10) * (1.0f / float(int(u_4_1))))), float(-2147483600.f), float(2147483600.f));
+	// 0  <=>  (isnan((({pf_0_1 : 224.00} * {f_8_10 : 4.00}) * (1.0f / float(int({u_4_1 : 268435008}))))) ? 0u : int({f_1_5 : 0.00}))
+	u_22_17 = (isnan(((pf_0_1 * f_8_10) * (1.0f / float(int(u_4_1))))) ? 0u : int(f_1_5));
+	// 2  <=>  ((isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22}) + {u_17_19 : 4294967276})
+	u_17_20 = ((isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4) + u_17_19);
+	// 0  <=>  (uint((int(0) - int(uint(bitfieldExtract(uint(abs(int({u_21_17 : 4294967295}))), int(0u), int(32u)))))) + 1u)
+	u_24_1 = (uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(u_21_17))), int(0u), int(32u)))))) + 1u);
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 2} : 4294967295u)), int(16u), int(16u)))))
+	u_26_2 = uint((uint(bitfieldExtract(uint(u_24_1), int(0u), int(16u))) * uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(16u), int(16u)))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 32u)) > int(0u)) ? 4294967295u : 0u))))
+	u_8_18 = uint((int(0) - int(((int((vs_cbuf9[7].x & 32u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 32u)) >= int(0u)) ? 0u : 1u))))
+	u_20_21 = uint((int(0) - int(((int((vs_cbuf9[7].x & 32u)) >= int(0u)) ? 0u : 1u))));
+	// 0  <=>  ({u_8_18 : 0} + {u_20_21 : 0})
+	u_8_19 = (u_8_18 + u_20_21);
+	// 0  <=>  ({u_12_7 : 0} & 4096u)
+	u_20_22 = (u_12_7 & 4096u);
+	// 2  <=>  uint(bitfieldExtract(uint(bitfieldInsert({u_26_2 : 0}, uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 2} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_24_2 = uint(bitfieldExtract(uint(bitfieldInsert(u_26_2, uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(16u), int(16u))) * {u_24_2 : 2}))
+	u_23_5 = uint((uint(bitfieldExtract(uint(u_24_1), int(16u), int(16u))) * u_24_2));
+	// 0  <=>  ((bitfieldInsert({u_26_2 : 0}, uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 2} : 4294967295u)), int(0u), int(16u))), int(16u), int(16u)) << 16u) + uint((uint(bitfieldExtract(uint({u_24_1 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({b_2_36 : True} ? {u_17_20 : 2} : 4294967295u)), int(0u), int(16u))))))
+	u_17_25 = ((bitfieldInsert(u_26_2, uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))), int(16u), int(16u)) << 16u) + uint((uint(bitfieldExtract(uint(u_24_1), int(0u), int(16u))) * uint(bitfieldExtract(uint((b_2_36 ? u_17_20 : 4294967295u)), int(0u), int(16u))))));
+	// 0.91079  <=>  (({utof(u_8_phi_71) : 1.00} * {in_attr7.x : 0.91079}) + (0.f - floor(({utof(u_8_phi_71) : 1.00} * {in_attr7.x : 0.91079}))))
+	pf_10_22 = ((utof(u_8_phi_71) * in_attr7.x) + (0.f - floor((utof(u_8_phi_71) * in_attr7.x))));
+	// 128  <=>  ({vs_cbuf9[7].x : 1879048329} & 128u)
+	u_3_7 = (vs_cbuf9[7].x & 128u);
+	// 3  <=>  (uint((({u_11_13 : 4} + 4294967295u) * uint(bitfieldExtract(uint(abs(int({u_21_17 : 4294967295}))), int(0u), int(32u))))) + (({u_23_5 : 0} << 16u) + {u_17_25 : 0}))
+	u_14_9 = (uint(((u_11_13 + 4294967295u) * uint(bitfieldExtract(uint(abs(int(u_21_17))), int(0u), int(32u))))) + ((u_23_5 << 16u) + u_17_25));
+	// 0  <=>  uint((int(0) - int(((int({u_20_22 : 0}) > int(0u)) ? 4294967295u : 0u))))
+	u_17_27 = uint((int(0) - int(((int(u_20_22) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  ({u_17_27 : 0} + uint((int(0) - int(((int({u_20_22 : 0}) >= int(0u)) ? 0u : 1u)))))
+	u_17_28 = (u_17_27 + uint((int(0) - int(((int(u_20_22) >= int(0u)) ? 0u : 1u)))));
+	// 3.64316  <=>  ({f_8_10 : 4.00} * {pf_10_22 : 0.91079})
+	pf_10_23 = (f_8_10 * pf_10_22);
+	// False  <=>  isnan({pf_10_23 : 3.64316})
+	b_3_20 = isnan(pf_10_23);
+	// 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_8_19 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_23_8 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_8_19), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)));
+	// 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_8_19 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)))
+	u_8_23 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_8_19), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)));
+	// 3  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint(({u_23_8 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_25_5 = uint(bitfieldExtract(uint(bitfieldInsert(uint((u_23_8 * uint(bitfieldExtract(uint(u_14_9), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  (bitfieldInsert(uint(({u_23_8 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_14_12 = (bitfieldInsert(uint((u_23_8 * uint(bitfieldExtract(uint(u_14_9), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u))), int(16u), int(16u)) << 16u);
+	// 0  <=>  ((uint(({u_8_23 : 0} * {u_25_5 : 3})) << 16u) + ({u_14_12 : 0} + uint(({u_23_8 : 0} * uint(bitfieldExtract(uint({u_14_9 : 3}), int(0u), int(16u)))))))
+	u_8_26 = ((uint((u_8_23 * u_25_5)) << 16u) + (u_14_12 + uint((u_23_8 * uint(bitfieldExtract(uint(u_14_9), int(0u), int(16u)))))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 64u)) > int(0u)) ? 4294967295u : 0u))))
+	u_20_26 = uint((int(0) - int(((int((vs_cbuf9[7].x & 64u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({vs_cbuf9[7].x : 1879048329} & 64u)) >= int(0u)) ? 0u : 1u))))
+	u_24_5 = uint((int(0) - int(((int((vs_cbuf9[7].x & 64u)) >= int(0u)) ? 0u : 1u))));
+	// 0  <=>  ({u_20_26 : 0} + {u_24_5 : 0})
+	u_20_27 = (u_20_26 + u_24_5);
+	// 0  <=>  uint((({b_3_20 : False} ? 0u : int(clamp(trunc({pf_10_23 : 3.64316}), float(-2147483600.f), float(2147483600.f)))) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_17_28 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	u_17_32 = uint(((b_3_20 ? 0u : int(clamp(trunc(pf_10_23), float(-2147483600.f), float(2147483600.f)))) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_17_28), int(0u), int(32u)))))), int(0u), int(32u)))));
+	// 22  <=>  ({u_17_32 : 0} + (isnan(({pf_0_1 : 224.00} * (1.0f / {f_8_4 : 10.00}))) ? 0u : {u_16_4 : 22}))
+	u_16_6 = (u_17_32 + (isnan((pf_0_1 * (1.0f / f_8_4))) ? 0u : u_16_4));
+	// 0  <=>  uint(({u_22_17 : 0} * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_2_6 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	u_2_10 = uint((u_22_17 * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_2_6), int(0u), int(32u)))))), int(0u), int(32u)))));
+	// 1  <=>  uint((int(0) - int(((int({u_3_7 : 128}) > int(0u)) ? 4294967295u : 0u))))
+	u_3_9 = uint((int(0) - int(((int(u_3_7) > int(0u)) ? 4294967295u : 0u))));
+	// 1  <=>  ({u_3_9 : 1} + uint((int(0) - int(((int({u_3_7 : 128}) >= int(0u)) ? 0u : 1u)))))
+	u_3_10 = (u_3_9 + uint((int(0) - int(((int(u_3_7) >= int(0u)) ? 0u : 1u)))));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_20_27 : 0}), int(0u), int(32u)))))), int(0u), int(32u))) * {u_16_6 : 22}))
+	u_17_33 = uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_20_27), int(0u), int(32u)))))), int(0u), int(32u))) * u_16_6));
+	// 0  <=>  ({u_17_33 : 0} + ({u_2_10 : 0} + {u_8_26 : 0}))
+	u_2_12 = (u_17_33 + (u_2_10 + u_8_26));
+	// 3  <=>  uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_10 : 1}), int(0u), int(32u)))))), int(0u), int(32u))) * ({b_3_20 : False} ? 0u : int(clamp(trunc({pf_10_23 : 3.64316}), float(-2147483600.f), float(2147483600.f))))))
+	u_3_14 = uint((uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_10), int(0u), int(32u)))))), int(0u), int(32u))) * (b_3_20 ? 0u : int(clamp(trunc(pf_10_23), float(-2147483600.f), float(2147483600.f))))));
+	// -0.025  <=>  (({pf_0_1 : 224.00} * (0.f - {utof(vs_cbuf9[74].x) : 0.00})) + (0.f - ((({in_attr7.x : 0.91079} * {utof(vs_cbuf9[75].x) : 0.00}) * -2.f) + ({utof(vs_cbuf9[75].x) : 0.00} + {utof(vs_cbuf9[74].z) : 0.025}))))
+	pf_10_26 = ((pf_0_1 * (0.f - utof(vs_cbuf9[74].x))) + (0.f - (((in_attr7.x * utof(vs_cbuf9[75].x)) * -2.f) + (utof(vs_cbuf9[75].x) + utof(vs_cbuf9[74].z)))));
+	// 0.00  <=>  clamp(trunc(({utof(u_15_6) : 0.25} * float(({u_3_14 : 3} + {u_2_12 : 0})))), float(0.f), float(4294967300.f))
+	f_1_15 = clamp(trunc((utof(u_15_6) * float((u_3_14 + u_2_12)))), float(0.f), float(4294967300.f));
+	// 0  <=>  uint({f_1_15 : 0.00})
+	u_17_34 = uint(f_1_15);
+	// 4294967295  <=>  (~ (((1u & {vs_cbuf9[7].y : 0}) == 1u) ? 4294967295u : 0u))
+	u_3_18 = (~ (((1u & vs_cbuf9[7].y) == 1u) ? 4294967295u : 0u));
+	// 0  <=>  (~ (((({in_attr7.x : 0.91079} > 0.5f) && (! isnan({in_attr7.x : 0.91079}))) && (! isnan(0.5f))) ? 4294967295u : 0u))
+	u_8_29 = (~ ((((in_attr7.x > 0.5f) && (! isnan(in_attr7.x))) && (! isnan(0.5f))) ? 4294967295u : 0u));
+	// 1  <=>  (isnan({utof(vs_cbuf9[83].z) : 1.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[83].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
+	u_3_21 = (isnan(utof(vs_cbuf9[83].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[83].z)), float(-2147483600.f), float(2147483600.f))));
+	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_34 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_34 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_22_20 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_34), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_34), int(0u), int(16u))), int(16u), int(16u));
+	// 0  <=>  uint(bitfieldExtract(uint({u_22_20 : 0}), int(16u), int(16u)))
+	u_25_6 = uint(bitfieldExtract(uint(u_22_20), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_25_6 : 0})) << 16u) + (({u_22_20 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_34 : 0}), int(0u), int(16u)))))))
+	u_20_34 = ((uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_25_6)) << 16u) + ((u_22_20 << 16u) + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_34), int(0u), int(16u)))))));
+	// ((0.f - {utof(u4_0_0.y) : }) + {utof(u4_0_1.y) : })
+	pf_21_1 = ((0.f - utof(u4_0_0.y)) + utof(u4_0_1.y));
+	// ((0.f - {utof(u4_0_0.x) : }) + {utof(u4_0_1.x) : })
+	pf_22_0 = ((0.f - utof(u4_0_0.x)) + utof(u4_0_1.x));
+	// ((0.f - {utof(u4_0_0.z) : }) + {utof(u4_0_1.z) : })
+	pf_23_0 = ((0.f - utof(u4_0_0.z)) + utof(u4_0_1.z));
+	// 1065353214  <=>  ({ftou((1.0f / float({u_3_21 : 1}))) : 1065353216} + 4294967294u)
+	u_20_35 = (ftou((1.0f / float(u_3_21))) + 4294967294u);
+	// 1051240557  <=>  {ftou(in_attr1.x) : 1051240557}
+	u_25_7 = ftou(in_attr1.x);
+	u_25_phi_72 = u_25_7;
+	// False  <=>  if(((! (({u_3_18 : 4294967295} | {u_8_29 : 0}) != 0u)) ? true : false))
+	if(((! ((u_3_18 | u_8_29) != 0u)) ? true : false))
+	{
+		// 1059826634  <=>  {ftou(((0.f - {in_attr1.x : 0.32941}) + 1.f)) : 1059826634}
+		u_25_8 = ftou(((0.f - in_attr1.x) + 1.f));
+		u_25_phi_72 = u_25_8;
+	}
+	// 1  <=>  (isnan({utof(vs_cbuf9[88].z) : 1.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[88].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
+	u_26_6 = (isnan(utof(vs_cbuf9[88].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[88].z)), float(-2147483600.f), float(2147483600.f))));
+	// 0.00  <=>  trunc(({utof(u_15_6) : 0.25} * float((({u_3_14 : 3} + {u_2_12 : 0}) + uint((int(0) - int({u_20_34 : 0})))))))
+	f_7_5 = trunc((utof(u_15_6) * float(((u_3_14 + u_2_12) + uint((int(0) - int(u_20_34)))))));
+	// 4294967295  <=>  (~ (((4u & {vs_cbuf9[7].y : 0}) == 4u) ? 4294967295u : 0u))
+	u_1_32 = (~ (((4u & vs_cbuf9[7].y) == 4u) ? 4294967295u : 0u));
+	// 0  <=>  (~ (((({in_attr7.z : 0.97727} > 0.5f) && (! isnan({in_attr7.z : 0.97727}))) && (! isnan(0.5f))) ? 4294967295u : 0u))
+	u_10_9 = (~ ((((in_attr7.z > 0.5f) && (! isnan(in_attr7.z))) && (! isnan(0.5f))) ? 4294967295u : 0u));
+	// 4294967295  <=>  (~ (((8u & {vs_cbuf9[7].y : 0}) == 8u) ? 4294967295u : 0u))
+	u_1_34 = (~ (((8u & vs_cbuf9[7].y) == 8u) ? 4294967295u : 0u));
+	// 0  <=>  (~ (((({in_attr7.w : 0.84969} > 0.5f) && (! isnan({in_attr7.w : 0.84969}))) && (! isnan(0.5f))) ? 4294967295u : 0u))
+	u_10_10 = (~ ((((in_attr7.w > 0.5f) && (! isnan(in_attr7.w))) && (! isnan(0.5f))) ? 4294967295u : 0u));
+	// 4294967295  <=>  (~ (((2u & {vs_cbuf9[7].y : 0}) == 2u) ? 4294967295u : 0u))
+	u_22_26 = (~ (((2u & vs_cbuf9[7].y) == 2u) ? 4294967295u : 0u));
+	// 0  <=>  (~ (((({in_attr7.y : 0.84444} > 0.5f) && (! isnan({in_attr7.y : 0.84444}))) && (! isnan(0.5f))) ? 4294967295u : 0u))
+	u_8_31 = (~ ((((in_attr7.y > 0.5f) && (! isnan(in_attr7.y))) && (! isnan(0.5f))) ? 4294967295u : 0u));
+	// 0  <=>  uint(bitfieldExtract(uint(({u_17_34 : 0} + uint(clamp({f_7_5 : 0.00}, float(0.f), float(4294967300.f))))), int(0u), int(16u)))
+	u_24_7 = uint(bitfieldExtract(uint((u_17_34 + uint(clamp(f_7_5, float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	// 1.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_10_9 = float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u))));
+	// 0  <=>  uint(bitfieldExtract(uint(({u_17_34 : 0} + uint(clamp({f_7_5 : 0.00}, float(0.f), float(4294967300.f))))), int(16u), int(16u)))
+	u_27_2 = uint(bitfieldExtract(uint((u_17_34 + uint(clamp(f_7_5, float(0.f), float(4294967300.f))))), int(16u), int(16u)));
+	// False  <=>  if(((! (({u_3_18 : 4294967295} | {u_8_29 : 0}) != 0u)) ? true : false))
+	if(((! ((u_3_18 | u_8_29) != 0u)) ? true : false))
+	{
+	}
+	// 1063905846  <=>  {ftou(in_attr1.y) : 1063905846}
+	u_29_0 = ftou(in_attr1.y);
+	u_29_phi_74 = u_29_0;
+	// False  <=>  if(((! (({u_22_26 : 4294967295} | {u_8_31 : 0}) != 0u)) ? true : false))
+	if(((! ((u_22_26 | u_8_31) != 0u)) ? true : false))
+	{
+		// 1034989136  <=>  {ftou(((0.f - {in_attr1.y : 0.91373}) + 1.f)) : 1034989136}
+		u_29_1 = ftou(((0.f - in_attr1.y) + 1.f));
+		u_29_phi_74 = u_29_1;
+	}
+	// 0  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_27_2 : 0})), {u_24_7 : 0}, int(16u), int(16u))), int(16u), int(16u)))
+	u_32_0 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_27_2)), u_24_7, int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_32_0 : 0}))
+	u_31_1 = uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_32_0));
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_27_2 : 0})), {u_24_7 : 0}, int(16u), int(16u)) << 16u)
+	u_24_11 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_27_2)), u_24_7, int(16u), int(16u)) << 16u);
+	// 0  <=>  (({u_31_1 : 0} << 16u) + ({u_24_11 : 0} + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_24_7 : 0}))))
+	u_23_22 = ((u_31_1 << 16u) + (u_24_11 + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_24_7))));
+	// 4294967295  <=>  (~ (((16u & {vs_cbuf9[7].y : 0}) == 16u) ? 4294967295u : 0u))
+	u_1_39 = (~ (((16u & vs_cbuf9[7].y) == 16u) ? 4294967295u : 0u));
+	// False  <=>  if(((! (({u_1_32 : 4294967295} | {u_10_9 : 0}) != 0u)) ? true : false))
+	if(((! ((u_1_32 | u_10_9) != 0u)) ? true : false))
+	{
+	}
+	// 1051240557  <=>  {ftou(in_attr1.x) : 1051240557}
+	u_32_1 = ftou(in_attr1.x);
+	u_32_phi_76 = u_32_1;
+	// False  <=>  if(((! (({u_1_32 : 4294967295} | {u_10_9 : 0}) != 0u)) ? true : false))
+	if(((! ((u_1_32 | u_10_9) != 0u)) ? true : false))
+	{
+		// 1059826634  <=>  {ftou(((0.f - {in_attr1.x : 0.32941}) + 1.f)) : 1059826634}
+		u_32_2 = ftou(((0.f - in_attr1.x) + 1.f));
+		u_32_phi_76 = u_32_2;
+	}
+	// 4294967295  <=>  (~ (((32u & {vs_cbuf9[7].y : 0}) == 32u) ? 4294967295u : 0u))
+	u_22_30 = (~ (((32u & vs_cbuf9[7].y) == 32u) ? 4294967295u : 0u));
+	// 0.9999999  <=>  {utof(u_20_35) : 0.9999999}
+	f_7_10 = utof(u_20_35);
+	// False  <=>  (uint((({u_3_14 : 3} + {u_2_12 : 0}) + uint((int(0) - int({u_23_22 : 0}))))) >= uint({u_11_13 : 4}))
+	b_8_8 = (uint(((u_3_14 + u_2_12) + uint((int(0) - int(u_23_22))))) >= uint(u_11_13));
+	// 0  <=>  uint(clamp(trunc((float(0u) * {f_7_10 : 0.9999999})), float(0.f), float(4294967300.f)))
+	u_30_2 = uint(clamp(trunc((float(0u) * f_7_10)), float(0.f), float(4294967300.f)));
+	// 0  <=>  uint((int(0) - int(((int(({u_12_7 : 0} & 2097152u)) > int(0u)) ? 4294967295u : 0u))))
+	u_12_10 = uint((int(0) - int(((int((u_12_7 & 2097152u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({u_12_7 : 0} & 2097152u)) >= int(0u)) ? 0u : 1u))))
+	u_31_4 = uint((int(0) - int(((int((u_12_7 & 2097152u)) >= int(0u)) ? 0u : 1u))));
+	// 0  <=>  ({u_12_10 : 0} + {u_31_4 : 0})
+	u_12_11 = (u_12_10 + u_31_4);
+	// 1.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_11_7 = float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u))));
+	// 3208141928  <=>  {ftou(in_attr2.y) : 3208141928}
+	u_31_5 = ftou(in_attr2.y);
+	u_31_phi_77 = u_31_5;
+	// True  <=>  if(((! {b_0_7 : False}) ? true : false))
+	if(((! b_0_7) ? true : false))
+	{
+		// 3220123125  <=>  {ftou((({in_attr0.y : -0.38281} * {utof(vs_cbuf13[0].x) : 3.00}) + {in_attr2.y : -0.72016})) : 3220123125}
+		u_31_6 = ftou(((in_attr0.y * utof(vs_cbuf13[0].x)) + in_attr2.y));
+		u_31_phi_77 = u_31_6;
+	}
+	// 0  <=>  uint((int(0) - int(({u_17_34 : 0} + uint(clamp({f_7_5 : 0.00}, float(0.f), float(4294967300.f)))))))
+	u_10_12 = uint((int(0) - int((u_17_34 + uint(clamp(f_7_5, float(0.f), float(4294967300.f)))))));
+	// 1065353214  <=>  ({ftou((1.0f / float({u_26_6 : 1}))) : 1065353216} + 4294967294u)
+	u_17_36 = (ftou((1.0f / float(u_26_6))) + 4294967294u);
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_10_12 : 0} + ({b_8_8 : False} ? 4294967295u : 0u))), int(0u), int(16u)))))
+	u_24_14 = uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_10_12 + (b_8_8 ? 4294967295u : 0u))), int(0u), int(16u)))));
+	// 0  <=>  uint(bitfieldExtract(uint(({u_10_12 : 0} + ({b_8_8 : False} ? 4294967295u : 0u))), int(16u), int(16u)))
+	u_34_0 = uint(bitfieldExtract(uint((u_10_12 + (b_8_8 ? 4294967295u : 0u))), int(16u), int(16u)));
+	// 3197652141  <=>  {ftou(in_attr2.x) : 3197652141}
+	u_33_5 = ftou(in_attr2.x);
+	u_33_phi_78 = u_33_5;
+	// True  <=>  if(((! {b_0_7 : False}) ? true : false))
+	if(((! b_0_7) ? true : false))
+	{
+		// 3209031288  <=>  {ftou((({in_attr0.x : -0.15857} * {utof(vs_cbuf13[0].x) : 3.00}) + {in_attr2.x : -0.29746})) : 3209031288}
+		u_33_6 = ftou(((in_attr0.x * utof(vs_cbuf13[0].x)) + in_attr2.x));
+		u_33_phi_78 = u_33_6;
+	}
+	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_30_2 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_30_2 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_34_5 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_30_2), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_30_2), int(0u), int(16u))), int(16u), int(16u));
+	// 0.9999999  <=>  {utof(u_17_36) : 0.9999999}
+	f_9_25 = utof(u_17_36);
+	// 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * float(0u))
+	pf_26_0 = (utof((ftou((1.0f / f_10_9)) + 4294967294u)) * float(0u));
+	// 0  <=>  uint(clamp(trunc((float(0u) * {f_9_25 : 0.9999999})), float(0.f), float(4294967300.f)))
+	u_35_2 = uint(clamp(trunc((float(0u) * f_9_25)), float(0.f), float(4294967300.f)));
+	// 0  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_34_0 : 0})), uint(bitfieldExtract(uint(({u_10_12 : 0} + ({b_8_8 : False} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_37_0 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_34_0)), uint(bitfieldExtract(uint((u_10_12 + (b_8_8 ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_37_0 : 0}))
+	u_36_1 = uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_37_0));
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_34_0 : 0})), uint(bitfieldExtract(uint(({u_10_12 : 0} + ({b_8_8 : False} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_10_16 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_34_0)), uint(bitfieldExtract(uint((u_10_12 + (b_8_8 ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u)) << 16u);
+	// 1059082228  <=>  {ftou(in_attr2.z) : 1059082228}
+	u_36_3 = ftou(in_attr2.z);
+	u_36_phi_79 = u_36_3;
+	// True  <=>  if(((! {b_0_7 : False}) ? true : false))
+	if(((! b_0_7) ? true : false))
+	{
+		// 1059082228  <=>  {ftou((({in_attr0.z : 0.00} * {utof(vs_cbuf13[0].x) : 3.00}) + {in_attr2.z : 0.62622})) : 1059082228}
+		u_36_4 = ftou(((in_attr0.z * utof(vs_cbuf13[0].x)) + in_attr2.z));
+		u_36_phi_79 = u_36_4;
+	}
+	// False  <=>  if(((! (({u_1_39 : 4294967295} | {u_8_31 : 0}) != 0u)) ? true : false))
+	if(((! ((u_1_39 | u_8_31) != 0u)) ? true : false))
+	{
+	}
+	// 1063905846  <=>  {ftou(in_attr1.y) : 1063905846}
+	u_23_26 = ftou(in_attr1.y);
+	u_23_phi_81 = u_23_26;
+	// False  <=>  if(((! (({u_1_34 : 4294967295} | {u_10_10 : 0}) != 0u)) ? true : false))
+	if(((! ((u_1_34 | u_10_10) != 0u)) ? true : false))
+	{
+		// 1034989136  <=>  {ftou(((0.f - {in_attr1.y : 0.91373}) + 1.f)) : 1034989136}
+		u_23_27 = ftou(((0.f - in_attr1.y) + 1.f));
+		u_23_phi_81 = u_23_27;
+	}
+	// 0  <=>  uint(bitfieldExtract(uint({u_34_5 : 0}), int(16u), int(16u)))
+	u_37_3 = uint(bitfieldExtract(uint(u_34_5), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(16u), int(16u))) * {u_37_3 : 0})) << 16u) + (({u_34_5 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_30_2 : 0}), int(0u), int(16u)))))))
+	u_1_45 = ((uint((uint(bitfieldExtract(uint(u_3_21), int(16u), int(16u))) * u_37_3)) << 16u) + ((u_34_5 << 16u) + uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_30_2), int(0u), int(16u)))))));
+	// 1063905846  <=>  {ftou(in_attr1.y) : 1063905846}
+	u_10_22 = ftou(in_attr1.y);
+	u_10_phi_82 = u_10_22;
+	// False  <=>  if(((! (({u_22_30 : 4294967295} | {u_10_9 : 0}) != 0u)) ? true : false))
+	if(((! ((u_22_30 | u_10_9) != 0u)) ? true : false))
+	{
+		// 1034989136  <=>  {ftou(((0.f - {in_attr1.y : 0.91373}) + 1.f)) : 1034989136}
+		u_10_23 = ftou(((0.f - in_attr1.y) + 1.f));
+		u_10_phi_82 = u_10_23;
+	}
+	// 0.00  <=>  (float(0u) * {utof(({ftou((1.0f / {f_11_7 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999})
+	pf_26_3 = (float(0u) * utof((ftou((1.0f / f_11_7)) + 4294967294u)));
+	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_35_2 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_35_2 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_37_7 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_35_2), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_35_2), int(0u), int(16u))), int(16u), int(16u));
+	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_39_0 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_39_0 : 1}))
+	u_38_3 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_39_0));
+	// 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)))
+	u_40_0 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_40_0 : 0}))
+	u_39_2 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_40_0));
+	// 65536  <=>  bitfieldInsert({u_39_2 : 0}, {u_39_0 : 1}, int(16u), int(16u))
+	u_39_3 = bitfieldInsert(u_39_2, u_39_0, int(16u), int(16u));
+	// 0  <=>  uint(bitfieldExtract(uint({u_37_7 : 0}), int(16u), int(16u)))
+	u_40_2 = uint(bitfieldExtract(uint(u_37_7), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(16u), int(16u))) * {u_40_2 : 0})) << 16u) + (({u_37_7 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_35_2 : 0}), int(0u), int(16u)))))))
+	u_31_10 = ((uint((uint(bitfieldExtract(uint(u_26_6), int(16u), int(16u))) * u_40_2)) << 16u) + ((u_37_7 << 16u) + uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_35_2), int(0u), int(16u)))))));
+	// 0  <=>  (int(({b_2_36 : True} ? (({u_3_14 : 3} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u)) >> 31u)
+	u_34_11 = (int((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u)) >> 31u);
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_39_3 : 65536}), int(16u), int(16u)))))
+	u_37_10 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_39_3), int(16u), int(16u)))));
+	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)))
+	u_33_7 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(0u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_33_7 : 1}))
+	u_31_13 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_33_7));
+	// 0  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)))
+	u_34_12 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * {u_34_12 : 0}))
+	u_33_9 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f)))), int(0u), int(16u))) * u_34_12));
+	// 65536  <=>  bitfieldInsert({u_33_9 : 0}, {u_33_7 : 1}, int(16u), int(16u))
+	u_33_10 = bitfieldInsert(u_33_9, u_33_7, int(16u), int(16u));
+	// 0.00  <=>  float(uint((int(0) - int((({u_37_10 : 0} << 16u) + (({u_39_3 : 65536} << 16u) + {u_38_3 : 0}))))))
+	f_8_30 = float(uint((int(0) - int(((u_37_10 << 16u) + ((u_39_3 << 16u) + u_38_3))))));
+	// 3  <=>  (({b_2_36 : True} ? (({u_3_14 : 3} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) + ({u_34_11 : 0} & 3u))
+	u_1_48 = ((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u) + (u_34_11 & 3u));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_33_10 : 65536}), int(16u), int(16u)))))
+	u_34_16 = uint((uint(bitfieldExtract(uint(uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f)))), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_33_10), int(16u), int(16u)))));
+	// 0.00  <=>  clamp(trunc(({utof(u_20_35) : 0.9999999} * float(uint((int(0) - int({u_1_45 : 0})))))), float(0.f), float(4294967300.f))
+	f_6_14 = clamp(trunc((utof(u_20_35) * float(uint((int(0) - int(u_1_45)))))), float(0.f), float(4294967300.f));
+	// 0  <=>  (int({u_1_48 : 3}) >> 2u)
+	u_1_49 = (int(u_1_48) >> 2u);
+	// 3  <=>  (({b_2_36 : True} ? (({u_3_14 : 3} + {u_2_12 : 0}) + (({u_36_1 : 0} << 16u) + ({u_10_16 : 0} + {u_24_14 : 0}))) : 4294967295u) & 3u)
+	u_2_16 = ((b_2_36 ? ((u_3_14 + u_2_12) + ((u_36_1 << 16u) + (u_10_16 + u_24_14))) : 4294967295u) & 3u);
+	// 0.00  <=>  float(uint((int(0) - int((({u_34_16 : 0} << 16u) + (({u_33_10 : 65536} << 16u) + {u_31_13 : 0}))))))
+	f_6_16 = float(uint((int(0) - int(((u_34_16 << 16u) + ((u_33_10 << 16u) + u_31_13))))));
+	// 0.00  <=>  ({utof(({ftou((1.0f / {f_10_9 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * {f_8_30 : 0.00})
+	pf_29_0 = (utof((ftou((1.0f / f_10_9)) + 4294967294u)) * f_8_30);
+	// 0.25  <=>  {utof(u_15_6) : 0.25}
+	f_7_26 = utof(u_15_6);
+	// 336  <=>  (({u_1_49 : 0} << 4u) + 336u)
+	u_27_9 = ((u_1_49 << 4u) + 336u);
+	// 0  <=>  {uvec2({vs_cbuf9[({u_27_9 : 336} >> 4)][(({u_27_9 : 336} >> 2) % 4)] : 0}, {vs_cbuf9[({u_27_9 : 336} >> 4)][((({u_27_9 : 336} + 4) >> 2) % 4)] : 1}).x : 0}
+	u_27_10 = uvec2(vs_cbuf9[(u_27_9 >> 4)][((u_27_9 >> 2) % 4)], vs_cbuf9[(u_27_9 >> 4)][(((u_27_9 + 4) >> 2) % 4)]).x;
+	// 5  <=>  uint(clamp(trunc(({f_7_26 : 0.25} * float({u_16_6 : 22}))), float(0.f), float(4294967300.f)))
+	u_33_12 = uint(clamp(trunc((f_7_26 * float(u_16_6))), float(0.f), float(4294967300.f)));
+	// 0.00  <=>  ({utof(({ftou((1.0f / {f_11_7 : 1.00})) : 1065353216} + 4294967294u)) : 0.9999999} * {f_6_16 : 0.00})
+	pf_31_0 = (utof((ftou((1.0f / f_11_7)) + 4294967294u)) * f_6_16);
+	// 0.00  <=>  clamp(trunc(({utof(u_17_36) : 0.9999999} * float(uint((int(0) - int({u_31_10 : 0})))))), float(0.f), float(4294967300.f))
+	f_6_21 = clamp(trunc((utof(u_17_36) * float(uint((int(0) - int(u_31_10)))))), float(0.f), float(4294967300.f));
+	// 344  <=>  (({u_1_49 : 0} << 4u) + 344u)
+	u_1_51 = ((u_1_49 << 4u) + 344u);
+	// 3  <=>  {uvec2({vs_cbuf9[({u_1_51 : 344} >> 4)][(({u_1_51 : 344} >> 2) % 4)] : 2}, {vs_cbuf9[({u_1_51 : 344} >> 4)][((({u_1_51 : 344} + 4) >> 2) % 4)] : 3}).y : 3}
+	u_34_20 = uvec2(vs_cbuf9[(u_1_51 >> 4)][((u_1_51 >> 2) % 4)], vs_cbuf9[(u_1_51 >> 4)][(((u_1_51 + 4) >> 2) % 4)]).y;
+	// 327680  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_33_12 : 5}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_33_12 : 5}), int(0u), int(16u))), int(16u), int(16u))
+	u_36_8 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_33_12), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_33_12), int(0u), int(16u))), int(16u), int(16u));
+	// 1  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967295u)) > int(0u)) ? 4294967295u : 0u))))
+	u_22_36 = uint((int(0) - int(((int((u_2_16 + 4294967295u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967295u)) >= int(0u)) ? 0u : 1u))))
+	u_17_40 = uint((int(0) - int(((int((u_2_16 + 4294967295u)) >= int(0u)) ? 0u : 1u))));
+	// 1  <=>  ({u_22_36 : 1} + {u_17_40 : 0})
+	u_17_41 = (u_22_36 + u_17_40);
+	// 5  <=>  uint(bitfieldExtract(uint({u_36_8 : 327680}), int(16u), int(16u)))
+	u_37_15 = uint(bitfieldExtract(uint(u_36_8), int(16u), int(16u)));
+	// 20  <=>  ((uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_37_15 : 5})) << 16u) + (({u_36_8 : 327680} << 16u) + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_33_12 : 5}), int(0u), int(16u)))))))
+	u_30_6 = ((uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_37_15)) << 16u) + ((u_36_8 << 16u) + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_33_12), int(0u), int(16u)))))));
+	// 9.591405  <=>  ({pf_1_7 : 6.8891} * ({pf_3_7 : 0.9281721} * {utof(vs_cbuf10[3].y) : 1.50}))
+	out_attr8.x = (pf_1_7 * (pf_3_7 * utof(vs_cbuf10[3].y)));
+	// 4294967295  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_17_41 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_17_45 = uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_17_41), int(0u), int(32u)))))), int(0u), int(32u))))));
+	// 0  <=>  ({u_17_45 : 4294967295} + 1u)
+	u_17_46 = (u_17_45 + 1u);
+	// 1  <=>  uint((int(0) - int(((int({u_2_16 : 3}) > int(0u)) ? 4294967295u : 0u))))
+	u_22_38 = uint((int(0) - int(((int(u_2_16) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int({u_2_16 : 3}) >= int(0u)) ? 0u : 1u))))
+	u_30_9 = uint((int(0) - int(((int(u_2_16) >= int(0u)) ? 0u : 1u))));
+	// 1  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(({u_22_38 : 1} + {u_30_9 : 0})), int(0u), int(32u)))))), int(0u), int(32u)))
+	u_22_42 = uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int((u_22_38 + u_30_9)), int(0u), int(32u)))))), int(0u), int(32u)));
+	// 1  <=>  uint(bitfieldExtract(uint({uvec2({vs_cbuf9[({u_27_9 : 336} >> 4)][(({u_27_9 : 336} >> 2) % 4)] : 0}, {vs_cbuf9[({u_27_9 : 336} >> 4)][((({u_27_9 : 336} + 4) >> 2) % 4)] : 1}).y : 1}), int(0u), int(16u)))
+	u_36_11 = uint(bitfieldExtract(uint(uvec2(vs_cbuf9[(u_27_9 >> 4)][((u_27_9 >> 2) % 4)], vs_cbuf9[(u_27_9 >> 4)][(((u_27_9 + 4) >> 2) % 4)]).y), int(0u), int(16u)));
+	// 0  <=>  bitfieldInsert(uint(({u_36_11 : 1} * uint(bitfieldExtract(uint({u_17_46 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_46 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_17_48 = bitfieldInsert(uint((u_36_11 * uint(bitfieldExtract(uint(u_17_46), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_46), int(0u), int(16u))), int(16u), int(16u));
+	// 1  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967294u)) > int(0u)) ? 4294967295u : 0u))))
+	u_15_7 = uint((int(0) - int(((int((u_2_16 + 4294967294u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967294u)) >= int(0u)) ? 0u : 1u))))
+	u_18_12 = uint((int(0) - int(((int((u_2_16 + 4294967294u)) >= int(0u)) ? 0u : 1u))));
+	// 1  <=>  ({u_15_7 : 1} + {u_18_12 : 0})
+	u_15_8 = (u_15_7 + u_18_12);
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_30_2 : 0} + uint({f_6_14 : 0.00}))), int(0u), int(16u)))))
+	u_18_14 = uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_30_2 + uint(f_6_14))), int(0u), int(16u)))));
+	// 0  <=>  uint(bitfieldExtract(uint({uvec2({vs_cbuf9[({u_27_9 : 336} >> 4)][(({u_27_9 : 336} >> 2) % 4)] : 0}, {vs_cbuf9[({u_27_9 : 336} >> 4)][((({u_27_9 : 336} + 4) >> 2) % 4)] : 1}).y : 1}), int(16u), int(16u)))
+	u_30_12 = uint(bitfieldExtract(uint(uvec2(vs_cbuf9[(u_27_9 >> 4)][((u_27_9 >> 2) % 4)], vs_cbuf9[(u_27_9 >> 4)][(((u_27_9 + 4) >> 2) % 4)]).y), int(16u), int(16u)));
+	// 0  <=>  ((uint(({u_30_12 : 0} * uint(bitfieldExtract(uint({u_17_48 : 0}), int(16u), int(16u))))) << 16u) + (({u_17_48 : 0} << 16u) + uint(({u_36_11 : 1} * uint(bitfieldExtract(uint({u_17_46 : 0}), int(0u), int(16u)))))))
+	u_17_51 = ((uint((u_30_12 * uint(bitfieldExtract(uint(u_17_48), int(16u), int(16u))))) << 16u) + ((u_17_48 << 16u) + uint((u_36_11 * uint(bitfieldExtract(uint(u_17_46), int(0u), int(16u)))))));
+	// 0.00  <=>  trunc(({utof(u_15_6) : 0.25} * float(({u_16_6 : 22} + uint((int(0) - int({u_30_6 : 20})))))))
+	f_6_28 = trunc((utof(u_15_6) * float((u_16_6 + uint((int(0) - int(u_30_6)))))));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_30_2 : 0} + uint({f_6_14 : 0.00}))), int(16u), int(16u)))))
+	u_35_9 = uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_30_2 + uint(f_6_14))), int(16u), int(16u)))));
+	// 0  <=>  bitfieldInsert({u_35_9 : 0}, uint(bitfieldExtract(uint(({u_30_2 : 0} + uint({f_6_14 : 0.00}))), int(0u), int(16u))), int(16u), int(16u))
+	u_35_10 = bitfieldInsert(u_35_9, uint(bitfieldExtract(uint((u_30_2 + uint(f_6_14))), int(0u), int(16u))), int(16u), int(16u));
+	// 0  <=>  uint(bitfieldExtract(uint((uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_29_0 : 0.00}), float(0.f), float(4294967300.f))))), int(0u), int(16u)))
+	u_19_5 = uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_29_0), float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	// 65536  <=>  bitfieldInsert(uint(({u_19_5 : 0} * {u_40_0 : 0})), {u_39_0 : 1}, int(16u), int(16u))
+	u_19_7 = bitfieldInsert(uint((u_19_5 * u_40_0)), u_39_0, int(16u), int(16u));
+	// 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967293u)) > int(0u)) ? 4294967295u : 0u))))
+	u_31_19 = uint((int(0) - int(((int((u_2_16 + 4294967293u)) > int(0u)) ? 4294967295u : 0u))));
+	// 0  <=>  uint((int(0) - int(((int(({u_2_16 : 3} + 4294967293u)) >= int(0u)) ? 0u : 1u))))
+	u_2_19 = uint((int(0) - int(((int((u_2_16 + 4294967293u)) >= int(0u)) ? 0u : 1u))));
+	// 0  <=>  ({u_31_19 : 0} + {u_2_19 : 0})
+	u_2_20 = (u_31_19 + u_2_19);
+	// 4294967295  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_15_8 : 1}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_15_12 = uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_15_8), int(0u), int(32u)))))), int(0u), int(32u))))));
+	// 0  <=>  (uint(((uint((int(0) - int({u_22_42 : 1}))) + 1u) * {u_27_10 : 0})) + {u_17_51 : 0})
+	u_17_52 = (uint(((uint((int(0) - int(u_22_42))) + 1u) * u_27_10)) + u_17_51);
+	// 0  <=>  uint(bitfieldExtract(uint({u_35_10 : 0}), int(16u), int(16u)))
+	u_27_11 = uint(bitfieldExtract(uint(u_35_10), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(16u), int(16u))) * {u_27_11 : 0})) << 16u) + (({u_35_10 : 0} << 16u) + {u_18_14 : 0}))
+	u_18_16 = ((uint((uint(bitfieldExtract(uint(u_3_21), int(16u), int(16u))) * u_27_11)) << 16u) + ((u_35_10 << 16u) + u_18_14));
+	// 5  <=>  uint(bitfieldExtract(uint(({u_33_12 : 5} + uint(clamp({f_6_28 : 0.00}, float(0.f), float(4294967300.f))))), int(0u), int(16u)))
+	u_31_20 = uint(bitfieldExtract(uint((u_33_12 + uint(clamp(f_6_28, float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	// 0  <=>  uint(bitfieldExtract(uint(({u_33_12 : 5} + uint(clamp({f_6_28 : 0.00}, float(0.f), float(4294967300.f))))), int(16u), int(16u)))
+	u_33_13 = uint(bitfieldExtract(uint((u_33_12 + uint(clamp(f_6_28, float(0.f), float(4294967300.f))))), int(16u), int(16u)));
+	// 327680  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_33_13 : 0})), {u_31_20 : 5}, int(16u), int(16u))
+	u_31_23 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_33_13)), u_31_20, int(16u), int(16u));
+	// 0  <=>  uint(bitfieldExtract(uint((uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_31_0 : 0.00}), float(0.f), float(4294967300.f))))), int(0u), int(16u)))
+	u_33_15 = uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_31_0), float(0.f), float(4294967300.f))))), int(0u), int(16u)));
+	// True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_0_20 = (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))), int(0u), int(32u))) == 0));
+	// True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_20 : True})
+	b_0_21 = ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_0_20);
+	// 1  <=>  uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(32u)))
+	u_35_12 = uint(bitfieldExtract(uint(u_3_21), int(0u), int(32u)));
+	// False  <=>  (int(uint(bitfieldExtract(uint({u_35_12 : 1}), int(0u), int(32u)))) < 0)
+	b_5_22 = (int(uint(bitfieldExtract(uint(u_35_12), int(0u), int(32u)))) < 0);
+	// 5  <=>  uint(bitfieldExtract(uint({u_31_23 : 327680}), int(16u), int(16u)))
+	u_37_20 = uint(bitfieldExtract(uint(u_31_23), int(16u), int(16u)));
+	// 20  <=>  ((uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * {u_37_20 : 5})) << 16u) + (({u_31_23 : 327680} << 16u) + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * {u_31_20 : 5}))))
+	u_27_17 = ((uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * u_37_20)) << 16u) + ((u_31_23 << 16u) + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * u_31_20))));
+	// 0  <=>  uint(bitfieldExtract(uint((uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_29_0 : 0.00}), float(0.f), float(4294967300.f))))), int(16u), int(16u)))
+	u_31_25 = uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_29_0), float(0.f), float(4294967300.f))))), int(16u), int(16u)));
+	// 0  <=>  ((uint(({u_31_25 : 0} * uint(bitfieldExtract(uint({u_19_7 : 65536}), int(16u), int(16u))))) << 16u) + (({u_19_7 : 65536} << 16u) + uint(({u_19_5 : 0} * {u_39_0 : 1}))))
+	u_19_10 = ((uint((u_31_25 * uint(bitfieldExtract(uint(u_19_7), int(16u), int(16u))))) << 16u) + ((u_19_7 << 16u) + uint((u_19_5 * u_39_0))));
+	// 0  <=>  (uint((({u_15_12 : 4294967295} + 1u) * {uvec2({vs_cbuf9[({u_1_51 : 344} >> 4)][(({u_1_51 : 344} >> 2) % 4)] : 2}, {vs_cbuf9[({u_1_51 : 344} >> 4)][((({u_1_51 : 344} + 4) >> 2) % 4)] : 3}).x : 2})) + {u_17_52 : 0})
+	u_1_54 = (uint(((u_15_12 + 1u) * uvec2(vs_cbuf9[(u_1_51 >> 4)][((u_1_51 >> 2) % 4)], vs_cbuf9[(u_1_51 >> 4)][(((u_1_51 + 4) >> 2) % 4)]).x)) + u_17_52);
+	// 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_2_20 : 0}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_2_24 = uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_2_20), int(0u), int(32u)))))), int(0u), int(32u))))));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_35_2 : 0} + uint({f_6_21 : 0.00}))), int(0u), int(16u)))))
+	u_15_15 = uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_35_2 + uint(f_6_21))), int(0u), int(16u)))));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_35_2 : 0} + uint({f_6_21 : 0.00}))), int(16u), int(16u)))))
+	u_22_52 = uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint((u_35_2 + uint(f_6_21))), int(16u), int(16u)))));
+	// 0  <=>  bitfieldInsert({u_22_52 : 0}, uint(bitfieldExtract(uint(({u_35_2 : 0} + uint({f_6_21 : 0.00}))), int(0u), int(16u))), int(16u), int(16u))
+	u_22_53 = bitfieldInsert(u_22_52, uint(bitfieldExtract(uint((u_35_2 + uint(f_6_21))), int(0u), int(16u))), int(16u), int(16u));
+	// 65536  <=>  bitfieldInsert(uint(({u_33_15 : 0} * {u_34_12 : 0})), {u_33_7 : 1}, int(16u), int(16u))
+	u_27_22 = bitfieldInsert(uint((u_33_15 * u_34_12)), u_33_7, int(16u), int(16u));
+	// 0  <=>  ((uint(({u_16_6 : 22} + uint((int(0) - int({u_27_17 : 20}))))) >= uint({u_11_13 : 4})) ? 4294967295u : 0u)
+	u_17_56 = ((uint((u_16_6 + uint((int(0) - int(u_27_17))))) >= uint(u_11_13)) ? 4294967295u : 0u);
+	// 0  <=>  uint(bitfieldExtract(uint({u_22_53 : 0}), int(16u), int(16u)))
+	u_36_21 = uint(bitfieldExtract(uint(u_22_53), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(16u), int(16u))) * {u_36_21 : 0})) << 16u) + (({u_22_53 : 0} << 16u) + {u_15_15 : 0}))
+	u_15_17 = ((uint((uint(bitfieldExtract(uint(u_26_6), int(16u), int(16u))) * u_36_21)) << 16u) + ((u_22_53 << 16u) + u_15_15));
+	// 0  <=>  uint(bitfieldExtract(uint((uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_31_0 : 0.00}), float(0.f), float(4294967300.f))))), int(16u), int(16u)))
+	u_22_55 = uint(bitfieldExtract(uint((uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_31_0), float(0.f), float(4294967300.f))))), int(16u), int(16u)));
+	// 0  <=>  ((uint(({u_22_55 : 0} * uint(bitfieldExtract(uint({u_27_22 : 65536}), int(16u), int(16u))))) << 16u) + (({u_27_22 : 65536} << 16u) + uint(({u_33_15 : 0} * {u_33_7 : 1}))))
+	u_22_58 = ((uint((u_22_55 * uint(bitfieldExtract(uint(u_27_22), int(16u), int(16u))))) << 16u) + ((u_27_22 << 16u) + uint((u_33_15 * u_33_7))));
+	// 0  <=>  uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_12_11 : 0}), int(0u), int(32u)))))), int(0u), int(32u))))))
+	u_27_25 = uint((int(0) - int(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_12_11), int(0u), int(32u)))))), int(0u), int(32u))))));
+	// 0.00  <=>  (({pf_0_1 : 224.00} * (0.f - {utof(vs_cbuf9[84].x) : 0.00})) + (0.f - ((({utof(u_21_phi_60) : 0.91079} * {utof(vs_cbuf9[85].x) : 0.00}) * -2.f) + ({utof(vs_cbuf9[85].x) : 0.00} + {utof(vs_cbuf9[84].z) : 0.00}))))
+	pf_17_9 = ((pf_0_1 * (0.f - utof(vs_cbuf9[84].x))) + (0.f - (((utof(u_21_phi_60) * utof(vs_cbuf9[85].x)) * -2.f) + (utof(vs_cbuf9[85].x) + utof(vs_cbuf9[84].z)))));
+	// 4294967291  <=>  uint((int(0) - int(({u_33_12 : 5} + uint(clamp({f_6_28 : 0.00}, float(0.f), float(4294967300.f)))))))
+	u_30_17 = uint((int(0) - int((u_33_12 + uint(clamp(f_6_28, float(0.f), float(4294967300.f)))))));
+	// 4294967291  <=>  ({u_30_17 : 4294967291} + {u_17_56 : 0})
+	u_17_57 = (u_30_17 + u_17_56);
+	// 0  <=>  uint((int(0) - int({u_22_58 : 0})))
+	u_2_27 = uint((int(0) - int(u_22_58)));
+	// 1  <=>  uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(32u)))
+	u_22_59 = uint(bitfieldExtract(uint(u_26_6), int(0u), int(32u)));
+	// False  <=>  (int(uint(bitfieldExtract(uint({u_22_59 : 1}), int(0u), int(32u)))) < 0)
+	b_6_18 = (int(uint(bitfieldExtract(uint(u_22_59), int(0u), int(32u)))) < 0);
+	// 2  <=>  (isnan({utof(vs_cbuf9[78].z) : 2.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[78].z) : 2.00}), float(-2147483600.f), float(2147483600.f))))
+	u_31_36 = (isnan(utof(vs_cbuf9[78].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[78].z)), float(-2147483600.f), float(2147483600.f))));
+	// 1  <=>  uint(bitfieldExtract(uint(({u_27_25 : 0} + 1u)), int(0u), int(16u)))
+	u_33_17 = uint(bitfieldExtract(uint((u_27_25 + 1u)), int(0u), int(16u)));
+	// 3  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 0} + 1u))) + {u_1_54 : 0})), int(0u), int(16u)))
+	u_34_21 = uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(0u), int(16u)));
+	// 0  <=>  uint(bitfieldExtract(uint((uint(({u_34_20 : 3} * ({u_2_24 : 0} + 1u))) + {u_1_54 : 0})), int(16u), int(16u)))
+	u_36_22 = uint(bitfieldExtract(uint((uint((u_34_20 * (u_2_24 + 1u))) + u_1_54)), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(({u_27_25 : 0} + 1u)), int(0u), int(16u))) * {u_36_22 : 0}))
+	u_34_23 = uint((uint(bitfieldExtract(uint((u_27_25 + 1u)), int(0u), int(16u))) * u_36_22));
+	// 4294705148  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_57 : 4294967291}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_57 : 4294967291}), int(0u), int(16u))), int(16u), int(16u))
+	u_17_59 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_57), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_57), int(0u), int(16u))), int(16u), int(16u));
+	// 0  <=>  (uint((int(0) - int(({u_35_2 : 0} + uint({f_6_21 : 0.00}))))) + ((uint(uint((int(0) - int({u_15_17 : 0})))) >= uint({u_26_6 : 1})) ? 4294967295u : 0u))
+	u_15_20 = (uint((int(0) - int((u_35_2 + uint(f_6_21))))) + ((uint(uint((int(0) - int(u_15_17)))) >= uint(u_26_6)) ? 4294967295u : 0u));
+	// 2  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))))), int(0u), int(32u)))
+	u_24_21 = uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))))), int(0u), int(32u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint(({u_27_25 : 0} + 1u)), int(16u), int(16u))) * uint(bitfieldExtract(uint(bitfieldInsert({u_34_23 : 0}, {u_34_21 : 3}, int(16u), int(16u))), int(16u), int(16u)))))
+	u_27_28 = uint((uint(bitfieldExtract(uint((u_27_25 + 1u)), int(16u), int(16u))) * uint(bitfieldExtract(uint(bitfieldInsert(u_34_23, u_34_21, int(16u), int(16u))), int(16u), int(16u)))));
+	// 4294967276  <=>  ((uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_17_59 : 4294705148}), int(16u), int(16u))))) << 16u) + (({u_17_59 : 4294705148} << 16u) + uint((uint(bitfieldExtract(uint({u_11_13 : 4}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_57 : 4294967291}), int(0u), int(16u)))))))
+	u_11_17 = ((uint((uint(bitfieldExtract(uint(u_11_13), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_17_59), int(16u), int(16u))))) << 16u) + ((u_17_59 << 16u) + uint((uint(bitfieldExtract(uint(u_11_13), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_57), int(0u), int(16u)))))));
+	// 0  <=>  (uint((int(0) - int(({u_30_2 : 0} + uint({f_6_14 : 0.00}))))) + ((uint(uint((int(0) - int({u_18_16 : 0})))) >= uint({u_3_21 : 1})) ? 4294967295u : 0u))
+	u_17_63 = (uint((int(0) - int((u_30_2 + uint(f_6_14))))) + ((uint(uint((int(0) - int(u_18_16)))) >= uint(u_3_21)) ? 4294967295u : 0u));
+	// 0.4855801  <=>  (({pf_0_1 : 224.00} * (0.f - {utof(vs_cbuf9[79].x) : 0.0015})) + (0.f - ((({utof(u_16_phi_50) : 0.91079} * {utof(vs_cbuf9[80].x) : 1.00}) * -2.f) + ({utof(vs_cbuf9[80].x) : 1.00} + {utof(vs_cbuf9[79].z) : 0.00}))))
+	pf_16_6 = ((pf_0_1 * (0.f - utof(vs_cbuf9[79].x))) + (0.f - (((utof(u_16_phi_50) * utof(vs_cbuf9[80].x)) * -2.f) + (utof(vs_cbuf9[80].x) + utof(vs_cbuf9[79].z)))));
+	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_63 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_17_63 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_17_65 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_63), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_17_63), int(0u), int(16u))), int(16u), int(16u));
+	// False  <=>  (uint({u_2_27 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	b_7_6 = (uint(u_2_27) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))))), int(0u), int(32u)))));
+	// 0  <=>  uint((int(0) - int({u_19_10 : 0})))
+	u_19_11 = uint((int(0) - int(u_19_10)));
+	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_15_20 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_15_20 : 0}), int(0u), int(16u))), int(16u), int(16u))
+	u_15_22 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_15_20), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_15_20), int(0u), int(16u))), int(16u), int(16u));
+	// 5.996582  <=>  (((({pf_13_2 : 0.00} + {utof(vs_cbuf10[6].w) : -122.3048}) * {utof(vs_cbuf8[11].z) : -0.2974617}) + (({pf_11_3 : 127.0516} * {utof(vs_cbuf8[11].y) : -0.3272613}) + ({pf_4_10 : -268.5887} * {utof(vs_cbuf8[11].x) : 0.8968928}))) + {utof(vs_cbuf8[11].w) : 252.0899})
+	pf_11_5 = ((((pf_13_2 + utof(vs_cbuf10[6].w)) * utof(vs_cbuf8[11].z)) + ((pf_11_3 * utof(vs_cbuf8[11].y)) + (pf_4_10 * utof(vs_cbuf8[11].x)))) + utof(vs_cbuf8[11].w));
+	// 0  <=>  ((uint(clamp(trunc({pf_26_3 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_31_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_6 : False} ? 4294967295u : 0u)))))
+	u_2_30 = ((uint(clamp(trunc(pf_26_3), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_31_0), float(0.f), float(4294967300.f)))) + uint((int(0) - int((b_7_6 ? 4294967295u : 0u)))));
+	// 0  <=>  uint(bitfieldExtract(uint({u_17_65 : 0}), int(16u), int(16u)))
+	u_27_32 = uint(bitfieldExtract(uint(u_17_65), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(16u), int(16u))) * {u_27_32 : 0})) << 16u) + (({u_17_65 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_3_21 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_17_63 : 0}), int(0u), int(16u)))))))
+	u_9_21 = ((uint((uint(bitfieldExtract(uint(u_3_21), int(16u), int(16u))) * u_27_32)) << 16u) + ((u_17_65 << 16u) + uint((uint(bitfieldExtract(uint(u_3_21), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_17_63), int(0u), int(16u)))))));
+	// 3.996979  <=>  (((({pf_13_2 : 0.00} + {utof(vs_cbuf10[6].w) : -122.3048}) * {utof(vs_cbuf8[10].z) : -0.2974855}) + (({pf_11_3 : 127.0516} * {utof(vs_cbuf8[10].y) : -0.3272875}) + ({pf_4_10 : -268.5887} * {utof(vs_cbuf8[10].x) : 0.8969646}))) + {utof(vs_cbuf8[10].w) : 250.11})
+	pf_4_14 = ((((pf_13_2 + utof(vs_cbuf10[6].w)) * utof(vs_cbuf8[10].z)) + ((pf_11_3 * utof(vs_cbuf8[10].y)) + (pf_4_10 * utof(vs_cbuf8[10].x)))) + utof(vs_cbuf8[10].w));
+	// False  <=>  (uint({u_19_11 : 0}) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_3_21 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	b_7_7 = (uint(u_19_11) >= uint(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_3_21), int(0u), int(32u)))))), int(0u), int(32u)))));
+	// 0  <=>  uint(bitfieldExtract(uint({u_15_22 : 0}), int(16u), int(16u)))
+	u_26_7 = uint(bitfieldExtract(uint(u_15_22), int(16u), int(16u)));
+	// 0  <=>  ((uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(16u), int(16u))) * {u_26_7 : 0})) << 16u) + (({u_15_22 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_26_6 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_15_20 : 0}), int(0u), int(16u)))))))
+	u_15_25 = ((uint((uint(bitfieldExtract(uint(u_26_6), int(16u), int(16u))) * u_26_7)) << 16u) + ((u_15_22 << 16u) + uint((uint(bitfieldExtract(uint(u_26_6), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_15_20), int(0u), int(16u)))))));
+	// 0  <=>  uint((({b_2_36 : True} ? ({u_16_6 : 22} + {u_11_17 : 4294967276}) : 4294967295u) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_12_11 : 0}), int(0u), int(32u)))))), int(0u), int(32u)))))
+	u_11_20 = uint(((b_2_36 ? (u_16_6 + u_11_17) : 4294967295u) * uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_12_11), int(0u), int(32u)))))), int(0u), int(32u)))));
+	// 3  <=>  ({u_11_20 : 0} + (({u_27_28 : 0} << 16u) + ((bitfieldInsert({u_34_23 : 0}, {u_34_21 : 3}, int(16u), int(16u)) << 16u) + uint(({u_33_17 : 1} * {u_34_21 : 3})))))
+	u_1_61 = (u_11_20 + ((u_27_28 << 16u) + ((bitfieldInsert(u_34_23, u_34_21, int(16u), int(16u)) << 16u) + uint((u_33_17 * u_34_21)))));
+	// 0  <=>  ((uint(clamp(trunc({pf_26_0 : 0.00}), float(0.f), float(4294967300.f))) + uint(clamp(trunc({pf_29_0 : 0.00}), float(0.f), float(4294967300.f)))) + uint((int(0) - int(({b_7_7 : False} ? 4294967295u : 0u)))))
+	u_8_38 = ((uint(clamp(trunc(pf_26_0), float(0.f), float(4294967300.f))) + uint(clamp(trunc(pf_29_0), float(0.f), float(4294967300.f)))) + uint((int(0) - int((b_7_7 ? 4294967295u : 0u)))));
+	// 3.00  <=>  float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 3}), int(0u), int(32u)))))), int(0u), int(32u))))
+	f_7_48 = float(uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))));
+	// 0  <=>  (({b_5_22 : False} || (! (uint(bitfieldExtract(uint({u_35_12 : 1}), int(0u), int(32u))) == 0))) ? {u_9_21 : 0} : 4294967295u)
+	u_9_22 = ((b_5_22 || (! (uint(bitfieldExtract(uint(u_35_12), int(0u), int(32u))) == 0))) ? u_9_21 : 4294967295u);
+	// 0  <=>  (({b_6_18 : False} || (! (uint(bitfieldExtract(uint({u_22_59 : 1}), int(0u), int(32u))) == 0))) ? {u_15_25 : 0} : 4294967295u)
+	u_9_23 = ((b_6_18 || (! (uint(bitfieldExtract(uint(u_22_59), int(0u), int(32u))) == 0))) ? u_15_25 : 4294967295u);
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[83].z) : 1.00}) * {utof(vs_cbuf9[83].x) : 1.00})
+	pf_11_7 = ((1.0f / utof(vs_cbuf9[83].z)) * utof(vs_cbuf9[83].x));
+	// 0  <=>  ({u_8_38 : 0} ^ uint((int(0) - int(({u_3_21 : 1} >> 31u)))))
+	u_8_39 = (u_8_38 ^ uint((int(0) - int((u_3_21 >> 31u)))));
+	// 1051240557  <=>  {ftou(in_attr1.x) : 1051240557}
+	u_9_24 = ftou(in_attr1.x);
+	u_9_phi_83 = u_9_24;
+	// False  <=>  if(((! (({u_1_39 : 4294967295} | {u_8_31 : 0}) != 0u)) ? true : false))
+	if(((! ((u_1_39 | u_8_31) != 0u)) ? true : false))
+	{
+		// 1059826634  <=>  {ftou(((0.f - {in_attr1.x : 0.32941}) + 1.f)) : 1059826634}
+		u_9_25 = ftou(((0.f - in_attr1.x) + 1.f));
+		u_9_phi_83 = u_9_25;
+	}
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[88].z) : 1.00}) * {utof(vs_cbuf9[88].x) : 1.00})
+	pf_13_6 = ((1.0f / utof(vs_cbuf9[88].z)) * utof(vs_cbuf9[88].x));
+	// True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_40 = (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))), int(0u), int(32u))) == 0));
+	// True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_26_6 : 1}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_40 : True})
+	b_2_41 = ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_26_6), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_40);
+	// 0  <=>  ({u_2_30 : 0} ^ uint((int(0) - int(({u_26_6 : 1} >> 31u)))))
+	u_2_31 = (u_2_30 ^ uint((int(0) - int((u_26_6 >> 31u)))));
+	// 0  <=>  (uint((int(0) - int(uint((int(0) - int(({u_3_21 : 1} >> 31u))))))) + {u_8_39 : 0})
+	u_3_25 = (uint((int(0) - int(uint((int(0) - int((u_3_21 >> 31u))))))) + u_8_39);
+	// -1.385471  <=>  (({utof(u_36_phi_79) : 0.62622} * {utof(vs_cbuf8[24].z) : -0.8968928}) + (({utof(u_33_phi_78) : -0.77317} * {utof(vs_cbuf8[24].x) : 0.3147963}) + ({utof(u_31_phi_77) : -1.86859} * {utof(vs_cbuf8[24].y) : 0.3106231})))
+	out_attr7.x = ((utof(u_36_phi_79) * utof(vs_cbuf8[24].z)) + ((utof(u_33_phi_78) * utof(vs_cbuf8[24].x)) + (utof(u_31_phi_77) * utof(vs_cbuf8[24].y))));
+	// 0.8332714  <=>  ((({pf_4_14 : 3.996979} * 0.5f) + ({pf_11_5 : 5.996582} * 0.5f)) * (1.0f / ((0.f * {pf_4_14 : 3.996979}) + {pf_11_5 : 5.996582})))
+	pf_4_16 = (((pf_4_14 * 0.5f) + (pf_11_5 * 0.5f)) * (1.0f / ((0.f * pf_4_14) + pf_11_5)));
+	// 0  <=>  (uint((int(0) - int(uint((int(0) - int(({u_26_6 : 1} >> 31u))))))) + {u_2_31 : 0})
+	u_2_32 = (uint((int(0) - int(uint((int(0) - int((u_26_6 >> 31u))))))) + u_2_31);
+	// 0.4999999  <=>  {utof(({ftou((1.0f / float({u_24_21 : 2}))) : 1056964608} + 4294967294u)) : 0.4999999}
+	f_8_36 = utof((ftou((1.0f / float(u_24_21))) + 4294967294u));
+	// 0.4999999  <=>  {utof(({ftou((1.0f / float({u_31_36 : 2}))) : 1056964608} + 4294967294u)) : 0.4999999}
+	f_9_37 = utof((ftou((1.0f / float(u_31_36))) + 4294967294u));
+	// 1  <=>  uint(clamp(trunc(({f_9_37 : 0.4999999} * float({u_1_61 : 3}))), float(0.f), float(4294967300.f)))
+	u_3_27 = uint(clamp(trunc((f_9_37 * float(u_1_61))), float(0.f), float(4294967300.f)));
+	// 0.33281  <=>  (((({pf_0_1 : 224.00} * {utof(vs_cbuf9[80].z) : 0.00}) + (({utof(u_13_phi_50) : 0.91079} * {utof(vs_cbuf9[81].z) : 0.05}) + ({utof(vs_cbuf9[81].x) : 0.80} + {utof(vs_cbuf9[81].z) : 0.05}))) * (({pf_11_7 : 1.00} * {utof(u_32_phi_76) : 0.32941}) + -0.5f)) + (({pf_11_7 : 1.00} * float(int({u_9_22 : 0}))) + {pf_16_6 : 0.4855801}))
+	pf_11_9 = ((((pf_0_1 * utof(vs_cbuf9[80].z)) + ((utof(u_13_phi_50) * utof(vs_cbuf9[81].z)) + (utof(vs_cbuf9[81].x) + utof(vs_cbuf9[81].z)))) * ((pf_11_7 * utof(u_32_phi_76)) + -0.5f)) + ((pf_11_7 * float(int(u_9_22))) + pf_16_6));
+	// -1.560757  <=>  (({utof(u_36_phi_79) : 0.62622} * {utof(vs_cbuf8[25].z) : 0.3272613}) + (({utof(u_33_phi_78) : -0.77317} * {utof(vs_cbuf8[25].x) : 0.00}) + ({utof(u_31_phi_77) : -1.86859} * {utof(vs_cbuf8[25].y) : 0.944934})))
+	out_attr7.y = ((utof(u_36_phi_79) * utof(vs_cbuf8[25].z)) + ((utof(u_33_phi_78) * utof(vs_cbuf8[25].x)) + (utof(u_31_phi_77) * utof(vs_cbuf8[25].y))));
+	// 1  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 3.00})), float(0.f), float(4294967300.f)))), int(0u), int(16u)))
+	u_2_34 = uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f)))), int(0u), int(16u)));
+	// 131072  <=>  bitfieldInsert(uint(({u_2_34 : 1} * uint(bitfieldExtract(uint({u_24_21 : 2}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u))), int(16u), int(16u))
+	u_13_13 = bitfieldInsert(uint((u_2_34 * uint(bitfieldExtract(uint(u_24_21), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u))), int(16u), int(16u));
+	// -0.91288  <=>  ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * (0.f - float(int(({b_0_21 : True} ? {u_3_25 : 0} : 4294967295u))))) + (({pf_0_1 : 224.00} * {utof(vs_cbuf9[79].y) : -0.001}) + ((({utof(u_14_phi_50) : 0.84444} * {utof(vs_cbuf9[80].y) : 1.00}) * -2.f) + ({utof(vs_cbuf9[80].y) : 1.00} + {utof(vs_cbuf9[79].w) : 0.00}))))
+	pf_4_19 = ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * (0.f - float(int((b_0_21 ? u_3_25 : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[79].y)) + (((utof(u_14_phi_50) * utof(vs_cbuf9[80].y)) * -2.f) + (utof(vs_cbuf9[80].y) + utof(vs_cbuf9[79].w)))));
+	// 0  <=>  uint(bitfieldExtract(uint(uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 3.00})), float(0.f), float(4294967300.f)))), int(16u), int(16u)))
+	u_17_70 = uint(bitfieldExtract(uint(uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f)))), int(16u), int(16u)));
+	// 0  <=>  uint(({u_17_70 : 0} * uint(bitfieldExtract(uint({u_13_13 : 131072}), int(16u), int(16u)))))
+	u_17_71 = uint((u_17_70 * uint(bitfieldExtract(uint(u_13_13), int(16u), int(16u)))));
+	// 2  <=>  (({u_17_71 : 0} << 16u) + (({u_13_13 : 131072} << 16u) + uint(({u_2_34 : 1} * uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u)))))))
+	u_2_37 = ((u_17_71 << 16u) + ((u_13_13 << 16u) + uint((u_2_34 * uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u)))))));
+	// 4.496573  <=>  (((1.0f / (({pf_4_16 : 0.8332714} * {utof(vs_cbuf8[30].w) : 24999.00}) + (0.f - {utof(vs_cbuf8[30].y) : 25000.00}))) * (0.f - {utof(vs_cbuf8[30].z) : 25000.00})) + (0.f - {utof(vs_cbuf9[138].x) : 1.50}))
+	pf_6_33 = (((1.0f / ((pf_4_16 * utof(vs_cbuf8[30].w)) + (0.f - utof(vs_cbuf8[30].y)))) * (0.f - utof(vs_cbuf8[30].z))) + (0.f - utof(vs_cbuf9[138].x)));
+	// 0.00  <=>  ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * (0.f - float(int(({b_2_41 : True} ? {u_2_32 : 0} : 4294967295u))))) + (({pf_0_1 : 224.00} * {utof(vs_cbuf9[84].y) : 0.00}) + ((({utof(u_20_phi_60) : 0.84444} * {utof(vs_cbuf9[85].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[85].y) : 0.00} + {utof(vs_cbuf9[84].w) : 0.00}))))
+	pf_0_3 = ((((1.0f / utof(vs_cbuf9[88].w)) * utof(vs_cbuf9[88].y)) * (0.f - float(int((b_2_41 ? u_2_32 : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[84].y)) + (((utof(u_20_phi_60) * utof(vs_cbuf9[85].y)) * -2.f) + (utof(vs_cbuf9[85].y) + utof(vs_cbuf9[84].w)))));
+	// -0.102354  <=>  (((({pf_0_1 : 224.00} * {utof(vs_cbuf9[85].z) : 0.00}) + (({utof(u_19_phi_60) : 0.91079} * {utof(vs_cbuf9[86].z) : 0.00}) + ({utof(vs_cbuf9[86].x) : 0.60} + {utof(vs_cbuf9[86].z) : 0.00}))) * (({pf_13_6 : 1.00} * {utof(u_9_phi_83) : 0.32941}) + -0.5f)) + (({pf_13_6 : 1.00} * float(int({u_9_23 : 0}))) + {pf_17_9 : 0.00}))
+	pf_3_12 = ((((pf_0_1 * utof(vs_cbuf9[85].z)) + ((utof(u_19_phi_60) * utof(vs_cbuf9[86].z)) + (utof(vs_cbuf9[86].x) + utof(vs_cbuf9[86].z)))) * ((pf_13_6 * utof(u_9_phi_83)) + -0.5f)) + ((pf_13_6 * float(int(u_9_23))) + pf_17_9));
+	// 0.91288  <=>  (0.f - {pf_4_19 : -0.91288})
+	f_2_63 = (0.f - pf_4_19);
+	// 1.282019  <=>  (((({pf_0_1 : 224.00} * {utof(vs_cbuf9[80].w) : 0.00}) + (({utof(u_15_phi_50) : 0.84444} * {utof(vs_cbuf9[81].w) : 0.05}) + ({utof(vs_cbuf9[81].w) : 0.05} + {utof(vs_cbuf9[81].y) : 0.80}))) * ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * {utof(u_23_phi_81) : 0.91373}) + -0.5f)) + {f_2_63 : 0.91288})
+	pf_4_20 = ((((pf_0_1 * utof(vs_cbuf9[80].w)) + ((utof(u_15_phi_50) * utof(vs_cbuf9[81].w)) + (utof(vs_cbuf9[81].w) + utof(vs_cbuf9[81].y)))) * ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * utof(u_23_phi_81)) + -0.5f)) + f_2_63);
+	// 1  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 1}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_13_15 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_27 : 1}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_13_16 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u))), int(16u), int(16u)) << 16u);
+	// 2  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_13_15 : 1})) << 16u) + ({u_13_16 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_27 : 1}), int(0u), int(16u)))))))
+	u_10_27 = ((uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_13_15)) << 16u) + (u_13_16 + uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_27), int(0u), int(16u)))))));
+	// 1  <=>  (uint((int(0) - int({u_2_37 : 2}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 3}), int(0u), int(32u)))))), int(0u), int(32u))))
+	u_2_39 = (uint((int(0) - int(u_2_37))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))));
+	// 0.00  <=>  (0.f - {pf_0_3 : 0.00})
+	f_2_64 = (0.f - pf_0_3);
+	// 0.248238  <=>  (((({pf_0_1 : 224.00} * {utof(vs_cbuf9[85].w) : 0.00}) + (({utof(u_18_phi_60) : 0.84444} * {utof(vs_cbuf9[86].w) : 0.00}) + ({utof(vs_cbuf9[86].w) : 0.00} + {utof(vs_cbuf9[86].y) : 0.60}))) * ((((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00}) * {utof(u_10_phi_82) : 0.91373}) + -0.5f)) + {f_2_64 : 0.00})
+	pf_0_4 = ((((pf_0_1 * utof(vs_cbuf9[85].w)) + ((utof(u_18_phi_60) * utof(vs_cbuf9[86].w)) + (utof(vs_cbuf9[86].w) + utof(vs_cbuf9[86].y)))) * ((((1.0f / utof(vs_cbuf9[88].w)) * utof(vs_cbuf9[88].y)) * utof(u_10_phi_82)) + -0.5f)) + f_2_64);
+	// 1.00  <=>  float({u_2_39 : 1})
+	f_2_65 = float(u_2_39);
+	// 4294967294  <=>  uint((int(0) - int({u_10_27 : 2})))
+	u_2_40 = uint((int(0) - int(u_10_27)));
+	// 0.75  <=>  ({utof(vs_cbuf9[113].x) : 0.75} * {utof(vs_cbuf10[0].w) : 1.00})
+	out_attr0.w = (utof(vs_cbuf9[113].x) * utof(vs_cbuf10[0].w));
+	// 2.248287  <=>  ({pf_6_33 : 4.496573} * (1.0f / ((0.f - {utof(vs_cbuf9[138].x) : 1.50}) + {utof(vs_cbuf9[138].y) : 3.50})))
+	pf_5_42 = (pf_6_33 * (1.0f / ((0.f - utof(vs_cbuf9[138].x)) + utof(vs_cbuf9[138].y))));
+	// 0.45125  <=>  (({utof(vs_cbuf9[105].x) : 0.95} * {utof(vs_cbuf10[0].x) : 0.95}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr0.x = ((utof(vs_cbuf9[105].x) * utof(vs_cbuf10[0].x)) * utof(vs_cbuf9[104].x));
+	// 0.00  <=>  clamp(trunc(({f_9_37 : 0.4999999} * float(({u_1_61 : 3} + {u_2_40 : 4294967294})))), float(0.f), float(4294967300.f))
+	f_2_74 = clamp(trunc((f_9_37 * float((u_1_61 + u_2_40)))), float(0.f), float(4294967300.f));
+	// 0.421362  <=>  (({utof(vs_cbuf9[105].y) : 0.918} * {utof(vs_cbuf10[0].y) : 0.918}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr0.y = ((utof(vs_cbuf9[105].y) * utof(vs_cbuf10[0].y)) * utof(vs_cbuf9[104].x));
+	// 0.354482  <=>  (({utof(vs_cbuf9[105].z) : 0.842} * {utof(vs_cbuf10[0].z) : 0.842}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr0.z = ((utof(vs_cbuf9[105].z) * utof(vs_cbuf10[0].z)) * utof(vs_cbuf9[104].x));
+	// 0.1455  <=>  (({utof(vs_cbuf9[121].y) : 0.291} * {utof(vs_cbuf10[1].y) : 1.00}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr1.y = ((utof(vs_cbuf9[121].y) * utof(vs_cbuf10[1].y)) * utof(vs_cbuf9[104].x));
+	// 1  <=>  (uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_7_48 : 3.00})), float(0.f), float(4294967300.f))) + uint(clamp(trunc(({f_8_36 : 0.4999999} * {f_2_65 : 1.00})), float(0.f), float(4294967300.f))))
+	u_2_43 = (uint(clamp(trunc((f_8_36 * f_7_48)), float(0.f), float(4294967300.f))) + uint(clamp(trunc((f_8_36 * f_2_65)), float(0.f), float(4294967300.f))));
+	// 6.387483  <=>  (({pf_7_11 : 5.996582} * 0.5f) + ((0.f * {pf_14_11 : 3.996982}) + ((0.f * {pf_12_8 : -0.6003447}) + ({pf_8_14 : -6.778384} * -0.5f))))
+	out_attr4.y = ((pf_7_11 * 0.5f) + ((0.f * pf_14_11) + ((0.f * pf_12_8) + (pf_8_14 * -0.5f))));
+	// 0.15  <=>  (({utof(vs_cbuf9[121].x) : 0.30} * {utof(vs_cbuf10[1].x) : 1.00}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr1.x = ((utof(vs_cbuf9[121].x) * utof(vs_cbuf10[1].x)) * utof(vs_cbuf9[104].x));
+	// 1  <=>  ({u_3_27 : 1} + uint({f_2_74 : 0.00}))
+	u_3_28 = (u_3_27 + uint(f_2_74));
+	// 0.15  <=>  {utof(vs_cbuf9[157].x) : 0.15}
+	out_attr5.x = utof(vs_cbuf9[157].x);
+	// 0.60  <=>  {utof(vs_cbuf9[157].y) : 0.60}
+	out_attr5.y = utof(vs_cbuf9[157].y);
+	// 1.065187  <=>  ((({pf_7_11 : 5.996582} * 0.5f) + ((0.f * {pf_14_11 : 3.996982}) + ((0.f * {pf_12_8 : -0.6003447}) + ({pf_8_14 : -6.778384} * -0.5f)))) * {f_0_70 : 0.1667617})
+	pf_1_18 = (((pf_7_11 * 0.5f) + ((0.f * pf_14_11) + ((0.f * pf_12_8) + (pf_8_14 * -0.5f)))) * f_0_70);
+	// 0  <=>  uint(bitfieldExtract(uint({u_24_21 : 2}), int(16u), int(16u)))
+	u_10_28 = uint(bitfieldExtract(uint(u_24_21), int(16u), int(16u)));
+	// 131072  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_2_43 : 1}), int(0u), int(16u))) * {u_10_28 : 0})), uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u))), int(16u), int(16u))
+	u_9_31 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * u_10_28)), uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u))), int(16u), int(16u));
+	// 0.1335  <=>  (({utof(vs_cbuf9[121].z) : 0.267} * {utof(vs_cbuf10[1].z) : 1.00}) * {utof(vs_cbuf9[104].x) : 0.50})
+	out_attr1.z = ((utof(vs_cbuf9[121].z) * utof(vs_cbuf10[1].z)) * utof(vs_cbuf9[104].x));
+	// 0.00  <=>  clamp(((((0.f - {pf_2_18 : 123.5821}) + min({utof(vs_cbuf8[29].y) : 128.5313}, {utof(vs_cbuf15[27].z) : 250.00})) * {utof(vs_cbuf15[27].y) : 0.0071429}) + {utof(vs_cbuf15[27].x) : -0.1428571}), 0.0, 1.0)
+	f_0_73 = clamp(((((0.f - pf_2_18) + min(utof(vs_cbuf8[29].y), utof(vs_cbuf15[27].z))) * utof(vs_cbuf15[27].y)) + utof(vs_cbuf15[27].x)), 0.0, 1.0);
+	// True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_0_22 = (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))), int(0u), int(32u))) == 0));
+	// True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_0_22 : True})
+	b_0_23 = ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_31_36), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_0_22);
+	// 1  <=>  uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 1}), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)))
+	u_15_31 = uint(bitfieldExtract(uint(bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u))), int(16u), int(16u))), int(16u), int(16u)));
+	// 0  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * {u_15_31 : 1}))
+	u_13_21 = uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * u_15_31));
+	// 0  <=>  (bitfieldInsert(uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_3_28 : 1}), int(0u), int(16u))), int(16u), int(16u)) << 16u)
+	u_12_21 = (bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u))), int(16u), int(16u)) << 16u);
+	// 2  <=>  (({u_13_21 : 0} << 16u) + ({u_12_21 : 0} + uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_3_28 : 1}), int(0u), int(16u)))))))
+	u_10_33 = ((u_13_21 << 16u) + (u_12_21 + uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_3_28), int(0u), int(16u)))))));
+	// 2  <=>  uint(bitfieldExtract(uint({u_9_31 : 131072}), int(16u), int(16u)))
+	u_15_32 = uint(bitfieldExtract(uint(u_9_31), int(16u), int(16u)));
+	// 2  <=>  ((uint((uint(bitfieldExtract(uint({u_2_43 : 1}), int(16u), int(16u))) * {u_15_32 : 2})) << 16u) + (({u_9_31 : 131072} << 16u) + uint((uint(bitfieldExtract(uint({u_2_43 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_24_21 : 2}), int(0u), int(16u)))))))
+	u_8_45 = ((uint((uint(bitfieldExtract(uint(u_2_43), int(16u), int(16u))) * u_15_32)) << 16u) + ((u_9_31 << 16u) + uint((uint(bitfieldExtract(uint(u_2_43), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_24_21), int(0u), int(16u)))))));
+	// (({pf_22_0 : } * (0.f - clamp((({pf_1_18 : 1.065187} * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_22_0 : })
+	pf_2_21 = ((pf_22_0 * (0.f - clamp(((pf_1_18 * -0.7f) + 0.85f), 0.0, 1.0))) + pf_22_0);
+	// (({pf_21_1 : } * (0.f - clamp((({pf_1_18 : 1.065187} * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_21_1 : })
+	pf_6_39 = ((pf_21_1 * (0.f - clamp(((pf_1_18 * -0.7f) + 0.85f), 0.0, 1.0))) + pf_21_1);
+	// 1  <=>  (uint((int(0) - int({u_8_45 : 2}))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_61 : 3}), int(0u), int(32u)))))), int(0u), int(32u))))
+	u_8_47 = (uint((int(0) - int(u_8_45))) + uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_61), int(0u), int(32u)))))), int(0u), int(32u))));
+	// (({pf_23_0 : } * (0.f - clamp((({pf_1_18 : 1.065187} * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_23_0 : })
+	pf_8_16 = ((pf_23_0 * (0.f - clamp(((pf_1_18 * -0.7f) + 0.85f), 0.0, 1.0))) + pf_23_0);
+	// 0.9213669  <=>  ((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].z) : -2.951901}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_11_9 : 0.33281} + 0.5f))
+	out_attr2.z = (((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].z)) * utof(vs_cbuf9[79].y)) + (pf_11_9 + 0.5f));
+	// False  <=>  (uint(({u_1_61 : 3} + uint((int(0) - int({u_10_33 : 2}))))) >= uint({u_31_36 : 2}))
+	b_4_12 = (uint((u_1_61 + uint((int(0) - int(u_10_33))))) >= uint(u_31_36));
+	// ({utof(u4_0_0.y) : } + {pf_6_39 : })
+	pf_6_40 = (utof(u4_0_0.y) + pf_6_39);
+	// 0.748238  <=>  (((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].w) : -15.98716}) * {utof(vs_cbuf13[3].w) : 1.00}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_0_4 : 0.248238} + 0.5f))
+	out_attr3.y = ((((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].w)) * utof(vs_cbuf13[3].w)) * utof(vs_cbuf9[84].y)) + (pf_0_4 + 0.5f));
+	// ({utof(u4_0_0.x) : } + {pf_2_21 : })
+	pf_2_22 = (utof(u4_0_0.x) + pf_2_21);
+	// 0.397646  <=>  ((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].z) : -2.951901}) * {utof(vs_cbuf9[84].y) : 0.00}) + ({pf_3_12 : -0.102354} + 0.5f))
+	out_attr3.x = (((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].z)) * utof(vs_cbuf9[84].y)) + (pf_3_12 + 0.5f));
+	// 2.261634  <=>  (((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].w) : -15.98716}) * {utof(vs_cbuf13[3].w) : 1.00}) * {utof(vs_cbuf9[79].y) : -0.001}) + ({pf_4_20 : 1.282019} + 0.5f))
+	out_attr2.w = ((((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].w)) * utof(vs_cbuf13[3].w)) * utof(vs_cbuf9[79].y)) + (pf_4_20 + 0.5f));
+	// 0.0199886  <=>  clamp((({pf_9_15 : 5.996583} * {utof(vs_cbuf15[24].x) : 0.0033333}) + (0.f - {utof(vs_cbuf15[24].y) : 0.00})), 0.0, 1.0)
+	f_2_95 = clamp(((pf_9_15 * utof(vs_cbuf15[24].x)) + (0.f - utof(vs_cbuf15[24].y))), 0.0, 1.0);
+	// 1  <=>  ({u_2_43 : 1} + uint((int(0) - int(((uint({u_8_47 : 1}) >= uint({u_24_21 : 2})) ? 4294967295u : 0u)))))
+	u_2_44 = (u_2_43 + uint((int(0) - int(((uint(u_8_47) >= uint(u_24_21)) ? 4294967295u : 0u)))));
+	// 131070  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 1}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(0u), int(16u)))))
+	u_6_24 = uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(0u), int(16u)))));
+	// 131070  <=>  uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 1}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(16u), int(16u)))))
+	u_8_51 = uint((uint(bitfieldExtract(uint(u_31_36), int(0u), int(16u))) * uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(16u), int(16u)))));
+	// 4294967294  <=>  bitfieldInsert({u_8_51 : 131070}, uint(bitfieldExtract(uint((uint((int(0) - int({u_3_28 : 1}))) + ({b_4_12 : False} ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u))
+	u_3_32 = bitfieldInsert(u_8_51, uint(bitfieldExtract(uint((uint((int(0) - int(u_3_28))) + (b_4_12 ? 4294967295u : 0u))), int(0u), int(16u))), int(16u), int(16u));
+	// ({utof(u4_0_0.z) : } + {pf_8_16 : })
+	pf_0_10 = (utof(u4_0_0.z) + pf_8_16);
+	// 0.9529887  <=>  (clamp({pf_5_42 : 2.248287}, 0.0, 1.0) * {utof(vs_cbuf10[3].x) : 0.9529887})
+	out_attr6.x = (clamp(pf_5_42, 0.0, 1.0) * utof(vs_cbuf10[3].x));
+	// 0.00  <=>  ({f_0_73 : 0.00} * {utof(vs_cbuf15[26].w) : 0.40})
+	out_attr10.y = (f_0_73 * utof(vs_cbuf15[26].w));
+	// (({pf_2_22 : } * (({utof(vs_cbuf15[58].w) : 1.00} * {utof(vs_cbuf15[58].x) : 1.00}) + (0.f - {utof(vs_cbuf15[58].w) : 1.00}))) + {pf_2_22 : })
+	out_attr11.x = ((pf_2_22 * ((utof(vs_cbuf15[58].w) * utof(vs_cbuf15[58].x)) + (0.f - utof(vs_cbuf15[58].w)))) + pf_2_22);
+	// True  <=>  (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u))) == 0))
+	b_2_43 = (! (uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_31_36), int(0u), int(32u)))), int(0u), int(32u))) == 0));
+	// True  <=>  ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_31_36 : 2}), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || {b_2_43 : True})
+	b_2_44 = ((int(uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_31_36), int(0u), int(32u)))), int(0u), int(32u)))) < 0) || b_2_43);
+	// 4294967294  <=>  ((uint((uint(bitfieldExtract(uint({u_31_36 : 2}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_3_32 : 4294967294}), int(16u), int(16u))))) << 16u) + (({u_3_32 : 4294967294} << 16u) + {u_6_24 : 131070}))
+	u_3_35 = ((uint((uint(bitfieldExtract(uint(u_31_36), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_3_32), int(16u), int(16u))))) << 16u) + ((u_3_32 << 16u) + u_6_24));
+	// 0  <=>  uint((int(0) - int(uint((int(0) - int((({u_1_61 : 3} ^ {u_31_36 : 2}) >> 31u)))))))
+	u_5_27 = uint((int(0) - int(uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u)))))));
+	// 1  <=>  ({u_5_27 : 0} + ({u_2_44 : 1} ^ uint((int(0) - int((({u_1_61 : 3} ^ {u_31_36 : 2}) >> 31u))))))
+	u_2_46 = (u_5_27 + (u_2_44 ^ uint((int(0) - int(((u_1_61 ^ u_31_36) >> 31u))))));
+	// (({pf_6_40 : } * (({utof(vs_cbuf15[58].w) : 1.00} * {utof(vs_cbuf15[58].y) : 1.00}) + (0.f - {utof(vs_cbuf15[58].w) : 1.00}))) + {pf_6_40 : })
+	out_attr11.y = ((pf_6_40 * ((utof(vs_cbuf15[58].w) * utof(vs_cbuf15[58].y)) + (0.f - utof(vs_cbuf15[58].w)))) + pf_6_40);
+	// 1  <=>  ({b_2_44 : True} ? ({u_1_61 : 3} + {u_3_35 : 4294967294}) : 4294967295u)
+	u_1_63 = (b_2_44 ? (u_1_61 + u_3_35) : 4294967295u);
+	// 10.2985  <=>  (({pf_9_15 : 5.996583} + {utof(vs_cbuf15[28].y) : -0.6541618}) * (1.0f / clamp((({utof(vs_cbuf15[28].y) : -0.6541618} * 1.5f) + 1.5f), 0.0, 1.0)))
+	pf_3_17 = ((pf_9_15 + utof(vs_cbuf15[28].y)) * (1.0f / clamp(((utof(vs_cbuf15[28].y) * 1.5f) + 1.5f), 0.0, 1.0)));
+	// 0.9920346  <=>  exp2((log2(({f_2_39 : -0.0001999} + 1.f)) * {utof(vs_cbuf15[23].x) : 40.00}))
+	f_1_20 = exp2((log2((f_2_39 + 1.f)) * utof(vs_cbuf15[23].x)));
+	// -0.3550816  <=>  (({utof(u_36_phi_79) : 0.62622} * {utof(vs_cbuf8[26].z) : 0.2974617}) + (({utof(u_33_phi_78) : -0.77317} * {utof(vs_cbuf8[26].x) : 0.9491593}) + ({utof(u_31_phi_77) : -1.86859} * {utof(vs_cbuf8[26].y) : -0.1030207})))
+	out_attr7.z = ((utof(u_36_phi_79) * utof(vs_cbuf8[26].z)) + ((utof(u_33_phi_78) * utof(vs_cbuf8[26].x)) + (utof(u_31_phi_77) * utof(vs_cbuf8[26].y))));
+	// 0.50  <=>  ((1.0f / {utof(vs_cbuf9[78].z) : 2.00}) * {utof(vs_cbuf9[78].x) : 1.00})
+	pf_7_14 = ((1.0f / utof(vs_cbuf9[78].z)) * utof(vs_cbuf9[78].x));
+	// 0.9224111  <=>  exp2((log2(((0.f - {f_2_95 : 0.0199886}) + 1.f)) * {utof(vs_cbuf15[24].w) : 4.00}))
+	f_7_76 = exp2((log2(((0.f - f_2_95) + 1.f)) * utof(vs_cbuf15[24].w)));
+	// -0.475  <=>  ((float(int(({b_0_23 : True} ? {u_2_46 : 1} : 4294967295u))) * (0.f - ((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}))) + (({pf_0_1 : 224.00} * {utof(vs_cbuf9[74].y) : 0.00}) + ((({in_attr7.y : 0.84444} * {utof(vs_cbuf9[75].y) : 0.00}) * -2.f) + ({utof(vs_cbuf9[75].y) : 0.00} + {utof(vs_cbuf9[74].w) : 0.025}))))
+	pf_6_42 = ((float(int((b_0_23 ? u_2_46 : 4294967295u))) * (0.f - ((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)))) + ((pf_0_1 * utof(vs_cbuf9[74].y)) + (((in_attr7.y * utof(vs_cbuf9[75].y)) * -2.f) + (utof(vs_cbuf9[75].y) + utof(vs_cbuf9[74].w)))));
+	// (({pf_0_10 : } * (({utof(vs_cbuf15[58].w) : 1.00} * {utof(vs_cbuf15[58].z) : 1.00}) + (0.f - {utof(vs_cbuf15[58].w) : 1.00}))) + {pf_0_10 : })
+	out_attr11.z = ((pf_0_10 * ((utof(vs_cbuf15[58].w) * utof(vs_cbuf15[58].z)) + (0.f - utof(vs_cbuf15[58].w)))) + pf_0_10);
+	// 0.475  <=>  (0.f - {pf_6_42 : -0.475})
+	f_0_78 = (0.f - pf_6_42);
+	// 0.431865  <=>  (((({pf_0_1 : 224.00} * {utof(vs_cbuf9[75].w) : 0.00}) + (({in_attr7.y : 0.84444} * {utof(vs_cbuf9[76].w) : 0.00}) + ({utof(vs_cbuf9[76].w) : 0.00} + {utof(vs_cbuf9[76].y) : 1.00}))) * ((((1.0f / {utof(vs_cbuf9[78].w) : 2.00}) * {utof(vs_cbuf9[78].y) : 1.00}) * {utof(u_29_phi_74) : 0.91373}) + -0.5f)) + {f_0_78 : 0.475})
+	pf_2_28 = ((((pf_0_1 * utof(vs_cbuf9[75].w)) + ((in_attr7.y * utof(vs_cbuf9[76].w)) + (utof(vs_cbuf9[76].w) + utof(vs_cbuf9[76].y)))) * ((((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)) * utof(u_29_phi_74)) + -0.5f)) + f_0_78);
+	// 0.0067706  <=>  clamp((({f_1_20 : 0.9920346} * (0.f - {utof(vs_cbuf15[23].z) : 0.85})) + {utof(vs_cbuf15[23].z) : 0.85}), 0.0, 1.0)
+	out_attr12.w = clamp(((f_1_20 * (0.f - utof(vs_cbuf15[23].z))) + utof(vs_cbuf15[23].z)), 0.0, 1.0);
+	// 0.139705  <=>  (((({pf_7_14 : 0.50} * {utof(u_25_phi_72) : 0.32941}) + -0.5f) * (({pf_0_1 : 224.00} * {utof(vs_cbuf9[75].z) : 0.00}) + (({in_attr7.x : 0.91079} * {utof(vs_cbuf9[76].z) : 0.00}) + ({utof(vs_cbuf9[76].z) : 0.00} + {utof(vs_cbuf9[76].x) : 1.00})))) + ((float(int({u_1_63 : 1})) * {pf_7_14 : 0.50}) + {pf_10_26 : -0.025}))
+	pf_0_13 = ((((pf_7_14 * utof(u_25_phi_72)) + -0.5f) * ((pf_0_1 * utof(vs_cbuf9[75].z)) + ((in_attr7.x * utof(vs_cbuf9[76].z)) + (utof(vs_cbuf9[76].z) + utof(vs_cbuf9[76].x))))) + ((float(int(u_1_63)) * pf_7_14) + pf_10_26));
+	// 0.0130199  <=>  (({f_7_76 : 0.9224111} * (0.f - {utof(vs_cbuf15[25].w) : 0.1678056})) + {utof(vs_cbuf15[25].w) : 0.1678056})
+	out_attr10.x = ((f_7_76 * (0.f - utof(vs_cbuf15[25].w))) + utof(vs_cbuf15[25].w));
+	// 0.931865  <=>  (((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].w) : -15.98716}) * {utof(vs_cbuf13[3].w) : 1.00}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_2_28 : 0.431865} + 0.5f))
+	out_attr2.y = ((((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].w)) * utof(vs_cbuf13[3].w)) * utof(vs_cbuf9[74].y)) + (pf_2_28 + 0.5f));
+	// 0.6397049  <=>  ((({utof(vs_cbuf13[2].w) : 30.00} * {utof(vs_cbuf16[0].z) : -2.951901}) * {utof(vs_cbuf9[74].y) : 0.00}) + ({pf_0_13 : 0.139705} + 0.5f))
+	out_attr2.x = (((utof(vs_cbuf13[2].w) * utof(vs_cbuf16[0].z)) * utof(vs_cbuf9[74].y)) + (pf_0_13 + 0.5f));
+	// 0.3432833  <=>  (clamp(max(({pf_3_17 : 10.2985} * 0.06666667f), 0.2f), 0.0, 1.0) * {f4_0_0.x : 0.50})
+	out_attr12.x = (clamp(max((pf_3_17 * 0.06666667f), 0.2f), 0.0, 1.0) * f4_0_0.x);
+	// 0.3432833  <=>  (clamp(max(({pf_3_17 : 10.2985} * 0.06666667f), 0.2f), 0.0, 1.0) * {f4_0_0.y : 0.50})
+	out_attr12.y = (clamp(max((pf_3_17 * 0.06666667f), 0.2f), 0.0, 1.0) * f4_0_0.y);
+	// 0.3432833  <=>  (clamp(max(({pf_3_17 : 10.2985} * 0.06666667f), 0.2f), 0.0, 1.0) * {f4_0_0.z : 0.50})
+	out_attr12.z = (clamp(max((pf_3_17 * 0.06666667f), 0.2f), 0.0, 1.0) * f4_0_0.z);
+	// False  <=>  if(((((0.f != {f_4_19 : 0.00}) || isnan(0.f)) || isnan({f_4_19 : 0.00})) ? true : false))
+	if(((((0.f != f_4_19) || isnan(0.f)) || isnan(f_4_19)) ? true : false))
+	{
+		// 1.00  <=>  ((({utof(u_0_phi_70) : -38.52367} * {utof(vs_cbuf15[49].x) : 0.00}) + (0.f - {utof(vs_cbuf15[49].x) : 0.00})) + 1.f)
+		pf_0_18 = (((utof(u_0_phi_70) * utof(vs_cbuf15[49].x)) + (0.f - utof(vs_cbuf15[49].x))) + 1.f);
+		// -0.0463194  <=>  (({pf_9_15 : 5.996583} * (1.0f / {utof(vs_cbuf15[51].x) : 950.00})) + (0.f - ((1.0f / {utof(vs_cbuf15[51].x) : 950.00}) * {utof(vs_cbuf15[51].y) : 50.00})))
+		pf_1_27 = ((pf_9_15 * (1.0f / utof(vs_cbuf15[51].x))) + (0.f - ((1.0f / utof(vs_cbuf15[51].x)) * utof(vs_cbuf15[51].y))));
+		// 0.00  <=>  clamp({pf_1_27 : -0.0463194}, 0.0, 1.0)
+		f_0_85 = clamp(pf_1_27, 0.0, 1.0);
+		// 0.00  <=>  (({pf_0_18 : 1.00} * (0.f - {f_0_85 : 0.00})) + {f_0_85 : 0.00})
+		pf_1_28 = ((pf_0_18 * (0.f - f_0_85)) + f_0_85);
+		// -∞  <=>  log2(abs({pf_1_28 : 0.00}))
+		f_0_87 = log2(abs(pf_1_28));
+		// 0.00  <=>  exp2(({f_0_87 : -∞} * {utof(vs_cbuf15[51].z) : 1.50}))
+		f_0_88 = exp2((f_0_87 * utof(vs_cbuf15[51].z)));
+		// 1.00  <=>  (({pf_0_18 : 1.00} * (0.f - (({f_0_88 : 0.00} * {utof(vs_cbuf15[51].w) : 1.00}) * {utof(vs_cbuf15[49].x) : 0.00}))) + {pf_0_18 : 1.00})
+		pf_0_19 = ((pf_0_18 * (0.f - ((f_0_88 * utof(vs_cbuf15[51].w)) * utof(vs_cbuf15[49].x)))) + pf_0_18);
+		// 1.00  <=>  {pf_0_19 : 1.00}
+		out_attr9.x = pf_0_19;
+	}
+	// 0.00  <=>  0.f
+	out_attr10.w = 0.f;
+	// True  <=>  ((! (((clamp({pf_5_42 : 2.248287}, 0.0, 1.0) <= 0.f) && (! isnan(clamp({pf_5_42 : 2.248287}, 0.0, 1.0)))) && (! isnan(0.f)))) ? true : false)
+	b_1_33 = ((! (((clamp(pf_5_42, 0.0, 1.0) <= 0.f) && (! isnan(clamp(pf_5_42, 0.0, 1.0)))) && (! isnan(0.f)))) ? true : false);
+	// True  <=>  if({b_1_33 : True})
+	if(b_1_33)
+	{
+		return;
+	}
+	// 0.00  <=>  0.f
+	gl_Position.x = 0.f;
+	// 0.00  <=>  0.f
+	gl_Position.y = 0.f;
+	// 125000.00  <=>  ({utof(vs_cbuf8[30].y) : 25000.00} * 5.f)
+	gl_Position.z = (utof(vs_cbuf8[30].y) * 5.f);
+	// 0.00  <=>  0.f
+	out_attr6.x = 0.f;
+	return;
+}

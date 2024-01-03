@@ -1,0 +1,89 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+layout(location = 0) in vec4 in_attr0;
+layout(location = 0) out vec4 frag_color0;
+layout(location = 1) out vec4 frag_color1;
+layout(location = 2) out vec4 frag_color2;
+layout(location = 3) out vec4 frag_color3;
+layout(location = 4) out vec4 frag_color4;
+layout(location = 5) out vec4 frag_color5;
+layout(location = 6) out vec4 frag_color6;
+layout(location = 7) out vec4 frag_color7;
+layout(std140, binding = 0) uniform fs_cbuf_0 { uvec4 fs_cbuf0[4096]; };
+layout(std140, binding = 1) uniform fs_cbuf_3 { uvec4 fs_cbuf3[4096]; };
+layout(std430, binding = 0) buffer fs_ssbo_0 { uint fs_ssbo0[]; };
+layout(binding = 1) uniform sampler2D tex1;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+	// fs_cbuf0[81] = vec4(0.00, 0.00, 0.00, 0.00);
+	// fs_cbuf3[0] = vec4(1.00, 25000.00, 1.777778, 0.99996);
+	// fs_cbuf3[1] = vec4(0.00, 0.00, 24999.00, 0.00004);
+
+	vec4 f4_0_0;
+	precise float gl_FragDepth;
+	uint u_0_10;
+	uint u_0_11;
+	uint u_0_9;
+	uint u_0_phi_2;
+	uint u_1_10;
+	uint u_1_11;
+	uint u_1_phi_3;
+	uint u_2_2;
+	uint u_2_3;
+	uint u_2_phi_1;
+	uint u_ssbo_0;
+	// vec4(0.50,0.50,0.50,0.75)  <=>  textureGather({tex1 : tex1}, vec2({in_attr0.x : -0.0000063}, {in_attr0.y : -0.00001}), int(0))
+	f4_0_0 = textureGather(tex1, vec2(in_attr0.x, in_attr0.y), int(0));
+	// 956014793  <=>  {ftou((((1.0f / ((max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) * (0.f - {utof(fs_cbuf3[0].w) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[1].w) : 0.00004}) + (0.f - {utof(fs_cbuf3[1].w) : 0.00004}))) : 956014793}
+	u_2_2 = ftou((((1.0f / ((max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w)) * (0.f - utof(fs_cbuf3[0].w))) + 1.f)) * utof(fs_cbuf3[1].w)) + (0.f - utof(fs_cbuf3[1].w))));
+	u_2_phi_1 = u_2_2;
+	// False  <=>  if(((((max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) == 1.f) && (! isnan(max(max({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), max({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75}))))) && (! isnan(1.f))) ? true : false))
+	if(((((max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w)) == 1.f) && (! isnan(max(max(f4_0_0.x, f4_0_0.y), max(f4_0_0.z, f4_0_0.w))))) && (! isnan(1.f))) ? true : false))
+	{
+		// 1065353216  <=>  1065353216u
+		u_2_3 = 1065353216u;
+		u_2_phi_1 = u_2_3;
+	}
+	// 19264  <=>  ((((((((((isnan(({in_attr0.y : -0.00001} * 18.f)) ? 0u : int(clamp(trunc(({in_attr0.y : -0.00001} * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan(({in_attr0.x : -0.0000063} * 32.f)) ? 0u : int(clamp(trunc(({in_attr0.x : -0.0000063} * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan({gl_FragCoord.x : 320.00}) ? 0u : int(clamp(trunc({gl_FragCoord.x : 320.00}), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan({gl_FragCoord.y : 240.00}) ? 0u : ...), ..., ...)) << ...) + ...) + ...) + ...) - ...)
+	u_0_9 = ((((((((((isnan((in_attr0.y * 18.f)) ? 0u : int(clamp(trunc((in_attr0.y * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan((in_attr0.x * 32.f)) ? 0u : int(clamp(trunc((in_attr0.x * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan(gl_FragCoord.x) ? 0u : int(clamp(trunc(gl_FragCoord.x), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan(gl_FragCoord.y) ? 0u : int(clamp(trunc(gl_FragCoord.y), float(-2147483600.f), float(2147483600.f)))), int(1u), ...)) << ...) + ...) + ...) + ...) - ...);
+	// atomicMax({fs_ssbo0[({u_0_9 : 19264} >> 2)] : }, uint(clamp(trunc(({utof(u_2_phi_1) : 0.00012} * 16777215.f)), float(0.f), float(4294967300.f))))
+	u_ssbo_0 = atomicMax(fs_ssbo0[(u_0_9 >> 2)], uint(clamp(trunc((utof(u_2_phi_1) * 16777215.f)), float(0.f), float(4294967300.f))));
+	// 956014793  <=>  {u_2_phi_1 : 956014793}
+	u_0_10 = u_2_phi_1;
+	u_0_phi_2 = u_0_10;
+	// False  <=>  if((((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f))) ? true : false))
+	if(((((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f))) ? true : false))
+	{
+		// 1065353216  <=>  1065353216u
+		u_0_11 = 1065353216u;
+		u_0_phi_2 = u_0_11;
+	}
+	// 956014793  <=>  {u_0_phi_2 : 956014793}
+	u_1_10 = u_0_phi_2;
+	u_1_phi_3 = u_1_10;
+	// True  <=>  if(((! ((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f)))) ? true : false))
+	if(((! (((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f)))) ? true : false))
+	{
+		// 956014793  <=>  {ftou((((1.0f / (({f4_0_0.w : 0.75} * (0.f - {utof(fs_cbuf3[0].w) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[1].w) : 0.00004}) + (0.f - {utof(fs_cbuf3[1].w) : 0.00004}))) : 956014793}
+		u_1_11 = ftou((((1.0f / ((f4_0_0.w * (0.f - utof(fs_cbuf3[0].w))) + 1.f)) * utof(fs_cbuf3[1].w)) + (0.f - utof(fs_cbuf3[1].w))));
+		u_1_phi_3 = u_1_11;
+	}
+	// 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+	frag_color0.x = utof(u_1_phi_3);
+	// 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+	frag_color0.y = utof(u_1_phi_3);
+	// 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+	frag_color0.z = utof(u_1_phi_3);
+	// 0.00012  <=>  {utof(u_1_phi_3) : 0.00012}
+	frag_color0.w = utof(u_1_phi_3);
+	// 0.75  <=>  {f4_0_0.w : 0.75}
+	gl_FragDepth = f4_0_0.w;
+	return;
+}

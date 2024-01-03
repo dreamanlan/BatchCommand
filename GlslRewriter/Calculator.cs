@@ -865,6 +865,12 @@ namespace GlslRewriter
                     succ = true;
                 }
             }
+            else if(func=="atomicAdd" || func== "atomicAnd" || func == "atomicOr" || func == "atomicXor"
+                || func == "atomicMin" || func == "atomicMax" || func == "atomicExchange" || func == "atomicCompSwap") {
+                //atomic系列函数需要单独的函数处理（第一个参数需要传进来内存地址与索引2部分信息），暂时先放这里让翻译可以正常进行
+                val = args[0];
+                succ = true;
+            }
             else {
                 supported = false;
             }

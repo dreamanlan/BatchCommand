@@ -90,6 +90,18 @@ vs
             add(3,7);
         };
     };
+    shader_arg(1)
+    {
+        redirect(0, "d:/UC/lighttex1", "d:/uc/VAO_lighttex1");
+    };
+    shader_arg(2)
+    {
+        redirect(0, "d:/UC/lighttex2", "d:/uc/VAO_lighttex2");
+    };
+    shader_arg(3)
+    {
+        redirect(0, "d:/UC/lighttex3", "d:/uc/VAO_lighttex3");
+    };
     type_replacement
     {
         vs_cbuf3 = float;
@@ -378,6 +390,18 @@ ps
         uniform("d:/UC/lighttex/fs_cbuf4.csv", "uvec4"){
             add(0,1,2,3,7);
         };
+    };
+    shader_arg(1)
+    {
+        redirect(0, "d:/UC/lighttex1", "d:/uc/VAO_lighttex1");
+    };
+    shader_arg(2)
+    {
+        redirect(0, "d:/UC/lighttex2", "d:/uc/VAO_lighttex2");
+    };
+    shader_arg(3)
+    {
+        redirect(0, "d:/UC/lighttex3", "d:/uc/VAO_lighttex3");
     };
     type_replacement
     {

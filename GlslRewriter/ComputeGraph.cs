@@ -582,7 +582,7 @@ namespace GlslRewriter
                 }
                 else {
                     if (setting.VariableExpandedOnlyOnce && usedVars.TryGetValue(VarName, out var varMaxLevel)) {
-                        if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitLevelForRepeatExpression <= varMaxLevel - curLevel) {
+                        if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0 && Config.ActiveConfig.SettingInfo.AutoSplitLevelForRepeatedExpression <= varMaxLevel - curLevel) {
                             Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                         }
                         if (withValue) {
@@ -654,9 +654,10 @@ namespace GlslRewriter
         private bool IsSplitOn(ComputeGraphNode prevNode, int deltaLevel)
         {
             bool ret = false;
-            if(prevNode is ComputeGraphCalcNode calcNode && calcNode.Operator=="=" && prevNode.PrevNodes[0] is ComputeGraphCalcNode calcNode2 &&
-                Config.ActiveConfig.SettingInfo.AutoSplitOnFuncs.TryGetValue(calcNode2.Operator, out var lvl) && lvl<=deltaLevel) {
-                ret = true;
+            if(prevNode is ComputeGraphCalcNode calcNode && calcNode.Operator=="=" && prevNode.PrevNodes[0] is ComputeGraphCalcNode calcNode2) {
+                if (Config.ActiveConfig.SettingInfo.AutoSplitOnFuncs.TryGetValue(calcNode2.Operator, out var lvl) && lvl <= deltaLevel) {
+                    ret = true;
+                }
             }
             return ret;
         }
@@ -1118,10 +1119,10 @@ namespace GlslRewriter
                 }
                 bool handled = false;
                 if (PrevNodes[0] is not ComputeGraphCalcNode) {
-                    handled = TryGenerateWithFunctionReplacement(false, ".", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                    handled = TryGenerateWithFunctionReplacement(false, ".", sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this);
                 }
                 else if (PrevNodes[0] is ComputeGraphCalcNode calcNode && calcNode.Operator == "[]") {
-                    handled = TryGenerateWithFunctionReplacement(false, "[].", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                    handled = TryGenerateWithFunctionReplacement(false, "[].", sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this);
                 }
                 if (!handled) {
                     PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
@@ -1156,7 +1157,7 @@ namespace GlslRewriter
                 }
                 bool handled = false;
                 if (PrevNodes[0] is not ComputeGraphCalcNode) {
-                    handled = TryGenerateWithFunctionReplacement(false, "[]", sb, indent, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, this);
+                    handled = TryGenerateWithFunctionReplacement(false, "[]", sb, indent, curLevel, ref curMaxLevel, setting, usedVars, visits, this);
                 }
                 if (!handled) {
                     PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
@@ -1240,7 +1241,8 @@ namespace GlslRewriter
                     for (int ix = 0; ix < repInfo.Args.Count; ++ix) {
                         string str = repInfo.Args[ix];
                         Debug.Assert(null != repInfo.ArgGetter);
-                        var node = repInfo.ArgGetter(this, ix);
+                        int curLvl = curLevel;
+                        var node = repInfo.ArgGetter(this, ix, ref curLvl);
                         if(node is ComputeGraphVarNode vnode) {
                             if (str != "*" && str != vnode.VarName) {
                                 match = false;
@@ -1290,17 +1292,32 @@ namespace GlslRewriter
                         string ixStr = funcData.GetParamId(0);
                         if (int.TryParse(ixStr, out var argIx)) {
                             Debug.Assert(null != repInfo.ArgGetter);
-                            var p = repInfo.ArgGetter(this, argIx);
+                            int curLvl = curLevel;
+                            var p = repInfo.ArgGetter(this, argIx, ref curLvl);
                             int action = GenConversionBefore(sb, argIx);
                             int subMaxLevel;
-                            p.GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            p.GenerateExpression(sb, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                             GenConversionAfter(sb, action);
                         }
                         else {
                             Console.WriteLine("function_replacement: {0}, @arg's argument must be integer !", repTag);
                         }
                     }
-                    else if(id == "@join") {
+                    else if (id == "@skip") {
+                        string ixStr = funcData.GetParamId(0);
+                        if (int.TryParse(ixStr, out var argIx)) {
+                            Debug.Assert(null != repInfo.ArgGetter);
+                            int curLvl = curLevel;
+                            var p = repInfo.ArgGetter(this, argIx, ref curLvl);
+                            s_IgnoredContent.Length = 0;
+                            int subMaxLevel;
+                            p.GenerateExpression(s_IgnoredContent, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, @skip's argument must be integer !", repTag);
+                        }
+                    }
+                    else if (id == "@join") {
                         foreach (var p in funcData.Params) {
                             TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
@@ -1311,16 +1328,16 @@ namespace GlslRewriter
                             var p = funcData.GetParam(0);
                             sb.Append(id);
                             sb.Append(" ");
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
                         else if (num == 2) {
                             var p1 = funcData.GetParam(0);
                             var p2 = funcData.GetParam(1);
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p1, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p1, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                             sb.Append(" ");
                             sb.Append(id);
                             sb.Append(" ");
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p2, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p2, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
                         else {
                             Console.WriteLine("function_replacement: {0}, invalid argument num for operator {1} !", repTag, id);
@@ -1345,7 +1362,7 @@ namespace GlslRewriter
                         string prestr = string.Empty;
                         foreach (var p in funcData.Params) {
                             sb.Append(prestr);
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                             if (string.IsNullOrEmpty(prestr))
                                 prestr = ", ";
                         }
@@ -1372,11 +1389,11 @@ namespace GlslRewriter
                             var condExp = f1.LowerOrderFunction.GetParam(0);
                             var trueExp = f1.GetParam(0);
                             var falseExp = f2.GetParam(0);
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, condExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, condExp, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                             sb.Append(" ? ");
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, trueExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, trueExp, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                             sb.Append(" : ");
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, falseExp, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, falseExp, sb, curLevel + 1, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
                         else {
                             Console.WriteLine("function_replacement: {0}, invalid condition expression !", repTag);
@@ -1550,47 +1567,55 @@ namespace GlslRewriter
             }
             return string.Empty;
         }
-        public static ComputeGraphNode GetArgForMember(ComputeGraphNode expNode, int ix)
+        public static ComputeGraphNode GetArgForMember(ComputeGraphNode expNode, int ix, ref int curLevel)
         {
             switch (ix) {
                 case 0:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[0];
                 case 1:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[1];
                 default:
                     Debug.Assert(false);
                     return expNode;
             }
         }
-        public static ComputeGraphNode GetArgForArray(ComputeGraphNode expNode, int ix)
+        public static ComputeGraphNode GetArgForArray(ComputeGraphNode expNode, int ix, ref int curLevel)
         {
             switch (ix) {
                 case 0:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[0];
                 case 1:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[1];
                 default:
                     Debug.Assert(false);
                     return expNode;
             }
         }
-        public static ComputeGraphNode GetArgForArrayMember(ComputeGraphNode expNode, int ix)
+        public static ComputeGraphNode GetArgForArrayMember(ComputeGraphNode expNode, int ix, ref int curLevel)
         {
             switch (ix) {
                 case 0:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[0].PrevNodes[0];
                 case 1:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[0].PrevNodes[1];
                 case 2:
+                    curLevel = curLevel + 1;
                     return expNode.PrevNodes[1];
                 default:
                     Debug.Assert(false);
                     return expNode;
             }
         }
-        public static ComputeGraphNode GetArgForFuncOrOper(ComputeGraphNode expNode, int ix)
+        public static ComputeGraphNode GetArgForFuncOrOper(ComputeGraphNode expNode, int ix, ref int curLevel)
         {
-            if(ix>=0 && ix < expNode.PrevNodes.Count) {
+            if (ix >= 0 && ix < expNode.PrevNodes.Count) {
+                curLevel = curLevel + 1;
                 return expNode.PrevNodes[ix];
             }
             else {
@@ -1605,6 +1630,8 @@ namespace GlslRewriter
         public const int c_action_add_itof = 3;
         public const int c_action_add_ftou = 4;
         public const int c_action_add_utof = 5;
+
+        private static StringBuilder s_IgnoredContent = new StringBuilder();
     }
     public class ComputeGraphBreakNode : ComputeGraphNode
     {

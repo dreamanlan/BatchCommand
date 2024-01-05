@@ -89,8 +89,9 @@ namespace GlslRewriter
                         }
                     }
 
+                    int startIdx = s_VertexStructInits.Count;
                     sb.Append("var vertexes = new[] {");
-                    s_VertexStructInits.Add(sb.ToString());
+                    s_VertexStructInits.Add(startIdx, sb.ToString());
                     sb.Length = 0;
 
                     int start = s_VertexStructInits.Count;
@@ -131,7 +132,7 @@ namespace GlslRewriter
                                 sb.Append("f");
                             }
                             sb.Append("))");
-                            s_VertexStructInits.Add(sb.ToString());
+                            s_VertexStructInits.Add(startIdx + idx + 1, sb.ToString());
                             sb.Length = 0;
 
                             int j = 0;
@@ -143,12 +144,12 @@ namespace GlslRewriter
                                         sb.Append(")");
                                         var prevNames = colNames[i - 1].Split(".");
                                         if (!s_VertexAttrInits.TryGetValue(prevNames[0], out var attrs)) {
-                                            attrs = new List<string>();
+                                            attrs = new SortedList<int, string>();
                                             s_VertexAttrInits.Add(prevNames[0], attrs);
-                                            attrs.Add("var " + prevNames[0] + " = new[] {");
+                                            attrs.Add(0, "var " + prevNames[0] + " = new[] {");
                                             first = true;
                                         }
-                                        attrs.Add(sb.ToString());
+                                        attrs.Add(idx + 1, sb.ToString());
                                         ++j;
                                         sb.Length = 0;
                                         sb.Append("\t");
@@ -178,11 +179,11 @@ namespace GlslRewriter
                             sb.Append(")");
                             var lastNames = colNames[colNames.Length - 1].Split(".");
                             if (!s_VertexAttrInits.TryGetValue(lastNames[0], out var attrs2)) {
-                                attrs2 = new List<string>();
+                                attrs2 = new SortedList<int, string>();
                                 s_VertexAttrInits.Add(lastNames[0], attrs2);
-                                attrs2.Add("var " + lastNames[0] + " = new[] {");
+                                attrs2.Add(0, "var " + lastNames[0] + " = new[] {");
                             }
-                            attrs2.Add(sb.ToString());
+                            attrs2.Add(idx + 1, sb.ToString());
                             sb.Length = 0;
                         }
                     }
@@ -190,13 +191,13 @@ namespace GlslRewriter
                     const string c_EndStr = "};";
 
                     sb.Append(c_EndStr);
-                    s_VertexStructInits.Add(sb.ToString());
+                    s_VertexStructInits.Add(s_VertexStructInits.Count, sb.ToString());
                     sb.Length = 0;
 
                     foreach (var pair in s_VertexAttrInits) {
                         var list = pair.Value;
                         if (list.Count > 0 && list[list.Count - 1] != c_EndStr)
-                            pair.Value.Add(c_EndStr);
+                            pair.Value.Add(pair.Value.Count, c_EndStr);
                     }
                 }
             }
@@ -767,8 +768,8 @@ namespace GlslRewriter
         }
 
         internal static List<string> s_UniformUtofOrFtouVals = new List<string>();
-        internal static List<string> s_VertexStructInits = new List<string>();
-        internal static SortedDictionary<string, List<string>> s_VertexAttrInits = new SortedDictionary<string, List<string>>();
+        internal static SortedList<int, string> s_VertexStructInits = new SortedList<int, string>();
+        internal static SortedDictionary<string, SortedList<int, string>> s_VertexAttrInits = new SortedDictionary<string, SortedList<int, string>>();
         internal static List<string> s_UniformInits = new List<string>();
         internal static List<string> s_UniformRawInits = new List<string>();
     }
@@ -1538,9 +1539,9 @@ namespace GlslRewriter
                     if (sid == "=") {
                         string key = fd.GetParamId(0);
                         var val = DoCalc(fd.GetParam(1));
-                        if (key == "split_level_for_repeat_expression") {
+                        if (key == "split_level_for_repeated_expression") {
                             if (Calculator.TryGetInt(val, out var v) && v > 0) {
-                                cfg.SettingInfo.AutoSplitLevelForRepeatExpression = v;
+                                cfg.SettingInfo.AutoSplitLevelForRepeatedExpression = v;
                             }
                         }
                     }
@@ -2795,7 +2796,7 @@ namespace GlslRewriter
             internal int MaxLoop = 256;
 
             internal int AutoSplitLevel = -1;
-            internal int AutoSplitLevelForRepeatExpression = 6;
+            internal int AutoSplitLevelForRepeatedExpression = 2;
             internal Dictionary<string, int> AutoSplitOnFuncs = new Dictionary<string, int>();
             internal HashSet<string> AutoSplitSkips = new HashSet<string>();
 
@@ -2883,8 +2884,8 @@ namespace GlslRewriter
                 VariableAssignments[vname] = new ValueInfo { Type = type, Value = val };
             }
 
-            internal static DslExpression.CalculatorValue s_DefSplitLevel = 15;
-            internal static DslExpression.CalculatorValue s_DefSplitOnLevel = 9;
+            internal static DslExpression.CalculatorValue s_DefSplitLevel = 5;
+            internal static DslExpression.CalculatorValue s_DefSplitOnLevel = 1;
         }
         internal class InOutAttrInfo
         {
@@ -2934,7 +2935,7 @@ namespace GlslRewriter
         }
         internal class FunctionMatchInfo
         {
-            internal delegate ComputeGraphNode GetArgDelegation(ComputeGraphNode expNode, int index);
+            internal delegate ComputeGraphNode GetArgDelegation(ComputeGraphNode expNode, int index, ref int curLevel);
 
             internal string FuncOrOper = string.Empty;
             internal GetArgDelegation? ArgGetter = null;

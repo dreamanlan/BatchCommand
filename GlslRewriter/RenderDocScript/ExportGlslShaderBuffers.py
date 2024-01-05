@@ -9,8 +9,8 @@ import csv
 import struct
 
 subDir = ""
-vaoOutputPath = "d:/uc/VAO_smoke"
-uniformOutputPath = "d:/uc/smoke"
+vaoOutputPath = "d:/uc/VAO_lighttex"
+uniformOutputPath = "d:/uc/lighttex"
 vaoRecordNum = 0
 
 def bytesToStr(bytes):

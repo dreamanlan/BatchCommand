@@ -374,13 +374,13 @@ namespace GlslRewriter
             else {
                 var lineList = new List<string>();
                 if (RenderDocImporter.s_VertexStructInits.Count > 0) {
-                    lineList.AddRange(RenderDocImporter.s_VertexStructInits);
+                    lineList.AddRange(RenderDocImporter.s_VertexStructInits.Values);
                     lineList.Add(string.Empty);
                 }
                 if (RenderDocImporter.s_VertexAttrInits.Count > 0) {
                     foreach (var pair in RenderDocImporter.s_VertexAttrInits) {
                         lineList.Add("// " + pair.Key);
-                        lineList.AddRange(pair.Value);
+                        lineList.AddRange(pair.Value.Values);
                         lineList.Add(string.Empty);
                     }
                 }
@@ -571,7 +571,7 @@ namespace GlslRewriter
             List<string> stms = new List<string>();
             //插入参数初始化
             if (s_IsPsShader) {
-                stms.Add("gl_FragCoord = vec4(320,240,0.5,1.0);");
+                stms.Add("gl_FragCoord = vec4(128, 128, 0.5, 1.0);");
             }
             var cfg = Config.ActiveArgConfig;
             var attrCfg = cfg.InOutAttrInfo;

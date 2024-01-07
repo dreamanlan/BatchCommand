@@ -569,16 +569,21 @@ namespace GlslRewriter
         private static List<string> GetImportAttrs(Dictionary<string, Dictionary<string, RenderDocImporter.HlslExportInfo>> hlslMergeDatas)
         {
             List<string> stms = new List<string>();
-            //插入参数初始化
-            if (s_IsPsShader) {
-                stms.Add("gl_FragCoord = vec4(128, 128, 0.5, 1.0);");
-            }
             var cfg = Config.ActiveArgConfig;
             var attrCfg = cfg.InOutAttrInfo;
             if (!string.IsNullOrEmpty(attrCfg.InAttrImportFile)) {
                 if (File.Exists(attrCfg.InAttrImportFile)) {
-                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile, hlslMergeDatas);
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile, hlslMergeDatas, out var outPos);
                     stms.AddRange(lines);
+                    //插入参数初始化
+                    if (s_IsPsShader) {
+                        int w = Config.CommonCfg.ViewportWidth;
+                        int h = Config.CommonCfg.ViewportHeight;
+                        float x = outPos.X * 0.5f + 0.5f;
+                        float y = outPos.Y * 0.5f + 0.5f;
+                        float z = outPos.Z * 0.5f + 0.5f;
+                        stms.Insert(0, string.Format("gl_FragCoord = vec4({0}, {1}, {2}, {3});", x * (w - 1), y * (h - 1), z, outPos.W));
+                    }
                 }
                 else {
                     Console.WriteLine("Can't find file {0}", attrCfg.InAttrImportFile);
@@ -586,7 +591,7 @@ namespace GlslRewriter
             }
             if (!string.IsNullOrEmpty(attrCfg.OutAttrImportFile)) {
                 if (File.Exists(attrCfg.OutAttrImportFile)) {
-                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile, hlslMergeDatas);
+                    var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.OutAttrMap, attrCfg.OutAttrImportFile, hlslMergeDatas, out var outPos);
                     stms.AddRange(lines);
                 }
                 else {

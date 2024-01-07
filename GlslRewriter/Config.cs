@@ -18,6 +18,7 @@ using System.Transactions;
 using Microsoft.VisualBasic;
 using System.Text.RegularExpressions;
 using Dsl;
+using System.Numerics;
 
 namespace GlslRewriter
 {
@@ -43,8 +44,9 @@ namespace GlslRewriter
             }
             return results;
         }
-        internal static List<string> GenenerateVsInOutAttr(string type, int index, Dictionary<string, string> attrMap, string csv_path, Dictionary<string, Dictionary<string, HlslExportInfo>> hlslMergeDatas)
+        internal static List<string> GenenerateVsInOutAttr(string type, int index, Dictionary<string, string> attrMap, string csv_path, Dictionary<string, Dictionary<string, HlslExportInfo>> hlslMergeDatas, out Vector4 outPos)
         {
+            outPos = Vector4.Zero;
             var results = new List<string>();
             var sb = new StringBuilder();
             var lines = File.ReadAllLines(csv_path);
@@ -60,28 +62,46 @@ namespace GlslRewriter
                         for (int i = 2; i < colNames.Length && i < cols.Count; ++i) {
                             var names = colNames[i].Split(".");
                             if (names.Length == 2) {
+                                bool skip = false;
                                 if (attrMap.TryGetValue(names[0], out var newName)) {
                                     if (string.IsNullOrEmpty(newName)) {
-                                        continue;
+                                        skip = true;
                                     }
-                                    names[0] = newName;
+                                    else {
+                                        names[0] = newName;
+                                    }
                                 }
-                                sb.Append(names[0]);
-                                sb.Append(".");
-                                sb.Append(names[1]);
-                                sb.Append(" = ");
-                                sb.Append(type);
-                                sb.Append("(");
+                                string vstr;
                                 if (Config.TryMergeHlslAttr(names[0], names[1], hlslMergeDatas, out var attrData)) {
-                                    sb.Append(attrData.Trim());
+                                    vstr = attrData.Trim();
                                 }
                                 else {
-                                    sb.Append(cols[i].Trim());
+                                    vstr = cols[i].Trim();
+                                    sb.Append(vstr);
                                 }
-                                sb.Append(");");
+                                if (names[0] == "gl_Position") {
+                                    if (names[1] == "x")
+                                        outPos.X = float.Parse(vstr);
+                                    else if (names[1] == "y")
+                                        outPos.Y = float.Parse(vstr);
+                                    else if (names[1] == "z")
+                                        outPos.Z = float.Parse(vstr);
+                                    else if (names[1] == "w")
+                                        outPos.W = float.Parse(vstr);
+                                }
+                                if (!skip) {
+                                    sb.Append(names[0]);
+                                    sb.Append(".");
+                                    sb.Append(names[1]);
+                                    sb.Append(" = ");
+                                    sb.Append(type);
+                                    sb.Append("(");
+                                    sb.Append(vstr);
+                                    sb.Append(");");
 
-                                results.Add(sb.ToString());
-                                sb.Length = 0;
+                                    results.Add(sb.ToString());
+                                    sb.Length = 0;
+                                }
                             }
                             else {
                                 Debug.Assert(false);
@@ -789,7 +809,10 @@ namespace GlslRewriter
                     string id = cfg.GetId();
                     var fd = cfg as Dsl.FunctionData;
                     if (null != fd) {
-                        if (id == "vs") {
+                        if (id == "common") {
+                            ParseCommonConfig(fd);
+                        }
+                        else if (id == "vs") {
                             AddShaderConfig(id, fd);
                         }
                         else if (id == "ps") {
@@ -1142,6 +1165,33 @@ namespace GlslRewriter
             return ret;
         }
 
+        private static void ParseCommonConfig(Dsl.FunctionData dslCfg)
+        {
+            if (dslCfg.HaveStatement()) {
+                foreach (var p in dslCfg.Params) {
+                    var vd = p as Dsl.ValueData;
+                    var fd = p as Dsl.FunctionData;
+                    if (null != vd) {
+                        string vid = vd.GetId();
+                    }
+                    else if (null != fd) {
+                        string fid = fd.GetId();
+                        if (fid == "=") {
+                            string key = fd.GetParamId(0);
+                            var val = DoCalc(fd.GetParam(1));
+                        }
+                        else if (fid == "viewport") {
+                            var w = DoCalc(fd.GetParam(0));
+                            var h = DoCalc(fd.GetParam(1));
+                            if (Calculator.TryGetInt(w, out var iw) && Calculator.TryGetInt(h, out var ih)) {
+                                CommonCfg.ViewportWidth = iw;
+                                CommonCfg.ViewportHeight = ih;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         private static void AddShaderConfig(string shaderType, Dsl.FunctionData dslCfg)
         {
             s_CurMaxShaderArgId = -1;
@@ -2967,7 +3017,13 @@ namespace GlslRewriter
             internal Dictionary<string, List<CalculatorInfo>> Calculators = new Dictionary<string, List<CalculatorInfo>>();
             internal Dictionary<string, string> CodeBlocks = new Dictionary<string, string>();
         }
+        internal class CommonConfig
+        {
+            internal int ViewportWidth = 256;
+            internal int ViewportHeight = 256;
+        }
 
+        internal static CommonConfig CommonCfg { get; } = new CommonConfig();
         internal static ShaderConfig ActiveConfig
         {
             get {

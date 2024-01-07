@@ -1,3 +1,7 @@
+common
+{
+    viewport(256, 256);
+};
 vs
 {
     setting

@@ -106,6 +106,86 @@ vs
     {
         redirect(0, "d:/UC/lighttex3", "d:/uc/VAO_lighttex3");
     };
+    shader_arg(10)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_after_rain_oclock_12", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(11)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_fog", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(12)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_4", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(13)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_6", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(14)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_8", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(15)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_2", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(16)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_4", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(17)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_5", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(18)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_6", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(19)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_8", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(20)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_10", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(21)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_12", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(22)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_14", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(23)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_16", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(24)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_17", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(25)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_18", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(26)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_19", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(27)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_20", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(28)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_22", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(29)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_24", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
     type_replacement
     {
         vs_cbuf3 = float;
@@ -406,6 +486,86 @@ ps
     shader_arg(3)
     {
         redirect(0, "d:/UC/lighttex3", "d:/uc/VAO_lighttex3");
+    };
+    shader_arg(10)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_after_rain_oclock_12", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(11)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_fog", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(12)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_4", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(13)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_6", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(14)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/lighttex_rain_oclock_8", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(15)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_2", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(16)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_4", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(17)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_5", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(18)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_6", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(19)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_8", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(20)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_10", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(21)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_12", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(22)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_14", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(23)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_16", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(24)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_17", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(25)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_18", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(26)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_19", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(27)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_20", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(28)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_22", "d:/uc/cloud_on_diff_time/VAO_lighttex");
+    };
+    shader_arg(29)
+    {
+        redirect(0, "d:/UC/cloud_on_diff_time/sky_oclock_24", "d:/uc/cloud_on_diff_time/VAO_lighttex");
     };
     type_replacement
     {

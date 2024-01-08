@@ -77,7 +77,6 @@ namespace GlslRewriter
                                 }
                                 else {
                                     vstr = cols[i].Trim();
-                                    sb.Append(vstr);
                                 }
                                 if (names[0] == "gl_Position") {
                                     if (names[1] == "x")

@@ -1,0 +1,114 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+out gl_PerVertex { vec4 gl_Position; };
+layout(location = 0) in vec4 in_attr0;
+layout(location = 0) out vec4 out_attr0;
+layout(location = 1) out vec4 out_attr1;
+layout(location = 2) out vec4 out_attr2;
+layout(std140, binding = 0) uniform vs_cbuf_3 { uvec4 vs_cbuf3[4096]; };
+layout(std140, binding = 1) uniform vs_cbuf_4 { uvec4 vs_cbuf4[4096]; };
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+	// vs_cbuf3[2] = vec4(256.00, 256.00, 0.0039063, 0.0039063);
+	// vs_cbuf3[8] = vec4(6360.00, 6420.00, 0.00, 0.00);
+	// vs_cbuf4[3] = vec4(12.87564, 13.65553, 12.55366, 0.0022093);
+	// vs_cbuf4[7] = vec4(0.00, 0.00, 0.00, 0.00);
+
+	bool b_1_1;
+	float f_0_2;
+	precise float pf_0_0;
+	precise float pf_0_1;
+	precise float pf_0_4;
+	uint u_0_1;
+	uint u_0_2;
+	uint u_0_3;
+	uint u_0_phi_2;
+	uint u_1_0;
+	uint u_1_1;
+	uint u_1_phi_1;
+	uint u_2_0;
+	// -1.00  <=>  float(-1.00)
+	gl_Position.x = float(-1.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.y = float(1.00);
+	// 0.00  <=>  float(0.00)
+	gl_Position.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	gl_Position.w = float(1.00);
+	// 6360.132  <=>  float(6360.13232)
+	out_attr0.x = float(6360.13232);
+	// 0.00  <=>  float(0.00)
+	out_attr0.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr0.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr0.w = float(1.00);
+	// -0.00646  <=>  float(-0.00646)
+	out_attr1.x = float(-0.00646);
+	// 0.00  <=>  float(0.00)
+	out_attr1.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr1.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr1.w = float(1.00);
+	// -0.00255  <=>  float(-0.00255)
+	out_attr2.x = float(-0.00255);
+	// 0.00  <=>  float(0.00)
+	out_attr2.y = float(0.00);
+	// 0.00  <=>  float(0.00)
+	out_attr2.z = float(0.00);
+	// 1.00  <=>  float(1.00)
+	out_attr2.w = float(1.00);
+	// 60.00  <=>  ((0.f - {utof(vs_cbuf3[8].x) : 6360.00}) + {utof(vs_cbuf3[8].y) : 6420.00})
+	pf_0_0 = ((0.f - utof(vs_cbuf3[8].x)) + utof(vs_cbuf3[8].y));
+	// 6360.132  <=>  (({pf_0_0 : 60.00} * clamp({utof(vs_cbuf4[3].w) : 0.0022093}, 0.0001f, 0.9999f)) + {utof(vs_cbuf3[8].x) : 6360.00})
+	pf_0_1 = ((pf_0_0 * clamp(utof(vs_cbuf4[3].w), 0.0001f, 0.9999f)) + utof(vs_cbuf3[8].x));
+	// 6360.132  <=>  {pf_0_1 : 6360.132}
+	out_attr0.x = pf_0_1;
+	// -1.00  <=>  ({in_attr0.x : -0.50} * 2.f)
+	gl_Position.x = (in_attr0.x * 2.f);
+	// 1065352866  <=>  {ftou(((1.0f / {pf_0_1 : 6360.132}) * {utof(vs_cbuf3[8].x) : 6360.00})) : 1065352866}
+	u_0_1 = ftou(((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)));
+	// 1.00  <=>  ({in_attr0.y : 0.50} * 2.f)
+	gl_Position.y = (in_attr0.y * 2.f);
+	// -0.9999791  <=>  (0.f - ((1.0f / {pf_0_1 : 6360.132}) * {utof(vs_cbuf3[8].x) : 6360.00}))
+	f_0_2 = (0.f - ((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)));
+	// 0.0000417  <=>  ((((1.0f / {pf_0_1 : 6360.132}) * {utof(vs_cbuf3[8].x) : 6360.00}) * {f_0_2 : -0.9999791}) + 1.f)
+	pf_0_4 = ((((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)) * f_0_2) + 1.f);
+	// 1065352866  <=>  {u_0_1 : 1065352866}
+	u_1_0 = u_0_1;
+	u_1_phi_1 = u_1_0;
+	// False  <=>  if(((0u != {vs_cbuf4[7].y : 0}) ? true : false))
+	if(((0u != vs_cbuf4[7].y) ? true : false))
+	{
+		// 3212836864  <=>  3212836864u
+		u_1_1 = 3212836864u;
+		u_1_phi_1 = u_1_1;
+	}
+	// True  <=>  ((! (0u != {vs_cbuf4[7].y : 0})) ? true : false)
+	b_1_1 = ((! (0u != vs_cbuf4[7].y)) ? true : false);
+	// 1065352866  <=>  {u_1_phi_1 : 1065352866}
+	u_0_2 = u_1_phi_1;
+	u_0_phi_2 = u_0_2;
+	// True  <=>  if({b_1_1 : True})
+	if(b_1_1)
+	{
+		// 3139916136  <=>  {ftou(((0.f - sqrt(clamp({pf_0_4 : 0.0000417}, 0.0, 1.0))) + {utof(vs_cbuf3[2].w) : 0.0039063})) : 3139916136}
+		u_2_0 = ftou(((0.f - sqrt(clamp(pf_0_4, 0.0, 1.0))) + utof(vs_cbuf3[2].w)));
+		// 3139916136  <=>  {u_2_0 : 3139916136}
+		u_0_3 = u_2_0;
+		u_0_phi_2 = u_0_3;
+	}
+	// -0.0064593  <=>  (0.f - sqrt(clamp({pf_0_4 : 0.0000417}, 0.0, 1.0)))
+	out_attr1.x = (0.f - sqrt(clamp(pf_0_4, 0.0, 1.0)));
+	// -0.0025531  <=>  {utof(u_0_phi_2) : -0.0025531}
+	out_attr2.x = utof(u_0_phi_2);
+	return;
+}

@@ -22,16 +22,16 @@ vs
 
         add_utof(1065353216u);
 
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt", 9);
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("textureGather", 3);
-            split_on("log2", 12);
+        auto_split(5){
+            split_on("exp2", 3);
+            split_on("inversesqrt", 3);
+            split_on("texture", 1);
+            split_on("textureLod", 1);
+            split_on("texelFetch", 1);
+            split_on("texelQueryLod", 1);
+            split_on("texelSize", 1);
+            split_on("textureGather", 1);
+            split_on("log2", 3);
         };
 
         variable_assignment
@@ -62,6 +62,22 @@ vs
     shader_arg
     {
         vs_attr("d:/UC/cubemap/vs_in.csv", "d:/UC/cubemap/vs_out.csv", 0);
+    };
+    shader_arg(1)
+    {
+        redirect(0, "d:/UC/cubemap1", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(2)
+    {
+        redirect(0, "d:/UC/cubemap2", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(3)
+    {
+        redirect(0, "d:/UC/cubemap3", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(4)
+    {
+        redirect(0, "d:/UC/cubemap4", "d:/uc/VAO_cubemap");
     };
     calculator
     {
@@ -95,16 +111,16 @@ ps
         generate_expression_list;
         remove_duplicate_expression;
 
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt");
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("textureGather", 3);
-            split_on("log2", 12);
+        auto_split(5){
+            split_on("exp2", 3);
+            split_on("inversesqrt", 3);
+            split_on("texture", 1);
+            split_on("textureLod", 1);
+            split_on("texelFetch", 1);
+            split_on("texelQueryLod", 1);
+            split_on("texelSize", 1);
+            split_on("textureGather", 1);
+            split_on("log2", 3);
         };
 
         split_object_assignment{
@@ -118,6 +134,23 @@ ps
             f4_0_0,
             f4_0_1,
             f4_0_2,
+            pf_1_1,
+            pf_1_2,
+            pf_1_5,
+            pf_1_6,
+            pf_10_4,
+            pf_12_0,
+            pf_13_0,
+            pf_14_0,
+            pf_15_0,
+            pf_16_0,
+            pf_4_1,
+            pf_4_2,
+            pf_4_5,
+            pf_4_6,
+            pf_4_8,
+            pf_6_9,
+            pf_8_4,
         };
     };
     shader_arg
@@ -132,6 +165,22 @@ ps
         uniform("d:/UC/cubemap/fs_cbuf5.csv", "uvec4"){
             add(8,9,16,17,18,19);
         };
+    };
+    shader_arg(1)
+    {
+        redirect(0, "d:/UC/cubemap1", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(2)
+    {
+        redirect(0, "d:/UC/cubemap2", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(3)
+    {
+        redirect(0, "d:/UC/cubemap3", "d:/uc/VAO_cubemap");
+    };
+    shader_arg(4)
+    {
+        redirect(0, "d:/UC/cubemap4", "d:/uc/VAO_cubemap");
     };
     calculator
     {

@@ -26,24 +26,57 @@ void main()
 	// fs_cbuf3[0] = vec4(1.00, 25000.00, 1.777778, 0.99996);
 	// fs_cbuf3[1] = vec4(0.00, 0.00, 24999.00, 0.00004);
 
+	bool b_0_4;
+	float f_0_11;
+	float f_1_3;
 	vec4 f4_0_0;
 	precise float gl_FragDepth;
+	precise float pf_0_4;
+	uint u_0_0;
 	uint u_0_10;
 	uint u_0_11;
+	uint u_0_2;
+	uint u_0_6;
 	uint u_0_9;
 	uint u_0_phi_1;
+	uint u_1_0;
+	uint u_1_2;
+	uint u_1_4;
+	uint u_2_1;
 	uint u_ssbo_0;
 	// vec4(0.50,0.50,0.50,0.75)  <=>  textureGather({tex1 : tex1}, vec2({in_attr0.x : -0.0000063}, {in_attr0.y : -0.00001}), int(0))
 	f4_0_0 = textureGather(tex1, vec2(in_attr0.x, in_attr0.y), int(0));
-	// 19264  <=>  ((((((((((isnan(({in_attr0.y : -0.00001} * 18.f)) ? 0u : int(clamp(trunc(({in_attr0.y : -0.00001} * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan(({in_attr0.x : -0.0000063} * 32.f)) ? 0u : int(clamp(trunc(({in_attr0.x : -0.0000063} * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan({gl_FragCoord.x : 320.00}) ? 0u : int(clamp(trunc({gl_FragCoord.x : 320.00}), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan({gl_FragCoord.y : 240.00}) ? 0u : ...), ..., ...)) << ...) + ...) + ...) + ...) - ...)
-	u_0_9 = ((((((((((isnan((in_attr0.y * 18.f)) ? 0u : int(clamp(trunc((in_attr0.y * 18.f)), float(-2147483600.f), float(2147483600.f)))) << 5u) + (isnan((in_attr0.x * 32.f)) ? 0u : int(clamp(trunc((in_attr0.x * 32.f)), float(-2147483600.f), float(2147483600.f))))) << 2u) + bitfieldInsert(((isnan(gl_FragCoord.x) ? 0u : int(clamp(trunc(gl_FragCoord.x), float(-2147483600.f), float(2147483600.f)))) & 1u), (isnan(gl_FragCoord.y) ? 0u : int(clamp(trunc(gl_FragCoord.y), float(-2147483600.f), float(2147483600.f)))), int(1u), ...)) << ...) + ...) + ...) + ...) - ...);
-	// atomicMin({fs_ssbo0[({u_0_9 : 19264} >> 2)] : }, uint(clamp(trunc((min(min({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), min({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) * 16777215.f)), float(0.f), float(4294967300.f))))
-	u_ssbo_0 = atomicMin(fs_ssbo0[(u_0_9 >> 2)], uint(clamp(trunc((min(min(f4_0_0.x, f4_0_0.y), min(f4_0_0.z, f4_0_0.w)) * 16777215.f)), float(0.f), float(4294967300.f))));
-	// 1065352993  <=>  {ftou((({f4_0_0.w : 0.75} * {utof(fs_cbuf3[0].y) : 25000.00}) * (1.0f / (({f4_0_0.w : 0.75} * {utof(fs_cbuf3[1].z) : 24999.00}) + {utof(fs_cbuf3[0].x) : 1.00})))) : 1065352993}
-	u_0_10 = ftou(((f4_0_0.w * utof(fs_cbuf3[0].y)) * (1.0f / ((f4_0_0.w * utof(fs_cbuf3[1].z)) + utof(fs_cbuf3[0].x)))));
+	// 0  <=>  int(clamp(trunc(({in_attr0.x : -0.0000063} * 32.f)), float(-2147483600.f), float(2147483600.f)))
+	u_0_0 = int(clamp(trunc((in_attr0.x * 32.f)), float(-2147483600.f), float(2147483600.f)));
+	// 0  <=>  int(clamp(trunc(({in_attr0.y : -0.00001} * 18.f)), float(-2147483600.f), float(2147483600.f)))
+	u_1_0 = int(clamp(trunc((in_attr0.y * 18.f)), float(-2147483600.f), float(2147483600.f)));
+	// 0  <=>  ((isnan(({in_attr0.y : -0.00001} * 18.f)) ? 0u : {u_1_0 : 0}) << 5u)
+	u_1_2 = ((isnan((in_attr0.y * 18.f)) ? 0u : u_1_0) << 5u);
+	// 0  <=>  ({u_1_2 : 0} + (isnan(({in_attr0.x : -0.0000063} * 32.f)) ? 0u : {u_0_0 : 0}))
+	u_0_2 = (u_1_2 + (isnan((in_attr0.x * 32.f)) ? 0u : u_0_0));
+	// 0  <=>  (isnan({gl_FragCoord.x : 0.00}) ? 0u : int(clamp(trunc({gl_FragCoord.x : 0.00}), float(-2147483600.f), float(2147483600.f))))
+	u_1_4 = (isnan(gl_FragCoord.x) ? 0u : int(clamp(trunc(gl_FragCoord.x), float(-2147483600.f), float(2147483600.f))));
+	// 255  <=>  (isnan({gl_FragCoord.y : 255.00}) ? 0u : int(clamp(trunc({gl_FragCoord.y : 255.00}), float(-2147483600.f), float(2147483600.f))))
+	u_2_1 = (isnan(gl_FragCoord.y) ? 0u : int(clamp(trunc(gl_FragCoord.y), float(-2147483600.f), float(2147483600.f))));
+	// 19272  <=>  (((({u_0_2 : 0} << 2u) + bitfieldInsert(({u_1_4 : 0} & 1u), {u_2_1 : 255}, int(1u), int(1u))) << 2u) + 19264u)
+	u_0_6 = ((((u_0_2 << 2u) + bitfieldInsert((u_1_4 & 1u), u_2_1, int(1u), int(1u))) << 2u) + 19264u);
+	// False  <=>  ((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f)))
+	b_0_4 = (((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f)));
+	// 0.0000533  <=>  (1.0f / (({f4_0_0.w : 0.75} * {utof(fs_cbuf3[1].z) : 24999.00}) + {utof(fs_cbuf3[0].x) : 1.00}))
+	f_1_3 = (1.0f / ((f4_0_0.w * utof(fs_cbuf3[1].z)) + utof(fs_cbuf3[0].x)));
+	// 8388607.00  <=>  trunc((min(min({f4_0_0.x : 0.50}, {f4_0_0.y : 0.50}), min({f4_0_0.z : 0.50}, {f4_0_0.w : 0.75})) * 16777215.f))
+	f_0_11 = trunc((min(min(f4_0_0.x, f4_0_0.y), min(f4_0_0.z, f4_0_0.w)) * 16777215.f));
+	// 0.9999867  <=>  (({f4_0_0.w : 0.75} * {utof(fs_cbuf3[0].y) : 25000.00}) * {f_1_3 : 0.0000533})
+	pf_0_4 = ((f4_0_0.w * utof(fs_cbuf3[0].y)) * f_1_3);
+	// 19272  <=>  ((({u_0_6 : 19272} + {fs_cbuf0[81].x : 675610624}) + 0u) - ({fs_cbuf0[81].x : 675610624} & 4294967280u))
+	u_0_9 = (((u_0_6 + fs_cbuf0[81].x) + 0u) - (fs_cbuf0[81].x & 4294967280u));
+	// atomicMin({fs_ssbo0[({u_0_9 : 19272} >> 2)] : }, uint(clamp({f_0_11 : 8388607.00}, float(0.f), float(4294967300.f))))
+	u_ssbo_0 = atomicMin(fs_ssbo0[(u_0_9 >> 2)], uint(clamp(f_0_11, float(0.f), float(4294967300.f))));
+	// 1065352993  <=>  {ftou(pf_0_4) : 1065352993}
+	u_0_10 = ftou(pf_0_4);
 	u_0_phi_1 = u_0_10;
-	// False  <=>  if((((({f4_0_0.w : 0.75} == 1.f) && (! isnan({f4_0_0.w : 0.75}))) && (! isnan(1.f))) ? true : false))
-	if(((((f4_0_0.w == 1.f) && (! isnan(f4_0_0.w))) && (! isnan(1.f))) ? true : false))
+	// False  <=>  if(({b_0_4 : False} ? true : false))
+	if((b_0_4 ? true : false))
 	{
 		// 1065353216  <=>  1065353216u
 		u_0_11 = 1065353216u;

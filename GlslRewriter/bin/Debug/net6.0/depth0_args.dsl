@@ -22,15 +22,16 @@ vs
 
         add_utof(1065353216u);
 
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt", 9);
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("log2", 12);
+        auto_split(5){
+            split_on("exp2", 3);
+            split_on("inversesqrt", 3);
+            split_on("texture", 1);
+            split_on("textureLod", 1);
+            split_on("texelFetch", 1);
+            split_on("texelQueryLod", 1);
+            split_on("texelSize", 1);
+            split_on("textureGather", 1);
+            split_on("log2", 3);
         };
 
         variable_assignment
@@ -56,6 +57,8 @@ vs
         };
 
         split_variable_assignment{
+            u_0_0,
+            u_1_0,
         };
     };
     shader_arg
@@ -83,7 +86,7 @@ ps
         //def_multiline_for_variable = false;
         //def_expanded_only_once_for_variable = false;
         def_max_level = 32;
-        def_max_length = 512;
+        def_max_length = 2048;
         //def_skip_value;
         def_skip_expression;
         def_max_level_for_variable = 256;
@@ -94,15 +97,16 @@ ps
         generate_expression_list;
         remove_duplicate_expression;
 
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt");
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("log2", 12);
+        auto_split(5){
+            split_on("exp2", 3);
+            split_on("inversesqrt", 3);
+            split_on("texture", 1);
+            split_on("textureLod", 1);
+            split_on("texelFetch", 1);
+            split_on("texelQueryLod", 1);
+            split_on("texelSize", 1);
+            split_on("textureGather", 1);
+            split_on("log2", 3);
         };
 
         split_object_assignment{
@@ -113,7 +117,11 @@ ps
         };
 
         split_variable_assignment{
+            b_0_0,
+            f_0_1,
             f4_0_0,
+            pf_0_1,
+            pf_0_2,
             u_1_0,
             u_1_1,
             u_1_phi_1,

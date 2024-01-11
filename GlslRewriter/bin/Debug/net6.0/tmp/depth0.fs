@@ -11,7 +11,7 @@ layout(location = 7) out vec4 frag_color7;
 layout(std140, binding = 0) uniform fs_cbuf_3 { uvec4 fs_cbuf3[4096]; };
 layout(binding = 1) uniform sampler2D tex1;
 void main() {
-gl_FragCoord = vec4(320,240,0.5,1.0);
+gl_FragCoord = vec4(0, 255, 1, 1);
 in_attr0.x = float(-6.25000E-06);
 in_attr0.y = float(-0.00001);
 in_attr0.z = float(0.00);

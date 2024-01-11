@@ -15,6 +15,8 @@ void main()
 {
 	// 1065353216 = 1.00f;
 
+	uint u_0_0;
+	uint u_1_0;
 	// -1.00  <=>  float(-1.00)
 	gl_Position.x = float(-1.00);
 	// 1.00  <=>  float(1.00)
@@ -31,15 +33,19 @@ void main()
 	out_attr0.z = float(0.00);
 	// 1.00  <=>  float(1.00)
 	out_attr0.w = float(1.00);
+	// 8  <=>  {uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).x : 8}
+	u_0_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x;
+	// 13  <=>  {uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).y : 13}
+	u_1_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).y;
 	// 1.00  <=>  1.f
 	gl_Position.z = 1.f;
 	// -1.00  <=>  ({in_attr0.x : -0.50} * 2.f)
 	gl_Position.x = (in_attr0.x * 2.f);
 	// 1.00  <=>  ({in_attr0.y : 0.50} * 2.f)
 	gl_Position.y = (in_attr0.y * 2.f);
-	// -0.00125  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).x : 8}))) * -0.01f) + {in_attr1.x : 0.00})
-	out_attr0.x = (((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x))) * -0.01f) + in_attr1.x);
-	// -0.0007692  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).y : 13}))) * -0.01f) + {in_attr1.y : 0.00})
-	out_attr0.y = (((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).y))) * -0.01f) + in_attr1.y);
+	// -0.00125  <=>  (((1.0f / float(int({u_0_0 : 8}))) * -0.01f) + {in_attr1.x : 0.00})
+	out_attr0.x = (((1.0f / float(int(u_0_0))) * -0.01f) + in_attr1.x);
+	// -0.0007692  <=>  (((1.0f / float(int({u_1_0 : 13}))) * -0.01f) + {in_attr1.y : 0.00})
+	out_attr0.y = (((1.0f / float(int(u_1_0))) * -0.01f) + in_attr1.y);
 	return;
 }

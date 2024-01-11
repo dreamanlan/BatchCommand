@@ -1,21 +1,21 @@
 var vertexes = new[] {
 	new VertexData(new Vector4(-1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f))
-	, new VertexData(new Vector4(-1.00f, -3.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f))
 	, new VertexData(new Vector4(3.00f, 1.00f, 1.00f, 1.00f), new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f))
+	, new VertexData(new Vector4(-1.00f, -3.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f))
 };
 
 // gl_Position
 var gl_Position = new[] {
 	new Vector4(-1.00f, 1.00f, 1.00f, 1.00f)
-	, new Vector4(-1.00f, -3.00f, 1.00f, 1.00f)
 	, new Vector4(3.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(-1.00f, -3.00f, 1.00f, 1.00f)
 };
 
 // out_attr0
 var out_attr0 = new[] {
 	new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f)
-	, new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f)
 	, new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f)
+	, new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f)
 };
 
 // fs_cbuf3[0] = new Vector4(0.00004f, 0.99996f, 0.99996f, 24999.00f);
@@ -42,7 +42,7 @@ layout(std140, binding = 0 )uniform fs_cbuf_3
 layout(binding = 1 )uniform sampler2D tex1;
 void main()
 {
-	gl_FragCoord = vec4(320, 240, 0.5, 1.0 );	// vec4(320.00,240.00,0.50,1.00)
+	gl_FragCoord = vec4(0, 255, 1, 1 );	// vec4(0.00,255.00,1.00,1.00)
 	in_attr0.x  = float(-6.25000E-06 );	// -0.0000063
 	in_attr0.y  = float(-0.00001 );	// -0.00001
 	in_attr0.z  = float(0.00 );	// 0.00
@@ -67,21 +67,25 @@ void main()
 	f_2_1 = in_attr0.y ;	// -0.00001
 	f_3_0 = gl_FragCoord.w ;	// 1.00
 	f_2_2 = f_2_1 * f_3_0;	// -0.00001
-	f_0_1 = (1.0f ) / f_0_0;	// 1.00
+	f_0_1 = (1.0f ) / f_0_0;	/* 1.00  <=>  (1.0f / {gl_FragCoord.w : 1.00})
+<=>
+(1.0f / gl_FragCoord.w)
+<=>
+{f_0_1 = (1.0f / 
+	{f_0_0 = gl_FragCoord.w
+	})
+}
+*/
 	pf_0_0 = f_0_1 * f_1_1;	// -0.0000063
 	pf_1_0 = f_0_1 * f_2_2;	// -0.00001
 	f2_0_0 = vec2(pf_0_0, pf_1_0 );	// vec2(-0.0000063,-0.00001)
-	f4_0_0 = texture(tex1, f2_0_0 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex1 : tex1}, vec2(((1.0f / {gl_FragCoord.w : 1.00}) * ({in_attr0.x : -0.0000063} * {gl_FragCoord.w : 1.00})), ((1.0f / {gl_FragCoord.w : 1.00}) * ({in_attr0.y : -0.00001} * {gl_FragCoord.w : 1.00}))))
+	f4_0_0 = texture(tex1, f2_0_0 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex1 : tex1}, vec2(({f_0_1 : 1.00} * ({in_attr0.x : -0.0000063} * {gl_FragCoord.w : 1.00})), ({f_0_1 : 1.00} * ({in_attr0.y : -0.00001} * {gl_FragCoord.w : 1.00}))))
 <=>
-texture(tex1, vec2(((1.0f / gl_FragCoord.w) * (in_attr0.x * gl_FragCoord.w)), ((1.0f / gl_FragCoord.w) * (in_attr0.y * gl_FragCoord.w))))
+texture(tex1, vec2((f_0_1 * (in_attr0.x * gl_FragCoord.w)), (f_0_1 * (in_attr0.y * gl_FragCoord.w))))
 <=>
 {f4_0_0 = texture(tex1, 
 	{f2_0_0 = vec2(
-		{pf_0_0 = (
-			{f_0_1 = (1.0f / 
-				{f_0_0 = gl_FragCoord.w
-				})
-			} * 
+		{pf_0_0 = (f_0_1 * 
 			{f_1_1 = (
 				{f_1_0 = in_attr0.x
 				} * 
@@ -103,46 +107,62 @@ texture(tex1, vec2(((1.0f / gl_FragCoord.w) * (in_attr0.x * gl_FragCoord.w)), ((
 	f_0_2 = f4_0_0.x ;	// 0.50
 	f_1_2 = utof(fs_cbuf3[0 ].y  );	// 0.99996
 	f_1_3 = 0.f - (f_1_2 );	// -0.99996
-	pf_0_1 = fma(f_0_2, f_1_3, 1.f );	// 0.50002
-	b_0_0 = f_0_2 == 1.f && ! isnan(f_0_2 ) && ! isnan(1.f );	// False
+	pf_0_1 = fma(f_0_2, f_1_3, 1.f );	/* 0.50002  <=>  (({f4_0_0.x : 0.50} * (0.f - {utof(fs_cbuf3[0].y) : 0.99996})) + 1.f)
+<=>
+((f4_0_0.x * (0.f - utof(fs_cbuf3[0].y))) + 1.f)
+<=>
+{pf_0_1 = ((
+	{f_0_2 = f4_0_0.x
+	} * 
+	{f_1_3 = (0.f - 
+		{f_1_2 = utof(fs_cbuf3[0].y)
+		})
+	}) + 1.f)
+}
+*/
+	b_0_0 = f_0_2 == 1.f && ! isnan(f_0_2 ) && ! isnan(1.f );	/* False  <=>  ((({f4_0_0.x : 0.50} == 1.f) && (! isnan({f4_0_0.x : 0.50}))) && (! isnan(1.f)))
+<=>
+(((f4_0_0.x == 1.f) && (! isnan(f4_0_0.x))) && (! isnan(1.f)))
+<=>
+{b_0_0 = (((
+	{f_0_2 = f4_0_0.x
+	} == 1.f) && (! isnan(f_0_2))) && (! isnan(1.f)))
+}
+*/
 	f_0_3 = (1.0f ) / pf_0_1;	// 1.99992
 	f_1_4 = utof(fs_cbuf3[0 ].x  );	// 0.00004
 	f_2_3 = utof(fs_cbuf3[0 ].x  );	// 0.00004
 	f_1_5 = 0.f - (f_1_4 );	// -0.00004
-	pf_0_2 = fma(f_0_3, f_2_3, f_1_5 );	// 0.00004
+	pf_0_2 = fma(f_0_3, f_2_3, f_1_5 );	/* 0.00004  <=>  (((1.0f / {pf_0_1 : 0.50002}) * {utof(fs_cbuf3[0].x) : 0.00004}) + (0.f - {utof(fs_cbuf3[0].x) : 0.00004}))
+<=>
+(((1.0f / pf_0_1) * utof(fs_cbuf3[0].x)) + (0.f - utof(fs_cbuf3[0].x)))
+<=>
+{pf_0_2 = ((
+	{f_0_3 = (1.0f / pf_0_1)
+	} * 
+	{f_2_3 = utof(fs_cbuf3[0].x)
+	}) + 
+	{f_1_5 = (0.f - 
+		{f_1_4 = utof(fs_cbuf3[0].x)
+		})
+	})
+}
+*/
 	u_0_0 = ftou(pf_0_2 );	// 942130163
 	b_1_0 = b_0_0 ? (true) : (false);	// False
-	u_1_0 = u_0_0;	/* 942130163  <=>  {ftou((((1.0f / (({f4_0_0.x : 0.50} * (0.f - {utof(fs_cbuf3[0].y) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[0].x) : 0.00004}) + (0.f - {utof(fs_cbuf3[0].x) : 0.00004}))) : 942130163}
+	u_1_0 = u_0_0;	/* 942130163  <=>  {ftou(pf_0_2) : 942130163}
 <=>
-ftou((((1.0f / ((f4_0_0.x * (0.f - utof(fs_cbuf3[0].y))) + 1.f)) * utof(fs_cbuf3[0].x)) + (0.f - utof(fs_cbuf3[0].x))))
+ftou(pf_0_2)
 <=>
 {u_1_0 = 
-	{u_0_0 = ftou(
-		{pf_0_2 = ((
-			{f_0_3 = (1.0f / 
-				{pf_0_1 = ((
-					{f_0_2 = f4_0_0.x
-					} * 
-					{f_1_3 = (0.f - 
-						{f_1_2 = utof(fs_cbuf3[0].y)
-						})
-					}) + 1.f)
-				})
-			} * 
-			{f_2_3 = utof(fs_cbuf3[0].x)
-			}) + 
-			{f_1_5 = (0.f - 
-				{f_1_4 = utof(fs_cbuf3[0].x)
-				})
-			})
-		})
+	{u_0_0 = ftou(pf_0_2)
 	}
 }
 */
 	u_1_phi_1 = u_1_0;
-	if(b_1_0 )	/* False  <=>  if((((({f4_0_0.x : 0.50} == 1.f) && (! isnan({f4_0_0.x : 0.50}))) && (! isnan(1.f))) ? true : false))
+	if(b_1_0 )	/* False  <=>  if(({b_0_0 : False} ? true : false))
 <=>
-if(((((f4_0_0.x == 1.f) && (! isnan(f4_0_0.x))) && (! isnan(1.f))) ? true : false))
+if((b_0_0 ? true : false))
 <=>if(b_1_0...)
 */
 	{
@@ -198,7 +218,11 @@ utof(u_1_phi_1)
 	return;
 } 
 /*split_variable_assignment{
+	b_0_0,
+	f_0_1,
 	f4_0_0,
+	pf_0_1,
+	pf_0_2,
 	u_1_0,
 	u_1_1,
 	u_1_phi_1,

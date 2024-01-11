@@ -22,17 +22,29 @@ void main()
 	// 1065353216 = 1.00f;
 	// fs_cbuf3[0] = vec4(0.00004, 0.99996, 0.99996, 24999.00);
 
+	bool b_0_0;
+	float f_0_1;
 	vec4 f4_0_0;
+	precise float pf_0_1;
+	precise float pf_0_2;
 	uint u_1_0;
 	uint u_1_1;
 	uint u_1_phi_1;
-	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex1 : tex1}, vec2(((1.0f / {gl_FragCoord.w : 1.00}) * ({in_attr0.x : -0.0000063} * {gl_FragCoord.w : 1.00})), ((1.0f / {gl_FragCoord.w : 1.00}) * ({in_attr0.y : -0.00001} * {gl_FragCoord.w : 1.00}))))
-	f4_0_0 = texture(tex1, vec2(((1.0f / gl_FragCoord.w) * (in_attr0.x * gl_FragCoord.w)), ((1.0f / gl_FragCoord.w) * (in_attr0.y * gl_FragCoord.w))));
-	// 942130163  <=>  {ftou((((1.0f / (({f4_0_0.x : 0.50} * (0.f - {utof(fs_cbuf3[0].y) : 0.99996})) + 1.f)) * {utof(fs_cbuf3[0].x) : 0.00004}) + (0.f - {utof(fs_cbuf3[0].x) : 0.00004}))) : 942130163}
-	u_1_0 = ftou((((1.0f / ((f4_0_0.x * (0.f - utof(fs_cbuf3[0].y))) + 1.f)) * utof(fs_cbuf3[0].x)) + (0.f - utof(fs_cbuf3[0].x))));
+	// 1.00  <=>  (1.0f / {gl_FragCoord.w : 1.00})
+	f_0_1 = (1.0f / gl_FragCoord.w);
+	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex1 : tex1}, vec2(({f_0_1 : 1.00} * ({in_attr0.x : -0.0000063} * {gl_FragCoord.w : 1.00})), ({f_0_1 : 1.00} * ({in_attr0.y : -0.00001} * {gl_FragCoord.w : 1.00}))))
+	f4_0_0 = texture(tex1, vec2((f_0_1 * (in_attr0.x * gl_FragCoord.w)), (f_0_1 * (in_attr0.y * gl_FragCoord.w))));
+	// 0.50002  <=>  (({f4_0_0.x : 0.50} * (0.f - {utof(fs_cbuf3[0].y) : 0.99996})) + 1.f)
+	pf_0_1 = ((f4_0_0.x * (0.f - utof(fs_cbuf3[0].y))) + 1.f);
+	// False  <=>  ((({f4_0_0.x : 0.50} == 1.f) && (! isnan({f4_0_0.x : 0.50}))) && (! isnan(1.f)))
+	b_0_0 = (((f4_0_0.x == 1.f) && (! isnan(f4_0_0.x))) && (! isnan(1.f)));
+	// 0.00004  <=>  (((1.0f / {pf_0_1 : 0.50002}) * {utof(fs_cbuf3[0].x) : 0.00004}) + (0.f - {utof(fs_cbuf3[0].x) : 0.00004}))
+	pf_0_2 = (((1.0f / pf_0_1) * utof(fs_cbuf3[0].x)) + (0.f - utof(fs_cbuf3[0].x)));
+	// 942130163  <=>  {ftou(pf_0_2) : 942130163}
+	u_1_0 = ftou(pf_0_2);
 	u_1_phi_1 = u_1_0;
-	// False  <=>  if((((({f4_0_0.x : 0.50} == 1.f) && (! isnan({f4_0_0.x : 0.50}))) && (! isnan(1.f))) ? true : false))
-	if(((((f4_0_0.x == 1.f) && (! isnan(f4_0_0.x))) && (! isnan(1.f))) ? true : false))
+	// False  <=>  if(({b_0_0 : False} ? true : false))
+	if((b_0_0 ? true : false))
 	{
 		// 1065353216  <=>  1065353216u
 		u_1_1 = 1065353216u;

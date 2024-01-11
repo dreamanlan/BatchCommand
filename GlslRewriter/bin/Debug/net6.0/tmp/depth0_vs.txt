@@ -1,40 +1,40 @@
 var vertexes = new[] {
 	new VertexData(new Vector4(-0.50f, 0.50f, 0.00f, 0.00f), new Vector4(0.00f, 0.00f))
-	, new VertexData(new Vector4(-0.50f, -1.50f, 0.00f, 0.00f), new Vector4(0.00f, 2.00f))
 	, new VertexData(new Vector4(1.50f, 0.50f, 0.00f, 0.00f), new Vector4(2.00f, 0.00f))
+	, new VertexData(new Vector4(-0.50f, -1.50f, 0.00f, 0.00f), new Vector4(0.00f, 2.00f))
 };
 var vertexes = new[] {
 	new VertexData(new Vector4(-1.00f, 1.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f))
-	, new VertexData(new Vector4(-1.00f, -3.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f))
 	, new VertexData(new Vector4(3.00f, 1.00f, 1.00f, 1.00f), new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f))
+	, new VertexData(new Vector4(-1.00f, -3.00f, 1.00f, 1.00f), new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f))
 };
 
 // gl_Position
 var gl_Position = new[] {
 	new Vector4(-1.00f, 1.00f, 1.00f, 1.00f)
-	, new Vector4(-1.00f, -3.00f, 1.00f, 1.00f)
 	, new Vector4(3.00f, 1.00f, 1.00f, 1.00f)
+	, new Vector4(-1.00f, -3.00f, 1.00f, 1.00f)
 };
 
 // in_attr0
 var in_attr0 = new[] {
 	new Vector4(-0.50f, 0.50f, 0.00f, 0.00f)
-	, new Vector4(-0.50f, -1.50f, 0.00f, 0.00f)
 	, new Vector4(1.50f, 0.50f, 0.00f, 0.00f)
+	, new Vector4(-0.50f, -1.50f, 0.00f, 0.00f)
 };
 
 // in_attr1
 var in_attr1 = new[] {
 	new Vector4(0.00f, 0.00f)
-	, new Vector4(0.00f, 2.00f)
 	, new Vector4(2.00f, 0.00f)
+	, new Vector4(0.00f, 2.00f)
 };
 
 // out_attr0
 var out_attr0 = new[] {
 	new Vector4(-6.25000E-06f, -0.00001f, 0.00f, 1.00f)
-	, new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f)
 	, new Vector4(1.99999f, -0.00001f, 0.00f, 1.00f)
+	, new Vector4(-6.25000E-06f, 1.99999f, 0.00f, 1.00f)
 };
 
 // 1065353216 = 1.00f;
@@ -123,8 +123,24 @@ float(1.00)
 	gl_Position = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
 	out_attr0 = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
 	u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u ) ) ), 0u, 0u );	// uvec4(8,13,0,0)
-	u_0_0 = u4_0_0.x ;	// 8
-	u_1_0 = u4_0_0.y ;	// 13
+	u_0_0 = u4_0_0.x ;	/* 8  <=>  {uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).x : 8}
+<=>
+uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x
+<=>
+{u_0_0 = 
+	{u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u)
+	}.x
+}
+*/
+	u_1_0 = u4_0_0.y ;	/* 13  <=>  {uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).y : 13}
+<=>
+uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).y
+<=>
+{u_1_0 = 
+	{u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u)
+	}.y
+}
+*/
 	f_0_0 = in_attr0.x ;	// -0.50
 	f_1_0 = in_attr1.x ;	// 0.00
 	f_2_0 = in_attr1.y ;	// 0.00
@@ -166,18 +182,14 @@ float(1.00)
 	f_3_2 = (1.0f ) / f_3_1;	// 0.0769231
 	pf_0_2 = fma(f_0_2, -0.01f, f_1_0 );	// -0.00125
 	pf_1_0 = fma(f_3_2, -0.01f, f_2_0 );	// -0.0007692
-	out_attr0.x  = pf_0_2;	/* -0.00125  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).x : 8}))) * -0.01f) + {in_attr1.x : 0.00})
+	out_attr0.x  = pf_0_2;	/* -0.00125  <=>  (((1.0f / float(int({u_0_0 : 8}))) * -0.01f) + {in_attr1.x : 0.00})
 <=>
-(((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).x))) * -0.01f) + in_attr1.x)
+(((1.0f / float(int(u_0_0))) * -0.01f) + in_attr1.x)
 <=>
 {out_attr0.x = 
 	{pf_0_2 = ((
 		{f_0_2 = (1.0f / 
-			{f_0_1 = float(int(
-				{u_0_0 = 
-					{u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u)
-					}.x
-				}))
+			{f_0_1 = float(int(u_0_0))
 			})
 		} * -0.01f) + 
 		{f_1_0 = in_attr1.x
@@ -185,18 +197,14 @@ float(1.00)
 	}
 }
 */
-	out_attr0.y  = pf_1_0;	/* -0.0007692  <=>  (((1.0f / float(int({uvec4(uvec2(textureSize({tex0 : tex0}, int(0u))), 0u, 0u).y : 13}))) * -0.01f) + {in_attr1.y : 0.00})
+	out_attr0.y  = pf_1_0;	/* -0.0007692  <=>  (((1.0f / float(int({u_1_0 : 13}))) * -0.01f) + {in_attr1.y : 0.00})
 <=>
-(((1.0f / float(int(uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u).y))) * -0.01f) + in_attr1.y)
+(((1.0f / float(int(u_1_0))) * -0.01f) + in_attr1.y)
 <=>
 {out_attr0.y = 
 	{pf_1_0 = ((
 		{f_3_2 = (1.0f / 
-			{f_3_1 = float(int(
-				{u_1_0 = 
-					{u4_0_0 = uvec4(uvec2(textureSize(tex0, int(0u))), 0u, 0u)
-					}.y
-				}))
+			{f_3_1 = float(int(u_1_0))
 			})
 		} * -0.01f) + 
 		{f_2_0 = in_attr1.y
@@ -206,3 +214,7 @@ float(1.00)
 */
 	return;
 } 
+/*split_variable_assignment{
+	u_0_0,
+	u_1_0,
+}*/

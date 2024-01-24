@@ -1497,11 +1497,17 @@ namespace GlslRewriter
 
         public static string FloatToString(float v)
         {
-            return v.ToString(s_FloatFormat);
+            if (v > 1e-7 && v < 10e28)
+                return v.ToString(s_FloatFormat);
+            else
+                return string.Format("{0}", v);
         }
         public static string DoubleToString(double v)
         {
-            return v.ToString(s_DoubleFormat);
+            if (v > 1e-16 && v < 10e28)
+                return v.ToString(s_DoubleFormat);
+            else
+                return string.Format("{0}", v);
         }
         public static unsafe int ftoi(float v)
         {
@@ -1726,6 +1732,6 @@ namespace GlslRewriter
 
         public static char[] s_FloatExponent = new char[] { 'e', 'E', '.' };
         private static string s_FloatFormat = "###########################0.00#####";
-        private static string s_DoubleFormat = "###########################0.00#############";
+        private static string s_DoubleFormat = "###########################0.00##############";
     }
 }

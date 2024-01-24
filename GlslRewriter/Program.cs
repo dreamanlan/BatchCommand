@@ -11,6 +11,7 @@ using static GlslRewriter.Config;
 using System.Net.Http.Headers;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using DslExpression;
 
 namespace GlslRewriter
 {
@@ -777,7 +778,19 @@ namespace GlslRewriter
                 if (null != line) {
                     var r = BatchCommand.BatchScript.EvalAndRun(line);
                     Console.Write("result:");
-                    Console.WriteLine(r.ToString());
+                    if (r.IsNumber) {
+                        if (r.Type == CalculatorValue.c_DoubleType) {
+                            double v = r.GetDouble();
+                            Console.WriteLine("{0}", v);
+                        }
+                        else {
+                            double v = r.GetFloat();
+                            Console.WriteLine("{0}", v);
+                        }
+                    }
+                    else {
+                        Console.WriteLine(r.ToString());
+                    }
                 }
             }
         }

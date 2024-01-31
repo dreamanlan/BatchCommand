@@ -198,6 +198,7 @@ script(main)args($id, $metadata, $context)
     addkeyword($id, "exe");
     addkeyword($id, "start");
     addkeyword($id, "unity");
+    addkeyword($id, "unityfile");
     addkeyword($id, "notepad");
     addkeyword($id, "vscode");
     addkeyword($id, "renderdoc");
@@ -211,6 +212,7 @@ script(main)args($id, $metadata, $context)
     //执行的命令参数格式化串(使用{0}引用第二次选择的结果，一般是文件路径)
     @cfg = {
         "unity" => ["\\unity.exe", "unity \\Assets", "{0}", "-projectPath {0}"],
+        "unityfile" => ["\\unity.exe", "unityfile *.unity", "{0}", "-openfile {0}"],
         "notepad" => ["\\notepad++.exe", "notepad *.dsl", "{0}", "{0}"],
         "vscode" => ["\\code.exe", "vscode *.dsl", "{0}", "{0}"],
         "renderdoc" => ["\\qrenderdoc.exe", "renderdoc *.exe", "{0}", "{0}"],

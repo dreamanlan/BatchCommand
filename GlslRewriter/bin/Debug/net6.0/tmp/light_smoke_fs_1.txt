@@ -193,20 +193,29 @@ var out_attr9 = new[] {
 };
 
 // fs_cbuf8[30] = new Vector4(0.10f, 25000.00f, 2500.00f, 24999.90f);
-// fs_cbuf9[139] = new Vector4(1.00f, 0.00f, 0.00f, 0.00f);
-// fs_cbuf9[140] = new Vector4(1.00f, 3.00f, 0.00f, 0.00f);
-// fs_cbuf13[0] = new Vector4(0.00f, 0.50f, 1.00f, 0.20f);
-// fs_cbuf15[1] = new Vector4(0.00f, 0.00f, 2.624696f, 0.20f);
+// fs_cbuf9[139] = new Vector4(1.00f, 0f, 0f, 0f);
+// fs_cbuf9[140] = new Vector4(1.00f, 3.00f, 0f, 0f);
+// fs_cbuf13[0] = new Vector4(0f, 0.50f, 1.00f, 0.20f);
+// fs_cbuf15[1] = new Vector4(0f, 0f, 2.624696f, 0.20f);
 // fs_cbuf15[25] = new Vector4(0.0282744f, 0.0931012f, 0.1164359f, 0.7006614f);
 // fs_cbuf15[26] = new Vector4(0.0174636f, 0.1221582f, 0.2193998f, 0.20f);
 // fs_cbuf15[39] = new Vector4(-1914.887f, 360.0903f, -3728.196f, 0.0000017f);
 
+// fs_cbuf8[30] = , 1036831949u, 1187205120u, 1159479296u, 1187205069u
+// fs_cbuf9[139] = , 1065353216u, 0u, 0u, 0u
+// fs_cbuf9[140] = , 1065353216u, 1077936128u, 0u, 0u
+// fs_cbuf13[0] = , 0u, 1056964608u, 1065353216u, 1045220557u
+// fs_cbuf15[1] = , 0u, 0u, 1076361990u, 1045220556u
+// fs_cbuf15[25] = , 1021812663u, 1035906006u, 1039037935u, 1060331147u
+// fs_cbuf15[26] = , 1016008658u, 1039805978u, 1046522458u, 1045220557u
+// fs_cbuf15[39] = , 3304021090u, 1135872910u, 3311993635u, 904339934u
+
 // 1065353216 = 1.00f;
 // fs_cbuf8[30] = vec4(0.10, 25000.00, 2500.00, 24999.90);
-// fs_cbuf9[139] = vec4(1.00, 0.00, 0.00, 0.00);
-// fs_cbuf9[140] = vec4(1.00, 3.00, 0.00, 0.00);
-// fs_cbuf13[0] = vec4(0.00, 0.50, 1.00, 0.20);
-// fs_cbuf15[1] = vec4(0.00, 0.00, 2.624696, 0.20);
+// fs_cbuf9[139] = vec4(1.00, 0, 0, 0);
+// fs_cbuf9[140] = vec4(1.00, 3.00, 0, 0);
+// fs_cbuf13[0] = vec4(0, 0.50, 1.00, 0.20);
+// fs_cbuf15[1] = vec4(0, 0, 2.624696, 0.20);
 // fs_cbuf15[25] = vec4(0.0282744, 0.0931012, 0.1164359, 0.7006614);
 // fs_cbuf15[26] = vec4(0.0174636, 0.1221582, 0.2193998, 0.20);
 // fs_cbuf15[39] = vec4(-1914.887, 360.0903, -3728.196, 0.0000017);
@@ -256,7 +265,7 @@ layout(binding = 5 )uniform sampler2D tex5;
 layout(binding = 6 )uniform samplerCube tex6;
 void main()
 {
-	gl_FragCoord = vec4(320, 240, 0.5, 1.0 );	// vec4(320.00,240.00,0.50,1.00)
+	gl_FragCoord = vec4(-3110.439, -795.3743, 11.07855, 21.35693 );	// vec4(-3110.439,-795.3743,11.07855,21.35693)
 	in_attr0.x  = float(0.94008 );	// 0.94008
 	in_attr0.y  = float(0.93556 );	// 0.93556
 	in_attr0.z  = float(0.85801 );	// 0.85801
@@ -271,36 +280,36 @@ void main()
 	in_attr2.w  = float(0.99756 );	// 0.99756
 	in_attr3.x  = float(0.01643 );	// 0.01643
 	in_attr3.y  = float(0.24346 );	// 0.24346
-	in_attr3.z  = float(0.00 );	// 0.00
+	in_attr3.z  = float(0.00 );	// 0
 	in_attr3.w  = float(1.00 );	// 1.00
 	in_attr4.x  = float(-2.01933 );	// -2.01933
 	in_attr4.y  = float(14.29758 );	// 14.29758
 	in_attr4.z  = float(21.25702 );	// 21.25702
 	in_attr4.w  = float(21.35693 );	// 21.35693
 	in_attr5.x  = float(0.15 );	// 0.15
-	in_attr5.y  = float(0.00 );	// 0.00
-	in_attr5.z  = float(0.00 );	// 0.00
+	in_attr5.y  = float(0.00 );	// 0
+	in_attr5.z  = float(0.00 );	// 0
 	in_attr5.w  = float(1.00 );	// 1.00
-	in_attr6.x  = float(0.00 );	// 0.00
-	in_attr6.y  = float(0.00 );	// 0.00
-	in_attr6.z  = float(0.00 );	// 0.00
+	in_attr6.x  = float(0.00 );	// 0
+	in_attr6.y  = float(0.00 );	// 0
+	in_attr6.z  = float(0.00 );	// 0
 	in_attr6.w  = float(1.00 );	// 1.00
 	in_attr7.x  = float(-1892.45105 );	// -1892.451
 	in_attr7.y  = float(351.99081 );	// 351.9908
-	in_attr7.z  = float(-3734.75366 );	// -3734.754
+	in_attr7.z  = float(-3734.75366 );	// -3734.7537
 	in_attr7.w  = float(1.00 );	// 1.00
 	in_attr8.x  = float(-0.6645 );	// -0.6645
 	in_attr8.y  = float(0.12329 );	// 0.12329
 	in_attr8.z  = float(-0.73678 );	// -0.73678
 	in_attr8.w  = float(1.00 );	// 1.00
 	in_attr9.x  = float(1.00 );	// 1.00
-	in_attr9.y  = float(0.00 );	// 0.00
-	in_attr9.z  = float(0.00 );	// 0.00
+	in_attr9.y  = float(0.00 );	// 0
+	in_attr9.z  = float(0.00 );	// 0
 	in_attr9.w  = float(1.00 );	// 1.00
 	in_attr10.x  = float(0.23782 );	// 0.23782
-	in_attr10.y  = float(0.00 );	// 0.00
-	in_attr10.z  = float(0.00 );	// 0.00
-	in_attr10.w  = float(0.00 );	// 0.00
+	in_attr10.y  = float(0.00 );	// 0
+	in_attr10.z  = float(0.00 );	// 0
+	in_attr10.w  = float(0.00 );	// 0
 	in_attr11.x  = float(0.60851 );	// 0.60851
 	in_attr11.y  = float(0.67602 );	// 0.67602
 	in_attr11.z  = float(0.69804 );	// 0.69804
@@ -321,34 +330,34 @@ void main()
 	bool b_1 = bool(0 );	// False
 	uint u_0 = uint(0 );	// 0
 	uint u_1 = uint(0 );	// 0
-	float f_0 = float(0 );	// 0.00
-	float f_1 = float(0 );	// 0.00
-	float f_2 = float(0 );	// 0.00
-	float f_3 = float(0 );	// 0.00
-	float f_4 = float(0 );	// 0.00
-	float f_5 = float(0 );	// 0.00
-	float f_6 = float(0 );	// 0.00
-	float f_7 = float(0 );	// 0.00
-	float f_8 = float(0 );	// 0.00
-	float f_9 = float(0 );	// 0.00
-	float f_10 = float(0 );	// 0.00
-	float f_11 = float(0 );	// 0.00
-	float f_12 = float(0 );	// 0.00
-	float f_13 = float(0 );	// 0.00
-	vec2 f2_0 = vec2(0 );	// vec2(0.00,0.00)
-	vec3 f3_0 = vec3(0 );	// vec3(0.00,0.00,0.00)
-	vec4 f4_0 = vec4(0 );	// vec4(0.00,0.00,0.00,0.00)
-	precise float pf_0 = float(0 );	// 0.00
-	precise float pf_1 = float(0 );	// 0.00
-	precise float pf_2 = float(0 );	// 0.00
-	precise float pf_3 = float(0 );	// 0.00
-	precise float pf_4 = float(0 );	// 0.00
-	precise float pf_5 = float(0 );	// 0.00
-	precise float pf_6 = float(0 );	// 0.00
+	float f_0 = float(0 );	// 0
+	float f_1 = float(0 );	// 0
+	float f_2 = float(0 );	// 0
+	float f_3 = float(0 );	// 0
+	float f_4 = float(0 );	// 0
+	float f_5 = float(0 );	// 0
+	float f_6 = float(0 );	// 0
+	float f_7 = float(0 );	// 0
+	float f_8 = float(0 );	// 0
+	float f_9 = float(0 );	// 0
+	float f_10 = float(0 );	// 0
+	float f_11 = float(0 );	// 0
+	float f_12 = float(0 );	// 0
+	float f_13 = float(0 );	// 0
+	vec2 f2_0 = vec2(0 );	// vec2(0,0)
+	vec3 f3_0 = vec3(0 );	// vec3(0,0,0)
+	vec4 f4_0 = vec4(0 );	// vec4(0,0,0,0)
+	precise float pf_0 = float(0 );	// 0
+	precise float pf_1 = float(0 );	// 0
+	precise float pf_2 = float(0 );	// 0
+	precise float pf_3 = float(0 );	// 0
+	precise float pf_4 = float(0 );	// 0
+	precise float pf_5 = float(0 );	// 0
+	precise float pf_6 = float(0 );	// 0
 	f_0_0 = in_attr2.x ;	// 0.87088
 	f_1_0 = in_attr2.y ;	// 6.36147
 	f2_0_0 = vec2(f_0_0, f_1_0 );	// vec2(0.87088,6.36147)
-	f4_0_0 = vec4(textureQueryLod(tex2, f2_0_0 ), 0.0, 0.0 );	// vec4(4.00,1.00,0.00,0.00)
+	f4_0_0 = vec4(textureQueryLod(tex2, f2_0_0 ), 0.0, 0.0 );	// vec4(4.00,1.00,0,0)
 	f_2_0 = f4_0_0.y ;	// 1.00
 	u_0_0 = uint(f_2_0 );	// 1
 	u_0_1 = u_0_0 << 8u;	// 256
@@ -391,38 +400,50 @@ textureLod(tex2, vec2(in_attr2.x, in_attr2.y), min((float((uint(vec4(textureQuer
 	f_3_0 = in_attr2.z ;	// 0.75213
 	f_4_0 = in_attr3.y ;	// 0.24346
 	f_5_0 = in_attr2.w ;	// 0.99756
-	pf_0_1 = fma(f_0_1, 2.f, -1.f );	// 0.00
-	pf_1_0 = fma(f_1_1, 2.f, -1.f );	// 0.00
+	pf_0_1 = fma(f_0_1, 2.f, -1.f );	// 0
+	pf_1_0 = fma(f_1_1, 2.f, -1.f );	// 0
 	pf_2_0 = fma(pf_0_1, 0.1f, f_2_3 );	// 0.01643
 	pf_0_2 = fma(pf_0_1, 0.1f, f_3_0 );	// 0.75213
 	pf_3_0 = fma(pf_1_0, 0.1f, f_4_0 );	// 0.24346
 	pf_1_1 = fma(pf_1_0, 0.1f, f_5_0 );	// 0.99756
 	f2_0_2 = vec2(pf_2_0, pf_3_0 );	// vec2(0.01643,0.24346)
-	f4_0_2 = vec4(textureQueryLod(tex2, f2_0_2 ), 0.0, 0.0 );	// vec4(4.00,1.00,0.00,0.00)
+	f4_0_2 = vec4(textureQueryLod(tex2, f2_0_2 ), 0.0, 0.0 );	// vec4(4.00,1.00,0,0)
 	f_0_2 = f4_0_2.y ;	// 1.00
 	u_0_2 = uint(f_0_2 );	// 1
 	u_0_3 = u_0_2 << 8u;	// 256
 	f2_0_3 = vec2(pf_0_2, pf_1_1 );	// vec2(0.75213,0.99756)
-	f4_0_3 = vec4(textureQueryLod(tex3, f2_0_3 ), 0.0, 0.0 );	// vec4(4.00,1.00,0.00,0.00)
+	f4_0_3 = vec4(textureQueryLod(tex3, f2_0_3 ), 0.0, 0.0 );	// vec4(4.00,1.00,0,0)
 	f_0_3 = f4_0_3.y ;	// 1.00
 	u_1_0 = uint(f_0_3 );	// 1
 	u_1_1 = u_1_0 << 8u;	// 256
 	f_0_4 = in_attr4.w ;	// 21.35693
-	f_1_2 = gl_FragCoord.w ;	// 1.00
-	f_0_5 = f_0_4 * f_1_2;	// 21.35693
-	f_0_6 = (1.0f ) / f_0_5;	// 0.0468232
-	f_1_3 = in_attr4.x ;	// -2.01933
-	f_2_4 = gl_FragCoord.w ;	// 1.00
-	f_1_4 = f_1_3 * f_2_4;	// -2.01933
-	f_1_5 = f_1_4 * f_0_6;	// -0.0945515
-	f_2_5 = in_attr4.y ;	// 14.29758
-	f_3_1 = gl_FragCoord.w ;	// 1.00
-	f_2_6 = f_2_5 * f_3_1;	// 14.29758
-	f_0_7 = f_2_6 * f_0_6;	// 0.6694586
-	f2_0_4 = vec2(f_1_5, f_0_7 );	// vec2(-0.0945515,0.6694586)
-	f4_0_4 = texture(tex5, f2_0_4 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex5 : tex5}, vec2((({in_attr4.x : -2.01933} * {gl_FragCoord.w : 1.00}) * (1.0f / ({in_attr4.w : 21.35693} * {gl_FragCoord.w : 1.00}))), (({in_attr4.y : 14.29758} * {gl_FragCoord.w : 1.00}) * (1.0f / ({in_attr4.w : 21.35693} * {gl_FragCoord.w : 1.00})))))
+	f_1_2 = gl_FragCoord.w ;	// 21.35693
+	f_0_5 = f_0_4 * f_1_2;	// 456.1184
+	f_0_6 = (1.0f ) / f_0_5;	/* 0.0021924  <=>  (1.0f / ({in_attr4.w : 21.35693} * {gl_FragCoord.w : 21.35693}))
 <=>
-texture(tex5, vec2(((in_attr4.x * gl_FragCoord.w) * (1.0f / (in_attr4.w * gl_FragCoord.w))), ((in_attr4.y * gl_FragCoord.w) * (1.0f / (in_attr4.w * gl_FragCoord.w)))))
+(1.0f / (in_attr4.w * gl_FragCoord.w))
+<=>
+{f_0_6 = (1.0f / 
+	{f_0_5 = (
+		{f_0_4 = in_attr4.w
+		} * 
+		{f_1_2 = gl_FragCoord.w
+		})
+	})
+}
+*/
+	f_1_3 = in_attr4.x ;	// -2.01933
+	f_2_4 = gl_FragCoord.w ;	// 21.35693
+	f_1_4 = f_1_3 * f_2_4;	// -43.12669
+	f_1_5 = f_1_4 * f_0_6;	// -0.09455151
+	f_2_5 = in_attr4.y ;	// 14.29758
+	f_3_1 = gl_FragCoord.w ;	// 21.35693
+	f_2_6 = f_2_5 * f_3_1;	// 305.3524
+	f_0_7 = f_2_6 * f_0_6;	// 0.6694586
+	f2_0_4 = vec2(f_1_5, f_0_7 );	// vec2(-0.09455151,0.6694586)
+	f4_0_4 = texture(tex5, f2_0_4 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex5 : tex5}, vec2((({in_attr4.x : -2.01933} * {gl_FragCoord.w : 21.35693}) * {f_0_6 : 0.0021924}), (({in_attr4.y : 14.29758} * {gl_FragCoord.w : 21.35693}) * {f_0_6 : 0.0021924})))
+<=>
+texture(tex5, vec2(((in_attr4.x * gl_FragCoord.w) * f_0_6), ((in_attr4.y * gl_FragCoord.w) * f_0_6)))
 <=>
 {f4_0_4 = texture(tex5, 
 	{f2_0_4 = vec2(
@@ -432,15 +453,7 @@ texture(tex5, vec2(((in_attr4.x * gl_FragCoord.w) * (1.0f / (in_attr4.w * gl_Fra
 				} * 
 				{f_2_4 = gl_FragCoord.w
 				})
-			} * 
-			{f_0_6 = (1.0f / 
-				{f_0_5 = (
-					{f_0_4 = in_attr4.w
-					} * 
-					{f_1_2 = gl_FragCoord.w
-					})
-				})
-			})
+			} * f_0_6)
 		}, 
 		{f_0_7 = (
 			{f_2_6 = (
@@ -578,21 +591,57 @@ textureLod(tex3, vec2(((((f4_0_1.x * 2.f) + -1.f) * 0.1f) + in_attr2.z), ((((f4_
 	f_6_0 = f4_0_7.w ;	// 0.75
 	f_7_0 = in_attr7.x ;	// -1892.451
 	f_8_0 = in_attr7.y ;	// 351.9908
-	f_9_0 = in_attr7.z ;	// -3734.754
+	f_9_0 = in_attr7.z ;	// -3734.7537
 	f_10_0 = in_attr4.w ;	// 21.35693
 	f_11_0 = in_attr5.x ;	// 0.15
 	f_12_0 = utof(fs_cbuf9[140 ].y  );	// 3.00
 	f_12_1 = (1.0f ) / f_12_0;	// 0.3333333
 	f_13_0 = utof(fs_cbuf15[39 ].x  );	// -1914.887
 	f_7_1 = 0.f - (f_7_0 );	// 1892.451
-	pf_0_3 = f_7_1 + f_13_0;	// -22.43591
+	pf_0_3 = f_7_1 + f_13_0;	/* -22.435913  <=>  ((0.f - {in_attr7.x : -1892.451}) + {utof(fs_cbuf15[39].x) : -1914.887})
+<=>
+((0.f - in_attr7.x) + utof(fs_cbuf15[39].x))
+<=>
+{pf_0_3 = (
+	{f_7_1 = (0.f - 
+		{f_7_0 = in_attr7.x
+		})
+	} + 
+	{f_13_0 = utof(fs_cbuf15[39].x)
+	})
+}
+*/
 	f_7_2 = (1.0f ) / f_10_0;	// 0.0468232
 	f_10_1 = utof(fs_cbuf15[39 ].y  );	// 360.0903
 	f_8_1 = 0.f - (f_8_0 );	// -351.9908
-	pf_1_2 = f_8_1 + f_10_1;	// 8.099457
+	pf_1_2 = f_8_1 + f_10_1;	/* 8.099457  <=>  ((0.f - {in_attr7.y : 351.9908}) + {utof(fs_cbuf15[39].y) : 360.0903})
+<=>
+((0.f - in_attr7.y) + utof(fs_cbuf15[39].y))
+<=>
+{pf_1_2 = (
+	{f_8_1 = (0.f - 
+		{f_8_0 = in_attr7.y
+		})
+	} + 
+	{f_10_1 = utof(fs_cbuf15[39].y)
+	})
+}
+*/
 	f_8_2 = utof(fs_cbuf15[39 ].z  );	// -3728.196
 	f_9_1 = 0.f - (f_9_0 );	// 3734.754
-	pf_2_1 = f_9_1 + f_8_2;	// 6.557617
+	pf_2_1 = f_9_1 + f_8_2;	/* 6.557617  <=>  ((0.f - {in_attr7.z : -3734.7537}) + {utof(fs_cbuf15[39].z) : -3728.196})
+<=>
+((0.f - in_attr7.z) + utof(fs_cbuf15[39].z))
+<=>
+{pf_2_1 = (
+	{f_9_1 = (0.f - 
+		{f_9_0 = in_attr7.z
+		})
+	} + 
+	{f_8_2 = utof(fs_cbuf15[39].z)
+	})
+}
+*/
 	pf_0_4 = pf_0_3 * pf_0_3;	// 503.3702
 	pf_0_5 = fma(pf_1_2, pf_1_2, pf_0_4 );	// 568.9714
 	f_8_3 = utof(fs_cbuf8[30 ].x  );	// 0.10
@@ -606,8 +655,8 @@ textureLod(tex3, vec2(((((f4_0_1.x * 2.f) + -1.f) * 0.1f) + in_attr2.z), ((((f4_
 	f_0_10 = min(max(pf_2_2, 0.0 ), 1.0 );	// 1.00
 	f_7_3 = utof(fs_cbuf8[30 ].y  );	// 25000.00
 	f_8_5 = utof(fs_cbuf8[30 ].w  );	// 24999.90
-	f_7_4 = 0.f - (f_7_3 );	// -25000.00
-	pf_0_8 = fma(pf_0_7, f_8_5, f_7_4 );	// -117.0494
+	f_7_4 = 0.f - (f_7_3 );	// -25000
+	pf_0_8 = fma(pf_0_7, f_8_5, f_7_4 );	// -117.049416
 	f_7_5 = in_attr0.w ;	// 0.10
 	f_8_6 = (1.0f ) / pf_0_8;	// -0.0085434
 	f_9_3 = utof(fs_cbuf8[30 ].z  );	// 2500.00
@@ -620,9 +669,9 @@ textureLod(tex3, vec2(((((f4_0_1.x * 2.f) + -1.f) * 0.1f) + in_attr2.z), ((((f4_
 	f_0_11 = min(max(pf_0_11, 0.0 ), 1.0 );	// 1.00
 	pf_0_12 = f_0_11 + -0.25f;	// 0.75
 	pf_0_13 = pf_0_12 * 2.f;	// 1.50
-	f_0_12 = min(max(pf_0_13, 0.0 ), 1.0 );	/* 1.00  <=>  clamp(((clamp(((clamp(({in_attr5.x : 0.15} * sqrt(((((0.f - {in_attr7.z : -3734.754}) + {utof(fs_cbuf15[39].z) : -3728.196}) * ((0.f - {in_attr7.z : -3734.754}) + {utof(fs_cbuf15[39].z) : -3728.196})) + ((((0.f - {in_attr7.y : 351.9908}) + {utof(fs_cbuf15[39].y) : 360.0903}) * ((0.f - {in_attr7.y : 351.9908}) + {utof(fs_cbuf15[39].y) : 360.0903})) + (((0.f - {in_attr7.x : -1892.451}) + {utof(fs_cbuf15[39].x) : -1914.887}) * ((0.f - {in_attr7.x : -1892.451}) + {utof(fs_cbuf15[39].x) : -1914.887})))))), 0.0, 1.0) * ...) + ...), ..., ...) + ...) * ...), ..., ...)
+	f_0_12 = min(max(pf_0_13, 0.0 ), 1.0 );	/* 1.00  <=>  clamp(((clamp(((clamp(({in_attr5.x : 0.15} * sqrt((({pf_2_1 : 6.557617} * {pf_2_1 : 6.557617}) + (({pf_1_2 : 8.099457} * {pf_1_2 : 8.099457}) + ({pf_0_3 : -22.435913} * {pf_0_3 : -22.435913}))))), 0.0, 1.0) * 2.f) + (0.f - {f4_0_5.w : 0.75})), 0.0, 1.0) + -0.25f) * 2.f), 0.0, 1.0)
 <=>
-clamp(((clamp(((clamp((in_attr5.x * sqrt(((((0.f - in_attr7.z) + utof(fs_cbuf15[39].z)) * ((0.f - in_attr7.z) + utof(fs_cbuf15[39].z))) + ((((0.f - in_attr7.y) + utof(fs_cbuf15[39].y)) * ((0.f - in_attr7.y) + utof(fs_cbuf15[39].y))) + (((0.f - in_attr7.x) + utof(fs_cbuf15[39].x)) * ((0.f - in_attr7.x) + utof(fs_cbuf15[39].x))))))), 0.0, 1.0) * 2.f) + (0.f - f4_0_5.w)), 0.0, 1.0) + -0.25f) * 2.f), 0.0, 1.0)
+clamp(((clamp(((clamp((in_attr5.x * sqrt(((pf_2_1 * pf_2_1) + ((pf_1_2 * pf_1_2) + (pf_0_3 * pf_0_3))))), 0.0, 1.0) * 2.f) + (0.f - f4_0_5.w)), 0.0, 1.0) + -0.25f) * 2.f), 0.0, 1.0)
 <=>
 {f_0_12 = clamp(
 	{pf_0_13 = (
@@ -634,33 +683,9 @@ clamp(((clamp(((clamp((in_attr5.x * sqrt(((((0.f - in_attr7.z) + utof(fs_cbuf15[
 							{f_11_0 = in_attr5.x
 							} * 
 							{f_8_4 = sqrt(
-								{pf_0_6 = ((
-									{pf_2_1 = (
-										{f_9_1 = (0.f - 
-											{f_9_0 = in_attr7.z
-											})
-										} + 
-										{f_8_2 = utof(fs_cbuf15[39].z)
-										})
-									} * pf_2_1) + 
-									{pf_0_5 = ((
-										{pf_1_2 = (
-											{f_8_1 = (0.f - 
-												{f_8_0 = in_attr7.y
-												})
-											} + 
-											{f_10_1 = utof(fs_cbuf15[39].y)
-											})
-										} * pf_1_2) + 
-										{pf_0_4 = (
-											{pf_0_3 = (
-												{f_7_1 = (0.f - 
-													{f_7_0 = in_attr7.x
-													})
-												} + 
-												{f_13_0 = utof(fs_cbuf15[39].x)
-												})
-											} * pf_0_3)
+								{pf_0_6 = ((pf_2_1 * pf_2_1) + 
+									{pf_0_5 = ((pf_1_2 * pf_1_2) + 
+										{pf_0_4 = (pf_0_3 * pf_0_3)
 										})
 									})
 								})
@@ -677,8 +702,8 @@ clamp(((clamp(((clamp((in_attr5.x * sqrt(((((0.f - in_attr7.z) + utof(fs_cbuf15[
 	}, 0.0, 1.0)
 }
 */
-	f_1_10 = in_attr6.x ;	// 0.00
-	f_7_6 = 0.f - (f_7_5 );	// -0.10
+	f_1_10 = in_attr6.x ;	// 0
+	f_7_6 = 0.f - (f_7_5 );	// -0.1
 	pf_0_14 = fma(f_2_8, f_6_0, f_7_6 );	// 0.4625
 	f_2_9 = in_attr8.y ;	// 0.12329
 	pf_1_4 = fma(f_0_12, -2.f, 3.f );	// 1.00
@@ -701,7 +726,7 @@ clamp(((clamp(((clamp((in_attr5.x * sqrt(((((0.f - in_attr7.z) + utof(fs_cbuf15[
 	pf_0_17 = pf_0_16 * f_0_14;	// 0.1665
 	f_0_15 = min(max(pf_0_17, 0.0 ), 1.0 );	// 0.1665
 	pf_0_18 = f_9_4 * f_0_15;	// 0.1665
-	pf_0_19 = pf_0_18 * f_1_10;	/* 0.00  <=>  ((clamp(((((1.0f / ((({in_attr4.z : 21.25702} * (1.0f / {in_attr4.w : 21.35693})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_4.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 3.00})), 0.0, 1.0) * clamp(({pf_0_16 : 1.00} * clamp((((({f4_0_6.w : 0.75} * {f4_0_7.w : 0.75}) + (0.f - {in_attr0.w : 0.10})) * 4.f) * {in_attr1.w : 0.09}), 0.0, 1.0)), 0.0, 1.0)) * {....... : 0.00})
+	pf_0_19 = pf_0_18 * f_1_10;	/* 0  <=>  ((clamp(((((1.0f / ((({in_attr4.z : 21.25702} * (1.0f / {in_attr4.w : 21.35693})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_4.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 3.00})), 0.0, 1.0) * clamp(({pf_0_16 : 1.00} * clamp((((({f4_0_6.w : 0.75} * {f4_0_7.w : 0.75}) + (0.f - {in_attr0.w : 0.10})) * 4.f) * {in_attr1.w : 0.09}), 0.0, 1.0)), 0.0, 1.0)) * {....... : 0})
 <=>
 ((clamp(((((1.0f / (((in_attr4.z * (1.0f / in_attr4.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z)) + ((f4_0_4.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y))), 0.0, 1.0) * clamp((pf_0_16 * clamp(((((f4_0_6.w * f4_0_7.w) + (0.f - in_attr0.w)) * 4.f) * in_attr1.w), 0.0, 1.0)), 0.0, 1.0)) * in_attr6.x)
 <=>
@@ -773,16 +798,20 @@ clamp(((clamp(((clamp((in_attr5.x * sqrt(((((0.f - in_attr7.z) + utof(fs_cbuf15[
 }
 */
 	f_0_16 = in_attr8.x ;	// -0.6645
-	f_1_11 = utof(fs_cbuf9[139 ].z  );	// 0.00
-	b_0_0 = pf_0_19 <= f_1_11 && ! isnan(pf_0_19 ) && ! isnan(f_1_11 );	// True
-	b_1_0 = b_0_0 ? (true) : (false);	/* True  <=>  (((({pf_0_19 : 0.00} <= {utof(fs_cbuf9[139].z) : 0.00}) && (! isnan({pf_0_19 : 0.00}))) && (! isnan({utof(fs_cbuf9[139].z) : 0.00}))) ? true : false)
+	f_1_11 = utof(fs_cbuf9[139 ].z  );	/* 0  <=>  {utof(fs_cbuf9[139].z) : 0}
 <=>
-((((pf_0_19 <= utof(fs_cbuf9[139].z)) && (! isnan(pf_0_19))) && (! isnan(utof(fs_cbuf9[139].z)))) ? true : false)
+utof(fs_cbuf9[139].z)
+<=>
+{f_1_11 = utof(fs_cbuf9[139].z)
+}
+*/
+	b_0_0 = pf_0_19 <= f_1_11 && ! isnan(pf_0_19 ) && ! isnan(f_1_11 );	// True
+	b_1_0 = b_0_0 ? (true) : (false);	/* True  <=>  (((({pf_0_19 : 0} <= {f_1_11 : 0}) && (! isnan({pf_0_19 : 0}))) && (! isnan({f_1_11 : 0}))) ? true : false)
+<=>
+((((pf_0_19 <= f_1_11) && (! isnan(pf_0_19))) && (! isnan(f_1_11))) ? true : false)
 <=>
 {b_1_0 = (
-	{b_0_0 = (((pf_0_19 <= 
-		{f_1_11 = utof(fs_cbuf9[139].z)
-		}) && (! isnan(pf_0_19))) && (! isnan(f_1_11)))
+	{b_0_0 = (((pf_0_19 <= f_1_11) && (! isnan(pf_0_19))) && (! isnan(f_1_11)))
 	} ? true : false)
 }
 */
@@ -797,61 +826,87 @@ if(b_1_0)
 	pf_1_5 = f_0_16 * f_0_16;	// 0.4415602
 	pf_1_6 = fma(f_2_9, f_2_9, pf_1_5 );	// 0.4567607
 	pf_1_7 = fma(f_6_1, f_6_1, pf_1_6 );	// 0.9996054
-	f_1_12 = inversesqrt(pf_1_7 );	// 1.000197
-	pf_1_8 = f_2_9 * f_1_12;	// 0.1233143
-	pf_2_4 = f_0_16 * f_1_12;	// -0.6646311
-	pf_3_1 = f_6_1 * f_1_12;	// -0.7369254
+	f_1_12 = inversesqrt(pf_1_7 );	/* 1.000197  <=>  inversesqrt((({in_attr8.z : -0.73678} * {in_attr8.z : -0.73678}) + (({in_attr8.y : 0.12329} * {in_attr8.y : 0.12329}) + ({in_attr8.x : -0.6645} * {in_attr8.x : -0.6645}))))
+<=>
+inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x))))
+<=>
+{f_1_12 = inversesqrt(
+	{pf_1_7 = ((
+		{f_6_1 = in_attr8.z
+		} * f_6_1) + 
+		{pf_1_6 = ((
+			{f_2_9 = in_attr8.y
+			} * f_2_9) + 
+			{pf_1_5 = (
+				{f_0_16 = in_attr8.x
+				} * f_0_16)
+			})
+		})
+	})
+}
+*/
+	pf_1_8 = f_2_9 * f_1_12;	/* 0.1233143  <=>  ({in_attr8.y : 0.12329} * {f_1_12 : 1.000197})
+<=>
+(in_attr8.y * f_1_12)
+<=>
+{pf_1_8 = (
+	{f_2_9 = in_attr8.y
+	} * f_1_12)
+}
+*/
+	pf_2_4 = f_0_16 * f_1_12;	// -0.66463107
+	pf_3_1 = f_6_1 * f_1_12;	/* -0.73692536  <=>  ({in_attr8.z : -0.73678} * {f_1_12 : 1.000197})
+<=>
+(in_attr8.z * f_1_12)
+<=>
+{pf_3_1 = (
+	{f_6_1 = in_attr8.z
+	} * f_1_12)
+}
+*/
 	f_0_17 = abs(pf_1_8 );	// 0.1233143
 	f_1_13 = abs(pf_2_4 );	// 0.6646311
 	f_0_18 = max(f_0_17, f_1_13 );	// 0.6646311
 	f_1_14 = abs(pf_3_1 );	// 0.7369254
 	f_0_19 = max(f_1_14, f_0_18 );	// 0.7369254
-	f_0_20 = (1.0f ) / f_0_19;	// 1.35699
+	f_0_20 = (1.0f ) / f_0_19;	/* 1.35699  <=>  (1.0f / max(abs({pf_3_1 : -0.73692536}), max(abs({pf_1_8 : 0.1233143}), abs(({in_attr8.x : -0.6645} * {f_1_12 : 1.000197})))))
+<=>
+(1.0f / max(abs(pf_3_1), max(abs(pf_1_8), abs((in_attr8.x * f_1_12)))))
+<=>
+{f_0_20 = (1.0f / 
+	{f_0_19 = max(
+		{f_1_14 = abs(pf_3_1)
+		}, 
+		{f_0_18 = max(
+			{f_0_17 = abs(pf_1_8)
+			}, 
+			{f_1_13 = abs(
+				{pf_2_4 = (
+					{f_0_16 = in_attr8.x
+					} * f_1_12)
+				})
+			})
+		})
+	})
+}
+*/
 	pf_2_5 = pf_2_4 * f_0_20;	// -0.9018974
 	pf_1_9 = pf_1_8 * f_0_20;	// 0.1673363
-	f_0_21 = 0.f - (f_0_20 );	// -1.35699
+	f_0_21 = 0.f - (f_0_20 );	// -1.3569895
 	pf_3_2 = pf_3_1 * f_0_21;	// 1.00
-	f_0_22 = utof(fs_cbuf15[1 ].x  );	// 0.00
+	f_0_22 = utof(fs_cbuf15[1 ].x  );	// 0
 	f3_0_0 = vec3(pf_2_5, pf_1_9, pf_3_2 );	// vec3(-0.9018974,0.1673363,1.00)
-	f4_0_8 = textureLod(tex6, f3_0_0, f_0_22 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, vec3((({in_attr8.x : -0.6645} * inversesqrt((({in_attr8.z : -0.73678} * {in_attr8.z : -0.73678}) + (({in_attr8.y : 0.12329} * {in_attr8.y : 0.12329}) + ({in_attr8.x : -0.6645} * {in_attr8.x : -0.6645}))))) * (1.0f / max(abs(({in_attr8.z : -0.73678} * inversesqrt((({in_attr8.z : -0.73678} * {in_attr8.z : -0.73678}) + (({in_attr8.y : 0.12329} * {in_attr8.y : 0.12329}) + ({in_attr8.x : -0.6645} * {in_attr8.x : -0.6645})))))), max(abs(({in_attr8.y : 0.12329} * inversesqrt((({in_attr8.z : -0.73678} * ...) + ...)))), ...)))), ..., ...), ...)
+	f4_0_8 = textureLod(tex6, f3_0_0, f_0_22 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, vec3((({in_attr8.x : -0.6645} * {f_1_12 : 1.000197}) * {f_0_20 : 1.35699}), ({pf_1_8 : 0.1233143} * {f_0_20 : 1.35699}), ({pf_3_1 : -0.73692536} * (0.f - {f_0_20 : 1.35699}))), {utof(fs_cbuf15[1].x) : 0})
 <=>
-textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x))))) * (1.0f / max(abs((in_attr8.z * inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x)))))), max(abs((in_attr8.y * inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x)))))), abs((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x)))))))))), ..., ...), ...)
+textureLod(tex6, vec3(((in_attr8.x * f_1_12) * f_0_20), (pf_1_8 * f_0_20), (pf_3_1 * (0.f - f_0_20))), utof(fs_cbuf15[1].x))
 <=>
 {f4_0_8 = textureLod(tex6, 
 	{f3_0_0 = vec3(
 		{pf_2_5 = (
 			{pf_2_4 = (
 				{f_0_16 = in_attr8.x
-				} * 
-				{f_1_12 = inversesqrt(
-					{pf_1_7 = ((
-						{f_6_1 = in_attr8.z
-						} * f_6_1) + 
-						{pf_1_6 = ((
-							{f_2_9 = in_attr8.y
-							} * f_2_9) + 
-							{pf_1_5 = (f_0_16 * f_0_16)
-							})
-						})
-					})
-				})
-			} * 
-			{f_0_20 = (1.0f / 
-				{f_0_19 = max(
-					{f_1_14 = abs(
-						{pf_3_1 = (f_6_1 * f_1_12)
-						})
-					}, 
-					{f_0_18 = max(
-						{f_0_17 = abs(
-							{pf_1_8 = (f_2_9 * f_1_12)
-							})
-						}, 
-						{f_1_13 = abs(pf_2_4)
-						})
-					})
-				})
-			})
+				} * f_1_12)
+			} * f_0_20)
 		}, 
 		{pf_1_9 = (pf_1_8 * f_0_20)
 		}, 
@@ -867,42 +922,102 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 	f_0_23 = f4_0_8.x ;	// 0.50
 	f_1_15 = f4_0_8.y ;	// 0.50
 	f_2_10 = f4_0_8.z ;	// 0.50
-	f_6_2 = in_attr1.x ;	// 0.45512
+	f_6_2 = in_attr1.x ;	/* 0.45512  <=>  {in_attr1.x : 0.45512}
+<=>
+in_attr1.x
+<=>
+{f_6_2 = in_attr1.x
+}
+*/
 	f_7_7 = in_attr0.x ;	// 0.94008
-	f_8_8 = in_attr1.y ;	// 0.53034
+	f_8_8 = in_attr1.y ;	/* 0.53034  <=>  {in_attr1.y : 0.53034}
+<=>
+in_attr1.y
+<=>
+{f_8_8 = in_attr1.y
+}
+*/
 	f_9_5 = in_attr0.y ;	// 0.93556
 	f_10_2 = in_attr12.w ;	// 0.03947
-	f_11_1 = min(max(pf_0_19, 0.0 ), 1.0 );	// 0.00
+	f_11_1 = min(max(pf_0_19, 0.0 ), 1.0 );	// 0
 	f_12_2 = 0.f - (f_6_2 );	// -0.45512
 	pf_0_20 = fma(f_3_3, f_12_2, f_6_2 );	// 0.22756
 	f_6_3 = 0.f - (f_8_8 );	// -0.53034
 	pf_1_10 = fma(f_4_1, f_6_3, f_8_8 );	// 0.26517
-	pf_0_21 = fma(f_3_3, f_7_7, pf_0_20 );	// 0.6976
-	f_3_4 = in_attr1.z ;	// 0.55675
-	pf_1_11 = fma(f_4_1, f_9_5, pf_1_10 );	// 0.73295
+	pf_0_21 = fma(f_3_3, f_7_7, pf_0_20 );	/* 0.6976  <=>  (({f4_0_7.x : 0.50} * {in_attr0.x : 0.94008}) + (({f4_0_7.x : 0.50} * (0.f - {f_6_2 : 0.45512})) + {f_6_2 : 0.45512}))
+<=>
+((f4_0_7.x * in_attr0.x) + ((f4_0_7.x * (0.f - f_6_2)) + f_6_2))
+<=>
+{pf_0_21 = ((
+	{f_3_3 = f4_0_7.x
+	} * 
+	{f_7_7 = in_attr0.x
+	}) + 
+	{pf_0_20 = ((f_3_3 * 
+		{f_12_2 = (0.f - f_6_2)
+		}) + f_6_2)
+	})
+}
+*/
+	f_3_4 = in_attr1.z ;	/* 0.55675  <=>  {in_attr1.z : 0.55675}
+<=>
+in_attr1.z
+<=>
+{f_3_4 = in_attr1.z
+}
+*/
+	pf_1_11 = fma(f_4_1, f_9_5, pf_1_10 );	/* 0.73295  <=>  (({f4_0_7.y : 0.50} * {in_attr0.y : 0.93556}) + (({f4_0_7.y : 0.50} * (0.f - {f_8_8 : 0.53034})) + {f_8_8 : 0.53034}))
+<=>
+((f4_0_7.y * in_attr0.y) + ((f4_0_7.y * (0.f - f_8_8)) + f_8_8))
+<=>
+{pf_1_11 = ((
+	{f_4_1 = f4_0_7.y
+	} * 
+	{f_9_5 = in_attr0.y
+	}) + 
+	{pf_1_10 = ((f_4_1 * 
+		{f_6_3 = (0.f - f_8_8)
+		}) + f_8_8)
+	})
+}
+*/
 	f_4_2 = in_attr0.z ;	// 0.85801
-	f_6_4 = in_attr10.w ;	// 0.00
+	f_6_4 = in_attr10.w ;	// 0
 	f_7_8 = in_attr11.x ;	// 0.60851
 	f_8_9 = 0.f - (f_3_4 );	// -0.55675
 	pf_2_6 = fma(f_5_1, f_8_9, f_3_4 );	// 0.278375
-	pf_2_7 = fma(f_5_1, f_4_2, pf_2_6 );	// 0.70738
+	pf_2_7 = fma(f_5_1, f_4_2, pf_2_6 );	/* 0.70738  <=>  (({f4_0_7.z : 0.50} * {in_attr0.z : 0.85801}) + (({f4_0_7.z : 0.50} * (0.f - {f_3_4 : 0.55675})) + {f_3_4 : 0.55675}))
+<=>
+((f4_0_7.z * in_attr0.z) + ((f4_0_7.z * (0.f - f_3_4)) + f_3_4))
+<=>
+{pf_2_7 = ((
+	{f_5_1 = f4_0_7.z
+	} * 
+	{f_4_2 = in_attr0.z
+	}) + 
+	{pf_2_6 = ((f_5_1 * 
+		{f_8_9 = (0.f - f_3_4)
+		}) + f_3_4)
+	})
+}
+*/
 	f_3_5 = in_attr11.y ;	// 0.67602
 	f_4_3 = in_attr11.z ;	// 0.69804
-	f_5_2 = 0.f - (f_6_4 );	// 0.00
+	f_5_2 = 0.f - (f_6_4 );	// 0
 	pf_3_3 = fma(f_0_23, f_5_2, f_0_23 );	// 0.50
-	f_0_24 = 0.f - (f_6_4 );	// 0.00
+	f_0_24 = 0.f - (f_6_4 );	// 0
 	pf_4_1 = fma(f_1_15, f_0_24, f_1_15 );	// 0.50
-	f_0_25 = 0.f - (f_6_4 );	// 0.00
+	f_0_25 = 0.f - (f_6_4 );	// 0
 	pf_5_1 = fma(f_2_10, f_0_25, f_2_10 );	// 0.50
 	f_0_26 = utof(fs_cbuf13[0 ].y  );	// 0.50
 	pf_3_4 = pf_3_3 * f_0_26;	// 0.25
-	f_0_27 = in_attr10.y ;	// 0.00
+	f_0_27 = in_attr10.y ;	// 0
 	f_1_16 = utof(fs_cbuf13[0 ].y  );	// 0.50
 	pf_4_2 = pf_4_1 * f_1_16;	// 0.25
 	f_1_17 = utof(fs_cbuf13[0 ].y  );	// 0.50
 	pf_5_2 = pf_5_1 * f_1_17;	// 0.25
 	f_1_18 = utof(fs_cbuf15[1 ].w  );	// 0.20
-	pf_3_5 = fma(pf_3_4, f_1_18, f_7_8 );	/* 0.65851  <=>  ((((({f4_0_8.x : 0.50} * (0.f - {in_attr10.w : 0.00})) + {f4_0_8.x : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.x : 0.60851})
+	pf_3_5 = fma(pf_3_4, f_1_18, f_7_8 );	/* 0.65851  <=>  ((((({f4_0_8.x : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_8.x : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.x : 0.60851})
 <=>
 (((((f4_0_8.x * (0.f - in_attr10.w)) + f4_0_8.x) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.x)
 <=>
@@ -926,7 +1041,7 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 }
 */
 	f_1_19 = utof(fs_cbuf15[1 ].w  );	// 0.20
-	pf_4_3 = fma(pf_4_2, f_1_19, f_3_5 );	/* 0.72602  <=>  ((((({f4_0_8.y : 0.50} * (0.f - {in_attr10.w : 0.00})) + {f4_0_8.y : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.y : 0.67602})
+	pf_4_3 = fma(pf_4_2, f_1_19, f_3_5 );	/* 0.72602  <=>  ((((({f4_0_8.y : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_8.y : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.y : 0.67602})
 <=>
 (((((f4_0_8.y * (0.f - in_attr10.w)) + f4_0_8.y) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.y)
 <=>
@@ -950,7 +1065,7 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 }
 */
 	f_1_20 = utof(fs_cbuf15[1 ].w  );	// 0.20
-	pf_5_3 = fma(pf_5_2, f_1_20, f_4_3 );	/* 0.74804  <=>  ((((({f4_0_8.z : 0.50} * (0.f - {in_attr10.w : 0.00})) + {f4_0_8.z : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.z : 0.69804})
+	pf_5_3 = fma(pf_5_2, f_1_20, f_4_3 );	/* 0.74804  <=>  ((((({f4_0_8.z : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_8.z : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.z : 0.69804})
 <=>
 (((((f4_0_8.z * (0.f - in_attr10.w)) + f4_0_8.z) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.z)
 <=>
@@ -981,8 +1096,8 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 	f_2_12 = in_attr12.x ;	// 0.00104
 	pf_3_6 = pf_1_11 * pf_4_3;	// 0.5321364
 	f_3_7 = utof(fs_cbuf15[26 ].y  );	// 0.1221582
-	f_4_4 = 0.f - (pf_4_3 );	// -0.72602
-	pf_1_12 = fma(pf_1_11, f_4_4, f_3_7 );	// -0.4099781
+	f_4_4 = 0.f - (pf_4_3 );	// -0.72602004
+	pf_1_12 = fma(pf_1_11, f_4_4, f_3_7 );	// -0.40997812
 	f_3_8 = in_attr12.y ;	// 0.00829
 	pf_4_4 = pf_2_7 * pf_5_3;	// 0.5291485
 	f_4_5 = utof(fs_cbuf15[26 ].z  );	// 0.2193998
@@ -990,24 +1105,12 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 	pf_2_8 = fma(pf_2_7, f_5_3, f_4_5 );	// -0.3097487
 	f_4_6 = in_attr10.x ;	// 0.23782
 	f_5_4 = in_attr9.x ;	// 1.00
-	pf_0_23 = fma(pf_0_22, f_0_27, pf_6_0 );	/* 0.4593766  <=>  (((((({f4_0_7.x : 0.50} * {in_attr0.x : 0.94008}) + (({f4_0_7.x : 0.50} * (0.f - {in_attr1.x : 0.45512})) + {in_attr1.x : 0.45512})) * (0.f - {pf_3_5 : 0.65851})) + {utof(fs_cbuf15[26].x) : 0.0174636}) * {in_attr10.y : 0.00}) + ((({f4_0_7.x : 0.50} * {in_attr0.x : 0.94008}) + (({f4_0_7.x : 0.50} * (0.f - {in_attr1.x : 0.45512})) + {in_attr1.x : 0.45512})) * {pf_3_5 : 0.65851}))
+	pf_0_23 = fma(pf_0_22, f_0_27, pf_6_0 );	/* 0.4593766  <=>  (((({pf_0_21 : 0.6976} * (0.f - {pf_3_5 : 0.65851})) + {utof(fs_cbuf15[26].x) : 0.0174636}) * {in_attr10.y : 0}) + ({pf_0_21 : 0.6976} * {pf_3_5 : 0.65851}))
 <=>
-((((((f4_0_7.x * in_attr0.x) + ((f4_0_7.x * (0.f - in_attr1.x)) + in_attr1.x)) * (0.f - pf_3_5)) + utof(fs_cbuf15[26].x)) * in_attr10.y) + (((f4_0_7.x * in_attr0.x) + ((f4_0_7.x * (0.f - in_attr1.x)) + in_attr1.x)) * pf_3_5))
+((((pf_0_21 * (0.f - pf_3_5)) + utof(fs_cbuf15[26].x)) * in_attr10.y) + (pf_0_21 * pf_3_5))
 <=>
 {pf_0_23 = ((
-	{pf_0_22 = ((
-		{pf_0_21 = ((
-			{f_3_3 = f4_0_7.x
-			} * 
-			{f_7_7 = in_attr0.x
-			}) + 
-			{pf_0_20 = ((f_3_3 * 
-				{f_12_2 = (0.f - 
-					{f_6_2 = in_attr1.x
-					})
-				}) + f_6_2)
-			})
-		} * 
+	{pf_0_22 = ((pf_0_21 * 
 		{f_3_6 = (0.f - pf_3_5)
 		}) + 
 		{f_2_11 = utof(fs_cbuf15[26].x)
@@ -1019,24 +1122,12 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 	})
 }
 */
-	pf_1_13 = fma(pf_1_12, f_0_27, pf_3_6 );	/* 0.5321364  <=>  (((((({f4_0_7.y : 0.50} * {in_attr0.y : 0.93556}) + (({f4_0_7.y : 0.50} * (0.f - {in_attr1.y : 0.53034})) + {in_attr1.y : 0.53034})) * (0.f - {pf_4_3 : 0.72602})) + {utof(fs_cbuf15[26].y) : 0.1221582}) * {in_attr10.y : 0.00}) + ((({f4_0_7.y : 0.50} * {in_attr0.y : 0.93556}) + (({f4_0_7.y : 0.50} * (0.f - {in_attr1.y : 0.53034})) + {in_attr1.y : 0.53034})) * {pf_4_3 : 0.72602}))
+	pf_1_13 = fma(pf_1_12, f_0_27, pf_3_6 );	/* 0.5321364  <=>  (((({pf_1_11 : 0.73295} * (0.f - {pf_4_3 : 0.72602})) + {utof(fs_cbuf15[26].y) : 0.1221582}) * {in_attr10.y : 0}) + ({pf_1_11 : 0.73295} * {pf_4_3 : 0.72602}))
 <=>
-((((((f4_0_7.y * in_attr0.y) + ((f4_0_7.y * (0.f - in_attr1.y)) + in_attr1.y)) * (0.f - pf_4_3)) + utof(fs_cbuf15[26].y)) * in_attr10.y) + (((f4_0_7.y * in_attr0.y) + ((f4_0_7.y * (0.f - in_attr1.y)) + in_attr1.y)) * pf_4_3))
+((((pf_1_11 * (0.f - pf_4_3)) + utof(fs_cbuf15[26].y)) * in_attr10.y) + (pf_1_11 * pf_4_3))
 <=>
 {pf_1_13 = ((
-	{pf_1_12 = ((
-		{pf_1_11 = ((
-			{f_4_1 = f4_0_7.y
-			} * 
-			{f_9_5 = in_attr0.y
-			}) + 
-			{pf_1_10 = ((f_4_1 * 
-				{f_6_3 = (0.f - 
-					{f_8_8 = in_attr1.y
-					})
-				}) + f_8_8)
-			})
-		} * 
+	{pf_1_12 = ((pf_1_11 * 
 		{f_4_4 = (0.f - pf_4_3)
 		}) + 
 		{f_3_7 = utof(fs_cbuf15[26].y)
@@ -1048,24 +1139,12 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 	})
 }
 */
-	pf_2_9 = fma(pf_2_8, f_0_27, pf_4_4 );	/* 0.5291485  <=>  (((((({f4_0_7.z : 0.50} * {in_attr0.z : 0.85801}) + (({f4_0_7.z : 0.50} * (0.f - {in_attr1.z : 0.55675})) + {in_attr1.z : 0.55675})) * (0.f - {pf_5_3 : 0.74804})) + {utof(fs_cbuf15[26].z) : 0.2193998}) * {in_attr10.y : 0.00}) + ((({f4_0_7.z : 0.50} * {in_attr0.z : 0.85801}) + (({f4_0_7.z : 0.50} * (0.f - {in_attr1.z : 0.55675})) + {in_attr1.z : 0.55675})) * {pf_5_3 : 0.74804}))
+	pf_2_9 = fma(pf_2_8, f_0_27, pf_4_4 );	/* 0.5291485  <=>  (((({pf_2_7 : 0.70738} * (0.f - {pf_5_3 : 0.74804})) + {utof(fs_cbuf15[26].z) : 0.2193998}) * {in_attr10.y : 0}) + ({pf_2_7 : 0.70738} * {pf_5_3 : 0.74804}))
 <=>
-((((((f4_0_7.z * in_attr0.z) + ((f4_0_7.z * (0.f - in_attr1.z)) + in_attr1.z)) * (0.f - pf_5_3)) + utof(fs_cbuf15[26].z)) * in_attr10.y) + (((f4_0_7.z * in_attr0.z) + ((f4_0_7.z * (0.f - in_attr1.z)) + in_attr1.z)) * pf_5_3))
+((((pf_2_7 * (0.f - pf_5_3)) + utof(fs_cbuf15[26].z)) * in_attr10.y) + (pf_2_7 * pf_5_3))
 <=>
 {pf_2_9 = ((
-	{pf_2_8 = ((
-		{pf_2_7 = ((
-			{f_5_1 = f4_0_7.z
-			} * 
-			{f_4_2 = in_attr0.z
-			}) + 
-			{pf_2_6 = ((f_5_1 * 
-				{f_8_9 = (0.f - 
-					{f_3_4 = in_attr1.z
-					})
-				}) + f_3_4)
-			})
-		} * 
+	{pf_2_8 = ((pf_2_7 * 
 		{f_5_3 = (0.f - pf_5_3)
 		}) + 
 		{f_4_5 = utof(fs_cbuf15[26].z)
@@ -1078,7 +1157,7 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 }
 */
 	f_0_28 = 0.f - (pf_2_9 );	// -0.5291485
-	pf_3_7 = f_0_28 + f_1_21;	// -0.5211685
+	pf_3_7 = f_0_28 + f_1_21;	// -0.52116853
 	f_0_29 = 0.f - (pf_0_23 );	// -0.4593766
 	pf_4_5 = f_0_29 + f_2_12;	// -0.4583366
 	pf_2_10 = fma(pf_3_7, f_10_2, pf_2_9 );	/* 0.508578  <=>  ((((0.f - {pf_2_9 : 0.5291485}) + {in_attr12.z : 0.00798}) * {in_attr12.w : 0.03947}) + {pf_2_9 : 0.5291485})
@@ -1130,13 +1209,13 @@ textureLod(tex6, vec3(((in_attr8.x * inversesqrt(((in_attr8.z * in_attr8.z) + ((
 */
 	f_0_31 = utof(fs_cbuf15[25 ].z  );	// 0.1164359
 	f_1_22 = 0.f - (pf_2_10 );	// -0.508578
-	pf_3_9 = f_1_22 + f_0_31;	// -0.3921421
+	pf_3_9 = f_1_22 + f_0_31;	// -0.39214212
 	f_0_32 = utof(fs_cbuf15[25 ].x  );	// 0.0282744
-	f_1_23 = 0.f - (pf_0_24 );	// -0.4412861
-	pf_4_6 = f_1_23 + f_0_32;	// -0.4130117
+	f_1_23 = 0.f - (pf_0_24 );	// -0.44128606
+	pf_4_6 = f_1_23 + f_0_32;	// -0.41301167
 	f_0_33 = utof(fs_cbuf15[25 ].y  );	// 0.0931012
 	f_1_24 = 0.f - (pf_1_14 );	// -0.5114602
-	pf_5_4 = f_1_24 + f_0_33;	// -0.418359
+	pf_5_4 = f_1_24 + f_0_33;	// -0.41835898
 	pf_2_11 = fma(pf_3_9, f_4_6, pf_2_10 );	// 0.4153188
 	pf_0_25 = fma(pf_4_6, f_4_6, pf_0_24 );	// 0.3430636
 	pf_1_15 = fma(pf_5_4, f_4_6, pf_1_14 );	// 0.4119661
@@ -1218,7 +1297,7 @@ pf_2_12
 {frag_color0.z = pf_2_12
 }
 */
-	frag_color0.w  = f_11_1;	/* 0.00  <=>  clamp({pf_0_19 : 0.00}, 0.0, 1.0)
+	frag_color0.w  = f_11_1;	/* 0  <=>  clamp({pf_0_19 : 0}, 0.0, 1.0)
 <=>
 clamp(pf_0_19, 0.0, 1.0)
 <=>
@@ -1232,6 +1311,13 @@ clamp(pf_0_19, 0.0, 1.0)
 /*split_variable_assignment{
 	b_1_0,
 	f_0_12,
+	f_0_20,
+	f_0_6,
+	f_1_11,
+	f_1_12,
+	f_3_4,
+	f_6_2,
+	f_8_8,
 	f4_0_1,
 	f4_0_4,
 	f4_0_5,
@@ -1240,15 +1326,23 @@ clamp(pf_0_19, 0.0, 1.0)
 	f4_0_8,
 	pf_0_16,
 	pf_0_19,
+	pf_0_21,
 	pf_0_23,
 	pf_0_24,
 	pf_0_26,
+	pf_0_3,
+	pf_1_11,
 	pf_1_13,
 	pf_1_14,
 	pf_1_16,
+	pf_1_2,
+	pf_1_8,
+	pf_2_1,
 	pf_2_10,
 	pf_2_12,
+	pf_2_7,
 	pf_2_9,
+	pf_3_1,
 	pf_3_5,
 	pf_4_3,
 	pf_5_3,

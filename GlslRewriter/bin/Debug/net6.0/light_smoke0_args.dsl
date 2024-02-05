@@ -9,7 +9,7 @@ vs
         //def_multiline_for_variable = false;
         //def_expanded_only_once_for_variable = false;
         def_max_level = 32;
-        def_max_length = 512;
+        def_max_length = 4096;
         //def_skip_value;
         def_skip_expression;
         def_max_level_for_variable = 256;
@@ -92,24 +92,48 @@ vs
         };
 
         split_variable_assignment{
+            f_0_12,
             f_0_26,
             f_0_39,
             f_0_40,
             f_0_41,
+            f_0_48,
+            f_0_56,
             f_0_78,
+            f_0_88,
             f_0_89,
             f_0_91,
+            f_0_92,
             f_1_151,
+            f_1_152,
             f_1_2,
+            f_1_37,
+            f_1_40,
+            f_1_47,
+            f_1_49,
+            f_1_51,
+            f_1_58,
+            f_1_64,
             f_1_68,
             f_1_71,
             f_1_76,
+            f_1_85,
+            f_1_95,
             f_2_104,
+            f_3_23,
+            f_3_35,
+            f_3_56,
             f_3_63,
             f_3_72,
             f_3_89,
             f_4_3,
+            f_5_13,
+            f_5_25,
+            f_5_44,
+            f_6_21,
+            f_6_42,
             f_6_49,
+            f_7_25,
             f_8_11,
             f_8_26,
             f2_0_0,
@@ -126,6 +150,7 @@ vs
             pf_1_6,
             pf_10_12,
             pf_11_10,
+            pf_11_11,
             pf_12_3,
             pf_12_7,
             pf_13_8,
@@ -156,8 +181,13 @@ vs
             pf_26_15,
             pf_27_10,
             pf_27_2,
+            pf_27_5,
+            pf_29_1,
             pf_3_10,
+            pf_3_3,
             pf_3_7,
+            pf_30_2,
+            pf_4_2,
             pf_5_5,
             pf_6_5,
             pf_9_9,
@@ -176,6 +206,8 @@ vs
             u_1_18,
             u_1_19,
             u_1_2,
+            u_1_20,
+            u_1_22,
             u_1_4,
             u_1_9,
             u_1_phi_22,
@@ -187,9 +219,11 @@ vs
             u_10_14,
             u_10_15,
             u_10_16,
+            u_10_17,
             u_10_18,
             u_10_25,
             u_10_26,
+            u_10_4,
             u_10_9,
             u_10_phi_19,
             u_10_phi_21,
@@ -198,12 +232,14 @@ vs
             u_11_16,
             u_11_20,
             u_11_21,
+            u_11_6,
             u_11_phi_74,
             u_12_13,
             u_12_14,
             u_12_16,
             u_12_19,
             u_12_24,
+            u_12_5,
             u_12_phi_24,
             u_13_10,
             u_13_11,
@@ -232,6 +268,7 @@ vs
             u_19_4,
             u_2_1,
             u_2_10,
+            u_2_11,
             u_2_15,
             u_2_17,
             u_2_2,
@@ -242,6 +279,7 @@ vs
             u_2_26,
             u_2_27,
             u_2_3,
+            u_2_30,
             u_2_4,
             u_2_7,
             u_2_8,
@@ -317,6 +355,7 @@ vs
             u_31_0,
             u_31_1,
             u_31_12,
+            u_31_8,
             u_31_phi_37,
             u_32_2,
             u_32_3,
@@ -326,6 +365,7 @@ vs
             u_32_phi_44,
             u_32_phi_51,
             u_33_3,
+            u_33_4,
             u_34_2,
             u_34_3,
             u_34_phi_38,
@@ -517,6 +557,52 @@ vs
     {
         redirect(0, "d:/UC/light_smoke_0/4", "d:/uc/VAO_light_smoke_0/4");
     };
+    type_replacement
+    {
+        vs_cbuf0 = float;
+        vs_cbuf8 = float;
+        vs_cbuf9 = float;
+        vs_cbuf10 = float;
+        vs_cbuf13 = float;
+        vs_cbuf15 = float;
+        vs_cbuf16 = float;
+    };
+    function_replacement
+    {
+        textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
+        textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
+        vs_cbuf9[*] = vs_cbuf9[@arg(1)];
+        replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
+        vs_cbuf8[29] = camera_wpos;
+        vs_cbuf15[28] = lightDir;
+        vs_ssbo0[44] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[45] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[46] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[47] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[48] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[49] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[50] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[51] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[*] = vs_ssbo0[@arg(1)];
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
+    };
+    string_replacement
+    {
+        string("uvec", "uint");
+        string("ivec", "int");
+        string("vec2", "float2");
+        string("vec3", "float3");
+        string("vec4", "float4");
+        string("in_attr", "uni_attr");
+        string("out_attr", "o.fs_attr");
+        string("gl_Position", "o.vertex");
+        string("return;", "return o;");
+        string("tex5", "_CameraDepthTexture");
+        string("isnan", "myIsNaN");
+        regex(@"\buni_attr0\b", "v.vertex");
+        regex(@"\buni_attr1\b", "v.uv");
+        regex(@"\buni_attr2\b", "v.offset");
+    };
     calculator
     {
         textureSize(tex0,*) = vec2(8,13);
@@ -573,6 +659,13 @@ ps
             b_1_3,
             b_1_4,
             b_1_5,
+            f_0_9,
+            f_2_2,
+            f_2_9,
+            f_4_3,
+            f_4_4,
+            f_4_5,
+            f_6_3,
             f4_0_0,
             f4_0_1,
             f4_0_2,
@@ -580,15 +673,20 @@ ps
             f4_0_4,
             pf_0_10,
             pf_1_11,
+            pf_1_6,
             pf_1_8,
             pf_1_9,
+            pf_2_3,
             pf_2_5,
             pf_2_6,
             pf_2_8,
             pf_3_10,
             pf_3_11,
             pf_3_13,
+            pf_3_4,
+            pf_3_8,
             pf_4_6,
+            pf_5_0,
             pf_5_5,
             pf_6_2,
             u_1_1,
@@ -651,6 +749,33 @@ ps
     shader_arg(4)
     {
         redirect(0, "d:/UC/light_smoke_0/4", "d:/uc/VAO_light_smoke_0/4");
+    };
+    type_replacement
+    {
+        fs_cbuf8 = float;
+        fs_cbuf9 = float;
+        fs_cbuf13 = float;
+        fs_cbuf15 = float;
+    };
+    function_replacement
+    {
+        textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
+        textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
+        texture(*,*) = textureSample(@arg(0), @arg(1), s_linear_clamp_sampler);
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
+    };
+    string_replacement
+    {
+        string("uvec", "uint");
+        string("ivec", "int");
+        string("vec2", "float2");
+        string("vec3", "float3");
+        string("vec4", "float4");
+        string("in_attr", "i.fs_attr");
+        string("gl_FragCoord", "i.vertex");
+        string("frag_color0", "col");
+        string("return;", "return col;");
+        string("tex5", "_CameraDepthTexture");
     };
     calculator
     {

@@ -45,9 +45,9 @@ var out_attr2 = new[] {
 };
 
 // vs_cbuf3[2] = new Vector4(256.00f, 256.00f, 0.0039063f, 0.0039063f);
-// vs_cbuf3[8] = new Vector4(6360.00f, 6420.00f, 0.00f, 0.00f);
+// vs_cbuf3[8] = new Vector4(6360.00f, 6420.00f, 0f, 0f);
 // vs_cbuf4[3] = new Vector4(2.695f, 7.70f, 7.70f, 0.0252825f);
-// vs_cbuf4[7] = new Vector4(0.1922222f, 0.00f, 0.00f, 0.00f);
+// vs_cbuf4[7] = new Vector4(0.1922222f, 0f, 0f, 0f);
 
 // vs_cbuf3[2] = , 1132462080u, 1132462080u, 998244352u, 998244352u
 // vs_cbuf3[8] = , 1170653184u, 1170776064u, 0u, 0u
@@ -56,9 +56,9 @@ var out_attr2 = new[] {
 
 // 1065353216 = 1.00f;
 // vs_cbuf3[2] = vec4(256.00, 256.00, 0.0039063, 0.0039063);
-// vs_cbuf3[8] = vec4(6360.00, 6420.00, 0.00, 0.00);
+// vs_cbuf3[8] = vec4(6360.00, 6420.00, 0, 0);
 // vs_cbuf4[3] = vec4(2.695, 7.70, 7.70, 0.0252825);
-// vs_cbuf4[7] = vec4(0.1922222, 0.00, 0.00, 0.00);
+// vs_cbuf4[7] = vec4(0.1922222, 0, 0, 0);
 
 out gl_PerVertex
 {
@@ -78,11 +78,11 @@ layout(std140, binding = 1 )uniform vs_cbuf_4
 };
 void main()
 {
-	in_attr0.x  = float(-0.50 );	// -0.50
+	in_attr0.x  = float(-0.50 );	// -0.5
 	in_attr0.y  = float(0.50 );	// 0.50
-	in_attr0.z  = float(0.00 );	// 0.00
-	in_attr0.w  = float(0.00 );	// 0.00
-	gl_Position.x  = float(-1.00 );	/* -1.00  <=>  float(-1.00)
+	in_attr0.z  = float(0.00 );	// 0
+	in_attr0.w  = float(0.00 );	// 0
+	gl_Position.x  = float(-1.00 );	/* -1  <=>  float(-1.00)
 <=>
 float(-1.00)
 <=>
@@ -96,7 +96,7 @@ float(1.00)
 {gl_Position.y = float(1.00)
 }
 */
-	gl_Position.z  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	gl_Position.z  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
@@ -117,14 +117,14 @@ float(6361.51709)
 {out_attr0.x = float(6361.51709)
 }
 */
-	out_attr0.y  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr0.y  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
 {out_attr0.y = float(0.00)
 }
 */
-	out_attr0.z  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr0.z  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
@@ -145,14 +145,14 @@ float(-0.02184)
 {out_attr1.x = float(-0.02184)
 }
 */
-	out_attr1.y  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr1.y  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
 {out_attr1.y = float(0.00)
 }
 */
-	out_attr1.z  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr1.z  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
@@ -173,14 +173,14 @@ float(-0.01793)
 {out_attr2.x = float(-0.01793)
 }
 */
-	out_attr2.y  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr2.y  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
 {out_attr2.y = float(0.00)
 }
 */
-	out_attr2.z  = float(0.00 );	/* 0.00  <=>  float(0.00)
+	out_attr2.z  = float(0.00 );	/* 0  <=>  float(0.00)
 <=>
 float(0.00)
 <=>
@@ -203,18 +203,18 @@ float(1.00)
 	uint u_0 = uint(0 );	// 0
 	uint u_1 = uint(0 );	// 0
 	uint u_2 = uint(0 );	// 0
-	float f_0 = float(0 );	// 0.00
-	float f_1 = float(0 );	// 0.00
-	float f_2 = float(0 );	// 0.00
-	float f_3 = float(0 );	// 0.00
-	float f_4 = float(0 );	// 0.00
-	precise float pf_0 = float(0 );	// 0.00
-	precise float pf_1 = float(0 );	// 0.00
-	gl_Position = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
-	out_attr0 = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
-	out_attr1 = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
-	out_attr2 = vec4(0, 0, 0, 1 );	// vec4(0.00,0.00,0.00,1.00)
-	f_0_0 = in_attr0.x ;	// -0.50
+	float f_0 = float(0 );	// 0
+	float f_1 = float(0 );	// 0
+	float f_2 = float(0 );	// 0
+	float f_3 = float(0 );	// 0
+	float f_4 = float(0 );	// 0
+	precise float pf_0 = float(0 );	// 0
+	precise float pf_1 = float(0 );	// 0
+	gl_Position = vec4(0, 0, 0, 1 );	// vec4(0,0,0,1.00)
+	out_attr0 = vec4(0, 0, 0, 1 );	// vec4(0,0,0,1.00)
+	out_attr1 = vec4(0, 0, 0, 1 );	// vec4(0,0,0,1.00)
+	out_attr2 = vec4(0, 0, 0, 1 );	// vec4(0,0,0,1.00)
+	f_0_0 = in_attr0.x ;	// -0.5
 	f_1_0 = in_attr0.y ;	// 0.50
 	u_0_0 = (vs_cbuf4[7 ].y  );	// 0
 	b_0_0 = 0u != u_0_0;	// False
@@ -222,7 +222,7 @@ float(1.00)
 	f_2_1 = min(f_2_0, 0.9999f );	// 0.0252825
 	f_3_0 = utof(vs_cbuf3[8 ].y  );	// 6420.00
 	f_4_0 = utof(vs_cbuf3[8 ].x  );	// 6360.00
-	f_4_1 = 0.f - (f_4_0 );	// -6360.00
+	f_4_1 = 0.f - (f_4_0 );	// -6360
 	pf_0_0 = f_4_1 + f_3_0;	/* 60.00  <=>  ((0.f - {utof(vs_cbuf3[8].x) : 6360.00}) + {utof(vs_cbuf3[8].y) : 6420.00})
 <=>
 ((0.f - utof(vs_cbuf3[8].x)) + utof(vs_cbuf3[8].y))
@@ -259,9 +259,9 @@ pf_0_1
 {out_attr0.x = pf_0_1
 }
 */
-	pf_0_2 = f_0_0 * 2.f;	// -1.00
+	pf_0_2 = f_0_0 * 2.f;	// -1
 	pf_1_0 = f_1_0 * 2.f;	// 1.00
-	gl_Position.x  = pf_0_2;	/* -1.00  <=>  ({in_attr0.x : -0.50} * 2.f)
+	gl_Position.x  = pf_0_2;	/* -1  <=>  ({in_attr0.x : -0.5} * 2.f)
 <=>
 (in_attr0.x * 2.f)
 <=>
@@ -298,7 +298,7 @@ ftou(((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)))
 	}
 }
 */
-	f_0_2 = 0.f - (pf_0_3 );	/* -0.9997615  <=>  (0.f - ((1.0f / {pf_0_1 : 6361.517}) * {utof(vs_cbuf3[8].x) : 6360.00}))
+	f_0_2 = 0.f - (pf_0_3 );	/* -0.99976146  <=>  (0.f - ((1.0f / {pf_0_1 : 6361.517}) * {utof(vs_cbuf3[8].x) : 6360.00}))
 <=>
 (0.f - ((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)))
 <=>
@@ -311,7 +311,7 @@ ftou(((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)))
 	})
 }
 */
-	pf_0_4 = fma(pf_0_3, f_0_2, 1.f );	/* 0.000477  <=>  ((((1.0f / {pf_0_1 : 6361.517}) * {utof(vs_cbuf3[8].x) : 6360.00}) * {f_0_2 : -0.9997615}) + 1.f)
+	pf_0_4 = fma(pf_0_3, f_0_2, 1.f );	/* 0.000477  <=>  ((((1.0f / {pf_0_1 : 6361.517}) * {utof(vs_cbuf3[8].x) : 6360.00}) * {f_0_2 : -0.99976146}) + 1.f)
 <=>
 ((((1.0f / pf_0_1) * utof(vs_cbuf3[8].x)) * f_0_2) + 1.f)
 <=>
@@ -350,7 +350,7 @@ if(((0u != vs_cbuf4[7].y) ? true : false))
 		u_1_phi_1 = u_1_1;
 	} 
 	f_0_4 = sqrt(f_0_3 );	// 0.0218408
-	f_1_1 = 0.f - (f_0_4 );	// -0.0218408
+	f_1_1 = 0.f - (f_0_4 );	// -0.021840757
 	b_0_1 = ! b_0_0;	// True
 	b_1_1 = b_0_1 ? (true) : (false);	/* True  <=>  ((! (0u != {vs_cbuf4[7].y : 0})) ? true : false)
 <=>
@@ -384,8 +384,8 @@ if(b_1_1)
 */
 	{
 		f_2_4 = utof(vs_cbuf3[2 ].w  );	// 0.0039063
-		f_0_5 = 0.f - (f_0_4 );	// -0.0218408
-		pf_0_5 = f_0_5 + f_2_4;	// -0.0179345
+		f_0_5 = 0.f - (f_0_4 );	// -0.021840757
+		pf_0_5 = f_0_5 + f_2_4;	// -0.017934507
 		u_2_0 = ftou(pf_0_5 );	/* 3163745123  <=>  {ftou(((0.f - sqrt(clamp({pf_0_4 : 0.000477}, 0.0, 1.0))) + {utof(vs_cbuf3[2].w) : 0.0039063})) : 3163745123}
 <=>
 ftou(((0.f - sqrt(clamp(pf_0_4, 0.0, 1.0))) + utof(vs_cbuf3[2].w)))
@@ -416,7 +416,7 @@ u_2_0
 		u_2_phi_2 = u_2_0;
 		u_0_phi_2 = u_0_3;
 	} 
-	out_attr1.x  = f_1_1;	/* -0.0218408  <=>  (0.f - sqrt(clamp({pf_0_4 : 0.000477}, 0.0, 1.0)))
+	out_attr1.x  = f_1_1;	/* -0.021840757  <=>  (0.f - sqrt(clamp({pf_0_4 : 0.000477}, 0.0, 1.0)))
 <=>
 (0.f - sqrt(clamp(pf_0_4, 0.0, 1.0)))
 <=>
@@ -429,8 +429,8 @@ u_2_0
 	}
 }
 */
-	f_0_6 = utof(u_0_phi_2 );	// -0.0179345
-	out_attr2.x  = f_0_6;	/* -0.0179345  <=>  {utof(u_0_phi_2) : -0.0179345}
+	f_0_6 = utof(u_0_phi_2 );	// -0.017934507
+	out_attr2.x  = f_0_6;	/* -0.017934507  <=>  {utof(u_0_phi_2) : -0.017934507}
 <=>
 utof(u_0_phi_2)
 <=>

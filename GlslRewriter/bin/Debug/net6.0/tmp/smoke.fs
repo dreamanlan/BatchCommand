@@ -31,7 +31,7 @@ layout(binding = 4) uniform sampler2D tex4;
 layout(binding = 5) uniform sampler2D tex5;
 layout(binding = 6) uniform samplerCube tex6;
 void main() {
-gl_FragCoord = vec4(320,240,0.5,1.0);
+gl_FragCoord = vec4(-149.3688, -1233.9182, 0.332715, 1.66537);
 in_attr0.x = float(0.45125);
 in_attr0.y = float(0.42136);
 in_attr0.z = float(0.35448);

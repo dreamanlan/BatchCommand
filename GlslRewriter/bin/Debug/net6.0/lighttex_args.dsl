@@ -193,7 +193,7 @@ vs
     };
     function_replacement
     {
-        (*)[*] = @join(@arg(0), _, @arg(1));
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
     };
     string_replacement
     {
@@ -575,7 +575,7 @@ ps
     function_replacement
     {
         texture(*,*) = textureSample(@arg(0), @arg(1), s_linear_clamp_sampler);
-        (*)[*] = @join(@arg(0), _, @arg(1));
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
     };
     string_replacement
     {

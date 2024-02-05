@@ -754,6 +754,7 @@ namespace GlslRewriter
                 }
             }
             else if (Operator == "=") {
+                bool cachedValueAssigned = false;
                 if (NextNodes[0] is ComputeGraphVarNode vnode) {
                     //var = exp
                     //phi变量存在多分支赋值，在计算图上计算时跳过赋值
@@ -763,6 +764,10 @@ namespace GlslRewriter
                         }
                         else {
                             VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo), ArgTypeConversion, 0);
+                        }
+                        if(VariableTable.GetVarValue(vnode.VarName, vnode.Type, out var v)) {
+                            CachedValue = v;
+                            cachedValueAssigned = true;
                         }
                     }
                 }
@@ -783,7 +788,9 @@ namespace GlslRewriter
                         }
                     }
                 }
-                CachedValue = PrevNodes[0].CalcValue(visits, ref cinfo);
+                if(!cachedValueAssigned) {
+                    CachedValue = PrevNodes[0].CalcValue(visits, ref cinfo);
+                }
             }
             else if (PrevNodes.Count == 3) {
                 var cond = PrevNodes[0].CalcValue(visits, ref cinfo);
@@ -1244,7 +1251,7 @@ namespace GlslRewriter
                         int curLvl = curLevel;
                         var node = repInfo.ArgGetter(this, ix, ref curLvl);
                         if(node is ComputeGraphVarNode vnode) {
-                            if (str != "*" && str != vnode.VarName) {
+                            if (str != "*" && str != vnode.VarName && str != vnode.GetValue().ToString()) {
                                 match = false;
                                 break;
                             }
@@ -1255,14 +1262,41 @@ namespace GlslRewriter
                                 break;
                             }
                         }
+                        else if(node is ComputeGraphCalcNode calcNode) {
+                            if (str != "*" && str != calcNode.GetValue().ToString()) {
+                                match = false;
+                                break;
+                            }
+                        }
                     }
                     if (match) {
-                        var dslFunc = repInfo.Replacement as Dsl.FunctionData;
+                        var dslFunc = repInfo.Replacement;
                         if (null != dslFunc) {
                             ret = true;
 
                             string dslFuncId = dslFunc.GetId();
                             string repTag = key + "=>" + dslFuncId;
+
+                            if (dslFunc is Dsl.ValueData) {
+                                // 由于visits记录是用来查重的，如果我们实际使用了参数，就不能再采用这种忽略结果的方式来计算表达式深度，所以这种通用方式只用在单一值的情形，对于不使用参数的表达式，可以使用@join函数+@skip_and_lvlup函数来处理
+                                // 这段使用先生成参数表达式再丢弃的方式来计算maxLevel，以保持替换情形下的表达式深度与不替换时一致（用于glsl与hlsl代码保持一致）
+                                for (int argIx = 0; argIx < PrevNodes.Count; ++argIx) {
+                                    var node = PrevNodes[argIx];
+                                    int curLvl;
+                                    if (null != repInfo.ArgGetter) {
+                                        curLvl = curLevel;
+                                        var p = repInfo.ArgGetter(this, argIx, ref curLvl);
+                                        s_IgnoredContent.Length = 0;
+                                        int subMaxLevel;
+                                        p.GenerateExpression(s_IgnoredContent, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                    }
+                                    else {
+                                        curLvl = curLevel + 1;
+                                        int subMaxLevel;
+                                        node.GenerateExpression(s_IgnoredContent, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                                    }
+                                }
+                            }
                             TransformSyntax(useArgTypeConversion, repTag, repInfo, dslFunc, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
                         break;
@@ -1288,7 +1322,49 @@ namespace GlslRewriter
                 var funcData = syntax as Dsl.FunctionData;
                 if (null != funcData) {
                     string id = funcData.GetId();
-                    if (id == "@arg") {
+                    if (id == "@arg_and_lvlup") {
+                        string ixStr = funcData.GetParamId(0);
+                        string lvlStr = funcData.GetParamNum() > 1 ? funcData.GetParamId(1) : "0";
+                        if (int.TryParse(ixStr, out var argIx) && int.TryParse(lvlStr, out var lvl)) {
+                            Debug.Assert(null != repInfo.ArgGetter);
+                            int curLvl = curLevel;
+                            var p = repInfo.ArgGetter(this, argIx, ref curLvl);
+                            if (lvl != 0) {
+                                curLvl = curLevel + lvl;
+                            }
+                            int action = GenConversionBefore(sb, argIx);
+                            int subMaxLevel;
+                            p.GenerateExpression(sb, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            GenConversionAfter(sb, action);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, @arg_and_lvlup's argument must be integer !", repTag);
+                        }
+                    }
+                    else if (id == "@skip_and_lvlup") {
+                        string ixStr = funcData.GetParamId(0);
+                        string lvlStr = funcData.GetParamNum() > 1 ? funcData.GetParamId(1) : "0";
+                        if (int.TryParse(ixStr, out var argIx) && int.TryParse(lvlStr, out var lvl)) {
+                            Debug.Assert(null != repInfo.ArgGetter);
+                            int curLvl = curLevel;
+                            var p = repInfo.ArgGetter(this, argIx, ref curLvl);
+                            if (lvl != 0) {
+                                curLvl = curLevel + lvl;
+                            }
+                            s_IgnoredContent.Length = 0;
+                            int subMaxLevel;
+                            p.GenerateExpression(s_IgnoredContent, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                        }
+                        else {
+                            Console.WriteLine("function_replacement: {0}, @skip_and_lvlup's argument must be integer !", repTag);
+                        }
+                    }
+                    else if (id == "@join") {
+                        foreach (var p in funcData.Params) {
+                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
+                        }
+                    }
+                    else if (id == "@arg") {
                         string ixStr = funcData.GetParamId(0);
                         if (int.TryParse(ixStr, out var argIx)) {
                             Debug.Assert(null != repInfo.ArgGetter);
@@ -1296,7 +1372,7 @@ namespace GlslRewriter
                             var p = repInfo.ArgGetter(this, argIx, ref curLvl);
                             int action = GenConversionBefore(sb, argIx);
                             int subMaxLevel;
-                            p.GenerateExpression(sb, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            p.GenerateExpression(sb, 0, curLevel, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                             GenConversionAfter(sb, action);
                         }
                         else {
@@ -1311,15 +1387,10 @@ namespace GlslRewriter
                             var p = repInfo.ArgGetter(this, argIx, ref curLvl);
                             s_IgnoredContent.Length = 0;
                             int subMaxLevel;
-                            p.GenerateExpression(s_IgnoredContent, 0, curLvl, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
+                            p.GenerateExpression(s_IgnoredContent, 0, curLevel, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                         }
                         else {
                             Console.WriteLine("function_replacement: {0}, @skip's argument must be integer !", repTag);
-                        }
-                    }
-                    else if (id == "@join") {
-                        foreach (var p in funcData.Params) {
-                            TransformSyntax(useArgTypeConversion, repTag, repInfo, p, sb, curLevel, ref curMaxLevel, setting, usedVars, visits, fromNode);
                         }
                     }
                     else if (funcData.IsOperatorParamClass()) {

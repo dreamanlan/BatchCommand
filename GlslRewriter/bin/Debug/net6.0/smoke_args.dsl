@@ -1034,7 +1034,7 @@ vs
         textureLod = textureLodTest(@arg(0), @arg(1), s_sampler);
         vs_ssbo0[*] = vs_ssbo0[@arg(1)];
         vs_cbuf9[*] = vs_cbuf9[@arg(1)];
-        (*)[*] = @join(@arg(0), _, @arg(1));
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
     };
     string_replacement
     {

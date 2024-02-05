@@ -17,9 +17,9 @@ void main()
 {
 	// 1065353216 = 1.00f;
 	// vs_cbuf3[2] = float4(256.00, 256.00, 0.0039063, 0.0039063);
-	// vs_cbuf3[8] = float4(6360.00, 6420.00, 0.00, 0.00);
+	// vs_cbuf3[8] = float4(6360.00, 6420.00, 0, 0);
 	// vs_cbuf4[3] = float4(18.00, 16.58824, 15.30, 0.0021038);
-	// vs_cbuf4[7] = float4(0.00, 0.00, 0.00, 0.00);
+	// vs_cbuf4[7] = float4(0, 0, 0, 0);
 
 	bool b_1_1;
 	float f_0_2;
@@ -34,35 +34,35 @@ void main()
 	uint u_1_1;
 	uint u_1_phi_1;
 	uint u_2_0;
-	// -1.00  <=>  float(-1.00)
+	// -1  <=>  float(-1.00)
 	o.vertex.x = float(-1.00);
 	// 1.00  <=>  float(1.00)
 	o.vertex.y = float(1.00);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.vertex.z = float(0.00);
 	// 1.00  <=>  float(1.00)
 	o.vertex.w = float(1.00);
 	// 6360.126  <=>  float(6360.12646)
 	o.fs_attr0.x = float(6360.12646);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr0.y = float(0.00);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr0.z = float(0.00);
 	// 1.00  <=>  float(1.00)
 	o.fs_attr0.w = float(1.00);
 	// -0.00631  <=>  float(-0.00631)
 	o.fs_attr1.x = float(-0.00631);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr1.y = float(0.00);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr1.z = float(0.00);
 	// 1.00  <=>  float(1.00)
 	o.fs_attr1.w = float(1.00);
 	// -0.0024  <=>  float(-0.0024)
 	o.fs_attr2.x = float(-0.0024);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr2.y = float(0.00);
-	// 0.00  <=>  float(0.00)
+	// 0  <=>  float(0.00)
 	o.fs_attr2.z = float(0.00);
 	// 1.00  <=>  float(1.00)
 	o.fs_attr2.w = float(1.00);
@@ -72,7 +72,7 @@ void main()
 	pf_0_1 = ((pf_0_0 * clamp((vs_cbuf4_3.w), 0.0001f, 0.9999f)) + (vs_cbuf3_8.x));
 	// 6360.126  <=>  {pf_0_1 : 6360.126}
 	o.fs_attr0.x = pf_0_1;
-	// -1.00  <=>  ({v.vertex.x : -0.50} * 2.f)
+	// -1  <=>  ({v.vertex.x : -0.5} * 2.f)
 	o.vertex.x = (v.vertex.x * 2.f);
 	// 1065352882  <=>  {ftou(((1.0f / {pf_0_1 : 6360.126}) * {(vs_cbuf3_8.x) : 6360.00})) : 1065352882}
 	u_0_1 = ftou(((1.0f / pf_0_1) * (vs_cbuf3_8.x)));
@@ -85,14 +85,14 @@ void main()
 	// 1065352882  <=>  {u_0_1 : 1065352882}
 	u_1_0 = u_0_1;
 	u_1_phi_1 = u_1_0;
-	// False  <=>  if(((0u != ftou({vs_cbuf4_7.y : 0.00})) ? true : false))
+	// False  <=>  if(((0u != ftou({vs_cbuf4_7.y : 0})) ? true : false))
 	if(((0u != ftou(vs_cbuf4_7.y)) ? true : false))
 	{
 		// 3212836864  <=>  3212836864u
 		u_1_1 = 3212836864u;
 		u_1_phi_1 = u_1_1;
 	}
-	// True  <=>  ((! (0u != ftou({vs_cbuf4_7.y : 0.00}))) ? true : false)
+	// True  <=>  ((! (0u != ftou({vs_cbuf4_7.y : 0}))) ? true : false)
 	b_1_1 = ((! (0u != ftou(vs_cbuf4_7.y))) ? true : false);
 	// 1065352882  <=>  {u_1_phi_1 : 1065352882}
 	u_0_2 = u_1_phi_1;
@@ -106,9 +106,9 @@ void main()
 		u_0_3 = u_2_0;
 		u_0_phi_2 = u_0_3;
 	}
-	// -0.00631  <=>  (0.f - sqrt(clamp({pf_0_4 : 0.0000398}, 0.0, 1.0)))
+	// -0.006309953  <=>  (0.f - sqrt(clamp({pf_0_4 : 0.0000398}, 0.0, 1.0)))
 	o.fs_attr1.x = (0.f - sqrt(clamp(pf_0_4, 0.0, 1.0)));
-	// -0.0024037  <=>  {utof(u_0_phi_2) : -0.0024037}
+	// -0.0024036532  <=>  {utof(u_0_phi_2) : -0.0024036532}
 	o.fs_attr2.x = utof(u_0_phi_2);
 	return o;
 }

@@ -9,7 +9,7 @@ vs
         //def_multiline_for_variable = false;
         //def_expanded_only_once_for_variable = false;
         def_max_level = 32;
-        def_max_length = 512;
+        def_max_length = 4096;
         //def_skip_value;
         def_skip_expression;
         def_max_level_for_variable = 256;
@@ -98,13 +98,21 @@ vs
             f_0_10,
             f_0_104,
             f_0_113,
+            f_0_123,
             f_0_125,
+            f_0_127,
             f_0_128,
             f_0_130,
+            f_0_131,
             f_0_15,
             f_0_16,
+            f_0_66,
+            f_0_74,
             f_1_11,
+            f_1_16,
+            f_1_18,
             f_1_2,
+            f_1_23,
             f_1_25,
             f_1_26,
             f_1_40,
@@ -117,11 +125,19 @@ vs
             f_2_17,
             f_2_43,
             f_3_36,
+            f_4_20,
             f_4_23,
+            f_4_26,
             f_4_34,
+            f_4_56,
+            f_4_7,
+            f_5_15,
+            f_5_24,
             f_5_43,
             f_5_55,
             f_5_64,
+            f_6_25,
+            f_6_38,
             f_7_30,
             f_8_11,
             f_8_12,
@@ -136,15 +152,22 @@ vs
             pf_0_25,
             pf_1_10,
             pf_1_11,
+            pf_1_2,
+            pf_1_3,
+            pf_1_6,
             pf_1_7,
             pf_1_8,
             pf_1_9,
             pf_10_10,
             pf_10_9,
+            pf_11_10,
+            pf_11_11,
             pf_11_16,
+            pf_11_9,
             pf_12_5,
             pf_12_8,
             pf_13_6,
+            pf_13_9,
             pf_14_3,
             pf_14_5,
             pf_15_1,
@@ -155,6 +178,7 @@ vs
             pf_18_0,
             pf_18_16,
             pf_18_19,
+            pf_19_11,
             pf_2_10,
             pf_2_12,
             pf_2_17,
@@ -168,23 +192,30 @@ vs
             pf_21_25,
             pf_21_4,
             pf_21_6,
+            pf_21_7,
             pf_25_10,
             pf_25_2,
             pf_28_3,
             pf_3_19,
             pf_3_23,
+            pf_3_5,
             pf_3_6,
+            pf_3_7,
+            pf_32_0,
             pf_4_12,
             pf_4_14,
             pf_4_8,
             pf_5_0,
             pf_5_10,
+            pf_5_15,
             pf_5_21,
+            pf_5_7,
             pf_6_20,
             pf_7_6,
             pf_7_7,
             pf_8_0,
             u_0_1,
+            u_0_12,
             u_0_14,
             u_0_16,
             u_0_2,
@@ -194,6 +225,8 @@ vs
             u_0_23,
             u_0_25,
             u_0_26,
+            u_0_28,
+            u_0_30,
             u_0_4,
             u_0_5,
             u_0_7,
@@ -225,10 +258,13 @@ vs
             u_10_1,
             u_11_1,
             u_11_15,
+            u_11_18,
             u_11_2,
             u_11_8,
             u_11_phi_30,
+            u_12_13,
             u_12_18,
+            u_12_2,
             u_12_21,
             u_12_24,
             u_12_26,
@@ -236,6 +272,7 @@ vs
             u_12_34,
             u_12_8,
             u_13_1,
+            u_13_10,
             u_13_15,
             u_13_7,
             u_13_8,
@@ -247,6 +284,7 @@ vs
             u_14_16,
             u_14_24,
             u_14_25,
+            u_14_27,
             u_14_3,
             u_14_32,
             u_14_34,
@@ -260,10 +298,13 @@ vs
             u_14_phi_26,
             u_14_phi_74,
             u_15_11,
+            u_15_16,
             u_15_17,
             u_15_18,
             u_15_24,
             u_15_30,
+            u_15_33,
+            u_15_38,
             u_15_4,
             u_15_43,
             u_15_49,
@@ -281,6 +322,7 @@ vs
             u_16_63,
             u_16_66,
             u_16_67,
+            u_16_69,
             u_16_7,
             u_16_75,
             u_16_8,
@@ -299,6 +341,7 @@ vs
             u_19_17,
             u_19_23,
             u_19_24,
+            u_19_9,
             u_19_phi_21,
             u_2_0,
             u_2_1,
@@ -314,9 +357,11 @@ vs
             u_2_32,
             u_2_33,
             u_2_34,
+            u_2_36,
             u_2_41,
             u_2_47,
             u_2_49,
+            u_2_5,
             u_2_50,
             u_2_51,
             u_2_52,
@@ -339,11 +384,13 @@ vs
             u_20_16,
             u_20_2,
             u_20_22,
+            u_20_8,
             u_20_phi_23,
             u_21_0,
             u_21_4,
             u_21_5,
             u_21_phi_22,
+            u_22_2,
             u_22_27,
             u_22_28,
             u_22_37,
@@ -352,7 +399,9 @@ vs
             u_22_phi_49,
             u_23_16,
             u_23_19,
+            u_23_21,
             u_23_25,
+            u_23_33,
             u_23_37,
             u_23_41,
             u_23_46,
@@ -374,6 +423,7 @@ vs
             u_26_18,
             u_26_2,
             u_26_3,
+            u_26_4,
             u_26_phi_32,
             u_27_1,
             u_27_11,
@@ -406,6 +456,7 @@ vs
             u_29_phi_51,
             u_3_18,
             u_3_19,
+            u_3_20,
             u_3_21,
             u_3_23,
             u_3_25,
@@ -413,6 +464,8 @@ vs
             u_3_31,
             u_3_35,
             u_3_36,
+            u_3_4,
+            u_3_9,
             u_3_phi_16,
             u_3_phi_63,
             u_3_phi_76,
@@ -474,10 +527,12 @@ vs
             u_4_15,
             u_4_17,
             u_4_19,
+            u_4_2,
             u_4_20,
             u_4_24,
             u_4_5,
             u_4_6,
+            u_4_7,
             u_4_phi_15,
             u_4_phi_31,
             u_40_0,
@@ -512,6 +567,7 @@ vs
             u_7_2,
             u_7_20,
             u_7_21,
+            u_7_23,
             u_7_4,
             u_7_5,
             u_7_8,
@@ -607,6 +663,52 @@ vs
     {
         redirect(0, "d:/UC/light_smoke/4", "d:/uc/VAO_light_smoke/4");
     };
+    type_replacement
+    {
+        vs_cbuf0 = float;
+        vs_cbuf8 = float;
+        vs_cbuf9 = float;
+        vs_cbuf10 = float;
+        vs_cbuf13 = float;
+        vs_cbuf15 = float;
+        vs_cbuf16 = float;
+    };
+    function_replacement
+    {
+        textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
+        textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
+        vs_cbuf9[*] = vs_cbuf9[@arg(1)];
+        replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
+        vs_cbuf8[29] = camera_wpos;
+        vs_cbuf15[28] = lightDir;
+        vs_ssbo0[44] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[45] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[46] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[47] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[48] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[49] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[50] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[51] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[*] = vs_ssbo0[@arg(1)];
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
+    };
+    string_replacement
+    {
+        string("uvec", "uint");
+        string("ivec", "int");
+        string("vec2", "float2");
+        string("vec3", "float3");
+        string("vec4", "float4");
+        string("in_attr", "uni_attr");
+        string("out_attr", "o.fs_attr");
+        string("gl_Position", "o.vertex");
+        string("return;", "return o;");
+        string("tex5", "_CameraDepthTexture");
+        string("isnan", "myIsNaN");
+        regex(@"\buni_attr0\b", "v.vertex");
+        regex(@"\buni_attr1\b", "v.uv");
+        regex(@"\buni_attr2\b", "v.offset");
+    };
     calculator
     {
         textureSize(tex0,*) = vec2(8,13);
@@ -659,6 +761,13 @@ ps
         split_variable_assignment{
             b_1_0,
             f_0_12,
+            f_0_20,
+            f_0_6,
+            f_1_11,
+            f_1_12,
+            f_3_4,
+            f_6_2,
+            f_8_8,
             f4_0_1,
             f4_0_4,
             f4_0_5,
@@ -667,15 +776,23 @@ ps
             f4_0_8,
             pf_0_16,
             pf_0_19,
+            pf_0_21,
             pf_0_23,
             pf_0_24,
             pf_0_26,
+            pf_0_3,
+            pf_1_11,
             pf_1_13,
             pf_1_14,
             pf_1_16,
+            pf_1_2,
+            pf_1_8,
+            pf_2_1,
             pf_2_10,
             pf_2_12,
+            pf_2_7,
             pf_2_9,
+            pf_3_1,
             pf_3_5,
             pf_4_3,
             pf_5_3,
@@ -727,6 +844,33 @@ ps
     shader_arg(4)
     {
         redirect(0, "d:/UC/light_smoke/4", "d:/uc/VAO_light_smoke/4");
+    };
+    type_replacement
+    {
+        fs_cbuf8 = float;
+        fs_cbuf9 = float;
+        fs_cbuf13 = float;
+        fs_cbuf15 = float;
+    };
+    function_replacement
+    {
+        textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
+        textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
+        texture(*,*) = textureSample(@arg(0), @arg(1), s_linear_clamp_sampler);
+        (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
+    };
+    string_replacement
+    {
+        string("uvec", "uint");
+        string("ivec", "int");
+        string("vec2", "float2");
+        string("vec3", "float3");
+        string("vec4", "float4");
+        string("in_attr", "i.fs_attr");
+        string("gl_FragCoord", "i.vertex");
+        string("frag_color0", "col");
+        string("return;", "return col;");
+        string("tex5", "_CameraDepthTexture");
     };
     calculator
     {

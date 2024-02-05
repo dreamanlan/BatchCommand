@@ -52,6 +52,12 @@ rem GlslRewriter -argcfg 35 -out smoke_fs_t3_6.txt smoke.fs
 rem GlslRewriter -argcfg 36 -out smoke_fs_t3_7.txt smoke.fs
 rem GlslRewriter -argcfg 37 -out smoke_fs_t3_8.txt smoke.fs
 
+GlslRewriter smoke.vs
+GlslRewriter smoke.fs
+
+GlslRewriter -r -out smoke_vs_hlsl.txt smoke.vs
+GlslRewriter -r -out smoke_fs_hlsl.txt smoke.fs
+
 GlslRewriter -argcfg 41 -out smoke_vs_fade1.txt smoke.vs
 GlslRewriter -argcfg 42 -out smoke_vs_fade2.txt smoke.vs
 GlslRewriter -argcfg 43 -out smoke_vs_fade3.txt smoke.vs

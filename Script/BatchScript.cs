@@ -2178,6 +2178,10 @@ namespace BatchCommand
 
     internal sealed class BatchScript
     {
+        internal static SortedList<string, string> ApiDocs
+        {
+            get { return s_Calculator.ApiDocs; }
+        }
         internal static bool TimeStatisticOn
         {
             get { return s_TimeStatisticOn; }
@@ -2223,79 +2227,79 @@ namespace BatchCommand
             s_Calculator.Init();
 
             //注册Gm命令
-            s_Calculator.Register("timestat", new ExpressionFactoryHelper<TimeStatisticOnExp>());
-            s_Calculator.Register("fileecho", new ExpressionFactoryHelper<FileEchoExp>());
-            s_Calculator.Register("listdirs", new ExpressionFactoryHelper<ListDirectoriesExp>());
-            s_Calculator.Register("listfiles", new ExpressionFactoryHelper<ListFilesExp>());
-            s_Calculator.Register("listalldirs", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
-            s_Calculator.Register("listallfiles", new ExpressionFactoryHelper<ListAllFilesExp>());
-            s_Calculator.Register("direxist", new ExpressionFactoryHelper<DirectoryExistExp>());
-            s_Calculator.Register("fileexist", new ExpressionFactoryHelper<FileExistExp>());
-            s_Calculator.Register("createdir", new ExpressionFactoryHelper<CreateDirectoryExp>());
-            s_Calculator.Register("copydir", new ExpressionFactoryHelper<CopyDirectoryExp>());
-            s_Calculator.Register("movedir", new ExpressionFactoryHelper<MoveDirectoryExp>());
-            s_Calculator.Register("deletedir", new ExpressionFactoryHelper<DeleteDirectoryExp>());
-            s_Calculator.Register("copyfile", new ExpressionFactoryHelper<CopyFileExp>());
-            s_Calculator.Register("copyfiles", new ExpressionFactoryHelper<CopyFilesExp>());
-            s_Calculator.Register("movefile", new ExpressionFactoryHelper<MoveFileExp>());
-            s_Calculator.Register("deletefile", new ExpressionFactoryHelper<DeleteFileExp>());
-            s_Calculator.Register("deletefiles", new ExpressionFactoryHelper<DeleteFilesExp>());
-            s_Calculator.Register("deleteallfiles", new ExpressionFactoryHelper<DeleteAllFilesExp>());
-            s_Calculator.Register("getfileinfo", new ExpressionFactoryHelper<GetFileInfoExp>());
-            s_Calculator.Register("getdirinfo", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
-            s_Calculator.Register("getdriveinfo", new ExpressionFactoryHelper<GetDriveInfoExp>());
-            s_Calculator.Register("getdrivesinfo", new ExpressionFactoryHelper<GetDrivesInfoExp>());
-            s_Calculator.Register("grep", new ExpressionFactoryHelper<GrepExp>());
-            s_Calculator.Register("subst", new ExpressionFactoryHelper<SubstExp>());
-            s_Calculator.Register("awk", new ExpressionFactoryHelper<AwkExp>());
-            s_Calculator.Register("process", new ExpressionFactoryHelper<CommandExp>());
-            s_Calculator.Register("command", new ExpressionFactoryHelper<CommandExp>());
-            s_Calculator.Register("kill", new ExpressionFactoryHelper<KillExp>());
-            s_Calculator.Register("killme", new ExpressionFactoryHelper<KillMeExp>());
-            s_Calculator.Register("pid", new ExpressionFactoryHelper<GetCurrentProcessIdExp>());
-            s_Calculator.Register("plist", new ExpressionFactoryHelper<ListProcessesExp>());
-            s_Calculator.Register("getscriptdir", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
-            s_Calculator.Register("pause", new ExpressionFactoryHelper<PauseExp>());
-            s_Calculator.Register("wait", new ExpressionFactoryHelper<WaitExp>());
-            s_Calculator.Register("waitall", new ExpressionFactoryHelper<WaitAllExp>());
-            s_Calculator.Register("clear", new ExpressionFactoryHelper<ClearExp>());
-            s_Calculator.Register("write", new ExpressionFactoryHelper<WriteExp>());
-            s_Calculator.Register("writeblock", new ExpressionFactoryHelper<WriteBlockExp>());
-            s_Calculator.Register("block", new ExpressionFactoryHelper<BlockExp>());
-            s_Calculator.Register("readline", new ExpressionFactoryHelper<ReadLineExp>());
-            s_Calculator.Register("read", new ExpressionFactoryHelper<ReadExp>());
-            s_Calculator.Register("beep", new ExpressionFactoryHelper<BeepExp>());
-            s_Calculator.Register("gettitle", new ExpressionFactoryHelper<GetTitleExp>());
-            s_Calculator.Register("settitle", new ExpressionFactoryHelper<SetTitleExp>());
-            s_Calculator.Register("getbufferwidth", new ExpressionFactoryHelper<GetBufferWidthExp>());
-            s_Calculator.Register("getbufferheight", new ExpressionFactoryHelper<GetBufferHeightExp>());
-            s_Calculator.Register("setbuffersize", new ExpressionFactoryHelper<SetBufferSizeExp>());
-            s_Calculator.Register("getcursorleft", new ExpressionFactoryHelper<GetCursorLeftExp>());
-            s_Calculator.Register("getcursortop", new ExpressionFactoryHelper<GetCursorTopExp>());
-            s_Calculator.Register("setcursorpos", new ExpressionFactoryHelper<SetCursorPosExp>());
-            s_Calculator.Register("getbgcolor", new ExpressionFactoryHelper<GetBgColorExp>());
-            s_Calculator.Register("setbgcolor", new ExpressionFactoryHelper<SetBgColorExp>());
-            s_Calculator.Register("getfgcolor", new ExpressionFactoryHelper<GetFgColorExp>());
-            s_Calculator.Register("setfgcolor", new ExpressionFactoryHelper<SetFgColorExp>());
-            s_Calculator.Register("resetcolor", new ExpressionFactoryHelper<ResetColorExp>());
-            s_Calculator.Register("setencoding", new ExpressionFactoryHelper<SetEncodingExp>());
-            s_Calculator.Register("getinputencoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
-            s_Calculator.Register("getoutputencoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
-            s_Calculator.Register("console", new ExpressionFactoryHelper<ConsoleExp>());
-            s_Calculator.Register("encoding", new ExpressionFactoryHelper<EncodingExp>());
-            s_Calculator.Register("env", new ExpressionFactoryHelper<EnvironmentExp>());
-            s_Calculator.Register("readalllines", new ExpressionFactoryHelper<ReadAllLinesExp>());
-            s_Calculator.Register("writealllines", new ExpressionFactoryHelper<WriteAllLinesExp>());
-            s_Calculator.Register("readalltext", new ExpressionFactoryHelper<ReadAllTextExp>());
-            s_Calculator.Register("writealltext", new ExpressionFactoryHelper<WriteAllTextExp>());
-            s_Calculator.Register("waitstartinterval", new ExpressionFactoryHelper<WaitStartIntervalExp>());
-            s_Calculator.Register("regread", new ExpressionFactoryHelper<RegReadExp>());
-            s_Calculator.Register("regwrite", new ExpressionFactoryHelper<RegWriteExp>());
-            s_Calculator.Register("regdelete", new ExpressionFactoryHelper<RegDeleteExp>());
+            s_Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
+            s_Calculator.Register("fileecho", "fileecho(bool) or fileecho() api", new ExpressionFactoryHelper<FileEchoExp>());
+            s_Calculator.Register("listdirs", "listdirs(dir,filter_list_or_str_1,filter_list_or_str_2,...) api", new ExpressionFactoryHelper<ListDirectoriesExp>());
+            s_Calculator.Register("listfiles", "listfiles(dir,filter_list_or_str_1,filter_list_or_str_2,...) api", new ExpressionFactoryHelper<ListFilesExp>());
+            s_Calculator.Register("listalldirs", "listalldirs(dir,filter_list_or_str_1,filter_list_or_str_2,...) api", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
+            s_Calculator.Register("listallfiles", "listallfiles(dir,filter_list_or_str_1,filter_list_or_str_2,...) api", new ExpressionFactoryHelper<ListAllFilesExp>());
+            s_Calculator.Register("direxist", "direxist(dir) api", new ExpressionFactoryHelper<DirectoryExistExp>());
+            s_Calculator.Register("fileexist", "fileexist(file) api", new ExpressionFactoryHelper<FileExistExp>());
+            s_Calculator.Register("createdir", "createdir(dir) api", new ExpressionFactoryHelper<CreateDirectoryExp>());
+            s_Calculator.Register("copydir", "copydir(dir1,dir2,filter_list_or_str_1,filter_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<CopyDirectoryExp>());
+            s_Calculator.Register("movedir", "movedir(dir1,dir2) api", new ExpressionFactoryHelper<MoveDirectoryExp>());
+            s_Calculator.Register("deletedir", "deletedir(dir) api", new ExpressionFactoryHelper<DeleteDirectoryExp>());
+            s_Calculator.Register("copyfile", "copyfile(file1,file2) api", new ExpressionFactoryHelper<CopyFileExp>());
+            s_Calculator.Register("copyfiles", "copyfiles(dir1,dir2,filter_list_or_str_1,filter_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
+            s_Calculator.Register("movefile", "movefile(file1,file2) api", new ExpressionFactoryHelper<MoveFileExp>());
+            s_Calculator.Register("deletefile", "deletefile(file) api", new ExpressionFactoryHelper<DeleteFileExp>());
+            s_Calculator.Register("deletefiles", "deletefiles(dir,filter_list_or_str_1,filter_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
+            s_Calculator.Register("deleteallfiles", "deleteallfiles(dir,filter_list_or_str_1,filter_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
+            s_Calculator.Register("getfileinfo", "getfileinfo(file) api", new ExpressionFactoryHelper<GetFileInfoExp>());
+            s_Calculator.Register("getdirinfo", "getdirinfo(dir) api", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
+            s_Calculator.Register("getdriveinfo", "getdriveinfo(drive) api", new ExpressionFactoryHelper<GetDriveInfoExp>());
+            s_Calculator.Register("getdrivesinfo", "getdrivesinfo() api", new ExpressionFactoryHelper<GetDrivesInfoExp>());
+            s_Calculator.Register("grep", "grep(lines[,regex]) api", new ExpressionFactoryHelper<GrepExp>());
+            s_Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
+            s_Calculator.Register("awk", "awk(lines,scp[,removeEmpties,sep1,sep2,...]) api", new ExpressionFactoryHelper<AwkExp>());
+            s_Calculator.Register("process", "process(file,arg_str) or process(file,arg_str){[options;]} api", new ExpressionFactoryHelper<CommandExp>());
+            s_Calculator.Register("command", "command{win{:cmd_str:};unix{:cmd_str:};common{:cmd_str:};[options;]} api", new ExpressionFactoryHelper<CommandExp>());
+            s_Calculator.Register("kill", "kill(name_or_pid) api", new ExpressionFactoryHelper<KillExp>());
+            s_Calculator.Register("killme", "killme([exit_code]) api", new ExpressionFactoryHelper<KillMeExp>());
+            s_Calculator.Register("pid", "pid() api", new ExpressionFactoryHelper<GetCurrentProcessIdExp>());
+            s_Calculator.Register("plist", "plist([filter]) api, return list", new ExpressionFactoryHelper<ListProcessesExp>());
+            s_Calculator.Register("getscriptdir", "getscriptdir() api", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
+            s_Calculator.Register("pause", "pause() api", new ExpressionFactoryHelper<PauseExp>());
+            s_Calculator.Register("wait", "wait(time) api", new ExpressionFactoryHelper<WaitExp>());
+            s_Calculator.Register("waitall", "waitall([timeout]) api, wait all task to exit", new ExpressionFactoryHelper<WaitAllExp>());
+            s_Calculator.Register("clear", "clear() api, clear console", new ExpressionFactoryHelper<ClearExp>());
+            s_Calculator.Register("write", "write(fmt,arg1,arg2,....) api, Console.Write", new ExpressionFactoryHelper<WriteExp>());
+            s_Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(two_chars_begin,two_chars_end){:txt:} api, Console.Write with macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<WriteBlockExp>());
+            s_Calculator.Register("block", "block{:txt:} or block(two_chars_begin,two_chars_end){:txt:} api, macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<BlockExp>());
+            s_Calculator.Register("readline", "readline() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
+            s_Calculator.Register("read", "read([nodisplay]) api, Console.Read", new ExpressionFactoryHelper<ReadExp>());
+            s_Calculator.Register("beep", "beep([frequence,duration]) api, Console.Beep, only on win32", new ExpressionFactoryHelper<BeepExp>());
+            s_Calculator.Register("gettitle", "gettitle() api, Console.Title, only on win32", new ExpressionFactoryHelper<GetTitleExp>());
+            s_Calculator.Register("settitle", "settitle(title) api", new ExpressionFactoryHelper<SetTitleExp>());
+            s_Calculator.Register("getbufferwidth", "getbufferwidth() api", new ExpressionFactoryHelper<GetBufferWidthExp>());
+            s_Calculator.Register("getbufferheight", "getbufferheight() api", new ExpressionFactoryHelper<GetBufferHeightExp>());
+            s_Calculator.Register("setbuffersize", "setbuffersize(width,height) api", new ExpressionFactoryHelper<SetBufferSizeExp>());
+            s_Calculator.Register("getcursorleft", "getcursorleft() api", new ExpressionFactoryHelper<GetCursorLeftExp>());
+            s_Calculator.Register("getcursortop", "getcursortop() api", new ExpressionFactoryHelper<GetCursorTopExp>());
+            s_Calculator.Register("setcursorpos", "setcursorpos(left,top) api", new ExpressionFactoryHelper<SetCursorPosExp>());
+            s_Calculator.Register("getbgcolor", "getbgcolor() api, return str", new ExpressionFactoryHelper<GetBgColorExp>());
+            s_Calculator.Register("setbgcolor", "setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetBgColorExp>());
+            s_Calculator.Register("getfgcolor", "getfgcolor() api, return str", new ExpressionFactoryHelper<GetFgColorExp>());
+            s_Calculator.Register("setfgcolor", "setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetFgColorExp>());
+            s_Calculator.Register("resetcolor", "resetcolor() api", new ExpressionFactoryHelper<ResetColorExp>());
+            s_Calculator.Register("setencoding", "setencoding([input[,output]]) api, def is UTF8", new ExpressionFactoryHelper<SetEncodingExp>());
+            s_Calculator.Register("getinputencoding", "getinputencoding() api, return Encoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
+            s_Calculator.Register("getoutputencoding", "getoutputencoding() api, return Encoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
+            s_Calculator.Register("console", "console() api, return typeof(Console)", new ExpressionFactoryHelper<ConsoleExp>());
+            s_Calculator.Register("encoding", "encoding() api, return typeof(Encoding)", new ExpressionFactoryHelper<EncodingExp>());
+            s_Calculator.Register("env", "env() api, return typeof(Environment)", new ExpressionFactoryHelper<EnvironmentExp>());
+            s_Calculator.Register("readalllines", "readalllines(file[,encoding]) api", new ExpressionFactoryHelper<ReadAllLinesExp>());
+            s_Calculator.Register("writealllines", "writealllines(file,lines[,encoding]) api", new ExpressionFactoryHelper<WriteAllLinesExp>());
+            s_Calculator.Register("readalltext", "readalltext(file[,encoding]) api", new ExpressionFactoryHelper<ReadAllTextExp>());
+            s_Calculator.Register("writealltext", "writealltext(file,txt[,encoding]) api", new ExpressionFactoryHelper<WriteAllTextExp>());
+            s_Calculator.Register("waitstartinterval", "waitstartinterval(time) or waitstartinterval() api, used in Task.Wait for process/command", new ExpressionFactoryHelper<WaitStartIntervalExp>());
+            s_Calculator.Register("regread", "regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
+            s_Calculator.Register("regwrite", "regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
+            s_Calculator.Register("regdelete", "regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
         }
-        internal static void Register(string name, IExpressionFactory factory)
+        internal static void Register(string name, string doc, IExpressionFactory factory)
         {
-            s_Calculator.Register(name, factory);
+            s_Calculator.Register(name, doc, factory);
         }
         internal static void SetOnTryGetVariable(DslCalculator.TryGetVariableDelegation callback)
         {

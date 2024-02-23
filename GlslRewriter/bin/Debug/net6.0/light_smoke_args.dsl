@@ -667,7 +667,7 @@ vs
     {
         vs_cbuf0 = float;
         vs_cbuf8 = float;
-        vs_cbuf9 = float;
+        //vs_cbuf9 = float;
         vs_cbuf10 = float;
         vs_cbuf13 = float;
         vs_cbuf15 = float;
@@ -677,6 +677,10 @@ vs
     {
         textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
         textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
+        vs_cbuf9[7].x = vs_cbuf9_7_x;
+        vs_cbuf9[7].y = vs_cbuf9_7_y;
+        vs_cbuf9[7].z = vs_cbuf9_7_z;
+        vs_cbuf9[7].w = vs_cbuf9_7_w;
         vs_cbuf9[*] = vs_cbuf9[@arg(1)];
         replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
         vs_cbuf8[29] = camera_wpos;

@@ -417,33 +417,33 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         FlushLog("InitScript");
 
         BatchScript.Init();
-        BatchScript.Register("contextmenu", new ExpressionFactoryHelper<ShellContextMenuExp>());
-        BatchScript.Register("context", new ExpressionFactoryHelper<ContextExp>());
-        BatchScript.Register("api", new ExpressionFactoryHelper<ApiExp>());
-        BatchScript.Register("metadata", new ExpressionFactoryHelper<MetadataExp>());
-        BatchScript.Register("showmsg", new ExpressionFactoryHelper<ShowMsgExp>());
-        BatchScript.Register("restart", new ExpressionFactoryHelper<RestartExp>());
-        BatchScript.Register("show", new ExpressionFactoryHelper<ShowConsoleExp>());
-        BatchScript.Register("hide", new ExpressionFactoryHelper<HideConsoleExp>());
-        BatchScript.Register("reloaddsl", new ExpressionFactoryHelper<ReloadDslExp>());
-        BatchScript.Register("evaldsl", new ExpressionFactoryHelper<EvalDslExp>());
-        BatchScript.Register("changequery", new ExpressionFactoryHelper<ChangeQueryExp>());
-        BatchScript.Register("addresult", new ExpressionFactoryHelper<AddResultExp>());
-        BatchScript.Register("addcontextmenu", new ExpressionFactoryHelper<AddContextMenuExp>());
-        BatchScript.Register("keywordregistered", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
-        BatchScript.Register("clearkeywords", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
-        BatchScript.Register("addkeyword", new ExpressionFactoryHelper<AddActionKeywordExp>());
-        BatchScript.Register("showcontextmenu", new ExpressionFactoryHelper<ShowContextMenuExp>());
-        BatchScript.Register("tryfindeverything", new ExpressionFactoryHelper<TryFindEverythingExp>());
-        BatchScript.Register("everythingexists", new ExpressionFactoryHelper<EverythingExistsExp>());
-        BatchScript.Register("everythingreset", new ExpressionFactoryHelper<EverythingResetExp>());
-        BatchScript.Register("everythingsetdefault", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
-        BatchScript.Register("everythingmatchpath", new ExpressionFactoryHelper<EverythingMatchPathExp>());
-        BatchScript.Register("everythingmatchcase", new ExpressionFactoryHelper<EverythingMatchCaseExp>());
-        BatchScript.Register("everythingmatchwholeword", new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
-        BatchScript.Register("everythingregex", new ExpressionFactoryHelper<EverythingRegexExp>());
-        BatchScript.Register("everythingsort", new ExpressionFactoryHelper<EverythingSortExp>());
-        BatchScript.Register("everythingsearch", new ExpressionFactoryHelper<EverythingSearchExp>());
+        BatchScript.Register("contextmenu", "contextment api", new ExpressionFactoryHelper<ShellContextMenuExp>());
+        BatchScript.Register("context", "context api", new ExpressionFactoryHelper<ContextExp>());
+        BatchScript.Register("api", "api api", new ExpressionFactoryHelper<ApiExp>());
+        BatchScript.Register("metadata", "metadata api", new ExpressionFactoryHelper<MetadataExp>());
+        BatchScript.Register("showmsg", "showmsg api", new ExpressionFactoryHelper<ShowMsgExp>());
+        BatchScript.Register("restart", "restart api", new ExpressionFactoryHelper<RestartExp>());
+        BatchScript.Register("show", "show api", new ExpressionFactoryHelper<ShowConsoleExp>());
+        BatchScript.Register("hide", "hide api", new ExpressionFactoryHelper<HideConsoleExp>());
+        BatchScript.Register("reloaddsl", "reloaddsl api", new ExpressionFactoryHelper<ReloadDslExp>());
+        BatchScript.Register("evaldsl", "evaldsl api", new ExpressionFactoryHelper<EvalDslExp>());
+        BatchScript.Register("changequery", "changequery api", new ExpressionFactoryHelper<ChangeQueryExp>());
+        BatchScript.Register("addresult", "addresult api", new ExpressionFactoryHelper<AddResultExp>());
+        BatchScript.Register("addcontextmenu", "addcontextmenu api", new ExpressionFactoryHelper<AddContextMenuExp>());
+        BatchScript.Register("keywordregistered", "keywordregistered api", new ExpressionFactoryHelper<ActionKeywordRegisteredExp>());
+        BatchScript.Register("clearkeywords", "clearkeywords api", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
+        BatchScript.Register("addkeyword", "addkeyword api", new ExpressionFactoryHelper<AddActionKeywordExp>());
+        BatchScript.Register("showcontextmenu", "showcontextmenu api", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("tryfindeverything", "tryfindeverything api", new ExpressionFactoryHelper<TryFindEverythingExp>());
+        BatchScript.Register("everythingexists", "everythingexists api", new ExpressionFactoryHelper<EverythingExistsExp>());
+        BatchScript.Register("everythingreset", "everythingreset api", new ExpressionFactoryHelper<EverythingResetExp>());
+        BatchScript.Register("everythingsetdefault", "everythingsetdefault api", new ExpressionFactoryHelper<EverythingSetDefaultExp>());
+        BatchScript.Register("everythingmatchpath", "everythingmatchpath api", new ExpressionFactoryHelper<EverythingMatchPathExp>());
+        BatchScript.Register("everythingmatchcase", "everythingmatchcase api", new ExpressionFactoryHelper<EverythingMatchCaseExp>());
+        BatchScript.Register("everythingmatchwholeword", "everythingmatchwholeword api", new ExpressionFactoryHelper<EverythingMatchWholeWordExp>());
+        BatchScript.Register("everythingregex", "everythingregex api", new ExpressionFactoryHelper<EverythingRegexExp>());
+        BatchScript.Register("everythingsort", "everythingsort api", new ExpressionFactoryHelper<EverythingSortExp>());
+        BatchScript.Register("everythingsearch", "everythingsearch api", new ExpressionFactoryHelper<EverythingSearchExp>());
 
         ReloadDsl();
     }
@@ -792,10 +792,21 @@ internal sealed class EvalDslExp : SimpleExpressionBase
                 var arg = operands[i];
                 args.Add(arg);
             }
-            var id = BatchScript.EvalAsFunc(code, new string[] { "$query", "$result", "$actionContext" });
-            if (null != id) {
+            if (code == "help" || code.StartsWith("help ")) {
                 Main.ShowConsole();
-                r = BatchScript.Call(id, args);
+                string filter = code.Substring(4).Trim();
+                foreach (var pair in BatchScript.ApiDocs) {
+                    if (pair.Key.Contains(filter) || pair.Value.Contains(filter)) {
+                        Console.WriteLine("[{0}]:{1}", pair.Key, pair.Value);
+                    }
+                }
+            }
+            else {
+                var id = BatchScript.EvalAsFunc(code, new string[] { "$query", "$result", "$actionContext" });
+                if (null != id) {
+                    Main.ShowConsole();
+                    r = BatchScript.Call(id, args);
+                }
             }
             BatchScript.RecycleCalculatorValueList(args);
             if (!r.IsNullObject) {

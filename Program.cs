@@ -104,12 +104,22 @@ namespace BatchCommand
             for (; ; ) {
                 Console.Write(">");
                 var line = Console.ReadLine();
-                if (line == "exit" || line == "quit")
-                    break;
                 if (null != line) {
-                    var r = BatchScript.EvalAndRun(line);
-                    Console.Write("result:");
-                    Console.WriteLine(r.ToString());
+                    if (line == "exit" || line == "quit")
+                        break;
+                    if (line == "help" || line.StartsWith("help ")) {
+                        string filter = line.Substring(4).Trim();
+                        foreach (var pair in BatchScript.ApiDocs) {
+                            if (pair.Key.Contains(filter) || pair.Value.Contains(filter)) {
+                                Console.WriteLine("[{0}]:{1}", pair.Key, pair.Value);
+                            }
+                        }
+                    }
+                    else {
+                        var r = BatchScript.EvalAndRun(line);
+                        Console.Write("result:");
+                        Console.WriteLine(r.ToString());
+                    }
                 }
             }
         }

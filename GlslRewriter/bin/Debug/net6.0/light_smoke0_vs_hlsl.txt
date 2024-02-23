@@ -752,8 +752,8 @@ void main()
 	o.fs_attr12.z = float(0.00901);
 	// 0.06556  <=>  float(0.06556)
 	o.fs_attr12.w = float(0.06556);
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.vertex.x = 0.f;
@@ -761,15 +761,15 @@ void main()
 	// 0  <=>  0u
 	u_6_0 = 0u;
 	u_6_phi_2 = u_6_0;
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 1187205120  <=>  ftou({vs_cbuf8_30.y : 25000.00})
 		u_6_1 = ftou(vs_cbuf8_30.y);
 		u_6_phi_2 = u_6_1;
 	}
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.vertex.y = 0.f;
@@ -777,36 +777,36 @@ void main()
 	// 0  <=>  {u_6_phi_2 : }
 	u_4_1 = u_6_phi_2;
 	u_4_phi_4 = u_4_1;
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 0  <=>  {ftou(({utof(u_6_phi_2) : 0} * 5.f)) : 0}
 		u_4_2 = ftou((utof(u_6_phi_2) * 5.f));
 		u_4_phi_4 = u_4_2;
 	}
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.fs_attr6.x = 0.f;
 	}
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		// 0  <=>  {utof(u_4_phi_4) : 0}
 		o.vertex.z = utof(u_4_phi_4);
 	}
-	// False  <=>  if(((int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
-	if(((int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	// False  <=>  if(((int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
+	if(((int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))) <= int(0u)) ? true : false))
 	{
 		return o;
 	}
-	// 291.00  <=>  float(int((isnan({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))))
-	f_1_2 = float(int((isnan(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))));
+	// 291.00  <=>  float(int((myIsNaN({uni_attr3.w : 291.00}) ? 0u : int(clamp(trunc({uni_attr3.w : 291.00}), float(-2147483600.f), float(2147483600.f))))))
+	f_1_2 = float(int((myIsNaN(uni_attr3.w) ? 0u : int(clamp(trunc(uni_attr3.w), float(-2147483600.f), float(2147483600.f))))));
 	// 221.00  <=>  ((0.f - {uni_attr4.w : 658.50}) + {(vs_cbuf10_2.x) : 879.50})
 	pf_0_1 = ((0.f - uni_attr4.w) + (vs_cbuf10_2.x));
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.vertex.x = 0.f;
@@ -814,15 +814,15 @@ void main()
 	// 1143250944  <=>  {ftou(uni_attr4.w) : 1143250944}
 	u_6_2 = ftou(uni_attr4.w);
 	u_6_phi_9 = u_6_2;
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 1187205120  <=>  ftou({vs_cbuf8_30.y : 25000.00})
 		u_6_3 = ftou(vs_cbuf8_30.y);
 		u_6_phi_9 = u_6_3;
 	}
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.vertex.y = 0.f;
@@ -830,46 +830,46 @@ void main()
 	// 1143250944  <=>  {u_6_phi_9 : }
 	u_4_4 = u_6_phi_9;
 	u_4_phi_11 = u_4_4;
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 1162725376  <=>  {ftou(({utof(u_6_phi_9) : 658.50} * 5.f)) : 1162725376}
 		u_4_5 = ftou((utof(u_6_phi_9) * 5.f));
 		u_4_phi_11 = u_4_5;
 	}
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 0  <=>  0.f
 		o.fs_attr6.x = 0.f;
 	}
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		// 658.50  <=>  {utof(u_4_phi_11) : 658.50}
 		o.vertex.z = utof(u_4_phi_11);
 	}
-	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! isnan({uni_attr4.w : 658.50}))) && (! isnan({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! isnan({pf_0_1 : 221.00}))) && (! isnan({f_1_2 : 291.00})))) ? true : false))
-	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! isnan(uni_attr4.w))) && (! isnan((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! isnan(pf_0_1))) && (! isnan(f_1_2)))) ? true : false))
+	// False  <=>  if(((((({uni_attr4.w : 658.50} > {(vs_cbuf10_2.x) : 879.50}) && (! myIsNaN({uni_attr4.w : 658.50}))) && (! myIsNaN({(vs_cbuf10_2.x) : 879.50}))) || ((({pf_0_1 : 221.00} >= {f_1_2 : 291.00}) && (! myIsNaN({pf_0_1 : 221.00}))) && (! myIsNaN({f_1_2 : 291.00})))) ? true : false))
+	if((((((uni_attr4.w > (vs_cbuf10_2.x)) && (! myIsNaN(uni_attr4.w))) && (! myIsNaN((vs_cbuf10_2.x)))) || (((pf_0_1 >= f_1_2) && (! myIsNaN(pf_0_1))) && (! myIsNaN(f_1_2)))) ? true : false))
 	{
 		return o;
 	}
-	// 0.8992063  <=>  (({(vs_cbuf9[105].x) : 0.8174603} * {(vs_cbuf10_0.x) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr0.x = (((vs_cbuf9[105].x) * (vs_cbuf10_0.x)) * (vs_cbuf9[104].x));
-	// 0.10  <=>  ({(vs_cbuf9[113].x) : 0.10} * {(vs_cbuf10_0.w) : 1.00})
-	o.fs_attr0.w = ((vs_cbuf9[113].x) * (vs_cbuf10_0.w));
-	// 0.8948796  <=>  (({(vs_cbuf9[105].y) : 0.8135269} * {(vs_cbuf10_0.y) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr0.y = (((vs_cbuf9[105].y) * (vs_cbuf10_0.y)) * (vs_cbuf9[104].x));
-	// 0.8207042  <=>  (({(vs_cbuf9[105].z) : 0.7460947} * {(vs_cbuf10_0.z) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr0.z = (((vs_cbuf9[105].z) * (vs_cbuf10_0.z)) * (vs_cbuf9[104].x));
+	// 0.8992063  <=>  (({utof(vs_cbuf9[105].x) : 0.8174603} * {(vs_cbuf10_0.x) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr0.x = ((utof(vs_cbuf9[105].x) * (vs_cbuf10_0.x)) * utof(vs_cbuf9[104].x));
+	// 0.10  <=>  ({utof(vs_cbuf9[113].x) : 0.10} * {(vs_cbuf10_0.w) : 1.00})
+	o.fs_attr0.w = (utof(vs_cbuf9[113].x) * (vs_cbuf10_0.w));
+	// 0.8948796  <=>  (({utof(vs_cbuf9[105].y) : 0.8135269} * {(vs_cbuf10_0.y) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr0.y = ((utof(vs_cbuf9[105].y) * (vs_cbuf10_0.y)) * utof(vs_cbuf9[104].x));
+	// 0.8207042  <=>  (({utof(vs_cbuf9[105].z) : 0.7460947} * {(vs_cbuf10_0.z) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr0.z = ((utof(vs_cbuf9[105].z) * (vs_cbuf10_0.z)) * utof(vs_cbuf9[104].x));
 	// 0  <=>  0u
 	u_6_4 = 0u;
 	u_6_phi_15 = u_6_4;
-	// False  <=>  if(((((0.f < {(vs_cbuf9[11].w) : 0}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[11].w) : 0}))) ? true : false))
-	if(((((0.f < (vs_cbuf9[11].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[11].w)))) ? true : false))
+	// False  <=>  if(((((0.f < {utof(vs_cbuf9[11].w) : 0}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[11].w) : 0}))) ? true : false))
+	if(((((0.f < utof(vs_cbuf9[11].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[11].w)))) ? true : false))
 	{
-		// ∞  <=>  (((({uni_attr6.x : 0.7713} * {(vs_cbuf9[13].x) : 0}) * {(vs_cbuf9[11].w) : 0}) + {pf_0_1 : 221.00}) * (1.0f / {(vs_cbuf9[11].w) : 0}))
-		pf_4_2 = ((((uni_attr6.x * (vs_cbuf9[13].x)) * (vs_cbuf9[11].w)) + pf_0_1) * (1.0f / (vs_cbuf9[11].w)));
+		// ∞  <=>  (((({uni_attr6.x : 0.7713} * {utof(vs_cbuf9[13].x) : 0}) * {utof(vs_cbuf9[11].w) : 0}) + {pf_0_1 : 221.00}) * (1.0f / {utof(vs_cbuf9[11].w) : 0}))
+		pf_4_2 = ((((uni_attr6.x * utof(vs_cbuf9[13].x)) * utof(vs_cbuf9[11].w)) + pf_0_1) * (1.0f / utof(vs_cbuf9[11].w)));
 		// 4290772992  <=>  {ftou(({pf_4_2 : ∞} + (0.f - floor({pf_4_2 : ∞})))) : 4290772992}
 		u_6_5 = ftou((pf_4_2 + (0.f - floor(pf_4_2))));
 		u_6_phi_15 = u_6_5;
@@ -877,8 +877,8 @@ void main()
 	// 0  <=>  {u_6_phi_15 : }
 	u_3_1 = u_6_phi_15;
 	u_3_phi_16 = u_3_1;
-	// True  <=>  if(((! (((0.f < {(vs_cbuf9[11].w) : 0}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[11].w) : 0})))) ? true : false))
-	if(((! (((0.f < (vs_cbuf9[11].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[11].w))))) ? true : false))
+	// True  <=>  if(((! (((0.f < {utof(vs_cbuf9[11].w) : 0}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[11].w) : 0})))) ? true : false))
+	if(((! (((0.f < utof(vs_cbuf9[11].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[11].w))))) ? true : false))
 	{
 		// 1061317460  <=>  {ftou(({pf_0_1 : 221.00} * (1.0f / {f_1_2 : 291.00}))) : 1061317460}
 		u_3_2 = ftou((pf_0_1 * (1.0f / f_1_2)));
@@ -888,24 +888,24 @@ void main()
 	f_4_3 = uni_attr6.y;
 	// 1.00  <=>  floor(({uni_attr6.x : 0.7713} * 2.f))
 	f_5_13 = floor((uni_attr6.x * 2.f));
-	// 0  <=>  (ftou({vs_cbuf9[7].x : 1.3E-44}) & 536870912u)
-	u_11_6 = (ftou(vs_cbuf9[7].x) & 536870912u);
-	// 0  <=>  (ftou({vs_cbuf9[7].x : 1.3E-44}) & 268435456u)
-	u_12_5 = (ftou(vs_cbuf9[7].x) & 268435456u);
-	// 0  <=>  (ftou({vs_cbuf9[7].x : 1.3E-44}) & 1073741824u)
-	u_10_4 = (ftou(vs_cbuf9[7].x) & 1073741824u);
+	// 0  <=>  ({vs_cbuf9[7].x : 9} & 536870912u)
+	u_11_6 = (vs_cbuf9[7].x & 536870912u);
+	// 0  <=>  ({vs_cbuf9[7].x : 9} & 268435456u)
+	u_12_5 = (vs_cbuf9[7].x & 268435456u);
+	// 0  <=>  ({vs_cbuf9[7].x : 9} & 1073741824u)
+	u_10_4 = (vs_cbuf9[7].x & 1073741824u);
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_14_3 = ftou(v.uv.x);
 	u_14_phi_17 = u_14_3;
-	// False  <=>  if(((! (((~ (((1u & ftou({vs_cbuf9[7].y : 0})) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! isnan({uni_attr6.x : 0.7713}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & ftou(vs_cbuf9[7].y)) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! isnan(uni_attr6.x))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9[7].y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9[7].y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_14_4 = ftou(((0.f - v.uv.x) + 1.f));
 		u_14_phi_17 = u_14_4;
 	}
-	// False  <=>  if(((! (((~ (((1u & ftou({vs_cbuf9[7].y : 0})) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! isnan({uni_attr6.x : 0.7713}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & ftou(vs_cbuf9[7].y)) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! isnan(uni_attr6.x))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9[7].y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9[7].y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 0  <=>  floor(({f_4_3 : 0.15253} * 2.f))
@@ -915,18 +915,18 @@ void main()
 	// 0  <=>  0u
 	u_10_9 = 0u;
 	u_10_phi_19 = u_10_9;
-	// True  <=>  if(((! (((0.f == {(vs_cbuf9[195].w) : 1.00}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[195].w) : 1.00})))) ? true : false))
-	if(((! (((0.f == (vs_cbuf9[195].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[195].w))))) ? true : false))
+	// True  <=>  if(((! (((0.f == {utof(vs_cbuf9[195].w) : 1.00}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00})))) ? true : false))
+	if(((! (((0.f == utof(vs_cbuf9[195].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[195].w))))) ? true : false))
 	{
-		// 0  <=>  {ftou(log2(abs({(vs_cbuf9[195].w) : 1.00}))) : 0}
-		u_10_10 = ftou(log2(abs((vs_cbuf9[195].w))));
+		// 0  <=>  {ftou(log2(abs({utof(vs_cbuf9[195].w) : 1.00}))) : 0}
+		u_10_10 = ftou(log2(abs(utof(vs_cbuf9[195].w))));
 		u_10_phi_19 = u_10_10;
 	}
 	// 0  <=>  {u_10_phi_19 : }
 	u_2_1 = u_10_phi_19;
 	u_2_phi_20 = u_2_1;
-	// True  <=>  if(((! (((0.f == {(vs_cbuf9[195].w) : 1.00}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[195].w) : 1.00})))) ? true : false))
-	if(((! (((0.f == (vs_cbuf9[195].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[195].w))))) ? true : false))
+	// True  <=>  if(((! (((0.f == {utof(vs_cbuf9[195].w) : 1.00}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00})))) ? true : false))
+	if(((! (((0.f == utof(vs_cbuf9[195].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[195].w))))) ? true : false))
 	{
 		// 0  <=>  {ftou(({pf_0_1 : 221.00} * {utof(u_10_phi_19) : 0})) : 0}
 		u_2_2 = ftou((pf_0_1 * utof(u_10_phi_19)));
@@ -935,18 +935,18 @@ void main()
 	// 0  <=>  0u
 	u_10_11 = 0u;
 	u_10_phi_21 = u_10_11;
-	// True  <=>  if(((! (((0.f == {(vs_cbuf9[195].w) : 1.00}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[195].w) : 1.00})))) ? true : false))
-	if(((! (((0.f == (vs_cbuf9[195].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[195].w))))) ? true : false))
+	// True  <=>  if(((! (((0.f == {utof(vs_cbuf9[195].w) : 1.00}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00})))) ? true : false))
+	if(((! (((0.f == utof(vs_cbuf9[195].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[195].w))))) ? true : false))
 	{
 		// 0  <=>  {u_2_phi_20 : }
 		u_10_12 = u_2_phi_20;
 		u_10_phi_21 = u_10_12;
 	}
-	// 0  <=>  {ftou((({(vs_cbuf9[156].x) : 1.00} + (0.f - {(vs_cbuf9[155].x) : 1.00})) * (1.0f / ((0.f - {(vs_cbuf9[155].w) : 7.00}) + {(vs_cbuf9[156].w) : 8.00})))) : 0}
-	u_1_1 = ftou((((vs_cbuf9[156].x) + (0.f - (vs_cbuf9[155].x))) * (1.0f / ((0.f - (vs_cbuf9[155].w)) + (vs_cbuf9[156].w)))));
+	// 0  <=>  {ftou((({utof(vs_cbuf9[156].x) : 1.00} + (0.f - {utof(vs_cbuf9[155].x) : 1.00})) * (1.0f / ((0.f - {utof(vs_cbuf9[155].w) : 7.00}) + {utof(vs_cbuf9[156].w) : 8.00})))) : 0}
+	u_1_1 = ftou(((utof(vs_cbuf9[156].x) + (0.f - utof(vs_cbuf9[155].x))) * (1.0f / ((0.f - utof(vs_cbuf9[155].w)) + utof(vs_cbuf9[156].w)))));
 	u_1_phi_22 = u_1_1;
-	// False  <=>  if(((((0.f == {(vs_cbuf9[195].w) : 1.00}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[195].w) : 1.00}))) ? true : false))
-	if(((((0.f == (vs_cbuf9[195].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[195].w)))) ? true : false))
+	// False  <=>  if(((((0.f == {utof(vs_cbuf9[195].w) : 1.00}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00}))) ? true : false))
+	if(((((0.f == utof(vs_cbuf9[195].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[195].w)))) ? true : false))
 	{
 		// 1065353216  <=>  1065353216u
 		u_1_2 = 1065353216u;
@@ -955,8 +955,8 @@ void main()
 	// 0  <=>  {u_1_phi_22 : }
 	u_2_3 = u_1_phi_22;
 	u_2_phi_23 = u_2_3;
-	// True  <=>  if(((! (((0.f == {(vs_cbuf9[195].w) : 1.00}) && (! isnan(0.f))) && (! isnan({(vs_cbuf9[195].w) : 1.00})))) ? true : false))
-	if(((! (((0.f == (vs_cbuf9[195].w)) && (! isnan(0.f))) && (! isnan((vs_cbuf9[195].w))))) ? true : false))
+	// True  <=>  if(((! (((0.f == {utof(vs_cbuf9[195].w) : 1.00}) && (! myIsNaN(0.f))) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00})))) ? true : false))
+	if(((! (((0.f == utof(vs_cbuf9[195].w)) && (! myIsNaN(0.f))) && (! myIsNaN(utof(vs_cbuf9[195].w))))) ? true : false))
 	{
 		// 1.00  <=>  exp2({utof(u_10_phi_21) : 0})
 		f_1_37 = exp2(utof(u_10_phi_21));
@@ -966,71 +966,71 @@ void main()
 	}
 	// 0  <=>  floor(({uni_attr6.z : 0.11625} * 2.f))
 	f_1_40 = floor((uni_attr6.z * 2.f));
-	// 1  <=>  (isnan({(vs_cbuf9[78].z) : 1.00}) ? 0u : int(clamp(trunc({(vs_cbuf9[78].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
-	u_1_4 = (isnan((vs_cbuf9[78].z)) ? 0u : int(clamp(trunc((vs_cbuf9[78].z)), float(-2147483600.f), float(2147483600.f))));
-	// 0  <=>  {(vs_cbuf9[149].w) : 0}
-	f_6_21 = (vs_cbuf9[149].w);
-	// 1065353216  <=>  (((({pf_23_1 : 0.7594502} >= {f_6_21 : 0}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_6_21 : 0}))) ? 1065353216u : 0u)
-	u_10_14 = ((((pf_23_1 >= f_6_21) && (! isnan(pf_23_1))) && (! isnan(f_6_21))) ? 1065353216u : 0u);
+	// 1  <=>  (myIsNaN({utof(vs_cbuf9[78].z) : 1.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[78].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
+	u_1_4 = (myIsNaN(utof(vs_cbuf9[78].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[78].z)), float(-2147483600.f), float(2147483600.f))));
+	// 0  <=>  {utof(vs_cbuf9[149].w) : 0}
+	f_6_21 = utof(vs_cbuf9[149].w);
+	// 1065353216  <=>  (((({pf_23_1 : 0.7594502} >= {f_6_21 : 0}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_6_21 : 0}))) ? 1065353216u : 0u)
+	u_10_14 = ((((pf_23_1 >= f_6_21) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_6_21))) ? 1065353216u : 0u);
 	// 0  <=>  0u
 	u_12_13 = 0u;
 	u_12_phi_24 = u_12_13;
-	// False  <=>  if(((! ((({(vs_cbuf9[195].w) : 1.00} == 1.f) && (! isnan({(vs_cbuf9[195].w) : 1.00}))) && (! isnan(1.f)))) ? true : false))
-	if(((! ((((vs_cbuf9[195].w) == 1.f) && (! isnan((vs_cbuf9[195].w)))) && (! isnan(1.f)))) ? true : false))
+	// False  <=>  if(((! ((({utof(vs_cbuf9[195].w) : 1.00} == 1.f) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00}))) && (! myIsNaN(1.f)))) ? true : false))
+	if(((! (((utof(vs_cbuf9[195].w) == 1.f) && (! myIsNaN(utof(vs_cbuf9[195].w)))) && (! myIsNaN(1.f)))) ? true : false))
 	{
-		// 0  <=>  {ftou(((0.f - {(vs_cbuf9[195].w) : 1.00}) + 1.f)) : 0}
-		u_12_14 = ftou(((0.f - (vs_cbuf9[195].w)) + 1.f));
+		// 0  <=>  {ftou(((0.f - {utof(vs_cbuf9[195].w) : 1.00}) + 1.f)) : 0}
+		u_12_14 = ftou(((0.f - utof(vs_cbuf9[195].w)) + 1.f));
 		u_12_phi_24 = u_12_14;
 	}
-	// 1  <=>  (isnan({(vs_cbuf9[88].z) : 1.00}) ? 0u : int(clamp(trunc({(vs_cbuf9[88].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
-	u_0_2 = (isnan((vs_cbuf9[88].z)) ? 0u : int(clamp(trunc((vs_cbuf9[88].z)), float(-2147483600.f), float(2147483600.f))));
-	// 0  <=>  (((((({uni_attr6.x : 0.7713} + {f_4_3 : 0.15253}) * 0.5f) + -0.5f) * {(vs_cbuf9[196].x) : 0}) * 2.f) + {(vs_cbuf9[195].x) : 0})
-	pf_21_5 = ((((((uni_attr6.x + f_4_3) * 0.5f) + -0.5f) * (vs_cbuf9[196].x)) * 2.f) + (vs_cbuf9[195].x));
+	// 1  <=>  (myIsNaN({utof(vs_cbuf9[88].z) : 1.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[88].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
+	u_0_2 = (myIsNaN(utof(vs_cbuf9[88].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[88].z)), float(-2147483600.f), float(2147483600.f))));
+	// 0  <=>  (((((({uni_attr6.x : 0.7713} + {f_4_3 : 0.15253}) * 0.5f) + -0.5f) * {utof(vs_cbuf9[196].x) : 0}) * 2.f) + {utof(vs_cbuf9[195].x) : 0})
+	pf_21_5 = ((((((uni_attr6.x + f_4_3) * 0.5f) + -0.5f) * utof(vs_cbuf9[196].x)) * 2.f) + utof(vs_cbuf9[195].x));
 	// 0  <=>  {u_12_phi_24 : }
 	u_13_10 = u_12_phi_24;
 	u_13_phi_25 = u_13_10;
-	// False  <=>  if(((! ((({(vs_cbuf9[195].w) : 1.00} == 1.f) && (! isnan({(vs_cbuf9[195].w) : 1.00}))) && (! isnan(1.f)))) ? true : false))
-	if(((! ((((vs_cbuf9[195].w) == 1.f) && (! isnan((vs_cbuf9[195].w)))) && (! isnan(1.f)))) ? true : false))
+	// False  <=>  if(((! ((({utof(vs_cbuf9[195].w) : 1.00} == 1.f) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00}))) && (! myIsNaN(1.f)))) ? true : false))
+	if(((! (((utof(vs_cbuf9[195].w) == 1.f) && (! myIsNaN(utof(vs_cbuf9[195].w)))) && (! myIsNaN(1.f)))) ? true : false))
 	{
 		// 2139095040  <=>  {ftou((1.0f / {utof(u_12_phi_24) : 0})) : 2139095040}
 		u_13_11 = ftou((1.0f / utof(u_12_phi_24)));
 		u_13_phi_25 = u_13_11;
 	}
-	// 1  <=>  (isnan({(vs_cbuf9[83].z) : 1.00}) ? 0u : int(clamp(trunc({(vs_cbuf9[83].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
-	u_15_3 = (isnan((vs_cbuf9[83].z)) ? 0u : int(clamp(trunc((vs_cbuf9[83].z)), float(-2147483600.f), float(2147483600.f))));
-	// 0  <=>  (((((({f_4_3 : 0.15253} + {uni_attr6.z : 0.11625}) * 0.5f) + -0.5f) * {(vs_cbuf9[196].y) : 0}) * 2.f) + {(vs_cbuf9[195].y) : 0})
-	pf_24_6 = ((((((f_4_3 + uni_attr6.z) * 0.5f) + -0.5f) * (vs_cbuf9[196].y)) * 2.f) + (vs_cbuf9[195].y));
+	// 1  <=>  (myIsNaN({utof(vs_cbuf9[83].z) : 1.00}) ? 0u : int(clamp(trunc({utof(vs_cbuf9[83].z) : 1.00}), float(-2147483600.f), float(2147483600.f))))
+	u_15_3 = (myIsNaN(utof(vs_cbuf9[83].z)) ? 0u : int(clamp(trunc(utof(vs_cbuf9[83].z)), float(-2147483600.f), float(2147483600.f))));
+	// 0  <=>  (((((({f_4_3 : 0.15253} + {uni_attr6.z : 0.11625}) * 0.5f) + -0.5f) * {utof(vs_cbuf9[196].y) : 0}) * 2.f) + {utof(vs_cbuf9[195].y) : 0})
+	pf_24_6 = ((((((f_4_3 + uni_attr6.z) * 0.5f) + -0.5f) * utof(vs_cbuf9[196].y)) * 2.f) + utof(vs_cbuf9[195].y));
 	// 1  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_15_3 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))
 	u_18_2 = uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_15_3), int(0u), int(32u)))))), int(0u), int(32u)));
-	// 0  <=>  (((((({uni_attr6.x : 0.7713} + {uni_attr6.z : 0.11625}) * 0.5f) + -0.5f) * {(vs_cbuf9[196].z) : 0}) * 2.f) + {(vs_cbuf9[195].z) : 0})
-	pf_22_7 = ((((((uni_attr6.x + uni_attr6.z) * 0.5f) + -0.5f) * (vs_cbuf9[196].z)) * 2.f) + (vs_cbuf9[195].z));
-	// 0  <=>  {(vs_cbuf9[129].w) : 0}
-	f_1_47 = (vs_cbuf9[129].w);
-	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_47 : 0}) && (! isnan({utof(u_3_phi_16) : 0.7594502}))) && (! isnan({f_1_47 : 0}))) ? 1065353216u : 0u)
-	u_12_16 = ((((utof(u_3_phi_16) >= f_1_47) && (! isnan(utof(u_3_phi_16)))) && (! isnan(f_1_47))) ? 1065353216u : 0u);
+	// 0  <=>  (((((({uni_attr6.x : 0.7713} + {uni_attr6.z : 0.11625}) * 0.5f) + -0.5f) * {utof(vs_cbuf9[196].z) : 0}) * 2.f) + {utof(vs_cbuf9[195].z) : 0})
+	pf_22_7 = ((((((uni_attr6.x + uni_attr6.z) * 0.5f) + -0.5f) * utof(vs_cbuf9[196].z)) * 2.f) + utof(vs_cbuf9[195].z));
+	// 0  <=>  {utof(vs_cbuf9[129].w) : 0}
+	f_1_47 = utof(vs_cbuf9[129].w);
+	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_47 : 0}) && (! myIsNaN({utof(u_3_phi_16) : 0.7594502}))) && (! myIsNaN({f_1_47 : 0}))) ? 1065353216u : 0u)
+	u_12_16 = ((((utof(u_3_phi_16) >= f_1_47) && (! myIsNaN(utof(u_3_phi_16)))) && (! myIsNaN(f_1_47))) ? 1065353216u : 0u);
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_16_1 = ftou(v.uv.y);
 	u_16_phi_26 = u_16_1;
-	// False  <=>  if(((! (((~ (((2u & ftou({vs_cbuf9[7].y : 0})) == 2u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! isnan({f_4_3 : 0.15253}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((2u & ftou(vs_cbuf9[7].y)) == 2u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! isnan(f_4_3))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((2u & {vs_cbuf9[7].y : 0}) == 2u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((2u & vs_cbuf9[7].y) == 2u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_16_2 = ftou(((0.f - v.uv.y) + 1.f));
 		u_16_phi_26 = u_16_2;
 	}
-	// 0.31  <=>  {(vs_cbuf9[130].w) : 0.31}
-	f_1_49 = (vs_cbuf9[130].w);
-	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_49 : 0.31}) && (! isnan({utof(u_3_phi_16) : 0.7594502}))) && (! isnan({f_1_49 : 0.31}))) ? 1065353216u : 0u)
-	u_23_1 = ((((utof(u_3_phi_16) >= f_1_49) && (! isnan(utof(u_3_phi_16)))) && (! isnan(f_1_49))) ? 1065353216u : 0u);
-	// 0.03  <=>  {(vs_cbuf9[150].w) : 0.03}
-	f_1_51 = (vs_cbuf9[150].w);
-	// 1065353216  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_51 : 0.03}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_1_51 : 0.03}))) ? 1065353216u : 0u)
-	u_20_1 = ((((pf_23_1 >= f_1_51) && (! isnan(pf_23_1))) && (! isnan(f_1_51))) ? 1065353216u : 0u);
-	// 0  <=>  (((({f_3_23 : 0} > 0.f) && (! isnan({f_3_23 : 0}))) && (! isnan(0.f))) ? 1065353216u : 0u)
-	u_24_0 = ((((f_3_23 > 0.f) && (! isnan(f_3_23))) && (! isnan(0.f))) ? 1065353216u : 0u);
+	// 0.31  <=>  {utof(vs_cbuf9[130].w) : 0.31}
+	f_1_49 = utof(vs_cbuf9[130].w);
+	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_49 : 0.31}) && (! myIsNaN({utof(u_3_phi_16) : 0.7594502}))) && (! myIsNaN({f_1_49 : 0.31}))) ? 1065353216u : 0u)
+	u_23_1 = ((((utof(u_3_phi_16) >= f_1_49) && (! myIsNaN(utof(u_3_phi_16)))) && (! myIsNaN(f_1_49))) ? 1065353216u : 0u);
+	// 0.03  <=>  {utof(vs_cbuf9[150].w) : 0.03}
+	f_1_51 = utof(vs_cbuf9[150].w);
+	// 1065353216  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_51 : 0.03}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_1_51 : 0.03}))) ? 1065353216u : 0u)
+	u_20_1 = ((((pf_23_1 >= f_1_51) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_1_51))) ? 1065353216u : 0u);
+	// 0  <=>  (((({f_3_23 : 0} > 0.f) && (! myIsNaN({f_3_23 : 0}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)
+	u_24_0 = ((((f_3_23 > 0.f) && (! myIsNaN(f_3_23))) && (! myIsNaN(0.f))) ? 1065353216u : 0u);
 	u_24_phi_27 = u_24_0;
-	// False  <=>  if(((! ((({(vs_cbuf9[195].w) : 1.00} == 1.f) && (! isnan({(vs_cbuf9[195].w) : 1.00}))) && (! isnan(1.f)))) ? true : false))
-	if(((! ((((vs_cbuf9[195].w) == 1.f) && (! isnan((vs_cbuf9[195].w)))) && (! isnan(1.f)))) ? true : false))
+	// False  <=>  if(((! ((({utof(vs_cbuf9[195].w) : 1.00} == 1.f) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00}))) && (! myIsNaN(1.f)))) ? true : false))
+	if(((! (((utof(vs_cbuf9[195].w) == 1.f) && (! myIsNaN(utof(vs_cbuf9[195].w)))) && (! myIsNaN(1.f)))) ? true : false))
 	{
 		// 0  <=>  {ftou((({utof(u_13_phi_25) : 0} * (0.f - {utof(u_2_phi_23) : 1.00})) + {utof(u_13_phi_25) : 0})) : 0}
 		u_24_1 = ftou(((utof(u_13_phi_25) * (0.f - utof(u_2_phi_23))) + utof(u_13_phi_25)));
@@ -1039,46 +1039,46 @@ void main()
 	// 0  <=>  0u
 	u_2_7 = 0u;
 	u_2_phi_28 = u_2_7;
-	// True  <=>  if((((1u & ftou({vs_cbuf9[7].z : 4.2187E-40})) != 1u) ? true : false))
-	if((((1u & ftou(vs_cbuf9[7].z)) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9[7].z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
 	{
 		// 1  <=>  1u
 		u_2_8 = 1u;
 		u_2_phi_28 = u_2_8;
 	}
-	// 0  <=>  (((0.f - {utof((((({f_3_23 : 0} < 0.f) && (! isnan({f_3_23 : 0}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_3_23 : 0} > 0.f) && (! isnan({f_3_23 : 0}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 0}) * float(int(abs(int((uint((int(0) - int(((int({u_10_4 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_10_4 : 0}) >= int(0u)) ? 0u : 1u))))))))))
-	pf_27_2 = (((0.f - utof(((((f_3_23 < 0.f) && (! isnan(f_3_23))) && (! isnan(0.f))) ? 1065353216u : 0u))) + utof(((((f_3_23 > 0.f) && (! isnan(f_3_23))) && (! isnan(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_10_4) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_10_4) >= int(0u)) ? 0u : 1u))))))))));
-	// 0.65  <=>  {(vs_cbuf9[131].w) : 0.65}
-	f_3_35 = (vs_cbuf9[131].w);
-	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_3_35 : 0.65}) && (! isnan({utof(u_3_phi_16) : 0.7594502}))) && (! isnan({f_3_35 : 0.65}))) ? 1065353216u : 0u)
-	u_10_15 = ((((utof(u_3_phi_16) >= f_3_35) && (! isnan(utof(u_3_phi_16)))) && (! isnan(f_3_35))) ? 1065353216u : 0u);
-	// 0  <=>  (((0.f - {utof((((({f_5_13 : 1.00} < 0.f) && (! isnan({f_5_13 : 1.00}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_5_13 : 1.00} > 0.f) && (! isnan({f_5_13 : 1.00}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 1.00}) * float(int(abs(int((uint((int(0) - int(((int({u_11_6 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_11_6 : 0}) >= int(0u)) ? 0u : 1u))))))))))
-	pf_19_2 = (((0.f - utof(((((f_5_13 < 0.f) && (! isnan(f_5_13))) && (! isnan(0.f))) ? 1065353216u : 0u))) + utof(((((f_5_13 > 0.f) && (! isnan(f_5_13))) && (! isnan(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_11_6) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_11_6) >= int(0u)) ? 0u : 1u))))))))));
+	// 0  <=>  (((0.f - {utof((((({f_3_23 : 0} < 0.f) && (! myIsNaN({f_3_23 : 0}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_3_23 : 0} > 0.f) && (! myIsNaN({f_3_23 : 0}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 0}) * float(int(abs(int((uint((int(0) - int(((int({u_10_4 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_10_4 : 0}) >= int(0u)) ? 0u : 1u))))))))))
+	pf_27_2 = (((0.f - utof(((((f_3_23 < 0.f) && (! myIsNaN(f_3_23))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) + utof(((((f_3_23 > 0.f) && (! myIsNaN(f_3_23))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_10_4) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_10_4) >= int(0u)) ? 0u : 1u))))))))));
+	// 0.65  <=>  {utof(vs_cbuf9[131].w) : 0.65}
+	f_3_35 = utof(vs_cbuf9[131].w);
+	// 1065353216  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_3_35 : 0.65}) && (! myIsNaN({utof(u_3_phi_16) : 0.7594502}))) && (! myIsNaN({f_3_35 : 0.65}))) ? 1065353216u : 0u)
+	u_10_15 = ((((utof(u_3_phi_16) >= f_3_35) && (! myIsNaN(utof(u_3_phi_16)))) && (! myIsNaN(f_3_35))) ? 1065353216u : 0u);
+	// 0  <=>  (((0.f - {utof((((({f_5_13 : 1.00} < 0.f) && (! myIsNaN({f_5_13 : 1.00}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_5_13 : 1.00} > 0.f) && (! myIsNaN({f_5_13 : 1.00}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 1.00}) * float(int(abs(int((uint((int(0) - int(((int({u_11_6 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_11_6 : 0}) >= int(0u)) ? 0u : 1u))))))))))
+	pf_19_2 = (((0.f - utof(((((f_5_13 < 0.f) && (! myIsNaN(f_5_13))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) + utof(((((f_5_13 > 0.f) && (! myIsNaN(f_5_13))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_11_6) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_11_6) >= int(0u)) ? 0u : 1u))))))))));
 	// 1  <=>  uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int({u_1_4 : 1}), int(0u), int(32u)))))), int(0u), int(32u)))
 	u_12_19 = uint(bitfieldExtract(uint(abs(int(uint(bitfieldExtract(int(u_1_4), int(0u), int(32u)))))), int(0u), int(32u)));
-	// 0.83  <=>  {(vs_cbuf9[132].w) : 0.83}
-	f_5_25 = (vs_cbuf9[132].w);
-	// 0  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_5_25 : 0.83}) && (! isnan({utof(u_3_phi_16) : 0.7594502}))) && (! isnan({f_5_25 : 0.83}))) ? 1065353216u : 0u)
-	u_13_12 = ((((utof(u_3_phi_16) >= f_5_25) && (! isnan(utof(u_3_phi_16)))) && (! isnan(f_5_25))) ? 1065353216u : 0u);
-	// 0.94  <=>  {(vs_cbuf9[151].w) : 0.94}
-	f_6_42 = (vs_cbuf9[151].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_6_42 : 0.94}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_6_42 : 0.94}))) ? 1065353216u : 0u)
-	u_21_1 = ((((pf_23_1 >= f_6_42) && (! isnan(pf_23_1))) && (! isnan(f_6_42))) ? 1065353216u : 0u);
-	// False  <=>  if(((! (((~ (((4u & ftou({vs_cbuf9[7].y : 0})) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! isnan({uni_attr6.z : 0.11625}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & ftou(vs_cbuf9[7].y)) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! isnan(uni_attr6.z))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// 0.83  <=>  {utof(vs_cbuf9[132].w) : 0.83}
+	f_5_25 = utof(vs_cbuf9[132].w);
+	// 0  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_5_25 : 0.83}) && (! myIsNaN({utof(u_3_phi_16) : 0.7594502}))) && (! myIsNaN({f_5_25 : 0.83}))) ? 1065353216u : 0u)
+	u_13_12 = ((((utof(u_3_phi_16) >= f_5_25) && (! myIsNaN(utof(u_3_phi_16)))) && (! myIsNaN(f_5_25))) ? 1065353216u : 0u);
+	// 0.94  <=>  {utof(vs_cbuf9[151].w) : 0.94}
+	f_6_42 = utof(vs_cbuf9[151].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_6_42 : 0.94}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_6_42 : 0.94}))) ? 1065353216u : 0u)
+	u_21_1 = ((((pf_23_1 >= f_6_42) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_6_42))) ? 1065353216u : 0u);
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9[7].y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9[7].y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
-	// 1.00  <=>  {(vs_cbuf9[152].w) : 1.00}
-	f_7_25 = (vs_cbuf9[152].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_7_25 : 1.00}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_7_25 : 1.00}))) ? 1065353216u : 0u)
-	u_10_16 = ((((pf_23_1 >= f_7_25) && (! isnan(pf_23_1))) && (! isnan(f_7_25))) ? 1065353216u : 0u);
+	// 1.00  <=>  {utof(vs_cbuf9[152].w) : 1.00}
+	f_7_25 = utof(vs_cbuf9[152].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_7_25 : 1.00}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_7_25 : 1.00}))) ? 1065353216u : 0u)
+	u_10_16 = ((((pf_23_1 >= f_7_25) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_7_25))) ? 1065353216u : 0u);
 	// 0  <=>  uint(clamp(trunc((float(0u) * {utof(({ftou((1.0f / float({u_1_4 : 1}))) : 1065353216} + 4294967294u)) : 0.9999999})), float(0.f), float(4294967300.f)))
 	u_20_2 = uint(clamp(trunc((float(0u) * utof((ftou((1.0f / float(u_1_4))) + 4294967294u)))), float(0.f), float(4294967300.f)));
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_22_1 = ftou(v.uv.y);
 	u_22_phi_30 = u_22_1;
-	// False  <=>  if(((! (((~ (((8u & ftou({vs_cbuf9[7].y : 0})) == 8u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.w : 0.16655} > 0.5f) && (! isnan({uni_attr6.w : 0.16655}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((8u & ftou(vs_cbuf9[7].y)) == 8u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.w > 0.5f) && (! isnan(uni_attr6.w))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((8u & {vs_cbuf9[7].y : 0}) == 8u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.w : 0.16655} > 0.5f) && (! myIsNaN({uni_attr6.w : 0.16655}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((8u & vs_cbuf9[7].y) == 8u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.w > 0.5f) && (! myIsNaN(uni_attr6.w))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_22_2 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1091,15 +1091,15 @@ void main()
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_25_0 = ftou(v.uv.y);
 	u_25_phi_31 = u_25_0;
-	// False  <=>  if(((! (((~ (((32u & ftou({vs_cbuf9[7].y : 0})) == 32u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! isnan({uni_attr6.z : 0.11625}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((32u & ftou(vs_cbuf9[7].y)) == 32u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! isnan(uni_attr6.z))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((32u & {vs_cbuf9[7].y : 0}) == 32u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((32u & vs_cbuf9[7].y) == 32u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_25_1 = ftou(((0.f - v.uv.y) + 1.f));
 		u_25_phi_31 = u_25_1;
 	}
-	// 0  <=>  (((0.f - {utof((((({f_1_40 : 0} < 0.f) && (! isnan({f_1_40 : 0}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_1_40 : 0} > 0.f) && (! isnan({f_1_40 : 0}))) && (! isnan(0.f))) ? 1065353216u : 0u)) : 0}) * float(int(abs(int((uint((int(0) - int(((int({u_12_5 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_12_5 : 0}) >= int(0u)) ? 0u : 1u))))))))))
-	pf_12_3 = (((0.f - utof(((((f_1_40 < 0.f) && (! isnan(f_1_40))) && (! isnan(0.f))) ? 1065353216u : 0u))) + utof(((((f_1_40 > 0.f) && (! isnan(f_1_40))) && (! isnan(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_12_5) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_12_5) >= int(0u)) ? 0u : 1u))))))))));
+	// 0  <=>  (((0.f - {utof((((({f_1_40 : 0} < 0.f) && (! myIsNaN({f_1_40 : 0}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 0}) + {utof((((({f_1_40 : 0} > 0.f) && (! myIsNaN({f_1_40 : 0}))) && (! myIsNaN(0.f))) ? 1065353216u : 0u)) : 0}) * float(int(abs(int((uint((int(0) - int(((int({u_12_5 : 0}) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int({u_12_5 : 0}) >= int(0u)) ? 0u : 1u))))))))))
+	pf_12_3 = (((0.f - utof(((((f_1_40 < 0.f) && (! myIsNaN(f_1_40))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) + utof(((((f_1_40 > 0.f) && (! myIsNaN(f_1_40))) && (! myIsNaN(0.f))) ? 1065353216u : 0u))) * float(int(abs(int((uint((int(0) - int(((int(u_12_5) > int(0u)) ? 4294967295u : 0u)))) + uint((int(0) - int(((int(u_12_5) >= int(0u)) ? 0u : 1u))))))))));
 	// 0  <=>  uint(clamp(trunc((float(0u) * {utof(({ftou((1.0f / float({u_0_2 : 1}))) : 1065353216} + 4294967294u)) : 0.9999999})), float(0.f), float(4294967300.f)))
 	u_8_10 = uint(clamp(trunc((float(0u) * utof((ftou((1.0f / float(u_0_2))) + 4294967294u)))), float(0.f), float(4294967300.f)));
 	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_1_4 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_20_2 : 0}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_20_2 : 0}), int(0u), int(16u))), int(16u), int(16u))
@@ -1107,8 +1107,8 @@ void main()
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_28_2 = ftou(v.uv.x);
 	u_28_phi_32 = u_28_2;
-	// False  <=>  if(((! (((~ (((4u & ftou({vs_cbuf9[7].y : 0})) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! isnan({uni_attr6.z : 0.11625}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & ftou(vs_cbuf9[7].y)) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! isnan(uni_attr6.z))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9[7].y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9[7].y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_28_3 = ftou(((0.f - v.uv.x) + 1.f));
@@ -1117,8 +1117,8 @@ void main()
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_27_5 = ftou(v.uv.x);
 	u_27_phi_33 = u_27_5;
-	// False  <=>  if(((! (((~ (((16u & ftou({vs_cbuf9[7].y : 0})) == 16u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! isnan({f_4_3 : 0.15253}))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((16u & ftou(vs_cbuf9[7].y)) == 16u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! isnan(f_4_3))) && (! isnan(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((16u & {vs_cbuf9[7].y : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((16u & vs_cbuf9[7].y) == 16u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_27_6 = ftou(((0.f - v.uv.x) + 1.f));
@@ -1127,8 +1127,8 @@ void main()
 	// 0  <=>  {u_24_phi_27 : }
 	u_9_13 = u_24_phi_27;
 	u_9_phi_34 = u_9_13;
-	// True  <=>  if((((({(vs_cbuf9[195].w) : 1.00} == 1.f) && (! isnan({(vs_cbuf9[195].w) : 1.00}))) && (! isnan(1.f))) ? true : false))
-	if((((((vs_cbuf9[195].w) == 1.f) && (! isnan((vs_cbuf9[195].w)))) && (! isnan(1.f))) ? true : false))
+	// True  <=>  if((((({utof(vs_cbuf9[195].w) : 1.00} == 1.f) && (! myIsNaN({utof(vs_cbuf9[195].w) : 1.00}))) && (! myIsNaN(1.f))) ? true : false))
+	if(((((utof(vs_cbuf9[195].w) == 1.f) && (! myIsNaN(utof(vs_cbuf9[195].w)))) && (! myIsNaN(1.f))) ? true : false))
 	{
 		// 1130168320  <=>  {ftou(pf_0_1) : 1130168320}
 		u_9_14 = ftou(pf_0_1);
@@ -1246,20 +1246,20 @@ void main()
 		u_37_phi_39 = u_37_1;
 		u_38_phi_39 = u_38_1;
 	}
-	// 1.00  <=>  {(vs_cbuf9[133].w) : 1.00}
-	f_1_58 = (vs_cbuf9[133].w);
-	// 0  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_58 : 1.00}) && (! isnan({utof(u_3_phi_16) : 0.7594502}))) && (! isnan({f_1_58 : 1.00}))) ? 1065353216u : 0u)
-	u_2_11 = ((((utof(u_3_phi_16) >= f_1_58) && (! isnan(utof(u_3_phi_16)))) && (! isnan(f_1_58))) ? 1065353216u : 0u);
+	// 1.00  <=>  {utof(vs_cbuf9[133].w) : 1.00}
+	f_1_58 = utof(vs_cbuf9[133].w);
+	// 0  <=>  (((({utof(u_3_phi_16) : 0.7594502} >= {f_1_58 : 1.00}) && (! myIsNaN({utof(u_3_phi_16) : 0.7594502}))) && (! myIsNaN({f_1_58 : 1.00}))) ? 1065353216u : 0u)
+	u_2_11 = ((((utof(u_3_phi_16) >= f_1_58) && (! myIsNaN(utof(u_3_phi_16)))) && (! myIsNaN(f_1_58))) ? 1065353216u : 0u);
 	// 0  <=>  ((({pf_21_5 : 0} * {pf_12_3 : 0}) * -2.f) + {pf_21_5 : 0})
 	pf_11_10 = (((pf_21_5 * pf_12_3) * -2.f) + pf_21_5);
 	// 1065353214  <=>  ({ftou((1.0f / float({u_12_19 : 1}))) : 1065353216} + 4294967294u)
 	u_3_4 = (ftou((1.0f / float(u_12_19))) + 4294967294u);
 	// 1065353214  <=>  ({ftou((1.0f / float({u_18_2 : 1}))) : 1065353216} + 4294967294u)
 	u_13_13 = (ftou((1.0f / float(u_18_2))) + 4294967294u);
-	// 5.00  <=>  {(vs_cbuf9[153].w) : 5.00}
-	f_1_64 = (vs_cbuf9[153].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_64 : 5.00}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_1_64 : 5.00}))) ? 1065353216u : 0u)
-	u_29_10 = ((((pf_23_1 >= f_1_64) && (! isnan(pf_23_1))) && (! isnan(f_1_64))) ? 1065353216u : 0u);
+	// 5.00  <=>  {utof(vs_cbuf9[153].w) : 5.00}
+	f_1_64 = utof(vs_cbuf9[153].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_64 : 5.00}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_1_64 : 5.00}))) ? 1065353216u : 0u)
+	u_29_10 = ((((pf_23_1 >= f_1_64) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_1_64))) ? 1065353216u : 0u);
 	// 0  <=>  ((({pf_24_6 : 0} * {pf_19_2 : 0}) * -2.f) + {pf_24_6 : 0})
 	pf_19_4 = (((pf_24_6 * pf_19_2) * -2.f) + pf_24_6);
 	// 0  <=>  trunc(({utof(u_3_4) : 0.9999999} * float(0u)))
@@ -1275,15 +1275,15 @@ void main()
 	// 0  <=>  0u
 	u_32_2 = 0u;
 	u_32_phi_44 = u_32_2;
-	// True  <=>  if((((1u & ftou({vs_cbuf9[7].z : 4.2187E-40})) != 1u) ? true : false))
-	if((((1u & ftou(vs_cbuf9[7].z)) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9[7].z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
 	{
 		// 2  <=>  2u
 		u_32_3 = 2u;
 		u_32_phi_44 = u_32_3;
 	}
-	// 0  <=>  (({pf_11_10 : 0} * {utof(u_9_phi_34) : 221.00}) + (({uni_attr6.x : 0.7713} + -0.5f) * {(vs_cbuf9[194].x) : 0}))
-	pf_11_11 = ((pf_11_10 * utof(u_9_phi_34)) + ((uni_attr6.x + -0.5f) * (vs_cbuf9[194].x)));
+	// 0  <=>  (({pf_11_10 : 0} * {utof(u_9_phi_34) : 221.00}) + (({uni_attr6.x : 0.7713} + -0.5f) * {utof(vs_cbuf9[194].x) : 0}))
+	pf_11_11 = ((pf_11_10 * utof(u_9_phi_34)) + ((uni_attr6.x + -0.5f) * utof(vs_cbuf9[194].x)));
 	// 0  <=>  trunc((float(0u) * {utof(u_30_4) : 0.9999999}))
 	f_1_76 = trunc((float(0u) * utof(u_30_4)));
 	// 0  <=>  uint(clamp({f_1_76 : 0}, float(0.f), float(4294967300.f)))
@@ -1292,14 +1292,14 @@ void main()
 	u_39_5 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_31_8), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_12_19), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_12_19), int(0u), int(16u))), int(16u), int(16u));
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_10_17 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_18_2 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_18_2 : 1}), int(0u), int(16u))), int(16u), int(16u))
 	u_41_5 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_10_17), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_18_2), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_18_2), int(0u), int(16u))), int(16u), int(16u));
-	// 0  <=>  ((((({pf_22_7 : 0} * {pf_27_2 : 0}) * -2.f) + {pf_22_7 : 0}) * {utof(u_9_phi_34) : 221.00}) + (({uni_attr6.z : 0.11625} + -0.5f) * {(vs_cbuf9[194].z) : 0}))
-	pf_13_8 = (((((pf_22_7 * pf_27_2) * -2.f) + pf_22_7) * utof(u_9_phi_34)) + ((uni_attr6.z + -0.5f) * (vs_cbuf9[194].z)));
+	// 0  <=>  ((((({pf_22_7 : 0} * {pf_27_2 : 0}) * -2.f) + {pf_22_7 : 0}) * {utof(u_9_phi_34) : 221.00}) + (({uni_attr6.z : 0.11625} + -0.5f) * {utof(vs_cbuf9[194].z) : 0}))
+	pf_13_8 = (((((pf_22_7 * pf_27_2) * -2.f) + pf_22_7) * utof(u_9_phi_34)) + ((uni_attr6.z + -0.5f) * utof(vs_cbuf9[194].z)));
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_33_4 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_23_5 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_23_5 : 1}), int(0u), int(16u))), int(16u), int(16u))
 	u_40_9 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_33_4), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_23_5), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_23_5), int(0u), int(16u))), int(16u), int(16u));
-	// 6.00  <=>  {(vs_cbuf9[154].w) : 6.00}
-	f_1_85 = (vs_cbuf9[154].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_85 : 6.00}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_1_85 : 6.00}))) ? 1065353216u : 0u)
-	u_37_2 = ((((pf_23_1 >= f_1_85) && (! isnan(pf_23_1))) && (! isnan(f_1_85))) ? 1065353216u : 0u);
+	// 6.00  <=>  {utof(vs_cbuf9[154].w) : 6.00}
+	f_1_85 = utof(vs_cbuf9[154].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_85 : 6.00}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_1_85 : 6.00}))) ? 1065353216u : 0u)
+	u_37_2 = ((((pf_23_1 >= f_1_85) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_1_85))) ? 1065353216u : 0u);
 	// 1061516267  <=>  {ftou(uni_attr6.x) : 1061516267}
 	u_29_11 = ftou(uni_attr6.x);
 	u_29_phi_45 = u_29_11;
@@ -1436,22 +1436,22 @@ void main()
 	}
 	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_1_4 : 1}), int(0u), int(32u)))), int(0u), int(32u)))
 	u_4_10 = uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_1_4), int(0u), int(32u)))), int(0u), int(32u)));
-	// 7.00  <=>  {(vs_cbuf9[155].w) : 7.00}
-	f_0_12 = (vs_cbuf9[155].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_0_12 : 7.00}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_0_12 : 7.00}))) ? 1065353216u : 0u)
-	u_6_9 = ((((pf_23_1 >= f_0_12) && (! isnan(pf_23_1))) && (! isnan(f_0_12))) ? 1065353216u : 0u);
+	// 7.00  <=>  {utof(vs_cbuf9[155].w) : 7.00}
+	f_0_12 = utof(vs_cbuf9[155].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_0_12 : 7.00}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_0_12 : 7.00}))) ? 1065353216u : 0u)
+	u_6_9 = ((((pf_23_1 >= f_0_12) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_0_12))) ? 1065353216u : 0u);
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_1_4 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_27_3 : 0}), int(16u), int(16u))))) << 16u) + (({u_27_3 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_1_4 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_20_2 : 0}), int(0u), int(16u))))))))))
 	u_7_9 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_1_4), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_27_3), int(16u), int(16u))))) << 16u) + ((u_27_3 << 16u) + uint((uint(bitfieldExtract(uint(u_1_4), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_20_2), int(0u), int(16u))))))))));
-	// 8.00  <=>  {(vs_cbuf9[156].w) : 8.00}
-	f_1_95 = (vs_cbuf9[156].w);
-	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_95 : 8.00}) && (! isnan({pf_23_1 : 0.7594502}))) && (! isnan({f_1_95 : 8.00}))) ? 1065353216u : 0u)
-	u_7_10 = ((((pf_23_1 >= f_1_95) && (! isnan(pf_23_1))) && (! isnan(f_1_95))) ? 1065353216u : 0u);
+	// 8.00  <=>  {utof(vs_cbuf9[156].w) : 8.00}
+	f_1_95 = utof(vs_cbuf9[156].w);
+	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_1_95 : 8.00}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_1_95 : 8.00}))) ? 1065353216u : 0u)
+	u_7_10 = ((((pf_23_1 >= f_1_95) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_1_95))) ? 1065353216u : 0u);
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_0_2 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_33_3 : 0}), int(16u), int(16u))))) << 16u) + (({u_33_3 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_0_2 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_8_10 : 0}), int(0u), int(16u))))))))))
 	u_24_11 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_0_2), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_33_3), int(16u), int(16u))))) << 16u) + ((u_33_3 << 16u) + uint((uint(bitfieldExtract(uint(u_0_2), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_8_10), int(0u), int(16u))))))))));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_24_5 : 0}), int(16u), int(16u))))) << 16u) + (({u_24_5 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_21_2 : 0}), int(0u), int(16u))))))))))
 	u_5_7 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_15_3), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_24_5), int(16u), int(16u))))) << 16u) + ((u_24_5 << 16u) + uint((uint(bitfieldExtract(uint(u_15_3), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_21_2), int(0u), int(16u))))))))));
-	// 1.00  <=>  (((((((0.f - {(vs_cbuf9[154].x) : 1.00}) + {(vs_cbuf9[155].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[154].w) : 6.00}) + {(vs_cbuf9[155].w) : 7.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[154].w) : 6.00}))) + {(vs_cbuf9[154].x) : 1.00}) * (({utof(u_37_2) : 0} * (0.f - {utof(u_6_9) : 0})) + {utof(u_37_2) : 0})) + (((((((0.f - {(vs_cbuf9[153].x) : 1.00}) + {(vs_cbuf9[154].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[153].w) : 5.00}) + {(vs_cbuf9[154].w) : 6.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[153].w) : 5.00}))) + {(vs_cbuf9[153].x) : 1.00}) * (({utof(u_29_10) : 0} * (0.f - {utof(u_37_2) : 0})) + {utof(u_29_10) : 0})) + (((((((0.f - {(vs_cbuf9[152].x) : 1.00}) + {(vs_cbuf9[153].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[152].w) : 1.00}) + {(vs_cbuf9[153].w) : 5.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[152].w) : 1.00}))) + {(vs_cbuf9[152].x) : 1.00}) * (({utof(u_10_16) : 0} * (0.f - {utof(u_29_10) : 0})) + {utof(u_10_16) : 0})) + (((((((0.f - {(vs_cbuf9[151].x) : 1.00}) + {(vs_cbuf9[152].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[151].w) : 0.94}) + {(vs_cbuf9[152].w) : 1.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[151].w) : 0.94}))) + {(vs_cbuf9[151].x) : 1.00}) * (({utof(u_21_1) : 0} * (0.f - {utof(u_10_16) : 0})) + {utof(u_21_1) : 0})) + (((((((0.f - {(vs_cbuf9[150].x) : 1.00}) + {(vs_cbuf9[151].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[150].w) : 0.03}) + {(vs_cbuf9[151].w) : 0.94}))) * ({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[150].w) : 0.03}))) + {(vs_cbuf9[150].x) : 1.00}) * (({utof(u_20_1) : 1.00} * (0.f - {utof(u_21_1) : 0})) + {utof(u_20_1) : 1.00})) + ((((({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[149].w) : 0})) * (((0.f - {(vs_cbuf9[149].x) : 1.00}) + {(vs_cbuf9[150].x) : 1.00}) * (1.0f / ((0.f - {(vs_cbuf9[149].w) : 0}) + {(vs_cbuf9[150].w) : 0.03})))) + {(vs_cbuf9[149].x) : 1.00}) * (({utof(u_10_14) : 1.00} * (0.f - {utof(u_20_1) : 1.00})) + {utof(u_10_14) : 1.00})) + (({utof(u_10_14) : 1.00} * (0.f - {(vs_cbuf9[149].x) : 1.00})) + {(vs_cbuf9[149].x) : 1.00})))))))
-	pf_10_12 = (((((((0.f - (vs_cbuf9[154].x)) + (vs_cbuf9[155].x)) * (1.0f / ((0.f - (vs_cbuf9[154].w)) + (vs_cbuf9[155].w)))) * (pf_23_1 + (0.f - (vs_cbuf9[154].w)))) + (vs_cbuf9[154].x)) * ((utof(u_37_2) * (0.f - utof(u_6_9))) + utof(u_37_2))) + (((((((0.f - (vs_cbuf9[153].x)) + (vs_cbuf9[154].x)) * (1.0f / ((0.f - (vs_cbuf9[153].w)) + (vs_cbuf9[154].w)))) * (pf_23_1 + (0.f - (vs_cbuf9[153].w)))) + (vs_cbuf9[153].x)) * ((utof(u_29_10) * (0.f - utof(u_37_2))) + utof(u_29_10))) + (((((((0.f - (vs_cbuf9[152].x)) + (vs_cbuf9[153].x)) * (1.0f / ((0.f - (vs_cbuf9[152].w)) + (vs_cbuf9[153].w)))) * (pf_23_1 + (0.f - (vs_cbuf9[152].w)))) + (vs_cbuf9[152].x)) * ((utof(u_10_16) * (0.f - utof(u_29_10))) + utof(u_10_16))) + (((((((0.f - (vs_cbuf9[151].x)) + (vs_cbuf9[152].x)) * (1.0f / ((0.f - (vs_cbuf9[151].w)) + (vs_cbuf9[152].w)))) * (pf_23_1 + (0.f - (vs_cbuf9[151].w)))) + (vs_cbuf9[151].x)) * ((utof(u_21_1) * (0.f - utof(u_10_16))) + utof(u_21_1))) + (((((((0.f - (vs_cbuf9[150].x)) + (vs_cbuf9[151].x)) * (1.0f / ((0.f - (vs_cbuf9[150].w)) + (vs_cbuf9[151].w)))) * (pf_23_1 + (0.f - (vs_cbuf9[150].w)))) + (vs_cbuf9[150].x)) * ((utof(u_20_1) * (0.f - utof(u_21_1))) + utof(u_20_1))) + (((((pf_23_1 + (0.f - (vs_cbuf9[149].w))) * (((0.f - (vs_cbuf9[149].x)) + (vs_cbuf9[150].x)) * (1.0f / ((0.f - (vs_cbuf9[149].w)) + (vs_cbuf9[150].w))))) + (vs_cbuf9[149].x)) * ((utof(u_10_14) * (0.f - utof(u_20_1))) + utof(u_10_14))) + ((utof(u_10_14) * (0.f - (vs_cbuf9[149].x))) + (vs_cbuf9[149].x))))))));
+	// 1.00  <=>  (((((((0.f - {utof(vs_cbuf9[154].x) : 1.00}) + {utof(vs_cbuf9[155].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[154].w) : 6.00}) + {utof(vs_cbuf9[155].w) : 7.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[154].w) : 6.00}))) + {utof(vs_cbuf9[154].x) : 1.00}) * (({utof(u_37_2) : 0} * (0.f - {utof(u_6_9) : 0})) + {utof(u_37_2) : 0})) + (((((((0.f - {utof(vs_cbuf9[153].x) : 1.00}) + {utof(vs_cbuf9[154].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[153].w) : 5.00}) + {utof(vs_cbuf9[154].w) : 6.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[153].w) : 5.00}))) + {utof(vs_cbuf9[153].x) : 1.00}) * (({utof(u_29_10) : 0} * (0.f - {utof(u_37_2) : 0})) + {utof(u_29_10) : 0})) + (((((((0.f - {utof(vs_cbuf9[152].x) : 1.00}) + {utof(vs_cbuf9[153].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[152].w) : 1.00}) + {utof(vs_cbuf9[153].w) : 5.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[152].w) : 1.00}))) + {utof(vs_cbuf9[152].x) : 1.00}) * (({utof(u_10_16) : 0} * (0.f - {utof(u_29_10) : 0})) + {utof(u_10_16) : 0})) + (((((((0.f - {utof(vs_cbuf9[151].x) : 1.00}) + {utof(vs_cbuf9[152].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[151].w) : 0.94}) + {utof(vs_cbuf9[152].w) : 1.00}))) * ({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[151].w) : 0.94}))) + {utof(vs_cbuf9[151].x) : 1.00}) * (({utof(u_21_1) : 0} * (0.f - {utof(u_10_16) : 0})) + {utof(u_21_1) : 0})) + (((((((0.f - {utof(vs_cbuf9[150].x) : 1.00}) + {utof(vs_cbuf9[151].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[150].w) : 0.03}) + {utof(vs_cbuf9[151].w) : 0.94}))) * ({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[150].w) : 0.03}))) + {utof(vs_cbuf9[150].x) : 1.00}) * (({utof(u_20_1) : 1.00} * (0.f - {utof(u_21_1) : 0})) + {utof(u_20_1) : 1.00})) + ((((({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[149].w) : 0})) * (((0.f - {utof(vs_cbuf9[149].x) : 1.00}) + {utof(vs_cbuf9[150].x) : 1.00}) * (1.0f / ((0.f - {utof(vs_cbuf9[149].w) : 0}) + {utof(vs_cbuf9[150].w) : 0.03})))) + {utof(vs_cbuf9[149].x) : 1.00}) * (({utof(u_10_14) : 1.00} * (0.f - {utof(u_20_1) : 1.00})) + {utof(u_10_14) : 1.00})) + (({utof(u_10_14) : 1.00} * (0.f - {utof(vs_cbuf9[149].x) : 1.00})) + {utof(vs_cbuf9[149].x) : 1.00})))))))
+	pf_10_12 = (((((((0.f - utof(vs_cbuf9[154].x)) + utof(vs_cbuf9[155].x)) * (1.0f / ((0.f - utof(vs_cbuf9[154].w)) + utof(vs_cbuf9[155].w)))) * (pf_23_1 + (0.f - utof(vs_cbuf9[154].w)))) + utof(vs_cbuf9[154].x)) * ((utof(u_37_2) * (0.f - utof(u_6_9))) + utof(u_37_2))) + (((((((0.f - utof(vs_cbuf9[153].x)) + utof(vs_cbuf9[154].x)) * (1.0f / ((0.f - utof(vs_cbuf9[153].w)) + utof(vs_cbuf9[154].w)))) * (pf_23_1 + (0.f - utof(vs_cbuf9[153].w)))) + utof(vs_cbuf9[153].x)) * ((utof(u_29_10) * (0.f - utof(u_37_2))) + utof(u_29_10))) + (((((((0.f - utof(vs_cbuf9[152].x)) + utof(vs_cbuf9[153].x)) * (1.0f / ((0.f - utof(vs_cbuf9[152].w)) + utof(vs_cbuf9[153].w)))) * (pf_23_1 + (0.f - utof(vs_cbuf9[152].w)))) + utof(vs_cbuf9[152].x)) * ((utof(u_10_16) * (0.f - utof(u_29_10))) + utof(u_10_16))) + (((((((0.f - utof(vs_cbuf9[151].x)) + utof(vs_cbuf9[152].x)) * (1.0f / ((0.f - utof(vs_cbuf9[151].w)) + utof(vs_cbuf9[152].w)))) * (pf_23_1 + (0.f - utof(vs_cbuf9[151].w)))) + utof(vs_cbuf9[151].x)) * ((utof(u_21_1) * (0.f - utof(u_10_16))) + utof(u_21_1))) + (((((((0.f - utof(vs_cbuf9[150].x)) + utof(vs_cbuf9[151].x)) * (1.0f / ((0.f - utof(vs_cbuf9[150].w)) + utof(vs_cbuf9[151].w)))) * (pf_23_1 + (0.f - utof(vs_cbuf9[150].w)))) + utof(vs_cbuf9[150].x)) * ((utof(u_20_1) * (0.f - utof(u_21_1))) + utof(u_20_1))) + (((((pf_23_1 + (0.f - utof(vs_cbuf9[149].w))) * (((0.f - utof(vs_cbuf9[149].x)) + utof(vs_cbuf9[150].x)) * (1.0f / ((0.f - utof(vs_cbuf9[149].w)) + utof(vs_cbuf9[150].w))))) + utof(vs_cbuf9[149].x)) * ((utof(u_10_14) * (0.f - utof(u_20_1))) + utof(u_10_14))) + ((utof(u_10_14) * (0.f - utof(vs_cbuf9[149].x))) + utof(vs_cbuf9[149].x))))))));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_31_8 : 0}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_39_5 : 65536}), int(16u), int(16u))))) << 16u) + (({u_39_5 : 65536} << 16u) + uint((uint(bitfieldExtract(uint({u_31_8 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_12_19 : 1}), int(0u), int(16u))))))))))
 	u_5_8 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_31_8), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_39_5), int(16u), int(16u))))) << 16u) + ((u_39_5 << 16u) + uint((uint(bitfieldExtract(uint(u_31_8), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_12_19), int(0u), int(16u))))))))));
 	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_1_4 : 1}), int(0u), int(32u)))), int(0u), int(32u)))
@@ -1460,10 +1460,10 @@ void main()
 	u_6_10 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_33_4), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_40_9), int(16u), int(16u))))) << 16u) + ((u_40_9 << 16u) + uint((uint(bitfieldExtract(uint(u_33_4), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_23_5), int(0u), int(16u))))))))));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_10_17 : 0}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_41_5 : 65536}), int(16u), int(16u))))) << 16u) + (({u_41_5 : 65536} << 16u) + uint((uint(bitfieldExtract(uint({u_10_17 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_18_2 : 1}), int(0u), int(16u))))))))))
 	u_11_14 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_10_17), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_41_5), int(16u), int(16u))))) << 16u) + ((u_41_5 << 16u) + uint((uint(bitfieldExtract(uint(u_10_17), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_18_2), int(0u), int(16u))))))))));
-	// 0.1631872  <=>  (({utof(u_2_11) : 0} * {(vs_cbuf9[133].x) : 0}) + (((((((0.f - {(vs_cbuf9[132].x) : 0.075}) + {(vs_cbuf9[133].x) : 0}) * (1.0f / ((0.f - {(vs_cbuf9[132].w) : 0.83}) + {(vs_cbuf9[133].w) : 1.00}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {(vs_cbuf9[132].w) : 0.83}))) + {(vs_cbuf9[132].x) : 0.075}) * (({utof(u_13_12) : 0} * (0.f - {utof(u_2_11) : 0})) + {utof(u_13_12) : 0})) + (((((({(vs_cbuf9[132].x) : 0.075} + (0.f - {(vs_cbuf9[131].x) : 0.30})) * (1.0f / ((0.f - {(vs_cbuf9[131].w) : 0.65}) + {(vs_cbuf9[132].w) : 0.83}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {(vs_cbuf9[131].w) : 0.65}))) + {(vs_cbuf9[131].x) : 0.30}) * (({utof(u_10_15) : 1.00} * (0.f - {utof(u_13_12) : 0})) + {utof(u_10_15) : 1.00})) + (((((((0.f - {(vs_cbuf9[130].x) : 0.075}) + {(vs_cbuf9[131].x) : 0.30}) * (1.0f / ((0.f - {(vs_cbuf9[130].w) : 0.31}) + {(vs_cbuf9[131].w) : 0.65}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {(vs_cbuf9[130].w) : 0.31}))) + {(vs_cbuf9[130].x) : 0.075}) * (({utof(u_23_1) : 1.00} * (0.f - {utof(u_10_15) : 1.00})) + {utof(u_23_1) : 1.00})) + (((((({(vs_cbuf9[130].x) : 0.075} + (0.f - {(vs_cbuf9[129].x) : 0})) * (1.0f / ((0.f - {(vs_cbuf9[129].w) : 0}) + {(vs_cbuf9[130].w) : 0.31}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {(vs_cbuf9[129].w) : 0}))) + {(vs_cbuf9[129].x) : 0}) * (({utof(u_23_1) : 1.00} * (0.f - {utof(u_12_16) : 1.00})) + {utof(u_12_16) : 1.00})) + (({utof(u_12_16) : 1.00} * (0.f - {(vs_cbuf9[129].x) : 0})) + {(vs_cbuf9[129].x) : 0}))))))
-	pf_9_9 = ((utof(u_2_11) * (vs_cbuf9[133].x)) + (((((((0.f - (vs_cbuf9[132].x)) + (vs_cbuf9[133].x)) * (1.0f / ((0.f - (vs_cbuf9[132].w)) + (vs_cbuf9[133].w)))) * (utof(u_3_phi_16) + (0.f - (vs_cbuf9[132].w)))) + (vs_cbuf9[132].x)) * ((utof(u_13_12) * (0.f - utof(u_2_11))) + utof(u_13_12))) + (((((((vs_cbuf9[132].x) + (0.f - (vs_cbuf9[131].x))) * (1.0f / ((0.f - (vs_cbuf9[131].w)) + (vs_cbuf9[132].w)))) * (utof(u_3_phi_16) + (0.f - (vs_cbuf9[131].w)))) + (vs_cbuf9[131].x)) * ((utof(u_10_15) * (0.f - utof(u_13_12))) + utof(u_10_15))) + (((((((0.f - (vs_cbuf9[130].x)) + (vs_cbuf9[131].x)) * (1.0f / ((0.f - (vs_cbuf9[130].w)) + (vs_cbuf9[131].w)))) * (utof(u_3_phi_16) + (0.f - (vs_cbuf9[130].w)))) + (vs_cbuf9[130].x)) * ((utof(u_23_1) * (0.f - utof(u_10_15))) + utof(u_23_1))) + (((((((vs_cbuf9[130].x) + (0.f - (vs_cbuf9[129].x))) * (1.0f / ((0.f - (vs_cbuf9[129].w)) + (vs_cbuf9[130].w)))) * (utof(u_3_phi_16) + (0.f - (vs_cbuf9[129].w)))) + (vs_cbuf9[129].x)) * ((utof(u_23_1) * (0.f - utof(u_12_16))) + utof(u_12_16))) + ((utof(u_12_16) * (0.f - (vs_cbuf9[129].x))) + (vs_cbuf9[129].x)))))));
-	// 1.00  <=>  (({utof(u_7_10) : 0} * {(vs_cbuf9[156].x) : 1.00}) + ((((({pf_23_1 : 0.7594502} + (0.f - {(vs_cbuf9[155].w) : 7.00})) * (({(vs_cbuf9[156].x) : 1.00} + (0.f - {(vs_cbuf9[155].x) : 1.00})) * (1.0f / ((0.f - {(vs_cbuf9[155].w) : 7.00}) + {(vs_cbuf9[156].w) : 8.00})))) + {(vs_cbuf9[155].x) : 1.00}) * (({utof(u_6_9) : 0} * (0.f - {utof(u_7_10) : 0})) + {utof(u_6_9) : 0})) + {pf_10_12 : 1.00}))
-	o.fs_attr5.x = ((utof(u_7_10) * (vs_cbuf9[156].x)) + (((((pf_23_1 + (0.f - (vs_cbuf9[155].w))) * (((vs_cbuf9[156].x) + (0.f - (vs_cbuf9[155].x))) * (1.0f / ((0.f - (vs_cbuf9[155].w)) + (vs_cbuf9[156].w))))) + (vs_cbuf9[155].x)) * ((utof(u_6_9) * (0.f - utof(u_7_10))) + utof(u_6_9))) + pf_10_12));
+	// 0.1631872  <=>  (({utof(u_2_11) : 0} * {utof(vs_cbuf9[133].x) : 0}) + (((((((0.f - {utof(vs_cbuf9[132].x) : 0.075}) + {utof(vs_cbuf9[133].x) : 0}) * (1.0f / ((0.f - {utof(vs_cbuf9[132].w) : 0.83}) + {utof(vs_cbuf9[133].w) : 1.00}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {utof(vs_cbuf9[132].w) : 0.83}))) + {utof(vs_cbuf9[132].x) : 0.075}) * (({utof(u_13_12) : 0} * (0.f - {utof(u_2_11) : 0})) + {utof(u_13_12) : 0})) + (((((({utof(vs_cbuf9[132].x) : 0.075} + (0.f - {utof(vs_cbuf9[131].x) : 0.30})) * (1.0f / ((0.f - {utof(vs_cbuf9[131].w) : 0.65}) + {utof(vs_cbuf9[132].w) : 0.83}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {utof(vs_cbuf9[131].w) : 0.65}))) + {utof(vs_cbuf9[131].x) : 0.30}) * (({utof(u_10_15) : 1.00} * (0.f - {utof(u_13_12) : 0})) + {utof(u_10_15) : 1.00})) + (((((((0.f - {utof(vs_cbuf9[130].x) : 0.075}) + {utof(vs_cbuf9[131].x) : 0.30}) * (1.0f / ((0.f - {utof(vs_cbuf9[130].w) : 0.31}) + {utof(vs_cbuf9[131].w) : 0.65}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {utof(vs_cbuf9[130].w) : 0.31}))) + {utof(vs_cbuf9[130].x) : 0.075}) * (({utof(u_23_1) : 1.00} * (0.f - {utof(u_10_15) : 1.00})) + {utof(u_23_1) : 1.00})) + (((((({utof(vs_cbuf9[130].x) : 0.075} + (0.f - {utof(vs_cbuf9[129].x) : 0})) * (1.0f / ((0.f - {utof(vs_cbuf9[129].w) : 0}) + {utof(vs_cbuf9[130].w) : 0.31}))) * ({utof(u_3_phi_16) : 0.7594502} + (0.f - {utof(vs_cbuf9[129].w) : 0}))) + {utof(vs_cbuf9[129].x) : 0}) * (({utof(u_23_1) : 1.00} * (0.f - {utof(u_12_16) : 1.00})) + {utof(u_12_16) : 1.00})) + (({utof(u_12_16) : 1.00} * (0.f - {utof(vs_cbuf9[129].x) : 0})) + {utof(vs_cbuf9[129].x) : 0}))))))
+	pf_9_9 = ((utof(u_2_11) * utof(vs_cbuf9[133].x)) + (((((((0.f - utof(vs_cbuf9[132].x)) + utof(vs_cbuf9[133].x)) * (1.0f / ((0.f - utof(vs_cbuf9[132].w)) + utof(vs_cbuf9[133].w)))) * (utof(u_3_phi_16) + (0.f - utof(vs_cbuf9[132].w)))) + utof(vs_cbuf9[132].x)) * ((utof(u_13_12) * (0.f - utof(u_2_11))) + utof(u_13_12))) + ((((((utof(vs_cbuf9[132].x) + (0.f - utof(vs_cbuf9[131].x))) * (1.0f / ((0.f - utof(vs_cbuf9[131].w)) + utof(vs_cbuf9[132].w)))) * (utof(u_3_phi_16) + (0.f - utof(vs_cbuf9[131].w)))) + utof(vs_cbuf9[131].x)) * ((utof(u_10_15) * (0.f - utof(u_13_12))) + utof(u_10_15))) + (((((((0.f - utof(vs_cbuf9[130].x)) + utof(vs_cbuf9[131].x)) * (1.0f / ((0.f - utof(vs_cbuf9[130].w)) + utof(vs_cbuf9[131].w)))) * (utof(u_3_phi_16) + (0.f - utof(vs_cbuf9[130].w)))) + utof(vs_cbuf9[130].x)) * ((utof(u_23_1) * (0.f - utof(u_10_15))) + utof(u_23_1))) + ((((((utof(vs_cbuf9[130].x) + (0.f - utof(vs_cbuf9[129].x))) * (1.0f / ((0.f - utof(vs_cbuf9[129].w)) + utof(vs_cbuf9[130].w)))) * (utof(u_3_phi_16) + (0.f - utof(vs_cbuf9[129].w)))) + utof(vs_cbuf9[129].x)) * ((utof(u_23_1) * (0.f - utof(u_12_16))) + utof(u_12_16))) + ((utof(u_12_16) * (0.f - utof(vs_cbuf9[129].x))) + utof(vs_cbuf9[129].x)))))));
+	// 1.00  <=>  (({utof(u_7_10) : 0} * {utof(vs_cbuf9[156].x) : 1.00}) + ((((({pf_23_1 : 0.7594502} + (0.f - {utof(vs_cbuf9[155].w) : 7.00})) * (({utof(vs_cbuf9[156].x) : 1.00} + (0.f - {utof(vs_cbuf9[155].x) : 1.00})) * (1.0f / ((0.f - {utof(vs_cbuf9[155].w) : 7.00}) + {utof(vs_cbuf9[156].w) : 8.00})))) + {utof(vs_cbuf9[155].x) : 1.00}) * (({utof(u_6_9) : 0} * (0.f - {utof(u_7_10) : 0})) + {utof(u_6_9) : 0})) + {pf_10_12 : 1.00}))
+	o.fs_attr5.x = ((utof(u_7_10) * utof(vs_cbuf9[156].x)) + (((((pf_23_1 + (0.f - utof(vs_cbuf9[155].w))) * ((utof(vs_cbuf9[156].x) + (0.f - utof(vs_cbuf9[155].x))) * (1.0f / ((0.f - utof(vs_cbuf9[155].w)) + utof(vs_cbuf9[156].w))))) + utof(vs_cbuf9[155].x)) * ((utof(u_6_9) * (0.f - utof(u_7_10))) + utof(u_6_9))) + pf_10_12));
 	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(int({u_15_3 : 1}), int(0u), int(32u)))), int(0u), int(32u)))
 	u_9_21 = uint(bitfieldExtract(uint(uint(bitfieldExtract(int(u_15_3), int(0u), int(32u)))), int(0u), int(32u)));
 	// 0  <=>  uint((uint(bitfieldExtract(uint({u_1_4 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint(({u_20_2 : 0} + uint(clamp(trunc(({utof(({ftou((1.0f / float({u_1_4 : 1}))) : 1065353216} + 4294967294u)) : 0.9999999} * float({u_7_9 : 0}))), float(0.f), float(4294967300.f))))), int(0u), int(16u)))))
@@ -1500,16 +1500,16 @@ void main()
 	u_29_16 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_10_18), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_18_2), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_18_2), int(0u), int(16u))), int(16u), int(16u));
 	// 65536  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_11_16 : 0}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_23_5 : 1}), int(16u), int(16u))))), uint(bitfieldExtract(uint({u_23_5 : 1}), int(0u), int(16u))), int(16u), int(16u))
 	u_31_12 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_11_16), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_23_5), int(16u), int(16u))))), uint(bitfieldExtract(uint(u_23_5), int(0u), int(16u))), int(16u), int(16u));
-	// 1.00  <=>  ((1.0f / {(vs_cbuf9[88].z) : 1.00}) * {(vs_cbuf9[88].x) : 1.00})
-	pf_24_8 = ((1.0f / (vs_cbuf9[88].z)) * (vs_cbuf9[88].x));
-	// -7.241559  <=>  (0.f - (({pf_0_1 : 221.00} * {(vs_cbuf9[87].x) : 0}) + (({utof(u_46_phi_50) : 0.15253} * {(vs_cbuf9[87].z) : 6.283185}) + ({(vs_cbuf9[87].z) : 6.283185} + {(vs_cbuf9[87].y) : 0}))))
-	f_0_26 = (0.f - ((pf_0_1 * (vs_cbuf9[87].x)) + ((utof(u_46_phi_50) * (vs_cbuf9[87].z)) + ((vs_cbuf9[87].z) + (vs_cbuf9[87].y)))));
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[88].z) : 1.00}) * {utof(vs_cbuf9[88].x) : 1.00})
+	pf_24_8 = ((1.0f / utof(vs_cbuf9[88].z)) * utof(vs_cbuf9[88].x));
+	// -7.24156  <=>  (0.f - (({pf_0_1 : 221.00} * {utof(vs_cbuf9[87].x) : 0}) + (({utof(u_46_phi_50) : 0.15253} * {utof(vs_cbuf9[87].z) : 6.283185}) + ({utof(vs_cbuf9[87].z) : 6.283185} + {utof(vs_cbuf9[87].y) : 0}))))
+	f_0_26 = (0.f - ((pf_0_1 * utof(vs_cbuf9[87].x)) + ((utof(u_46_phi_50) * utof(vs_cbuf9[87].z)) + (utof(vs_cbuf9[87].z) + utof(vs_cbuf9[87].y)))));
 	// 1  <=>  uint(bitfieldExtract(uint(uint(bitfieldExtract(uint({u_0_2 : 1}), int(0u), int(32u)))), int(0u), int(32u)))
 	u_32_9 = uint(bitfieldExtract(uint(uint(bitfieldExtract(uint(u_0_2), int(0u), int(32u)))), int(0u), int(32u)));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_1_4 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_19_4 : 0}), int(16u), int(16u))))) << 16u) + (({u_19_4 : 0} << 16u) + {u_13_15 : 0})))))
 	u_13_18 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_1_4), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_19_4), int(16u), int(16u))))) << 16u) + ((u_19_4 << 16u) + u_13_15)))));
-	// 1.00  <=>  ((1.0f / {(vs_cbuf9[88].w) : 1.00}) * {(vs_cbuf9[88].y) : 1.00})
-	pf_22_14 = ((1.0f / (vs_cbuf9[88].w)) * (vs_cbuf9[88].y));
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[88].w) : 1.00}) * {utof(vs_cbuf9[88].y) : 1.00})
+	pf_22_14 = ((1.0f / utof(vs_cbuf9[88].w)) * utof(vs_cbuf9[88].y));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_20_13 : 0}), int(16u), int(16u))))) << 16u) + (({u_20_13 : 0} << 16u) + {u_17_5 : 0})))))
 	u_17_8 = uint((int(0) - int(((uint((uint(bitfieldExtract(uint(u_15_3), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_20_13), int(16u), int(16u))))) << 16u) + ((u_20_13 << 16u) + u_17_5)))));
 	// 0  <=>  uint((int(0) - int(((uint((uint(bitfieldExtract(uint({u_0_2 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_24_16 : 0}), int(16u), int(16u))))) << 16u) + (({u_24_16 : 0} << 16u) + {u_21_12 : 0})))))
@@ -1546,54 +1546,54 @@ void main()
 	u_20_26 = uint(bitfieldExtract(uint(u_2_15), int(16u), int(16u)));
 	// 0  <=>  bitfieldInsert(uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(0u), int(16u))) * {u_20_26 : 0})), uint(bitfieldExtract(uint({u_2_15 : 0}), int(0u), int(16u))), int(16u), int(16u))
 	u_2_17 = bitfieldInsert(uint((uint(bitfieldExtract(uint(u_15_3), int(0u), int(16u))) * u_20_26)), uint(bitfieldExtract(uint(u_2_15), int(0u), int(16u))), int(16u), int(16u));
-	// 1.00  <=>  ((1.0f / {(vs_cbuf9[78].z) : 1.00}) * {(vs_cbuf9[78].x) : 1.00})
-	pf_27_5 = ((1.0f / (vs_cbuf9[78].z)) * (vs_cbuf9[78].x));
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[78].z) : 1.00}) * {utof(vs_cbuf9[78].x) : 1.00})
+	pf_27_5 = ((1.0f / utof(vs_cbuf9[78].z)) * utof(vs_cbuf9[78].x));
 	// 0  <=>  (((int({u_32_9 : 1}) < 0) || (! ({u_32_9 : 1} == 0))) ? ((uint((uint(bitfieldExtract(uint({u_0_2 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_6_16 : 0}), int(16u), int(16u))))) << 16u) + (({u_6_16 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_0_2 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_6_14 : 0}), int(0u), int(16u))))))) : 4294967295u)
 	u_0_7 = (((int(u_32_9) < 0) || (! (u_32_9 == 0))) ? ((uint((uint(bitfieldExtract(uint(u_0_2), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_6_16), int(16u), int(16u))))) << 16u) + ((u_6_16 << 16u) + uint((uint(bitfieldExtract(uint(u_0_2), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_6_14), int(0u), int(16u))))))) : 4294967295u);
 	// 0  <=>  (((int({u_19_10 : 1}) < 0) || (! ({u_19_10 : 1} == 0))) ? ((uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(16u), int(16u))) * uint(bitfieldExtract(uint({u_2_17 : 0}), int(16u), int(16u))))) << 16u) + (({u_2_17 : 0} << 16u) + uint((uint(bitfieldExtract(uint({u_15_3 : 1}), int(0u), int(16u))) * uint(bitfieldExtract(uint({u_2_15 : 0}), int(0u), int(16u))))))) : 4294967295u)
 	u_0_9 = (((int(u_19_10) < 0) || (! (u_19_10 == 0))) ? ((uint((uint(bitfieldExtract(uint(u_15_3), int(16u), int(16u))) * uint(bitfieldExtract(uint(u_2_17), int(16u), int(16u))))) << 16u) + ((u_2_17 << 16u) + uint((uint(bitfieldExtract(uint(u_15_3), int(0u), int(16u))) * uint(bitfieldExtract(uint(u_2_15), int(0u), int(16u))))))) : 4294967295u);
-	// 1.00  <=>  ((1.0f / {(vs_cbuf9[83].z) : 1.00}) * {(vs_cbuf9[83].x) : 1.00})
-	pf_29_1 = ((1.0f / (vs_cbuf9[83].z)) * (vs_cbuf9[83].x));
-	// 0.4353301  <=>  (({(vs_cbuf9[121].x) : 0.3957546} * {(vs_cbuf10_1.x) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr1.x = (((vs_cbuf9[121].x) * (vs_cbuf10_1.x)) * (vs_cbuf9[104].x));
-	// -0.67284  <=>  (0.f - ((((1.0f / {(vs_cbuf9[78].w) : 1.00}) * {(vs_cbuf9[78].y) : 1.00}) * (0.f - float(int((((int({u_4_10 : 1}) < 0) || (! ({u_4_10 : 1} == 0))) ? (uint((int(0) - int({u_17_12 : 0}))) + (({u_3_6 : 0} + uint((int(0) - int(((uint({u_8_15 : 0}) >= uint({u_12_19 : 1})) ? 4294967295u : 0u))))) ^ {u_17_12 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {(vs_cbuf9[74].y) : -0.0001}) + ((({f_4_3 : 0.15253} * {(vs_cbuf9[75].y) : 1.00}) * -2.f) + ({(vs_cbuf9[75].y) : 1.00} + {(vs_cbuf9[74].w) : 0})))))
-	f_0_39 = (0.f - ((((1.0f / (vs_cbuf9[78].w)) * (vs_cbuf9[78].y)) * (0.f - float(int((((int(u_4_10) < 0) || (! (u_4_10 == 0))) ? (uint((int(0) - int(u_17_12))) + ((u_3_6 + uint((int(0) - int(((uint(u_8_15) >= uint(u_12_19)) ? 4294967295u : 0u))))) ^ u_17_12)) : 4294967295u))))) + ((pf_0_1 * (vs_cbuf9[74].y)) + (((f_4_3 * (vs_cbuf9[75].y)) * -2.f) + ((vs_cbuf9[75].y) + (vs_cbuf9[74].w))))));
-	// 0  <=>  (0.f - ((((1.0f / {(vs_cbuf9[83].w) : 1.00}) * {(vs_cbuf9[83].y) : 1.00}) * (0.f - float(int((((int({u_9_21 : 1}) < 0) || (! ({u_9_21 : 1} == 0))) ? (uint((int(0) - int({u_7_19 : 0}))) + (({u_10_18 : 0} + uint((int(0) - int(((uint({u_21_18 : 0}) >= uint({u_18_2 : 1})) ? 4294967295u : 0u))))) ^ {u_7_19 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {(vs_cbuf9[79].y) : 0}) + ((({utof(u_35_phi_39) : 0.11625} * {(vs_cbuf9[80].y) : 0}) * -2.f) + ({(vs_cbuf9[80].y) : 0} + {(vs_cbuf9[79].w) : 0})))))
-	f_0_40 = (0.f - ((((1.0f / (vs_cbuf9[83].w)) * (vs_cbuf9[83].y)) * (0.f - float(int((((int(u_9_21) < 0) || (! (u_9_21 == 0))) ? (uint((int(0) - int(u_7_19))) + ((u_10_18 + uint((int(0) - int(((uint(u_21_18) >= uint(u_18_2)) ? 4294967295u : 0u))))) ^ u_7_19)) : 4294967295u))))) + ((pf_0_1 * (vs_cbuf9[79].y)) + (((utof(u_35_phi_39) * (vs_cbuf9[80].y)) * -2.f) + ((vs_cbuf9[80].y) + (vs_cbuf9[79].w))))));
-	// 0  <=>  (0.f - (({pf_22_14 : 1.00} * (0.f - float(int((((int({u_13_21 : 1}) < 0) || (! ({u_13_21 : 1} == 0))) ? (uint((int(0) - int({u_8_19 : 0}))) + (({u_11_16 : 0} + uint((int(0) - int(((uint({u_12_24 : 0}) >= uint({u_23_5 : 1})) ? 4294967295u : 0u))))) ^ {u_8_19 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {(vs_cbuf9[84].y) : 0}) + ((({utof(u_44_phi_50) : 0.7713} * {(vs_cbuf9[85].y) : 0}) * -2.f) + ({(vs_cbuf9[85].y) : 0} + {(vs_cbuf9[84].w) : 0})))))
-	f_0_41 = (0.f - ((pf_22_14 * (0.f - float(int((((int(u_13_21) < 0) || (! (u_13_21 == 0))) ? (uint((int(0) - int(u_8_19))) + ((u_11_16 + uint((int(0) - int(((uint(u_12_24) >= uint(u_23_5)) ? 4294967295u : 0u))))) ^ u_8_19)) : 4294967295u))))) + ((pf_0_1 * (vs_cbuf9[84].y)) + (((utof(u_44_phi_50) * (vs_cbuf9[85].y)) * -2.f) + ((vs_cbuf9[85].y) + (vs_cbuf9[84].w))))));
-	// 0.5072804  <=>  (({(vs_cbuf9[121].y) : 0.461164} * {(vs_cbuf10_1.y) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr1.y = (((vs_cbuf9[121].y) * (vs_cbuf10_1.y)) * (vs_cbuf9[104].x));
-	// 0.5325397  <=>  (({(vs_cbuf9[121].z) : 0.484127} * {(vs_cbuf10_1.z) : 1.00}) * {(vs_cbuf9[104].x) : 1.10})
-	o.fs_attr1.z = (((vs_cbuf9[121].z) * (vs_cbuf10_1.z)) * (vs_cbuf9[104].x));
+	// 1.00  <=>  ((1.0f / {utof(vs_cbuf9[83].z) : 1.00}) * {utof(vs_cbuf9[83].x) : 1.00})
+	pf_29_1 = ((1.0f / utof(vs_cbuf9[83].z)) * utof(vs_cbuf9[83].x));
+	// 0.4353301  <=>  (({utof(vs_cbuf9[121].x) : 0.3957546} * {(vs_cbuf10_1.x) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr1.x = ((utof(vs_cbuf9[121].x) * (vs_cbuf10_1.x)) * utof(vs_cbuf9[104].x));
+	// -0.67284  <=>  (0.f - ((((1.0f / {utof(vs_cbuf9[78].w) : 1.00}) * {utof(vs_cbuf9[78].y) : 1.00}) * (0.f - float(int((((int({u_4_10 : 1}) < 0) || (! ({u_4_10 : 1} == 0))) ? (uint((int(0) - int({u_17_12 : 0}))) + (({u_3_6 : 0} + uint((int(0) - int(((uint({u_8_15 : 0}) >= uint({u_12_19 : 1})) ? 4294967295u : 0u))))) ^ {u_17_12 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {utof(vs_cbuf9[74].y) : -0.0001}) + ((({f_4_3 : 0.15253} * {utof(vs_cbuf9[75].y) : 1.00}) * -2.f) + ({utof(vs_cbuf9[75].y) : 1.00} + {utof(vs_cbuf9[74].w) : 0})))))
+	f_0_39 = (0.f - ((((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)) * (0.f - float(int((((int(u_4_10) < 0) || (! (u_4_10 == 0))) ? (uint((int(0) - int(u_17_12))) + ((u_3_6 + uint((int(0) - int(((uint(u_8_15) >= uint(u_12_19)) ? 4294967295u : 0u))))) ^ u_17_12)) : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[74].y)) + (((f_4_3 * utof(vs_cbuf9[75].y)) * -2.f) + (utof(vs_cbuf9[75].y) + utof(vs_cbuf9[74].w))))));
+	// 0  <=>  (0.f - ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * (0.f - float(int((((int({u_9_21 : 1}) < 0) || (! ({u_9_21 : 1} == 0))) ? (uint((int(0) - int({u_7_19 : 0}))) + (({u_10_18 : 0} + uint((int(0) - int(((uint({u_21_18 : 0}) >= uint({u_18_2 : 1})) ? 4294967295u : 0u))))) ^ {u_7_19 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {utof(vs_cbuf9[79].y) : 0}) + ((({utof(u_35_phi_39) : 0.11625} * {utof(vs_cbuf9[80].y) : 0}) * -2.f) + ({utof(vs_cbuf9[80].y) : 0} + {utof(vs_cbuf9[79].w) : 0})))))
+	f_0_40 = (0.f - ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * (0.f - float(int((((int(u_9_21) < 0) || (! (u_9_21 == 0))) ? (uint((int(0) - int(u_7_19))) + ((u_10_18 + uint((int(0) - int(((uint(u_21_18) >= uint(u_18_2)) ? 4294967295u : 0u))))) ^ u_7_19)) : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[79].y)) + (((utof(u_35_phi_39) * utof(vs_cbuf9[80].y)) * -2.f) + (utof(vs_cbuf9[80].y) + utof(vs_cbuf9[79].w))))));
+	// 0  <=>  (0.f - (({pf_22_14 : 1.00} * (0.f - float(int((((int({u_13_21 : 1}) < 0) || (! ({u_13_21 : 1} == 0))) ? (uint((int(0) - int({u_8_19 : 0}))) + (({u_11_16 : 0} + uint((int(0) - int(((uint({u_12_24 : 0}) >= uint({u_23_5 : 1})) ? 4294967295u : 0u))))) ^ {u_8_19 : 0})) : 4294967295u))))) + (({pf_0_1 : 221.00} * {utof(vs_cbuf9[84].y) : 0}) + ((({utof(u_44_phi_50) : 0.7713} * {utof(vs_cbuf9[85].y) : 0}) * -2.f) + ({utof(vs_cbuf9[85].y) : 0} + {utof(vs_cbuf9[84].w) : 0})))))
+	f_0_41 = (0.f - ((pf_22_14 * (0.f - float(int((((int(u_13_21) < 0) || (! (u_13_21 == 0))) ? (uint((int(0) - int(u_8_19))) + ((u_11_16 + uint((int(0) - int(((uint(u_12_24) >= uint(u_23_5)) ? 4294967295u : 0u))))) ^ u_8_19)) : 4294967295u))))) + ((pf_0_1 * utof(vs_cbuf9[84].y)) + (((utof(u_44_phi_50) * utof(vs_cbuf9[85].y)) * -2.f) + (utof(vs_cbuf9[85].y) + utof(vs_cbuf9[84].w))))));
+	// 0.5072804  <=>  (({utof(vs_cbuf9[121].y) : 0.461164} * {(vs_cbuf10_1.y) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr1.y = ((utof(vs_cbuf9[121].y) * (vs_cbuf10_1.y)) * utof(vs_cbuf9[104].x));
+	// 0.5325397  <=>  (({utof(vs_cbuf9[121].z) : 0.484127} * {(vs_cbuf10_1.z) : 1.00}) * {utof(vs_cbuf9[104].x) : 1.10})
+	o.fs_attr1.z = ((utof(vs_cbuf9[121].z) * (vs_cbuf10_1.z)) * utof(vs_cbuf9[104].x));
 	// 0.1631872  <=>  ({pf_9_9 : 0.1631872} * {(vs_cbuf10_1.w) : 1.00})
 	o.fs_attr1.w = (pf_9_9 * (vs_cbuf10_1.w));
 	// 1.00  <=>  1.f
 	o.fs_attr7.x = 1.f;
-	// 25.30763  <=>  (({uni_attr5.y : 25.30763} * {(vs_cbuf9[141].y) : 1.00}) * {(vs_cbuf10_3.z) : 1.00})
-	pf_1_6 = ((uni_attr5.y * (vs_cbuf9[141].y)) * (vs_cbuf10_3.z));
+	// 25.30763  <=>  (({uni_attr5.y : 25.30763} * {utof(vs_cbuf9[141].y) : 1.00}) * {(vs_cbuf10_3.z) : 1.00})
+	pf_1_6 = ((uni_attr5.y * utof(vs_cbuf9[141].y)) * (vs_cbuf10_3.z));
 	// 1.00  <=>  1.f
 	o.fs_attr7.y = 1.f;
 	// 1.00  <=>  1.f
 	o.fs_attr7.z = 1.f;
-	// 20.2461  <=>  (((clamp(min(0.f, {uni_attr6.x : 0.7713}), 0.0, 1.0) + {uni_attr5.x : 20.2461}) * {(vs_cbuf9[141].x) : 1.00}) * {(vs_cbuf10_3.y) : 0.9999999})
-	pf_3_3 = (((clamp(min(0.f, uni_attr6.x), 0.0, 1.0) + uni_attr5.x) * (vs_cbuf9[141].x)) * (vs_cbuf10_3.y));
+	// 20.2461  <=>  (((clamp(min(0.f, {uni_attr6.x : 0.7713}), 0.0, 1.0) + {uni_attr5.x : 20.2461}) * {utof(vs_cbuf9[141].x) : 1.00}) * {(vs_cbuf10_3.y) : 0.9999999})
+	pf_3_3 = (((clamp(min(0.f, uni_attr6.x), 0.0, 1.0) + uni_attr5.x) * utof(vs_cbuf9[141].x)) * (vs_cbuf10_3.y));
 	// 1056653223  <=>  {u_28_phi_32 : 1056653223}
 	u_0_12 = u_28_phi_32;
 	u_0_phi_56 = u_0_12;
-	// False  <=>  if((((((0.f == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! isnan(0.f))) && (! isnan(abs({(vs_cbuf8_28.z) : -0.6398518})))) && (((0.f == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! isnan(0.f))) && (! isnan(abs({(vs_cbuf8_28.x) : -0.57711935}))))) ? true : false))
-	if((((((0.f == abs((vs_cbuf8_28.z))) && (! isnan(0.f))) && (! isnan(abs((vs_cbuf8_28.z))))) && (((0.f == abs((vs_cbuf8_28.x))) && (! isnan(0.f))) && (! isnan(abs((vs_cbuf8_28.x)))))) ? true : false))
+	// False  <=>  if((((((0.f == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! myIsNaN(0.f))) && (! myIsNaN(abs({(vs_cbuf8_28.z) : -0.6398518})))) && (((0.f == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! myIsNaN(0.f))) && (! myIsNaN(abs({(vs_cbuf8_28.x) : -0.57711935}))))) ? true : false))
+	if((((((0.f == abs((vs_cbuf8_28.z))) && (! myIsNaN(0.f))) && (! myIsNaN(abs((vs_cbuf8_28.z))))) && (((0.f == abs((vs_cbuf8_28.x))) && (! myIsNaN(0.f))) && (! myIsNaN(abs((vs_cbuf8_28.x)))))) ? true : false))
 	{
 		// -0.6398518  <=>  {(vs_cbuf8_28.z) : -0.6398518}
 		f_0_48 = (vs_cbuf8_28.z);
-		// 1078530011  <=>  ((((0.f > {f_0_48 : -0.6398518}) && (! isnan(0.f))) && (! isnan({f_0_48 : -0.6398518}))) ? 1078530011u : 0u)
-		u_2_21 = ((((0.f > f_0_48) && (! isnan(0.f))) && (! isnan(f_0_48))) ? 1078530011u : 0u);
+		// 1078530011  <=>  ((((0.f > {f_0_48 : -0.6398518}) && (! myIsNaN(0.f))) && (! myIsNaN({f_0_48 : -0.6398518}))) ? 1078530011u : 0u)
+		u_2_21 = ((((0.f > f_0_48) && (! myIsNaN(0.f))) && (! myIsNaN(f_0_48))) ? 1078530011u : 0u);
 		u_2_phi_57 = u_2_21;
-		// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! isnan(0.f))) && (! isnan({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
-		if(((((0.f > (vs_cbuf8_28.x)) && (! isnan(0.f))) && (! isnan((vs_cbuf8_28.x)))) ? true : false))
+		// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! myIsNaN(0.f))) && (! myIsNaN({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
+		if(((((0.f > (vs_cbuf8_28.x)) && (! myIsNaN(0.f))) && (! myIsNaN((vs_cbuf8_28.x)))) ? true : false))
 		{
-			// 3226013659  <=>  {ftou((0.f - {utof(((((0.f > {f_0_48 : -0.6398518}) && (! isnan(0.f))) && (! isnan({f_0_48 : -0.6398518}))) ? 1078530011u : 0u)) : 3.141593})) : 3226013659}
-			u_2_22 = ftou((0.f - utof(((((0.f > f_0_48) && (! isnan(0.f))) && (! isnan(f_0_48))) ? 1078530011u : 0u))));
+			// 3226013659  <=>  {ftou((0.f - {utof(((((0.f > {f_0_48 : -0.6398518}) && (! myIsNaN(0.f))) && (! myIsNaN({f_0_48 : -0.6398518}))) ? 1078530011u : 0u)) : 3.141593})) : 3226013659}
+			u_2_22 = ftou((0.f - utof(((((0.f > f_0_48) && (! myIsNaN(0.f))) && (! myIsNaN(f_0_48))) ? 1078530011u : 0u))));
 			u_2_phi_57 = u_2_22;
 		}
 		// 3226013659  <=>  {u_2_phi_57 : }
@@ -1603,25 +1603,25 @@ void main()
 	// 1056653223  <=>  {u_0_phi_56 : }
 	u_1_15 = u_0_phi_56;
 	u_1_phi_58 = u_1_15;
-	// True  <=>  if(((! ((((0.f == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! isnan(0.f))) && (! isnan(abs({(vs_cbuf8_28.z) : -0.6398518})))) && (((0.f == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! isnan(0.f))) && (! isnan(abs({(vs_cbuf8_28.x) : -0.57711935})))))) ? true : false))
-	if(((! ((((0.f == abs((vs_cbuf8_28.z))) && (! isnan(0.f))) && (! isnan(abs((vs_cbuf8_28.z))))) && (((0.f == abs((vs_cbuf8_28.x))) && (! isnan(0.f))) && (! isnan(abs((vs_cbuf8_28.x))))))) ? true : false))
+	// True  <=>  if(((! ((((0.f == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! myIsNaN(0.f))) && (! myIsNaN(abs({(vs_cbuf8_28.z) : -0.6398518})))) && (((0.f == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! myIsNaN(0.f))) && (! myIsNaN(abs({(vs_cbuf8_28.x) : -0.57711935})))))) ? true : false))
+	if(((! ((((0.f == abs((vs_cbuf8_28.z))) && (! myIsNaN(0.f))) && (! myIsNaN(abs((vs_cbuf8_28.z))))) && (((0.f == abs((vs_cbuf8_28.x))) && (! myIsNaN(0.f))) && (! myIsNaN(abs((vs_cbuf8_28.x))))))) ? true : false))
 	{
 		// 2139095040  <=>  2139095040u
 		u_2_23 = 2139095040u;
 		u_2_phi_59 = u_2_23;
-		// False  <=>  if(((((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! isnan({utof(0x7f800000) : ∞}))) && (! isnan(abs({(vs_cbuf8_28.z) : -0.6398518})))) && ((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! isnan({utof(0x7f800000) : ∞}))) && (! isnan(abs({(vs_cbuf8_28.x) : -0.57711935}))))) ? true : false))
-		if((((((utof(0x7f800000) == abs((vs_cbuf8_28.z))) && (! isnan(utof(0x7f800000)))) && (! isnan(abs((vs_cbuf8_28.z))))) && (((utof(0x7f800000) == abs((vs_cbuf8_28.x))) && (! isnan(utof(0x7f800000)))) && (! isnan(abs((vs_cbuf8_28.x)))))) ? true : false))
+		// False  <=>  if(((((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! myIsNaN({utof(0x7f800000) : ∞}))) && (! myIsNaN(abs({(vs_cbuf8_28.z) : -0.6398518})))) && ((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! myIsNaN({utof(0x7f800000) : ∞}))) && (! myIsNaN(abs({(vs_cbuf8_28.x) : -0.57711935}))))) ? true : false))
+		if((((((utof(0x7f800000) == abs((vs_cbuf8_28.z))) && (! myIsNaN(utof(0x7f800000)))) && (! myIsNaN(abs((vs_cbuf8_28.z))))) && (((utof(0x7f800000) == abs((vs_cbuf8_28.x))) && (! myIsNaN(utof(0x7f800000)))) && (! myIsNaN(abs((vs_cbuf8_28.x)))))) ? true : false))
 		{
 			// -0.6398518  <=>  {(vs_cbuf8_28.z) : -0.6398518}
 			f_0_56 = (vs_cbuf8_28.z);
-			// 1075235812  <=>  ((((0.f > {f_0_56 : -0.6398518}) && (! isnan(0.f))) && (! isnan({f_0_56 : -0.6398518}))) ? 1075235812u : 1061752795u)
-			u_6_22 = ((((0.f > f_0_56) && (! isnan(0.f))) && (! isnan(f_0_56))) ? 1075235812u : 1061752795u);
+			// 1075235812  <=>  ((((0.f > {f_0_56 : -0.6398518}) && (! myIsNaN(0.f))) && (! myIsNaN({f_0_56 : -0.6398518}))) ? 1075235812u : 1061752795u)
+			u_6_22 = ((((0.f > f_0_56) && (! myIsNaN(0.f))) && (! myIsNaN(f_0_56))) ? 1075235812u : 1061752795u);
 			u_6_phi_60 = u_6_22;
-			// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! isnan(0.f))) && (! isnan({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
-			if(((((0.f > (vs_cbuf8_28.x)) && (! isnan(0.f))) && (! isnan((vs_cbuf8_28.x)))) ? true : false))
+			// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! myIsNaN(0.f))) && (! myIsNaN({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
+			if(((((0.f > (vs_cbuf8_28.x)) && (! myIsNaN(0.f))) && (! myIsNaN((vs_cbuf8_28.x)))) ? true : false))
 			{
-				// 3222719460  <=>  {ftou((0.f - {utof(((((0.f > {f_0_56 : -0.6398518}) && (! isnan(0.f))) && (! isnan({f_0_56 : -0.6398518}))) ? 1075235812u : 1061752795u)) : 2.356194})) : 3222719460}
-				u_6_23 = ftou((0.f - utof(((((0.f > f_0_56) && (! isnan(0.f))) && (! isnan(f_0_56))) ? 1075235812u : 1061752795u))));
+				// 3222719460  <=>  {ftou((0.f - {utof(((((0.f > {f_0_56 : -0.6398518}) && (! myIsNaN(0.f))) && (! myIsNaN({f_0_56 : -0.6398518}))) ? 1075235812u : 1061752795u)) : 2.356194})) : 3222719460}
+				u_6_23 = ftou((0.f - utof(((((0.f > f_0_56) && (! myIsNaN(0.f))) && (! myIsNaN(f_0_56))) ? 1075235812u : 1061752795u))));
 				u_6_phi_60 = u_6_23;
 			}
 			// 3222719460  <=>  {u_6_phi_60 : }
@@ -1631,14 +1631,14 @@ void main()
 		// 2139095040  <=>  {u_2_phi_59 : }
 		u_3_12 = u_2_phi_59;
 		u_3_phi_61 = u_3_12;
-		// True  <=>  if(((! (((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! isnan({utof(0x7f800000) : ∞}))) && (! isnan(abs({(vs_cbuf8_28.z) : -0.6398518})))) && ((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! isnan({utof(0x7f800000) : ∞}))) && (! isnan(abs({(vs_cbuf8_28.x) : -0.57711935})))))) ? true : false))
-		if(((! ((((utof(0x7f800000) == abs((vs_cbuf8_28.z))) && (! isnan(utof(0x7f800000)))) && (! isnan(abs((vs_cbuf8_28.z))))) && (((utof(0x7f800000) == abs((vs_cbuf8_28.x))) && (! isnan(utof(0x7f800000)))) && (! isnan(abs((vs_cbuf8_28.x))))))) ? true : false))
+		// True  <=>  if(((! (((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.z) : -0.6398518})) && (! myIsNaN({utof(0x7f800000) : ∞}))) && (! myIsNaN(abs({(vs_cbuf8_28.z) : -0.6398518})))) && ((({utof(0x7f800000) : ∞} == abs({(vs_cbuf8_28.x) : -0.57711935})) && (! myIsNaN({utof(0x7f800000) : ∞}))) && (! myIsNaN(abs({(vs_cbuf8_28.x) : -0.57711935})))))) ? true : false))
+		if(((! ((((utof(0x7f800000) == abs((vs_cbuf8_28.z))) && (! myIsNaN(utof(0x7f800000)))) && (! myIsNaN(abs((vs_cbuf8_28.z))))) && (((utof(0x7f800000) == abs((vs_cbuf8_28.x))) && (! myIsNaN(utof(0x7f800000)))) && (! myIsNaN(abs((vs_cbuf8_28.x))))))) ? true : false))
 		{
 			// 1059310932  <=>  {ftou(max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))) : 1059310932}
 			u_8_20 = ftou(max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))));
 			u_8_phi_62 = u_8_20;
-			// False  <=>  if(((((max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) >= 16.f) && (! isnan(max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))))) && (! isnan(16.f))) ? true : false))
-			if(((((max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) >= 16.f) && (! isnan(max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z)))))) && (! isnan(16.f))) ? true : false))
+			// False  <=>  if(((((max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) >= 16.f) && (! myIsNaN(max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))))) && (! myIsNaN(16.f))) ? true : false))
+			if(((((max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) >= 16.f) && (! myIsNaN(max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z)))))) && (! myIsNaN(16.f))) ? true : false))
 			{
 				// 1025756500  <=>  {ftou((max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) * 0.0625f)) : 1025756500}
 				u_8_21 = ftou((max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) * 0.0625f));
@@ -1647,8 +1647,8 @@ void main()
 			// 1058258456  <=>  {ftou(min(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))) : 1058258456}
 			u_6_25 = ftou(min(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))));
 			u_6_phi_63 = u_6_25;
-			// False  <=>  if(((((max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) >= 16.f) && (! isnan(max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))))) && (! isnan(16.f))) ? true : false))
-			if(((((max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) >= 16.f) && (! isnan(max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z)))))) && (! isnan(16.f))) ? true : false))
+			// False  <=>  if(((((max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) >= 16.f) && (! myIsNaN(max(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518}))))) && (! myIsNaN(16.f))) ? true : false))
+			if(((((max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) >= 16.f) && (! myIsNaN(max(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z)))))) && (! myIsNaN(16.f))) ? true : false))
 			{
 				// 1024704024  <=>  {ftou((min(abs({(vs_cbuf8_28.x) : -0.57711935}), abs({(vs_cbuf8_28.z) : -0.6398518})) * 0.0625f)) : 1024704024}
 				u_6_26 = ftou((min(abs((vs_cbuf8_28.x)), abs((vs_cbuf8_28.z))) * 0.0625f));
@@ -1659,8 +1659,8 @@ void main()
 			// 1060888727  <=>  {ftou((((1.0f / ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * (({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) + 11.335388f)) + 28.842468f)) + 19.69667f)) * ({pf_15_12 : 0.9019579} * (({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * -0.82336295f) + -5.674867f)) + -6.565555f)))) + {pf_15_12 : 0.9019579})) : 1060888727}
 			u_7_25 = ftou((((1.0f / (((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * ((pf_15_12 * pf_15_12) + 11.335388f)) + 28.842468f)) + 19.69667f)) * (pf_15_12 * ((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * -0.82336295f) + -5.674867f)) + -6.565555f)))) + pf_15_12));
 			u_7_phi_64 = u_7_25;
-			// False  <=>  if(((((abs({(vs_cbuf8_28.x) : -0.57711935}) > abs({(vs_cbuf8_28.z) : -0.6398518})) && (! isnan(abs({(vs_cbuf8_28.x) : -0.57711935})))) && (! isnan(abs({(vs_cbuf8_28.z) : -0.6398518})))) ? true : false))
-			if(((((abs((vs_cbuf8_28.x)) > abs((vs_cbuf8_28.z))) && (! isnan(abs((vs_cbuf8_28.x))))) && (! isnan(abs((vs_cbuf8_28.z))))) ? true : false))
+			// False  <=>  if(((((abs({(vs_cbuf8_28.x) : -0.57711935}) > abs({(vs_cbuf8_28.z) : -0.6398518})) && (! myIsNaN(abs({(vs_cbuf8_28.x) : -0.57711935})))) && (! myIsNaN(abs({(vs_cbuf8_28.z) : -0.6398518})))) ? true : false))
+			if(((((abs((vs_cbuf8_28.x)) > abs((vs_cbuf8_28.z))) && (! myIsNaN(abs((vs_cbuf8_28.x))))) && (! myIsNaN(abs((vs_cbuf8_28.z))))) ? true : false))
 			{
 				// 1062616863  <=>  {ftou(((0.f - (((1.0f / ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * (({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) + 11.335388f)) + 28.842468f)) + 19.69667f)) * ({pf_15_12 : 0.9019579} * (({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * ((({pf_15_12 : 0.9019579} * {pf_15_12 : 0.9019579}) * -0.82336295f) + -5.674867f)) + -6.565555f)))) + {pf_15_12 : 0.9019579})) + 1.5707964f)) : 1062616863}
 				u_7_26 = ftou(((0.f - (((1.0f / (((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * ((pf_15_12 * pf_15_12) + 11.335388f)) + 28.842468f)) + 19.69667f)) * (pf_15_12 * ((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * (((pf_15_12 * pf_15_12) * -0.82336295f) + -5.674867f)) + -6.565555f)))) + pf_15_12)) + 1.5707964f));
@@ -1669,8 +1669,8 @@ void main()
 			// 1060888727  <=>  {u_7_phi_64 : }
 			u_6_28 = u_7_phi_64;
 			u_6_phi_65 = u_6_28;
-			// True  <=>  if(((((0.f > {(vs_cbuf8_28.z) : -0.6398518}) && (! isnan(0.f))) && (! isnan({(vs_cbuf8_28.z) : -0.6398518}))) ? true : false))
-			if(((((0.f > (vs_cbuf8_28.z)) && (! isnan(0.f))) && (! isnan((vs_cbuf8_28.z)))) ? true : false))
+			// True  <=>  if(((((0.f > {(vs_cbuf8_28.z) : -0.6398518}) && (! myIsNaN(0.f))) && (! myIsNaN({(vs_cbuf8_28.z) : -0.6398518}))) ? true : false))
+			if(((((0.f > (vs_cbuf8_28.z)) && (! myIsNaN(0.f))) && (! myIsNaN((vs_cbuf8_28.z)))) ? true : false))
 			{
 				// 1075451829  <=>  {ftou(((0.f - {utof(u_7_phi_64) : 0.7338957}) + 3.1415927f)) : 1075451829}
 				u_6_29 = ftou(((0.f - utof(u_7_phi_64)) + 3.1415927f));
@@ -1679,8 +1679,8 @@ void main()
 			// 1075451829  <=>  {u_6_phi_65 : }
 			u_7_27 = u_6_phi_65;
 			u_7_phi_66 = u_7_27;
-			// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! isnan(0.f))) && (! isnan({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
-			if(((((0.f > (vs_cbuf8_28.x)) && (! isnan(0.f))) && (! isnan((vs_cbuf8_28.x)))) ? true : false))
+			// True  <=>  if(((((0.f > {(vs_cbuf8_28.x) : -0.57711935}) && (! myIsNaN(0.f))) && (! myIsNaN({(vs_cbuf8_28.x) : -0.57711935}))) ? true : false))
+			if(((((0.f > (vs_cbuf8_28.x)) && (! myIsNaN(0.f))) && (! myIsNaN((vs_cbuf8_28.x)))) ? true : false))
 			{
 				// 3222935477  <=>  {ftou((0.f - {utof(u_6_phi_65) : 2.407697})) : 3222935477}
 				u_7_28 = ftou((0.f - utof(u_6_phi_65)));
@@ -1694,8 +1694,8 @@ void main()
 		u_1_16 = u_3_phi_61;
 		u_1_phi_58 = u_1_16;
 	}
-	// -2.407697  <=>  ((({pf_19_4 : 0} * {utof(u_9_phi_34) : 221.00}) + (({f_4_3 : 0.15253} + -0.5f) * {(vs_cbuf9[194].y) : 0})) + {utof(u_1_phi_58) : -2.407697})
-	pf_12_7 = (((pf_19_4 * utof(u_9_phi_34)) + ((f_4_3 + -0.5f) * (vs_cbuf9[194].y))) + utof(u_1_phi_58));
+	// -2.407697  <=>  ((({pf_19_4 : 0} * {utof(u_9_phi_34) : 221.00}) + (({f_4_3 : 0.15253} + -0.5f) * {utof(vs_cbuf9[194].y) : 0})) + {utof(u_1_phi_58) : -2.407697})
+	pf_12_7 = (((pf_19_4 * utof(u_9_phi_34)) + ((f_4_3 + -0.5f) * utof(vs_cbuf9[194].y))) + utof(u_1_phi_58));
 	// 1.00  <=>  cos({pf_11_11 : 0})
 	f_3_56 = cos(pf_11_11);
 	// -0.66976756  <=>  sin({pf_12_7 : -2.407697})
@@ -1704,14 +1704,14 @@ void main()
 	f_8_11 = sin(pf_13_8);
 	// -0  <=>  (sin({pf_11_11 : 0}) * {f_6_49 : -0.66976756})
 	pf_13_9 = (sin(pf_11_11) * f_6_49);
-	// -0.46293998  <=>  ((((((({uni_attr5.z : 20.2461} * {(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})) + (0.f - (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))))) + ((({pf_3_3 : 20.2461} * ((0.5f * {(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00})) + {pf_13_9 : -0})) + (({pf_1_6 : 25.30763} * ((0.5f * {(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * ({f_3_56 : 1.00} * cos({pf_13_8 : 0}))))) + (((0.f - abs({(vs_cbuf8_28.y) : 0.5074672})) * {(vs_cbuf13_6.w) : 0}) + {(vs_cbuf13_6.w) : 0})) * (1.0f / {pf_1_6 : 25.30763}))
-	pf_16_15 = (((((((uni_attr5.z * (vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * (vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * (f_3_56 * f_6_49)) + (0.f - (cos(pf_12_7) * sin(pf_11_11))))) + (((pf_3_3 * ((0.5f * (vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * f_3_56)) + pf_13_9)) + ((pf_1_6 * ((0.5f * (vs_cbuf9[16].y)) + v.vertex.y)) * (f_3_56 * cos(pf_13_8))))) + (((0.f - abs((vs_cbuf8_28.y))) * (vs_cbuf13_6.w)) + (vs_cbuf13_6.w))) * (1.0f / pf_1_6));
-	// -1872.9534  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.x) : 0.7282469})) + (((({uni_attr3.z : -68.91116} * {uni_attr8.z : -0.66988}) + (({uni_attr3.y : -19.03992} * {uni_attr8.y : 0}) + ({uni_attr3.x : -4.98609} * {uni_attr8.x : -0.74247}))) + {uni_attr8.w : -1919.2635}) + ((((({uni_attr5.z : 20.2461} * {(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (cos({pf_13_8 : 0}) * {f_6_49 : -0.66976756})) + ((({pf_3_3 : 20.2461} * ((0.5f * {(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (cos({pf_12_7 : -2.407697}) * cos({pf_13_8 : 0}))) + (({pf_1_6 : 25.30763} * ((0.5f * {(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * (0.f - {f_8_11 : 0}))))))
-	pf_16_18 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.x))) + ((((uni_attr3.z * uni_attr8.z) + ((uni_attr3.y * uni_attr8.y) + (uni_attr3.x * uni_attr8.x))) + uni_attr8.w) + (((((uni_attr5.z * (vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * (vs_cbuf9[16].z)) + v.vertex.z)) * (cos(pf_13_8) * f_6_49)) + (((pf_3_3 * ((0.5f * (vs_cbuf9[16].x)) + v.vertex.x)) * (cos(pf_12_7) * cos(pf_13_8))) + ((pf_1_6 * ((0.5f * (vs_cbuf9[16].y)) + v.vertex.y)) * (0.f - f_8_11))))));
-	// 334.9802  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.y) : 0})) + (((({uni_attr3.z : -68.91116} * {uni_attr9.z : 0}) + (({uni_attr3.y : -19.03992} * {uni_attr9.y : 1.00}) + ({uni_attr3.x : -4.98609} * {uni_attr9.x : 0}))) + {uni_attr9.w : 365.736}) + ((((({uni_attr5.z : 20.2461} * {(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})) + (0.f - (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))))) + ((({pf_3_3 : 20.2461} * ((0.5f * {(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00})) + {pf_13_9 : -0})) + (({pf_1_6 : 25.30763} * ((0.5f * {(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * ({f_3_56 : 1.00} * cos({pf_13_8 : 0})))))))
-	pf_17_17 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.y))) + ((((uni_attr3.z * uni_attr9.z) + ((uni_attr3.y * uni_attr9.y) + (uni_attr3.x * uni_attr9.x))) + uni_attr9.w) + (((((uni_attr5.z * (vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * (vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * (f_3_56 * f_6_49)) + (0.f - (cos(pf_12_7) * sin(pf_11_11))))) + (((pf_3_3 * ((0.5f * (vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * f_3_56)) + pf_13_9)) + ((pf_1_6 * ((0.5f * (vs_cbuf9[16].y)) + v.vertex.y)) * (f_3_56 * cos(pf_13_8)))))));
-	// -3689.2463  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.z) : 0.685315})) + (((({uni_attr3.z : -68.91116} * {uni_attr10.z : -0.74247}) + (({uni_attr3.y : -19.03992} * {uni_attr10.y : 0}) + ({uni_attr3.x : -4.98609} * {uni_attr10.x : 0.66988}))) + {uni_attr10.w : -3733.0469}) + ((((({uni_attr5.z : 20.2461} * {(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * {pf_13_9 : -0}) + (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00}))) + ((({pf_3_3 : 20.2461} * ((0.5f * {(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))) + (0.f - ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})))) + (({pf_1_6 : 25.30763} * ((0.5f * {(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * (sin({pf_11_11 : 0}) * cos({pf_13_8 : 0})))))))
-	pf_2_7 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.z))) + ((((uni_attr3.z * uni_attr10.z) + ((uni_attr3.y * uni_attr10.y) + (uni_attr3.x * uni_attr10.x))) + uni_attr10.w) + (((((uni_attr5.z * (vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * (vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * pf_13_9) + (cos(pf_12_7) * f_3_56))) + (((pf_3_3 * ((0.5f * (vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * sin(pf_11_11))) + (0.f - (f_3_56 * f_6_49)))) + ((pf_1_6 * ((0.5f * (vs_cbuf9[16].y)) + v.vertex.y)) * (sin(pf_11_11) * cos(pf_13_8)))))));
+	// -0.46293998  <=>  ((((((({uni_attr5.z : 20.2461} * {utof(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {utof(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})) + (0.f - (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))))) + ((({pf_3_3 : 20.2461} * ((0.5f * {utof(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00})) + {pf_13_9 : -0})) + (({pf_1_6 : 25.30763} * ((0.5f * {utof(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * ({f_3_56 : 1.00} * cos({pf_13_8 : 0}))))) + (((0.f - abs({(vs_cbuf8_28.y) : 0.5074672})) * {(vs_cbuf13_6.w) : 0}) + {(vs_cbuf13_6.w) : 0})) * (1.0f / {pf_1_6 : 25.30763}))
+	pf_16_15 = (((((((uni_attr5.z * utof(vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * utof(vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * (f_3_56 * f_6_49)) + (0.f - (cos(pf_12_7) * sin(pf_11_11))))) + (((pf_3_3 * ((0.5f * utof(vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * f_3_56)) + pf_13_9)) + ((pf_1_6 * ((0.5f * utof(vs_cbuf9[16].y)) + v.vertex.y)) * (f_3_56 * cos(pf_13_8))))) + (((0.f - abs((vs_cbuf8_28.y))) * (vs_cbuf13_6.w)) + (vs_cbuf13_6.w))) * (1.0f / pf_1_6));
+	// -1872.9534  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.x) : 0.7282469})) + (((({uni_attr3.z : -68.91116} * {uni_attr8.z : -0.66988}) + (({uni_attr3.y : -19.03992} * {uni_attr8.y : 0}) + ({uni_attr3.x : -4.98609} * {uni_attr8.x : -0.74247}))) + {uni_attr8.w : -1919.2635}) + ((((({uni_attr5.z : 20.2461} * {utof(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {utof(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (cos({pf_13_8 : 0}) * {f_6_49 : -0.66976756})) + ((({pf_3_3 : 20.2461} * ((0.5f * {utof(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (cos({pf_12_7 : -2.407697}) * cos({pf_13_8 : 0}))) + (({pf_1_6 : 25.30763} * ((0.5f * {utof(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * (0.f - {f_8_11 : 0}))))))
+	pf_16_18 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.x))) + ((((uni_attr3.z * uni_attr8.z) + ((uni_attr3.y * uni_attr8.y) + (uni_attr3.x * uni_attr8.x))) + uni_attr8.w) + (((((uni_attr5.z * utof(vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * utof(vs_cbuf9[16].z)) + v.vertex.z)) * (cos(pf_13_8) * f_6_49)) + (((pf_3_3 * ((0.5f * utof(vs_cbuf9[16].x)) + v.vertex.x)) * (cos(pf_12_7) * cos(pf_13_8))) + ((pf_1_6 * ((0.5f * utof(vs_cbuf9[16].y)) + v.vertex.y)) * (0.f - f_8_11))))));
+	// 334.9802  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.y) : 0})) + (((({uni_attr3.z : -68.91116} * {uni_attr9.z : 0}) + (({uni_attr3.y : -19.03992} * {uni_attr9.y : 1.00}) + ({uni_attr3.x : -4.98609} * {uni_attr9.x : 0}))) + {uni_attr9.w : 365.736}) + ((((({uni_attr5.z : 20.2461} * {utof(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {utof(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})) + (0.f - (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))))) + ((({pf_3_3 : 20.2461} * ((0.5f * {utof(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00})) + {pf_13_9 : -0})) + (({pf_1_6 : 25.30763} * ((0.5f * {utof(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * ({f_3_56 : 1.00} * cos({pf_13_8 : 0})))))))
+	pf_17_17 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.y))) + ((((uni_attr3.z * uni_attr9.z) + ((uni_attr3.y * uni_attr9.y) + (uni_attr3.x * uni_attr9.x))) + uni_attr9.w) + (((((uni_attr5.z * utof(vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * utof(vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * (f_3_56 * f_6_49)) + (0.f - (cos(pf_12_7) * sin(pf_11_11))))) + (((pf_3_3 * ((0.5f * utof(vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * f_3_56)) + pf_13_9)) + ((pf_1_6 * ((0.5f * utof(vs_cbuf9[16].y)) + v.vertex.y)) * (f_3_56 * cos(pf_13_8)))))));
+	// -3689.2463  <=>  (({pf_3_3 : 20.2461} * (((({pf_16_15 : -0.46293998} * {(vs_cbuf16_1.w) : 1.479783}) * abs({pf_16_15 : -0.46293998})) * {(vs_cbuf13_2.y) : 0.50}) * {(vs_cbuf16_1.z) : 0.685315})) + (((({uni_attr3.z : -68.91116} * {uni_attr10.z : -0.74247}) + (({uni_attr3.y : -19.03992} * {uni_attr10.y : 0}) + ({uni_attr3.x : -4.98609} * {uni_attr10.x : 0.66988}))) + {uni_attr10.w : -3733.0469}) + ((((({uni_attr5.z : 20.2461} * {utof(vs_cbuf9[141].z) : 1.00}) * {(vs_cbuf10_3.w) : 0.9999999}) * ((0.5f * {utof(vs_cbuf9[16].z) : 0}) + {v.vertex.z : 0.10712})) * (({f_8_11 : 0} * {pf_13_9 : -0}) + (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00}))) + ((({pf_3_3 : 20.2461} * ((0.5f * {utof(vs_cbuf9[16].x) : 0}) + {v.vertex.x : -0.01573})) * (({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0}))) + (0.f - ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})))) + (({pf_1_6 : 25.30763} * ((0.5f * {utof(vs_cbuf9[16].y) : -0.15}) + {v.vertex.y : -0.38794})) * (sin({pf_11_11 : 0}) * cos({pf_13_8 : 0})))))))
+	pf_2_7 = ((pf_3_3 * ((((pf_16_15 * (vs_cbuf16_1.w)) * abs(pf_16_15)) * (vs_cbuf13_2.y)) * (vs_cbuf16_1.z))) + ((((uni_attr3.z * uni_attr10.z) + ((uni_attr3.y * uni_attr10.y) + (uni_attr3.x * uni_attr10.x))) + uni_attr10.w) + (((((uni_attr5.z * utof(vs_cbuf9[141].z)) * (vs_cbuf10_3.w)) * ((0.5f * utof(vs_cbuf9[16].z)) + v.vertex.z)) * ((f_8_11 * pf_13_9) + (cos(pf_12_7) * f_3_56))) + (((pf_3_3 * ((0.5f * utof(vs_cbuf9[16].x)) + v.vertex.x)) * ((f_8_11 * (cos(pf_12_7) * sin(pf_11_11))) + (0.f - (f_3_56 * f_6_49)))) + ((pf_1_6 * ((0.5f * utof(vs_cbuf9[16].y)) + v.vertex.y)) * (sin(pf_11_11) * cos(pf_13_8)))))));
 	// -5.0511475  <=>  ((({pf_2_7 : -3689.2463} * {(view_proj[0].z) : 0.6697676}) + (({pf_17_17 : 334.9802} * {(view_proj[0].y) : 1.493044E-08}) + ({pf_16_18 : -1872.9534} * {(view_proj[0].x) : -0.7425708}))) + {(view_proj[0].w) : 1075.086})
 	pf_15_25 = (((pf_2_7 * (view_proj[0].z)) + ((pf_17_17 * (view_proj[0].y)) + (pf_16_18 * (view_proj[0].x)))) + (view_proj[0].w));
 	// 5.742188  <=>  ((({pf_2_7 : -3689.2463} * {(view_proj[1].z) : 0.3768303}) + (({pf_17_17 : 334.9802} * {(view_proj[1].y) : 0.8616711}) + ({pf_16_18 : -1872.9534} * {(view_proj[1].x) : 0.339885}))) + {(view_proj[1].w) : 1743.908})
@@ -1735,8 +1735,8 @@ void main()
 	// 3303677570  <=>  {ftou(pf_16_18) : 3303677570}
 	u_3_14 = ftou(pf_16_18);
 	u_3_phi_67 = u_3_14;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// 1131613168  <=>  {ftou(({pf_16_18 : -1872.9534} + (0.f - {(vs_cbuf15_52.x) : -2116}))) : 1131613168}
 		u_3_15 = ftou((pf_16_18 + (0.f - (vs_cbuf15_52.x))));
@@ -1745,8 +1745,8 @@ void main()
 	// 0  <=>  {u_24_16 : 0}
 	u_1_18 = u_24_16;
 	u_1_phi_68 = u_1_18;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// 3231045142  <=>  {ftou(({utof(u_3_phi_67) : -1872.9534} * {(vs_cbuf15_52.z) : 0.0025})) : 3231045142}
 		u_1_19 = ftou((utof(u_3_phi_67) * (vs_cbuf15_52.z)));
@@ -1757,8 +1757,8 @@ void main()
 	// 3311834097  <=>  {ftou(pf_2_7) : 3311834097}
 	u_3_17 = ftou(pf_2_7);
 	u_3_phi_69 = u_3_17;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// 1131593968  <=>  {ftou(({pf_2_7 : -3689.2463} + (0.f - {(vs_cbuf15_52.y) : -3932}))) : 1131593968}
 		u_3_18 = ftou((pf_2_7 + (0.f - (vs_cbuf15_52.y))));
@@ -1767,8 +1767,8 @@ void main()
 	// 0  <=>  {ftou(pf_13_8) : 0}
 	u_2_26 = ftou(pf_13_8);
 	u_2_phi_70 = u_2_26;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// 3239285218  <=>  {ftou(({utof(u_3_phi_69) : -3689.2463} * {(vs_cbuf15_52.z) : 0.0025})) : 3239285218}
 		u_2_27 = ftou((utof(u_3_phi_69) * (vs_cbuf15_52.z)));
@@ -1787,8 +1787,8 @@ void main()
 	// 0  <=>  {u_1_phi_68 : }
 	u_0_15 = u_1_phi_68;
 	u_0_phi_71 = u_0_15;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// float4(0.50,0.50,0.50,1.00)  <=>  textureLod({tex1 : tex1}, float2({utof(u_1_phi_68) : 0}, {utof(u_2_phi_70) : 0}), 0.0, s_linear_clamp_sampler)
 		f4_0_1 = textureLod(tex1, float2(utof(u_1_phi_68), utof(u_2_phi_70)), 0.0, s_linear_clamp_sampler);
@@ -1820,33 +1820,33 @@ void main()
 	o.fs_attr4.w = (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28))));
 	// 1.00  <=>  1.f
 	o.fs_attr9.x = 1.f;
-	// -0.22446394  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {(vs_cbuf9[79].y) : 0}) + ((((({pf_0_1 : 221.00} * {(vs_cbuf9[80].z) : 0}) + (({utof(u_38_phi_39) : 0.15253} * {(vs_cbuf9[81].z) : 0}) + ({(vs_cbuf9[81].z) : 0} + {(vs_cbuf9[81].x) : 0.80}))) * (({pf_29_1 : 1.00} * {utof(u_28_phi_32) : 0.49072}) + -0.5f)) + (({pf_29_1 : 1.00} * float(int({u_0_9 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {(vs_cbuf9[79].x) : 0.0001})) + (0.f - ((({utof(u_36_phi_39) : 0.15253} * {(vs_cbuf9[80].x) : 1.00}) * -2.f) + ({(vs_cbuf9[80].x) : 1.00} + {(vs_cbuf9[79].z) : 0})))))) + 0.5f))
-	o.fs_attr2.z = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * (vs_cbuf9[79].y)) + (((((pf_0_1 * (vs_cbuf9[80].z)) + ((utof(u_38_phi_39) * (vs_cbuf9[81].z)) + ((vs_cbuf9[81].z) + (vs_cbuf9[81].x)))) * ((pf_29_1 * utof(u_28_phi_32)) + -0.5f)) + ((pf_29_1 * float(int(u_0_9))) + ((pf_0_1 * (0.f - (vs_cbuf9[79].x))) + (0.f - (((utof(u_36_phi_39) * (vs_cbuf9[80].x)) * -2.f) + ((vs_cbuf9[80].x) + (vs_cbuf9[79].z))))))) + 0.5f));
-	// 1.884697  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {(vs_cbuf9[74].y) : -0.0001}) + ((((({pf_27_5 : 1.00} * {utof(u_14_phi_17) : 0.49072}) + -0.5f) * (({pf_0_1 : 221.00} * {(vs_cbuf9[75].z) : 0}) + (({uni_attr6.x : 0.7713} * {(vs_cbuf9[76].z) : 0.05}) + ({(vs_cbuf9[76].x) : 1.60} + {(vs_cbuf9[76].z) : 0.05})))) + (({pf_27_5 : 1.00} * float(int({u_1_9 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {(vs_cbuf9[74].x) : 0})) + (0.f - ((({uni_attr6.x : 0.7713} * {(vs_cbuf9[75].x) : 1.00}) * -2.f) + ({(vs_cbuf9[75].x) : 1.00} + {(vs_cbuf9[74].z) : 0})))))) + 0.5f))
-	o.fs_attr2.x = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * (vs_cbuf9[74].y)) + (((((pf_27_5 * utof(u_14_phi_17)) + -0.5f) * ((pf_0_1 * (vs_cbuf9[75].z)) + ((uni_attr6.x * (vs_cbuf9[76].z)) + ((vs_cbuf9[76].x) + (vs_cbuf9[76].z))))) + ((pf_27_5 * float(int(u_1_9))) + ((pf_0_1 * (0.f - (vs_cbuf9[74].x))) + (0.f - (((uni_attr6.x * (vs_cbuf9[75].x)) * -2.f) + ((vs_cbuf9[75].x) + (vs_cbuf9[74].z))))))) + 0.5f));
-	// 0.9419776  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {(vs_cbuf9[84].y) : 0}) + ((((((({pf_24_8 : 1.00} * {utof(u_27_phi_33) : 0.49072}) + -0.5f) * cos({f_0_26 : -7.241559})) + (0.f - ((({pf_22_14 : 1.00} * {utof(u_25_phi_31) : 0.99756}) + -0.5f) * sin({f_0_26 : -7.241559})))) * (({pf_0_1 : 221.00} * {(vs_cbuf9[85].z) : 0}) + (({utof(u_47_phi_50) : 0.7713} * {(vs_cbuf9[86].z) : 0}) + ({(vs_cbuf9[86].z) : 0} + {(vs_cbuf9[86].x) : 1.10})))) + (({pf_24_8 : 1.00} * float(int({u_0_7 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {(vs_cbuf9[84].x) : 0})) + (0.f - ((({utof(u_43_phi_50) : 0.11625} * {(vs_cbuf9[85].x) : 0}) * -2.f) + ({(vs_cbuf9[85].x) : 0} + {(vs_cbuf9[84].z) : 0})))))) + 0.5f))
-	o.fs_attr3.x = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * (vs_cbuf9[84].y)) + (((((((pf_24_8 * utof(u_27_phi_33)) + -0.5f) * cos(f_0_26)) + (0.f - (((pf_22_14 * utof(u_25_phi_31)) + -0.5f) * sin(f_0_26)))) * ((pf_0_1 * (vs_cbuf9[85].z)) + ((utof(u_47_phi_50) * (vs_cbuf9[86].z)) + ((vs_cbuf9[86].z) + (vs_cbuf9[86].x))))) + ((pf_24_8 * float(int(u_0_7))) + ((pf_0_1 * (0.f - (vs_cbuf9[84].x))) + (0.f - (((utof(u_43_phi_50) * (vs_cbuf9[85].x)) * -2.f) + ((vs_cbuf9[85].x) + (vs_cbuf9[84].z))))))) + 0.5f));
+	// -0.22446394  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {utof(vs_cbuf9[79].y) : 0}) + ((((({pf_0_1 : 221.00} * {utof(vs_cbuf9[80].z) : 0}) + (({utof(u_38_phi_39) : 0.15253} * {utof(vs_cbuf9[81].z) : 0}) + ({utof(vs_cbuf9[81].z) : 0} + {utof(vs_cbuf9[81].x) : 0.80}))) * (({pf_29_1 : 1.00} * {utof(u_28_phi_32) : 0.49072}) + -0.5f)) + (({pf_29_1 : 1.00} * float(int({u_0_9 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {utof(vs_cbuf9[79].x) : 0.0001})) + (0.f - ((({utof(u_36_phi_39) : 0.15253} * {utof(vs_cbuf9[80].x) : 1.00}) * -2.f) + ({utof(vs_cbuf9[80].x) : 1.00} + {utof(vs_cbuf9[79].z) : 0})))))) + 0.5f))
+	o.fs_attr2.z = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[79].y)) + (((((pf_0_1 * utof(vs_cbuf9[80].z)) + ((utof(u_38_phi_39) * utof(vs_cbuf9[81].z)) + (utof(vs_cbuf9[81].z) + utof(vs_cbuf9[81].x)))) * ((pf_29_1 * utof(u_28_phi_32)) + -0.5f)) + ((pf_29_1 * float(int(u_0_9))) + ((pf_0_1 * (0.f - utof(vs_cbuf9[79].x))) + (0.f - (((utof(u_36_phi_39) * utof(vs_cbuf9[80].x)) * -2.f) + (utof(vs_cbuf9[80].x) + utof(vs_cbuf9[79].z))))))) + 0.5f));
+	// 1.884697  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {utof(vs_cbuf9[74].y) : -0.0001}) + ((((({pf_27_5 : 1.00} * {utof(u_14_phi_17) : 0.49072}) + -0.5f) * (({pf_0_1 : 221.00} * {utof(vs_cbuf9[75].z) : 0}) + (({uni_attr6.x : 0.7713} * {utof(vs_cbuf9[76].z) : 0.05}) + ({utof(vs_cbuf9[76].x) : 1.60} + {utof(vs_cbuf9[76].z) : 0.05})))) + (({pf_27_5 : 1.00} * float(int({u_1_9 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {utof(vs_cbuf9[74].x) : 0})) + (0.f - ((({uni_attr6.x : 0.7713} * {utof(vs_cbuf9[75].x) : 1.00}) * -2.f) + ({utof(vs_cbuf9[75].x) : 1.00} + {utof(vs_cbuf9[74].z) : 0})))))) + 0.5f))
+	o.fs_attr2.x = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[74].y)) + (((((pf_27_5 * utof(u_14_phi_17)) + -0.5f) * ((pf_0_1 * utof(vs_cbuf9[75].z)) + ((uni_attr6.x * utof(vs_cbuf9[76].z)) + (utof(vs_cbuf9[76].x) + utof(vs_cbuf9[76].z))))) + ((pf_27_5 * float(int(u_1_9))) + ((pf_0_1 * (0.f - utof(vs_cbuf9[74].x))) + (0.f - (((uni_attr6.x * utof(vs_cbuf9[75].x)) * -2.f) + (utof(vs_cbuf9[75].x) + utof(vs_cbuf9[74].z))))))) + 0.5f));
+	// 0.9419779  <=>  ((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.z) : -53.610455}) * {utof(vs_cbuf9[84].y) : 0}) + ((((((({pf_24_8 : 1.00} * {utof(u_27_phi_33) : 0.49072}) + -0.5f) * cos({f_0_26 : -7.24156})) + (0.f - ((({pf_22_14 : 1.00} * {utof(u_25_phi_31) : 0.99756}) + -0.5f) * sin({f_0_26 : -7.24156})))) * (({pf_0_1 : 221.00} * {utof(vs_cbuf9[85].z) : 0}) + (({utof(u_47_phi_50) : 0.7713} * {utof(vs_cbuf9[86].z) : 0}) + ({utof(vs_cbuf9[86].z) : 0} + {utof(vs_cbuf9[86].x) : 1.10})))) + (({pf_24_8 : 1.00} * float(int({u_0_7 : 0}))) + (({pf_0_1 : 221.00} * (0.f - {utof(vs_cbuf9[84].x) : 0})) + (0.f - ((({utof(u_43_phi_50) : 0.11625} * {utof(vs_cbuf9[85].x) : 0}) * -2.f) + ({utof(vs_cbuf9[85].x) : 0} + {utof(vs_cbuf9[84].z) : 0})))))) + 0.5f))
+	o.fs_attr3.x = ((((vs_cbuf13_2.w) * (vs_cbuf16_0.z)) * utof(vs_cbuf9[84].y)) + (((((((pf_24_8 * utof(u_27_phi_33)) + -0.5f) * cos(f_0_26)) + (0.f - (((pf_22_14 * utof(u_25_phi_31)) + -0.5f) * sin(f_0_26)))) * ((pf_0_1 * utof(vs_cbuf9[85].z)) + ((utof(u_47_phi_50) * utof(vs_cbuf9[86].z)) + (utof(vs_cbuf9[86].z) + utof(vs_cbuf9[86].x))))) + ((pf_24_8 * float(int(u_0_7))) + ((pf_0_1 * (0.f - utof(vs_cbuf9[84].x))) + (0.f - (((utof(u_43_phi_50) * utof(vs_cbuf9[85].x)) * -2.f) + (utof(vs_cbuf9[85].x) + utof(vs_cbuf9[84].z))))))) + 0.5f));
 	// 1039957880  <=>  {ftou(v.offset.y) : 1039957880}
 	u_14_5 = ftou(v.offset.y);
 	u_14_phi_72 = u_14_5;
-	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! isnan({v.vertex.z : 0.10712}))) && (! isnan(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! isnan({v.vertex.x : -0.01573}))) && (! isnan(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! isnan({v.vertex.y : -0.38794}))) && (! isnan(0.f)))))) ? true : false))
-	if(((! ((((v.vertex.z == 0.f) && (! isnan(v.vertex.z))) && (! isnan(0.f))) && ((((v.vertex.x == 0.f) && (! isnan(v.vertex.x))) && (! isnan(0.f))) && (((v.vertex.y == 0.f) && (! isnan(v.vertex.y))) && (! isnan(0.f)))))) ? true : false))
+	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! myIsNaN({v.vertex.z : 0.10712}))) && (! myIsNaN(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! myIsNaN({v.vertex.x : -0.01573}))) && (! myIsNaN(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! myIsNaN({v.vertex.y : -0.38794}))) && (! myIsNaN(0.f)))))) ? true : false))
+	if(((! ((((v.vertex.z == 0.f) && (! myIsNaN(v.vertex.z))) && (! myIsNaN(0.f))) && ((((v.vertex.x == 0.f) && (! myIsNaN(v.vertex.x))) && (! myIsNaN(0.f))) && (((v.vertex.y == 0.f) && (! myIsNaN(v.vertex.y))) && (! myIsNaN(0.f)))))) ? true : false))
 	{
 		// 1039957880  <=>  {ftou((({v.vertex.y : -0.38794} * {(vs_cbuf13_0.x) : 0}) + {v.offset.y : 0.12329})) : 1039957880}
 		u_14_6 = ftou(((v.vertex.y * (vs_cbuf13_0.x)) + v.offset.y));
 		u_14_phi_72 = u_14_6;
 	}
-	// 0.99756  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {(vs_cbuf9[79].y) : 0}) + ((((({pf_0_1 : 221.00} * {(vs_cbuf9[80].w) : 0}) + (({utof(u_37_phi_39) : 0.11625} * {(vs_cbuf9[81].w) : 0}) + ({(vs_cbuf9[81].w) : 0} + {(vs_cbuf9[81].y) : 1.00}))) * ((((1.0f / {(vs_cbuf9[83].w) : 1.00}) * {(vs_cbuf9[83].y) : 1.00}) * {utof(u_22_phi_30) : 0.99756}) + -0.5f)) + {f_0_40 : 0}) + 0.5f))
-	o.fs_attr2.w = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * (vs_cbuf9[79].y)) + (((((pf_0_1 * (vs_cbuf9[80].w)) + ((utof(u_37_phi_39) * (vs_cbuf9[81].w)) + ((vs_cbuf9[81].w) + (vs_cbuf9[81].y)))) * ((((1.0f / (vs_cbuf9[83].w)) * (vs_cbuf9[83].y)) * utof(u_22_phi_30)) + -0.5f)) + f_0_40) + 0.5f));
-	// 4.632787  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {(vs_cbuf9[74].y) : -0.0001}) + ((((({pf_0_1 : 221.00} * {(vs_cbuf9[75].w) : 0}) + (({f_4_3 : 0.15253} * {(vs_cbuf9[76].w) : 0.05}) + ({(vs_cbuf9[76].w) : 0.05} + {(vs_cbuf9[76].y) : 0.96}))) * ((((1.0f / {(vs_cbuf9[78].w) : 1.00}) * {(vs_cbuf9[78].y) : 1.00}) * {utof(u_16_phi_26) : 0.99756}) + -0.5f)) + {f_0_39 : -0.67284}) + 0.5f))
-	o.fs_attr2.y = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * (vs_cbuf9[74].y)) + (((((pf_0_1 * (vs_cbuf9[75].w)) + ((f_4_3 * (vs_cbuf9[76].w)) + ((vs_cbuf9[76].w) + (vs_cbuf9[76].y)))) * ((((1.0f / (vs_cbuf9[78].w)) * (vs_cbuf9[78].y)) * utof(u_16_phi_26)) + -0.5f)) + f_0_39) + 0.5f));
-	// 0.8229782  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {(vs_cbuf9[84].y) : 0}) + ((((((({pf_24_8 : 1.00} * {utof(u_27_phi_33) : 0.49072}) + -0.5f) * sin({f_0_26 : -7.241559})) + (cos({f_0_26 : -7.241559}) * (({pf_22_14 : 1.00} * {utof(u_25_phi_31) : 0.99756}) + -0.5f))) * (({pf_0_1 : 221.00} * {(vs_cbuf9[85].w) : 0}) + (({utof(u_45_phi_50) : 0.15253} * {(vs_cbuf9[86].w) : 0}) + ({(vs_cbuf9[86].y) : 1.10} + {(vs_cbuf9[86].w) : 0})))) + {f_0_41 : 0}) + 0.5f))
-	o.fs_attr3.y = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * (vs_cbuf9[84].y)) + (((((((pf_24_8 * utof(u_27_phi_33)) + -0.5f) * sin(f_0_26)) + (cos(f_0_26) * ((pf_22_14 * utof(u_25_phi_31)) + -0.5f))) * ((pf_0_1 * (vs_cbuf9[85].w)) + ((utof(u_45_phi_50) * (vs_cbuf9[86].w)) + ((vs_cbuf9[86].y) + (vs_cbuf9[86].w))))) + f_0_41) + 0.5f));
+	// 0.99756  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[79].y) : 0}) + ((((({pf_0_1 : 221.00} * {utof(vs_cbuf9[80].w) : 0}) + (({utof(u_37_phi_39) : 0.11625} * {utof(vs_cbuf9[81].w) : 0}) + ({utof(vs_cbuf9[81].w) : 0} + {utof(vs_cbuf9[81].y) : 1.00}))) * ((((1.0f / {utof(vs_cbuf9[83].w) : 1.00}) * {utof(vs_cbuf9[83].y) : 1.00}) * {utof(u_22_phi_30) : 0.99756}) + -0.5f)) + {f_0_40 : 0}) + 0.5f))
+	o.fs_attr2.w = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[79].y)) + (((((pf_0_1 * utof(vs_cbuf9[80].w)) + ((utof(u_37_phi_39) * utof(vs_cbuf9[81].w)) + (utof(vs_cbuf9[81].w) + utof(vs_cbuf9[81].y)))) * ((((1.0f / utof(vs_cbuf9[83].w)) * utof(vs_cbuf9[83].y)) * utof(u_22_phi_30)) + -0.5f)) + f_0_40) + 0.5f));
+	// 4.632787  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[74].y) : -0.0001}) + ((((({pf_0_1 : 221.00} * {utof(vs_cbuf9[75].w) : 0}) + (({f_4_3 : 0.15253} * {utof(vs_cbuf9[76].w) : 0.05}) + ({utof(vs_cbuf9[76].w) : 0.05} + {utof(vs_cbuf9[76].y) : 0.96}))) * ((((1.0f / {utof(vs_cbuf9[78].w) : 1.00}) * {utof(vs_cbuf9[78].y) : 1.00}) * {utof(u_16_phi_26) : 0.99756}) + -0.5f)) + {f_0_39 : -0.67284}) + 0.5f))
+	o.fs_attr2.y = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[74].y)) + (((((pf_0_1 * utof(vs_cbuf9[75].w)) + ((f_4_3 * utof(vs_cbuf9[76].w)) + (utof(vs_cbuf9[76].w) + utof(vs_cbuf9[76].y)))) * ((((1.0f / utof(vs_cbuf9[78].w)) * utof(vs_cbuf9[78].y)) * utof(u_16_phi_26)) + -0.5f)) + f_0_39) + 0.5f));
+	// 0.8229778  <=>  (((({(vs_cbuf13_2.w) : 160.00} * {(vs_cbuf16_0.w) : -268.7061}) * {(vs_cbuf13_3.w) : 1.00}) * {utof(vs_cbuf9[84].y) : 0}) + ((((((({pf_24_8 : 1.00} * {utof(u_27_phi_33) : 0.49072}) + -0.5f) * sin({f_0_26 : -7.24156})) + (cos({f_0_26 : -7.24156}) * (({pf_22_14 : 1.00} * {utof(u_25_phi_31) : 0.99756}) + -0.5f))) * (({pf_0_1 : 221.00} * {utof(vs_cbuf9[85].w) : 0}) + (({utof(u_45_phi_50) : 0.15253} * {utof(vs_cbuf9[86].w) : 0}) + ({utof(vs_cbuf9[86].y) : 1.10} + {utof(vs_cbuf9[86].w) : 0})))) + {f_0_41 : 0}) + 0.5f))
+	o.fs_attr3.y = (((((vs_cbuf13_2.w) * (vs_cbuf16_0.w)) * (vs_cbuf13_3.w)) * utof(vs_cbuf9[84].y)) + (((((((pf_24_8 * utof(u_27_phi_33)) + -0.5f) * sin(f_0_26)) + (cos(f_0_26) * ((pf_22_14 * utof(u_25_phi_31)) + -0.5f))) * ((pf_0_1 * utof(vs_cbuf9[85].w)) + ((utof(u_45_phi_50) * utof(vs_cbuf9[86].w)) + (utof(vs_cbuf9[86].y) + utof(vs_cbuf9[86].w))))) + f_0_41) + 0.5f));
 	// 0  <=>  {ftou(v.offset.x) : 0}
 	u_10_25 = ftou(v.offset.x);
 	u_10_phi_73 = u_10_25;
-	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! isnan({v.vertex.z : 0.10712}))) && (! isnan(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! isnan({v.vertex.x : -0.01573}))) && (! isnan(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! isnan({v.vertex.y : -0.38794}))) && (! isnan(0.f)))))) ? true : false))
-	if(((! ((((v.vertex.z == 0.f) && (! isnan(v.vertex.z))) && (! isnan(0.f))) && ((((v.vertex.x == 0.f) && (! isnan(v.vertex.x))) && (! isnan(0.f))) && (((v.vertex.y == 0.f) && (! isnan(v.vertex.y))) && (! isnan(0.f)))))) ? true : false))
+	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! myIsNaN({v.vertex.z : 0.10712}))) && (! myIsNaN(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! myIsNaN({v.vertex.x : -0.01573}))) && (! myIsNaN(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! myIsNaN({v.vertex.y : -0.38794}))) && (! myIsNaN(0.f)))))) ? true : false))
+	if(((! ((((v.vertex.z == 0.f) && (! myIsNaN(v.vertex.z))) && (! myIsNaN(0.f))) && ((((v.vertex.x == 0.f) && (! myIsNaN(v.vertex.x))) && (! myIsNaN(0.f))) && (((v.vertex.y == 0.f) && (! myIsNaN(v.vertex.y))) && (! myIsNaN(0.f)))))) ? true : false))
 	{
 		// 0  <=>  {ftou((({v.vertex.x : -0.01573} * {(vs_cbuf13_0.x) : 0}) + {v.offset.x : 0})) : 0}
 		u_10_26 = ftou(((v.vertex.x * (vs_cbuf13_0.x)) + v.offset.x));
@@ -1855,8 +1855,8 @@ void main()
 	// 1065221850  <=>  {ftou(v.offset.z) : 1065221850}
 	u_11_20 = ftou(v.offset.z);
 	u_11_phi_74 = u_11_20;
-	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! isnan({v.vertex.z : 0.10712}))) && (! isnan(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! isnan({v.vertex.x : -0.01573}))) && (! isnan(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! isnan({v.vertex.y : -0.38794}))) && (! isnan(0.f)))))) ? true : false))
-	if(((! ((((v.vertex.z == 0.f) && (! isnan(v.vertex.z))) && (! isnan(0.f))) && ((((v.vertex.x == 0.f) && (! isnan(v.vertex.x))) && (! isnan(0.f))) && (((v.vertex.y == 0.f) && (! isnan(v.vertex.y))) && (! isnan(0.f)))))) ? true : false))
+	// True  <=>  if(((! (((({v.vertex.z : 0.10712} == 0.f) && (! myIsNaN({v.vertex.z : 0.10712}))) && (! myIsNaN(0.f))) && (((({v.vertex.x : -0.01573} == 0.f) && (! myIsNaN({v.vertex.x : -0.01573}))) && (! myIsNaN(0.f))) && ((({v.vertex.y : -0.38794} == 0.f) && (! myIsNaN({v.vertex.y : -0.38794}))) && (! myIsNaN(0.f)))))) ? true : false))
+	if(((! ((((v.vertex.z == 0.f) && (! myIsNaN(v.vertex.z))) && (! myIsNaN(0.f))) && ((((v.vertex.x == 0.f) && (! myIsNaN(v.vertex.x))) && (! myIsNaN(0.f))) && (((v.vertex.y == 0.f) && (! myIsNaN(v.vertex.y))) && (! myIsNaN(0.f)))))) ? true : false))
 	{
 		// 1065221850  <=>  {ftou((({v.vertex.z : 0.10712} * {(vs_cbuf13_0.x) : 0}) + {v.offset.z : 0.99217})) : 1065221850}
 		u_11_21 = ftou(((v.vertex.z * (vs_cbuf13_0.x)) + v.offset.z));
@@ -1864,10 +1864,10 @@ void main()
 	}
 	// 32.13337  <=>  (({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + (({pf_18_16 : -6.0931234} * 0.5f) + (0.f * {pf_15_28 : 12.31416}))))
 	o.fs_attr4.x = ((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((pf_18_16 * 0.5f) + (0.f * pf_15_28))));
-	// -1.0481465  <=>  ((((1.0f / ((((({pf_5_5 : 68.84082} * 0.5f) + ({pf_6_5 : 69.04028} * 0.5f)) * (1.0f / ((0.f * {pf_5_5 : 68.84082}) + {pf_6_5 : 69.04028}))) * {(vs_cbuf8_30.w) : 24999.90}) + (0.f - {(vs_cbuf8_30.y) : 25000.00}))) * (0.f - {(vs_cbuf8_30.z) : 2500.00})) + (0.f - {(vs_cbuf9[138].z) : 90.00})) * (1.0f / ({(vs_cbuf9[138].w) : 110.00} + (0.f - {(vs_cbuf9[138].z) : 90.00}))))
-	pf_2_14 = ((((1.0f / (((((pf_5_5 * 0.5f) + (pf_6_5 * 0.5f)) * (1.0f / ((0.f * pf_5_5) + pf_6_5))) * (vs_cbuf8_30.w)) + (0.f - (vs_cbuf8_30.y)))) * (0.f - (vs_cbuf8_30.z))) + (0.f - (vs_cbuf9[138].z))) * (1.0f / ((vs_cbuf9[138].w) + (0.f - (vs_cbuf9[138].z)))));
-	// 1.00  <=>  clamp(((((1.0f / ((((({pf_5_5 : 68.84082} * 0.5f) + ({pf_6_5 : 69.04028} * 0.5f)) * (1.0f / ((0.f * {pf_5_5 : 68.84082}) + {pf_6_5 : 69.04028}))) * {(vs_cbuf8_30.w) : 24999.90}) + (0.f - {(vs_cbuf8_30.y) : 25000.00}))) * (0.f - {(vs_cbuf8_30.z) : 2500.00})) + (0.f - {(vs_cbuf9[138].x) : 35.00})) * (1.0f / ({(vs_cbuf9[138].y) : 45.00} + (0.f - {(vs_cbuf9[138].x) : 35.00})))), 0.0, 1.0)
-	f_0_78 = clamp(((((1.0f / (((((pf_5_5 * 0.5f) + (pf_6_5 * 0.5f)) * (1.0f / ((0.f * pf_5_5) + pf_6_5))) * (vs_cbuf8_30.w)) + (0.f - (vs_cbuf8_30.y)))) * (0.f - (vs_cbuf8_30.z))) + (0.f - (vs_cbuf9[138].x))) * (1.0f / ((vs_cbuf9[138].y) + (0.f - (vs_cbuf9[138].x))))), 0.0, 1.0);
+	// -1.0481465  <=>  ((((1.0f / ((((({pf_5_5 : 68.84082} * 0.5f) + ({pf_6_5 : 69.04028} * 0.5f)) * (1.0f / ((0.f * {pf_5_5 : 68.84082}) + {pf_6_5 : 69.04028}))) * {(vs_cbuf8_30.w) : 24999.90}) + (0.f - {(vs_cbuf8_30.y) : 25000.00}))) * (0.f - {(vs_cbuf8_30.z) : 2500.00})) + (0.f - {utof(vs_cbuf9[138].z) : 90.00})) * (1.0f / ({utof(vs_cbuf9[138].w) : 110.00} + (0.f - {utof(vs_cbuf9[138].z) : 90.00}))))
+	pf_2_14 = ((((1.0f / (((((pf_5_5 * 0.5f) + (pf_6_5 * 0.5f)) * (1.0f / ((0.f * pf_5_5) + pf_6_5))) * (vs_cbuf8_30.w)) + (0.f - (vs_cbuf8_30.y)))) * (0.f - (vs_cbuf8_30.z))) + (0.f - utof(vs_cbuf9[138].z))) * (1.0f / (utof(vs_cbuf9[138].w) + (0.f - utof(vs_cbuf9[138].z)))));
+	// 1.00  <=>  clamp(((((1.0f / ((((({pf_5_5 : 68.84082} * 0.5f) + ({pf_6_5 : 69.04028} * 0.5f)) * (1.0f / ((0.f * {pf_5_5 : 68.84082}) + {pf_6_5 : 69.04028}))) * {(vs_cbuf8_30.w) : 24999.90}) + (0.f - {(vs_cbuf8_30.y) : 25000.00}))) * (0.f - {(vs_cbuf8_30.z) : 2500.00})) + (0.f - {utof(vs_cbuf9[138].x) : 35.00})) * (1.0f / ({utof(vs_cbuf9[138].y) : 45.00} + (0.f - {utof(vs_cbuf9[138].x) : 35.00})))), 0.0, 1.0)
+	f_0_78 = clamp(((((1.0f / (((((pf_5_5 * 0.5f) + (pf_6_5 * 0.5f)) * (1.0f / ((0.f * pf_5_5) + pf_6_5))) * (vs_cbuf8_30.w)) + (0.f - (vs_cbuf8_30.y)))) * (0.f - (vs_cbuf8_30.z))) + (0.f - utof(vs_cbuf9[138].x))) * (1.0f / (utof(vs_cbuf9[138].y) + (0.f - utof(vs_cbuf9[138].x))))), 0.0, 1.0);
 	// -0.66452324  <=>  (((cos({pf_13_8 : 0}) * {f_6_49 : -0.66976756}) * {utof(u_11_phi_74) : 0.99217}) + (((cos({pf_12_7 : -2.407697}) * cos({pf_13_8 : 0})) * {utof(u_10_phi_73) : 0}) + ({f_8_11 : 0} * (0.f - {utof(u_14_phi_72) : 0.12329}))))
 	o.fs_attr8.x = (((cos(pf_13_8) * f_6_49) * utof(u_11_phi_74)) + (((cos(pf_12_7) * cos(pf_13_8)) * utof(u_10_phi_73)) + (f_8_11 * (0.f - utof(u_14_phi_72)))));
 	// 0.12329  <=>  (((({f_8_11 : 0} * ({f_3_56 : 1.00} * {f_6_49 : -0.66976756})) + (0.f - (cos({pf_12_7 : -2.407697}) * sin({pf_11_11 : 0})))) * {utof(u_11_phi_74) : 0.99217}) + (((({f_8_11 : 0} * (cos({pf_12_7 : -2.407697}) * {f_3_56 : 1.00})) + {pf_13_9 : -0}) * {utof(u_10_phi_73) : 0}) + (({f_3_56 : 1.00} * cos({pf_13_8 : 0})) * {utof(u_14_phi_72) : 0.12329})))
@@ -1884,22 +1884,22 @@ void main()
 	f_1_151 = log2(((0.f - clamp(((((1.0f / (((((pf_3_10 * 0.5f) + ((pf_25_13 * 0.5f) + ((0.f * pf_18_16) + (0.f * pf_15_28)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * (vs_cbuf8_30.w)) + (0.f - (vs_cbuf8_30.y)))) * (0.f - (vs_cbuf8_30.z))) * (vs_cbuf15_24.x)) + (0.f - (vs_cbuf15_24.y))), 0.0, 1.0)) + 1.f));
 	// 0.3794359  <=>  exp2(({f_1_151 : -0.34951794} * {(vs_cbuf15_24.w) : 4.00}))
 	f_1_152 = exp2((f_1_151 * (vs_cbuf15_24.w)));
-	// ((0.f - {utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).x) : }) + {utof(uint4({vs_ssbo0[({u_1_22 : 192} >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 4) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 8) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 12) >> 2)] : }).x) : })
-	pf_0_17 = ((0.f - utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).x)) + utof(uint4(vs_ssbo0[(u_1_22 >> 2)], vs_ssbo0[((u_1_22 + 4) >> 2)], vs_ssbo0[((u_1_22 + 8) >> 2)], vs_ssbo0[((u_1_22 + 12) >> 2)]).x));
-	// ((0.f - {utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).y) : }) + {utof(uint4({vs_ssbo0[({u_1_22 : 192} >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 4) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 8) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 12) >> 2)] : }).y) : })
-	pf_1_17 = ((0.f - utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).y)) + utof(uint4(vs_ssbo0[(u_1_22 >> 2)], vs_ssbo0[((u_1_22 + 4) >> 2)], vs_ssbo0[((u_1_22 + 8) >> 2)], vs_ssbo0[((u_1_22 + 12) >> 2)]).y));
-	// ((0.f - {utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).z) : }) + {utof(uint4({vs_ssbo0[({u_1_22 : 192} >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 4) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 8) >> 2)] : }, {vs_ssbo0[(({u_1_22 : 192} + 12) >> 2)] : }).z) : })
-	pf_2_19 = ((0.f - utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).z)) + utof(uint4(vs_ssbo0[(u_1_22 >> 2)], vs_ssbo0[((u_1_22 + 4) >> 2)], vs_ssbo0[((u_1_22 + 8) >> 2)], vs_ssbo0[((u_1_22 + 12) >> 2)]).z));
+	// ((0.f - {utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).x) : }) + {utof(uint4({vs_ssbo_color2.x * vs_ssbo_scale : }, {vs_ssbo_color2.y * vs_ssbo_scale : }, {vs_ssbo_color2.z * vs_ssbo_scale : }, {vs_ssbo_color2.w * vs_ssbo_scale : }).x) : })
+	pf_0_17 = ((0.f - utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).x)) + utof(uint4(vs_ssbo_color2.x * vs_ssbo_scale, vs_ssbo_color2.y * vs_ssbo_scale, vs_ssbo_color2.z * vs_ssbo_scale, vs_ssbo_color2.w * vs_ssbo_scale).x));
+	// ((0.f - {utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).y) : }) + {utof(uint4({vs_ssbo_color2.x * vs_ssbo_scale : }, {vs_ssbo_color2.y * vs_ssbo_scale : }, {vs_ssbo_color2.z * vs_ssbo_scale : }, {vs_ssbo_color2.w * vs_ssbo_scale : }).y) : })
+	pf_1_17 = ((0.f - utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).y)) + utof(uint4(vs_ssbo_color2.x * vs_ssbo_scale, vs_ssbo_color2.y * vs_ssbo_scale, vs_ssbo_color2.z * vs_ssbo_scale, vs_ssbo_color2.w * vs_ssbo_scale).y));
+	// ((0.f - {utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).z) : }) + {utof(uint4({vs_ssbo_color2.x * vs_ssbo_scale : }, {vs_ssbo_color2.y * vs_ssbo_scale : }, {vs_ssbo_color2.z * vs_ssbo_scale : }, {vs_ssbo_color2.w * vs_ssbo_scale : }).z) : })
+	pf_2_19 = ((0.f - utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).z)) + utof(uint4(vs_ssbo_color2.x * vs_ssbo_scale, vs_ssbo_color2.y * vs_ssbo_scale, vs_ssbo_color2.z * vs_ssbo_scale, vs_ssbo_color2.w * vs_ssbo_scale).z));
 	// -0.56125593  <=>  (0.f - clamp(((((({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + ({pf_15_28 : 12.31416} * -0.5f)))) * (1.0f / ({pf_3_10 : 70.35986} + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + (0.f * {pf_15_28 : 12.31416})))))) * -0.7f) + 0.85f), 0.0, 1.0))
 	f_8_26 = (0.f - clamp((((((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (pf_15_28 * -0.5f)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * -0.7f) + 0.85f), 0.0, 1.0));
 	// 0.9228389  <=>  exp2(({f_3_72 : -0.005792466} * {(vs_cbuf15_23.x) : 20.00}))
 	f_3_89 = exp2((f_3_72 * (vs_cbuf15_23.x)));
-	// ({utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).x) : } + (({pf_0_17 : } * {f_8_26 : -0.56125593}) + {pf_0_17 : }))
-	pf_0_19 = (utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).x) + ((pf_0_17 * f_8_26) + pf_0_17));
-	// ({utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).y) : } + (({pf_1_17 : } * (0.f - clamp(((((({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + ({pf_15_28 : 12.31416} * -0.5f)))) * (1.0f / ({pf_3_10 : 70.35986} + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + (0.f * {pf_15_28 : 12.31416})))))) * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_1_17 : }))
-	pf_1_19 = (utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).y) + ((pf_1_17 * (0.f - clamp((((((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (pf_15_28 * -0.5f)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * -0.7f) + 0.85f), 0.0, 1.0))) + pf_1_17));
-	// ({utof(uint4({vs_ssbo0[({u_2_30 : 176} >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 4) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 8) >> 2)] : }, {vs_ssbo0[(({u_2_30 : 176} + 12) >> 2)] : }).z) : } + (({pf_2_19 : } * (0.f - clamp(((((({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + ({pf_15_28 : 12.31416} * -0.5f)))) * (1.0f / ({pf_3_10 : 70.35986} + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + (0.f * {pf_15_28 : 12.31416})))))) * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_2_19 : }))
-	pf_2_21 = (utof(uint4(vs_ssbo0[(u_2_30 >> 2)], vs_ssbo0[((u_2_30 + 4) >> 2)], vs_ssbo0[((u_2_30 + 8) >> 2)], vs_ssbo0[((u_2_30 + 12) >> 2)]).z) + ((pf_2_19 * (0.f - clamp((((((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (pf_15_28 * -0.5f)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * -0.7f) + 0.85f), 0.0, 1.0))) + pf_2_19));
+	// ({utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).x) : } + (({pf_0_17 : } * {f_8_26 : -0.56125593}) + {pf_0_17 : }))
+	pf_0_19 = (utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).x) + ((pf_0_17 * f_8_26) + pf_0_17));
+	// ({utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).y) : } + (({pf_1_17 : } * (0.f - clamp(((((({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + ({pf_15_28 : 12.31416} * -0.5f)))) * (1.0f / ({pf_3_10 : 70.35986} + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + (0.f * {pf_15_28 : 12.31416})))))) * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_1_17 : }))
+	pf_1_19 = (utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).y) + ((pf_1_17 * (0.f - clamp((((((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (pf_15_28 * -0.5f)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * -0.7f) + 0.85f), 0.0, 1.0))) + pf_1_17));
+	// ({utof(uint4({vs_ssbo_color1.x * vs_ssbo_scale : }, {vs_ssbo_color1.y * vs_ssbo_scale : }, {vs_ssbo_color1.z * vs_ssbo_scale : }, {vs_ssbo_color1.w * vs_ssbo_scale : }).z) : } + (({pf_2_19 : } * (0.f - clamp(((((({pf_3_10 : 70.35986} * 0.5f) + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + ({pf_15_28 : 12.31416} * -0.5f)))) * (1.0f / ({pf_3_10 : 70.35986} + ((0.f * {pf_25_13 : 70.16042}) + ((0.f * {pf_18_16 : -6.0931234}) + (0.f * {pf_15_28 : 12.31416})))))) * -0.7f) + 0.85f), 0.0, 1.0))) + {pf_2_19 : }))
+	pf_2_21 = (utof(uint4(vs_ssbo_color1.x * vs_ssbo_scale, vs_ssbo_color1.y * vs_ssbo_scale, vs_ssbo_color1.z * vs_ssbo_scale, vs_ssbo_color1.w * vs_ssbo_scale).z) + ((pf_2_19 * (0.f - clamp((((((pf_3_10 * 0.5f) + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (pf_15_28 * -0.5f)))) * (1.0f / (pf_3_10 + ((0.f * pf_25_13) + ((0.f * pf_18_16) + (0.f * pf_15_28)))))) * -0.7f) + 0.85f), 0.0, 1.0))) + pf_2_19));
 	// (({pf_0_19 : } * (({(vs_cbuf15_58.w) : 1.00} * {(vs_cbuf15_58.x) : 1.00}) + (0.f - {(vs_cbuf15_58.w) : 1.00}))) + {pf_0_19 : })
 	o.fs_attr11.x = ((pf_0_19 * (((vs_cbuf15_58.w) * (vs_cbuf15_58.x)) + (0.f - (vs_cbuf15_58.w)))) + pf_0_19);
 	// 0  <=>  ({uni_attr11.x : 0} * {(vs_cbuf13_5.z) : 0.50})
@@ -1926,8 +1926,8 @@ void main()
 	o.fs_attr12.y = pf_1_23;
 	// 0.50  <=>  {pf_0_25 : 0.50}
 	o.fs_attr12.z = pf_0_25;
-	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || isnan(0.f)) || isnan({(vs_cbuf15_49.x) : 0})) ? true : false))
-	if(((((0.f != (vs_cbuf15_49.x)) || isnan(0.f)) || isnan((vs_cbuf15_49.x))) ? true : false))
+	// False  <=>  if(((((0.f != {(vs_cbuf15_49.x) : 0}) || myIsNaN(0.f)) || myIsNaN({(vs_cbuf15_49.x) : 0})) ? true : false))
+	if(((((0.f != (vs_cbuf15_49.x)) || myIsNaN(0.f)) || myIsNaN((vs_cbuf15_49.x))) ? true : false))
 	{
 		// 0.0010526  <=>  (1.0f / {(vs_cbuf15_51.x) : 950.00})
 		f_0_88 = (1.0f / (vs_cbuf15_51.x));
@@ -1942,8 +1942,8 @@ void main()
 		// 1.00  <=>  (({pf_0_27 : 1.00} * (0.f - (({f_0_92 : 0} * {(vs_cbuf15_51.w) : 1.00}) * {(vs_cbuf15_49.x) : 0}))) + {pf_0_27 : 1.00})
 		o.fs_attr9.x = ((pf_0_27 * (0.f - ((f_0_92 * (vs_cbuf15_51.w)) * (vs_cbuf15_49.x)))) + pf_0_27);
 	}
-	// True  <=>  if(((! ((((((0.f - clamp({pf_2_14 : -1.0481465}, 0.0, 1.0)) + 1.f) <= 0.f) && (! isnan(((0.f - clamp({pf_2_14 : -1.0481465}, 0.0, 1.0)) + 1.f)))) && (! isnan(0.f))) || ((({f_0_78 : 1.00} <= 0.f) && (! isnan({f_0_78 : 1.00}))) && (! isnan(0.f))))) ? true : false))
-	if(((! ((((((0.f - clamp(pf_2_14, 0.0, 1.0)) + 1.f) <= 0.f) && (! isnan(((0.f - clamp(pf_2_14, 0.0, 1.0)) + 1.f)))) && (! isnan(0.f))) || (((f_0_78 <= 0.f) && (! isnan(f_0_78))) && (! isnan(0.f))))) ? true : false))
+	// True  <=>  if(((! ((((((0.f - clamp({pf_2_14 : -1.0481465}, 0.0, 1.0)) + 1.f) <= 0.f) && (! myIsNaN(((0.f - clamp({pf_2_14 : -1.0481465}, 0.0, 1.0)) + 1.f)))) && (! myIsNaN(0.f))) || ((({f_0_78 : 1.00} <= 0.f) && (! myIsNaN({f_0_78 : 1.00}))) && (! myIsNaN(0.f))))) ? true : false))
+	if(((! ((((((0.f - clamp(pf_2_14, 0.0, 1.0)) + 1.f) <= 0.f) && (! myIsNaN(((0.f - clamp(pf_2_14, 0.0, 1.0)) + 1.f)))) && (! myIsNaN(0.f))) || (((f_0_78 <= 0.f) && (! myIsNaN(f_0_78))) && (! myIsNaN(0.f))))) ? true : false))
 	{
 		return o;
 	}

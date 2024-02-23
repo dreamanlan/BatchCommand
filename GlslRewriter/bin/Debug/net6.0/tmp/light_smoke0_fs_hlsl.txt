@@ -1012,27 +1012,27 @@ inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.
 	pf_5_1 = pf_5_0 * f_0_10;	// 1.00
 	f_0_11 = utof(fs_cbuf15[1 ].x  );	// 0
 	f3_0_0 = vec3(pf_4_1, pf_3_5, pf_5_1 );	// vec3(-0.90194917,0.1673408,1.00)
-	f4_0_4 = textureLod(tex6, f3_0_0, f_0_11 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, vec3((({in_attr8.x : -0.66452} * {f_4_3 : 1.000199}) * {f_0_9 : 1.357024}), ({pf_3_4 : 0.1233145} * {f_0_9 : 1.357024}), ({pf_5_0 : -0.7369064} * (0.f - {f_0_9 : 1.357024}))), {(fs_cbuf15_1.x) : 0})
+	f4_0_4 = textureLod(tex6, f3_0_0, f_0_11 );	/* vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, vec3((({in_attr8.x : -0.66452} * {f_4_3 : 1.000199}) * {f_0_9 : 1.357024}), ({pf_3_4 : 0.1233145} * {f_0_9 : 1.357024}), ({pf_5_0 : -0.7369064} * (0.f - {f_0_9 : 1.357024}))), {(fs_cbuf15_1.x) : 0}, s_linear_clamp_sampler)
 <=>
-textureLod(tex6, vec3(((in_attr8.x * f_4_3) * f_0_9), (pf_3_4 * f_0_9), (pf_5_0 * (0.f - f_0_9))), (fs_cbuf15_1.x))
+textureLod(tex6, vec3(((in_attr8.x * f_4_3) * f_0_9), (pf_3_4 * f_0_9), (pf_5_0 * (0.f - f_0_9))), (fs_cbuf15_1.x), s_linear_clamp_sampler)
 <=>
 {f4_0_4 = textureLod(tex6, 
-	{f3_0_0 = vec3(
-		{pf_4_1 = (
-			{pf_4_0 = (
-				{f_2_14 = in_attr8.x
-				} * f_4_3)
-			} * f_0_9)
-		}, 
-		{pf_3_5 = (pf_3_4 * f_0_9)
-		}, 
-		{pf_5_1 = (pf_5_0 * 
-			{f_0_10 = (0.f - f_0_9)
-			})
-		})
+{f3_0_0 = vec3(
+	{pf_4_1 = (
+		{pf_4_0 = (
+			{f_2_14 = in_attr8.x
+			} * f_4_3)
+		} * f_0_9)
 	}, 
-	{f_0_11 = (fs_cbuf15_1.x)
+	{pf_3_5 = (pf_3_4 * f_0_9)
+	}, 
+	{pf_5_1 = (pf_5_0 * 
+		{f_0_10 = (0.f - f_0_9)
+		})
 	})
+}, 
+{f_0_11 = (fs_cbuf15_1.x)
+}, s_linear_clamp_sampler)
 }
 */
 	f_0_12 = f4_0_4.x ;	// 0.50

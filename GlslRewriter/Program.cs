@@ -755,15 +755,15 @@ namespace GlslRewriter
         private static void InitBatchScript()
         {
             BatchCommand.BatchScript.Init();
-            BatchCommand.BatchScript.Register("shader", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
-            BatchCommand.BatchScript.Register("add_svar", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
-            BatchCommand.BatchScript.Register("set_svar", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
-            BatchCommand.BatchScript.Register("add_unsvar", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
-            BatchCommand.BatchScript.Register("import_inout", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
-            BatchCommand.BatchScript.Register("recalc", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
-            BatchCommand.BatchScript.Register("rand_color", new DslExpression.ExpressionFactoryHelper<RandColorExp>());
-            BatchCommand.BatchScript.Register("rand_uv", new DslExpression.ExpressionFactoryHelper<RandUVExp>());
-            BatchCommand.BatchScript.Register("rand_size", new DslExpression.ExpressionFactoryHelper<RandSizeExp>());
+            BatchCommand.BatchScript.Register("shader", "shader(code1,code2,...) api", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
+            BatchCommand.BatchScript.Register("add_svar", "add_svar(name,val[,dim_for_array]) api", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
+            BatchCommand.BatchScript.Register("set_svar", "set_svar(var_code,val) api", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
+            BatchCommand.BatchScript.Register("add_unsvar", "add_unsvar(var_code_1,var_code_2,...) api", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
+            BatchCommand.BatchScript.Register("import_inout", "import_inout(index) api", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
+            BatchCommand.BatchScript.Register("recalc", "recalc([bool_full]) api", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
+            BatchCommand.BatchScript.Register("rand_color", "rand_color() api", new DslExpression.ExpressionFactoryHelper<RandColorExp>());
+            BatchCommand.BatchScript.Register("rand_uv", "rand_uv(dim) api", new DslExpression.ExpressionFactoryHelper<RandUVExp>());
+            BatchCommand.BatchScript.Register("rand_size", "rand_size(max_v) or rand_size(max_x,max_y) or rand_size(max_x,max_y,max_z) or rand_size(max_x,max_y,max_z,max_w) api", new DslExpression.ExpressionFactoryHelper<RandSizeExp>());
             BatchCommand.BatchScript.SetOnTryGetVariable(VariableTable.TryGetVariable);
             BatchCommand.BatchScript.SetOnTrySetVariable(VariableTable.TrySetVariable);
         }
@@ -773,23 +773,33 @@ namespace GlslRewriter
             for (; ; ) {
                 Console.Write(">");
                 var line = Console.ReadLine();
-                if (line == "exit" || line == "quit")
-                    break;
                 if (null != line) {
-                    var r = BatchCommand.BatchScript.EvalAndRun(line);
-                    Console.Write("result:");
-                    if (r.IsNumber) {
-                        if (r.Type == CalculatorValue.c_DoubleType) {
-                            double v = r.GetDouble();
-                            Console.WriteLine("{0}", v);
-                        }
-                        else {
-                            double v = r.GetFloat();
-                            Console.WriteLine("{0}", v);
+                    if (line == "exit" || line == "quit")
+                        break;
+                    if (line == "help" || line.StartsWith("help ")) {
+                        string filter = line.Substring(4).Trim();
+                        foreach (var pair in BatchCommand.BatchScript.ApiDocs) {
+                            if (pair.Key.Contains(filter) || pair.Value.Contains(filter)) {
+                                Console.WriteLine("[{0}]:{1}", pair.Key, pair.Value);
+                            }
                         }
                     }
                     else {
-                        Console.WriteLine(r.ToString());
+                        var r = BatchCommand.BatchScript.EvalAndRun(line);
+                        Console.Write("result:");
+                        if (r.IsNumber) {
+                            if (r.Type == CalculatorValue.c_DoubleType) {
+                                double v = r.GetDouble();
+                                Console.WriteLine("{0}", v);
+                            }
+                            else {
+                                double v = r.GetFloat();
+                                Console.WriteLine("{0}", v);
+                            }
+                        }
+                        else {
+                            Console.WriteLine(r.ToString());
+                        }
                     }
                 }
             }

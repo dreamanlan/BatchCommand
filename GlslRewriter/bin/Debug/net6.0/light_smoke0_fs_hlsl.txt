@@ -29,7 +29,7 @@ layout(std140, binding = 10) uniform fs_cbuf_15 { uint4 fs_cbuf15[4096]; };
 layout(binding = 2) uniform sampler2D tex2;
 layout(binding = 3) uniform sampler2D tex3;
 layout(binding = 4) uniform sampler2D tex4;
-layout(binding = 5) uniform sampler2D tex5;
+layout(binding = 5) uniform sampler2D _CameraDepthTexture;
 layout(binding = 6) uniform samplerCube tex6;
 #define ftoi floatBitsToInt
 #define ftou floatBitsToUint
@@ -104,8 +104,8 @@ void main()
 	f4_0_1 = textureSample(tex4, float2(i.fs_attr3.x, i.fs_attr3.y), s_linear_clamp_sampler);
 	// float4(0.50,0.50,0.50,0.75)  <=>  textureSample({tex3 : tex3}, float2(((({i.fs_attr5.x : 1.00} * {(fs_cbuf9_19.x) : 0.10}) * (({f4_0_0.x : 0.50} * 2.f) + -1.f)) + {i.fs_attr2.z : -0.22447}), ((({i.fs_attr5.x : 1.00} * {(fs_cbuf9_19.y) : 0.10}) * (({f4_0_0.y : 0.50} * 2.f) + -1.f)) + {i.fs_attr2.w : 0.99756})), s_linear_clamp_sampler)
 	f4_0_2 = textureSample(tex3, float2((((i.fs_attr5.x * (fs_cbuf9_19.x)) * ((f4_0_0.x * 2.f) + -1.f)) + i.fs_attr2.z), (((i.fs_attr5.x * (fs_cbuf9_19.y)) * ((f4_0_0.y * 2.f) + -1.f)) + i.fs_attr2.w)), s_linear_clamp_sampler);
-	// float4(0.50,0.50,0.50,0.75)  <=>  textureSample({tex5 : tex5}, float2((({i.fs_attr4.x : 32.13303} * {i.vertex.w : 70.35962}) * {f_2_2 : 0.000202}), (({i.fs_attr4.y : 29.0226} * {i.vertex.w : 70.35962}) * {f_2_2 : 0.000202})), s_linear_clamp_sampler)
-	f4_0_3 = textureSample(tex5, float2(((i.fs_attr4.x * i.vertex.w) * f_2_2), ((i.fs_attr4.y * i.vertex.w) * f_2_2)), s_linear_clamp_sampler);
+	// float4(0.50,0.50,0.50,0.75)  <=>  textureSample({_CameraDepthTexture : _CameraDepthTexture}, float2((({i.fs_attr4.x : 32.13303} * {i.vertex.w : 70.35962}) * {f_2_2 : 0.000202}), (({i.fs_attr4.y : 29.0226} * {i.vertex.w : 70.35962}) * {f_2_2 : 0.000202})), s_linear_clamp_sampler)
+	f4_0_3 = textureSample(_CameraDepthTexture, float2(((i.fs_attr4.x * i.vertex.w) * f_2_2), ((i.fs_attr4.y * i.vertex.w) * f_2_2)), s_linear_clamp_sampler);
 	// 0.16319  <=>  ((clamp(((((1.0f / ((({i.fs_attr4.z : 70.2599} * (1.0f / {i.fs_attr4.w : 70.35962})) * {(fs_cbuf8_30.w) : 24999.90}) + (0.f - {(fs_cbuf8_30.y) : 25000.00}))) * {(fs_cbuf8_30.z) : 2500.00}) + (({f4_0_3.x : 0.50} * {(fs_cbuf8_30.w) : 24999.90}) + {(fs_cbuf8_30.x) : 0.10})) * (1.0f / {(fs_cbuf9_140.y) : 20.00})), 0.0, 1.0) * clamp((clamp((((({f4_0_2.w : 0.75} * {f4_0_1.w : 0.75}) * 1.f) + (0.f - {i.fs_attr0.w : 0.10})) * 4.f), 0.0, 1.0) * {i.fs_attr1.w : 0.16319}), 0.0, 1.0)) * {i.fs_attr6.x : 1.00})
 	pf_0_10 = ((clamp(((((1.0f / (((i.fs_attr4.z * (1.0f / i.fs_attr4.w)) * (fs_cbuf8_30.w)) + (0.f - (fs_cbuf8_30.y)))) * (fs_cbuf8_30.z)) + ((f4_0_3.x * (fs_cbuf8_30.w)) + (fs_cbuf8_30.x))) * (1.0f / (fs_cbuf9_140.y))), 0.0, 1.0) * clamp((clamp(((((f4_0_2.w * f4_0_1.w) * 1.f) + (0.f - i.fs_attr0.w)) * 4.f), 0.0, 1.0) * i.fs_attr1.w), 0.0, 1.0)) * i.fs_attr6.x);
 	// 0  <=>  {(fs_cbuf9_139.z) : 0}
@@ -188,8 +188,8 @@ void main()
 	pf_5_0 = (i.fs_attr8.z * f_4_3);
 	// 1.357024  <=>  (1.0f / max(abs({pf_5_0 : -0.7369064}), max(abs({pf_3_4 : 0.1233145}), abs(({i.fs_attr8.x : -0.66452} * {f_4_3 : 1.000199})))))
 	f_0_9 = (1.0f / max(abs(pf_5_0), max(abs(pf_3_4), abs((i.fs_attr8.x * f_4_3)))));
-	// float4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, float3((({i.fs_attr8.x : -0.66452} * {f_4_3 : 1.000199}) * {f_0_9 : 1.357024}), ({pf_3_4 : 0.1233145} * {f_0_9 : 1.357024}), ({pf_5_0 : -0.7369064} * (0.f - {f_0_9 : 1.357024}))), {(fs_cbuf15_1.x) : 0})
-	f4_0_4 = textureLod(tex6, float3(((i.fs_attr8.x * f_4_3) * f_0_9), (pf_3_4 * f_0_9), (pf_5_0 * (0.f - f_0_9))), (fs_cbuf15_1.x));
+	// float4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, float3((({i.fs_attr8.x : -0.66452} * {f_4_3 : 1.000199}) * {f_0_9 : 1.357024}), ({pf_3_4 : 0.1233145} * {f_0_9 : 1.357024}), ({pf_5_0 : -0.7369064} * (0.f - {f_0_9 : 1.357024}))), {(fs_cbuf15_1.x) : 0}, s_linear_clamp_sampler)
+	f4_0_4 = textureLod(tex6, float3(((i.fs_attr8.x * f_4_3) * f_0_9), (pf_3_4 * f_0_9), (pf_5_0 * (0.f - f_0_9))), (fs_cbuf15_1.x), s_linear_clamp_sampler);
 	// 0.43533  <=>  {i.fs_attr1.x : 0.43533}
 	f_4_4 = i.fs_attr1.x;
 	// 0.50728  <=>  {i.fs_attr1.y : 0.50728}

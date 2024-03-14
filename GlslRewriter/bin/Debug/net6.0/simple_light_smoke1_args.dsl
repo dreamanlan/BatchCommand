@@ -687,10 +687,10 @@ vs
     {
         textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
         textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
-        vs_cbuf9[7].x = "1u";
-        vs_cbuf9[7].y = "0u";
-        vs_cbuf9[7].z = "301056u";
-        vs_cbuf9[7].w = "0u";
+        vs_cbuf9[7].x = 1u;
+        vs_cbuf9[7].y = 0u;
+        vs_cbuf9[7].z = 301056u;
+        vs_cbuf9[7].w = 0u;
         vs_cbuf9[*] = vs_cbuf9[@arg(1)];
         replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
         vs_cbuf8[29] = camera_wpos;

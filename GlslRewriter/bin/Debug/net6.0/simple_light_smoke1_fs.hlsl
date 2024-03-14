@@ -1,4 +1,4 @@
-void frag_from_glsl(v2f i, inout float4 : SV_Target)
+void frag_from_glsl(v2f i, inout float4 col)
 {
 	// 1065353216 = 1.00f;
 	// fs_cbuf8[30] = float4(0.10, 25000.00, 2500.00, 24999.90);

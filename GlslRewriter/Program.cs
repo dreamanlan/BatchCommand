@@ -457,14 +457,26 @@ namespace GlslRewriter
                     }
                     var outBuilder = s_ExpressionBuilder;
                     outBuilder.Length = 0;
-                    if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
-                        outBuilder.AppendLine(gcode);
+                    if (s_DoReplacement && Config.ActiveConfig.SettingInfo.ForHlslShader) {
+                        if (Config.ActiveConfig.ShaderType == "vs") {
+                            outBuilder.AppendLine("void vert_from_glsl(appdata v, vaodata i, inout v2f o)");
+                            outBuilder.AppendLine("{");
+                        }
+                        else {
+                            outBuilder.AppendLine("void frag_from_glsl(v2f i, inout float4 col)");
+                            outBuilder.AppendLine("{");
+                        }
                     }
                     else {
-                        outBuilder.AppendLine(globalCode);
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
+                            outBuilder.AppendLine(gcode);
+                        }
+                        else {
+                            outBuilder.AppendLine(globalCode);
+                        }
+                        outBuilder.AppendLine("void main()");
+                        outBuilder.AppendLine("{");
                     }
-                    outBuilder.AppendLine("void main()");
-                    outBuilder.AppendLine("{");
                     if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
                         foreach (var line in RenderDocImporter.s_UniformUtofOrFtouVals) {
                             outBuilder.Append("\t");

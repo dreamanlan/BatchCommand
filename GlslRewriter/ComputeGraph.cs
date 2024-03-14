@@ -1310,9 +1310,9 @@ namespace GlslRewriter
             var valData = syntax as Dsl.ValueData;
             if (null != valData) {
                 if (valData.IsString()) {
-                    sb.Append('"');
+                    //sb.Append('"');
                     sb.Append(valData.GetId());
-                    sb.Append('"');
+                    //sb.Append('"');
                 }
                 else {
                     sb.Append(valData.GetId());

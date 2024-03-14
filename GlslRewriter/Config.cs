@@ -1256,6 +1256,9 @@ namespace GlslRewriter
                         else if (vid == "print_graph") {
                             cfg.SettingInfo.PrintGraph = true;
                         }
+                        else if (vid == "for_hlsl_shader") {
+                            cfg.SettingInfo.ForHlslShader = true;
+                        }
                         else if (vid == "generate_expression_list") {
                             cfg.SettingInfo.GenerateExpressionList = true;
                         }
@@ -2828,6 +2831,7 @@ namespace GlslRewriter
         {
             internal bool DebugMode = false;
             internal bool PrintGraph = false;
+            internal bool ForHlslShader = false;
             internal bool NeedUniformUtofVals = true;
             internal bool NeedUniformFtouVals = false;
             internal bool DefMultiline = false;

@@ -1,0 +1,238 @@
+#version 460
+#pragma optionNV(fastmath off)
+#extension GL_ARB_separate_shader_objects : enable
+layout(location = 0) in vec4 in_attr0;
+layout(location = 1) in vec4 in_attr1;
+layout(location = 2) in vec4 in_attr2;
+layout(location = 3) in vec4 in_attr3;
+layout(location = 4) in vec4 in_attr4;
+layout(location = 5) flat in vec4 in_attr5;
+layout(location = 6) in vec4 in_attr6;
+layout(location = 7) in vec4 in_attr7;
+layout(location = 8) in vec4 in_attr8;
+layout(location = 9) in vec4 in_attr9;
+layout(location = 10) in vec4 in_attr10;
+layout(location = 11) in vec4 in_attr11;
+layout(location = 12) in vec4 in_attr12;
+layout(location = 0) out vec4 frag_color0;
+layout(location = 1) out vec4 frag_color1;
+layout(location = 2) out vec4 frag_color2;
+layout(location = 3) out vec4 frag_color3;
+layout(location = 4) out vec4 frag_color4;
+layout(location = 5) out vec4 frag_color5;
+layout(location = 6) out vec4 frag_color6;
+layout(location = 7) out vec4 frag_color7;
+layout(std140, binding = 7) uniform fs_cbuf_8 { uvec4 fs_cbuf8[4096]; };
+layout(std140, binding = 8) uniform fs_cbuf_9 { uvec4 fs_cbuf9[4096]; };
+layout(std140, binding = 9) uniform fs_cbuf_13 { uvec4 fs_cbuf13[4096]; };
+layout(std140, binding = 10) uniform fs_cbuf_15 { uvec4 fs_cbuf15[4096]; };
+layout(binding = 2) uniform sampler2D tex2;
+layout(binding = 3) uniform sampler2D tex3;
+layout(binding = 4) uniform sampler2D tex4;
+layout(binding = 5) uniform sampler2D tex5;
+layout(binding = 6) uniform samplerCube tex6;
+#define ftoi floatBitsToInt
+#define ftou floatBitsToUint
+#define itof intBitsToFloat
+#define utof uintBitsToFloat
+
+void main()
+{
+	// 1065353216 = 1.00f;
+	// fs_cbuf8[30] = vec4(0.10, 25000.00, 2500.00, 24999.90);
+	// fs_cbuf9[19] = vec4(0.10, 0.10, 0, 0);
+	// fs_cbuf9[139] = vec4(1.00, 0, 0, 0);
+	// fs_cbuf9[140] = vec4(1.00, 400.00, 0, 0);
+	// fs_cbuf13[0] = vec4(0, 0.50, 1.00, 0.50);
+	// fs_cbuf15[1] = vec4(0, 0, 2.594247, 0.20);
+	// fs_cbuf15[25] = vec4(0.0282744, 0.0931012, 0.1164359, 0.7006614);
+	// fs_cbuf15[26] = vec4(0.0174636, 0.1221582, 0.2193998, 0.20);
+
+	bool b_1_0;
+	bool b_1_1;
+	bool b_1_2;
+	bool b_1_3;
+	bool b_1_4;
+	bool b_1_5;
+	float f_0_9;
+	float f_2_2;
+	float f_2_9;
+	float f_4_3;
+	float f_4_4;
+	float f_4_5;
+	float f_6_3;
+	vec4 f4_0_0;
+	vec4 f4_0_1;
+	vec4 f4_0_2;
+	vec4 f4_0_3;
+	vec4 f4_0_4;
+	precise float pf_0_10;
+	precise float pf_1_11;
+	precise float pf_1_6;
+	precise float pf_1_8;
+	precise float pf_1_9;
+	precise float pf_2_3;
+	precise float pf_2_5;
+	precise float pf_2_6;
+	precise float pf_2_8;
+	precise float pf_3_10;
+	precise float pf_3_11;
+	precise float pf_3_13;
+	precise float pf_3_4;
+	precise float pf_3_8;
+	precise float pf_4_6;
+	precise float pf_5_0;
+	precise float pf_5_5;
+	precise float pf_6_2;
+	uint u_1_1;
+	uint u_1_2;
+	uint u_1_phi_4;
+	uint u_2_1;
+	uint u_2_2;
+	uint u_2_phi_5;
+	uint u_3_1;
+	uint u_3_2;
+	uint u_3_phi_3;
+	uint u_4_0;
+	uint u_4_1;
+	uint u_4_phi_2;
+	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex2 : tex2}, vec2({in_attr2.x : 1.5015}, {in_attr2.y : 1.66788}))
+	f4_0_0 = texture(tex2, vec2(in_attr2.x, in_attr2.y));
+	// 3.132577E-08  <=>  (1.0f / ({in_attr4.w : 5650.009} * {gl_FragCoord.w : 5650.009}))
+	f_2_2 = (1.0f / (in_attr4.w * gl_FragCoord.w));
+	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex4 : tex4}, vec2({in_attr3.x : 0.96338}, {in_attr3.y : 0.76525}))
+	f4_0_1 = texture(tex4, vec2(in_attr3.x, in_attr3.y));
+	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex3 : tex3}, vec2(((({in_attr5.x : 1.00} * {utof(fs_cbuf9[19].x) : 0.10}) * (({f4_0_0.x : 0.50} * 2.f) + -1.f)) + {in_attr2.z : -0.18467}), ((({in_attr5.x : 1.00} * {utof(fs_cbuf9[19].y) : 0.10}) * (({f4_0_0.y : 0.50} * 2.f) + -1.f)) + {in_attr2.w : 0.98535})))
+	f4_0_2 = texture(tex3, vec2((((in_attr5.x * utof(fs_cbuf9[19].x)) * ((f4_0_0.x * 2.f) + -1.f)) + in_attr2.z), (((in_attr5.x * utof(fs_cbuf9[19].y)) * ((f4_0_0.y * 2.f) + -1.f)) + in_attr2.w)));
+	// vec4(0.50,0.50,0.50,0.75)  <=>  texture({tex5 : tex5}, vec2((({in_attr4.x : 6779.333} * {gl_FragCoord.w : 5650.009}) * {f_2_2 : 3.132577E-08}), (({in_attr4.y : 414.9578} * {gl_FragCoord.w : 5650.009}) * {f_2_2 : 3.132577E-08})))
+	f4_0_3 = texture(tex5, vec2(((in_attr4.x * gl_FragCoord.w) * f_2_2), ((in_attr4.y * gl_FragCoord.w) * f_2_2)));
+	// 0.38125  <=>  ((clamp(((((1.0f / ((({in_attr4.z : 5649.931} * (1.0f / {in_attr4.w : 5650.009})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_3.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 400.00})), 0.0, 1.0) * clamp((clamp((((({f4_0_2.w : 0.75} * {f4_0_1.w : 0.75}) * 1.f) + (0.f - {in_attr0.w : 0.10})) * 4.f), 0.0, 1.0) * {in_attr1.w : 0.38125}), 0.0, 1.0)) * {in_attr6.... : 1.00})
+	pf_0_10 = ((clamp(((((1.0f / (((in_attr4.z * (1.0f / in_attr4.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z)) + ((f4_0_3.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y))), 0.0, 1.0) * clamp((clamp(((((f4_0_2.w * f4_0_1.w) * 1.f) + (0.f - in_attr0.w)) * 4.f), 0.0, 1.0) * in_attr1.w), 0.0, 1.0)) * in_attr6.x);
+	// 0  <=>  {utof(fs_cbuf9[139].z) : 0}
+	f_2_9 = utof(fs_cbuf9[139].z);
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_0 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false);
+	// False  <=>  if({b_1_0 : False})
+	if(b_1_0)
+	{
+		discard;
+	}
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_1 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:(b_1_0, b_1_0)
+	// 1052980019  <=>  {ftou((clamp(((((1.0f / ((({in_attr4.z : 5649.931} * (1.0f / {in_attr4.w : 5650.009})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_3.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 400.00})), 0.0, 1.0) * clamp((clamp((((({f4_0_2.w : 0.75} * {f4_0_1.w : 0.75}) * 1.f) + (0.f - {in_attr0.w : 0.10})) * 4.f), 0.0, 1.0) * {in_attr1.w : 0.38125}), 0.0, 1.0))) : 1052980019}
+	u_4_0 = ftou((clamp(((((1.0f / (((in_attr4.z * (1.0f / in_attr4.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z)) + ((f4_0_3.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y))), 0.0, 1.0) * clamp((clamp(((((f4_0_2.w * f4_0_1.w) * 1.f) + (0.f - in_attr0.w)) * 4.f), 0.0, 1.0) * in_attr1.w), 0.0, 1.0)));
+	u_4_phi_2 = u_4_0;
+	// False  <=>  if({b_1_1 : False})
+	if(b_1_1)
+	{
+		// 0  <=>  0u
+		u_4_1 = 0u;
+		u_4_phi_2 = u_4_1;
+	}
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_2 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:(b_1_0, b_1_0)|(b_1_1, b_1_1)
+	// 992204554  <=>  {ftou((1.0f / {utof(fs_cbuf9[140].y) : 400.00})) : 992204554}
+	u_3_1 = ftou((1.0f / utof(fs_cbuf9[140].y)));
+	u_3_phi_3 = u_3_1;
+	// False  <=>  if({b_1_2 : False})
+	if(b_1_2)
+	{
+		// 0  <=>  0u
+		u_3_2 = 0u;
+		u_3_phi_3 = u_3_2;
+	}
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_3 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:(b_1_0, b_1_0)|(b_1_1, b_1_1)|(b_1_2, b_1_2)
+	// 1065353216  <=>  {ftou(clamp(((((1.0f / ((({in_attr4.z : 5649.931} * (1.0f / {in_attr4.w : 5650.009})) * {utof(fs_cbuf8[30].w) : 24999.90}) + (0.f - {utof(fs_cbuf8[30].y) : 25000.00}))) * {utof(fs_cbuf8[30].z) : 2500.00}) + (({f4_0_3.x : 0.50} * {utof(fs_cbuf8[30].w) : 24999.90}) + {utof(fs_cbuf8[30].x) : 0.10})) * (1.0f / {utof(fs_cbuf9[140].y) : 400.00})), 0.0, 1.0)) : 1065353216}
+	u_1_1 = ftou(clamp(((((1.0f / (((in_attr4.z * (1.0f / in_attr4.w)) * utof(fs_cbuf8[30].w)) + (0.f - utof(fs_cbuf8[30].y)))) * utof(fs_cbuf8[30].z)) + ((f4_0_3.x * utof(fs_cbuf8[30].w)) + utof(fs_cbuf8[30].x))) * (1.0f / utof(fs_cbuf9[140].y))), 0.0, 1.0));
+	u_1_phi_4 = u_1_1;
+	// False  <=>  if({b_1_3 : False})
+	if(b_1_3)
+	{
+		// 0  <=>  0u
+		u_1_2 = 0u;
+		u_1_phi_4 = u_1_2;
+	}
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_4 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:(b_1_0, b_1_0)|(b_1_1, b_1_1)|(b_1_2, b_1_2)|(b_1_3, b_1_3)
+	// 1067029930  <=>  {ftou((({in_attr4.x : 6779.333} * {gl_FragCoord.w : 5650.009}) * {f_2_2 : 3.132577E-08})) : 1067029930}
+	u_2_1 = ftou(((in_attr4.x * gl_FragCoord.w) * f_2_2));
+	u_2_phi_5 = u_2_1;
+	// False  <=>  if({b_1_4 : False})
+	if(b_1_4)
+	{
+		// 0  <=>  0u
+		u_2_2 = 0u;
+		u_2_phi_5 = u_2_2;
+	}
+	// False  <=>  (((({pf_0_10 : 0.38125} <= {f_2_9 : 0}) && (! isnan({pf_0_10 : 0.38125}))) && (! isnan({f_2_9 : 0}))) ? true : false)
+	b_1_5 = ((((pf_0_10 <= f_2_9) && (! isnan(pf_0_10))) && (! isnan(f_2_9))) ? true : false); // maybe duplicate expression on the right side of the assignment, vars:(b_1_0, b_1_0)|(b_1_1, b_1_1)|(b_1_2, b_1_2)|(b_1_3, b_1_3)|(b_1_4, b_1_4)
+	// False  <=>  if({b_1_5 : False})
+	if(b_1_5)
+	{
+		// 0.38125  <=>  {utof(u_4_phi_2) : 0.38125}
+		frag_color0.x = utof(u_4_phi_2);
+		// 0.0025  <=>  {utof(u_3_phi_3) : 0.0025}
+		frag_color0.y = utof(u_3_phi_3);
+		// 1.00  <=>  {utof(u_1_phi_4) : 1.00}
+		frag_color0.z = utof(u_1_phi_4);
+		// 1.19988  <=>  {utof(u_2_phi_5) : 1.19988}
+		frag_color0.w = utof(u_2_phi_5);
+		return;
+	}
+	// 0.999817  <=>  inversesqrt((({in_attr8.z : -0.7353} * {in_attr8.z : -0.7353}) + (({in_attr8.y : 0.1409} * {in_attr8.y : 0.1409}) + ({in_attr8.x : -0.66321} * {in_attr8.x : -0.66321}))))
+	f_4_3 = inversesqrt(((in_attr8.z * in_attr8.z) + ((in_attr8.y * in_attr8.y) + (in_attr8.x * in_attr8.x))));
+	// 0.1408742  <=>  ({in_attr8.y : 0.1409} * {f_4_3 : 0.999817})
+	pf_3_4 = (in_attr8.y * f_4_3);
+	// -0.7351654  <=>  ({in_attr8.z : -0.7353} * {f_4_3 : 0.999817})
+	pf_5_0 = (in_attr8.z * f_4_3);
+	// 1.360238  <=>  (1.0f / max(abs({pf_5_0 : -0.7351654}), max(abs({pf_3_4 : 0.1408742}), abs(({in_attr8.x : -0.66321} * {f_4_3 : 0.999817})))))
+	f_0_9 = (1.0f / max(abs(pf_5_0), max(abs(pf_3_4), abs((in_attr8.x * f_4_3)))));
+	// vec4(0.50,0.50,0.50,0.75)  <=>  textureLod({tex6 : tex6}, vec3((({in_attr8.x : -0.66321} * {f_4_3 : 0.999817}) * {f_0_9 : 1.360238}), ({pf_3_4 : 0.1408742} * {f_0_9 : 1.360238}), ({pf_5_0 : -0.7351654} * (0.f - {f_0_9 : 1.360238}))), {utof(fs_cbuf15[1].x) : 0})
+	f4_0_4 = textureLod(tex6, vec3(((in_attr8.x * f_4_3) * f_0_9), (pf_3_4 * f_0_9), (pf_5_0 * (0.f - f_0_9))), utof(fs_cbuf15[1].x));
+	// 0.59656  <=>  {in_attr1.x : 0.59656}
+	f_4_4 = in_attr1.x;
+	// 0.68487  <=>  {in_attr1.y : 0.68487}
+	f_6_3 = in_attr1.y;
+	// 0.71587  <=>  {in_attr1.z : 0.71587}
+	f_4_5 = in_attr1.z;
+	// 0.8970225  <=>  (((({f4_0_2.x : 0.50} * {f4_0_2.x : 0.50}) * ((0.f - {f_4_4 : 0.59656}) + {in_attr0.x : 1.79841})) + {f_4_4 : 0.59656}) * {in_attr7.x : 1.00})
+	pf_1_6 = ((((f4_0_2.x * f4_0_2.x) * ((0.f - f_4_4) + in_attr0.x)) + f_4_4) * in_attr7.x);
+	// 0.9610925  <=>  (((({f4_0_2.y : 0.50} * {f4_0_2.y : 0.50}) * ((0.f - {f_6_3 : 0.68487}) + {in_attr0.y : 1.78976})) + {f_6_3 : 0.68487}) * {in_attr7.y : 1.00})
+	pf_2_3 = ((((f4_0_2.y * f4_0_2.y) * ((0.f - f_6_3) + in_attr0.y)) + f_6_3) * in_attr7.y);
+	// 0.947255  <=>  (((({f4_0_2.z : 0.50} * {f4_0_2.z : 0.50}) * ((0.f - {f_4_5 : 0.71587}) + {in_attr0.z : 1.64141})) + {f_4_5 : 0.71587}) * {in_attr7.z : 1.00})
+	pf_3_8 = ((((f4_0_2.z * f4_0_2.z) * ((0.f - f_4_5) + in_attr0.z)) + f_4_5) * in_attr7.z);
+	// 0.11156  <=>  ((((({f4_0_4.x : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_4.x : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.x : 0.06156})
+	pf_4_6 = (((((f4_0_4.x * (0.f - in_attr10.w)) + f4_0_4.x) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.x);
+	// 0.11156  <=>  ((((({f4_0_4.y : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_4.y : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.y : 0.06156})
+	pf_5_5 = (((((f4_0_4.y * (0.f - in_attr10.w)) + f4_0_4.y) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.y);
+	// 0.11156  <=>  ((((({f4_0_4.z : 0.50} * (0.f - {in_attr10.w : 0})) + {f4_0_4.z : 0.50}) * {utof(fs_cbuf13[0].y) : 0.50}) * {utof(fs_cbuf15[1].w) : 0.20}) + {in_attr11.z : 0.06156})
+	pf_6_2 = (((((f4_0_4.z * (0.f - in_attr10.w)) + f4_0_4.z) * utof(fs_cbuf13[0].y)) * utof(fs_cbuf15[1].w)) + in_attr11.z);
+	// 0.1102072  <=>  (((({pf_2_3 : 0.9610925} * (0.f - {pf_5_5 : 0.11156})) + {utof(fs_cbuf15[26].y) : 0.1221582}) * {in_attr10.y : 0.20}) + ({pf_2_3 : 0.9610925} * {pf_5_5 : 0.11156}))
+	pf_2_5 = ((((pf_2_3 * (0.f - pf_5_5)) + utof(fs_cbuf15[26].y)) * in_attr10.y) + (pf_2_3 * pf_5_5));
+	// 0.0835502  <=>  (((({pf_1_6 : 0.8970225} * (0.f - {pf_4_6 : 0.11156})) + {utof(fs_cbuf15[26].x) : 0.0174636}) * {in_attr10.y : 0.20}) + ({pf_1_6 : 0.8970225} * {pf_4_6 : 0.11156}))
+	pf_1_8 = ((((pf_1_6 * (0.f - pf_4_6)) + utof(fs_cbuf15[26].x)) * in_attr10.y) + (pf_1_6 * pf_4_6));
+	// 0.1284206  <=>  (((({pf_3_8 : 0.947255} * (0.f - {pf_6_2 : 0.11156})) + {utof(fs_cbuf15[26].z) : 0.2193998}) * {in_attr10.y : 0.20}) + ({pf_3_8 : 0.947255} * {pf_6_2 : 0.11156}))
+	pf_3_10 = ((((pf_3_8 * (0.f - pf_6_2)) + utof(fs_cbuf15[26].z)) * in_attr10.y) + (pf_3_8 * pf_6_2));
+	// 0.0146853  <=>  ((((0.f - {pf_1_8 : 0.0835502}) + {in_attr12.x : 0.00129}) * {in_attr12.w : 0.83716}) + {pf_1_8 : 0.0835502})
+	pf_1_9 = ((((0.f - pf_1_8) + in_attr12.x) * in_attr12.w) + pf_1_8);
+	// 0.0263094  <=>  ((((0.f - {pf_2_5 : 0.1102072}) + {in_attr12.y : 0.00999}) * {in_attr12.w : 0.83716}) + {pf_2_5 : 0.1102072})
+	pf_2_6 = ((((0.f - pf_2_5) + in_attr12.y) * in_attr12.w) + pf_2_5);
+	// 0.0291413  <=>  ((((0.f - {pf_3_10 : 0.1284206}) + {in_attr12.z : 0.00983}) * {in_attr12.w : 0.83716}) + {pf_3_10 : 0.1284206})
+	pf_3_11 = ((((0.f - pf_3_10) + in_attr12.z) * in_attr12.w) + pf_3_10);
+	// 0.0242066  <=>  (((((0.f - {pf_1_9 : 0.0146853}) + {utof(fs_cbuf15[25].x) : 0.0282744}) * {in_attr10.x : 0.70066}) + {pf_1_9 : 0.0146853}) * {in_attr9.x : 1.00})
+	pf_1_11 = (((((0.f - pf_1_9) + utof(fs_cbuf15[25].x)) * in_attr10.x) + pf_1_9) * in_attr9.x);
+	// 0.0731077  <=>  (((((0.f - {pf_2_6 : 0.0263094}) + {utof(fs_cbuf15[25].y) : 0.0931012}) * {in_attr10.x : 0.70066}) + {pf_2_6 : 0.0263094}) * {in_attr9.x : 1.00})
+	pf_2_8 = (((((0.f - pf_2_6) + utof(fs_cbuf15[25].y)) * in_attr10.x) + pf_2_6) * in_attr9.x);
+	// 0.0903051  <=>  (((((0.f - {pf_3_11 : 0.0291413}) + {utof(fs_cbuf15[25].z) : 0.1164359}) * {in_attr10.x : 0.70066}) + {pf_3_11 : 0.0291413}) * {in_attr9.x : 1.00})
+	pf_3_13 = (((((0.f - pf_3_11) + utof(fs_cbuf15[25].z)) * in_attr10.x) + pf_3_11) * in_attr9.x);
+	// 0.0242066  <=>  {pf_1_11 : 0.0242066}
+	frag_color0.x = pf_1_11;
+	// 0.0731077  <=>  {pf_2_8 : 0.0731077}
+	frag_color0.y = pf_2_8;
+	// 0.0903051  <=>  {pf_3_13 : 0.0903051}
+	frag_color0.z = pf_3_13;
+	// 0.38125  <=>  clamp({pf_0_10 : 0.38125}, 0.0, 1.0)
+	frag_color0.w = clamp(pf_0_10, 0.0, 1.0);
+	return;
+}

@@ -888,24 +888,24 @@ void main()
 	f_4_3 = uni_attr6.y;
 	// 1.00  <=>  floor(({uni_attr6.x : 0.7713} * 2.f))
 	f_5_13 = floor((uni_attr6.x * 2.f));
-	// 0  <=>  ({vs_cbuf9[7].x : 9} & 536870912u)
-	u_11_6 = (vs_cbuf9[7].x & 536870912u);
-	// 0  <=>  ({vs_cbuf9[7].x : 9} & 268435456u)
-	u_12_5 = (vs_cbuf9[7].x & 268435456u);
-	// 0  <=>  ({vs_cbuf9[7].x : 9} & 1073741824u)
-	u_10_4 = (vs_cbuf9[7].x & 1073741824u);
+	// 0  <=>  ({vs_cbuf9_7_x : 9} & 536870912u)
+	u_11_6 = (vs_cbuf9_7_x & 536870912u);
+	// 0  <=>  ({vs_cbuf9_7_x : 9} & 268435456u)
+	u_12_5 = (vs_cbuf9_7_x & 268435456u);
+	// 0  <=>  ({vs_cbuf9_7_x : 9} & 1073741824u)
+	u_10_4 = (vs_cbuf9_7_x & 1073741824u);
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_14_3 = ftou(v.uv.x);
 	u_14_phi_17 = u_14_3;
-	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9[7].y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & vs_cbuf9[7].y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9_7_y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9_7_y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_14_4 = ftou(((0.f - v.uv.x) + 1.f));
 		u_14_phi_17 = u_14_4;
 	}
-	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9[7].y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & vs_cbuf9[7].y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9_7_y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.x : 0.7713} > 0.5f) && (! myIsNaN({uni_attr6.x : 0.7713}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9_7_y) == 1u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.x > 0.5f) && (! myIsNaN(uni_attr6.x))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 0  <=>  floor(({f_4_3 : 0.15253} * 2.f))
@@ -1011,8 +1011,8 @@ void main()
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_16_1 = ftou(v.uv.y);
 	u_16_phi_26 = u_16_1;
-	// False  <=>  if(((! (((~ (((2u & {vs_cbuf9[7].y : 0}) == 2u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((2u & vs_cbuf9[7].y) == 2u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((2u & {vs_cbuf9_7_y : 0}) == 2u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((2u & vs_cbuf9_7_y) == 2u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_16_2 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1039,8 +1039,8 @@ void main()
 	// 0  <=>  0u
 	u_2_7 = 0u;
 	u_2_phi_28 = u_2_7;
-	// True  <=>  if((((1u & {vs_cbuf9[7].z : 301056}) != 1u) ? true : false))
-	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9_7_z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9_7_z) != 1u) ? true : false))
 	{
 		// 1  <=>  1u
 		u_2_8 = 1u;
@@ -1064,8 +1064,8 @@ void main()
 	f_6_42 = utof(vs_cbuf9[151].w);
 	// 0  <=>  (((({pf_23_1 : 0.7594502} >= {f_6_42 : 0.94}) && (! myIsNaN({pf_23_1 : 0.7594502}))) && (! myIsNaN({f_6_42 : 0.94}))) ? 1065353216u : 0u)
 	u_21_1 = ((((pf_23_1 >= f_6_42) && (! myIsNaN(pf_23_1))) && (! myIsNaN(f_6_42))) ? 1065353216u : 0u);
-	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9[7].y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & vs_cbuf9[7].y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9_7_y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9_7_y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 1.00  <=>  {utof(vs_cbuf9[152].w) : 1.00}
@@ -1077,8 +1077,8 @@ void main()
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_22_1 = ftou(v.uv.y);
 	u_22_phi_30 = u_22_1;
-	// False  <=>  if(((! (((~ (((8u & {vs_cbuf9[7].y : 0}) == 8u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.w : 0.16655} > 0.5f) && (! myIsNaN({uni_attr6.w : 0.16655}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((8u & vs_cbuf9[7].y) == 8u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.w > 0.5f) && (! myIsNaN(uni_attr6.w))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((8u & {vs_cbuf9_7_y : 0}) == 8u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.w : 0.16655} > 0.5f) && (! myIsNaN({uni_attr6.w : 0.16655}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((8u & vs_cbuf9_7_y) == 8u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.w > 0.5f) && (! myIsNaN(uni_attr6.w))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_22_2 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1091,8 +1091,8 @@ void main()
 	// 1065312280  <=>  {ftou(v.uv.y) : 1065312280}
 	u_25_0 = ftou(v.uv.y);
 	u_25_phi_31 = u_25_0;
-	// False  <=>  if(((! (((~ (((32u & {vs_cbuf9[7].y : 0}) == 32u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((32u & vs_cbuf9[7].y) == 32u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((32u & {vs_cbuf9_7_y : 0}) == 32u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((32u & vs_cbuf9_7_y) == 32u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 991946752  <=>  {ftou(((0.f - {v.uv.y : 0.99756}) + 1.f)) : 991946752}
 		u_25_1 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1107,8 +1107,8 @@ void main()
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_28_2 = ftou(v.uv.x);
 	u_28_phi_32 = u_28_2;
-	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9[7].y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & vs_cbuf9[7].y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9_7_y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({uni_attr6.z : 0.11625} > 0.5f) && (! myIsNaN({uni_attr6.z : 0.11625}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9_7_y) == 4u) ? 4294967295u : 0u)) | (~ ((((uni_attr6.z > 0.5f) && (! myIsNaN(uni_attr6.z))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_28_3 = ftou(((0.f - v.uv.x) + 1.f));
@@ -1117,8 +1117,8 @@ void main()
 	// 1056653223  <=>  {ftou(v.uv.x) : 1056653223}
 	u_27_5 = ftou(v.uv.x);
 	u_27_phi_33 = u_27_5;
-	// False  <=>  if(((! (((~ (((16u & {vs_cbuf9[7].y : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((16u & vs_cbuf9[7].y) == 16u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((16u & {vs_cbuf9_7_y : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_4_3 : 0.15253} > 0.5f) && (! myIsNaN({f_4_3 : 0.15253}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((16u & vs_cbuf9_7_y) == 16u) ? 4294967295u : 0u)) | (~ ((((f_4_3 > 0.5f) && (! myIsNaN(f_4_3))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057120300  <=>  {ftou(((0.f - {v.uv.x : 0.49072}) + 1.f)) : 1057120300}
 		u_27_6 = ftou(((0.f - v.uv.x) + 1.f));
@@ -1275,8 +1275,8 @@ void main()
 	// 0  <=>  0u
 	u_32_2 = 0u;
 	u_32_phi_44 = u_32_2;
-	// True  <=>  if((((1u & {vs_cbuf9[7].z : 301056}) != 1u) ? true : false))
-	if((((1u & vs_cbuf9[7].z) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9_7_z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9_7_z) != 1u) ? true : false))
 	{
 		// 2  <=>  2u
 		u_32_3 = 2u;

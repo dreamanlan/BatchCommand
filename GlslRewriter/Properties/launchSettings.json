@@ -2,7 +2,7 @@
   "profiles": {
     "GlslRewriter": {
       "commandName": "Project",
-      "commandLineArgs": "-r -out light_smoke_vs_hlsl.txt light_smoke.vs",
+      "commandLineArgs": "-argcfg 1 -out simple_light_smoke1_vs_1.txt simple_light_smoke1.vs",
       "workingDirectory": "F:\\GitHub\\BatchCommand\\GlslRewriter\\bin\\Debug\\net6.0"
     }
   }

@@ -397,7 +397,10 @@ namespace GlslRewriter
         protected DslExpression.CalculatorValue CachedValue
         {
             get { return m_CachedValue; }
-            set { m_CachedValue = value;m_HaveValue = true; }
+            set {
+                m_CachedValue = value;
+                m_HaveValue = true;
+            }
         }
         protected string CachedExpression { get; set; } = string.Empty;
         protected int ExpressionIndent { get; set; } = 0;
@@ -761,6 +764,10 @@ namespace GlslRewriter
                     if (!Program.IsPhiVar(vnode.VarName)) {
                         if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
                             VariableTable.AssignValue(vnode, vnode2, ArgTypeConversion, 0);
+                            if (Program.IsPhiVar(vnode2.VarName)) {
+                                //这里有可能是phi变量第一次被使用，因为phi变量在计算图上没有赋值，这里给一次缓存值的机会
+                                vnode2.CalcValue(visits, ref cinfo);
+                            }
                         }
                         else {
                             VariableTable.AssignValue(vnode, PrevNodes[0].CalcValue(visits, ref cinfo), ArgTypeConversion, 0);

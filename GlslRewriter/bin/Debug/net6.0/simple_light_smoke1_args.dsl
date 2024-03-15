@@ -1,10 +1,10 @@
-vs
+common
 {
     setting
     {
+        for_hlsl_shader;
         debug_mode;
         //print_graph;
-        for_hlsl_shader;
         //def_multiline;
         //def_expanded_only_once;
         //def_multiline_for_variable = false;
@@ -32,7 +32,12 @@ vs
             split_on("texelSize", 3);
             split_on("log2", 12);
         };
-
+    };
+};
+vs
+{
+    setting
+    {
         split_object_assignment{
             set(out_attr0.x, 64, 20480, true, true);
             out_attr0.y,
@@ -687,10 +692,10 @@ vs
     {
         textureQueryLod = textureQueryLod(@arg(0), @arg(1), s_linear_clamp_sampler);
         textureLod = textureLod(@arg(0), @arg(1), @arg(2), s_linear_clamp_sampler);
-        vs_cbuf9[7].x = 1u;
-        vs_cbuf9[7].y = 0u;
-        vs_cbuf9[7].z = 301056u;
-        vs_cbuf9[7].w = 0u;
+        vs_cbuf9[7].x = vs_cbuf9_7_x;
+        vs_cbuf9[7].y = vs_cbuf9_7_y;
+        vs_cbuf9[7].z = vs_cbuf9_7_z;
+        vs_cbuf9[7].w = vs_cbuf9_7_w;
         vs_cbuf9[*] = vs_cbuf9[@arg(1)];
         replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
         vs_cbuf8[29] = camera_wpos;
@@ -736,35 +741,6 @@ ps
 {
     setting
     {
-        debug_mode;
-        //print_graph;
-        for_hlsl_shader;
-        //def_multiline;
-        //def_expanded_only_once;
-        //def_multiline_for_variable = false;
-        //def_expanded_only_once_for_variable = false;
-        def_max_level = 32;
-        def_max_length = 512;
-        //def_skip_value;
-        def_skip_expression;
-        def_max_level_for_variable = 256;
-        def_max_length_for_variable = 20480;
-        compute_graph_nodes_capacity = 10240;
-        shader_variables_capacity = 1024;
-        string_buffer_capacity_surplus = 1024;
-        generate_expression_list;
-
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt");
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("log2", 12);
-        };
-
         split_object_assignment{
             set(frag_color0.x, 64, 2048, true, true);
             set(frag_color0.y, 64, 2048);
@@ -935,3 +911,11 @@ cs
         generate_expression_list;
     };
 };
+vs_code_block(hlsl_prologue)
+{:
+    // 1u, 0u, 301056u, 0u
+    uint vs_cbuf9_7_x = 1u;
+    uint vs_cbuf9_7_y = 0u;
+    uint vs_cbuf9_7_z = 301056u;
+    uint vs_cbuf9_7_w = 0u;
+:};

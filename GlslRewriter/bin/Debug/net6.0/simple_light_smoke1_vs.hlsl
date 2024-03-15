@@ -1,5 +1,11 @@
 void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 {
+    // 1u, 0u, 301056u, 0u
+    uint vs_cbuf9_7_x = 1u;
+    uint vs_cbuf9_7_y = 0u;
+    uint vs_cbuf9_7_z = 301056u;
+    uint vs_cbuf9_7_w = 0u;
+
 	// 1065353216 = 1.00f;
 	// vs_cbuf0[21] = float4(1.0935697E-14, 8E-45, 8.2508E-41, 0);
 	// vs_cbuf8[0] = float4(-0.7425708, 1.493044E-08, 0.6697676, 1075.086);
@@ -1062,14 +1068,14 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	f_8_13 = i.vao_attr6.y;
 	// 0.76809  <=>  {i.vao_attr6.z : 0.76809}
 	f_5_2 = i.vao_attr6.z;
-	// 0  <=>  ({1u : 1} & 268435456u)
-	u_11_13 = (1u & 268435456u);
-	// 0  <=>  ({1u : 1} & 1073741824u)
-	u_12_13 = (1u & 1073741824u);
+	// 0  <=>  ({vs_cbuf9_7_x : 1} & 268435456u)
+	u_11_13 = (vs_cbuf9_7_x & 268435456u);
+	// 0  <=>  ({vs_cbuf9_7_x : 1} & 1073741824u)
+	u_12_13 = (vs_cbuf9_7_x & 1073741824u);
 	// 1.00  <=>  floor(({f_0_6 : 0.90784} * 2.f))
 	f_3_12 = floor((f_0_6 * 2.f));
-	// 0  <=>  ({1u : 1} & 536870912u)
-	u_5_14 = (1u & 536870912u);
+	// 0  <=>  ({vs_cbuf9_7_x : 1} & 536870912u)
+	u_5_14 = (vs_cbuf9_7_x & 536870912u);
 	// 0.305  <=>  ({pf_0_1 : 183.00} * (1.0f / float(int((myIsNaN({i.vao_attr3.w : 600.00}) ? 0u : int(clamp(trunc({i.vao_attr3.w : 600.00}), float(-2147483600.f), float(2147483600.f))))))))
 	pf_16_1 = (pf_0_1 * (1.0f / float(int((myIsNaN(i.vao_attr3.w) ? 0u : int(clamp(trunc(i.vao_attr3.w), float(-2147483600.f), float(2147483600.f))))))));
 	// 1.00  <=>  floor(({f_5_2 : 0.76809} * 2.f))
@@ -1077,15 +1083,15 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1056759926  <=>  {ftou(v.uv.x) : 1056759926}
 	u_5_19 = ftou(v.uv.x);
 	u_5_phi_24 = u_5_19;
-	// False  <=>  if(((! (((~ (((1u & {0u : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({f_0_6 : 0.90784} > 0.5f) && (! myIsNaN({f_0_6 : 0.90784}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & 0u) == 1u) ? 4294967295u : 0u)) | (~ ((((f_0_6 > 0.5f) && (! myIsNaN(f_0_6))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9_7_y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({f_0_6 : 0.90784} > 0.5f) && (! myIsNaN({f_0_6 : 0.90784}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9_7_y) == 1u) ? 4294967295u : 0u)) | (~ ((((f_0_6 > 0.5f) && (! myIsNaN(f_0_6))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057066949  <=>  {ftou(((0.f - {v.uv.x : 0.4939}) + 1.f)) : 1057066949}
 		u_5_20 = ftou(((0.f - v.uv.x) + 1.f));
 		u_5_phi_24 = u_5_20;
 	}
-	// False  <=>  if(((! (((~ (((1u & {0u : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({f_0_6 : 0.90784} > 0.5f) && (! myIsNaN({f_0_6 : 0.90784}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((1u & 0u) == 1u) ? 4294967295u : 0u)) | (~ ((((f_0_6 > 0.5f) && (! myIsNaN(f_0_6))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((1u & {vs_cbuf9_7_y : 0}) == 1u) ? 4294967295u : 0u)) | (~ (((({f_0_6 : 0.90784} > 0.5f) && (! myIsNaN({f_0_6 : 0.90784}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((1u & vs_cbuf9_7_y) == 1u) ? 4294967295u : 0u)) | (~ ((((f_0_6 > 0.5f) && (! myIsNaN(f_0_6))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 0  <=>  0u
@@ -1105,15 +1111,15 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1056759926  <=>  {ftou(v.uv.x) : 1056759926}
 	u_16_2 = ftou(v.uv.x);
 	u_16_phi_27 = u_16_2;
-	// False  <=>  if(((! (((~ (((4u & {0u : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & 0u) == 4u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9_7_y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9_7_y) == 4u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057066949  <=>  {ftou(((0.f - {v.uv.x : 0.4939}) + 1.f)) : 1057066949}
 		u_16_3 = ftou(((0.f - v.uv.x) + 1.f));
 		u_16_phi_27 = u_16_3;
 	}
-	// False  <=>  if(((! (((~ (((4u & {0u : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((4u & 0u) == 4u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((4u & {vs_cbuf9_7_y : 0}) == 4u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((4u & vs_cbuf9_7_y) == 4u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 0  <=>  (((((({f_0_6 : 0.90784} + {f_8_13 : 0.16926}) * 0.5f) + -0.5f) * {utof(vs_cbuf9[196].x) : 0}) * 2.f) + {utof(vs_cbuf9[195].x) : 0})
@@ -1131,8 +1137,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1056759926  <=>  {ftou(v.uv.x) : 1056759926}
 	u_13_9 = ftou(v.uv.x);
 	u_13_phi_30 = u_13_9;
-	// False  <=>  if(((! (((~ (((16u & {0u : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((16u & 0u) == 16u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((16u & {vs_cbuf9_7_y : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((16u & vs_cbuf9_7_y) == 16u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1057066949  <=>  {ftou(((0.f - {v.uv.x : 0.4939}) + 1.f)) : 1057066949}
 		u_13_10 = ftou(((0.f - v.uv.x) + 1.f));
@@ -1214,8 +1220,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	f_6_6 = utof(vs_cbuf9[151].w);
 	// 0  <=>  (((({pf_16_1 : 0.305} >= {f_6_6 : 0.94}) && (! myIsNaN({pf_16_1 : 0.305}))) && (! myIsNaN({f_6_6 : 0.94}))) ? 1065353216u : 0u)
 	u_20_2 = ((((pf_16_1 >= f_6_6) && (! myIsNaN(pf_16_1))) && (! myIsNaN(f_6_6))) ? 1065353216u : 0u);
-	// False  <=>  if(((! (((~ (((16u & {0u : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((16u & 0u) == 16u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((16u & {vs_cbuf9_7_y : 0}) == 16u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((16u & vs_cbuf9_7_y) == 16u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 	}
 	// 1065353216  <=>  {u_12_phi_32 : }
@@ -1231,8 +1237,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1065107430  <=>  {ftou(v.uv.y) : 1065107430}
 	u_12_27 = ftou(v.uv.y);
 	u_12_phi_37 = u_12_27;
-	// False  <=>  if(((! (((~ (((2u & {0u : 0}) == 2u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((2u & 0u) == 2u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((2u & {vs_cbuf9_7_y : 0}) == 2u) ? 4294967295u : 0u)) | (~ (((({f_8_13 : 0.16926} > 0.5f) && (! myIsNaN({f_8_13 : 0.16926}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((2u & vs_cbuf9_7_y) == 2u) ? 4294967295u : 0u)) | (~ ((((f_8_13 > 0.5f) && (! myIsNaN(f_8_13))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1013974656  <=>  {ftou(((0.f - {v.uv.y : 0.98535}) + 1.f)) : 1013974656}
 		u_12_28 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1241,8 +1247,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1065107430  <=>  {ftou(v.uv.y) : 1065107430}
 	u_22_1 = ftou(v.uv.y);
 	u_22_phi_38 = u_22_1;
-	// False  <=>  if(((! (((~ (((8u & {0u : 0}) == 8u) ? 4294967295u : 0u)) | (~ (((({i.vao_attr6.w : 0.07008} > 0.5f) && (! myIsNaN({i.vao_attr6.w : 0.07008}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((8u & 0u) == 8u) ? 4294967295u : 0u)) | (~ ((((i.vao_attr6.w > 0.5f) && (! myIsNaN(i.vao_attr6.w))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((8u & {vs_cbuf9_7_y : 0}) == 8u) ? 4294967295u : 0u)) | (~ (((({i.vao_attr6.w : 0.07008} > 0.5f) && (! myIsNaN({i.vao_attr6.w : 0.07008}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((8u & vs_cbuf9_7_y) == 8u) ? 4294967295u : 0u)) | (~ ((((i.vao_attr6.w > 0.5f) && (! myIsNaN(i.vao_attr6.w))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1013974656  <=>  {ftou(((0.f - {v.uv.y : 0.98535}) + 1.f)) : 1013974656}
 		u_22_2 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1251,8 +1257,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 1065107430  <=>  {ftou(v.uv.y) : 1065107430}
 	u_23_1 = ftou(v.uv.y);
 	u_23_phi_39 = u_23_1;
-	// False  <=>  if(((! (((~ (((32u & {0u : 0}) == 32u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
-	if(((! (((~ (((32u & 0u) == 32u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	// False  <=>  if(((! (((~ (((32u & {vs_cbuf9_7_y : 0}) == 32u) ? 4294967295u : 0u)) | (~ (((({f_5_2 : 0.76809} > 0.5f) && (! myIsNaN({f_5_2 : 0.76809}))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
+	if(((! (((~ (((32u & vs_cbuf9_7_y) == 32u) ? 4294967295u : 0u)) | (~ ((((f_5_2 > 0.5f) && (! myIsNaN(f_5_2))) && (! myIsNaN(0.5f))) ? 4294967295u : 0u))) != 0u)) ? true : false))
 	{
 		// 1013974656  <=>  {ftou(((0.f - {v.uv.y : 0.98535}) + 1.f)) : 1013974656}
 		u_23_2 = ftou(((0.f - v.uv.y) + 1.f));
@@ -1291,8 +1297,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 0  <=>  0u
 	u_21_2 = 0u;
 	u_21_phi_41 = u_21_2;
-	// True  <=>  if((((1u & {301056u : 301056}) != 1u) ? true : false))
-	if((((1u & 301056u) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9_7_z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9_7_z) != 1u) ? true : false))
 	{
 		// 1  <=>  1u
 		u_21_3 = 1u;
@@ -1465,8 +1471,8 @@ void vert_from_glsl(appdata v, vaodata i, inout v2f o)
 	// 0  <=>  0u
 	u_40_3 = 0u;
 	u_40_phi_52 = u_40_3;
-	// True  <=>  if((((1u & {301056u : 301056}) != 1u) ? true : false))
-	if((((1u & 301056u) != 1u) ? true : false))
+	// True  <=>  if((((1u & {vs_cbuf9_7_z : 301056}) != 1u) ? true : false))
+	if((((1u & vs_cbuf9_7_z) != 1u) ? true : false))
 	{
 		// 2  <=>  2u
 		u_40_4 = 2u;

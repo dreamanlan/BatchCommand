@@ -236,7 +236,7 @@ namespace GlslRewriter
                 var datas = RenderDocImporter.ReadHlslMergeInfo(hlslMerge.File);
                 hlslMergeDatas.Add(hlslMerge.File, datas);
             }
-            var glslLines = CompletionAndSkipPP(glslFileLines, hlslMergeDatas, out var globalCode);
+            var glslLines = CompletionAndSkipPP(glslFileLines, hlslMergeDatas, out var glslGlobalCode);
             string glslTxt = ConvertCondExpAndSkipComments(glslLines);
             if (!s_InteractiveComputing)
                 File.WriteAllText(s_SrcFileForDSL, glslTxt);
@@ -457,7 +457,14 @@ namespace GlslRewriter
                     }
                     var outBuilder = s_ExpressionBuilder;
                     outBuilder.Length = 0;
+                    bool isForHlsl = false;
                     if (s_DoReplacement && Config.ActiveConfig.SettingInfo.ForHlslShader) {
+                        isForHlsl = true;
+                    }
+                    if (isForHlsl) {
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("hlsl_global", out var gcode)) {
+                            outBuilder.AppendLine(gcode);
+                        }
                         if (Config.ActiveConfig.ShaderType == "vs") {
                             outBuilder.AppendLine("void vert_from_glsl(appdata v, vaodata i, inout v2f o)");
                             outBuilder.AppendLine("{");
@@ -466,16 +473,22 @@ namespace GlslRewriter
                             outBuilder.AppendLine("void frag_from_glsl(v2f i, inout float4 col)");
                             outBuilder.AppendLine("{");
                         }
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("hlsl_prologue", out var pcode)) {
+                            outBuilder.AppendLine(pcode);
+                        }
                     }
                     else {
-                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("global", out var gcode)) {
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("glsl_global", out var gcode)) {
                             outBuilder.AppendLine(gcode);
                         }
                         else {
-                            outBuilder.AppendLine(globalCode);
+                            outBuilder.AppendLine(glslGlobalCode);
                         }
                         outBuilder.AppendLine("void main()");
                         outBuilder.AppendLine("{");
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("glsl_prologue", out var pcode)) {
+                            outBuilder.AppendLine(pcode);
+                        }
                     }
                     if (RenderDocImporter.s_UniformUtofOrFtouVals.Count > 0) {
                         foreach (var line in RenderDocImporter.s_UniformUtofOrFtouVals) {
@@ -499,6 +512,16 @@ namespace GlslRewriter
                     foreach (var tuple in s_ExpressionList) {
                         var line = tuple.Item1;
                         outBuilder.AppendLine(line);
+                    }
+                    if (isForHlsl) {
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("hlsl_epilogue", out var ecode)) {
+                            outBuilder.AppendLine(ecode);
+                        }
+                    }
+                    else {
+                        if (Config.ActiveConfig.CodeBlocks.TryGetValue("glsl_epilogue", out var ecode)) {
+                            outBuilder.AppendLine(ecode);
+                        }
                     }
                     outBuilder.AppendLine("}");
                     string txt = outBuilder.ToString();

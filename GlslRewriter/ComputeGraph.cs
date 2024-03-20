@@ -708,8 +708,8 @@ namespace GlslRewriter
                     }
                     else if (PrevNodes[0] is ComputeGraphCalcNode calcNode) {
                         if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode2) {
-                            //var[ix].member
-                            if(VariableTable.ObjectArrayGetValue(vnode2, cnode2.Value, constNode.Value, out var val)) {
+                            //var[ix].member, 这里ix应该不会有从浮点转换到整数的情形，如果遇到应该是把本来是整数的参数配成浮点数了，重新配置再生成代码
+                            if (VariableTable.ObjectArrayGetValue(vnode2, cnode2.Value, constNode.Value, out var val)) {
                                 CachedValue = val;
                                 handled = true;
                             }
@@ -730,7 +730,7 @@ namespace GlslRewriter
             else if (Operator == "[]") {
                 bool handled = false;
                 if (PrevNodes[0] is ComputeGraphVarNode varNode) {
-                    //var[ix]
+                    //var[ix], 这里ix应该不会有从浮点转换到整数的情形，如果遇到应该是把本来是整数的参数配成浮点数了，重新配置再生成代码
                     if (PrevNodes[1] is ComputeGraphConstNode constNode) {
                         if (VariableTable.ArrayGetValue(varNode, constNode.Value, out var val)) {
                             CachedValue = val;
@@ -780,16 +780,18 @@ namespace GlslRewriter
                 }
                 else if (NextNodes[0] is ComputeGraphCalcNode calcNode) {
                     if (calcNode.Operator=="." && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode2) {
-                        //var.member = exp
+                        //var.member = exp, 这里exp与var.member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
                         VariableTable.ObjectAssignValue(vnode2, cnode2.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                     }
                     else if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode3 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode3) {
-                        //var[ix] = exp
+                        //var[ix] = exp, 这里exp与var.member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
+                        //此外，ix不应该有从浮点变到整数的情形，遇到表明本来是整数的参数配成浮点数了，重新配置再生成代码
                         VariableTable.ArrayAssignValue(vnode3, cnode3.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                     }
                     else if (calcNode.Operator == "." && calcNode.PrevNodes[0] is ComputeGraphCalcNode calcNode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode4) {
                         if (calcNode2.Operator == "[]" && calcNode2.PrevNodes[0] is ComputeGraphVarNode vnode5 && calcNode2.PrevNodes[1] is ComputeGraphConstNode cnode5) {
-                            //var[ix].member = exp
+                            //var[ix].member = exp, 这里exp与var[ix].member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
+                            //此外，ix不应该有从浮点变到整数的情形，遇到表明本来是整数的参数配成浮点数了，重新配置再生成代码
                             //暂未遇到
                             VariableTable.ObjectArrayAssignValue(vnode5, cnode5.Value, cnode4.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                         }
@@ -1291,6 +1293,7 @@ namespace GlslRewriter
                                     var node = PrevNodes[argIx];
                                     int curLvl;
                                     if (null != repInfo.ArgGetter) {
+                                        //这里的层级配置有可能与原计算不一致，遇到glsl与hlsl的变量拆分不一致时重点检查此处
                                         curLvl = curLevel;
                                         var p = repInfo.ArgGetter(this, argIx, ref curLvl);
                                         s_IgnoredContent.Length = 0;
@@ -1677,10 +1680,10 @@ namespace GlslRewriter
         {
             switch (ix) {
                 case 0:
-                    curLevel = curLevel + 1;
+                    curLevel = curLevel + 2;
                     return expNode.PrevNodes[0].PrevNodes[0];
                 case 1:
-                    curLevel = curLevel + 1;
+                    curLevel = curLevel + 2;
                     return expNode.PrevNodes[0].PrevNodes[1];
                 case 2:
                     curLevel = curLevel + 1;

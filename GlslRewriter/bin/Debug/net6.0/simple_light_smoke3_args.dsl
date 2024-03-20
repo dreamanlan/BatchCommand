@@ -1,7 +1,8 @@
-vs
+common
 {
     setting
     {
+        for_hlsl_shader;
         debug_mode;
         //print_graph;
         //def_multiline;
@@ -31,7 +32,12 @@ vs
             split_on("texelSize", 3);
             split_on("log2", 12);
         };
-
+    };
+};
+vs
+{
+    setting
+    {
         split_object_assignment{
             set(out_attr0.x, 64, 20480, true, true);
             out_attr0.y,
@@ -143,7 +149,7 @@ vs
             add_range(0,101);
         };
         vao_attr("private Vector4[] in_attr11_array", "vec4", "d:/uc/VAO_simple_light_smoke3/vertex_in_attr11.csv", "[NonSerialized]"){
-            add_range(0,34);
+            add_range(0,101);
         };
     };
     shader_arg(1)
@@ -188,14 +194,14 @@ vs
         replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
         vs_cbuf8[29] = camera_wpos;
         vs_cbuf15[28] = lightDir;
-        vs_ssbo0[44] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[45] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[46] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[47] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[48] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[49] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[50] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[51] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[28] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[29] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[30] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[31] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[32] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[33] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[34] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[35] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
         vs_ssbo0[*] = vs_ssbo0[@arg(1)];
         (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
     };
@@ -206,15 +212,14 @@ vs
         string("vec2", "float2");
         string("vec3", "float3");
         string("vec4", "float4");
-        string("in_attr", "uni_attr");
-        string("out_attr", "o.fs_attr");
-        string("gl_Position", "o.vertex");
-        string("return;", "return o;");
         string("tex5", "_CameraDepthTexture");
         string("isnan", "myIsNaN");
-        regex(@"\buni_attr0\b", "v.vertex");
-        regex(@"\buni_attr1\b", "v.uv");
-        regex(@"\buni_attr2\b", "v.offset");
+        regex(@"\bin_attr0\b", "v.vertex");
+        regex(@"\bin_attr1\b", "v.uv");
+        regex(@"\bin_attr2\b", "v.offset");
+        string("in_attr", "i.vao_attr");
+        string("out_attr", "o.fs_attr");
+        string("gl_Position", "o.vertex");
     };
     calculator
     {
@@ -230,34 +235,6 @@ ps
 {
     setting
     {
-        debug_mode;
-        //print_graph;
-        //def_multiline;
-        //def_expanded_only_once;
-        //def_multiline_for_variable = false;
-        //def_expanded_only_once_for_variable = false;
-        def_max_level = 32;
-        def_max_length = 512;
-        //def_skip_value;
-        def_skip_expression;
-        def_max_level_for_variable = 256;
-        def_max_length_for_variable = 20480;
-        compute_graph_nodes_capacity = 10240;
-        shader_variables_capacity = 1024;
-        string_buffer_capacity_surplus = 1024;
-        generate_expression_list;
-
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt");
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("log2", 12);
-        };
-
         split_object_assignment{
             set(frag_color0.x, 64, 2048, true, true);
             set(frag_color0.y, 64, 2048);
@@ -343,7 +320,6 @@ ps
         string("in_attr", "i.fs_attr");
         string("gl_FragCoord", "i.vertex");
         string("frag_color0", "col");
-        string("return;", "return col;");
         string("tex5", "_CameraDepthTexture");
     };
     calculator
@@ -381,3 +357,11 @@ cs
         generate_expression_list;
     };
 };
+vs_code_block(hlsl_prologue)
+{:
+    // 9u, 0u, 301056u, 11u
+    uint vs_cbuf9_7_x = 9u;
+    uint vs_cbuf9_7_y = 0u;
+    uint vs_cbuf9_7_z = 301056u;
+    uint vs_cbuf9_7_w = 11u;
+:};

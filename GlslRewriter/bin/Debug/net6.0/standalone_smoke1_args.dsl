@@ -1,7 +1,8 @@
-vs
+common
 {
     setting
     {
+        for_hlsl_shader;
         debug_mode;
         //print_graph;
         //def_multiline;
@@ -31,7 +32,12 @@ vs
             split_on("texelSize", 3);
             split_on("log2", 12);
         };
-
+    };
+};
+vs
+{
+    setting
+    {
         split_object_assignment{
             set(out_attr0.x, 64, 20480, true, true);
             out_attr0.y,
@@ -92,6 +98,161 @@ vs
         };
 
         split_variable_assignment{
+            b_0_8,
+            b_1_22,
+            b_1_24,
+            b_2_11,
+            f_0_24,
+            f_0_28,
+            f_0_31,
+            f_0_32,
+            f_0_34,
+            f_0_35,
+            f_1_35,
+            f_10_9,
+            f_11_9,
+            f_13_6,
+            f_13_7,
+            f_14_4,
+            f_16_6,
+            f_2_73,
+            f_3_15,
+            f_5_3,
+            f_7_20,
+            f_8_6,
+            f4_0_0,
+            f4_0_1,
+            pf_0_1,
+            pf_0_9,
+            pf_1_1,
+            pf_1_10,
+            pf_1_6,
+            pf_10_5,
+            pf_11_3,
+            pf_12_3,
+            pf_12_8,
+            pf_12_9,
+            pf_13_2,
+            pf_16_0,
+            pf_17_0,
+            pf_17_1,
+            pf_2_11,
+            pf_2_12,
+            pf_2_13,
+            pf_2_14,
+            pf_2_4,
+            pf_2_6,
+            pf_3_16,
+            pf_3_18,
+            pf_3_19,
+            pf_3_4,
+            pf_4_13,
+            pf_4_17,
+            pf_4_21,
+            pf_4_3,
+            pf_6_1,
+            pf_6_5,
+            pf_6_7,
+            pf_6_8,
+            pf_7_1,
+            pf_7_2,
+            pf_8_12,
+            pf_8_6,
+            pf_8_8,
+            pf_9_6,
+            u_0_1,
+            u_0_2,
+            u_0_3,
+            u_0_4,
+            u_0_7,
+            u_0_8,
+            u_0_phi_19,
+            u_0_phi_21,
+            u_1_1,
+            u_1_2,
+            u_1_5,
+            u_1_7,
+            u_1_phi_18,
+            u_11_2,
+            u_11_3,
+            u_11_6,
+            u_11_8,
+            u_11_9,
+            u_11_phi_25,
+            u_12_1,
+            u_12_11,
+            u_12_12,
+            u_12_17,
+            u_12_3,
+            u_12_4,
+            u_12_phi_26,
+            u_13_10,
+            u_13_6,
+            u_13_7,
+            u_13_9,
+            u_13_phi_30,
+            u_14_6,
+            u_14_7,
+            u_14_phi_29,
+            u_15_3,
+            u_15_5,
+            u_15_8,
+            u_15_9,
+            u_15_phi_27,
+            u_16_0,
+            u_16_8,
+            u_17_0,
+            u_19_4,
+            u_2_1,
+            u_2_2,
+            u_2_4,
+            u_2_5,
+            u_2_phi_11,
+            u_2_phi_4,
+            u_20_1,
+            u_20_2,
+            u_20_3,
+            u_20_4,
+            u_20_phi_23,
+            u_20_phi_24,
+            u_3_3,
+            u_3_4,
+            u_3_6,
+            u_3_7,
+            u_3_phi_16,
+            u_3_phi_20,
+            u_4_0,
+            u_4_1,
+            u_4_2,
+            u_4_3,
+            u_4_5,
+            u_4_6,
+            u_4_8,
+            u_4_phi_2,
+            u_4_phi_20,
+            u_4_phi_9,
+            u_5_4,
+            u_5_5,
+            u_5_6,
+            u_5_7,
+            u_5_8,
+            u_5_phi_15,
+            u_5_phi_17,
+            u_6_4,
+            u_6_5,
+            u_6_7,
+            u_6_phi_20,
+            u_7_3,
+            u_7_8,
+            u_8_10,
+            u_8_15,
+            u_8_17,
+            u_8_21,
+            u_9_14,
+            u_9_20,
+            u_9_21,
+            u_9_7,
+            u_9_9,
         };
     };
     shader_arg
@@ -101,50 +262,33 @@ vs
             add(21);
         };
         uniform("d:/UC/standalone_smoke1/vs_cbuf8.csv", "uvec4"){
-            add(10,11,28,29,30);
+            add(29,30);
             add_range(0,7);
         };
         uniform("d:/UC/standalone_smoke1/vs_cbuf9.csv", "uvec4"){
-            //add(7,11,13,16,17,18,20,29,74,75,76,78,79,80,81,83,84,85,86,87,88,104,105,113,121,129,130,131,137,138,141,157);
-            add(194,195,196);
             add_range(0, 160);
         };
         uniform("d:/UC/standalone_smoke1/vs_cbuf10.csv", "uvec4"){
-            add_range(0,6);
+            add_range(0,10);
         };
         uniform("d:/UC/standalone_smoke1/vs_cbuf13.csv", "uvec4"){
-            add(0,1,2,3,5,6);
+            add(0);
         };
         uniform("d:/UC/standalone_smoke1/vs_cbuf15.csv", "uvec4"){
             add(49,51,52,58);
             add_range(22,28);
         };
-        uniform("d:/UC/standalone_smoke1/vs_cbuf16.csv", "uvec4"){
-            add(0,1);
-        };
-        vao_attr("private Vector4[] in_attr3_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr3.csv", "[NonSerialized]"){
-            add_range(0,34);
-        };
         vao_attr("private Vector4[] in_attr4_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr4.csv", "[NonSerialized]"){
-            add_range(0,34);
+            add_range(0,102);
         };
         vao_attr("private Vector4[] in_attr5_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr5.csv", "[NonSerialized]"){
-            add_range(0,34);
+            add_range(0,102);
         };
         vao_attr("private Vector4[] in_attr6_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr6.csv", "[NonSerialized]"){
-            add_range(0,34);
+            add_range(0,102);
         };
-        vao_attr("private Vector4[] in_attr8_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr8.csv", "[NonSerialized]"){
-            add_range(0,34);
-        };
-        vao_attr("private Vector4[] in_attr9_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr9.csv", "[NonSerialized]"){
-            add_range(0,34);
-        };
-        vao_attr("private Vector4[] in_attr10_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr10.csv", "[NonSerialized]"){
-            add_range(0,34);
-        };
-        vao_attr("private Vector4[] in_attr11_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr11.csv", "[NonSerialized]"){
-            add_range(0,34);
+        vao_attr("private Vector4[] in_attr7_array", "vec4", "d:/uc/VAO_standalone_smoke1/vertex_in_attr7.csv", "[NonSerialized]"){
+            add_range(0,102);
         };
     };
     shader_arg(1)
@@ -189,14 +333,14 @@ vs
         replacement(vs_cbuf8[$iter], view_proj[@arg(1)])for(0,7);
         vs_cbuf8[29] = camera_wpos;
         vs_cbuf15[28] = lightDir;
-        vs_ssbo0[44] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[45] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[46] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[47] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[48] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[49] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[50] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
-        vs_ssbo0[51] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[28] = @join(vs_ssbo_color1.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[29] = @join(vs_ssbo_color1.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[30] = @join(vs_ssbo_color1.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[31] = @join(vs_ssbo_color1.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[32] = @join(vs_ssbo_color2.x * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[33] = @join(vs_ssbo_color2.y * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[34] = @join(vs_ssbo_color2.z * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
+        vs_ssbo0[35] = @join(vs_ssbo_color2.w * vs_ssbo_scale, @skip_and_lvlup(0), @skip_and_lvlup(1));
         vs_ssbo0[*] = vs_ssbo0[@arg(1)];
         (*)[*] = @join(@arg_and_lvlup(0), _, @arg_and_lvlup(1));
     };
@@ -207,15 +351,15 @@ vs
         string("vec2", "float2");
         string("vec3", "float3");
         string("vec4", "float4");
-        string("in_attr", "uni_attr");
-        string("out_attr", "o.fs_attr");
-        string("gl_Position", "o.vertex");
-        string("return;", "return o;");
         string("tex5", "_CameraDepthTexture");
         string("isnan", "myIsNaN");
-        regex(@"\buni_attr0\b", "v.vertex");
-        regex(@"\buni_attr1\b", "v.uv");
-        regex(@"\buni_attr2\b", "v.offset");
+        regex(@"\bin_attr0\b", "v.vertex");
+        regex(@"\bin_attr1\b", "v.uv");
+        regex(@"\bin_attr2\b", "v.offset");
+        regex(@"\bin_attr3\b", "v.coeff");
+        string("in_attr", "i.vao_attr");
+        string("out_attr", "o.fs_attr");
+        string("gl_Position", "o.vertex");
     };
     calculator
     {
@@ -231,34 +375,6 @@ ps
 {
     setting
     {
-        debug_mode;
-        //print_graph;
-        //def_multiline;
-        //def_expanded_only_once;
-        //def_multiline_for_variable = false;
-        //def_expanded_only_once_for_variable = false;
-        def_max_level = 32;
-        def_max_length = 512;
-        //def_skip_value;
-        def_skip_expression;
-        def_max_level_for_variable = 256;
-        def_max_length_for_variable = 20480;
-        compute_graph_nodes_capacity = 10240;
-        shader_variables_capacity = 1024;
-        string_buffer_capacity_surplus = 1024;
-        generate_expression_list;
-
-        auto_split(15){
-            split_on("exp2");
-            split_on("inversesqrt");
-            split_on("texture", 3);
-            split_on("textureLod", 3);
-            split_on("texelFetch", 3);
-            split_on("texelQueryLod", 3);
-            split_on("texelSize", 3);
-            split_on("log2", 12);
-        };
-
         split_object_assignment{
             set(frag_color0.x, 64, 2048, true, true);
             set(frag_color0.y, 64, 2048);
@@ -267,6 +383,47 @@ ps
         };
 
         split_variable_assignment{
+            b_0_0,
+            f_0_16,
+            f_0_2,
+            f_0_7,
+            f_3_3,
+            f_3_4,
+            f_6_5,
+            f4_0_0,
+            f4_0_1,
+            f4_0_2,
+            f4_0_3,
+            pf_0_7,
+            pf_1_4,
+            pf_1_6,
+            pf_1_7,
+            pf_1_9,
+            pf_2_2,
+            pf_2_4,
+            pf_2_5,
+            pf_2_7,
+            pf_3_10,
+            pf_3_12,
+            pf_3_3,
+            pf_3_7,
+            pf_3_9,
+            pf_4_6,
+            pf_5_0,
+            pf_5_5,
+            pf_6_2,
+            u_1_1,
+            u_1_2,
+            u_1_phi_4,
+            u_2_1,
+            u_2_2,
+            u_2_phi_3,
+            u_3_1,
+            u_3_2,
+            u_3_phi_5,
+            u_4_0,
+            u_4_1,
+            u_4_phi_2,
         };
     };
     shader_arg
@@ -344,8 +501,7 @@ ps
         string("in_attr", "i.fs_attr");
         string("gl_FragCoord", "i.vertex");
         string("frag_color0", "col");
-        string("return;", "return col;");
-        string("tex5", "_CameraDepthTexture");
+        string("tex4", "_CameraDepthTexture");
     };
     calculator
     {
@@ -382,3 +538,11 @@ cs
         generate_expression_list;
     };
 };
+vs_code_block(hlsl_prologue)
+{:
+    // 1u, 0u, 299520u, 0u
+    uint vs_cbuf9_7_x = 1u;
+    uint vs_cbuf9_7_y = 0u;
+    uint vs_cbuf9_7_z = 299520u;
+    uint vs_cbuf9_7_w = 0u;
+:};

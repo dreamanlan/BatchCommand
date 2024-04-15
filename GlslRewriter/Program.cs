@@ -1540,7 +1540,7 @@ namespace GlslRewriter
                         agn.AddNext(cgcn);
                     }
                 }
-                cgcn.Type = FunctionTypeInference(id, argTypes, out var finfo);
+                cgcn.Type = FunctionTypeInference(id, argTypes, call, out var finfo);
                 semanticInfo.GraphNode = cgcn;
             }
             else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR) {
@@ -2113,7 +2113,7 @@ namespace GlslRewriter
                     agn.AddNext(cgcn);
                 }
             }
-            cgcn.Type = FunctionTypeInference(id, argTypes, out var finfo);
+            cgcn.Type = FunctionTypeInference(id, argTypes, call, out var finfo);
             semanticInfo.GraphNode = cgcn;
         }
         private static void TransformStatementOfForHeader(Dsl.ISyntaxComponent syntax, ref SemanticInfo semanticInfo)
@@ -3143,7 +3143,7 @@ namespace GlslRewriter
                                 return (argTypes.Count > 0 ? argTypes[argTypes.Count - 1] : string.Empty);
                             }
                             else {
-                                return FunctionTypeInference(funcName, argTypes, out FuncInfo? funcInfo);
+                                return FunctionTypeInference(funcName, argTypes, syntax, out FuncInfo? funcInfo);
                             }
                         }
                 }
@@ -3216,7 +3216,7 @@ namespace GlslRewriter
             }
             return resultType;
         }
-        private static string FunctionTypeInference(string func, IList<string> args, out FuncInfo? funcInfo)
+        private static string FunctionTypeInference(string func, IList<string> args, Dsl.ISyntaxComponent syntax, out FuncInfo? funcInfo)
         {
             funcInfo = null;
             string callSig = func + "_" + string.Join("_", args);
@@ -3248,6 +3248,14 @@ namespace GlslRewriter
             else {
                 //built-in function
                 if (s_BuiltInFuncs.TryGetValue(func, out var resultType)) {
+                    if (func.StartsWith("texture")) {
+                        foreach(var arg in args) {
+                            if (arg == "vec3" || arg == "vec4") {
+                                Console.WriteLine("'{0}' use vec3/vec4 argument, line {1} dsl {2}", func, arg, syntax.GetLine(), syntax.ToScriptString(false));
+                                break;
+                            }
+                        }
+                    }
                     string ret = GetFuncResultType(resultType, func, args, args);
                     return ret;
                 }

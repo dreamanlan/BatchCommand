@@ -24,15 +24,14 @@ using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 /// <remarks>
-/// 目前插件只用于1.3.524版本的Wox，更新的版本因为插件初始化不在主线程，MessageWindow的功能会不正常
-/// 注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！）
+/// Currently, the plugin is only used for version 1.3.524 of Wox. For updated versions, the MessageWindow function may not work properly due to the plugin initialization not being in the main thread.
+/// Note: When the Title and SubTitle of the Result are the same, Wox considers them to be the same result (i.e., it will not update other fields such as Action!).
 /// </remarks>
 public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISavable
 {
     public Main()
     {
-        //注：插件构造不是在主线程执行的
-
+        //Note: The construction of the plugin is not executed in the main thread.
         m_Storage = new PluginJsonStorage<PluginSettings>();
         m_Settings = m_Storage.Load();
 
@@ -69,7 +68,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             TryFindEverything();
 
             if (query.ActionKeyword == "dsl" && query.FirstSearch == "restart") {
-                //重启功能在c#端完成，防止某些功能导致dsl脚本线程卡死后无法重启
+                //The restart function is implemented in C# to prevent the DSL script thread from getting stuck and unable to restart due to certain functions.
                 var item = new Result { Title = "restart", SubTitle = "restart Wox", IcoPath = c_IcoPath, ContextData = query };
                 item.Action = e => { return Main.OnAction("on_action_restart", query, item, e); };
                 s_Results.Clear();
@@ -79,7 +78,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                 var evt = GetThreadEvent();
                 evt.Reset();
                 QueueScriptQuery(evt, () => {
-                    //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
+                    //The result list is cleared only when a new query is executed. At this point, there should be no threads still using it.
+                    //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
                     s_NewResults.Clear();
                     BatchScript.Call("on_query", CalculatorValue.FromObject(query));
                     FlushLog("Query");
@@ -111,12 +111,13 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         Debug.Assert(!IsScriptThread());
         Query query = selectedResult.ContextData as Query;
         LogLine("load context menu for [{0}|{1}], query [{2}], count {3} from thread {4}", selectedResult.Title, selectedResult.SubTitle, query.ToString(), s_ContextMenus.Count, Thread.CurrentThread.ManagedThreadId);
-        //这个操作串行执行
+        //This operation is executed in a serial manner.
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
         evt.Reset();
         QueueScriptAction(evt, funcs, () => {
-            //执行新查询时才清空列表，这时候应该没有线程还在使用了，也可以每次都构建一个新列表，不过还是减少一些GC吧
+            //The result list is cleared only when a new query is executed. At this point, there should be no threads still using it.
+            //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
             s_NewContextMenus.Clear();
             BatchScript.Call("on_context_menus", CalculatorValue.FromObject(query), CalculatorValue.FromObject(selectedResult));
             FlushLog("LoadContextMenus");
@@ -133,7 +134,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     {
         Debug.Assert(!IsScriptThread());
         LogLine("menu action for [{0}|{1}], query [{2}], result [{3}|{4}] from thread {5}", menu.Title, menu.SubTitle, query.ToString(), result.Title, result.SubTitle, Thread.CurrentThread.ManagedThreadId);
-        //由于Wox实现上的缺陷，这里根据menu的Title与SubTitle在菜单列表里查找真正的菜单项再调action
+        //Due to the implementation flaw of Wox, we need to search for the actual result item in the result list based on
+        //the Title and SubTitle of the result before calling the action.
         int ix = s_ContextMenus.IndexOf(menu);
         if (ix < 0) {
             s_Context.API.ShowMsg("Can't find menu " + menu.Title, menu.SubTitle, menu.IcoPath);
@@ -142,7 +144,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         if (s_ContextMenus[ix].ContextData != menu.ContextData || s_ContextMenus[ix].Action != menu.Action) {
             return s_ContextMenus[ix].Action(e);
         }
-        //这里开始串行执行
+        //Serial execution starts here.
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
         evt.Reset();
@@ -169,14 +171,15 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     {
         Debug.Assert(!IsScriptThread());
         LogLine("action for [{0}|{1}], query [{2}] from thread {3}", result.Title, result.SubTitle, query.ToString(), Thread.CurrentThread.ManagedThreadId);
-        //由于Wox实现上的缺陷，这里根据result的Title与SubTitle在结果列表里查找真正的result项再调action
+        //Due to the implementation flaw of Wox, we need to search for the actual result item in the result list based on
+        //the Title and SubTitle of the result before calling the action.
         int ix = s_Results.IndexOf(result);
         if (ix < 0) {
             s_Context.API.ShowMsg("Can't find result " + result.Title, result.SubTitle, result.IcoPath);
             return false;
         }
         if (action == "on_action_restart") {
-            //这里应该已经是主线程，还是dispatch一次，下一帧执行
+            //This should already be the main thread. But let's dispatch once and execute it in the next frame.
             System.Windows.Application.Current.Dispatcher.Invoke(() => {
                 s_Context.API.RestarApp();
             });
@@ -185,7 +188,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         if (s_Results[ix].ContextData != result.ContextData || s_Results[ix].Action != result.Action) {
             return s_Results[ix].Action(e);
         }
-        //这里开始串行执行
+        //Serial execution starts here.
         var evt = GetThreadEvent();
         var funcs = GetThreadFuncs();
         evt.Reset();
@@ -468,7 +471,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         for (int ct = 0; ct < maxQueryNum && s_ScriptQueryQueue.Count > 0; ++ct) {
             if (s_ScriptQueryQueue.TryDequeue(out var action)) {
                 try {
-                    //只执行最后队列里的最后一个查询（相当于连续输入的中间查询不执行）
+                    //It appears that only the last query in the queue is being executed,
+                    //and the intermediate queries that are entered consecutively are not being executed.
                     if (s_ScriptQueryQueue.Count == 0) {
                         action.Action();
                     }
@@ -636,7 +640,9 @@ public sealed class StringWriterWithLock : StringWriter
 }
 
 ///<remarks>
-///Form好像必须在主线程初始化才会起作用，目前wox调插件Init方法时是在主线程的，但1.4版本之后就不是了
+///It seems that the Form needs to be initialized in the main thread to function properly.
+///Currently, when Wox calls the plugin's Init method, it is executed in the main thread.
+///However, this behavior changed after version 1.4.
 ///</remarks>
 public sealed class MessageWindow : Form
 {
@@ -727,7 +733,7 @@ internal sealed class ShowMsgExp : SimpleExpressionBase
             string icon = operands.Count > 2 ? operands[2].ToString() : Main.c_IcoPath;
 
             if (null != Main.s_CurFuncs) {
-                //转到主线程执行（点击列表触发的请求好像都是从主线程发起）
+                //Switch to the main thread for execution (it seems that requests triggered by clicking on the list are always initiated from the main thread).
                 Main.s_CurFuncs.Enqueue(() => {
                     Main.s_Context.API.ShowMsg(title, subtitle, icon);
                     return false;
@@ -745,7 +751,8 @@ internal sealed class RestartExp : SimpleExpressionBase
     protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
     {
         if (null != Main.s_CurFuncs) {
-            //RestarApp方法需要在主线程执行（点击列表触发的请求好像都是从主线程发起）
+            //The RestarApp method needs to be executed on the main thread (it seems that
+            //all requests triggered by clicking the list are initiated from the main thread).
             Main.s_CurFuncs.Enqueue(() => {
                 Main.s_Context.API.RestarApp();
                 return false;
@@ -825,7 +832,7 @@ internal sealed class ChangeQueryExp : SimpleExpressionBase
             bool requery = operands[1].GetBool();
 
             if (null != Main.s_CurFuncs) {
-                //转到主线程执行（点击列表触发的请求好像都是从主线程发起）
+                //Switch to the main thread for execution (it seems that requests triggered by clicking on the list are always initiated from the main thread).
                 Main.s_CurFuncs.Enqueue(() => {
                     Main.s_Context.API.ChangeQuery(queryStr, requery);
                     return false;
@@ -943,7 +950,7 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
             bool shift = operands[2].GetBool();
 
             Debug.Assert(null != Main.s_CurFuncs);
-            //shell操作推到发起请求的线程执行（点击列表触发的请求好像都是从主线程发起）
+            //Shell operations are pushed to the thread that initiated the request (it seems that requests triggered by clicking on the list are always initiated from the main thread).
             if (Directory.Exists(path)) {
                 Main.s_CurFuncs.Enqueue(() => {
                     var dis = new DirectoryInfo[] { new DirectoryInfo(path) };

@@ -44,11 +44,11 @@ namespace CppLua2Dsl
         }
         private static void CountFiles(string dir, IList<string> filters, ref int ct)
         {
-            // 子文件夹
+            // sub directories
             foreach (string sub in Directory.GetDirectories(dir)) {
                 CountFiles(sub, filters, ref ct);
             }
-            // 文件
+            // file
             for (int i = 0; i < filters.Count; ++i) {
                 string filter = filters[i];
                 var files = Directory.GetFiles(dir, filter, SearchOption.TopDirectoryOnly);
@@ -65,7 +65,7 @@ namespace CppLua2Dsl
         {
             if (!string.IsNullOrEmpty(to) && !Directory.Exists(to))
                 Directory.CreateDirectory(to);
-            // 子文件夹
+            // sub directories
             foreach (string sub in Directory.GetDirectories(from)) {
                 var srcPath = Path.GetFullPath(sub);
                 if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) {
@@ -79,7 +79,7 @@ namespace CppLua2Dsl
                 var sName = Path.GetFileName(sub);
                 CopyFolder(targetRoot, sub, Path.Combine(to, sName), filters, total, ref ct);
             }
-            // 文件
+            // file
             for (int i = 0; i < filters.Count; ++i) {
                 string filter = filters[i];
                 foreach (string file in Directory.GetFiles(from, filter, SearchOption.TopDirectoryOnly)) {
@@ -239,7 +239,7 @@ namespace CppLua2Dsl
             var sb = new StringBuilder();
             Dsl.DslFile dslFile = new Dsl.DslFile();
             if (dslFile.LoadGppFromString(txt, msg => s_ErrorWriter?.WriteLine("{0} preprocess file:{1}", msg, file), "={:=", "=:}=", out gppTxt)) {
-                //遍历并提取代码
+                //Traverse and extract the code
                 foreach (var info in dslFile.DslInfos) {
                     HandleSyntax(sb, info, false, file);
                 }

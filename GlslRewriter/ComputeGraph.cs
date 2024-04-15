@@ -545,7 +545,8 @@ namespace GlslRewriter
             }
             else {
                 if (PrevNodes.Count > 0) {
-                    //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
+                    //Fetch the last assignment(multiple assignments only occur in branch scenarios with phi variable assignments),
+                    //which facilitates correct calculation after commenting out non-executed if statements during code analysis.
                     CachedValue = PrevNodes[PrevNodes.Count - 1].CalcValue(visits, ref cinfo);
                 }
                 else {
@@ -558,13 +559,13 @@ namespace GlslRewriter
             bool withValue = false;
             if (setting.WithValue) {
                 if (fromNode is not ComputeGraphCalcNode) {
-                    //这种情形对变量结点应该不会出现
+                    //This situation should not occur for variable nodes.
                     withValue = true;
                 }
                 else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
-                    //只对数组或成员访问计算结点的叶子结点标注计算值
+                    //Only annotate the computed values on the leaf nodes of the computation graph for array or member access.
                     if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" || calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
-                        //使用类型转换的uniform，值标注在类型转换函数调用上
+                        //Annotate the value on the type conversion function call when using a uniform with type casting.
                     }
                     else {
                         withValue = true;
@@ -600,14 +601,15 @@ namespace GlslRewriter
                     }
                     else {
                         if (curLevel < setting.MaxLevel) {
-                            //取最后一次赋值（多次赋值仅出现在分支情形的phi变量赋值），方便代码分析中注释掉不执行的if语句后进行正确计算
+                            //Fetch the last assignment (multiple assignments only occur in branch scenarios with phi variable assignments),
+                            //which facilitates correct calculation after commenting out non-executed if statements during code analysis.
                             int start = sb.Length;
                             int tmpMaxLevel = curLevel;
-                            //赋值表达式合并到变量使用的表达式时，记录fromNode为使用的表达式结点
+                            //When the assignment expression is merged into the expression used by the variable, record the fromNode as the node of the expression used.
                             var from = fromNode;
                             if (null == from)
                                 from = this;
-                            //变量赋值表达式不增加层级
+                            //The variable assignment expression does not increase the level.
                             PrevNodes[PrevNodes.Count - 1].GenerateExpression(sb, indent, curLevel, ref tmpMaxLevel, out varMaxLevel, setting, usedVars, visits, from);
                             if (Config.ActiveConfig.SettingInfo.AutoSplitLevel >= 0) {
                                 if (IsSplitOn(PrevNodes[PrevNodes.Count - 1], varMaxLevel - curLevel)) {
@@ -631,7 +633,8 @@ namespace GlslRewriter
                             }
                         }
                         else {
-                            //这里不用拆分变量，通过其它拆分多次迭代应该就可以消除，如果在这里也拆分可能会引入比较多的简单表达式
+                            //Here, there is no need to split the variable. It should be possible to eliminate it through other splitting methods with multiple iterations.
+                            //Splitting here might introduce a relatively large number of simple expressions.
                             sb.Append(VarName + "...");
                         }
                     }
@@ -642,7 +645,7 @@ namespace GlslRewriter
                     sb.Append("{");
                 }
                 if (null != OwnFunc) {
-                    //未赋值的局部变量，这里一般是phi变量，添加到拆分表达式变量列表记录变量使用
+                    //Uninitialized local variables, which are generally phi variables, are added to the list of variables for the split expression to record variable usage.
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(VarName, Type);
                 }
                 sb.Append(VarName);
@@ -708,7 +711,9 @@ namespace GlslRewriter
                     }
                     else if (PrevNodes[0] is ComputeGraphCalcNode calcNode) {
                         if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode2) {
-                            //var[ix].member, 这里ix应该不会有从浮点转换到整数的情形，如果遇到应该是把本来是整数的参数配成浮点数了，重新配置再生成代码
+                            //var[ix].member, Here, ix should not have a situation where it is converted from a floating-point number to an integer.
+                            //If encountered, it should be because an integer parameter was configured as a floating-point number.
+                            //Reconfigure and regenerate the code.
                             if (VariableTable.ObjectArrayGetValue(vnode2, cnode2.Value, constNode.Value, out var val)) {
                                 CachedValue = val;
                                 handled = true;
@@ -730,7 +735,9 @@ namespace GlslRewriter
             else if (Operator == "[]") {
                 bool handled = false;
                 if (PrevNodes[0] is ComputeGraphVarNode varNode) {
-                    //var[ix], 这里ix应该不会有从浮点转换到整数的情形，如果遇到应该是把本来是整数的参数配成浮点数了，重新配置再生成代码
+                    //var[ix], Here, ix should not have a situation where it is converted from a floating-point number to an integer.
+                    //If encountered, it should be because an integer parameter was configured as a floating-point number.
+                    //Reconfigure and regenerate the code.
                     if (PrevNodes[1] is ComputeGraphConstNode constNode) {
                         if (VariableTable.ArrayGetValue(varNode, constNode.Value, out var val)) {
                             CachedValue = val;
@@ -760,12 +767,13 @@ namespace GlslRewriter
                 bool cachedValueAssigned = false;
                 if (NextNodes[0] is ComputeGraphVarNode vnode) {
                     //var = exp
-                    //phi变量存在多分支赋值，在计算图上计算时跳过赋值
+                    //Phi variables have multiple branch assignments, which are skipped during calculation on the computation graph.
                     if (!Program.IsPhiVar(vnode.VarName)) {
                         if (PrevNodes[0] is ComputeGraphVarNode vnode2) {
                             VariableTable.AssignValue(vnode, vnode2, ArgTypeConversion, 0);
                             if (Program.IsPhiVar(vnode2.VarName)) {
-                                //这里有可能是phi变量第一次被使用，因为phi变量在计算图上没有赋值，这里给一次缓存值的机会
+                                //Here, it is possible that the phi variable is being used for the first time, as the phi variable does not have a value assigned on the computation graph.
+                                //Here, we provide an opportunity to cache the value once.
                                 vnode2.CalcValue(visits, ref cinfo);
                             }
                         }
@@ -780,19 +788,30 @@ namespace GlslRewriter
                 }
                 else if (NextNodes[0] is ComputeGraphCalcNode calcNode) {
                     if (calcNode.Operator=="." && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode2) {
-                        //var.member = exp, 这里exp与var.member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
+                        //var.member = exp, The types of exp and var.member may not be consistent here, and they will be dealt with when encountered later.
+                        //(This should be rare because the conversions are usually applied to input parameters, and there are generally no writing situations,
+                        //while output parameters are usually floating-point numbers.)
                         VariableTable.ObjectAssignValue(vnode2, cnode2.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                     }
                     else if (calcNode.Operator == "[]" && calcNode.PrevNodes[0] is ComputeGraphVarNode vnode3 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode3) {
-                        //var[ix] = exp, 这里exp与var.member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
-                        //此外，ix不应该有从浮点变到整数的情形，遇到表明本来是整数的参数配成浮点数了，重新配置再生成代码
+                        //var[ix] = exp, The types of exp and var.member may not be consistent here, and they will be dealt with when encountered later.
+                        //(This should be rare because the conversions are usually applied to input parameters, and there are generally no writing situations,
+                        //while output parameters are usually floating-point numbers.)
+                        //In addition, there should not be a case where ix changes from a floating-point number to an integer. If this happens,
+                        //it indicates that a parameter that was originally an integer has been set as a floating-point number.
+                        //The parameter should be reconfigured and the code should be regenerated.
                         VariableTable.ArrayAssignValue(vnode3, cnode3.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                     }
                     else if (calcNode.Operator == "." && calcNode.PrevNodes[0] is ComputeGraphCalcNode calcNode2 && calcNode.PrevNodes[1] is ComputeGraphConstNode cnode4) {
                         if (calcNode2.Operator == "[]" && calcNode2.PrevNodes[0] is ComputeGraphVarNode vnode5 && calcNode2.PrevNodes[1] is ComputeGraphConstNode cnode5) {
-                            //var[ix].member = exp, 这里exp与var[ix].member的类型可能不一致，遇到时再补处理。（应该很少遇到，因为需要转换的都是输入参数，一般不会有写的情形，而输出参数通常是浮点数）
-                            //此外，ix不应该有从浮点变到整数的情形，遇到表明本来是整数的参数配成浮点数了，重新配置再生成代码
-                            //暂未遇到
+                            //var[ix].member = exp, The types of exp and var[ix].member may not be consistent here, and they will be dealt with when encountered later.
+                            //(This should be rare because the conversions are usually applied to input parameters, and there are generally no writing situations,
+                            //while output parameters are usually floating-point numbers.)
+                            //In addition, there should not be a case where ix changes from a floating-point number to an integer. If this happens,
+                            //it indicates that a parameter that was originally an integer has been set as a floating-point number.
+                            //The parameter should be reconfigured and the code should be regenerated.
+                            //
+                            //Currently, we have not encountered a situation where the execution reaches this point.
                             VariableTable.ObjectArrayAssignValue(vnode5, cnode5.Value, cnode4.Value, PrevNodes[0].CalcValue(visits, ref cinfo));
                         }
                     }
@@ -839,7 +858,7 @@ namespace GlslRewriter
                 bool handled = true;
                 if (Operator == "fma") {
                     //fma(a,b,c) => a*b+c
-                    //我们输出时不考虑运算优先级，每个运算都加上括号
+                    //We do not consider operator precedence when outputting, and add parentheses to each operation.
                     sb.Append("((");
                     PrevNodes[0].GenerateExpression(sb, indent, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                     sb.Append(" * ");
@@ -883,7 +902,7 @@ namespace GlslRewriter
                 }
                 else if (Operator == "min" && PrevNodes[1] is ComputeGraphCalcNode cnode5 && cnode5.Operator == "max") {
                     //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
-                    //并且min的参数是可交换的，所以下面等式也成立
+                    //And, the parameters of "min" are commutative, so the following equation holds as well.
                     //min(b,max(v,a)) => clamp(v,a,b)
                     int v1 = CalcVarLike(cnode5.PrevNodes[0]);
                     int v2 = CalcVarLike(cnode5.PrevNodes[1]);
@@ -901,7 +920,7 @@ namespace GlslRewriter
                 else if (Operator == "min" && PrevNodes[1] is ComputeGraphVarNode vnode3 && vnode3.PrevNodes.Count > 0 && vnode3.PrevNodes[vnode3.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode7 && cnode7.Operator == "="
                     && cnode7.PrevNodes[0] is ComputeGraphCalcNode cnode71 && cnode71.Operator == "max") {
                     //opengl:clamp returns the value of x constrained to the range minVal to maxVal. The returned value is computed as min(max(x, minVal), maxVal).
-                    //并且min的参数是可交换的，所以下面等式也成立
+                    //And, the parameters of "min" are commutative, so the following equation holds as well.
                     //min(b,{vname = max(v,a)}) => clamp(v,a,b)
                     int v1 = CalcVarLike(cnode71.PrevNodes[0]);
                     int v2 = CalcVarLike(cnode71.PrevNodes[1]);
@@ -917,7 +936,7 @@ namespace GlslRewriter
                     sb.Append(")");
                 }
                 else if (Operator == "max" && PrevNodes[0] is ComputeGraphCalcNode cnode2 && cnode2.Operator == "min") {
-                    //下面的等式只在a<=b时成立
+                    //The following equation only holds when a<=b.
                     //max(min(v,b),a) => clamp(v,a,b)
                     bool r1 = TryGetConstNumeric(cnode2.PrevNodes[0], out var v1);
                     bool r2 = TryGetConstNumeric(cnode2.PrevNodes[1], out var v2);
@@ -942,7 +961,7 @@ namespace GlslRewriter
                 }
                 else if (Operator == "max" && PrevNodes[0] is ComputeGraphVarNode vnode2 && vnode2.PrevNodes.Count > 0 && vnode2.PrevNodes[vnode2.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode4 && cnode4.Operator == "="
                     && cnode4.PrevNodes[0] is ComputeGraphCalcNode cnode41 && cnode41.Operator == "min") {
-                    //下面的等式只在a<=b时成立
+                    //The following equation only holds when a<=b.
                     //max({vname = min(v,b)},a) => clamp(v,a,b)
                     bool r1 = TryGetConstNumeric(cnode41.PrevNodes[0], out var v1);
                     bool r2 = TryGetConstNumeric(cnode41.PrevNodes[1], out var v2);
@@ -966,7 +985,7 @@ namespace GlslRewriter
                     }
                 }
                 else if (Operator == "max" && PrevNodes[1] is ComputeGraphCalcNode cnode6 && cnode6.Operator == "min") {
-                    //下面的等式只在a<=b时成立
+                    //The following equation only holds when a<=b.
                     //max(a,min(v,b)) => clamp(v,a,b)
                     bool r1 = TryGetConstNumeric(PrevNodes[0], out var v1);
                     bool r2 = TryGetConstNumeric(cnode6.PrevNodes[0], out var v2);
@@ -991,7 +1010,7 @@ namespace GlslRewriter
                 }
                 else if (Operator == "max" && PrevNodes[1] is ComputeGraphVarNode vnode4 && vnode4.PrevNodes.Count > 0 && vnode4.PrevNodes[vnode4.PrevNodes.Count - 1] is ComputeGraphCalcNode cnode8 && cnode8.Operator == "="
                     && cnode8.PrevNodes[0] is ComputeGraphCalcNode cnode81 && cnode81.Operator == "min") {
-                    //下面的等式只在a<=b时成立
+                    //The following equation only holds when a<=b.
                     //max(a,{vname = min(v,b)}) => clamp(v,a,b)
                     bool r1 = TryGetConstNumeric(PrevNodes[0], out var v1);
                     bool r2 = TryGetConstNumeric(cnode81.PrevNodes[0], out var v2);
@@ -1031,7 +1050,7 @@ namespace GlslRewriter
                                         p.PrevNodes[0].GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                                     }
                                     else if (p is not ComputeGraphConstNode) {
-                                        //只支持for语句的第一个表达式为单个赋值或空的情形
+                                        // Only the case where the first expression of the "for" statement is a single assignment or empty is supported.
                                         Debug.Assert(false);
                                     }
                                 }
@@ -1043,7 +1062,7 @@ namespace GlslRewriter
                                 break;
                             case 2: {
                                     if (p is ComputeGraphConstNode) {
-                                        //空语句
+                                        //empty statement
                                     }
                                     else if (p.OutNodes.Count == 1) {
                                         var varnode = p.OutNodes[0] as ComputeGraphVarNode;
@@ -1055,7 +1074,7 @@ namespace GlslRewriter
                                         p.GenerateExpression(sb, 0, curLevel + 1, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, this);
                                     }
                                     else {
-                                        //只支持for语句的第三个表达式为单个赋值或空的情形
+                                        //Only the case where the third expression of the "for" statement is a single assignment or empty is supported.
                                         Debug.Assert(false);
                                     }
                                 }
@@ -1073,7 +1092,7 @@ namespace GlslRewriter
                     bool withValue = false;
                     if(setting.WithValue && (Operator == "utof" || Operator== "uintBitsToFloat"
                         || Operator == "ftou" || Operator == "floatBitsToUint")){
-                        //使用类型转换的uniform，在转换函数调用上标注计算值
+                        //The "uniform" that uses type conversion should mark the calculated value on the conversion function call.
                         withValue = true;
                         sb.Append("{");
                     }
@@ -1117,15 +1136,16 @@ namespace GlslRewriter
                 bool withValue = false;
                 if (setting.WithValue) {
                     if (fromNode is not ComputeGraphCalcNode) {
-                        //如果父结点不是计算结点（常量或变量），则当前成员访问结点已经是成员访问叶子结点，在此结点上标注计算值
+                        // If the parent node is not a calculation node (constant or variable), then the current member access node is already a member access leaf node,
+                        // and the calculated value should be marked on this node.
                         withValue = true;
                         sb.Append("{");
                     }
                     else if(fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
-                        //只对数组或成员访问计算结点的叶子结点标注计算值
+                        //Only annotate the leaf nodes of the calculation nodes for array or member access with the calculated value.
                         if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" ||
                             calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
-                            //使用类型转换的uniform，值标注在类型转换函数调用上
+                            //Annotate the values on the type conversion function call when using uniforms with type conversion.
                         }
                         else {
                             withValue = true;
@@ -1155,15 +1175,16 @@ namespace GlslRewriter
                 bool withValue = false;
                 if (setting.WithValue) {
                     if (fromNode is not ComputeGraphCalcNode) {
-                        //如果父结点不是计算结点（常量或变量），则当前成员访问结点已经是数组元素访问叶子结点，在此结点上标注计算值
+                        //If the parent node is not a computation node (constant or variable), then the current member access node is already an array element access leaf node,
+                        //and the calculated value should be annotated on this node.
                         withValue = true;
                         sb.Append("{");
                     }
                     else if (fromNode is ComputeGraphCalcNode calcNode && calcNode.Operator != "[]" && calcNode.Operator != ".") {
-                        //只对数组或成员访问计算结点的叶子结点标注计算值
+                        //Only annotate the calculated value on the leaf nodes of the computation nodes for array or member access.
                         if (calcNode.Operator == "utof" || calcNode.Operator == "uintBitsToFloat" ||
                             calcNode.Operator == "ftou" || calcNode.Operator == "floatBitsToUint") {
-                            //使用类型转换的uniform，值标注在类型转换函数调用上
+                            //Annotate the values on the type conversion function call when using uniforms with type conversion.
                         }
                         else {
                             withValue = true;
@@ -1195,12 +1216,12 @@ namespace GlslRewriter
                     AppendAssignLeft(sb, NextNodes[0]);
                     sb.Append(" = ");
                 }
-                //赋值表达式合并到变量使用的表达式时，记录fromNode为使用的表达式结点
+                //When assigning an expression to a variable, record the fromNode as the expression node used.
                 var from = fromNode;
                 if (setting.UseMultilineComments || null == fromNode)
                     from = this;
                 int action = GenConversionBefore(sb, 0);
-                //赋值语句不增加层级
+                //Do not increase the level when assigning a statement.
                 PrevNodes[0].GenerateExpression(sb, indent + 1, curLevel, ref curMaxLevel, out subMaxLevel, setting, usedVars, visits, from);
                 GenConversionAfter(sb, action);
                 if (setting.UseMultilineComments) {
@@ -1287,13 +1308,17 @@ namespace GlslRewriter
                             string repTag = key + "=>" + dslFuncId;
 
                             if (dslFunc is Dsl.ValueData) {
-                                // 由于visits记录是用来查重的，如果我们实际使用了参数，就不能再采用这种忽略结果的方式来计算表达式深度，所以这种通用方式只用在单一值的情形，对于不使用参数的表达式，可以使用@join函数+@skip_and_lvlup函数来处理
-                                // 这段使用先生成参数表达式再丢弃的方式来计算maxLevel，以保持替换情形下的表达式深度与不替换时一致（用于glsl与hlsl代码保持一致）
+                                //Since the visits record is used for duplicate checking, if we actually use the parameters, we cannot use this method of ignoring the results to calculate the depth of the expression.
+                                //Therefore, this general method can only be used in the case of a single value. For expressions that do not use parameters, you can use the @join function and the @skip_and_lvlup function to handle them.
+                                //This section uses the method of generating parameter expressions and discarding them to calculate maxLevel,
+                                //in order to keep the depth of the expression consistent in the case of replacement and non - replacement(for maintaining consistency between GLSL and HLSL code).
                                 for (int argIx = 0; argIx < PrevNodes.Count; ++argIx) {
                                     var node = PrevNodes[argIx];
                                     int curLvl;
                                     if (null != repInfo.ArgGetter) {
-                                        //这里的层级配置有可能与原计算不一致，遇到glsl与hlsl的变量拆分不一致时重点检查此处
+                                        //The level configuration here may be inconsistent with the original calculation.
+                                        //When encountering inconsistencies in variable splitting between GLSL and HLSL,
+                                        //pay particular attention to this part.
                                         curLvl = curLevel;
                                         var p = repInfo.ArgGetter(this, argIx, ref curLvl);
                                         s_IgnoredContent.Length = 0;

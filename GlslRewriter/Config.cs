@@ -528,7 +528,7 @@ namespace GlslRewriter
                                             sb.Append("new Vector4(");
                                             var colName = realColNames[(index - 1) / 4];
                                             if (Config.TryMergeHlslData(colName, ix - 1, hlslMergeDatas, out var hlslData)) {
-                                                //VAO目前类型都是float，就不检查类型了
+                                                //Since the current VAO types are all float, type checking is not performed.
                                                 var vals = hlslData.Value.Split(",", StringSplitOptions.TrimEntries);
                                                 foreach (var v in vals) {
                                                     sb.Append(v);
@@ -549,7 +549,7 @@ namespace GlslRewriter
                                     sb.Append("new Vector4(");
                                     var colName = realColNames[0];
                                     if (Config.TryMergeHlslData(colName, ix - 1, hlslMergeDatas, out var hlslData)) {
-                                        //VAO目前类型都是float，就不检查类型了
+                                        //Since the current VAO types are all float, type checking is not performed.
                                         var vals = hlslData.Value.Split(",", StringSplitOptions.TrimEntries);
                                         foreach (var v in vals) {
                                             sb.Append(v);
@@ -2422,7 +2422,7 @@ namespace GlslRewriter
             }
             else if (null != fd) {
                 if (fd.GetId() == "func" && fd.IsHighOrder && fd.HaveStatement()) {
-                    //这种形式用于直接调dsl脚本，构造一个函数
+                    //This form is used to directly call a DSL script to construct a function.
                     var callData = fd.LowerOrderFunction;
                     List<string> argNames = new List<string>();
                     foreach (var p in callData.Params) {

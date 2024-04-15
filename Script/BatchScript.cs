@@ -295,7 +295,7 @@ namespace BatchCommand
         {
             if (!string.IsNullOrEmpty(to) && !Directory.Exists(to))
                 Directory.CreateDirectory(to);
-            // 子文件夹
+            // sub directories
             foreach (string sub in Directory.GetDirectories(from)) {
                 var srcPath = Path.GetFullPath(sub);
                 if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) {
@@ -309,7 +309,7 @@ namespace BatchCommand
                 var sName = Path.GetFileName(sub);
                 CopyFolder(targetRoot, sub, Path.Combine(to, sName), filterAndNewExts, ref ct);
             }
-            // 文件
+            // file
             for (int i = 0; i < filterAndNewExts.Count; i += 2) {
                 string filter = filterAndNewExts[i];
                 string newExt = string.Empty;
@@ -447,7 +447,7 @@ namespace BatchCommand
         {
             if (!string.IsNullOrEmpty(to) && !Directory.Exists(to))
                 Directory.CreateDirectory(to);
-            // 文件
+            // file
             for (int i = 0; i < filterAndNewExts.Count; i += 2) {
                 string filter = filterAndNewExts[i];
                 string newExt = string.Empty;
@@ -2226,7 +2226,7 @@ namespace BatchCommand
             s_Calculator.OnLog = msg => { Log(msg); };
             s_Calculator.Init();
 
-            //注册Gm命令
+            //register Gm Command
             s_Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             s_Calculator.Register("fileecho", "fileecho(bool) or fileecho() api", new ExpressionFactoryHelper<FileEchoExp>());
             s_Calculator.Register("listdirs", "listdirs(dir,filter_list_or_str_1,filter_list_or_str_2,...) api", new ExpressionFactoryHelper<ListDirectoriesExp>());
@@ -2497,7 +2497,7 @@ namespace BatchCommand
         }
         private static int NewProcessTask(string fileName, string args, ProcessStartOption option, Stream istream, Stream ostream, IList<string> input, StringBuilder output, StringBuilder error, bool redirectToConsole, Encoding encoding)
         {
-            //考虑到跨平台兼容性，不使用特定进程环境变量
+            //Considering cross-platform compatibility, do not use specific process environment variables.
             try {
                 Process p = new Process();
                 var psi = p.StartInfo;

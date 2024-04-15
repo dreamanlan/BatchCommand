@@ -1,10 +1,10 @@
-//注意:Result的Title与SubTitle相同时Wox认为是相同的结果（亦即，不会更新Action等其他字段！
-//在Action处理里，BatchCommand插件尝试根据Title与SubTitle来定位正确的Result，所以结果列表
-//里不要出现Title与SubTitle都相同的项）
-//ActionKeyword注册为*时，Query.ActionKeyword为空串，输入的第一个部分是Query.FirstSearch，这与非*的ActionKeyword注册不同。
-//这里还是采用具体的ActionKeyword注册。
+// Note: When the Title and SubTitle of the Result are the same, Wox considers them to be the same result (that is, it will not update the Action and other fields!
+// In the Action processing, the BatchCommand plugin tries to locate the correct Result based on the Title and SubTitle, so there should not be any items in the
+// result list with both the Title and SubTitle the same.
+// When ActionKeyword is registered as '*', Query.ActionKeyword is an empty string, and the first part of the input is Query.FirstSearch,
+// which is different from the non- ActionKeyword registration. Here, use a specific ActionKeyword registration.
 /*
-//脚本api
+//script api
 public class PluginMetadata : BaseModel
 {
     public string ID;
@@ -184,9 +184,9 @@ public const int EVERYTHING_SORT_DATE_ACCESSED_DESCENDING = 24;
 public const int EVERYTHING_SORT_DATE_RUN_ASCENDING = 25;
 public const int EVERYTHING_SORT_DATE_RUN_DESCENDING = 26;
 */
-//id:插件id，字符串
-//metadata:元数据对象，PluginMetadata
-//context:上下文对象，PluginInitContext
+//id:plugin_id，string
+//metadata:metadata object，PluginMetadata
+//context:context object，PluginInitContext
 script(main)args($id, $metadata, $context)
 {
     clearkeywords($id);
@@ -208,8 +208,9 @@ script(main)args($id, $metadata, $context)
     @exe = "";
     @path = "";
     @args = "";
-    //配置应用参数：exe查询串，选择exe后的替代查询串（keyword + " " + 新查询），执行的命令格式化串(使用{0}引用第一次选择的结果即exe路径)，
-    //执行的命令参数格式化串(使用{0}引用第二次选择的结果，一般是文件路径)
+    // Configure application parameters: exe query string, alternative query string after selecting exe (keyword + " " + new query),
+    // formatted string for the command to be executed (using {0} to reference the first selected result, which is the exe path),
+    // formatted string for the command arguments (using {0} to reference the second selected result, generally the file path)
     @cfg = {
         "unity" => ["\\unity.exe", "unity \\Assets", "{0}", "-projectPath {0}"],
         "unityfile" => ["\\unity.exe", "unityfile *.unity", "{0}", "-openfile {0}"],
@@ -244,7 +245,7 @@ script(on_query)args($query)
             addresult("info", "show query state", "", "on_action_change", $query);
             addresult("clear", "clear query", "", "on_action_change", $query);
             addresult("reload", "reload main.dsl", "", "on_action_change", $query);
-            //restart直接在c#里处理，dsl部分只处理ui显示
+            //restart is directly handled in C#, and the DSL part only handles the UI show.
             addresult("restart", "restart Wox", "", "on_action_change", $query);
         };
     }elseif($key=="menu"){
@@ -316,7 +317,7 @@ script(on_context_menus)args($query, $result)
     addcontextmenu("Show Explore Menu", "show explore menu", "", "on_menu_action_explore_menu", $query, $result);
     return(0);
 };
-//$menu也是Result对象
+//$menu is also a Result object
 script(on_menu_action_explore_menu)args($query, $result, $menu, $actionContext)
 {
     @path = $result.Title;
@@ -446,7 +447,7 @@ script(on_action_app_proj)args($query, $result, $actionContext)
     $key = $query.ActionKeyword;
     @args = $query.SecondToEndSearch;
     @path = $result.Title;
-    //unity工程可以借助子目录名来筛选
+    //The Unity project can be filtered by subdirectory.
     if($key=="unity" && @path.EndsWith("\\Assets")){
         @path = getdirectoryname(@path);
     };

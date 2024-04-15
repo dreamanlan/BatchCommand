@@ -21,40 +21,41 @@
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\CppLua2Dsl.AssemblyInfo.cs" />
-    <Compile Remove="CppLua2Dsl\obj\Debug\net6.0\CppLua2Dsl.GlobalUsings.g.cs" />
-    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\CppLua2Dsl.AssemblyInfo.cs" />
-    <Compile Remove="CppLua2Dsl\obj\Release\net6.0\CppLua2Dsl.GlobalUsings.g.cs" />
+    <Compile Remove="CppLua2Dsl\bin\**" />
+    <Compile Remove="CppLua2Dsl\obj\**" />
+    <Compile Remove="GlslRewriter\bin\**" />
+    <Compile Remove="GlslRewriter\obj\**" />
+    <Compile Remove="UnrealCodeTransform\bin\**" />
+    <Compile Remove="UnrealCodeTransform\obj\**" />
+    <Compile Remove="Wox.Plugin.BatchCommand\bin\**" />
+    <Compile Remove="Wox.Plugin.BatchCommand\obj\**" />
+    <EmbeddedResource Remove="CppLua2Dsl\bin\**" />
+    <EmbeddedResource Remove="CppLua2Dsl\obj\**" />
+    <EmbeddedResource Remove="GlslRewriter\bin\**" />
+    <EmbeddedResource Remove="GlslRewriter\obj\**" />
+    <EmbeddedResource Remove="UnrealCodeTransform\bin\**" />
+    <EmbeddedResource Remove="UnrealCodeTransform\obj\**" />
+    <EmbeddedResource Remove="Wox.Plugin.BatchCommand\bin\**" />
+    <EmbeddedResource Remove="Wox.Plugin.BatchCommand\obj\**" />
+    <None Remove="CppLua2Dsl\bin\**" />
+    <None Remove="CppLua2Dsl\obj\**" />
+    <None Remove="GlslRewriter\bin\**" />
+    <None Remove="GlslRewriter\obj\**" />
+    <None Remove="UnrealCodeTransform\bin\**" />
+    <None Remove="UnrealCodeTransform\obj\**" />
+    <None Remove="Wox.Plugin.BatchCommand\bin\**" />
+    <None Remove="Wox.Plugin.BatchCommand\obj\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Remove="CppLua2Dsl\Program.cs" />
     <Compile Remove="GlslRewriter\Calculator.cs" />
     <Compile Remove="GlslRewriter\ComputeGraph.cs" />
     <Compile Remove="GlslRewriter\Config.cs" />
-    <Compile Remove="GlslRewriter\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslEquivalentTransformation.AssemblyInfo.cs" />
-    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslEquivalentTransformation.GlobalUsings.g.cs" />
-    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslRewriter.AssemblyInfo.cs" />
-    <Compile Remove="GlslRewriter\obj\Debug\net6.0\GlslRewriter.GlobalUsings.g.cs" />
-    <Compile Remove="GlslRewriter\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="GlslRewriter\obj\Release\net6.0\GlslRewriter.AssemblyInfo.cs" />
-    <Compile Remove="GlslRewriter\obj\Release\net6.0\GlslRewriter.GlobalUsings.g.cs" />
     <Compile Remove="GlslRewriter\Program.cs" />
     <Compile Remove="GlslRewriter\StringBuilderPool.cs" />
     <Compile Remove="GlslRewriter\VariableTable.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\.NETCoreApp,Version=v5.0.AssemblyAttributes.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\UnrealCodeTransform.AssemblyInfo.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net5.0\UnrealCodeTransform.GlobalUsings.g.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\UnrealCodeTransform.AssemblyInfo.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Debug\net6.0\UnrealCodeTransform.GlobalUsings.g.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\UnrealCodeTransform.AssemblyInfo.cs" />
-    <Compile Remove="UnrealCodeTransform\obj\Release\net6.0\UnrealCodeTransform.GlobalUsings.g.cs" />
     <Compile Remove="UnrealCodeTransform\Program.cs" />
     <Compile Remove="Wox.Plugin.BatchCommand\EveryThingSDK.cs" />
-    <Compile Remove="Wox.Plugin.BatchCommand\obj\Debug\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
-    <Compile Remove="Wox.Plugin.BatchCommand\obj\Release\.NETFramework,Version=v4.8.AssemblyAttributes.cs" />
     <Compile Remove="Wox.Plugin.BatchCommand\PluginMain.cs" />
     <Compile Remove="Wox.Plugin.BatchCommand\Properties\AssemblyInfo.cs" />
     <Compile Remove="Wox.Plugin.BatchCommand\ShellContextMenu.cs" />

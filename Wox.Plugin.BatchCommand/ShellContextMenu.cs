@@ -63,7 +63,7 @@ namespace ShellApi
                 iContextMenuPtr2 = IntPtr.Zero,
                 iContextMenuPtr3 = IntPtr.Zero;
 
-            //我们使用子类化窗口的方式来处理消息，使用windows hook在功能上没看出差别
+            //We use subclassing of windows to handle messages, and we haven't noticed any differences in functionality when using windows hooks.
             //LocalWindowsHook hook = new LocalWindowsHook(HookType.WH_CALLWNDPROC);
             //hook.HookInvoked += new LocalWindowsHook.HookEventHandler(WindowsHookInvoked);
 
@@ -103,7 +103,7 @@ namespace ShellApi
 
                 if (m_Hwnd == IntPtr.Zero || !IsWindow(m_Hwnd)) {
                     var p = Process.GetCurrentProcess();
-                    //p.MainWindowHandle这个句柄好像不太稳定
+                    //p.MainWindowHandle this Handle may not be stable
                     //m_Hwnd = p.MainWindowHandle;
                     if (m_Hwnd == IntPtr.Zero || !IsWindow(m_Hwnd)) {
                         var hwnds = EnumToplevelWindows();

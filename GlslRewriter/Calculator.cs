@@ -10,10 +10,12 @@ using System.Threading.Tasks;
 namespace GlslRewriter
 {
     /// <summary>
-    /// 虽然我们在GlslRewriter里引入了BatchCommand的dsl脚本，但这个脚本与glsl的语法包括api的签名都有可能不一样，所以我们不能直接使用
-    /// dsl脚本解释器来执行glsl的计算，不过dsl脚本可以用在Config里来提供glsl函数的替代实现，因为Config是我们基于dsl来解析与解释的，我
-    /// 们可以选择与dsl脚本一致的执行规则。
-    /// 倒是可以考虑使用DslExpression.CalculatorValue来表示计算图上的值，这个类类似c++里的联合，可以容纳glsl所需的数据类型。
+    /// Although we have introduced the BatchCommand DSL script in GlslRewriter, this script may have a different syntax and API signature compared to GLSL.
+    /// Therefore, we cannot directly use the DSL script interpreter to execute GLSL computations.
+    /// However, the DSL script can be used in Config to provide alternative implementations of GLSL functions, because Config is parsed and interpreted based on DSL.
+    /// We can choose execution rules that are consistent with the DSL script.
+    /// It might be worth considering using DslExpression.CalculatorValue to represent values on the computation graph.
+    /// This class is similar to a union in C++, capable of holding data types required by GLSL.
     /// </summary>
     public static class Calculator
     {
@@ -867,7 +869,8 @@ namespace GlslRewriter
             }
             else if(func=="atomicAdd" || func== "atomicAnd" || func == "atomicOr" || func == "atomicXor"
                 || func == "atomicMin" || func == "atomicMax" || func == "atomicExchange" || func == "atomicCompSwap") {
-                //atomic系列函数需要单独的函数处理（第一个参数需要传进来内存地址与索引2部分信息），暂时先放这里让翻译可以正常进行
+                //The atomic series functions require separate processing (the first argument needs to pass in both the memory address and index information),
+                //so for now, let's leave them here to allow the translation to proceed normally.
                 val = args[0];
                 succ = true;
             }

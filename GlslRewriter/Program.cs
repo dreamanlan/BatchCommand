@@ -15,8 +15,9 @@ using DslExpression;
 
 namespace GlslRewriter
 {
-    //目前主要用于将反编译（spirv-cross或yuzu）出来的glsl转换为近似SSA形式与表达式合并，表达式合并（借助计算图来生成）只用于生成注释，方便理解代码
-    //可能不适合用于通常的glsl代码
+    // Currently mainly used to convert decompiled GLSL (from spirv-cross or yuzu) into an approximation of SSA form and merge expressions.
+    // Expression merging (using a computation graph for generation) is only used to generate comments, making the code easier to understand.
+    // May not be suitable for general GLSL code.
     public class Program
     {
         static void Main(string[] args)
@@ -164,7 +165,7 @@ namespace GlslRewriter
                         }
                     }
 
-                    //在Config加载前初始化批处理脚本，Config里有可能会用到脚本解释器
+                    //Initialize the batch script before loading the Config. The script interpreter may be used in the Config.
                     InitBatchScript();
 
                     if (string.IsNullOrEmpty(cfgFilePath)) {
@@ -263,7 +264,7 @@ namespace GlslRewriter
                 if (null != func) {
                     if (func.HaveStatement()) {
                         if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch" || (func.IsHighOrder && func.LowerOrderFunction.IsParenthesisParamClass())) {
-                            //结束当前语句并开始一个新的空语句
+                            //End the current statement and start a new empty statement.
                             dslAction.endStatement();
                             dslAction.beginStatement();
                             return true;
@@ -271,7 +272,7 @@ namespace GlslRewriter
                     }
                     else {
                         if (sid == "do") {
-                            //结束当前语句并开始一个新的空语句
+                            //End the current statement and start a new empty statement.
                             dslAction.endStatement();
                             dslAction.beginStatement();
                             return true;
@@ -281,19 +282,21 @@ namespace GlslRewriter
                 return false;
             };
             file.onAddFunction = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
-                //这里不要改变程序结构，此时function还是一个空函数，真正的函数信息还没有填充，这里与onBeforeAddFunction的区别是此时构建了function并添加到了当前语句的函数表中
+                //Do not change the program structure here. At this point, the "function" is still an empty function, and the real function information has not been filled in.
+                //The difference between this and "onBeforeAddFunction" is that the "function" is constructed and added to the function table of the current statement.
                 return false;
             };
             file.onBeforeEndStatement = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement) => {
-                //这里可拆分语句
+                //The statement can be split here.
                 return false;
             };
             file.onEndStatement = (ref Dsl.Common.DslAction dslAction, ref Dsl.StatementData statement) => {
-                //这里可替换整个语句，但不要修改程序其它部分结构，这里与onBeforeEndStatement的区别是此时语句已经从栈里弹出，后续将化简再加入上层语法单位
+                //The entire statement can be replaced here, but do not modify other parts of the program structure. The difference between this and "onBeforeEndStatement" is that
+                //the statement has been popped from the stack at this point, and the simplified statement will be added to the upper-level syntax unit in the future.
                 return false;
             };
             file.onBeforeBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, Dsl.StatementData statement) => {
-                //这里拆分语句
+                //The statement can be split here.
                 string sid = statement.GetId();
                 var func = statement.Last.AsFunction;
                 if (null != func) {
@@ -309,11 +312,11 @@ namespace GlslRewriter
                 return false;
             };
             file.onBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, ref Dsl.StatementData statement) => {
-                //这里可替换语句，不要修改其它语法结构
+                //The statement can be replaced here, but do not modify other syntax structures.
                 return false;
             };
             file.onSetFunctionId = (ref Dsl.Common.DslAction dslAction, string name, Dsl.StatementData statement, Dsl.FunctionData function) => {
-                //这里可拆分语句
+                //The statement can be split here.
                 string sid = statement.GetId();
                 var func = statement.Last.AsFunction;
                 if (null != func) {
@@ -337,11 +340,11 @@ namespace GlslRewriter
                 return false;
             };
             file.onBeforeBuildHighOrder = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
-                //这里可拆分语句
+                //The statement can be split here.
                 return false;
             };
             file.onBuildHighOrder = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
-                //这里可拆分语句
+                //The statement can be split here.
                 return false;
             };
 
@@ -350,7 +353,7 @@ namespace GlslRewriter
                 Console.WriteLine("iteration:{0}...", iterIx);
                 int varCountBefore = Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count;
                 if (file.LoadFromString(glslTxt, msg => { Console.WriteLine(msg); })) {
-                    //glsl的语法是一个合法的dsl语法，但语义结构不同，我们尝试用dsl的表示来处理glsl语法
+                    //The syntax of GLSL is a valid DSL grammar, but with a different semantic structure. We attempt to process the GLSL syntax using the representation of a DSL.
                     Transform(file);
                     int varCountAfter = Config.ActiveConfig.SettingInfo.AutoSplitAddedVariables.Count;
                     Console.WriteLine("iteration:{0}, split variable count:{1} => {2}.", iterIx, varCountBefore, varCountAfter);
@@ -611,7 +614,7 @@ namespace GlslRewriter
                 if (File.Exists(attrCfg.InAttrImportFile)) {
                     var lines = RenderDocImporter.GenenerateVsInOutAttr("float", attrCfg.AttrIndex, attrCfg.InAttrMap, attrCfg.InAttrImportFile, hlslMergeDatas, out var outPos);
                     stms.AddRange(lines);
-                    //插入参数初始化
+                    //Insert parameter initialization
                     if (s_IsPsShader) {
                         int w = Config.CommonCfg.ViewportWidth;
                         int h = Config.CommonCfg.ViewportHeight;
@@ -647,7 +650,9 @@ namespace GlslRewriter
         }
         private static string ConvertCondExpAndSkipComments(IList<string> glslLines)
         {
-            //c语言的?:操作符与赋值操作是相同优先级，这与MetaDSL里不一样，有可能条件表达式里会出现赋值表达式，我们需要把这些表达式括起来再进行dsl解析
+            //In C language, the ternary operator (?:) and the assignment operator (=) have the same precedence, which is different from MetaDSL.
+            //It is possible that an assignment expression may appear within a conditional expression. Therefore,
+            //we need to enclose these expressions in parentheses before proceeding with the DSL parsing.
             var sb = new StringBuilder();
             bool inCommentBlock = false;
             for (int ix = 0; ix < glslLines.Count; ++ix) {
@@ -867,7 +872,7 @@ namespace GlslRewriter
             return ret;
         }
 
-        //顶层语法处理
+        //Top-level syntax processing
         private static void TransformToplevelSyntax(Dsl.ISyntaxComponent syntax)
         {
             var valData = syntax as Dsl.ValueData;
@@ -900,7 +905,7 @@ namespace GlslRewriter
                 }
             }
             else if (id == "in") {
-                //不是语句最后部分按变量处理，compute shader里描述线程数会使用in结束的语法
+                //In a compute shader, the syntax for describing the number of threads ends with the `in` keyword, rather than treating the last part as a variable.
                 if (startFuncIx < stmData.GetFunctionNum() - 1) {
                     TransformVar(stmData, startFuncIx, true, ref semanticInfo);
                 }
@@ -946,8 +951,9 @@ namespace GlslRewriter
                 }
             }
             else {
-                //在dsl语法里，分号分隔各语句，glsl里的函数定义结尾不加分隔符，dsl解析时会将函数定义与后面的函数定义或struct/buffer/变量定义
-                //连接在一起构成一个大语句，这里需要分别拆出来分析（为保证输出时的正确性，不能修改整体表示）
+                //In the DSL syntax, semicolons are used to separate statements. However, in GLSL, function definitions do not have a terminating semicolon. During DSL parsing,
+                //function definitions and subsequent function definitions or struct/buffer/variable definitions may be combined into a single large statement.
+                //Here, they need to be separated and analyzed individually (to ensure the correctness of the output, the overall representation cannot be modified).
                 int index = 0;
                 bool handled = false;
                 while (index < stmData.GetFunctionNum()) {
@@ -992,9 +998,10 @@ namespace GlslRewriter
                     TransformGeneralCall(fd, ref semanticInfo);
                 }
                 else if (null != sd) {
-                    //在dsl语法里，分号分隔各语句，glsl里的函数定义结尾不加分隔符，dsl解析时会将函数定义解析到赋值语句左边的语法部分
-                    //，这里需要把函数定义与赋值语句的左边部分拆分，以正确分析函数原型与识别赋值语句里的变量定义（但不能改变整体的表示
-                    //，否则输出时语法可能会不正确）
+                    //In the DSL syntax, semicolons are used to separate statements.However, in GLSL, function definitions do not have a terminating semicolon.
+                    //During DSL parsing, function definitions are parsed until the syntax part to the left of the assignment statement.Here, the function definition
+                    //and the left part of the assignment statement need to be separated in order to correctly analyze the function prototype and identify
+                    //variable definitions in the assignment statement(without changing the overall representation, otherwise the syntax may be incorrect during output).
                     Dsl.StatementData? left, right;
                     if (SplitToplevelStatementsInExpression(sd, out left, out right)) {
                         Debug.Assert(null != left && null != right);
@@ -1013,7 +1020,7 @@ namespace GlslRewriter
                         if (index < left.GetFunctionNum()) {
                             Debug.Assert(false);
                         }
-                        //拆分时left是一个复合语句结尾，到这里left应该已经处理完成了
+                        //When splitting, left is the end of a compound statement. At this point, left should have been processed completely.
                         TransformVar(right, 0, true, sd, ref semanticInfo);
                     }
                     else {
@@ -1214,7 +1221,7 @@ namespace GlslRewriter
             }
         }
 
-        //非顶层语句语法处理
+        //Non-top-level statement syntax handling.
         private static bool TransformStatement(Dsl.ISyntaxComponent syntax, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
             insertBeforeOuter = null;
@@ -1279,7 +1286,7 @@ namespace GlslRewriter
 
                     AddComputeGraphRootNode(cgcn);
 
-                    //计算总是要执行，输出按配置可能跳过
+                    //Calculations always need to be executed, but the output may be skipped based on the configuration.
                     cgcn.DoCalc();
                     if (Config.CalcSettingForVariable(p, out var isVariableSetting, out var markValue, out var markExp, out var maxLvlForExp, out var maxLenForExp, out var multiline, out var expandedOnlyOnce)) {
                         GenerateValueAndExpression(funcData, p, cgcn, isVariableSetting, markValue, markExp, true, maxLvlForExp, maxLenForExp, multiline, expandedOnlyOnce, out var val);
@@ -1371,7 +1378,7 @@ namespace GlslRewriter
             return null != insertBeforeOuter || null != insertAfterOuter;
         }
 
-        //表达式语法处理，表达式总是有一个返回值
+        //Expression syntax processing, expressions always have a return value.
         private static void TransformExpression(Dsl.ISyntaxComponent syntax, ref SemanticInfo semanticInfo)
         {
             string resultType = TypeInference(syntax);
@@ -1438,6 +1445,10 @@ namespace GlslRewriter
                 vgn.AddPrev(cgcn);
 
                 semanticInfo.GraphNode = vgn;
+
+                if (!string.IsNullOrEmpty(tempVarSi.ResultType) && !string.IsNullOrEmpty(tempValSi.ResultType) && tempVarSi.ResultType != tempVarSi.ResultType) {
+                    Console.WriteLine("type '{0}' assigned to type '{1}', line {2} dsl:{3}", tempValSi.ResultType, tempVarSi.ResultType, funcData.GetLine(), funcData.ToScriptString(false));
+                }
             }
             else {
                 TransformGeneralFunction(funcData, ref semanticInfo);
@@ -1612,7 +1623,7 @@ namespace GlslRewriter
             for (int stmIx = 0; stmIx < funcData.GetParamNum(); ++stmIx) {
                 Dsl.ISyntaxComponent? syntax = null;
                 for (; ; ) {
-                    //去掉连续分号
+                    //Remove consecutive semicolons.
                     syntax = funcData.GetParam(stmIx);
                     if (syntax.IsValid()) {
                         break;
@@ -1628,7 +1639,7 @@ namespace GlslRewriter
                         }
                     }
                 }
-                //处理语句
+                //Process the statement.
                 if (stmIx < funcData.GetParamNum() && null != syntax) {
                     if (TransformStatement(syntax, out var insertBefore, out var insertAfter)) {
                         if (null != insertBefore) {
@@ -1648,7 +1659,7 @@ namespace GlslRewriter
             }
         }
 
-        //if语句与循环语句的SSA处理
+        //SSA (Static Single Assignment) processing for if statements and loop statements.
         private static bool TransformIfFunction(Dsl.FunctionData ifFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
             var semanticInfo = new SemanticInfo();
@@ -1698,8 +1709,10 @@ namespace GlslRewriter
                         s_ExpressionList.Add(Tuple.Create(Literal.GetIndentString(s_Indent) + "}", string.Empty, CurBlockId()));
                     }
                     if (s_SSA) {
-                        //1、单分支if语句开始前使用phi变量别名暂存有可能在if分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
-                        //2、更新各变量的别名为phi变量别名
+                        // 1. Before the start of a single-branch if statement, use phi variable aliases to temporarily store the values of variables that
+                        // may be assigned within the if branch (these phi variables will not be used within the if statement, but will be used
+                        // by the code after the if statement).
+                        // 2. Update the aliases of each variable to the phi variable aliases.
                         insertBeforeOuter = new List<ISyntaxComponent>();
                         Debug.Assert(null != insertBeforeOuter);
                         foreach (var vname in setVars) {
@@ -1759,7 +1772,7 @@ namespace GlslRewriter
 
                     SetCurBlockPhiSuffix(suffix);
                     TransformFunctionStatements(f);
-                    //每个分支处理自己赋值过的变量，同时将变量名汇总
+                    //Each branch handles the variables it has assigned, while also consolidating the variable names.
                     foreach (var vname in CurSetVars()) {
                         if (!setVars.Contains(vname))
                             setVars.Add(vname);
@@ -1777,8 +1790,9 @@ namespace GlslRewriter
                 }
             }
             if (s_SSA) {
-                //1、多分支if语句开始前使用phi变量别名暂存有可能在各分支中被赋值的变量的值（这些phi变量不会在if语句中使用，供if语句后的代码使用）
-                //2、更新各变量的别名为phi变量别名
+                // 1. Before the start of a multi-branch if statement, use phi variable aliases to temporarily store the values of variables that may be assigned within each branch
+                // (these phi variables will not be used within the if statement, but will be used by the code after the if statement).
+                // 2. Update the aliases of each variable to the phi variable aliases.
                 insertBeforeOuter = new List<ISyntaxComponent>();
                 Debug.Assert(null != insertBeforeOuter);
                 foreach (var vname in setVars) {
@@ -1797,7 +1811,7 @@ namespace GlslRewriter
         }
         private static bool TransformSwitchFunction(Dsl.FunctionData ifFunc, out List<Dsl.ISyntaxComponent>? insertBeforeOuter, out List<Dsl.ISyntaxComponent>? insertAfterOuter)
         {
-            //先不支持了，好像一般反编译的shader都不会使用switch语句
+            //I won't support it for now. It seems that decompiled shaders generally do not use switch statements
             insertBeforeOuter = null;
             insertAfterOuter = null;
             return insertBeforeOuter != null || insertAfterOuter != null;
@@ -2068,7 +2082,7 @@ namespace GlslRewriter
             semanticInfo.ResultType = cgcn.Type;
         }
 
-        //for语句的for()部分的处理
+        //Processing the "for" part of a "for" statement
         private static void TransformForHeader(Dsl.FunctionData call, ref SemanticInfo semanticInfo)
         {
             int paramNum = call.GetParamNum();
@@ -2228,7 +2242,7 @@ namespace GlslRewriter
             Debug.Assert(null != insertBeforeOuter);
             var undeterminedAliasTable = CurUndeterminedVarAliasTable();
             foreach (var vname in CurSetVars()) {
-                //处理循环里的未决别名
+                //Handling unresolved aliases within the loop
                 string phiVarName = vname + phiSuffix;
                 if (undeterminedAliasTable.TryGetValue(vname, out var info)) {
                     foreach (var valData in info.ValueDatas) {
@@ -2237,12 +2251,12 @@ namespace GlslRewriter
                     undeterminedAliasTable.Remove(vname);
                 }
 
-                //在循环结束前添加phi变量赋值
+                //Adding phi variable assignments before the end of the loop
                 var assignFunc = BuildPhiVarAliasAssignment(vname, phiSuffix, CurVarAliasInfos(), true);
                 loopFunc.AddParam(assignFunc);
                 AddPhiVarAssignExpression(assignFunc, isLoopTrue);
 
-                //在循环体前添加phi变量赋值，这里有可能为外层循环引入未决别名(phi变量在循环前总是计算值)
+                //Adding phi variable assignments before the loop body can potentially introduce unresolved aliases for outer loops (phi variables always compute their values before the loop).
                 var assignFunc2 = BuildPhiVarAliasAssignment(vname, phiSuffix, oldAliasInfos, false, out var refVarData);
                 AddPhiVarAssignExpression(assignFunc2, true, ref expListCountBeforeLoop);
                 if (newRefVarValDataOuter.TryGetValue(vname, out var list)) {
@@ -2263,8 +2277,10 @@ namespace GlslRewriter
         }
         private static Dsl.FunctionData BuildPhiVarAliasAssignment(string vname, string phiSuffix, Dictionary<string, VarAliasInfo> aliasInfos, bool updateVarAliasInfo, out Dsl.ValueData refVarValDataOuter)
         {
-            //注：phi变量赋值不生成计算结点，因为phi变量本身不是SSA形式，我们在计算图上phi变量这里断开前后依赖，我们在生成phi变量赋值表达式的时候根据条件表达式的值会尝试给phi变量赋一个值，
-            //或者通过variable_assignment手动指定一个值（对if语句，自动赋值应该通常是正确的，手动指定可能主要用于循环情形）
+            //Note: Phi variable assignments do not generate computation nodes because phi variables themselves are not in SSA form. We break the dependencies before and
+            //after the phi variable in the computation graph. When generating phi variable assignment expressions, we attempt to assign a value to the phi variable based
+            //on the condition expression's value. Alternatively, we can manually specify a value through variable_assignment (this is mainly used in loop scenarios,
+            //as automatic assignment is usually correct for if statements).
             var assignFunc = new Dsl.FunctionData();
             assignFunc.Name = new Dsl.ValueData("=", Dsl.AbstractSyntaxComponent.ID_TOKEN);
             assignFunc.SetOperatorParamClass();
@@ -2283,12 +2299,15 @@ namespace GlslRewriter
             }
             assignFunc.AddParam(refVarValDataOuter);
 
-            //确定使用的phi变量标记给它赋值的变量为需要拆分表达式的变量（这需要多次生成代码才能标记，不过这样能避免生成多余的赋值语句）
+            //To mark the variables that require expression splitting, we need to generate code multiple times to determine the phi variables used.
+            //However, this approach helps avoid generating unnecessary assignment statements.
             if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarName)) {
                 string nvname = refVarValDataOuter.GetId();
-                //由于我们的标记不能递归，已经进行过SSA处理的代码不能再作为输入进行处理，否则这个判断会丢掉仅用于为phi变量赋值的各变量的赋值表达式
-                //另外在已经进行过SSA处理的代码里，变量的定义与赋值也是分开的，这样再作为输入进行处理也会导致这些变量再被重命名一次。
-                //我们通过命令行参数-nossa来避免这种混淆
+                //Since our marking is not recursive, code that has already undergone SSA processing cannot be processed again as input. Otherwise,
+                //this check would discard assignment expressions for variables used solely for phi variable assignments. Additionally,
+                //in code that has already undergone SSA processing, variable definitions and assignments are separate.
+                //Processing it again as input would result in these variables being renamed again.
+                //We can avoid this confusion by using the command-line parameter "-nossa".
                 if (!IsPhiVar(nvname)) {
                     Config.ActiveConfig.SettingInfo.AutoSplitAddVariable(nvname, string.Empty);
                 }
@@ -2311,7 +2330,7 @@ namespace GlslRewriter
                         Config.ActiveConfig.SettingInfo.AddAssignment(key, vnode.Type, vnode.GetValue());
                     }
                 }
-                //确定使用的phi变量生成赋值语句
+                //Generate assignment statements for the phi variables used
                 if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(key)) {
                     var line = s_ExpressionBuilder;
                     line.Length = 0;
@@ -2424,8 +2443,8 @@ namespace GlslRewriter
                         line.Append(";");
                     if (singleLineExp.IndexOf(' ') > 0) {
                         int blockId = CurBlockId();
-                        //只检查多参数函数与操作符表达式，避免将常量或utof/ftou判断为重复表达式
-                        if(!s_Expression2VarList.TryGetValue(blockId, out var exp2vars)) {
+                        //Only check multi-parameter functions and operator expressions to avoid mistaking constants or "utof/ftou" as duplicate expressions.
+                        if (!s_Expression2VarList.TryGetValue(blockId, out var exp2vars)) {
                             exp2vars = new Dictionary<string, List<Tuple<string, string>>>();
                             s_Expression2VarList.Add(blockId, exp2vars);
                         }
@@ -2482,10 +2501,10 @@ namespace GlslRewriter
             return !val.IsNullObject;
         }
 
-        //变量的SSA处理
+        //SSA handling of variable.
         private static void TransformVar(Dsl.ValueData valData, ref SemanticInfo semanticInfo)
         {
-            //变量没有出现在赋值语句左边，仍然可能是变量定义（定义相同类型的多个变量时）
+            //If a variable does not appear on the left side of an assignment statement, it may still be a variable definition (when defining multiple variables of the same type).
             if (valData.IsId()) {
                 string vid = valData.GetId();
                 if (vid != "true" && vid != "false" && vid.IndexOf(' ') < 0) {
@@ -2514,7 +2533,8 @@ namespace GlslRewriter
                             if (CurVarAliasInfos().TryGetValue(vid, out var info)) {
                                 valData.SetId(vid + info.AliasSuffix);
                             }
-                            //如果引用的变量不是在当前循环里赋值的，添加到未决别名表里（此变量可能在循环后续赋值，如果被赋值，需要修改别名为phi变量别名）
+                            //If the referenced variable is not assigned in the current loop, add it to the unresolved alias table
+                            //(this variable may be assigned later in the loop, and if it is assigned, the alias needs to be modified to the phi variable alias).
                             TryAddUndeterminedVarAlias(vid, valData);
                         }
                         var cgvn = FindComputeGraphVarNode(valData.GetId());
@@ -2547,12 +2567,12 @@ namespace GlslRewriter
         }
         private static void TransformVar(Dsl.StatementData stmData, int index, bool toplevel, ref SemanticInfo semanticInfo)
         {
-            //未初始化的变量定义
+            //Uninitialized variable definition.
             TransformVar(stmData, index, toplevel, null, ref semanticInfo);
         }
         private static void TransformVar(Dsl.StatementData stmData, int index, bool toplevel, Dsl.StatementData? oriStmData, ref SemanticInfo semanticInfo)
         {
-            //未初始化的变量定义
+            //Uninitialized variable definition.
             var lastId = stmData.Last.GetId();
             var last = stmData.Last.AsFunction;
             if (null == last || (last.IsBracketParamClass() && !last.HaveStatement())) {
@@ -2627,10 +2647,10 @@ namespace GlslRewriter
             }
         }
 
-        //变量赋值的SSA处理
+        //SSA handling of variable assignment.
         private static void TransformAssignLeft(Dsl.ValueData valData, ref SemanticInfo semanticInfo)
         {
-            //变量出现在赋值语句左边，有可能是变量定义（定义相同类型的多个变量时）或赋值
+            // The variable appears on the left side of the assignment statement, which may be a variable definition (when defining multiple variables of the same type) or an assignment.
             if (valData.IsId()) {
                 string vid = valData.GetId();
                 if (vid != "true" && vid != "false" && vid.IndexOf(' ') < 0) {
@@ -2671,7 +2691,7 @@ namespace GlslRewriter
                             semanticInfo.ResultType = vinfo.Type;
                         }
                         else {
-                            //类SSA形式的代码里，变量定义与赋值是分开的，在赋值时变量已经在计算图上了
+                            //In code like SSA form, variable definition and assignment are separate. During assignment, the variable is already in the computation graph.
                             var cgvn = FindComputeGraphVarNode(valData.GetId());
                             semanticInfo.GraphNode = cgvn;
                             semanticInfo.ResultType = vinfo.Type;
@@ -2693,12 +2713,12 @@ namespace GlslRewriter
         }
         private static void TransformAssignLeft(Dsl.StatementData stmData, int index, bool toplevel, ref SemanticInfo semanticInfo)
         {
-            //赋初始值的变量定义
+            //Variable definition with assigning initial value.
             TransformAssignLeft(stmData, index, toplevel, null, ref semanticInfo);
         }
         private static void TransformAssignLeft(Dsl.StatementData stmData, int index, bool toplevel, Dsl.StatementData? oriStmData, ref SemanticInfo semanticInfo)
         {
-            //赋初始值的变量定义
+            //Variable definition with assigning initial value.
             var lastId = stmData.Last.GetId();
             var last = stmData.Last.AsFunction;
             if (null == last || (last.IsBracketParamClass() && !last.HaveStatement())) {
@@ -2797,7 +2817,7 @@ namespace GlslRewriter
                 AddComputeGraphVarNode(cgvn);
 
                 if (null != vinfo.OwnFunc) {
-                    //只有已经在使用列表里的phi变量才记录类型
+                    //Only phi variables that are already in the usage list will have their types recorded.
                     if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(phiVarAlias)) {
                         string type = vinfo.Type;
                         if (vinfo.Modifiers.Contains("precise"))
@@ -2808,7 +2828,7 @@ namespace GlslRewriter
             }
         }
 
-        //非精确语法处理，这部分可能需要持续改进
+        //Imprecise syntax handling, this part may require continuous improvement.
         private static bool ParseStatement(Dsl.StatementData stmData, ref int index, out Dsl.FunctionData? f, out List<string> modifiers)
         {
             bool ret = false;
@@ -2837,7 +2857,7 @@ namespace GlslRewriter
             int funcNum = expParam.GetFunctionNum();
             var lastFunc = expParam.Last.AsFunction;
             if (null != lastFunc && lastFunc.IsHighOrder) {
-                //语句大括号后接圆括号表达式
+                //Statement curly braces followed by parentheses expression
                 var innerFunc = lastFunc;
                 while (innerFunc.IsHighOrder && innerFunc.HaveParam())
                     innerFunc = innerFunc.LowerOrderFunction;
@@ -3014,7 +3034,7 @@ namespace GlslRewriter
             }
         }
 
-        //表达式类型推导
+        // Expression Type Inference
         private static string TypeInference(Dsl.ISyntaxComponent syntax)
         {
             var valData = syntax as Dsl.ValueData;
@@ -3447,7 +3467,7 @@ namespace GlslRewriter
             return ret;
         }
 
-        //函数签名与类型编码
+        //function signature and type encoding
         private static string GetFullTypeFuncSig(string funcName, IList<string> argTypes)
         {
             var sb = new StringBuilder();
@@ -3646,7 +3666,7 @@ namespace GlslRewriter
             SetCurBlock(funcInfo.ComputeGraphFunc.Block);
         }
 
-        //计算图
+        //compute graph
         private static ComputeGraph CurComputeGraph()
         {
             var curFunc = CurFuncInfo();
@@ -3696,7 +3716,7 @@ namespace GlslRewriter
             return ret;
         }
 
-        //程序结构
+        //program structure
         private static void AddVar(VarInfo varInfo)
         {
             if (!s_VarInfos.TryGetValue(varInfo.Name, out var varInfos)) {
@@ -3710,7 +3730,7 @@ namespace GlslRewriter
             var cgvn = new ComputeGraphVarNode(varInfo.OwnFunc, Config.TryReplaceType(varInfo.Name, varInfo.Type), varInfo.Name);
             AddComputeGraphVarNode(cgvn);
 
-            //只有已经在使用列表里的变量才记录类型
+            //Only variables that are already in the list of used variables are recorded with their types.
             if (Config.ActiveConfig.SettingInfo.UsedVariables.ContainsKey(varInfo.Name)) {
                 string type = varInfo.Type;
                 if (varInfo.Modifiers.Contains("precise"))
@@ -3787,7 +3807,7 @@ namespace GlslRewriter
                         undeterminedVarAliasTable.Add(pair.Key, pair.Value);
                     }
                 }
-                //如果不是分支块，则别名信息被上层块继承
+                //If it is not a branch block, the alias information is inherited by the upper block.
                 if (!lastInfo.IsBranch) {
                     var varAliasInfos = curInfo.VarAliasInfos;
                     Debug.Assert(null != varAliasInfos);
@@ -3880,7 +3900,7 @@ namespace GlslRewriter
         {
             var vinfo = GetVarInfo(vname);
             if (null != vinfo && null == vinfo.OwnFunc) {
-                //全局变量不换名
+                //Global variables do not need to be renamed.
                 return;
             }
             var curLoopSetVars = CurLoopSetVars();
@@ -4190,8 +4210,10 @@ namespace GlslRewriter
         private static SortedDictionary<string, BufferInfo> s_BufferInfos = new SortedDictionary<string, BufferInfo>();
         private static SortedDictionary<string, ArrayInitInfo> s_ArrayInits = new SortedDictionary<string, ArrayInitInfo>();
 
-        //赋值语句左边变量别名替换需要等当前语句处理完成后进行（有可能右边引用的相同变量，此时引用变量的别名应该是之前赋值确定的别名）
-        //这个队列用于此目的
+        //The assignment of aliases to variables on the left side of an assignment statement needs to be performed after the current statement is processed
+        //(there may be variables with the same name on the right side of the statement, and the alias of the referenced variable should be the alias
+        //determined before assignment at this time).
+        //This queue is used for this purpose.
         private static Queue<string> s_VarAliasInfoUpdateQueue = new Queue<string>();
         private static Dictionary<string, VarAliasIndex> s_VarAliasIndexes = new Dictionary<string, VarAliasIndex>();
 

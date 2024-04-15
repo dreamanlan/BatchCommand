@@ -1,41 +1,42 @@
 # BatchCommand
 
-一个简单的基于dsl语法的批处理与模板代码生成脚本，主要目的是在一个脚本里写在windows与mac等不同平台上的批处理，或者用来生成代码。
+A simple batch processing and template code generation script based on DSL syntax. The main purpose is to write batch processing on different platforms such as Windows and Mac in one script, or to generate code.
 
-deps/DslCalculator.cs是一个相对通用的脚本解释器与常用API的实现。
-Script/BatchScript.cs是用于批处理的一个API，比如运行另外一个程序、目录与文件操作之类，另外也在这里实现了模板代码生成的机制，就是在输出文本里面再次嵌入脚本来输出程序化数据的方式。
+deps/DslCalculator.cs is a relatively general script interpreter and implementation of common APIs.
+Script/BatchScript.cs is an API for batch processing, such as running another program, directory and file operations, etc. In addition, the template code generation mechanism is also implemented here, which is to embed the script again in the output text to output the program way to digitize data.
 
-这个解释器与一般解释器的不同点在于，因为MetaDSL语法将类C语言的常用语法构造都抽象成了3类语法：值、函数、语句，然后解释器直接将这些语法构造交给API来处理，所以函数与语句都是API实现的。
+The difference between this interpreter and general interpreters is that the MetaDSL grammar abstracts the common grammatical constructs of C-like languages ​​into three types of grammar: values, functions, and statements, and then the interpreter directly hands these grammatical constructs to the API for processing. , so functions and statements are implemented by API.
 
-[解释器原理笔记](https://zhuanlan.zhihu.com/p/82055862)，这个笔记基于以前版本的MetaDSL所写，当时MetaDSL的基本语法有四类：值、函数调用、函数定义、语句，现在是三类了，不过原理是一样的。
+[Interpreter principle notes](https://zhuanlan.zhihu.com/p/82055862), this note is based on the previous version of MetaDSL. At that time, the basic syntax of MetaDSL had four categories: value, function call, function definition, and statement. Now there are three categories, but the principle is the same.
 
-另外BatchCommand在用于代码生成时比较多的会用到的是模板代码生成功能，这是相关原理的[笔记](https://zhuanlan.zhihu.com/p/618899030)。
+In addition, when BatchCommand is used for code generation, the template code generation function is often used. This is [note](https://zhuanlan.zhihu.com/p/618899030) on the relevant principles .
 
-因为是C#开发的，通常不用查看源码来了解API，使用ilspy直接反编译BatchCommand.exe来查看API会更方便一些。
+Because it is developed in C#, it is usually not necessary to check the source code to understand the API. It is more convenient to use ilspy to directly decompile BatchCommand.exe to check the API.
 
-主要有2个API注册的入口点，可以用ilspy从这2处入口来查找API。一个是DslCalculator.cs文件里的DslCalculator.Init，ilspy里搜索这个就可以看到：
+There are two main entry points for API registration. You can use ilspy to find the API from these two entries. One is DslCalculator.Init in the DslCalculator.cs file. You can see this by searching for this in ilspy:
 
-- 基础API注册
-![基础API,相对通用的](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api1.png)
+- Basic API registration
+![Basic API](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api1.png)
 
-- 批处理与模板替换API注册
-![批处理与模板替换API，专用](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api2.png)
+- Batch processing and template replacement API registration
+![Batch processing and template replacement API registration](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api2.png)
 
-API的实现有2种方式，一种是继承AbstractExpression类，重写Load与DoCalc方法，Load方法有不同的重载版本对应MetaDSL的不同语法类别，这里主要是解析API来准备运行时信息，DoCalc是实现API的功能，一般就是计算参数值，然后根据参数值来计算结果。另一种是继承SimpleExpression类，重写DoCalc方法，绝大多数API属于此类，它是接收一些值参数然后计算结果的函数类API，基类已经计算了参数值，在DoCalc里只需要根据参数值来计算结果即可。
+There are two ways to implement the API. One is to inherit the AbstractExpression class and override the Load and DoCalc methods. The Load method has different overloaded versions corresponding to different syntax categories of MetaDSL. The main purpose here is to parse the API to prepare runtime information. DoCalc is To implement the function of the API, it is generally to calculate the parameter value, and then calculate the result based on the parameter value. The other is to inherit the SimpleExpression class and override the DoCalc method. Most APIs fall into this category. It is a function API that receives some value parameters and then calculates the results. The base class has already calculated the parameter values. In DoCalc, you only need to calculate the parameters based on the parameters. value to calculate the result.
 
 - AbstractExpression类
-![api抽象类，适用于所有API](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf1.png)
+![api abstract class, used in all class](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf1.png)
 
 - SimpleExpression类
-![简单函数类API，用于常见的值参数与返回值类的api，绝大多数API都是此类](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf2.png)
+![Simple function class API, used for common value parameters and return value APIs, the vast majority of APIs are of this type.](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf2.png)
 
-下面是2种类型的API的简单示例，通常我们在ilspy的注册部分点击实现的api类跳过来查看就可以知道这个API接收哪些参数，做什么工作，返回什么结果了。
+The following are simple examples of two types of APIs. Usually we click on the implemented api class in the registration section of ilspy and jump to see what parameters the API receives, what work it does, and what results it returns.
 
-- 简单函数API示例
-![函数API实现示例](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_func_exam.png)
+- Simple function API example
+![Function API implementation example
+](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_func_exam.png)
 
-- 复杂一些的API示例（语句类API通常采用此类实现，或者参数不是普通值类型的API）
-![其他API实现示例](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other_exam.png)
+- More complex API examples (statement APIs usually use this type of implementation, or APIs whose parameters are not ordinary value types)
+![Other API implementation examples](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other_exam.png)
 
-![其他API实现示例](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other2_exam.png)
+![Other API implementation examples](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/api_other2_exam.png)
 

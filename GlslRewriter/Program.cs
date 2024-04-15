@@ -1446,7 +1446,7 @@ namespace GlslRewriter
 
                 semanticInfo.GraphNode = vgn;
 
-                if (!string.IsNullOrEmpty(tempVarSi.ResultType) && !string.IsNullOrEmpty(tempValSi.ResultType) && tempVarSi.ResultType != tempVarSi.ResultType) {
+                if (!string.IsNullOrEmpty(tempVarSi.ResultType) && !string.IsNullOrEmpty(tempValSi.ResultType) && tempVarSi.ResultType != tempValSi.ResultType) {
                     Console.WriteLine("type '{0}' assigned to type '{1}', line {2} dsl:{3}", tempValSi.ResultType, tempVarSi.ResultType, funcData.GetLine(), funcData.ToScriptString(false));
                 }
             }
@@ -3249,9 +3249,9 @@ namespace GlslRewriter
                 //built-in function
                 if (s_BuiltInFuncs.TryGetValue(func, out var resultType)) {
                     if (func.StartsWith("texture")) {
-                        foreach(var arg in args) {
+                        foreach (var arg in args) {
                             if (arg == "vec3" || arg == "vec4") {
-                                Console.WriteLine("'{0}' use vec3/vec4 argument, line {1} dsl {2}", func, arg, syntax.GetLine(), syntax.ToScriptString(false));
+                                Console.WriteLine("func '{0}' use {1} argument, line {2} dsl {3}", func, arg, syntax.GetLine(), syntax.ToScriptString(false));
                                 break;
                             }
                         }

@@ -23,10 +23,10 @@ There are two main entry points for API registration. You can use ilspy to find 
 
 There are two ways to implement the API. One is to inherit the AbstractExpression class and override the Load and DoCalc methods. The Load method has different overloaded versions corresponding to different syntax categories of MetaDSL. The main purpose here is to parse the API to prepare runtime information. DoCalc is To implement the function of the API, it is generally to calculate the parameter value, and then calculate the result based on the parameter value. The other is to inherit the SimpleExpression class and override the DoCalc method. Most APIs fall into this category. It is a function API that receives some value parameters and then calculates the results. The base class has already calculated the parameter values. In DoCalc, you only need to calculate the parameters based on the parameters. value to calculate the result.
 
-- AbstractExpression类
+- class AbstractExpression
 ![api abstract class, used in all class](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf1.png)
 
-- SimpleExpression类
+- class SimpleExpression
 ![Simple function class API, used for common value parameters and return value APIs, the vast majority of APIs are of this type.](https://raw.githubusercontent.com/dreamanlan/BatchCommand/master/apiintf2.png)
 
 The following are simple examples of two types of APIs. Usually we click on the implemented api class in the registration section of ilspy and jump to see what parameters the API receives, what work it does, and what results it returns.

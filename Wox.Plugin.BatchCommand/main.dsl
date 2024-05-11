@@ -99,43 +99,43 @@ public class ActionContext
 {
     public SpecialKeyState SpecialKeyState;
 }
-context() 返回PluginInitContext对象
-api() 返回IPublicAPI对象，一般不需要使用，有的有限制，比如RestarApp不能在脚本线程调用
-metadata() 返回PluginMetadata对象
-showmsg(title[,subtitle[,icon]]) 显示弹出消息,缺少的参数为string.Empty
-restart() 重启wox
-show() 显示console窗口，evaldsl会自动显示窗口
-hide() 隐藏console窗口
-reloaddsl() 重新加载main.dsl
-evaldsl(dsl代码, query, result, actioncontext) 执行dsl代码，代码里可以使用$query,$result,$actioncontext访问相应参数
-changequery(query_string, requery) 修改查询，requery是bool类型
-addresult(title, subtitle, icopath, action, query) 添加一条结果到列表，query是查询对象，其它都是字符串，action是dsl里的脚本函数名，
-用户点击时执行此脚本，向脚本传3个参数query,result,actioncontext
-addcontextmenu(tilte, subtitle, icopath, action, query, result) 添加一个上下文菜单项，query是查询对象，result是结果对象，其它都是字符串
-，action是dsl里的脚本函数名，用户点击时执行，向脚本传4个参数query,result,menu,actioncontext, menu也是Result对象，包含菜单项信息
-keywordregistered(keyword) 判断指定keyword是否已注册
-clearkeywords(id) 清空当前插件所有keyword, id是插件id
-addkeyword(id, keyword) 添加一个keyword, id是插件id, keyword是字符串
-showcontextmenu(path, ctrl, shift) 显示指定路径path关联的上下文菜单，ctrl与shift指明是否像按下ctrl与shift键一样
+context() returns the PluginInitContext object
+api() returns the IPublicAPI object, which generally does not need to be used. Some have restrictions. For example, RestarApp cannot be called in the script thread.
+metadata() returns the PluginMetadata object
+showmsg(title[,subtitle[,icon]]) displays a pop-up message, the missing parameter is string.Empty
+restart() restart wox
+show() displays the console window, evaldsl will automatically display the window
+hide() hides the console window
+reloaddsl() reloads main.dsl
+evaldsl(dsl code, query, result, actioncontext) executes the dsl code. You can use $query, $result, $actioncontext to access the corresponding parameters in the code.
+changequery(query_string, requery) Modifies the query, requery is of bool type
+addresult(title, subtitle, icopath, action, query) adds a result to the list, query is the query object, the others are strings, action is the script function name in dsl,
+This script is executed when the user clicks, and the three parameters query, result, and actioncontext are passed to the script.
+addcontextmenu(tilte, subtitle, icopath, action, query, result) adds a context menu item, query is the query object, result is the result object, and the others are strings
+, action is the name of the script function in dsl. It is executed when the user clicks. It passes 4 parameters query, result, menu, actioncontext to the script. Menu is also a Result object, containing menu item information.
+keywordregistered(keyword) determines whether the specified keyword has been registered
+clearkeywords(id) clears all keywords of the current plug-in, id is the plug-in id
+addkeyword(id, keyword) adds a keyword, id is the plug-in id, keyword is a string
+showcontextmenu(path, ctrl, shift) displays the context menu associated with the specified path path. ctrl and shift indicate whether it is the same as pressing the ctrl and shift keys.
 
-tryfindeverything() 如果还没有记录everything全路径，尝试查找，返回everything.exe的全路径
-everythingexists() 判断everything是否在运行
-everythingreset() 清空everything搜索
-everythingsetdefault() 设置everythin默认搜索设置，matchpath false, matchcase false, matchwholdword false, regex false, sort by path asc
-everythingmatchpath(bool) 设置matchpath，无参数返回当前设置
-everythingmatchcase(bool) 设置matchcase，无参数返回当前设置
-everythingmatchwholeword(bool) 设置matchwholeword，无参数返回当前设置
-everythingregex(bool) 设置match regex，无参数返回当前设置
-everythingsort(type, asc) 设置sort，type可以是path/size/time, asc是bool类型，为true表示升序，无参数返回当前设置
-everythingsort(sort) 设置sort, 参数为整数（参见下面的常量），无参数返回当前设置
-everythingsearch(key[,offset[,maxcount]]) 执行搜索，key为搜索关键字，offset默认为0，maxcount默认为100，返回一个三个元素的数组：full_path, size, file_date_time
-，size是整数，其它元素是字符串
+tryfindeverything() If the full path of everything has not been recorded, try to find it and return the full path of everything.exe.
+everythingexists() determines whether everything is running
+everythingreset() clears everything search
+everythingsetdefault() sets the default search settings for everything, matchpath false, matchcase false, matchwholdword false, regex false, sort by path asc
+everythingmatchpath(bool) sets matchpath, returns the current setting without parameters
+everythingmatchcase(bool) sets matchcase, returns the current setting without parameters
+everythingmatchwholeword(bool) sets matchwholeword, returns the current setting without parameters.
+everythingregex(bool) sets match regex, returns the current setting without parameters
+everythingsort(type, asc) sets sort, type can be path/size/time, asc is bool type, true means ascending order, no parameters return the current setting
+everythingsort(sort) sets sort, the parameter is an integer (see constants below), no parameters return the current setting
+everythingsearch(key[,offset[,maxcount]]) performs a search, key is the search keyword, offset defaults to 0, maxcount defaults to 100, and returns an array of three elements: full_path, size, file_date_time
+, size is an integer, other elements are strings
 
-regread(key_name, val_name[, def_val]) 读取注册表值
-regwrite(key_name, val_name, val[, val_kind]) 写注册表值
-regdelete(key_name[, val_name]) 删除注册表key或val
+regread(key_name, val_name[, def_val]) reads the registry value
+regwrite(key_name, val_name, val[, val_kind]) writes registry values
+regdelete(key_name[, val_name]) deletes the registry key or val
 
-key_name为路径串，HKey如下：
+key_name is a path string, HKey is as follows:
 HKEY_CURRENT_USER
 HKEY_LOCAL_MACHINE
 HKEY_CLASSES_ROOT
@@ -143,7 +143,7 @@ HKEY_USERS
 HKEY_PERFORMANCE_DATA
 HKEY_CURRENT_CONFIG
 
-val_kind为整数，来自枚举：
+val_kind is an integer, from the enumeration:
 public enum RegistryValueKind
 {
     String = 1,

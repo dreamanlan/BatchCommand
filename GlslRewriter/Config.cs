@@ -711,29 +711,29 @@ namespace GlslRewriter
                                     }
                                     names[0] = newName;
                                 }
-                                DslExpression.CalculatorValue val;
+                                DslExpression.BoxedValue val;
                                 if (type == "float") {
                                     if (float.TryParse(cols[i], out var v)) {
-                                        val = DslExpression.CalculatorValue.From(v);
+                                        val = DslExpression.BoxedValue.From(v);
                                     }
                                     else {
-                                        val = DslExpression.CalculatorValue.From(0.0f);
+                                        val = DslExpression.BoxedValue.From(0.0f);
                                     }
                                 }
                                 else if (type == "uint") {
                                     if (uint.TryParse(cols[i], out var v)) {
-                                        val = DslExpression.CalculatorValue.From(v);
+                                        val = DslExpression.BoxedValue.From(v);
                                     }
                                     else {
-                                        val = DslExpression.CalculatorValue.From(0u);
+                                        val = DslExpression.BoxedValue.From(0u);
                                     }
                                 }
                                 else {
                                     if (int.TryParse(cols[i], out var v)) {
-                                        val = DslExpression.CalculatorValue.From(v);
+                                        val = DslExpression.BoxedValue.From(v);
                                     }
                                     else {
-                                        val = DslExpression.CalculatorValue.From(0);
+                                        val = DslExpression.BoxedValue.From(0);
                                     }
                                 }
                                 ret = VariableTable.TrySetObject(names[0], names[1], ref val) && ret;
@@ -1116,7 +1116,7 @@ namespace GlslRewriter
             }
             return sb.ToString();
         }
-        internal static bool CalcFunc(string func, List<DslExpression.CalculatorValue> args, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.CalculatorValue val)
+        internal static bool CalcFunc(string func, List<DslExpression.BoxedValue> args, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue val)
         {
             bool ret = false;
             if (func == "if" || func == "while") {
@@ -1133,7 +1133,7 @@ namespace GlslRewriter
                     ret = true;
                 }
                 else {
-                    val = DslExpression.CalculatorValue.NullObject;
+                    val = DslExpression.BoxedValue.NullObject;
                     ret = true;
                 }
             }
@@ -1618,14 +1618,14 @@ namespace GlslRewriter
                     }
                     else if (fd.IsParenthesisParamClass()) {
                         if (sid == "split_on") {
-                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.CalculatorValue.EmptyString : DoCalc(fd.GetParam(0));
+                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.BoxedValue.EmptyString : DoCalc(fd.GetParam(0));
                             var v2val = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1));
                             if (Calculator.TryGetString(v1val, out var v1str) && !string.IsNullOrEmpty(v1str) && Calculator.TryGetInt(v2val, out var lvl)) {
                                 settingInfo.AutoSplitOnFuncs[v1str] = lvl;
                             }
                         }
                         else if (sid == "skip") {
-                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.CalculatorValue.EmptyString : DoCalc(fd.GetParam(0));
+                            var v1val = fd.GetParamNum() <= 0 ? DslExpression.BoxedValue.EmptyString : DoCalc(fd.GetParam(0));
                             if (Calculator.TryGetString(v1val, out var v1str) && !string.IsNullOrEmpty(v1str)) {
                                 if (!settingInfo.AutoSplitSkips.Contains(v1str)) {
                                     settingInfo.AutoSplitSkips.Add(v1str);
@@ -2430,7 +2430,7 @@ namespace GlslRewriter
                     }
                     string funcId = BatchScript.EvalAsFunc(fd, argNames);
                     info.OnGetValue = (args, resultType, argTypeConversion) => {
-                        return BatchScript.Call(funcId, CalculatorValue.FromObject(args), resultType, CalculatorValue.FromObject(argTypeConversion));
+                        return BatchScript.Call(funcId, BoxedValue.FromObject(args), resultType, BoxedValue.FromObject(argTypeConversion));
                     };
                 }
                 else {
@@ -2659,11 +2659,11 @@ namespace GlslRewriter
             }
         }
 
-        internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp)
+        internal static DslExpression.BoxedValue DoCalc(Dsl.ISyntaxComponent exp)
         {
             return DoCalc(exp, string.Empty);
         }
-        internal static DslExpression.CalculatorValue DoCalc(Dsl.ISyntaxComponent exp, string resultType)
+        internal static DslExpression.BoxedValue DoCalc(Dsl.ISyntaxComponent exp, string resultType)
         {
             bool supported = false;
             var vd = exp as Dsl.ValueData;
@@ -2682,7 +2682,7 @@ namespace GlslRewriter
                 if (Calculator.TryParseNumeric(vstr, out var val))
                     return val;
                 else if (!string.IsNullOrEmpty(vstr))
-                    return DslExpression.CalculatorValue.From(vstr);
+                    return DslExpression.BoxedValue.From(vstr);
             }
             else if (null != fd) {
                 if (fd.IsPeriodParamClass()) {
@@ -2726,7 +2726,7 @@ namespace GlslRewriter
                 }
                 else if (fd.IsParenthesisParamClass()) {
                     string func = fd.GetId();
-                    var args = new List<DslExpression.CalculatorValue>();
+                    var args = new List<DslExpression.BoxedValue>();
                     foreach (var p in fd.Params) {
                         args.Add(DoCalc(p));
                     }
@@ -2769,7 +2769,7 @@ namespace GlslRewriter
                 var r = BatchCommand.BatchScript.EvalAndRun(exp);
                 return r;
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
 
         internal static void AddUnassignableVariable(SettingInfo settingInfo, Dsl.ValueData? vd)
@@ -2836,15 +2836,15 @@ namespace GlslRewriter
             internal bool Multiline = false;
             internal bool ExpandedOnlyOnce = false;
 
-            internal static DslExpression.CalculatorValue s_DefMaxLvl = 256;
-            internal static DslExpression.CalculatorValue s_DefMaxLen = 102400;
-            internal static DslExpression.CalculatorValue s_DefMultiline = true;
-            internal static DslExpression.CalculatorValue s_DefExpandOnce = true;
+            internal static DslExpression.BoxedValue s_DefMaxLvl = 256;
+            internal static DslExpression.BoxedValue s_DefMaxLen = 102400;
+            internal static DslExpression.BoxedValue s_DefMultiline = true;
+            internal static DslExpression.BoxedValue s_DefExpandOnce = true;
         }
         internal class ValueInfo
         {
             internal string Type = string.Empty;
-            internal DslExpression.CalculatorValue Value = DslExpression.CalculatorValue.NullObject;
+            internal DslExpression.BoxedValue Value = DslExpression.BoxedValue.NullObject;
         }
         internal class SettingInfo
         {
@@ -2888,7 +2888,7 @@ namespace GlslRewriter
             internal Dictionary<string, HashSet<int>> UnassignableArrayElements = new Dictionary<string, HashSet<int>>();
             internal Dictionary<string, Dictionary<int, HashSet<string>>> UnassignableObjectArrayMembers = new Dictionary<string, Dictionary<int, HashSet<string>>>();
 
-            internal Dictionary<string, DslExpression.CalculatorValue> SettingVariables = new Dictionary<string, DslExpression.CalculatorValue>();
+            internal Dictionary<string, DslExpression.BoxedValue> SettingVariables = new Dictionary<string, DslExpression.BoxedValue>();
             internal SortedSet<string> AutoSplitAddedVariables = new SortedSet<string>();
             internal SortedList<string, string> UsedVariables = new SortedList<string, string>();
 
@@ -3060,7 +3060,7 @@ namespace GlslRewriter
                     AddSplitOnVariable(vname, SplitInfoForVariable.s_DefMaxLvl, SplitInfoForVariable.s_DefMaxLen, SplitInfoForVariable.s_DefMultiline, SplitInfoForVariable.s_DefExpandOnce);
                 }
             }
-            internal void AddSplitOnVariable(string vname, DslExpression.CalculatorValue v1val, DslExpression.CalculatorValue v2val, DslExpression.CalculatorValue v3val, DslExpression.CalculatorValue v4val)
+            internal void AddSplitOnVariable(string vname, DslExpression.BoxedValue v1val, DslExpression.BoxedValue v2val, DslExpression.BoxedValue v3val, DslExpression.BoxedValue v4val)
             {
                 if (!string.IsNullOrEmpty(vname)) {
                     if (!SplitOnVariables.Contains(vname))
@@ -3100,13 +3100,13 @@ namespace GlslRewriter
                         UsedVariables[vname] = type;
                 }
             }
-            internal void AddAssignment(string vname, string type, DslExpression.CalculatorValue val)
+            internal void AddAssignment(string vname, string type, DslExpression.BoxedValue val)
             {
                 VariableAssignments[vname] = new ValueInfo { Type = type, Value = val };
             }
 
-            internal static DslExpression.CalculatorValue s_DefSplitLevel = 5;
-            internal static DslExpression.CalculatorValue s_DefSplitOnLevel = 1;
+            internal static DslExpression.BoxedValue s_DefSplitLevel = 5;
+            internal static DslExpression.BoxedValue s_DefSplitOnLevel = 1;
         }
         internal class InOutAttrInfo
         {
@@ -3172,7 +3172,7 @@ namespace GlslRewriter
             internal string Dst = string.Empty;
             internal Regex? SrcRegex = null;
         }
-        internal delegate DslExpression.CalculatorValue CalculatorValueDelegation(List<DslExpression.CalculatorValue> args, string resultType, Dictionary<int, int> argTypeConversion);
+        internal delegate DslExpression.BoxedValue CalculatorValueDelegation(List<DslExpression.BoxedValue> args, string resultType, Dictionary<int, int> argTypeConversion);
         internal class CalculatorInfo : FunctionMatchInfo
         {
             internal CalculatorValueDelegation? OnGetValue;
@@ -3257,9 +3257,9 @@ namespace GlslRewriter
 
     internal sealed class ShaderExp : DslExpression.AbstractExpression
     {
-        protected override DslExpression.CalculatorValue DoCalc()
+        protected override DslExpression.BoxedValue DoCalc()
         {
-            DslExpression.CalculatorValue val = DslExpression.CalculatorValue.NullObject;
+            DslExpression.BoxedValue val = DslExpression.BoxedValue.NullObject;
             foreach (var p in m_DslArgs) {
                 val = Config.DoCalc(p);
             }
@@ -3280,7 +3280,7 @@ namespace GlslRewriter
     }
     internal sealed class AddShaderVarExp : DslExpression.AbstractExpression
     {
-        protected override DslExpression.CalculatorValue DoCalc()
+        protected override DslExpression.BoxedValue DoCalc()
         {
             int ct = 1;
             if (null != m_CountExp)
@@ -3289,7 +3289,7 @@ namespace GlslRewriter
             if (ct > 1)
                 type = type + "_x" + ct.ToString();
             VariableTable.AllocVar(m_Name, type);
-            return DslExpression.CalculatorValue.From(true);
+            return DslExpression.BoxedValue.From(true);
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
@@ -3308,7 +3308,7 @@ namespace GlslRewriter
     }
     internal sealed class SetShaderVarExp : DslExpression.AbstractExpression
     {
-        protected override DslExpression.CalculatorValue DoCalc()
+        protected override DslExpression.BoxedValue DoCalc()
         {
             bool ret = false;
             Debug.Assert(null != m_ValExp);
@@ -3332,7 +3332,7 @@ namespace GlslRewriter
                     ret = SetObjArray(ix, ref val);
                     break;
             }
-            return DslExpression.CalculatorValue.From(ret);
+            return DslExpression.BoxedValue.From(ret);
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
@@ -3375,22 +3375,22 @@ namespace GlslRewriter
             }
             return true;
         }
-        private bool SetVar(ref DslExpression.CalculatorValue val)
+        private bool SetVar(ref DslExpression.BoxedValue val)
         {
             bool ret = VariableTable.TrySetVariable(m_VarName, ref val);
             return ret;
         }
-        private bool SetObj(ref DslExpression.CalculatorValue val)
+        private bool SetObj(ref DslExpression.BoxedValue val)
         {
             bool ret = VariableTable.TrySetObject(m_VarName, m_Member, ref val);
             return ret;
         }
-        private bool SetArray(int ix, ref DslExpression.CalculatorValue val)
+        private bool SetArray(int ix, ref DslExpression.BoxedValue val)
         {
             bool ret = VariableTable.TrySetArray(m_VarName, ix, ref val);
             return ret;
         }
-        private bool SetObjArray(int ix, ref DslExpression.CalculatorValue val)
+        private bool SetObjArray(int ix, ref DslExpression.BoxedValue val)
         {
             bool ret = VariableTable.TrySetObjArray(m_VarName, ix, m_Member, ref val);
             return ret;
@@ -3412,7 +3412,7 @@ namespace GlslRewriter
     }
     internal sealed class AddUnassignableShaderVarExp : DslExpression.AbstractExpression
     {
-        protected override DslExpression.CalculatorValue DoCalc()
+        protected override DslExpression.BoxedValue DoCalc()
         {
             bool ret = false;
             foreach (var varDsl in m_DslArgs) {
@@ -3444,7 +3444,7 @@ namespace GlslRewriter
                     }
                 }
             }
-            return DslExpression.CalculatorValue.From(ret);
+            return DslExpression.BoxedValue.From(ret);
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
@@ -3461,7 +3461,7 @@ namespace GlslRewriter
     }
     internal sealed class ImportInOutExp : DslExpression.SimpleExpressionBase
     {
-        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        protected override DslExpression.BoxedValue OnCalc(IList<DslExpression.BoxedValue> operands)
         {
             bool ret = false;
             if (operands.Count > 0) {
@@ -3490,24 +3490,24 @@ namespace GlslRewriter
                 }
                 ret = ret1 && ret2;
             }
-            return DslExpression.CalculatorValue.From(ret);
+            return DslExpression.BoxedValue.From(ret);
         }
     }
     internal sealed class ReCalcExp : DslExpression.SimpleExpressionBase
     {
-        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        protected override DslExpression.BoxedValue OnCalc(IList<DslExpression.BoxedValue> operands)
         {
             bool full = false;
             if (operands.Count > 0) {
                 full = operands[0].GetBool();
             }
             var ret = Program.ReCalc(full);
-            return DslExpression.CalculatorValue.From(ret);
+            return DslExpression.BoxedValue.From(ret);
         }
     }
     internal sealed class RandColorExp : DslExpression.SimpleExpressionBase
     {
-        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        protected override DslExpression.BoxedValue OnCalc(IList<DslExpression.BoxedValue> operands)
         {
             var color = new Float4 {
                 x = Config.s_Random.NextSingle(),
@@ -3515,32 +3515,32 @@ namespace GlslRewriter
                 z = Config.s_Random.NextSingle(),
                 w = Config.s_Random.NextSingle()
             };
-            return DslExpression.CalculatorValue.FromObject(color);
+            return DslExpression.BoxedValue.FromObject(color);
         }
     }
     internal sealed class RandUVExp : DslExpression.SimpleExpressionBase
     {
-        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        protected override DslExpression.BoxedValue OnCalc(IList<DslExpression.BoxedValue> operands)
         {
-            var uv = DslExpression.CalculatorValue.NullObject;
+            var uv = DslExpression.BoxedValue.NullObject;
             if (operands.Count > 0) {
                 int num = operands[0].GetInt();
                 switch (num) {
                     case 2:
-                        uv = DslExpression.CalculatorValue.FromObject(new Float2 {
+                        uv = DslExpression.BoxedValue.FromObject(new Float2 {
                             x = Config.s_Random.NextSingle(),
                             y = Config.s_Random.NextSingle()
                         });
                         break;
                     case 3:
-                        uv = DslExpression.CalculatorValue.FromObject(new Float3 {
+                        uv = DslExpression.BoxedValue.FromObject(new Float3 {
                             x = Config.s_Random.NextSingle(),
                             y = Config.s_Random.NextSingle(),
                             z = Config.s_Random.NextSingle()
                         });
                         break;
                     case 4:
-                        uv = DslExpression.CalculatorValue.FromObject(new Float4 {
+                        uv = DslExpression.BoxedValue.FromObject(new Float4 {
                             x = Config.s_Random.NextSingle(),
                             y = Config.s_Random.NextSingle(),
                             z = Config.s_Random.NextSingle(),
@@ -3554,9 +3554,9 @@ namespace GlslRewriter
     }
     internal sealed class RandSizeExp : DslExpression.SimpleExpressionBase
     {
-        protected override DslExpression.CalculatorValue OnCalc(IList<DslExpression.CalculatorValue> operands)
+        protected override DslExpression.BoxedValue OnCalc(IList<DslExpression.BoxedValue> operands)
         {
-            var size = DslExpression.CalculatorValue.NullObject;
+            var size = DslExpression.BoxedValue.NullObject;
             if (operands.Count > 0) {
                 var list = new List<int>();
                 foreach (var v in operands) {
@@ -3564,23 +3564,23 @@ namespace GlslRewriter
                 }
                 switch (list.Count) {
                     case 1:
-                        size = DslExpression.CalculatorValue.From(Config.s_Random.Next(list[0]));
+                        size = DslExpression.BoxedValue.From(Config.s_Random.Next(list[0]));
                         break;
                     case 2:
-                        size = DslExpression.CalculatorValue.FromObject(new Float2 {
+                        size = DslExpression.BoxedValue.FromObject(new Float2 {
                             x = Config.s_Random.Next(list[0]),
                             y = Config.s_Random.Next(list[1])
                         });
                         break;
                     case 3:
-                        size = DslExpression.CalculatorValue.FromObject(new Float3 {
+                        size = DslExpression.BoxedValue.FromObject(new Float3 {
                             x = Config.s_Random.Next(list[0]),
                             y = Config.s_Random.Next(list[1]),
                             z = Config.s_Random.Next(list[2])
                         });
                         break;
                     case 4:
-                        size = DslExpression.CalculatorValue.FromObject(new Float4 {
+                        size = DslExpression.BoxedValue.FromObject(new Float4 {
                             x = Config.s_Random.Next(list[0]),
                             y = Config.s_Random.Next(list[1]),
                             z = Config.s_Random.Next(list[2]),

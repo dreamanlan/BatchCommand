@@ -250,7 +250,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetBool(v, out var val)) {
@@ -280,7 +280,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -296,7 +296,7 @@ namespace GlslRewriter
                         return y;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -326,7 +326,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Bool2 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Bool2 val)
         {
             bool succ = false;
             if(v.IsObject && v.ObjectVal is Bool2) {
@@ -376,7 +376,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetFloat(v, out var val)) {
@@ -406,7 +406,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -422,7 +422,7 @@ namespace GlslRewriter
                         return y;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -452,7 +452,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Float2 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Float2 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Float2) {
@@ -502,7 +502,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetInt(v, out var val)) {
@@ -532,7 +532,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -548,7 +548,7 @@ namespace GlslRewriter
                         return y;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -578,7 +578,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Int2 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Int2 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Int2) {
@@ -628,7 +628,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetUInt(v, out var val)) {
@@ -658,7 +658,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -674,7 +674,7 @@ namespace GlslRewriter
                         return y;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -704,7 +704,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Uint2 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Uint2 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Uint2) {
@@ -766,7 +766,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetBool(v, out var val)) {
@@ -801,7 +801,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -821,7 +821,7 @@ namespace GlslRewriter
                         return z;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -853,7 +853,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Bool3 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Bool3 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Bool3) {
@@ -915,7 +915,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetFloat(v, out var val)) {
@@ -950,7 +950,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -970,7 +970,7 @@ namespace GlslRewriter
                         return z;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1002,7 +1002,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Float3 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Float3 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Float3) {
@@ -1064,7 +1064,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetInt(v, out var val)) {
@@ -1099,7 +1099,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1119,7 +1119,7 @@ namespace GlslRewriter
                         return z;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1151,7 +1151,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Int3 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Int3 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Int3) {
@@ -1213,7 +1213,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetUInt(v, out var val)) {
@@ -1248,7 +1248,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1268,7 +1268,7 @@ namespace GlslRewriter
                         return z;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1300,7 +1300,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Uint3 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Uint3 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Uint3) {
@@ -1371,7 +1371,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetBool(v, out var val)) {
@@ -1411,7 +1411,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1435,7 +1435,7 @@ namespace GlslRewriter
                         return w;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1469,7 +1469,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Bool4 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Bool4 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Bool4) {
@@ -1543,7 +1543,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetFloat(v, out var val)) {
@@ -1583,7 +1583,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1607,7 +1607,7 @@ namespace GlslRewriter
                         return w;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1641,7 +1641,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Float4 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Float4 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Float4) {
@@ -1715,7 +1715,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetInt(v, out var val)) {
@@ -1755,7 +1755,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1779,7 +1779,7 @@ namespace GlslRewriter
                         return w;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1813,7 +1813,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Int4 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Int4 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Int4) {
@@ -1887,7 +1887,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public bool SetMember(DslExpression.CalculatorValue mv, DslExpression.CalculatorValue v)
+        public bool SetMember(DslExpression.BoxedValue mv, DslExpression.BoxedValue v)
         {
             bool ret = false;
             if (Calculator.TryGetUInt(v, out var val)) {
@@ -1927,7 +1927,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public DslExpression.CalculatorValue GetMember(DslExpression.CalculatorValue mv)
+        public DslExpression.BoxedValue GetMember(DslExpression.BoxedValue mv)
         {
             if (Calculator.TryGetString(mv, out var m)) {
                 if (m == "x")
@@ -1951,7 +1951,7 @@ namespace GlslRewriter
                         return w;
                 }
             }
-            return DslExpression.CalculatorValue.NullObject;
+            return DslExpression.BoxedValue.NullObject;
         }
         public override string ToString()
         {
@@ -1985,7 +1985,7 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool TryParse(DslExpression.CalculatorValue v, out Uint4 val)
+        public static bool TryParse(DslExpression.BoxedValue v, out Uint4 val)
         {
             bool succ = false;
             if (v.IsObject && v.ObjectVal is Uint4) {
@@ -2248,7 +2248,7 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static bool GetVarValue(string name, string type, out DslExpression.CalculatorValue varVal)
+        public static bool GetVarValue(string name, string type, out DslExpression.BoxedValue varVal)
         {
             bool exists = false;
             varVal = string.Empty;
@@ -2261,28 +2261,28 @@ namespace GlslRewriter
                         exists = s_Float4ArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "ivec") {
                         exists = s_Int4ArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "uvec") {
                         exists = s_Uint4ArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "bvec") {
                         exists = s_Bool4ArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                 }
@@ -2291,28 +2291,28 @@ namespace GlslRewriter
                         exists = s_FloatArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "int") {
                         exists = s_IntArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "uint") {
                         exists = s_UintArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                     else if (baseType == "bool") {
                         exists = s_BoolArrayVars.TryGetValue(name, out var val);
                         if (exists) {
                             Debug.Assert(null != val);
-                            varVal = DslExpression.CalculatorValue.FromObject(val);
+                            varVal = DslExpression.BoxedValue.FromObject(val);
                         }
                     }
                 }
@@ -2321,25 +2321,25 @@ namespace GlslRewriter
                 if (baseType == "vec") {
                     if (s_Float4Vars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.FromObject(val.Value);
+                        varVal = DslExpression.BoxedValue.FromObject(val.Value);
                     }
                 }
                 else if (baseType == "ivec") {
                     if (s_Int4Vars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.FromObject(val.Value);
+                        varVal = DslExpression.BoxedValue.FromObject(val.Value);
                     }
                 }
                 else if (baseType == "uvec") {
                     if (s_Uint4Vars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.FromObject(val.Value);
+                        varVal = DslExpression.BoxedValue.FromObject(val.Value);
                     }
                 }
                 else if (baseType == "bvec") {
                     if (s_Bool4Vars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.FromObject(val.Value);
+                        varVal = DslExpression.BoxedValue.FromObject(val.Value);
                     }
                 }
             }
@@ -2347,25 +2347,25 @@ namespace GlslRewriter
                 if (baseType == "float") {
                     if (s_FloatVars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.From(val.Value);
+                        varVal = DslExpression.BoxedValue.From(val.Value);
                     }
                 }
                 else if (baseType == "int") {
                     if (s_IntVars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.From(val.Value);
+                        varVal = DslExpression.BoxedValue.From(val.Value);
                     }
                 }
                 else if (baseType == "uint") {
                     if (s_UintVars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.From(val.Value);
+                        varVal = DslExpression.BoxedValue.From(val.Value);
                     }
                 }
                 else if (baseType == "bool") {
                     if (s_BoolVars.TryGetValue(name, out var val)) {
                         exists = val.IsValid;
-                        varVal = DslExpression.CalculatorValue.From(val.Value);
+                        varVal = DslExpression.BoxedValue.From(val.Value);
                     }
                 }
             }
@@ -2377,13 +2377,13 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static bool ObjectGetValue(ComputeGraphVarNode left, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue varVal)
+        public static bool ObjectGetValue(ComputeGraphVarNode left, DslExpression.BoxedValue m, out DslExpression.BoxedValue varVal)
         {
             string name = left.VarName;
             string type = left.Type;
             return ObjectGetValue(name, type, m, out varVal);
         }
-        public static bool ObjectGetValue(string name, string type, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue varVal)
+        public static bool ObjectGetValue(string name, string type, DslExpression.BoxedValue m, out DslExpression.BoxedValue varVal)
         {
             bool exists = false;
             varVal = string.Empty;
@@ -2423,13 +2423,13 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static bool ArrayGetValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, out DslExpression.CalculatorValue varVal)
+        public static bool ArrayGetValue(ComputeGraphVarNode left, DslExpression.BoxedValue ix, out DslExpression.BoxedValue varVal)
         {
             string name = left.VarName;
             string type = left.Type;
             return ArrayGetValue(name, type, ix, out varVal);
         }
-        public static bool ArrayGetValue(string name, string type, DslExpression.CalculatorValue ix, out DslExpression.CalculatorValue varVal)
+        public static bool ArrayGetValue(string name, string type, DslExpression.BoxedValue ix, out DslExpression.BoxedValue varVal)
         {
             bool exists = false;
             varVal = string.Empty;
@@ -2444,25 +2444,25 @@ namespace GlslRewriter
                     if (baseType == "vec") {
                         if (s_Float4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.FromObject(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.FromObject(vals[index].Value);
                         }
                     }
                     else if (baseType == "ivec") {
                         if (s_Int4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.FromObject(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.FromObject(vals[index].Value);
                         }
                     }
                     else if (baseType == "uvec") {
                         if (s_Uint4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.FromObject(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.FromObject(vals[index].Value);
                         }
                     }
                     else if (baseType == "bvec") {
                         if (s_Bool4ArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.FromObject(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.FromObject(vals[index].Value);
                         }
                     }
                 }
@@ -2470,25 +2470,25 @@ namespace GlslRewriter
                     if (baseType == "float") {
                         if (s_FloatArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.From(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.From(vals[index].Value);
                         }
                     }
                     else if (baseType == "int") {
                         if (s_IntArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.From(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.From(vals[index].Value);
                         }
                     }
                     else if (baseType == "uint") {
                         if (s_UintArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.From(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.From(vals[index].Value);
                         }
                     }
                     else if (baseType == "bool") {
                         if (s_BoolArrayVars.TryGetValue(name, out var vals) && index < vals.Count) {
                             exists = vals[index].IsValid;
-                            varVal = DslExpression.CalculatorValue.From(vals[index].Value);
+                            varVal = DslExpression.BoxedValue.From(vals[index].Value);
                         }
                     }
                 }
@@ -2528,13 +2528,13 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static bool ObjectArrayGetValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue varVal)
+        public static bool ObjectArrayGetValue(ComputeGraphVarNode left, DslExpression.BoxedValue ix, DslExpression.BoxedValue m, out DslExpression.BoxedValue varVal)
         {
             string name = left.VarName;
             string type = left.Type;
             return ObjectArrayGetValue(name, type, ix, m, out varVal);
         }
-        public static bool ObjectArrayGetValue(string name, string type, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, out DslExpression.CalculatorValue varVal)
+        public static bool ObjectArrayGetValue(string name, string type, DslExpression.BoxedValue ix, DslExpression.BoxedValue m, out DslExpression.BoxedValue varVal)
         {
             bool exists = false;
             varVal = string.Empty;
@@ -2582,13 +2582,13 @@ namespace GlslRewriter
             }
             return exists;
         }
-        public static void AssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue right, Dictionary<int, int> argTypeConversion, int argIx)
+        public static void AssignValue(ComputeGraphVarNode left, DslExpression.BoxedValue right, Dictionary<int, int> argTypeConversion, int argIx)
         {
             string name = left.VarName;
             string type = left.Type;
             AssignValue(name, type, right, argTypeConversion, argIx);
         }
-        public static void AssignValue(string name, string type, DslExpression.CalculatorValue right, Dictionary<int, int> argTypeConversion, int argIx)
+        public static void AssignValue(string name, string type, DslExpression.BoxedValue right, Dictionary<int, int> argTypeConversion, int argIx)
         {
             if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
                 return;
@@ -3201,13 +3201,13 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void ObjectAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
+        public static void ObjectAssignValue(ComputeGraphVarNode left, DslExpression.BoxedValue m, DslExpression.BoxedValue right)
         {
             string name = left.VarName;
             string type = left.Type;
             ObjectAssignValue(name, type, m, right);
         }
-        public static void ObjectAssignValue(string name, string type, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
+        public static void ObjectAssignValue(string name, string type, DslExpression.BoxedValue m, DslExpression.BoxedValue right)
         {
             if (Config.ActiveConfig.SettingInfo.UnassignableVariables.Contains(name))
                 return;
@@ -3258,13 +3258,13 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void ArrayAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue right)
+        public static void ArrayAssignValue(ComputeGraphVarNode left, DslExpression.BoxedValue ix, DslExpression.BoxedValue right)
         {
             string name = left.VarName;
             string type = left.Type;
             ArrayAssignValue(name, type, ix, right);
         }
-        public static void ArrayAssignValue(string name, string type, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue right)
+        public static void ArrayAssignValue(string name, string type, DslExpression.BoxedValue ix, DslExpression.BoxedValue right)
         {
             if (!Calculator.TryGetInt(ix, out var index) || index < 0) {
                 return;
@@ -3414,13 +3414,13 @@ namespace GlslRewriter
                 }
             }
         }
-        public static void ObjectArrayAssignValue(ComputeGraphVarNode left, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
+        public static void ObjectArrayAssignValue(ComputeGraphVarNode left, DslExpression.BoxedValue ix, DslExpression.BoxedValue m, DslExpression.BoxedValue right)
         {
             string name = left.VarName;
             string type = left.Type;
             ObjectArrayAssignValue(name, type, ix, m, right);
         }
-        public static void ObjectArrayAssignValue(string name, string type, DslExpression.CalculatorValue ix, DslExpression.CalculatorValue m, DslExpression.CalculatorValue right)
+        public static void ObjectArrayAssignValue(string name, string type, DslExpression.BoxedValue ix, DslExpression.BoxedValue m, DslExpression.BoxedValue right)
         {
             if (!Calculator.TryGetInt(ix, out var index) || index < 0) {
                 return;
@@ -3493,57 +3493,57 @@ namespace GlslRewriter
             }
         }
 
-        public static bool TryGetVariable(string v, out DslExpression.CalculatorValue result)
+        public static bool TryGetVariable(string v, out DslExpression.BoxedValue result)
         {
             bool ret = false;
-            result = DslExpression.CalculatorValue.NullObject;
+            result = DslExpression.BoxedValue.NullObject;
             if (TryGetVarType(v, out var type, out var isArray)) {
                 if (isArray) {
                     if (type == "vec4") {
                         if (s_Float4ArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "ivec4") {
                         if (s_Int4ArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "uvec4") {
                         if (s_Uint4ArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "bvec4") {
                         if (s_Bool4ArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "float") {
                         if (s_FloatArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "int") {
                         if (s_IntArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "uint") {
                         if (s_UintArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
                     else if (type == "bool") {
                         if (s_BoolArrayVars.TryGetValue(v, out var list)) {
-                            result = DslExpression.CalculatorValue.FromObject(list);
+                            result = DslExpression.BoxedValue.FromObject(list);
                             ret = true;
                         }
                     }
@@ -3551,49 +3551,49 @@ namespace GlslRewriter
                 else {
                     if (type == "vec4") {
                         if (s_Float4Vars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.FromObject(val.Value);
+                            result = DslExpression.BoxedValue.FromObject(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "ivec4") {
                         if (s_Int4Vars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.FromObject(val.Value);
+                            result = DslExpression.BoxedValue.FromObject(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "uvec4") {
                         if (s_Uint4Vars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.FromObject(val.Value);
+                            result = DslExpression.BoxedValue.FromObject(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "bvec4") {
                         if (s_Bool4Vars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.FromObject(val.Value);
+                            result = DslExpression.BoxedValue.FromObject(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "float") {
                         if (s_FloatVars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.From(val.Value);
+                            result = DslExpression.BoxedValue.From(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "int") {
                         if (s_IntVars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.From(val.Value);
+                            result = DslExpression.BoxedValue.From(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "uint") {
                         if (s_UintVars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.From(val.Value);
+                            result = DslExpression.BoxedValue.From(val.Value);
                             ret = true;
                         }
                     }
                     else if (type == "bool") {
                         if (s_BoolVars.TryGetValue(v, out var val)) {
-                            result = DslExpression.CalculatorValue.From(val.Value);
+                            result = DslExpression.BoxedValue.From(val.Value);
                             ret = true;
                         }
                     }
@@ -3601,7 +3601,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        public static bool TrySetVariable(string v, ref DslExpression.CalculatorValue result)
+        public static bool TrySetVariable(string v, ref DslExpression.BoxedValue result)
         {
             bool ret = false;
             if (TryGetVarType(v, out var type, out var isArray)) {
@@ -3824,7 +3824,7 @@ namespace GlslRewriter
                 Program.ResetValueDependsVar(v);
             return ret;
         }
-        public static bool TrySetObject(string v, string m, ref DslExpression.CalculatorValue result)
+        public static bool TrySetObject(string v, string m, ref DslExpression.BoxedValue result)
         {
             bool ret = false;
             if (TryGetVarType(v, out var type, out var isArray)) {
@@ -3917,7 +3917,7 @@ namespace GlslRewriter
                 Program.ResetValueDependsVar(v);
             return ret;
         }
-        public static bool TrySetArray(string v, int ix, ref DslExpression.CalculatorValue result)
+        public static bool TrySetArray(string v, int ix, ref DslExpression.BoxedValue result)
         {
             bool ret = false;
             if (TryGetVarType(v, out var type, out var isArray)) {
@@ -4042,7 +4042,7 @@ namespace GlslRewriter
                 Program.ResetValueDependsVar(v);
             return ret;
         }
-        public static bool TrySetObjArray(string v, int ix, string m, ref DslExpression.CalculatorValue result)
+        public static bool TrySetObjArray(string v, int ix, string m, ref DslExpression.BoxedValue result)
         {
             bool ret = false;
             if (TryGetVarType(v, out var type, out var isArray)) {

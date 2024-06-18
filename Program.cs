@@ -63,7 +63,7 @@ namespace BatchCommand
 
             int exitCode = 0;
             try {
-                var r = DslExpression.CalculatorValue.NullObject;
+                var r = DslExpression.BoxedValue.NullObject;
                 if (interactiveComputing) {
                     InteractiveComputing();
                 }

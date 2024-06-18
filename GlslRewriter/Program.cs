@@ -828,7 +828,7 @@ namespace GlslRewriter
                         var r = BatchCommand.BatchScript.EvalAndRun(line);
                         Console.Write("result:");
                         if (r.IsNumber) {
-                            if (r.Type == CalculatorValue.c_DoubleType) {
+                            if (r.Type == BoxedValue.c_DoubleType) {
                                 double v = r.GetDouble();
                                 Console.WriteLine("{0}", v);
                             }
@@ -1577,7 +1577,7 @@ namespace GlslRewriter
                 Debug.Assert(null != agn1);
 
                 string m = call.GetParamId(0);
-                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m, DslExpression.CalculatorValue.From(m));
+                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m, DslExpression.BoxedValue.From(m));
 
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), "float", ".");
 
@@ -1671,7 +1671,7 @@ namespace GlslRewriter
 
                 var ifNode = new ComputeGraphIfStatement(CurFuncInfo());
                 AddComputeGraphRootNode(ifNode);
-                DslExpression.CalculatorValue ifVal = DslExpression.CalculatorValue.NullObject;
+                DslExpression.BoxedValue ifVal = DslExpression.BoxedValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -1747,7 +1747,7 @@ namespace GlslRewriter
             foreach (var valOrFunc in ifStatement.Functions) {
                 var f = valOrFunc.AsFunction;
                 if (null != f) {
-                    DslExpression.CalculatorValue ifVal = DslExpression.CalculatorValue.NullObject;
+                    DslExpression.BoxedValue ifVal = DslExpression.BoxedValue.NullObject;
                     if (f.IsHighOrder) {
                         var semanticInfo = new SemanticInfo();
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
@@ -1827,7 +1827,7 @@ namespace GlslRewriter
 
                 var forNode = new ComputeGraphForStatement(CurFuncInfo());
                 AddComputeGraphRootNode(forNode);
-                DslExpression.CalculatorValue forVal = DslExpression.CalculatorValue.NullObject;
+                DslExpression.BoxedValue forVal = DslExpression.BoxedValue.NullObject;
 
                 TransformForHeader(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -1877,7 +1877,7 @@ namespace GlslRewriter
 
                 var whileNode = new ComputeGraphWhileStatement(CurFuncInfo());
                 AddComputeGraphRootNode(whileNode);
-                DslExpression.CalculatorValue whileVal = DslExpression.CalculatorValue.NullObject;
+                DslExpression.BoxedValue whileVal = DslExpression.BoxedValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -2108,7 +2108,7 @@ namespace GlslRewriter
                     agn.AddNext(cgcn);
                 }
                 else {
-                    var agn = new ComputeGraphConstNode(CurFuncInfo(), "string", string.Empty, DslExpression.CalculatorValue.EmptyString);
+                    var agn = new ComputeGraphConstNode(CurFuncInfo(), "string", string.Empty, DslExpression.BoxedValue.EmptyString);
                     cgcn.AddPrev(agn);
                     agn.AddNext(cgcn);
                 }
@@ -2350,10 +2350,10 @@ namespace GlslRewriter
                 }
             }
         }
-        private static bool GenerateValueAndExpressionForCondition(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.CalculatorValue val)
+        private static bool GenerateValueAndExpressionForCondition(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.BoxedValue val)
         {
             bool ret = false;
-            val = DslExpression.CalculatorValue.NullObject;
+            val = DslExpression.BoxedValue.NullObject;
             int lvlForExp = 1;
             var v1str = SplitInfoForVariable.s_DefMaxLen;
             var v2str = SplitInfoForVariable.s_DefMultiline;
@@ -2363,7 +2363,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce, out DslExpression.CalculatorValue val)
+        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce, out DslExpression.BoxedValue val)
         {
             int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
             int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
@@ -2548,7 +2548,7 @@ namespace GlslRewriter
                 else {
                     string str = valData.GetId();
                     bool v = Calculator.TryParseBool(str, out var bval);
-                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", str, v ? DslExpression.CalculatorValue.From(bval) : DslExpression.CalculatorValue.NullObject);
+                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", str, v ? DslExpression.BoxedValue.From(bval) : DslExpression.BoxedValue.NullObject);
                     semanticInfo.GraphNode = cgcn;
                     semanticInfo.ResultType = cgcn.Type;
                 }
@@ -2558,7 +2558,7 @@ namespace GlslRewriter
                 string strVal = valData.GetId();
                 if (!Calculator.TryParseNumeric(strVal, ref type, out var numVal)) {
                     type = "string";
-                    numVal = DslExpression.CalculatorValue.From(strVal);
+                    numVal = DslExpression.BoxedValue.From(strVal);
                 }
                 var cgcn = new ComputeGraphConstNode(CurFuncInfo(), type, strVal, numVal);
                 semanticInfo.GraphNode = cgcn;

@@ -81,7 +81,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                     //The result list is cleared only when a new query is executed. At this point, there should be no threads still using it.
                     //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
                     s_NewResults.Clear();
-                    BatchScript.Call("on_query", CalculatorValue.FromObject(query));
+                    BatchScript.Call("on_query", BoxedValue.FromObject(query));
                     FlushLog("Query");
                     //swap
                     var t = s_Results;
@@ -119,7 +119,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             //The result list is cleared only when a new query is executed. At this point, there should be no threads still using it.
             //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
             s_NewContextMenus.Clear();
-            BatchScript.Call("on_context_menus", CalculatorValue.FromObject(query), CalculatorValue.FromObject(selectedResult));
+            BatchScript.Call("on_context_menus", BoxedValue.FromObject(query), BoxedValue.FromObject(selectedResult));
             FlushLog("LoadContextMenus");
             //swap
             var t = s_ContextMenus;
@@ -149,7 +149,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         var funcs = GetThreadFuncs();
         evt.Reset();
         QueueScriptAction(evt, funcs, () => {
-            var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(menu), CalculatorValue.FromObject(e));
+            var r = BatchScript.Call(action, BoxedValue.FromObject(query), BoxedValue.FromObject(result), BoxedValue.FromObject(menu), BoxedValue.FromObject(e));
             Log("menu action for [{0}|{1}] return {2} from thread {3}", menu.Title, menu.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnMenuAction");
             if (s_NeedReload) {
@@ -193,7 +193,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         var funcs = GetThreadFuncs();
         evt.Reset();
         QueueScriptAction(evt, funcs, () => {
-            var r = BatchScript.Call(action, CalculatorValue.FromObject(query), CalculatorValue.FromObject(result), CalculatorValue.FromObject(e));
+            var r = BatchScript.Call(action, BoxedValue.FromObject(query), BoxedValue.FromObject(result), BoxedValue.FromObject(e));
             Log("action for [{0}|{1}] return {2} from thread {3}", result.Title, result.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnAction");
             if (s_NeedReload) {
@@ -250,8 +250,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
         var vargs = BatchScript.NewCalculatorValueList();
         vargs.Add(s_Context.CurrentPluginMetadata.ID);
-        vargs.Add(CalculatorValue.FromObject(s_Context.CurrentPluginMetadata));
-        vargs.Add(CalculatorValue.FromObject(s_Context));
+        vargs.Add(BoxedValue.FromObject(s_Context.CurrentPluginMetadata));
+        vargs.Add(BoxedValue.FromObject(s_Context));
         BatchScript.Run(dslPath, vargs);
         BatchScript.RecycleCalculatorValueList(vargs);
         Log("Reload Dsl from thread {0}", Thread.CurrentThread.ManagedThreadId);
@@ -697,35 +697,35 @@ public sealed class MessageWindow : Form
 
 internal sealed class ShellContextMenuExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        return CalculatorValue.FromObject(Main.s_ShellCtxMenu);
+        return BoxedValue.FromObject(Main.s_ShellCtxMenu);
     }
 }
 internal sealed class ContextExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        return CalculatorValue.FromObject(Main.s_Context);
+        return BoxedValue.FromObject(Main.s_Context);
     }
 }
 internal sealed class ApiExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        return CalculatorValue.FromObject(Main.s_Context.API);
+        return BoxedValue.FromObject(Main.s_Context.API);
     }
 }
 internal sealed class MetadataExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        return CalculatorValue.FromObject(Main.s_Context.CurrentPluginMetadata);
+        return BoxedValue.FromObject(Main.s_Context.CurrentPluginMetadata);
     }
 }
 internal sealed class ShowMsgExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count > 0) {
             string title = operands[0].ToString();
@@ -743,12 +743,12 @@ internal sealed class ShowMsgExp : SimpleExpressionBase
                 Main.s_Context.API.ShowMsg(title, subtitle, icon);
             }
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class RestartExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (null != Main.s_CurFuncs) {
             //The RestarApp method needs to be executed on the main thread (it seems that
@@ -758,40 +758,40 @@ internal sealed class RestartExp : SimpleExpressionBase
                 return false;
             });
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class ShowConsoleExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        CalculatorValue r = CalculatorValue.NullObject;
+        BoxedValue r = BoxedValue.NullObject;
         Main.ShowConsole();
         return r;
     }
 }
 internal sealed class HideConsoleExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        CalculatorValue r = CalculatorValue.NullObject;
+        BoxedValue r = BoxedValue.NullObject;
         Main.HideConsole();
         return r;
     }
 }
 internal sealed class ReloadDslExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         Main.s_NeedReload = true;
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class EvalDslExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        CalculatorValue r = CalculatorValue.NullObject;
+        BoxedValue r = BoxedValue.NullObject;
         if (operands.Count >= 1) {
             string code = operands[0].As<string>();
             var args = BatchScript.NewCalculatorValueList();
@@ -825,7 +825,7 @@ internal sealed class EvalDslExp : SimpleExpressionBase
 }
 internal sealed class ChangeQueryExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 2) {
             string queryStr = operands[0].AsString;
@@ -842,12 +842,12 @@ internal sealed class ChangeQueryExp : SimpleExpressionBase
                 Main.s_Context.API.ChangeQuery(queryStr, requery);
             }
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class AddResultExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 5) {
             string title = operands[0].AsString;
@@ -863,12 +863,12 @@ internal sealed class AddResultExp : SimpleExpressionBase
             item.Action = e => { return Main.OnAction(action, query, item, e); };
             Main.s_NewResults.Add(item);
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class AddContextMenuExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 6) {
             string title = operands[0].AsString;
@@ -885,12 +885,12 @@ internal sealed class AddContextMenuExp : SimpleExpressionBase
             item.Action = e => { return Main.OnMenuAction(action, query, result, item, e); };
             Main.s_NewContextMenus.Add(item);
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class ActionKeywordRegisteredExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string keyword = operands[0].AsString;
@@ -901,7 +901,7 @@ internal sealed class ActionKeywordRegisteredExp : SimpleExpressionBase
 }
 internal sealed class ClearActionKeywordsExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string id = operands[0].AsString;
@@ -919,7 +919,7 @@ internal sealed class ClearActionKeywordsExp : SimpleExpressionBase
 }
 internal sealed class AddActionKeywordExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 2) {
             string id = operands[0].AsString;
@@ -942,7 +942,7 @@ internal sealed class AddActionKeywordExp : SimpleExpressionBase
 }
 internal sealed class ShowContextMenuExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 3) {
             string path = operands[0].AsString;
@@ -976,32 +976,32 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
 }
 internal sealed class TryFindEverythingExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         Main.TryFindEverything();
-        return CalculatorValue.From(Main.s_EverythingFullPath);
+        return BoxedValue.From(Main.s_EverythingFullPath);
     }
 }
 internal sealed class EverythingExistsExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
-        return CalculatorValue.From(EveryThingSDK.EverythingExists());
+        return BoxedValue.From(EveryThingSDK.EverythingExists());
     }
 }
 internal sealed class EverythingResetExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (EveryThingSDK.EverythingExists()) {
             EveryThingSDK.Everything_Reset();
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (EveryThingSDK.EverythingExists()) {
             EveryThingSDK.Everything_SetMatchPath(false);
@@ -1010,12 +1010,12 @@ internal sealed class EverythingSetDefaultExp : SimpleExpressionBase
             EveryThingSDK.Everything_SetRegex(false);
             EveryThingSDK.Everything_SetSort(EveryThingSDK.EVERYTHING_SORT_PATH_ASCENDING);
         }
-        return CalculatorValue.NullObject;
+        return BoxedValue.NullObject;
     }
 }
 internal sealed class EverythingMatchPathExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1035,7 +1035,7 @@ internal sealed class EverythingMatchPathExp : SimpleExpressionBase
 }
 internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1055,7 +1055,7 @@ internal sealed class EverythingMatchCaseExp : SimpleExpressionBase
 }
 internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1075,7 +1075,7 @@ internal sealed class EverythingMatchWholeWordExp : SimpleExpressionBase
 }
 internal sealed class EverythingRegexExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             bool val = operands[0].GetBool();
@@ -1095,7 +1095,7 @@ internal sealed class EverythingRegexExp : SimpleExpressionBase
 }
 internal sealed class EverythingSortExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string type = operands[0].AsString;
@@ -1164,7 +1164,7 @@ internal sealed class EverythingSortExp : SimpleExpressionBase
 }
 internal sealed class EverythingSearchExp : SimpleExpressionBase
 {
-    protected override CalculatorValue OnCalc(IList<CalculatorValue> operands)
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         if (operands.Count >= 1) {
             string str = operands[0].AsString;
@@ -1196,7 +1196,7 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
                             list.Add(new object[] { sb.ToString(), size, dt.ToString("yyyy-MM-dd HH:mm:ss") });
                         }
                         Main.LogLine("everything_search '{0}', result:{1}, total:{2}", str, num, tot);
-                        return CalculatorValue.FromObject(list);
+                        return BoxedValue.FromObject(list);
                     }
                     else {
                         Main.LogLine("everything_search '{0}' failed.", str);
@@ -1207,7 +1207,7 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
                 }
             }
         }
-        return CalculatorValue.FromObject(s_EmptyList);
+        return BoxedValue.FromObject(s_EmptyList);
     }
 
     private static List<object[]> s_EmptyList = new List<object[]>();

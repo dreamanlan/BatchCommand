@@ -73,6 +73,9 @@
     <Reference Include="Dsl">
       <HintPath>deps\Dsl.dll</HintPath>
     </Reference>
+    <Reference Include="LitJson">
+      <HintPath>..\DotnetPatch\dep\LitJson.dll</HintPath>
+    </Reference>
     <Reference Include="ScriptFrameworkLibrary">
       <HintPath>deps\ScriptFrameworkLibrary.dll</HintPath>
     </Reference>

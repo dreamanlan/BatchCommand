@@ -48,7 +48,7 @@ layout(binding = 6) uniform sampler2D depthTex;
 
 
 void main() {
-gl_FragCoord = vec4(128, 128, 0.5, 1.0);
+gl_FragCoord = vec4(21350.924, 99298.38, 630.4733, 1261.8458);
 in_attr0.x = float(0.00);
 in_attr0.y = float(0.00);
 in_attr0.z = float(0.00);

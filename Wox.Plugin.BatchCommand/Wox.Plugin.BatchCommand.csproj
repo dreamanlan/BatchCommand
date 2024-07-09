@@ -48,6 +48,9 @@
     <Reference Include="Dsl">
       <HintPath>..\deps\Dsl.dll</HintPath>
     </Reference>
+    <Reference Include="LitJson">
+      <HintPath>..\deps\LitJson.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="ScriptFrameworkLibrary">

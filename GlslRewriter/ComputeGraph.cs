@@ -13,7 +13,9 @@ using static GlslRewriter.Program;
 using static System.Reflection.Metadata.BlobBuilder;
 using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
-using DslExpression;
+using ScriptableFramework;
+using DotnetStoryScript;
+using DotnetStoryScript.DslExpression;
 
 namespace GlslRewriter
 {
@@ -203,7 +205,7 @@ namespace GlslRewriter
             CachedExpression = string.Empty;
             ExpressionIndent = 0;
         }
-        public DslExpression.BoxedValue GetValue()
+        public BoxedValue GetValue()
         {
             HashSet<ComputeGraphNode> visits = new HashSet<ComputeGraphNode>(Config.ActiveConfig.SettingInfo.ComputeGraphNodesCapacity);
             var cinfo = new ControlInfo();
@@ -235,7 +237,7 @@ namespace GlslRewriter
             var cinfo = new ControlInfo();
             CalcValue(visits, ref cinfo);
         }
-        public DslExpression.BoxedValue CalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
+        public BoxedValue CalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
             if (!m_HaveValue) {
                 if (Config.ActiveConfig.SettingInfo.DebugMode) {
@@ -394,7 +396,7 @@ namespace GlslRewriter
         public List<ComputeGraphNode> NextNodes = new List<ComputeGraphNode>();
         public List<ComputeGraphNode> OutNodes = new List<ComputeGraphNode>();
 
-        protected DslExpression.BoxedValue CachedValue
+        protected BoxedValue CachedValue
         {
             get { return m_CachedValue; }
             set {
@@ -406,7 +408,7 @@ namespace GlslRewriter
         protected int ExpressionIndent { get; set; } = 0;
 
         private bool m_HaveValue = false;
-        private DslExpression.BoxedValue m_CachedValue = DslExpression.BoxedValue.NullObject;
+        private BoxedValue m_CachedValue = BoxedValue.NullObject;
 
         protected static void VisitChildPrevHelper(ComputeGraphNode? node, FuncInfo? ownFunc, HashSet<ComputeGraphNode> visits, VisitDelegation visitorCallback)
         {
@@ -491,7 +493,7 @@ namespace GlslRewriter
     }
     public class ComputeGraphConstNode : ComputeGraphNode
     {
-        public ComputeGraphConstNode(FuncInfo? ownFunc, string type, string srcString, DslExpression.BoxedValue val) : base(ownFunc, type)
+        public ComputeGraphConstNode(FuncInfo? ownFunc, string type, string srcString, BoxedValue val) : base(ownFunc, type)
         {
             SourceString = srcString;
             Value = val;
@@ -514,7 +516,7 @@ namespace GlslRewriter
         }
 
         public string SourceString = string.Empty;
-        public DslExpression.BoxedValue Value = DslExpression.BoxedValue.NullObject;
+        public BoxedValue Value = BoxedValue.NullObject;
     }
     public class ComputeGraphVarNode : ComputeGraphNode
     {
@@ -550,7 +552,7 @@ namespace GlslRewriter
                     CachedValue = PrevNodes[PrevNodes.Count - 1].CalcValue(visits, ref cinfo);
                 }
                 else {
-                    CachedValue = DslExpression.BoxedValue.From(VarName);
+                    CachedValue = BoxedValue.From(VarName);
                 }
             }
         }
@@ -691,7 +693,7 @@ namespace GlslRewriter
         protected override void TryCalcValue(HashSet<ComputeGraphNode> visits, ref ControlInfo cinfo)
         {
             if (Operator.Length > 0 && (char.IsLetter(Operator[0]) || Operator[0] == '_')) {
-                var args = new List<DslExpression.BoxedValue>();
+                var args = new List<BoxedValue>();
                 foreach (var p in PrevNodes) {
                     args.Add(p.CalcValue(visits, ref cinfo));
                 }

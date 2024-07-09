@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
+using ScriptableFramework;
 
 namespace BatchCommand
 {
@@ -63,7 +64,7 @@ namespace BatchCommand
 
             int exitCode = 0;
             try {
-                var r = DslExpression.BoxedValue.NullObject;
+                var r = BoxedValue.NullObject;
                 if (interactiveComputing) {
                     InteractiveComputing();
                 }

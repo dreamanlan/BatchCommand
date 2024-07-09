@@ -64,8 +64,17 @@
     <Compile Remove="Wox.Plugin.BatchCommand\SubclassWindow.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Common">
+      <HintPath>deps\Common.dll</HintPath>
+    </Reference>
+    <Reference Include="DotnetStoryScript">
+      <HintPath>deps\DotnetStoryScript.dll</HintPath>
+    </Reference>
     <Reference Include="Dsl">
       <HintPath>deps\Dsl.dll</HintPath>
+    </Reference>
+    <Reference Include="ScriptFrameworkLibrary">
+      <HintPath>deps\ScriptFrameworkLibrary.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using ScriptableFramework;
 
 namespace GlslRewriter
 {
@@ -19,38 +20,38 @@ namespace GlslRewriter
     /// </summary>
     public static class Calculator
     {
-        public static bool CalcFunc(string func, IList<DslExpression.BoxedValue> args, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue val, out bool supported)
+        public static bool CalcFunc(string func, IList<BoxedValue> args, string resultType, Dictionary<int, int> argTypeConversion, out BoxedValue val, out bool supported)
         {
             bool succ = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             supported = true;
             if (func == "bool") {
                 if (IsNumeric(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v.GetBool());
+                    val = BoxedValue.From(v.GetBool());
                     succ = true;
                 }
             }
             else if (func == "float") {
                 if (IsNumeric(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v.GetFloat());
+                    val = BoxedValue.From(v.GetFloat());
                     succ = true;
                 }
             }
             else if (func == "double") {
                 if (IsNumeric(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v.GetDouble());
+                    val = BoxedValue.From(v.GetDouble());
                     succ = true;
                 }
             }
             else if (func == "int") {
                 if (IsNumeric(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v.GetInt());
+                    val = BoxedValue.From(v.GetInt());
                     succ = true;
                 }
             }
             else if (func == "uint") {
                 if (IsNumeric(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v.GetUInt());
+                    val = BoxedValue.From(v.GetUInt());
                     succ = true;
                 }
             }
@@ -59,7 +60,7 @@ namespace GlslRewriter
                     if (TryGetBool(args[0], out var v)) {
                         Bool2 tmp = new Bool2();
                         tmp.x = tmp.y = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -68,7 +69,7 @@ namespace GlslRewriter
                         Bool2 tmp = new Bool2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -78,21 +79,21 @@ namespace GlslRewriter
                     if (TryGetFloat(args[0], out var v)) {
                         Float2 tmp = new Float2();
                         tmp.x = tmp.y = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
                         Float2 tmp = new Float2();
                         tmp.x = (float)i2.x;
                         tmp.y = (float)i2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
                         Float2 tmp = new Float2();
                         tmp.x = (float)u2.x;
                         tmp.y = (float)u2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -101,7 +102,7 @@ namespace GlslRewriter
                         Float2 tmp = new Float2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -111,21 +112,21 @@ namespace GlslRewriter
                     if (TryGetInt(args[0], out var v)) {
                         Int2 tmp = new Int2();
                         tmp.x = tmp.y = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Uint2.TryParse(args[0], out var u2)) {
                         Int2 tmp = new Int2();
                         tmp.x = (int)u2.x;
                         tmp.y = (int)u2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
                         Int2 tmp = new Int2();
                         tmp.x = (int)f2.x;
                         tmp.y = (int)f2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -134,7 +135,7 @@ namespace GlslRewriter
                         Int2 tmp = new Int2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -144,21 +145,21 @@ namespace GlslRewriter
                     if (TryGetUInt(args[0], out var v)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = tmp.y = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Int2.TryParse(args[0], out var i2)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = (uint)i2.x;
                         tmp.y = (uint)i2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                     else if (Float2.TryParse(args[0], out var f2)) {
                         Uint2 tmp = new Uint2();
                         tmp.x = (uint)f2.x;
                         tmp.y = (uint)f2.y;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -167,7 +168,7 @@ namespace GlslRewriter
                         Uint2 tmp = new Uint2();
                         tmp.x = v1;
                         tmp.y = v2;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -177,7 +178,7 @@ namespace GlslRewriter
                     if (TryGetBool(args[0], out var v)) {
                         Bool3 tmp = new Bool3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -187,7 +188,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -197,7 +198,7 @@ namespace GlslRewriter
                     if (TryGetFloat(args[0], out var v)) {
                         Float3 tmp = new Float3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -207,7 +208,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -217,7 +218,7 @@ namespace GlslRewriter
                     if (TryGetInt(args[0], out var v)) {
                         Int3 tmp = new Int3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -227,7 +228,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -237,7 +238,7 @@ namespace GlslRewriter
                     if (TryGetUInt(args[0], out var v)) {
                         Uint3 tmp = new Uint3();
                         tmp.x = tmp.y = tmp.z = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -247,7 +248,7 @@ namespace GlslRewriter
                         tmp.x = v1;
                         tmp.y = v2;
                         tmp.z = v3;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -257,7 +258,7 @@ namespace GlslRewriter
                     if (TryGetBool(args[0], out var v)) {
                         Bool4 tmp = new Bool4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -269,7 +270,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = false;
                             tmp.w = false;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Bool3.TryParse(args[0], out var f3)) {
@@ -278,7 +279,7 @@ namespace GlslRewriter
                             tmp.y = f3.y;
                             tmp.z = f3.z;
                             tmp.w = v2;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -291,7 +292,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = false;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Bool2.TryParse(args[0], out var f2)) {
@@ -300,7 +301,7 @@ namespace GlslRewriter
                             tmp.y = f2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -312,7 +313,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -322,7 +323,7 @@ namespace GlslRewriter
                     if (TryGetFloat(args[0], out var v)) {
                         Float4 tmp = new Float4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -334,7 +335,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Float3.TryParse(args[0], out var f3)) {
@@ -343,7 +344,7 @@ namespace GlslRewriter
                             tmp.y = f3.y;
                             tmp.z = f3.z;
                             tmp.w = v2;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -356,7 +357,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Float2.TryParse(args[0], out var f2)) {
@@ -365,7 +366,7 @@ namespace GlslRewriter
                             tmp.y = f2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -377,7 +378,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -387,7 +388,7 @@ namespace GlslRewriter
                     if (TryGetInt(args[0], out var v)) {
                         Int4 tmp = new Int4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -399,7 +400,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Int3.TryParse(args[0], out var i3)) {
@@ -408,7 +409,7 @@ namespace GlslRewriter
                             tmp.y = i3.y;
                             tmp.z = i3.z;
                             tmp.w = v2;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -421,7 +422,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Int2.TryParse(args[0], out var i2)) {
@@ -430,7 +431,7 @@ namespace GlslRewriter
                             tmp.y = i2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -442,7 +443,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -452,7 +453,7 @@ namespace GlslRewriter
                     if (TryGetUInt(args[0], out var v)) {
                         Uint4 tmp = new Uint4();
                         tmp.x = tmp.y = tmp.z = tmp.w = v;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -464,7 +465,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = 0;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Uint3.TryParse(args[0], out var u3)) {
@@ -473,7 +474,7 @@ namespace GlslRewriter
                             tmp.y = u3.y;
                             tmp.z = u3.z;
                             tmp.w = v2;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -486,7 +487,7 @@ namespace GlslRewriter
                             tmp.y = v2;
                             tmp.z = v3;
                             tmp.w = 0;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                         else if (Uint2.TryParse(args[0], out var u2)) {
@@ -495,7 +496,7 @@ namespace GlslRewriter
                             tmp.y = u2.y;
                             tmp.z = v2;
                             tmp.w = v3;
-                            val = DslExpression.BoxedValue.FromObject(tmp);
+                            val = BoxedValue.FromObject(tmp);
                             succ = true;
                         }
                     }
@@ -507,7 +508,7 @@ namespace GlslRewriter
                         tmp.y = v2;
                         tmp.z = v3;
                         tmp.w = v4;
-                        val = DslExpression.BoxedValue.FromObject(tmp);
+                        val = BoxedValue.FromObject(tmp);
                         succ = true;
                     }
                 }
@@ -520,7 +521,7 @@ namespace GlslRewriter
                     argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
                 }
                 else if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(ftoi(v));
+                    val = BoxedValue.From(ftoi(v));
                     succ = true;
                 }
             }
@@ -532,7 +533,7 @@ namespace GlslRewriter
                     argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
                 }
                 else if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(ftou(v));
+                    val = BoxedValue.From(ftou(v));
                     succ = true;
                 }
             }
@@ -544,7 +545,7 @@ namespace GlslRewriter
                     argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
                 }
                 else if (TryGetInt(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(itof(v));
+                    val = BoxedValue.From(itof(v));
                     succ = true;
                 }
             }
@@ -556,7 +557,7 @@ namespace GlslRewriter
                     argTypeConversion[0] = ComputeGraphCalcNode.c_action_remove_func;
                 }
                 else if (TryGetUInt(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(utof(v));
+                    val = BoxedValue.From(utof(v));
                     succ = true;
                 }
             }
@@ -564,7 +565,7 @@ namespace GlslRewriter
                 if (args[0].IsUnsignedInteger && TryGetUInt(args[0], out var uval) && TryGetInt(args[1], out var uoffset) && TryGetInt(args[2], out var ubits)) {
                     if (uoffset >= 0 && ubits >= 0 && uoffset + ubits <= sizeof(uint) * 8) {
                         if (ubits == 0) {
-                            val = DslExpression.BoxedValue.From((uint)0);
+                            val = BoxedValue.From((uint)0);
                         }
                         else if (uoffset == 0 && ubits == sizeof(uint) * 8) {
                             val = uval;
@@ -573,7 +574,7 @@ namespace GlslRewriter
                             //unsigned
                             uint mask = (1u << ubits) - 1u;
                             uint v = (uval >> uoffset) & mask;
-                            val = DslExpression.BoxedValue.From(v);
+                            val = BoxedValue.From(v);
                         }
                         succ = true;
                     }
@@ -581,7 +582,7 @@ namespace GlslRewriter
                 else if (args[0].IsSignedInteger && TryGetInt(args[0], out var ival) && TryGetInt(args[1], out var ioffset) && TryGetInt(args[2], out var ibits)) {
                     if (ioffset >= 0 && ibits >= 0 && ioffset + ibits <= sizeof(uint) * 8) {
                         if (ibits == 0) {
-                            val = DslExpression.BoxedValue.From((uint)0);
+                            val = BoxedValue.From((uint)0);
                         }
                         else if (ioffset == 0 && ibits == sizeof(uint) * 8) {
                             val = ival;
@@ -593,7 +594,7 @@ namespace GlslRewriter
                             int mask = (int)((1u << ibits) - 1u);
 
                             int v = -signBit | (shifted & mask);
-                            val = DslExpression.BoxedValue.From(v);
+                            val = BoxedValue.From(v);
                         }
                         succ = true;
                     }
@@ -603,7 +604,7 @@ namespace GlslRewriter
                 if (TryGetUInt(args[0], out var uval) && TryGetUInt(args[1], out var uinsert) && TryGetInt(args[2], out var uoffset) && TryGetInt(args[3], out var ubits)) {
                     if (uoffset >= 0 && ubits>=0 && uoffset + ubits <= sizeof(uint) * 8) {
                         if (ubits == 0) {
-                            val = DslExpression.BoxedValue.From(uval);
+                            val = BoxedValue.From(uval);
                         }
                         else if (uoffset == 0 && ubits == sizeof(uint) * 8) {
                             val = uinsert;
@@ -613,7 +614,7 @@ namespace GlslRewriter
                             uint mask = maskBits << uoffset;
                             uint src = uinsert << uoffset;
                             uint v = (src & mask) | (uval & ~mask);
-                            val = DslExpression.BoxedValue.From(v);
+                            val = BoxedValue.From(v);
                         }
                         succ = true;
                     }
@@ -621,91 +622,91 @@ namespace GlslRewriter
             }
             else if (func == "isinf") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(float.IsInfinity(v));
+                    val = BoxedValue.From(float.IsInfinity(v));
                     succ = true;
                 }
             }
             else if (func == "isnan") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(float.IsNaN(v));
+                    val = BoxedValue.From(float.IsNaN(v));
                     succ = true;
                 }
             }
             else if (func == "trunc") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Truncate(v));
+                    val = BoxedValue.From(MathF.Truncate(v));
                     succ = true;
                 }
             }
             else if (func == "floor") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Floor(v));
+                    val = BoxedValue.From(MathF.Floor(v));
                     succ = true;
                 }
             }
             else if (func == "ceiling") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Ceiling(v));
+                    val = BoxedValue.From(MathF.Ceiling(v));
                     succ = true;
                 }
             }
             else if (func == "round") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Round(v));
+                    val = BoxedValue.From(MathF.Round(v));
                     succ = true;
                 }
             }
             else if(func=="roundEven") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Round(v, MidpointRounding.ToEven));
+                    val = BoxedValue.From(MathF.Round(v, MidpointRounding.ToEven));
                     succ = true;
                 }
             }
             else if (func == "abs") {
                 if (args[0].IsUnsignedInteger) {
                     uint v = args[0].GetUInt();
-                    val = DslExpression.BoxedValue.From(v);
+                    val = BoxedValue.From(v);
                     succ = true;
                 }
                 else if (args[0].IsSignedInteger) {
                     int v = args[0].GetInt();
                     if (v < 0)
                         v = -v;
-                    val = DslExpression.BoxedValue.From(v);
+                    val = BoxedValue.From(v);
                     succ = true;
                 }
                 else if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Abs(v));
+                    val = BoxedValue.From(MathF.Abs(v));
                     succ = true;
                 }
             }
             else if (func == "log") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Log(v));
+                    val = BoxedValue.From(MathF.Log(v));
                     succ = true;
                 }
             }
             else if (func == "exp") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Exp(v));
+                    val = BoxedValue.From(MathF.Exp(v));
                     succ = true;
                 }
             }
             else if (func == "log2") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Log2(v));
+                    val = BoxedValue.From(MathF.Log2(v));
                     succ = true;
                 }
             }
             else if (func == "exp2") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Pow(2, v));
+                    val = BoxedValue.From(MathF.Pow(2, v));
                     succ = true;
                 }
             }
             else if (func == "sqrt") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Sqrt(v));
+                    val = BoxedValue.From(MathF.Sqrt(v));
                     succ = true;
                 }
             }
@@ -713,86 +714,86 @@ namespace GlslRewriter
                 if (TryGetFloat(args[0], out var v)) {
                     float sv = MathF.Sqrt(v);
                     if (sv != 0) {
-                        val = DslExpression.BoxedValue.From(1.0f / sv);
+                        val = BoxedValue.From(1.0f / sv);
                         succ = true;
                     }
                 }
             }
             else if (func == "sin") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Sin(v));
+                    val = BoxedValue.From(MathF.Sin(v));
                     succ = true;
                 }
             }
             else if (func == "cos") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Cos(v));
+                    val = BoxedValue.From(MathF.Cos(v));
                     succ = true;
                 }
             }
             else if (func == "tan") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Tan(v));
+                    val = BoxedValue.From(MathF.Tan(v));
                     succ = true;
                 }
             }
             else if (func == "sinh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Sinh(v));
+                    val = BoxedValue.From(MathF.Sinh(v));
                     succ = true;
                 }
             }
             else if (func == "cosh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Cosh(v));
+                    val = BoxedValue.From(MathF.Cosh(v));
                     succ = true;
                 }
             }
             else if (func == "tanh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Tanh(v));
+                    val = BoxedValue.From(MathF.Tanh(v));
                     succ = true;
                 }
             }
             else if (func == "asin") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Asin(v));
+                    val = BoxedValue.From(MathF.Asin(v));
                     succ = true;
                 }
             }
             else if (func == "acos") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Acos(v));
+                    val = BoxedValue.From(MathF.Acos(v));
                     succ = true;
                 }
             }
             else if (func == "atan") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Atan(v));
+                    val = BoxedValue.From(MathF.Atan(v));
                     succ = true;
                 }
             }
             else if (func == "asinh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Asinh(v));
+                    val = BoxedValue.From(MathF.Asinh(v));
                     succ = true;
                 }
             }
             else if (func == "acosh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Acosh(v));
+                    val = BoxedValue.From(MathF.Acosh(v));
                     succ = true;
                 }
             }
             else if (func == "atanh") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(MathF.Atanh(v));
+                    val = BoxedValue.From(MathF.Atanh(v));
                     succ = true;
                 }
             }
             else if (func == "degrees") {
                 if (TryGetFloat(args[0], out var v)) {
-                    val = DslExpression.BoxedValue.From(v * 180.0f / MathF.PI);
+                    val = BoxedValue.From(v * 180.0f / MathF.PI);
                     succ = true;
                 }
             }
@@ -804,13 +805,13 @@ namespace GlslRewriter
             }
             else if (func == "pow") {
                 if (TryGetFloat(args[0], out var v1) && TryGetFloat(args[1], out var v2)) {
-                    val = DslExpression.BoxedValue.From(MathF.Pow(v1, v2));
+                    val = BoxedValue.From(MathF.Pow(v1, v2));
                     succ = true;
                 }
             }
             else if (func == "fma") {
                 if (TryGetDouble(args[0], out var v1) && TryGetDouble(args[1], out var v2) && TryGetDouble(args[2], out var v3)) {
-                    val = DslExpression.BoxedValue.From((float)(v1 * v2 + v3));
+                    val = BoxedValue.From((float)(v1 * v2 + v3));
                     succ = true;
                 }
             }
@@ -820,13 +821,13 @@ namespace GlslRewriter
                         double v1 = val1.GetDouble();
                         double v2 = val2.GetDouble();
                         double v = v1 < v2 ? v1 : v2;
-                        val = DslExpression.BoxedValue.From((float)v);
+                        val = BoxedValue.From((float)v);
                     }
                     else {
                         long v1 = val1.GetLong();
                         long v2 = val2.GetLong();
                         long v = v1 < v2 ? v1 : v2;
-                        val = DslExpression.BoxedValue.From((int)v);
+                        val = BoxedValue.From((int)v);
                     }
                     succ = true;
                 }
@@ -837,13 +838,13 @@ namespace GlslRewriter
                         double v1 = val1.GetDouble();
                         double v2 = val2.GetDouble();
                         double v = v1 > v2 ? v1 : v2;
-                        val = DslExpression.BoxedValue.From((float)v);
+                        val = BoxedValue.From((float)v);
                     }
                     else {
                         long v1 = val1.GetLong();
                         long v2 = val2.GetLong();
                         long v = v1 > v2 ? v1 : v2;
-                        val = DslExpression.BoxedValue.From((int)v);
+                        val = BoxedValue.From((int)v);
                     }
                     succ = true;
                 }
@@ -855,14 +856,14 @@ namespace GlslRewriter
                         double v2 = val2.GetDouble();
                         double v3 = val3.GetDouble();
                         double v = v1 < v2 ? v2 : (v1 > v3 ? v3 : v1);
-                        val = DslExpression.BoxedValue.From((float)v);
+                        val = BoxedValue.From((float)v);
                     }
                     else {
                         long v1 = val1.GetLong();
                         long v2 = val2.GetLong();
                         long v3 = val3.GetLong();
                         long v = v1 < v2 ? v2 : (v1 > v3 ? v3 : v1);
-                        val = DslExpression.BoxedValue.From((int)v);
+                        val = BoxedValue.From((int)v);
                     }
                     succ = true;
                 }
@@ -879,10 +880,10 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcCondExp(DslExpression.BoxedValue cond, DslExpression.BoxedValue opd1, DslExpression.BoxedValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue val, out bool supported)
+        public static bool CalcCondExp(BoxedValue cond, BoxedValue opd1, BoxedValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out BoxedValue val, out bool supported)
         {
             bool succ = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             supported = true;
             if(TryGetBool(cond, out var bval)) {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
@@ -897,10 +898,10 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcBinary(string op, DslExpression.BoxedValue opd1, DslExpression.BoxedValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue val, out bool supported)
+        public static bool CalcBinary(string op, BoxedValue opd1, BoxedValue opd2, string resultType, Dictionary<int, int> argTypeConversion, out BoxedValue val, out bool supported)
         {
             bool succ = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             supported = true;
             if (op == "+") {
                 if (IsNumeric(opd1, out var val1) && IsNumeric(opd2, out var val2)) {
@@ -917,17 +918,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 + v2);
+                        val = BoxedValue.From(v1 + v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 + v2);
+                        val = BoxedValue.From(v1 + v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 + v2);
+                        val = BoxedValue.From(v1 + v2);
                     }
                     succ = true;
                 }
@@ -947,17 +948,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 - v2);
+                        val = BoxedValue.From(v1 - v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 - v2);
+                        val = BoxedValue.From(v1 - v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 - v2);
+                        val = BoxedValue.From(v1 - v2);
                     }
                     succ = true;
                 }
@@ -977,17 +978,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 * v2);
+                        val = BoxedValue.From(v1 * v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 * v2);
+                        val = BoxedValue.From(v1 * v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 * v2);
+                        val = BoxedValue.From(v1 * v2);
                     }
                     succ = true;
                 }
@@ -1007,17 +1008,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 / v2);
+                        val = BoxedValue.From(v1 / v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 / v2);
+                        val = BoxedValue.From(v1 / v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 / v2);
+                        val = BoxedValue.From(v1 / v2);
                     }
                     succ = true;
                 }
@@ -1037,12 +1038,12 @@ namespace GlslRewriter
                     if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 % v2);
+                        val = BoxedValue.From(v1 % v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 % v2);
+                        val = BoxedValue.From(v1 % v2);
                     }
                     succ = true;
                 }
@@ -1052,17 +1053,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 == v2);
+                        val = BoxedValue.From(v1 == v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 == v2);
+                        val = BoxedValue.From(v1 == v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 == v2);
+                        val = BoxedValue.From(v1 == v2);
                     }
                     succ = true;
                 }
@@ -1072,17 +1073,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 != v2);
+                        val = BoxedValue.From(v1 != v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 != v2);
+                        val = BoxedValue.From(v1 != v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 != v2);
+                        val = BoxedValue.From(v1 != v2);
                     }
                     succ = true;
                 }
@@ -1092,17 +1093,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 >= v2);
+                        val = BoxedValue.From(v1 >= v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 >= v2);
+                        val = BoxedValue.From(v1 >= v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 >= v2);
+                        val = BoxedValue.From(v1 >= v2);
                     }
                     succ = true;
                 }
@@ -1112,17 +1113,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 <= v2);
+                        val = BoxedValue.From(v1 <= v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 <= v2);
+                        val = BoxedValue.From(v1 <= v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 <= v2);
+                        val = BoxedValue.From(v1 <= v2);
                     }
                     succ = true;
                 }
@@ -1132,17 +1133,17 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 > v2);
+                        val = BoxedValue.From(v1 > v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 > v2);
+                        val = BoxedValue.From(v1 > v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 > v2);
+                        val = BoxedValue.From(v1 > v2);
                     }
                     succ = true;
                 }
@@ -1152,36 +1153,36 @@ namespace GlslRewriter
                     if (val1.IsNumber || val2.IsNumber) {
                         float v1 = val1.GetFloat();
                         float v2 = val2.GetFloat();
-                        val = DslExpression.BoxedValue.From(v1 < v2);
+                        val = BoxedValue.From(v1 < v2);
                     }
                     else if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 < v2);
+                        val = BoxedValue.From(v1 < v2);
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 < v2);
+                        val = BoxedValue.From(v1 < v2);
                     }
                     succ = true;
                 }
             }
             else if (op == "&&") {
                 if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
-                    val = DslExpression.BoxedValue.From(val1 && val2);
+                    val = BoxedValue.From(val1 && val2);
                     succ = true;
                 }
             }
             else if (op == "||") {
                 if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
-                    val = DslExpression.BoxedValue.From(val1 || val2);
+                    val = BoxedValue.From(val1 || val2);
                     succ = true;
                 }
             }
             else if (op == "^^") {
                 if (TryGetBool(opd1, out var val1) && TryGetBool(opd2, out var val2)) {
-                    val = DslExpression.BoxedValue.From(val1 != val2);
+                    val = BoxedValue.From(val1 != val2);
                     succ = true;
                 }
             }
@@ -1200,13 +1201,13 @@ namespace GlslRewriter
                     if(val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 & v2);
+                        val = BoxedValue.From(v1 & v2);
                         succ = true;
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 & v2);
+                        val = BoxedValue.From(v1 & v2);
                         succ = true;
                     }
                 }
@@ -1226,13 +1227,13 @@ namespace GlslRewriter
                     if(val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 | v2);
+                        val = BoxedValue.From(v1 | v2);
                         succ = true;
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 | v2);
+                        val = BoxedValue.From(v1 | v2);
                         succ = true;
                     }
                 }
@@ -1252,13 +1253,13 @@ namespace GlslRewriter
                     if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 ^ v2);
+                        val = BoxedValue.From(v1 ^ v2);
                         succ = true;
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         uint v2 = val2.GetUInt();
-                        val = DslExpression.BoxedValue.From(v1 ^ v2);
+                        val = BoxedValue.From(v1 ^ v2);
                         succ = true;
                     }
                 }
@@ -1278,13 +1279,13 @@ namespace GlslRewriter
                     if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 << v2);
+                        val = BoxedValue.From(v1 << v2);
                         succ = true;
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 << v2);
+                        val = BoxedValue.From(v1 << v2);
                         succ = true;
                     }
                 }
@@ -1304,13 +1305,13 @@ namespace GlslRewriter
                     if (val1.IsSignedInteger || val2.IsSignedInteger) {
                         int v1 = val1.GetInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 >> v2);
+                        val = BoxedValue.From(v1 >> v2);
                         succ = true;
                     }
                     else {
                         uint v1 = val1.GetUInt();
                         int v2 = val2.GetInt();
-                        val = DslExpression.BoxedValue.From(v1 >> v2);
+                        val = BoxedValue.From(v1 >> v2);
                         succ = true;
                     }
                 }
@@ -1328,10 +1329,10 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcUnary(string op, DslExpression.BoxedValue opd, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue val, out bool supported)
+        public static bool CalcUnary(string op, BoxedValue opd, string resultType, Dictionary<int, int> argTypeConversion, out BoxedValue val, out bool supported)
         {
             bool succ = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             supported = true;
             if (op == "-") {
                 if (opd.IsNumber) {
@@ -1372,10 +1373,10 @@ namespace GlslRewriter
             }
             return succ;
         }
-        public static bool CalcMember(DslExpression.BoxedValue objVal, DslExpression.BoxedValue m, string resultType, Dictionary<int, int> argTypeConversion, out DslExpression.BoxedValue oval, out bool supported)
+        public static bool CalcMember(BoxedValue objVal, BoxedValue m, string resultType, Dictionary<int, int> argTypeConversion, out BoxedValue oval, out bool supported)
         {
             bool succ = false;
-            oval = DslExpression.BoxedValue.NullObject;
+            oval = BoxedValue.NullObject;
             supported = true;
             if (objVal.IsNullObject) {
                 // succ=false && supported=true
@@ -1434,49 +1435,49 @@ namespace GlslRewriter
                 }
                 else if (TryGetList(objVal, out IList<Bool4Val>? b4list)) {
                     if (null != b4list && ix < b4list.Count) {
-                        oval = DslExpression.BoxedValue.FromObject(b4list[ix].Value);
+                        oval = BoxedValue.FromObject(b4list[ix].Value);
                         succ = b4list[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<Float4Val>? f4list)) {
                     if (null != f4list && ix < f4list.Count) {
-                        oval = DslExpression.BoxedValue.FromObject(f4list[ix].Value);
+                        oval = BoxedValue.FromObject(f4list[ix].Value);
                         succ = f4list[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<Int4Val>? i4list)) {
                     if (null != i4list && ix < i4list.Count) {
-                        oval = DslExpression.BoxedValue.FromObject(i4list[ix].Value);
+                        oval = BoxedValue.FromObject(i4list[ix].Value);
                         succ = i4list[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<Uint4Val>? u4list)) {
                     if (null != u4list && ix < u4list.Count) {
-                        oval = DslExpression.BoxedValue.FromObject(u4list[ix].Value);
+                        oval = BoxedValue.FromObject(u4list[ix].Value);
                         succ = u4list[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<BoolVal>? blist)) {
                     if (null != blist && ix < blist.Count) {
-                        oval = DslExpression.BoxedValue.From(blist[ix].Value);
+                        oval = BoxedValue.From(blist[ix].Value);
                         succ = blist[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<FloatVal>? flist)) {
                     if (null != flist && ix < flist.Count) {
-                        oval = DslExpression.BoxedValue.From(flist[ix].Value);
+                        oval = BoxedValue.From(flist[ix].Value);
                         succ = flist[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<IntVal>? ilist)) {
                     if (null != ilist && ix < ilist.Count) {
-                        oval = DslExpression.BoxedValue.From(ilist[ix].Value);
+                        oval = BoxedValue.From(ilist[ix].Value);
                         succ = ilist[ix].IsValid;
                     }
                 }
                 else if (TryGetList(objVal, out IList<UintVal>? ulist)) {
                     if (null != ulist && ix < ulist.Count) {
-                        oval = DslExpression.BoxedValue.From(ulist[ix].Value);
+                        oval = BoxedValue.From(ulist[ix].Value);
                         succ = ulist[ix].IsValid;
                     }
                 }
@@ -1536,15 +1537,15 @@ namespace GlslRewriter
             var val = *p;
             return val;
         }
-        public static bool TryParseNumeric(string str, out DslExpression.BoxedValue val)
+        public static bool TryParseNumeric(string str, out BoxedValue val)
         {
             string type = string.Empty;
             return TryParseNumeric(str, ref type, out val);
         }
-        public static bool TryParseNumeric(string str, ref string type, out DslExpression.BoxedValue val)
+        public static bool TryParseNumeric(string str, ref string type, out BoxedValue val)
         {
             bool ret = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             if (str.Length > 2 && str[0] == '0' && str[1] == 'x') {
                 char c = str[str.Length - 1];
                 if (c == 'u' || c == 'U') {
@@ -1621,7 +1622,7 @@ namespace GlslRewriter
             return false;
         }
 
-        public static string GetValueType(DslExpression.BoxedValue val)
+        public static string GetValueType(BoxedValue val)
         {
             string valType;
             if (val.IsNumber)
@@ -1640,18 +1641,18 @@ namespace GlslRewriter
                 valType = "string";
             return valType;
         }
-        public static bool IsNumeric(DslExpression.BoxedValue val, out DslExpression.BoxedValue oval)
+        public static bool IsNumeric(BoxedValue val, out BoxedValue oval)
         {
             bool ret = val.IsNumber || val.IsInteger || val.IsChar || val.IsBoolean;
             if (ret) {
                 oval = val;
             }
             else {
-                oval = DslExpression.BoxedValue.NullObject;
+                oval = BoxedValue.NullObject;
             }
             return ret;
         }
-        public static bool TryGetBool(DslExpression.BoxedValue v, out bool val)
+        public static bool TryGetBool(BoxedValue v, out bool val)
         {
             val = false;
             if(v.IsBoolean || v.IsInteger) {
@@ -1660,7 +1661,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetFloat(DslExpression.BoxedValue v, out float val)
+        public static bool TryGetFloat(BoxedValue v, out float val)
         {
             val = 0;
             if (v.IsNumber || v.IsInteger) {
@@ -1669,7 +1670,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetDouble(DslExpression.BoxedValue v, out double val)
+        public static bool TryGetDouble(BoxedValue v, out double val)
         {
             val = 0;
             if (v.IsNumber || v.IsInteger) {
@@ -1678,7 +1679,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetInt(DslExpression.BoxedValue v, out int val)
+        public static bool TryGetInt(BoxedValue v, out int val)
         {
             val = 0;
             if (v.IsInteger || v.IsChar) {
@@ -1687,7 +1688,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetLong(DslExpression.BoxedValue v, out long val)
+        public static bool TryGetLong(BoxedValue v, out long val)
         {
             val = 0;
             if (v.IsInteger || v.IsChar) {
@@ -1696,7 +1697,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetUInt(DslExpression.BoxedValue v, out uint val)
+        public static bool TryGetUInt(BoxedValue v, out uint val)
         {
             val = 0;
             if (v.IsInteger || v.IsChar) {
@@ -1705,7 +1706,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetULong(DslExpression.BoxedValue v, out ulong val)
+        public static bool TryGetULong(BoxedValue v, out ulong val)
         {
             val = 0;
             if (v.IsInteger || v.IsChar) {
@@ -1714,7 +1715,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetString(DslExpression.BoxedValue v, out string val)
+        public static bool TryGetString(BoxedValue v, out string val)
         {
             val = string.Empty;
             if (v.IsString) {
@@ -1723,7 +1724,7 @@ namespace GlslRewriter
             }
             return false;
         }
-        public static bool TryGetList<T>(DslExpression.BoxedValue v, out IList<T>? list)
+        public static bool TryGetList<T>(BoxedValue v, out IList<T>? list)
         {
             list = null;
             if (v.IsObject) {

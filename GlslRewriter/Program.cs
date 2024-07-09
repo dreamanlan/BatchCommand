@@ -11,7 +11,9 @@ using static GlslRewriter.Config;
 using System.Net.Http.Headers;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
-using DslExpression;
+using ScriptableFramework;
+using DotnetStoryScript;
+using DotnetStoryScript.DslExpression;
 
 namespace GlslRewriter
 {
@@ -795,15 +797,15 @@ namespace GlslRewriter
         private static void InitBatchScript()
         {
             BatchCommand.BatchScript.Init();
-            BatchCommand.BatchScript.Register("shader", "shader(code1,code2,...) api", new DslExpression.ExpressionFactoryHelper<ShaderExp>());
-            BatchCommand.BatchScript.Register("add_svar", "add_svar(name,val[,dim_for_array]) api", new DslExpression.ExpressionFactoryHelper<AddShaderVarExp>());
-            BatchCommand.BatchScript.Register("set_svar", "set_svar(var_code,val) api", new DslExpression.ExpressionFactoryHelper<SetShaderVarExp>());
-            BatchCommand.BatchScript.Register("add_unsvar", "add_unsvar(var_code_1,var_code_2,...) api", new DslExpression.ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
-            BatchCommand.BatchScript.Register("import_inout", "import_inout(index) api", new DslExpression.ExpressionFactoryHelper<ImportInOutExp>());
-            BatchCommand.BatchScript.Register("recalc", "recalc([bool_full]) api", new DslExpression.ExpressionFactoryHelper<ReCalcExp>());
-            BatchCommand.BatchScript.Register("rand_color", "rand_color() api", new DslExpression.ExpressionFactoryHelper<RandColorExp>());
-            BatchCommand.BatchScript.Register("rand_uv", "rand_uv(dim) api", new DslExpression.ExpressionFactoryHelper<RandUVExp>());
-            BatchCommand.BatchScript.Register("rand_size", "rand_size(max_v) or rand_size(max_x,max_y) or rand_size(max_x,max_y,max_z) or rand_size(max_x,max_y,max_z,max_w) api", new DslExpression.ExpressionFactoryHelper<RandSizeExp>());
+            BatchCommand.BatchScript.Register("shader", "shader(code1,code2,...) api", new ExpressionFactoryHelper<ShaderExp>());
+            BatchCommand.BatchScript.Register("add_svar", "add_svar(name,val[,dim_for_array]) api", new ExpressionFactoryHelper<AddShaderVarExp>());
+            BatchCommand.BatchScript.Register("set_svar", "set_svar(var_code,val) api", new ExpressionFactoryHelper<SetShaderVarExp>());
+            BatchCommand.BatchScript.Register("add_unsvar", "add_unsvar(var_code_1,var_code_2,...) api", new ExpressionFactoryHelper<AddUnassignableShaderVarExp>());
+            BatchCommand.BatchScript.Register("import_inout", "import_inout(index) api", new ExpressionFactoryHelper<ImportInOutExp>());
+            BatchCommand.BatchScript.Register("recalc", "recalc([bool_full]) api", new ExpressionFactoryHelper<ReCalcExp>());
+            BatchCommand.BatchScript.Register("rand_color", "rand_color() api", new ExpressionFactoryHelper<RandColorExp>());
+            BatchCommand.BatchScript.Register("rand_uv", "rand_uv(dim) api", new ExpressionFactoryHelper<RandUVExp>());
+            BatchCommand.BatchScript.Register("rand_size", "rand_size(max_v) or rand_size(max_x,max_y) or rand_size(max_x,max_y,max_z) or rand_size(max_x,max_y,max_z,max_w) api", new ExpressionFactoryHelper<RandSizeExp>());
             BatchCommand.BatchScript.SetOnTryGetVariable(VariableTable.TryGetVariable);
             BatchCommand.BatchScript.SetOnTrySetVariable(VariableTable.TrySetVariable);
         }
@@ -1577,7 +1579,7 @@ namespace GlslRewriter
                 Debug.Assert(null != agn1);
 
                 string m = call.GetParamId(0);
-                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m, DslExpression.BoxedValue.From(m));
+                var agn2 = new ComputeGraphConstNode(CurFuncInfo(), "string", m, BoxedValue.From(m));
 
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), "float", ".");
 
@@ -1671,7 +1673,7 @@ namespace GlslRewriter
 
                 var ifNode = new ComputeGraphIfStatement(CurFuncInfo());
                 AddComputeGraphRootNode(ifNode);
-                DslExpression.BoxedValue ifVal = DslExpression.BoxedValue.NullObject;
+                BoxedValue ifVal = BoxedValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -1747,7 +1749,7 @@ namespace GlslRewriter
             foreach (var valOrFunc in ifStatement.Functions) {
                 var f = valOrFunc.AsFunction;
                 if (null != f) {
-                    DslExpression.BoxedValue ifVal = DslExpression.BoxedValue.NullObject;
+                    BoxedValue ifVal = BoxedValue.NullObject;
                     if (f.IsHighOrder) {
                         var semanticInfo = new SemanticInfo();
                         TransformGeneralCall(f.LowerOrderFunction, ref semanticInfo);
@@ -1827,7 +1829,7 @@ namespace GlslRewriter
 
                 var forNode = new ComputeGraphForStatement(CurFuncInfo());
                 AddComputeGraphRootNode(forNode);
-                DslExpression.BoxedValue forVal = DslExpression.BoxedValue.NullObject;
+                BoxedValue forVal = BoxedValue.NullObject;
 
                 TransformForHeader(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -1877,7 +1879,7 @@ namespace GlslRewriter
 
                 var whileNode = new ComputeGraphWhileStatement(CurFuncInfo());
                 AddComputeGraphRootNode(whileNode);
-                DslExpression.BoxedValue whileVal = DslExpression.BoxedValue.NullObject;
+                BoxedValue whileVal = BoxedValue.NullObject;
 
                 TransformGeneralCall(lowerFunc, ref semanticInfo);
                 if (null != semanticInfo.GraphNode) {
@@ -2108,7 +2110,7 @@ namespace GlslRewriter
                     agn.AddNext(cgcn);
                 }
                 else {
-                    var agn = new ComputeGraphConstNode(CurFuncInfo(), "string", string.Empty, DslExpression.BoxedValue.EmptyString);
+                    var agn = new ComputeGraphConstNode(CurFuncInfo(), "string", string.Empty, BoxedValue.EmptyString);
                     cgcn.AddPrev(agn);
                     agn.AddNext(cgcn);
                 }
@@ -2350,10 +2352,10 @@ namespace GlslRewriter
                 }
             }
         }
-        private static bool GenerateValueAndExpressionForCondition(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out DslExpression.BoxedValue val)
+        private static bool GenerateValueAndExpressionForCondition(Dsl.FunctionData funcData, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, out BoxedValue val)
         {
             bool ret = false;
-            val = DslExpression.BoxedValue.NullObject;
+            val = BoxedValue.NullObject;
             int lvlForExp = 1;
             var v1str = SplitInfoForVariable.s_DefMaxLen;
             var v2str = SplitInfoForVariable.s_DefMultiline;
@@ -2363,7 +2365,7 @@ namespace GlslRewriter
             }
             return ret;
         }
-        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce, out DslExpression.BoxedValue val)
+        private static bool GenerateValueAndExpression(Dsl.FunctionData funcData, Dsl.ISyntaxComponent? leftAssignDsl, ComputeGraphNode cgn, bool isVariableSetting, bool markValue, bool markExp, bool addSemiColon, int maxLvlForExp, int maxLenForExp, bool multiline, bool expandedOnlyOnce, out BoxedValue val)
         {
             int defMaxLvl = Config.ActiveConfig.SettingInfo.DefMaxLevel;
             int defMaxLen = Config.ActiveConfig.SettingInfo.DefMaxLength;
@@ -2548,7 +2550,7 @@ namespace GlslRewriter
                 else {
                     string str = valData.GetId();
                     bool v = Calculator.TryParseBool(str, out var bval);
-                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", str, v ? DslExpression.BoxedValue.From(bval) : DslExpression.BoxedValue.NullObject);
+                    var cgcn = new ComputeGraphConstNode(CurFuncInfo(), "bool", str, v ? BoxedValue.From(bval) : BoxedValue.NullObject);
                     semanticInfo.GraphNode = cgcn;
                     semanticInfo.ResultType = cgcn.Type;
                 }
@@ -2558,7 +2560,7 @@ namespace GlslRewriter
                 string strVal = valData.GetId();
                 if (!Calculator.TryParseNumeric(strVal, ref type, out var numVal)) {
                     type = "string";
-                    numVal = DslExpression.BoxedValue.From(strVal);
+                    numVal = BoxedValue.From(strVal);
                 }
                 var cgcn = new ComputeGraphConstNode(CurFuncInfo(), type, strVal, numVal);
                 semanticInfo.GraphNode = cgcn;

@@ -1,9 +1,10 @@
 {
   "profiles": {
-    "BatchCommand": {
-      "commandName": "Project",
-      "commandLineArgs": "D:\\GitHub\\GameDemo\\Tools\\Batch\\build.dsl Debug",
-      "workingDirectory": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0"
+    "adb_cfg": {
+      "commandName": "Executable",
+      "executablePath": "F:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
+      "commandLineArgs": "main.dsl debug",
+      "workingDirectory": "C:\\sdk_full\\platform-tools"
     }
   }
 }

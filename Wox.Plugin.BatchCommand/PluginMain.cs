@@ -8,7 +8,6 @@ using Wox.Plugin;
 using Wox.Infrastructure;
 using Wox.Infrastructure.Storage;
 using BatchCommand;
-using DslExpression;
 using System.Threading;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -22,6 +21,9 @@ using Wox.Infrastructure.UserSettings;
 using System.Runtime;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+using ScriptableFramework;
+using DotnetStoryScript;
+using DotnetStoryScript.DslExpression;
 
 /// <remarks>
 /// Currently, the plugin is only used for version 1.3.524 of Wox. For updated versions, the MessageWindow function may not work properly due to the plugin initialization not being in the main thread.

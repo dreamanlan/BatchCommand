@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="TextCopy" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="Common">
       <HintPath>..\deps\Common.dll</HintPath>
     </Reference>

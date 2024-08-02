@@ -25,19 +25,23 @@ for evtId in range(lastEvtId + 1):
 		continue
 	pyrenderdoc.SetEventID([], pyrenderdoc.CurEvent(), d.eventId, False)
 	state = pyrenderdoc.CurPipelineState()
-	pipe = state.GetGraphicsPipelineObject()
 	ps = state.GetShaderReflection(rd.ShaderStage.Pixel)
-	resdesc = pyrenderdoc.GetResource(ps.resourceId)
+	if ps is None:
+		continue
+	shaderRes = pyrenderdoc.GetResource(ps.resourceId)
+	shaderName = ""
+	if shaderRes is not None:
+		shaderName = shaderRes.name
 
-	ct = psHash.get(resdesc.name)
+	ct = psHash.get(shaderName)
 	if ct is None:
 		ct = 1
 	else:
 		ct += 1
-	psHash[resdesc.name] = ct
+	psHash[shaderName] = ct
 
 	# Print this action
-	print('%s%d: ps:%s ct:%d' % (0, d.eventId, resdesc.name, ct))
+	print('%s%d: ps:%s ct:%d' % (0, d.eventId, shaderName, ct))
 
 print('======')
 for k, v in psHash.items():

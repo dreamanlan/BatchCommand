@@ -58,7 +58,7 @@ for evtId in range(lastEvtId + 1):
 	evtId += 1
 	if d is None:
 		continue
-	if d.flags == rd.DrawFlags.Dispatch:
+	if d.flags == rd.DrawFlags.PushMarker or d.flags == rd.DrawFlags.Clear:
 		continue
 	pyrenderdoc.SetEventID([], pyrenderdoc.CurEvent(), d.eventId, False)
 	state = pyrenderdoc.CurPipelineState()
@@ -89,7 +89,7 @@ for evtId in range(lastEvtId + 1):
 		psHash[progName] = ct
 
 		# Print this action
-		print('%s%d: ps:%s|%s ct:%d inout:%d' % (0, d.eventId, shaderName, progName, ct, useInout))
+		print('%s%d,%d,%s: ps:%s|%s ct:%d inout:%d' % (0, d.eventId, d.drawcallId, d.flags.name, shaderName, progName, ct, useInout))
 
 print('======')
 for k, v in psHash.items():

@@ -23,6 +23,8 @@ for evtId in range(lastEvtId + 1):
 	evtId += 1
 	if d is None:
 		continue
+	if d.flags == rd.ActionFlags.PushMarker or d.flags == rd.ActionFlags.PopMarker or d.flags == rd.ActionFlags.Clear or d.flags == rd.ActionFlags.Present:
+		continue
 	pyrenderdoc.SetEventID([], pyrenderdoc.CurEvent(), d.eventId, False)
 	state = pyrenderdoc.CurPipelineState()
 	ps = state.GetShaderReflection(rd.ShaderStage.Pixel)
@@ -41,7 +43,7 @@ for evtId in range(lastEvtId + 1):
 	psHash[shaderName] = ct
 
 	# Print this action
-	print('%s%d: ps:%s ct:%d' % (0, d.eventId, shaderName, ct))
+	print('%s%d,%d,%s: ps:%s ct:%d' % (0, d.eventId, d.actionId, d.flags.name, shaderName, ct))
 
 print('======')
 for k, v in psHash.items():

@@ -24,6 +24,10 @@ using Microsoft.Win32.SafeHandles;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
+using System.Net.Mail;
+using System.Windows.Media;
+using System.Windows.Interop;
+using System.Windows;
 
 /// <remarks>
 /// Currently, the plugin is only used for version 1.3.524 of Wox. For updated versions, the MessageWindow function may not work properly due to the plugin initialization not being in the main thread.
@@ -31,6 +35,14 @@ using DotnetStoryScript.DslExpression;
 /// </remarks>
 public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISavable
 {
+    public enum MainThreadSyncExecutionTypeEnum
+    {
+        Dispatcher = 0,
+        Rendering,
+        Message,
+        Num
+    }
+
     public Main()
     {
         //Note: The construction of the plugin is not executed in the main thread.
@@ -57,10 +69,14 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             sw.WriteLine("Startup Thread {0}.", s_StartupThreadId);
             sw.Close();
         }
+
         s_MessageWindow = new MessageWindow();
         s_MessageWindow.Hide();
+
+        CompositionTarget.Rendering += CompositionTarget_Rendering;
         StartScriptThread();
     }
+
     public List<Result> Query(Query query)
     {
         const int c_MaxQueueNum = 64;
@@ -102,7 +118,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             else {
                 Process.Start(s_EverythingFullPath);
             }
-            System.Windows.Application.Current.Dispatcher.Invoke(() => {
+            AsyncExecuteOnMainThread(() => {
                 s_Context.API.RestarApp();
             });
         }
@@ -182,7 +198,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         }
         if (action == "on_action_restart") {
             //This should already be the main thread. But let's dispatch once and execute it in the next frame.
-            System.Windows.Application.Current.Dispatcher.Invoke(() => {
+            AsyncExecuteOnMainThread(() => {
                 s_Context.API.RestarApp();
             });
             return true;
@@ -351,6 +367,60 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         }
     }
 
+    private void CompositionTarget_Rendering(object sender, EventArgs e)
+    {
+        if (s_MainThreadSyncExecutionType == MainThreadSyncExecutionTypeEnum.Rendering) {
+            HandleMainThreadActionOnce();
+        }
+    }
+    internal static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (s_MainThreadSyncExecutionType == MainThreadSyncExecutionTypeEnum.Message) {
+            HandleMainThreadActionOnce();
+        }
+        handled = false;
+        return IntPtr.Zero;
+    }
+    internal static void HandleMainThreadActionOnce()
+    {
+        for (int ct = 0; s_MainActions.Count > 0; ++ct) {
+            if (s_MainActions.TryDequeue(out var action)) {
+                try {
+                    action();
+                }
+                catch (Exception ex) {
+                    Console.WriteLine("exception:{0}", ex.Message);
+                }
+                finally {
+                }
+            }
+        }
+    }
+
+    internal static void SyncExecuteOnMainThread(Action action)
+    {
+        switch (s_MainThreadSyncExecutionType) {
+            case MainThreadSyncExecutionTypeEnum.Dispatcher:
+                Dispatcher().Invoke(action, System.Windows.Threading.DispatcherPriority.Send);
+                break;
+            default:
+                s_MainActions.Enqueue(() => {
+                    action();
+                    s_MainEvent.Set();
+                });
+                s_MainEvent.WaitOne();
+                break;
+        }
+    }
+    internal static System.Windows.Threading.DispatcherOperation AsyncExecuteOnMainThread(Action action)
+    {
+        return Dispatcher().InvokeAsync(action, System.Windows.Threading.DispatcherPriority.Send);
+    }
+    internal static System.Windows.Threading.Dispatcher Dispatcher()
+    {
+        return System.Windows.Application.Current.Dispatcher;
+    }
+
     internal static void ShowConsole()
     {
         var handle = GetConsoleWindow();
@@ -422,6 +492,11 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         FlushLog("InitScript");
 
         BatchScript.Init();
+        BatchScript.Register("set_sync_execution_type", "set_sync_execution_type(type), 0--rendering 1--message 2--dispatcher", new ExpressionFactoryHelper<MainThreadSyncExecutionTypeExp>());
+        BatchScript.Register("folderdlg", "folderdlg(desc[,int_spec_dir_enum])", new ExpressionFactoryHelper<FolderDialogExp>());
+        BatchScript.Register("openfiledlg", "openfiledlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFileDialogExp>());
+        BatchScript.Register("openfilesdlg", "openfilesdlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFilesDialogExp>());
+        BatchScript.Register("savefiledlg", "savefiledlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<SaveFileDialogExp>());
         BatchScript.Register("contextmenu", "contextment api", new ExpressionFactoryHelper<ShellContextMenuExp>());
         BatchScript.Register("context", "context api", new ExpressionFactoryHelper<ContextExp>());
         BatchScript.Register("api", "api api", new ExpressionFactoryHelper<ApiExp>());
@@ -499,11 +574,35 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     }
     private static void Wait(AutoResetEvent evt)
     {
-        evt.WaitOne(c_WaitTimeout);
+        int waitTime = 0;
+        while (waitTime < c_WaitTimeout) {
+            if (evt.WaitOne(10)) {
+                break;
+            }
+            else {
+                Dispatcher().Invoke(s_EmptyAction, System.Windows.Threading.DispatcherPriority.Background);
+                if (s_MainThreadSyncExecutionType != MainThreadSyncExecutionTypeEnum.Dispatcher) {
+                    HandleMainThreadActionOnce();
+                }
+                waitTime += c_WaitTimeSlice;
+            }
+        }
     }
     private static bool WaitAndGetResult(AutoResetEvent evt, ConcurrentQueue<Func<bool>> funcs)
     {
-        evt.WaitOne(c_WaitTimeout);
+        int waitTime = 0;
+        while (waitTime < c_WaitTimeout) {
+            if(evt.WaitOne(10)) {
+                break;
+            }
+            else {
+                Dispatcher().Invoke(s_EmptyAction, System.Windows.Threading.DispatcherPriority.Background);
+                if (s_MainThreadSyncExecutionType != MainThreadSyncExecutionTypeEnum.Dispatcher) {
+                    HandleMainThreadActionOnce();
+                }
+                waitTime += c_WaitTimeSlice;
+            }
+        }
         bool rt = false;
         while (funcs.Count > 0) {
             if (funcs.TryDequeue(out var f)) {
@@ -525,6 +624,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         internal ConcurrentQueue<Func<bool>> Funcs;
     }
 
+    internal static MainThreadSyncExecutionTypeEnum s_MainThreadSyncExecutionType = MainThreadSyncExecutionTypeEnum.Dispatcher;
+    internal static Action s_EmptyAction = () => { };
     internal static ShellApi.ShellContextMenu s_ShellCtxMenu = new ShellApi.ShellContextMenu();
     internal static MessageWindow s_MessageWindow = null;
     internal static PluginInitContext s_Context = null;
@@ -547,6 +648,9 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     private static StringBuilder s_ErrorBuilder = new StringBuilder();
     private static StringBuilder s_LogBuilder = new StringBuilder();
     private static object s_LogLock = new object();
+
+    private static ConcurrentQueue<Action> s_MainActions = new ConcurrentQueue<Action>();
+    private static AutoResetEvent s_MainEvent = new AutoResetEvent(false);
 
     private static ConcurrentQueue<ScriptQueryInfo> s_ScriptQueryQueue = new ConcurrentQueue<ScriptQueryInfo>();
     private static ConcurrentQueue<ScriptActionInfo> s_ScriptActionQueue = new ConcurrentQueue<ScriptActionInfo>();
@@ -571,6 +675,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     private const int c_QueryNumPerTick = 2;
     private const int c_ActionNumPerTick = 16;
     private const int c_WaitTimeout = 10000;
+    private const int c_WaitTimeSlice = 10;
 
     private const int ATTACH_PARENT_PROCESS = -1;
     private const int SW_HIDE = 0;
@@ -684,11 +789,23 @@ public sealed class MessageWindow : Form
                 m_EverythingQueryEvent.Set();
             }
         }
+
+        if (!m_MessageHookInited) {
+            var mainWindow = System.Windows.Application.Current.MainWindow;
+            if (null != mainWindow) {
+                var hwndSource = PresentationSource.FromVisual(mainWindow) as HwndSource;
+                if (null != hwndSource) {
+                    hwndSource.AddHook(new HwndSourceHook(Main.WndProc));
+                    m_MessageHookInited = true;
+                }
+            }
+        }
         base.WndProc(ref m);
     }
 
     private AutoResetEvent m_EverythingQueryEvent = null;
     private bool m_CheckReply = false;
+    private bool m_MessageHookInited = false;
     private IntPtr m_Handle = IntPtr.Zero;
 
     [DllImport("user32.dll")]
@@ -697,6 +814,145 @@ public sealed class MessageWindow : Form
     private const int WAIT_TIME_OUT = 10000;
 }
 
+internal sealed class MainThreadSyncExecutionTypeExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        BoxedValue r = 0;
+        if (operands.Count >= 1) {
+            int v = operands[0].GetInt();
+            Main.s_MainThreadSyncExecutionType = (Main.MainThreadSyncExecutionTypeEnum)v;
+            r = v;
+        }
+        return r;
+    }
+}
+internal sealed class FolderDialogExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        string ret = string.Empty;
+        if (operands.Count >= 1) {
+            string desc = operands[0].AsString;
+            Environment.SpecialFolder rootDir = Environment.SpecialFolder.MyComputer;
+            bool showNew = false;
+            if (operands.Count >= 2) {
+                rootDir = (Environment.SpecialFolder)operands[1].GetInt();
+            }
+            if (operands.Count >= 3) {
+                showNew = operands[2].GetBool();
+            }
+
+            Main.SyncExecuteOnMainThread(() => {
+                var fbd = new System.Windows.Forms.FolderBrowserDialog();
+                fbd.Description = desc;
+                fbd.RootFolder = rootDir;
+                fbd.ShowNewFolderButton = showNew;
+                var result = fbd.ShowDialog();
+                if (result == DialogResult.OK) {
+                    ret = fbd.SelectedPath;
+                }
+            });
+        }
+        return BoxedValue.FromString(ret);
+    }
+}
+internal sealed class OpenFileDialogExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        string ret = string.Empty;
+        if (operands.Count >= 3) {
+            string title = operands[0].AsString;
+            string initDir = operands[1].AsString;
+            string filter = operands[2].AsString;
+            int filterIndex = 0;
+            if (operands.Count >= 4) {
+                filterIndex = operands[3].GetInt();
+            }
+
+            Main.SyncExecuteOnMainThread(() => {
+                var ofd = new System.Windows.Forms.OpenFileDialog();
+                ofd.Title = title;
+                ofd.InitialDirectory = initDir;
+                ofd.Filter = filter;
+                ofd.FilterIndex = filterIndex;
+                ofd.RestoreDirectory = true;
+                ofd.Multiselect = false;
+                var result = ofd.ShowDialog();
+                if (result == DialogResult.OK) {
+                    ret = ofd.FileName;
+                }
+            });
+        }
+        return BoxedValue.FromString(ret);
+    }
+}
+internal sealed class OpenFilesDialogExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        string[] ret = null;
+        if (operands.Count >= 3) {
+            string title = operands[0].AsString;
+            string initDir = operands[1].AsString;
+            string filter = operands[2].AsString;
+            int filterIndex = 0;
+            if (operands.Count >= 4) {
+                filterIndex = operands[3].GetInt();
+            }
+
+            Main.SyncExecuteOnMainThread(() => {
+                var ofd = new System.Windows.Forms.OpenFileDialog();
+                ofd.Title = title;
+                ofd.InitialDirectory = initDir;
+                ofd.Filter = filter;
+                ofd.FilterIndex = filterIndex;
+                ofd.RestoreDirectory = true;
+                ofd.Multiselect = true;
+                var result = ofd.ShowDialog();
+                if (result == DialogResult.OK) {
+                    ret = ofd.FileNames;
+                }
+            });
+        }
+        if (null == ret) {
+            ret = new string[0];
+        }
+        return BoxedValue.FromObject(ret);
+    }
+}
+internal sealed class SaveFileDialogExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        string ret = string.Empty;
+        if (operands.Count >= 3) {
+            string title = operands[0].AsString;
+            string initDir = operands[1].AsString;
+            string filter = operands[2].AsString;
+            int filterIndex = 0;
+            if (operands.Count >= 4) {
+                filterIndex = operands[3].GetInt();
+            }
+
+            Main.SyncExecuteOnMainThread(() => {
+                var sfd = new System.Windows.Forms.SaveFileDialog();
+                sfd.Title = title;
+                sfd.InitialDirectory = initDir;
+                sfd.Filter = filter;
+                sfd.FilterIndex = filterIndex;
+                sfd.SupportMultiDottedExtensions = true;
+                sfd.RestoreDirectory = true;
+                var result = sfd.ShowDialog();
+                if (result == DialogResult.OK) {
+                    ret = sfd.FileName;
+                }
+            });
+        }
+        return BoxedValue.FromString(ret);
+    }
+}
 internal sealed class ShellContextMenuExp : SimpleExpressionBase
 {
     protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -736,6 +992,7 @@ internal sealed class ShowMsgExp : SimpleExpressionBase
 
             if (null != Main.s_CurFuncs) {
                 //Switch to the main thread for execution (it seems that requests triggered by clicking on the list are always initiated from the main thread).
+                //execute after dsl (see WaitAndGetResult)
                 Main.s_CurFuncs.Enqueue(() => {
                     Main.s_Context.API.ShowMsg(title, subtitle, icon);
                     return false;
@@ -755,6 +1012,7 @@ internal sealed class RestartExp : SimpleExpressionBase
         if (null != Main.s_CurFuncs) {
             //The RestarApp method needs to be executed on the main thread (it seems that
             //all requests triggered by clicking the list are initiated from the main thread).
+            //execute after dsl (see WaitAndGetResult)
             Main.s_CurFuncs.Enqueue(() => {
                 Main.s_Context.API.RestarApp();
                 return false;
@@ -835,6 +1093,7 @@ internal sealed class ChangeQueryExp : SimpleExpressionBase
 
             if (null != Main.s_CurFuncs) {
                 //Switch to the main thread for execution (it seems that requests triggered by clicking on the list are always initiated from the main thread).
+                //execute after dsl (see WaitAndGetResult)
                 Main.s_CurFuncs.Enqueue(() => {
                     Main.s_Context.API.ChangeQuery(queryStr, requery);
                     return false;
@@ -953,6 +1212,7 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
 
             Debug.Assert(null != Main.s_CurFuncs);
             //Shell operations are pushed to the thread that initiated the request (it seems that requests triggered by clicking on the list are always initiated from the main thread).
+            //execute after dsl (see WaitAndGetResult)
             if (Directory.Exists(path)) {
                 Main.s_CurFuncs.Enqueue(() => {
                     var dis = new DirectoryInfo[] { new DirectoryInfo(path) };

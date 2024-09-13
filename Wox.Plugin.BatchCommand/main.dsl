@@ -427,6 +427,12 @@ script(on_action_start_proj)args($query, $result, $actionContext)
 {
     @path = $result.Title;
     @args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    if($query.SecondSearch=="*"){
+        @path = folderdlg("select dir");
+    }
+    elseif($query.SecondSearch=="*.*"){
+        @path = openfiledlg("select file", "", "all|*.*");
+    };
     process(@exe, quotepath(@path) + @args){
         nowait(true);
     };
@@ -447,9 +453,25 @@ script(on_action_app_proj)args($query, $result, $actionContext)
     $key = $query.ActionKeyword;
     @args = $query.SecondToEndSearch;
     @path = $result.Title;
+    if($query.SecondSearch=="*"){
+        @path = folderdlg("select dir");
+        @args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    }
+    elseif($query.SecondSearch=="*.*"){
+        @path = openfiledlg("select file", "", "all|*.*");
+        @args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+    };
     //The Unity project can be filtered by subdirectory.
-    if($key=="unity" && @path.EndsWith("\\Assets")){
-        @path = getdirectoryname(@path);
+    if($key=="unity"){
+        if(@path.EndsWith("\\Assets")){
+            @path = getdirectoryname(@path);
+        }
+        else{
+            $ix = @path.IndexOf("\\Assets\\", 0);
+            if($ix>0){
+                @path = @path.Substring(0, $ix);
+            };
+        };
     };
     process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], quotepath(@path)) + " " + @args){
         nowait(true);

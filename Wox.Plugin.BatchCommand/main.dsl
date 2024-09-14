@@ -306,7 +306,11 @@ script(on_query)args($query)
             everythingsetdefault();
             if(@phase == 0){
                 $cfglist = @cfg[$key];
-                $list = everythingsearch($cfglist[0]);
+                $searchKey = $cfglist[0];
+                if(!isnullorempty($query.FirstSearch)){
+                    $searchKey = $query.FirstSearch;
+                };
+                $list = everythingsearch($searchKey);
                 addresult("file browser", "select a file", "", "on_action_app", $query, 10010, true);
                 looplist($list){
                     addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app", $query);
@@ -373,7 +377,7 @@ script(try_select_file_or_folder)args($title)
 {
     $p = "";
     if(@path=="file browser"){
-        $p = openfiledlg("select a file", "", "all|*.exe");
+        $p = openfiledlg("select a file", "", "txt|*.txt;*.log|doc|*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx|exe|*.exe|all|*.*", 4);
     }
     elseif(@path=="folder browser"){
         $p = folderdlg("select a folder");

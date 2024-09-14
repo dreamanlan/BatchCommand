@@ -109,8 +109,9 @@ hide() hides the console window
 reloaddsl() reloads main.dsl
 evaldsl(dsl code, query, result, actioncontext) executes the dsl code. You can use $query, $result, $actioncontext to access the corresponding parameters in the code.
 changequery(query_string, requery) Modifies the query, requery is of bool type
-addresult(title, subtitle, icopath, action, query) adds a result to the list, query is the query object, the others are strings, action is the script function name in dsl,
-This script is executed when the user clicks, and the three parameters query, result, and actioncontext are passed to the script.
+addresult(title, subtitle, icopath, action, query, search[, score[, highlight]]) adds a result to the list, query is the query object, the others are strings, action is the script function name in dsl,
+the search parameter is the keyword for Everything, the score is used for sorting, and highlight is a bool value indicating whether the title is fully highlighted (it seems to have no effect),
+this script is executed when the user clicks, and the three parameters query, result, and actioncontext are passed to the script.
 addcontextmenu(tilte, subtitle, icopath, action, query, result) adds a context menu item, query is the query object, result is the result object, and the others are strings
 , action is the name of the script function in dsl. It is executed when the user clicks. It passes 4 parameters query, result, menu, actioncontext to the script. Menu is also a Result object, containing menu item information.
 keywordregistered(keyword) determines whether the specified keyword has been registered
@@ -233,72 +234,73 @@ script(on_query)args($query)
     if($key=="dsl"){
         $param = $query.FirstSearch;
         if($param=="eval"){
-            addresult("eval", "evaluate dsl code.", "", "on_action_eval_dsl", $query);
+            addresult("eval", "evaluate dsl code.", "", "on_action_eval_dsl", $query, "");
         }elseif($param=="info"){
-            addresult("info", "show query state", "", "on_action_info", $query);
+            addresult("info", "show query state", "", "on_action_info", $query, "");
         }elseif($param=="clear"){
-            addresult("clear", "clear query", "", "on_action_clear", $query);
+            addresult("clear", "clear query", "", "on_action_clear", $query, "");
         }elseif($param=="reload"){
-            addresult("reload", "reload main.dsl", "", "on_action_reload", $query);
+            addresult("reload", "reload main.dsl", "", "on_action_reload", $query, "");
         }else{
-            addresult("eval", "evaluate dsl code", "", "on_action_change", $query);
-            addresult("info", "show query state", "", "on_action_change", $query);
-            addresult("clear", "clear query", "", "on_action_change", $query);
-            addresult("reload", "reload main.dsl", "", "on_action_change", $query);
+            addresult("eval", "evaluate dsl code", "", "on_action_change", $query, "");
+            addresult("info", "show query state", "", "on_action_change", $query, "");
+            addresult("clear", "clear query", "", "on_action_change", $query, "");
+            addresult("reload", "reload main.dsl", "", "on_action_change", $query, "");
             //restart is directly handled in C#, and the DSL part only handles the UI show.
-            addresult("restart", "restart Wox", "", "on_action_change", $query);
+            addresult("restart", "restart Wox", "", "on_action_change", $query, "");
         };
     }elseif($key=="menu"){
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_menu", $query, 10010, true);
+        addresult("file browser", "select a file", "", "on_action_menu", $query, "", 10000, true);
         looplist($list){
-            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query);
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query, $query.FirstSearch);
         };
     }elseif($key=="foldermenu"){
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
-        addresult("folder browser", "select a folder", "", "on_action_foldermenu", $query, 10010, true);
+        addresult("folder browser", "select a folder", "", "on_action_foldermenu", $query, "", 10000, true);
         looplist($list){
-            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_foldermenu", $query);
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_foldermenu", $query, $query.FirstSearch);
         };
     }elseif($key=="file"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_file", $query, 10010, true);
+        addresult("file browser", "select a file", "", "on_action_file", $query, "", 10000, true);
+        addresult("folder browser", "select a folder", "", "on_action_file", $query, "", 9999, true);
         looplist($list){
-            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_file", $query);
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_file", $query, $query.FirstSearch);
         };
     }elseif($key=="cmd"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_cmd", $query, 10010, true);
+        addresult("file browser", "select a file", "", "on_action_cmd", $query, "", 10000, true);
         looplist($list){
-            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_cmd", $query);
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_cmd", $query, $query.FirstSearch);
         };
     }elseif($key=="exe"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_exe", $query, 10010, true);
+        addresult("file browser", "select a file", "", "on_action_exe", $query, "", 10000, true);
         looplist($list){
-            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_exe", $query);
+            addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_exe", $query, $query.FirstSearch);
         };
     }elseif($key=="start"){
         everythingsetdefault();
         if(@phase==0){
             $list = everythingsearch($query.FirstSearch);
-            addresult("file browser", "select a file", "", "on_action_start", $query, 10010, true);
+            addresult("file browser", "select a file", "", "on_action_start", $query, "", 10000, true);
             looplist($list){
-                addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start", $query);
+                addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start", $query, $query.FirstSearch);
             };
         }elseif(@phase==1){
             $list = everythingsearch($query.SecondSearch);
-            addresult("file browser", "select a file", "", "on_action_start_proj", $query, 10010, true);
-            addresult("folder browser", "select a folder", "", "on_action_start_proj", $query, 10009, true);
+            addresult("file browser", "select a file", "", "on_action_start_proj", $query, "", 10000, true);
+            addresult("folder browser", "select a folder", "", "on_action_start_proj", $query, "", 9999, true);
             looplist($list){
-                addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start_proj", $query);
+                addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start_proj", $query, $query.SecondSearch);
             };
         };
     }elseif(!isnull($key)){
@@ -311,16 +313,16 @@ script(on_query)args($query)
                     $searchKey = $query.FirstSearch;
                 };
                 $list = everythingsearch($searchKey);
-                addresult("file browser", "select a file", "", "on_action_app", $query, 10010, true);
+                addresult("file browser", "select a file", "", "on_action_app", $query, "", 10000, true);
                 looplist($list){
-                    addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app", $query);
+                    addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app", $query, $searchKey);
                 };
             }elseif(@phase == 1){
                 $list = everythingsearch($query.FirstSearch);
-                addresult("file browser", "select a file", "", "on_action_app_proj", $query, 10010, true);
-                addresult("folder browser", "select a folder", "", "on_action_app_proj", $query, 10009, true);
+                addresult("file browser", "select a file", "", "on_action_app_proj", $query, "", 10000, true);
+                addresult("folder browser", "select a folder", "", "on_action_app_proj", $query, "", 9999, true);
                 looplist($list){
-                    addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app_proj", $query);
+                    addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app_proj", $query, $query.FirstSearch);
                 };
             };
         };
@@ -377,7 +379,7 @@ script(try_select_file_or_folder)args($title)
 {
     $p = "";
     if(@path=="file browser"){
-        $p = openfiledlg("select a file", "", "txt|*.txt;*.log|doc|*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx|exe|*.exe|all|*.*", 4);
+        $p = openfiledlg("select a file", "", "txt|*.txt;*.log;*.dsl;*.htm;*.html|code|*.cs;*.h;*.hpp;*.hxx;*.c;*.cc;*.cpp;*.cxx;*.m;*.mm;*.py;*.pl;*.js;*.lua|doc|*.doc;*.docx;*.xls;*.xlsx;*.ppt;*.pptx|exe|*.exe|all|*.*", 5);
     }
     elseif(@path=="folder browser"){
         $p = folderdlg("select a folder");
@@ -406,13 +408,13 @@ script(on_action_foldermenu)args($query, $result, $actionContext)
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
 
-    if(fileexist(@path)){
-        @path = getdirectoryname(@path);
-    };
-
     $p = try_select_file_or_folder(@path);
     if(!isnullorempty($p)){
         @path = $p;
+    };
+
+    if(fileexist(@path)){
+        @path = getdirectoryname(@path);
     };
 
     showcontextmenu(@path, $ctrl, $shift);
@@ -440,14 +442,15 @@ script(on_action_file)args($query, $result, $actionContext)
 script(on_action_cmd)args($query, $result, $actionContext)
 {
     @path = $result.Title;
-    if(fileexist(@path)){
-        @path = getdirectoryname(@path);
-    };
     @args = $query.SecondToEndSearch;
 
     $p = try_select_file_or_folder(@path);
     if(!isnullorempty($p)){
         @path = $p;
+    };
+    
+    if(fileexist(@path)){
+        @path = getdirectoryname(@path);
     };
 
     process("cmd", "/c start /d " + quotepath(@path) + " " + @args){

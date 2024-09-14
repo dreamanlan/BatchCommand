@@ -253,7 +253,7 @@ script(on_query)args($query)
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_menu", $query, "", 10000, true);
+        addresult("file browser", "select a file", "", "on_action_menu", $query, "", max_artificial_score(), true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query, $query.FirstSearch);
         };
@@ -261,29 +261,29 @@ script(on_query)args($query)
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
-        addresult("folder browser", "select a folder", "", "on_action_foldermenu", $query, "", 10000, true);
+        addresult("folder browser", "select a folder", "", "on_action_foldermenu", $query, "", max_artificial_score(), true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_foldermenu", $query, $query.FirstSearch);
         };
     }elseif($key=="file"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_file", $query, "", 10000, true);
-        addresult("folder browser", "select a folder", "", "on_action_file", $query, "", 9999, true);
+        addresult("file browser", "select a file", "", "on_action_file", $query, "", max_artificial_score(), true);
+        addresult("folder browser", "select a folder", "", "on_action_file", $query, "", max_artificial_score() - 1, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_file", $query, $query.FirstSearch);
         };
     }elseif($key=="cmd"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_cmd", $query, "", 10000, true);
+        addresult("file browser", "select a file", "", "on_action_cmd", $query, "", max_artificial_score(), true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_cmd", $query, $query.FirstSearch);
         };
     }elseif($key=="exe"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
-        addresult("file browser", "select a file", "", "on_action_exe", $query, "", 10000, true);
+        addresult("file browser", "select a file", "", "on_action_exe", $query, "", max_artificial_score(), true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_exe", $query, $query.FirstSearch);
         };
@@ -291,14 +291,14 @@ script(on_query)args($query)
         everythingsetdefault();
         if(@phase==0){
             $list = everythingsearch($query.FirstSearch);
-            addresult("file browser", "select a file", "", "on_action_start", $query, "", 10000, true);
+            addresult("file browser", "select a file", "", "on_action_start", $query, "", max_artificial_score(), true);
             looplist($list){
                 addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start", $query, $query.FirstSearch);
             };
         }elseif(@phase==1){
             $list = everythingsearch($query.SecondSearch);
-            addresult("file browser", "select a file", "", "on_action_start_proj", $query, "", 10000, true);
-            addresult("folder browser", "select a folder", "", "on_action_start_proj", $query, "", 9999, true);
+            addresult("file browser", "select a file", "", "on_action_start_proj", $query, "", max_artificial_score(), true);
+            addresult("folder browser", "select a folder", "", "on_action_start_proj", $query, "", max_artificial_score() - 1, true);
             looplist($list){
                 addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start_proj", $query, $query.SecondSearch);
             };
@@ -313,14 +313,14 @@ script(on_query)args($query)
                     $searchKey = $query.FirstSearch;
                 };
                 $list = everythingsearch($searchKey);
-                addresult("file browser", "select a file", "", "on_action_app", $query, "", 10000, true);
+                addresult("file browser", "select a file", "", "on_action_app", $query, "", max_artificial_score(), true);
                 looplist($list){
                     addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app", $query, $searchKey);
                 };
             }elseif(@phase == 1){
                 $list = everythingsearch($query.FirstSearch);
-                addresult("file browser", "select a file", "", "on_action_app_proj", $query, "", 10000, true);
-                addresult("folder browser", "select a folder", "", "on_action_app_proj", $query, "", 9999, true);
+                addresult("file browser", "select a file", "", "on_action_app_proj", $query, "", max_artificial_score(), true);
+                addresult("folder browser", "select a folder", "", "on_action_app_proj", $query, "", max_artificial_score() - 1, true);
                 looplist($list){
                     addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app_proj", $query, $query.FirstSearch);
                 };

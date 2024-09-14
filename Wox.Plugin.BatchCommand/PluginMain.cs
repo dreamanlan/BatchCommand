@@ -493,6 +493,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         FlushLog("InitScript");
 
         BatchScript.Init();
+        BatchScript.Register("max_artificial_score", "max_artificial_score()", new ExpressionFactoryHelper<MaxArtificialScoreExp>());
         BatchScript.Register("set_sync_execution_type", "set_sync_execution_type(type), 0--rendering 1--message 2--dispatcher", new ExpressionFactoryHelper<MainThreadSyncExecutionTypeExp>());
         BatchScript.Register("folderdlg", "folderdlg(desc[,int_spec_dir_enum])", new ExpressionFactoryHelper<FolderDialogExp>());
         BatchScript.Register("openfiledlg", "openfiledlg(title,init_dir,filter[,filter_index])", new ExpressionFactoryHelper<OpenFileDialogExp>());
@@ -638,9 +639,10 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     internal static bool s_NeedReload = false;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
     internal const string c_IcoPath = "Images\\dsl.png";
-    internal const int c_MaxArtificialResultNum = 1000;
-    internal const int c_MaxSearchResultNum = 9000;
-    internal const int c_DefMaxResults = 100;
+    internal const int c_MaxArtificialScore = 100000000;
+    internal const int c_MaxSearchScore = 10000;
+    internal const int c_MaxSearchResults = 1000;
+    internal const int c_DefMaxSearchResults = 100;
 
     private static int s_StartupThreadId = 0;
     private static Thread s_StartupThread = null;
@@ -818,6 +820,14 @@ public sealed class MessageWindow : Form
     private const int WAIT_TIME_OUT = 10000;
 }
 
+internal sealed class MaxArtificialScoreExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        BoxedValue r = Main.c_MaxArtificialScore;
+        return r;
+    }
+}
 internal sealed class MainThreadSyncExecutionTypeExp : SimpleExpressionBase
 {
     protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1122,7 +1132,7 @@ internal sealed class AddResultExp : SimpleExpressionBase
             Query query = operands[4].As<Query>();
             string search = operands[5].AsString;
 
-            int score = Main.c_MaxSearchResultNum + Main.c_MaxArtificialResultNum - Main.s_NewResults.Count;
+            int score = Main.c_MaxSearchScore - Main.s_NewResults.Count;
             if (operands.Count >= 7) {
                 score = operands[6].GetInt();
             }
@@ -1477,13 +1487,13 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
         if (operands.Count >= 1) {
             string str = operands[0].AsString;
             uint offset = 0;
-            uint maxCount = Main.c_DefMaxResults;
+            uint maxCount = Main.c_DefMaxSearchResults;
             if (operands.Count >= 2)
                 offset = operands[1].GetUInt();
             if (operands.Count >= 3)
                 maxCount = operands[2].GetUInt();
-            if (maxCount > Main.c_MaxSearchResultNum)
-                maxCount = Main.c_MaxSearchResultNum;
+            if (maxCount > Main.c_MaxSearchResults)
+                maxCount = Main.c_MaxSearchResults;
             if (null != str) {
                 if (EveryThingSDK.EverythingExists()) {
                     EveryThingSDK.Everything_SetSearchW(str);

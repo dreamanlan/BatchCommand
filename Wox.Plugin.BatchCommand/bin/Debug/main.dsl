@@ -252,6 +252,7 @@ script(on_query)args($query)
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
+        addresult("file browser", "select a file", "", "on_action_menu", $query, 10010, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_menu", $query);
         };
@@ -259,24 +260,28 @@ script(on_query)args($query)
         everythingsetdefault();
         everythingmatchpath(true);
         $list = everythingsearch($query.FirstSearch);
+        addresult("folder browser", "select a folder", "", "on_action_foldermenu", $query, 10010, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_foldermenu", $query);
         };
     }elseif($key=="file"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
+        addresult("file browser", "select a file", "", "on_action_file", $query, 10010, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_file", $query);
         };
     }elseif($key=="cmd"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
+        addresult("file browser", "select a file", "", "on_action_cmd", $query, 10010, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_cmd", $query);
         };
     }elseif($key=="exe"){
         everythingsetdefault();
         $list = everythingsearch($query.FirstSearch);
+        addresult("file browser", "select a file", "", "on_action_exe", $query, 10010, true);
         looplist($list){
             addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_exe", $query);
         };
@@ -284,11 +289,14 @@ script(on_query)args($query)
         everythingsetdefault();
         if(@phase==0){
             $list = everythingsearch($query.FirstSearch);
+            addresult("file browser", "select a file", "", "on_action_start", $query, 10010, true);
             looplist($list){
                 addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start", $query);
             };
         }elseif(@phase==1){
             $list = everythingsearch($query.SecondSearch);
+            addresult("file browser", "select a file", "", "on_action_start_proj", $query, 10010, true);
+            addresult("folder browser", "select a folder", "", "on_action_start_proj", $query, 10009, true);
             looplist($list){
                 addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_start_proj", $query);
             };
@@ -299,11 +307,14 @@ script(on_query)args($query)
             if(@phase == 0){
                 $cfglist = @cfg[$key];
                 $list = everythingsearch($cfglist[0]);
+                addresult("file browser", "select a file", "", "on_action_app", $query, 10010, true);
                 looplist($list){
                     addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app", $query);
                 };
             }elseif(@phase == 1){
                 $list = everythingsearch($query.FirstSearch);
+                addresult("file browser", "select a file", "", "on_action_app_proj", $query, 10010, true);
+                addresult("folder browser", "select a folder", "", "on_action_app_proj", $query, 10009, true);
                 looplist($list){
                     addresult($$[0], "" + $$[1] + " " + $$[2], "", "on_action_app_proj", $query);
                 };
@@ -358,11 +369,29 @@ script(on_action_reload)args($query, $result, $actionContext)
     return(1);
 };
 
+script(try_select_file_or_folder)args($title)
+{
+    $p = "";
+    if(@path=="file browser"){
+        $p = openfiledlg("select a file", "", "all|*.exe");
+    }
+    elseif(@path=="folder browser"){
+        $p = folderdlg("select a folder");
+    };
+    return($p);
+};
+
 script(on_action_menu)args($query, $result, $actionContext)
 {
     @path = $result.Title;
     $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
     $shift = $actionContext.SpecialKeyState.ShiftPressed;
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     showcontextmenu(@path, $ctrl, $shift);
     return(0);
 };
@@ -370,11 +399,18 @@ script(on_action_menu)args($query, $result, $actionContext)
 script(on_action_foldermenu)args($query, $result, $actionContext)
 {
     @path = $result.Title;
+    $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
+    $shift = $actionContext.SpecialKeyState.ShiftPressed;
+
     if(fileexist(@path)){
         @path = getdirectoryname(@path);
     };
-    $ctrl = $actionContext.SpecialKeyState.CtrlPressed;
-    $shift = $actionContext.SpecialKeyState.ShiftPressed;
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     showcontextmenu(@path, $ctrl, $shift);
     return(0);
 };
@@ -383,6 +419,12 @@ script(on_action_file)args($query, $result, $actionContext)
 {
     @path = $result.Title;
     @args = $query.SecondToEndSearch;
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     process(@path, @args){
         nowait(true);
         useshellexecute(true);
@@ -398,6 +440,12 @@ script(on_action_cmd)args($query, $result, $actionContext)
         @path = getdirectoryname(@path);
     };
     @args = $query.SecondToEndSearch;
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     process("cmd", "/c start /d " + quotepath(@path) + " " + @args){
         nowait(true);
         useshellexecute(true);
@@ -410,6 +458,12 @@ script(on_action_exe)args($query, $result, $actionContext)
 {
     @exe = $result.Title;
     @args = $query.SecondToEndSearch;
+
+    $p = try_select_file_or_folder(@exe);
+    if(!isnullorempty($p)){
+        @exe = $p;
+    };
+
     process(@exe, @args){
         nowait(true);
     };
@@ -420,6 +474,12 @@ script(on_action_start)args($query, $result, $actionContext)
 {
     @exe = $result.Title;
     @phase = 1;
+
+    $p = try_select_file_or_folder(@exe);
+    if(!isnullorempty($p)){
+        @exe = $p;
+    };
+
     changequery("start " + getfilename(@exe), false);
     return(0);
 };
@@ -427,6 +487,12 @@ script(on_action_start_proj)args($query, $result, $actionContext)
 {
     @path = $result.Title;
     @args = $query.SecondToEndSearch.Substring($query.SecondSearch.Length);
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     process(@exe, quotepath(@path) + @args){
         nowait(true);
     };
@@ -439,6 +505,12 @@ script(on_action_app)args($query, $result, $actionContext)
     $key = $query.ActionKeyword;
     @exe = $result.Title;
     @phase = 1;
+
+    $p = try_select_file_or_folder(@exe);
+    if(!isnullorempty($p)){
+        @exe = $p;
+    };
+
     changequery(@cfg[$key][1], true);
     return(0);
 };
@@ -447,9 +519,23 @@ script(on_action_app_proj)args($query, $result, $actionContext)
     $key = $query.ActionKeyword;
     @args = $query.SecondToEndSearch;
     @path = $result.Title;
+
+    $p = try_select_file_or_folder(@path);
+    if(!isnullorempty($p)){
+        @path = $p;
+    };
+
     //The Unity project can be filtered by subdirectory.
-    if($key=="unity" && @path.EndsWith("\\Assets")){
-        @path = getdirectoryname(@path);
+    if($key=="unity"){
+        if(@path.EndsWith("\\Assets")){
+            @path = getdirectoryname(@path);
+        }
+        else{
+            $ix = @path.IndexOf("\\Assets\\", 0);
+            if($ix>0){
+                @path = @path.Substring(0, $ix);
+            };
+        };
     };
     process(format(@cfg[$key][2], @exe), format(@cfg[$key][3], quotepath(@path)) + " " + @args){
         nowait(true);

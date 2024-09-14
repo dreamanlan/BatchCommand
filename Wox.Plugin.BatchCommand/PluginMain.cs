@@ -81,7 +81,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     {
         const int c_MaxQueueNum = 64;
         Debug.Assert(!IsScriptThread());
-        LogLine("query key:{0} first:{1} left:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
+        LogLine("query key:{0} first:{1} second to end:{2} from thread {3}", query.ActionKeyword, query.FirstSearch, query.SecondToEndSearch, Thread.CurrentThread.ManagedThreadId);
         if (EveryThingSDK.EverythingExists()) {
             TryFindEverything();
 
@@ -404,6 +404,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                 Dispatcher().Invoke(action, System.Windows.Threading.DispatcherPriority.Send);
                 break;
             default:
+                s_MainEvent.Reset();
                 s_MainActions.Enqueue(() => {
                     action();
                     s_MainEvent.Set();
@@ -637,6 +638,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     internal static bool s_NeedReload = false;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
     internal const string c_IcoPath = "Images\\dsl.png";
+    internal const int c_MaxResultNum = 10000;
+    internal const int c_DefMaxResults = 100;
 
     private static int s_StartupThreadId = 0;
     private static Thread s_StartupThread = null;
@@ -1117,10 +1120,31 @@ internal sealed class AddResultExp : SimpleExpressionBase
             string action = operands[3].AsString;
             Query query = operands[4].As<Query>();
 
+            int score = Main.c_MaxResultNum - Main.s_NewResults.Count;
+            if (operands.Count >= 6) {
+                score = operands[5].GetInt();
+            }
+            bool highlight = false;
+            if (operands.Count >= 7) {
+                highlight = operands[6].GetBool();
+            }
+
             if (string.IsNullOrEmpty(icoPath))
                 icoPath = Main.c_IcoPath;
 
-            var item = new Result { Title = title, SubTitle = subTitle, IcoPath = icoPath, ContextData = query };
+            var item = new Result { Title = title, SubTitle = subTitle, IcoPath = icoPath, ContextData = query, Score = score };
+            if (null != query) {
+                string key = query.ActionKeyword;
+                if (key != Query.GlobalPluginWildcardSign)
+                    item.ActionKeywordAssigned = key;
+            }
+            if (highlight) {
+                var list = new List<int>();
+                for(int i = 0; i < title.Length; ++i) {
+                    list.Add(i);
+                }
+                item.TitleHighlightData = list;
+            }
             item.Action = e => { return Main.OnAction(action, query, item, e); };
             Main.s_NewResults.Add(item);
         }
@@ -1431,11 +1455,13 @@ internal sealed class EverythingSearchExp : SimpleExpressionBase
         if (operands.Count >= 1) {
             string str = operands[0].AsString;
             uint offset = 0;
-            uint maxCount = 100;
+            uint maxCount = Main.c_DefMaxResults;
             if (operands.Count >= 2)
                 offset = operands[1].GetUInt();
             if (operands.Count >= 3)
                 maxCount = operands[2].GetUInt();
+            if (maxCount > Main.c_MaxResultNum)
+                maxCount = Main.c_MaxResultNum;
             if (null != str) {
                 if (EveryThingSDK.EverythingExists()) {
                     EveryThingSDK.Everything_SetSearchW(str);

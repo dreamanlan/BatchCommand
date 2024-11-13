@@ -2,9 +2,10 @@
   "profiles": {
     "adb_cfg": {
       "commandName": "Executable",
-      "executablePath": "F:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
-      "commandLineArgs": "main.dsl debug",
-      "workingDirectory": "C:\\sdk_full\\platform-tools"
+      "executablePath": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
+      "commandLineArgs": "-i",
+      "workingDirectory": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0",
+      "nativeDebugging": true
     }
   }
 }

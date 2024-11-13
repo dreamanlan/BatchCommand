@@ -1,0 +1,4 @@
+struct(TestStru)
+{
+	size : int64;
+};

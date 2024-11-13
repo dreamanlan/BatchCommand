@@ -1,0 +1,53 @@
+@ga : int = 123;
+@gb : int[3] = [3,5,1];
+@gc : int = 456;
+@gd : string = "this is a test";
+
+hook(Test)
+{
+	onenter{
+		$a : int = 12;
+		$b : int = 13 * 17;
+		$d : int = ptrget(addr($a), 4);
+		$e : int[4] = [1,$a,3,$b];
+		$c : int;
+		$e[1] = $d + $e[2] * $c;
+		if ($a==12) {
+			$c = $a * $b;
+		};
+		while($c!=0){
+			$c = $c - 1;
+		};
+		loopi($c,0,3,1){
+			$d = $d + 1;
+		};
+		loopd($c,8,0,-2){
+			$d = $d + 1;
+			break;
+		};
+		if($a == 12){
+			$d = $d + 1;
+		}
+		else{
+			$d = $d - 1;
+		};
+		$c = addr($e) + argv(0);
+		return 0;
+	};
+};
+
+hook(Test1)
+{
+	onenter{
+		$a:int = ptrget(argv(1),4);
+		$b:int = ptrget(argv(2),8);
+		$c:int = ptrget(argv(3),8);
+		printf("dbg a:%d b:%f c:%s\n",$a,$b,$c);
+		ptrset(argv(0),4,1);
+		return 0;
+	};
+	onexit{
+		printf("dbg time:%d\n",time());
+		ptrset(argv(0),4,2);
+	};
+};

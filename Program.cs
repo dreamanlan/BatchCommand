@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using System.Text;
 using ScriptableFramework;
+using DotnetStoryScript;
+using DotnetStoryScript.DslExpression;
 
 namespace BatchCommand
 {
@@ -14,7 +18,18 @@ namespace BatchCommand
             var vargs = BatchScript.NewCalculatorValueList();
             string scpTxt = string.Empty;
 
+            GlobalVariables.Instance.IsDevelopment = true;
+            GlobalVariables.Instance.IsDebug = true;
+            GlobalVariables.Instance.IsDevice = false;
+            LogSystem.OnOutput = (GameLogType type, string msg) => {
+                Console.WriteLine(msg);
+            };
+
             BatchScript.Init();
+            BatchScript.Register("compiledbgscp", "compiledbgscp(apiFile, struFile, scpFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
+            BatchScript.Register("uploaddbgscp", "dumpdbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
+            BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
+
             if (args.Length == 0) {
                 scpFile = "main.dsl";
                 if (File.Exists(scpFile)) {
@@ -123,6 +138,73 @@ namespace BatchCommand
                     }
                 }
             }
+        }
+    }
+
+    internal sealed class CompileDbgScpExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            string apiFile = "api.txt";
+            string struFile = "struct.txt";
+            string scpFile = "hook.txt";
+            if (operands.Count >= 3) {
+                apiFile = operands[0].AsString;
+                struFile = operands[1].AsString;
+                scpFile = operands[2].AsString;
+            }
+            if (!string.IsNullOrEmpty(apiFile) && !string.IsNullOrEmpty(struFile) && !string.IsNullOrEmpty(scpFile)) {
+                string txt = File.ReadAllText(apiFile);
+                string err = CppDebugScript.DebugScriptCompiler.Instance.LoadApiDefine(txt);
+                if (string.IsNullOrEmpty(err)) {
+                    LogSystem.Warn("Load API from {0} finished.", apiFile);
+                }
+                else {
+                    LogSystem.Warn("Load API from {0} failed:{1}", apiFile, err);
+                }
+
+                txt = File.ReadAllText(struFile);
+                err = CppDebugScript.DebugScriptCompiler.Instance.LoadStructDefine(txt);
+                if (string.IsNullOrEmpty(err)) {
+                    LogSystem.Warn("Load Struct from {0} finished.", struFile);
+                }
+                else {
+                    LogSystem.Warn("Load Struct from {0} failed:{1}", struFile, err);
+                }
+
+                txt = File.ReadAllText(scpFile);
+                if (CppDebugScript.DebugScriptCompiler.Instance.Compile(txt, out err)) {
+                    LogSystem.Warn("Compile {0} finished.", scpFile);
+                    var sb = new StringBuilder();
+                    CppDebugScript.DebugScriptCompiler.Instance.DumpAsm(sb);
+                    LogSystem.Warn("[ASM]:\n{0}", sb.ToString());
+                }
+                else {
+                    LogSystem.Warn("Compile DebugScript from {0} faild:{1}", scpFile, err);
+                }
+            }
+            return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class UploadDbgScpExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            CppDebugScript.DebugScriptCompiler.Instance.UploadToCppVM();
+            return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class TestDbgScpExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            int a = CppDebugScript.CppDbgScpInterface.Test1(123, 123.456, "test1");
+            LogSystem.Warn("retval a:{0}", a);
+            int b = CppDebugScript.CppDbgScpInterface.Test2(1234, 1234.456, "test2");
+            LogSystem.Warn("retval b:{0}", a);
+            CppDebugScript.CppDbgScpInterface.Test3(12345, 12345.456, "test3");
+            CppDebugScript.CppDbgScpInterface.Test4(123456, 123456.456, "test4");
+            return BoxedValue.NullObject;
         }
     }
 }

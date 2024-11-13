@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.ComponentModel.DataAnnotations;
 using ScriptableFramework;
+using DotnetStoryScript.CommonFunctions;
 
 namespace CppDebugScript
 {
@@ -172,7 +173,7 @@ namespace CppDebugScript
             ++indent;
             foreach(var pair in m_ConstInfos) {
                 var info = pair.Value;
-                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), info.StrValue, info.Type, info.Index);
+                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), info.StrValue, info.Type, c_max_variable_table_size - 1 - info.Index);
             }
             --indent;
             txt.AppendLine();
@@ -240,7 +241,8 @@ namespace CppDebugScript
         {
             CppDbgScpInterface.CppDbgScp_ResetVM();
 
-            var consts = new SortedDictionary<int, ConstInfo>();
+            var comparer = new ReverseComparer<int>(Comparer<int>.Default);
+            var consts = new SortedDictionary<int, ConstInfo>(comparer);
             CollectConstInfo("int", consts);
             foreach(var pair in consts) {
                 var info = pair.Value;
@@ -475,8 +477,8 @@ namespace CppDebugScript
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
-            txt.Append("{0}{1}: {2} = CALL", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index));
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = CALL", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
             for (int i = 0; i < argNum + 1; i += 2) {
                 ++pos;
                 int operand = codes[pos];
@@ -488,8 +490,8 @@ namespace CppDebugScript
                     }
                     else {
                         txt.Append(", ");
-                        DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-                        txt.Append(BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+                        DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                        txt.Append(BuildVar(isGlobal1, type1, index1));
                     }
                 }
                 if (i + 1 <= argNum) {
@@ -497,8 +499,8 @@ namespace CppDebugScript
                         txt.Append(' ');
                     else
                         txt.Append(", ");
-                    DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-                    txt.Append(BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
                 }
             }
             txt.AppendLine();
@@ -507,8 +509,8 @@ namespace CppDebugScript
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
-            txt.AppendLine("{0}{1}: RET {2}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index));
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: RET {2}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
         }
         private void DumpJmp(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
@@ -524,134 +526,134 @@ namespace CppDebugScript
             DecodeOpcode(opcode, out var ins, out var offset);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: JMPIFNOT {2}, {3}", Literal.GetIndentString(indent), ix, offset, BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: JMPIFNOT {2}, {3}", Literal.GetIndentString(indent), ix, offset, BuildVar(isGlobal1, type1, index1));
         }
         private void DumpInc(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
-            txt.AppendLine("{0}{1}: {2} = INC {2}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index));
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: {2} = INC {2}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
         }
         private void DumpIncVal(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: {2} = INCV {2} {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = INCV {2} {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
         private void DumpMov(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: MOV {2}, {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: MOV {2}, {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
         private void DumpArrGet(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: {2} = ARRGET {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1), BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+            txt.AppendLine("{0}{1}: {2} = ARRGET {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpArrSet(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: ARRSET {2}, {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1), BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+            txt.AppendLine("{0}{1}: ARRSET {2}, {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpUnary(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: {2} = {3} {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), op, BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = {3} {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op, BuildVar(isGlobal1, type1, index1));
         }
         private void DumpBinary(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: {2} = {3} {4}, {5}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), op, BuildVar(isGlobal1, isConstOrTemp1, type1, index1), BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+            txt.AppendLine("{0}{1}: {2} = {3} {4}, {5}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op, BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpArgc(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
-            txt.AppendLine("{0}{1}: {2} = ARGC", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index));
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: {2} = ARGC", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
         }
         private void DumpArgv(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: {2} = ARGV {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = ARGV {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
         private void DumpAddr(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: {2} = ADDR {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = ADDR {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
         private void DumpPtrGet(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: {2} = PTRGET {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1), BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+            txt.AppendLine("{0}{1}: {2} = PTRGET {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpPtrSet(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             ++pos;
             int operand = codes[pos];
-            DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-            DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: PTRSET {2}, {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index), BuildVar(isGlobal1, isConstOrTemp1, type1, index1), BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+            txt.AppendLine("{0}{1}: PTRSET {2}, {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpJaggedPtr(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
-            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var isConstOrTemp, out var type, out var index);
-            txt.Append("{0}{1}: {2} = JPTR", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, isConstOrTemp, type, index));
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = JPTR", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
             for (int i = 0; i < argNum + 1; i += 2) {
                 ++pos;
                 int operand = codes[pos];
@@ -662,22 +664,23 @@ namespace CppDebugScript
                     else {
                         txt.Append(", ");
                     }
-                    DecodeOperand1(operand, out var isGlobal1, out var isConstOrTemp1, out var type1, out var index1);
-                    txt.Append(BuildVar(isGlobal1, isConstOrTemp1, type1, index1));
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
                 }
                 if (i + 1 <= argNum) {
                     txt.Append(", ");
-                    DecodeOperand2(operand, out var isGlobal2, out var isConstOrTemp2, out var type2, out var index2);
-                    txt.Append(BuildVar(isGlobal2, isConstOrTemp2, type2, index2));
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
                 }
             }
             txt.AppendLine();
         }
-        private string BuildVar(bool isGlobal, bool isConstOrTemp, string type, int index)
+        private string BuildVar(bool isGlobal, string type, int index)
         {
             if (string.IsNullOrEmpty(type))
                 return string.Empty;
-            string name = isConstOrTemp ? (isGlobal ? "Const" : "Temp") : (isGlobal ? "Global" : "Local");
+            bool isConstOrTemp = index >= c_max_variable_table_size / 2;
+            string name = isGlobal ? (isConstOrTemp ? "Const" : "Global") : (isConstOrTemp ? "Temp" : "Local");
 
             string val = string.Empty;
             if (isGlobal && isConstOrTemp) {
@@ -688,7 +691,8 @@ namespace CppDebugScript
                     }
                 }
             }
-            return string.Format("{0}[{1}]:{2}({3})", name, index, val, type);
+            int cindex = isConstOrTemp ? c_max_variable_table_size - 1 - index : index;
+            return string.Format("{0}[{1}]:{2}({3})", name, cindex, val, type);
         }
 
         private void CompileToplevelSyntax(Dsl.ISyntaxComponent comp, StringBuilder err)
@@ -866,11 +870,11 @@ namespace CppDebugScript
                                     jmpIfNot = codes.Count;
                                     codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
                                     if (null == info.ResultValues) {
-                                        codes.Add(EncodeOperand1(info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                        codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
                                     }
                                     else {
-                                        int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                        codes.Add(EncodeConstOperand1(info.ResultType, rindex));
+                                        int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                        codes.Add(EncodeConstOperand1(info.ResultType, index));
                                     }
                                     //block
                                     PushBlock(true, false);
@@ -936,11 +940,11 @@ namespace CppDebugScript
                             int jmpIfNot = codes.Count;
                             codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
                             if (null == info.ResultValues) {
-                                codes.Add(EncodeOperand1(info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
                             }
                             else {
-                                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                codes.Add(EncodeConstOperand1(info.ResultType, rindex));
+                                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                codes.Add(EncodeConstOperand1(info.ResultType, index));
                             }
                             //block
                             PushBlock(false, true);
@@ -996,13 +1000,13 @@ namespace CppDebugScript
                                 var info2 = new SemanticInfo { TargetType = "int" };
                                 CompileExpression(beginExp, codes, err, ref info2);
                                 //gen assignment
-                                codes.Add(EncodeOpcode(InsEnum.MOV, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                codes.Add(EncodeOpcode(InsEnum.MOV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 if (null == info2.ResultValues) {
-                                    codes.Add(EncodeOperand1(info2.IsGlobal, info2.IsConstOrTemp, info2.ResultType, info2.ResultIndex));
+                                    codes.Add(EncodeOperand1(info2.IsGlobal, info2.ResultType, info2.ResultIndex));
                                 }
                                 else {
-                                    int rindex = AddConst(info2.ResultType, info2.ResultValues[0]);
-                                    codes.Add(EncodeConstOperand1(info2.ResultType, rindex));
+                                    int index = AddConst(info2.ResultType, info2.ResultValues[0]);
+                                    codes.Add(EncodeConstOperand1(info2.ResultType, index));
                                 }
                                 int loopContinue = codes.Count;
                                 var info3 = new SemanticInfo { TargetType = "int" };
@@ -1010,23 +1014,23 @@ namespace CppDebugScript
                                 //gen less equal than/great equal than
                                 int tempIx = lexicalInfo.AllocTempInt();
                                 if (id == "loopd")
-                                    codes.Add(EncodeOpcode(InsEnum.GE, false, true, "int", tempIx));
+                                    codes.Add(EncodeOpcode(InsEnum.GE, false, "int", tempIx));
                                 else
-                                    codes.Add(EncodeOpcode(InsEnum.LE, false, true, "int", tempIx));
-                                int opd1 = EncodeOperand1(info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex);
+                                    codes.Add(EncodeOpcode(InsEnum.LE, false, "int", tempIx));
+                                int opd1 = EncodeOperand1(info1.IsGlobal, info1.ResultType, info1.ResultIndex);
                                 int opd2;
                                 if (null == info3.ResultValues) {
-                                    opd2 = EncodeOperand2(info3.IsGlobal, info3.IsConstOrTemp, info3.ResultType, info3.ResultIndex);
+                                    opd2 = EncodeOperand2(info3.IsGlobal, info3.ResultType, info3.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(info3.ResultType, info3.ResultValues[0]);
-                                    opd2 = EncodeConstOperand2(info3.ResultType, rindex);
+                                    int index = AddConst(info3.ResultType, info3.ResultValues[0]);
+                                    opd2 = EncodeConstOperand2(info3.ResultType, index);
                                 }
                                 codes.Add(opd1 | opd2);
                                 //gen jmpifnot
                                 int jmpIfNot = codes.Count;
                                 codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                                codes.Add(EncodeOperand1(false, true, "int", tempIx));
+                                codes.Add(EncodeOperand1(false, "int", tempIx));
 
                                 lexicalInfo.ResetTempVars();
 
@@ -1038,7 +1042,7 @@ namespace CppDebugScript
 
                                 //gen inc/incv
                                 if (incOne) {
-                                    codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                    codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 }
                                 else {
                                     var info4 = new SemanticInfo { TargetType = "int" };
@@ -1046,17 +1050,17 @@ namespace CppDebugScript
                                     lexicalInfo.ResetTempVars();
 
                                     if (null == info4.ResultValues) {
-                                        codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info2.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
-                                        codes.Add(EncodeOperand1(info4.IsGlobal, info4.IsConstOrTemp, info4.ResultType, info4.ResultIndex));
+                                        codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
+                                        codes.Add(EncodeOperand1(info4.IsGlobal, info4.ResultType, info4.ResultIndex));
                                     }
                                     else {
                                         if (info4.ResultValues[0] == "1") {
-                                            codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                            codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                         }
                                         else {
-                                            codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
-                                            int rindex = AddConst(info4.ResultType, info4.ResultValues[0]);
-                                            codes.Add(EncodeConstOperand1(info4.ResultType, rindex));
+                                            codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
+                                            int index = AddConst(info4.ResultType, info4.ResultValues[0]);
+                                            codes.Add(EncodeConstOperand1(info4.ResultType, index));
                                         }
                                     }
                                 }
@@ -1186,11 +1190,11 @@ namespace CppDebugScript
                             int jmpIfNot = codes.Count;
                             codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
                             if (null == info.ResultValues) {
-                                codes.Add(EncodeOperand1(info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
                             }
                             else {
-                                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                codes.Add(EncodeConstOperand1(info.ResultType, rindex));
+                                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                codes.Add(EncodeConstOperand1(info.ResultType, index));
                             }
                             //block
                             PushBlock(true, false);
@@ -1222,11 +1226,11 @@ namespace CppDebugScript
                             int jmpIfNot = codes.Count;
                             codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
                             if (null == info.ResultValues) {
-                                codes.Add(EncodeOperand1(info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
                             }
                             else {
-                                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                codes.Add(EncodeConstOperand1(info.ResultType, rindex));
+                                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                codes.Add(EncodeConstOperand1(info.ResultType, index));
                             }
                             //block
                             PushBlock(false, true);
@@ -1277,13 +1281,13 @@ namespace CppDebugScript
                                 var info2 = new SemanticInfo { TargetType = "int" };
                                 CompileExpression(beginExp, codes, err, ref info2);
                                 //gen assignment
-                                codes.Add(EncodeOpcode(InsEnum.MOV, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                codes.Add(EncodeOpcode(InsEnum.MOV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 if (null == info2.ResultValues) {
-                                    codes.Add(EncodeOperand1(info2.IsGlobal, info2.IsConstOrTemp, info2.ResultType, info2.ResultIndex));
+                                    codes.Add(EncodeOperand1(info2.IsGlobal, info2.ResultType, info2.ResultIndex));
                                 }
                                 else {
-                                    int rindex = AddConst(info2.ResultType, info2.ResultValues[0]);
-                                    codes.Add(EncodeConstOperand1(info2.ResultType, rindex));
+                                    int index = AddConst(info2.ResultType, info2.ResultValues[0]);
+                                    codes.Add(EncodeConstOperand1(info2.ResultType, index));
                                 }
                                 int loopContinue = codes.Count;
                                 var info3 = new SemanticInfo { TargetType = "int" };
@@ -1291,23 +1295,23 @@ namespace CppDebugScript
                                 //gen less equal than/great equal than
                                 int tempIx = lexicalInfo.AllocTempInt();
                                 if (id == "loopd")
-                                    codes.Add(EncodeOpcode(InsEnum.GE, false, true, "int", tempIx));
+                                    codes.Add(EncodeOpcode(InsEnum.GE, false, "int", tempIx));
                                 else
-                                    codes.Add(EncodeOpcode(InsEnum.LE, false, true, "int", tempIx));
-                                int opd1 = EncodeOperand1(info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex);
+                                    codes.Add(EncodeOpcode(InsEnum.LE, false, "int", tempIx));
+                                int opd1 = EncodeOperand1(info1.IsGlobal, info1.ResultType, info1.ResultIndex);
                                 int opd2;
                                 if (null == info3.ResultValues) {
-                                    opd2 = EncodeOperand2(info3.IsGlobal, info3.IsConstOrTemp, info3.ResultType, info3.ResultIndex);
+                                    opd2 = EncodeOperand2(info3.IsGlobal, info3.ResultType, info3.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(info3.ResultType, info3.ResultValues[0]);
-                                    opd2 = EncodeConstOperand2(info3.ResultType, rindex);
+                                    int index = AddConst(info3.ResultType, info3.ResultValues[0]);
+                                    opd2 = EncodeConstOperand2(info3.ResultType, index);
                                 }
                                 codes.Add(opd1 | opd2);
                                 //gen jmpifnot
                                 int jmpIfNot = codes.Count;
                                 codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                                codes.Add(EncodeOperand1(false, true, "int", tempIx));
+                                codes.Add(EncodeOperand1(false, "int", tempIx));
 
                                 lexicalInfo.ResetTempVars();
 
@@ -1321,7 +1325,7 @@ namespace CppDebugScript
 
                                 //gen inc/incv
                                 if (incOne) {
-                                    codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                    codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 }
                                 else {
                                     var info4 = new SemanticInfo { TargetType = "int" };
@@ -1329,17 +1333,17 @@ namespace CppDebugScript
                                     lexicalInfo.ResetTempVars();
 
                                     if (null == info4.ResultValues) {
-                                        codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
-                                        codes.Add(EncodeOperand1(info4.IsGlobal, info4.IsConstOrTemp, info4.ResultType, info4.ResultIndex));
+                                        codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
+                                        codes.Add(EncodeOperand1(info4.IsGlobal, info4.ResultType, info4.ResultIndex));
                                     }
                                     else {
                                         if (info4.ResultValues[0] == "1") {
-                                            codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
+                                            codes.Add(EncodeOpcode(InsEnum.INC, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                         }
                                         else {
-                                            codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex));
-                                            int rindex = AddConst(info4.ResultType, info4.ResultValues[0]);
-                                            codes.Add(EncodeConstOperand1(info4.ResultType, rindex));
+                                            codes.Add(EncodeOpcode(InsEnum.INCV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
+                                            int index = AddConst(info4.ResultType, info4.ResultValues[0]);
+                                            codes.Add(EncodeConstOperand1(info4.ResultType, index));
                                         }
                                     }
                                 }
@@ -1375,11 +1379,11 @@ namespace CppDebugScript
                             CurBlock().ResetTempVars();
                             //gen ret
                             if (null == info.ResultValues) {
-                                codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.ResultType, info.ResultIndex));
                             }
                             else {
-                                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                codes.Add(EncodeOpcode(InsEnum.RET, true, true, info.ResultType, rindex));
+                                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                codes.Add(EncodeOpcode(InsEnum.RET, true, info.ResultType, index));
                             }
                         }
                         else {
@@ -1396,11 +1400,11 @@ namespace CppDebugScript
                             CurBlock().ResetTempVars();
                             //gen ret
                             if (null == info.ResultValues) {
-                                codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex));
+                                codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.ResultType, info.ResultIndex));
                             }
                             else {
-                                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                                codes.Add(EncodeOpcode(InsEnum.RET, true, true, info.ResultType, rindex));
+                                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                                codes.Add(EncodeOpcode(InsEnum.RET, true, info.ResultType, index));
                             }
                         }
                         else {
@@ -1497,7 +1501,6 @@ namespace CppDebugScript
                                     TryGenArrMov(vinfo.IsGlobal, false, vinfo.Type, vinfo.Index + i, codes, sinfo, err, p);
                                 }
                                 semanticInfo.IsGlobal = vinfo.IsGlobal;
-                                semanticInfo.IsConstOrTemp = false;
                                 semanticInfo.ResultType = vinfo.Type;
                                 semanticInfo.ResultCount = vinfo.Count;
                                 semanticInfo.ResultIndex = vinfo.Index;
@@ -1514,7 +1517,6 @@ namespace CppDebugScript
                                 TryGenArrMov(false, true, "int", tmpIndex + i, codes, sinfo, err, p);
                             }
                             semanticInfo.IsGlobal = false;
-                            semanticInfo.IsConstOrTemp = true;
                             semanticInfo.ResultType = type;
                             semanticInfo.ResultCount = semanticInfo.TargetCount;
                             semanticInfo.ResultIndex = tmpIndex;
@@ -1780,13 +1782,12 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
-                    int rindex = AddConst(semanticInfo.ResultType, val);
-                    int opd = EncodeConstOperand1(semanticInfo.ResultType, rindex);
+                    codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    int index = AddConst(semanticInfo.ResultType, val);
+                    int opd = EncodeConstOperand1(semanticInfo.ResultType, index);
                     codes.Add(opd);
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -1819,20 +1820,19 @@ namespace CppDebugScript
                         }
                         for (int i = 0; i < vinfo.Count && i < vinfo2.Count; ++i) {
                             //gen write result
-                            codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index + i));
-                            int opd = EncodeOperand1(vinfo2.IsGlobal, false, vinfo2.Type, vinfo2.Index + i);
+                            codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
+                            int opd = EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index + i);
                             codes.Add(opd);
                         }
                     }
                     else {
                         //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
-                        int opd = EncodeOperand1(vinfo2.IsGlobal, false, vinfo2.Type, vinfo2.Index);
+                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        int opd = EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index);
                         codes.Add(opd);
                     }
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -1848,7 +1848,6 @@ namespace CppDebugScript
                 }
 
                 semanticInfo.IsGlobal = vinfo.IsGlobal;
-                semanticInfo.IsConstOrTemp = false;
                 semanticInfo.ResultType = vinfo.Type;
                 semanticInfo.ResultCount = vinfo.Count;
                 semanticInfo.ResultIndex = vinfo.Index;
@@ -1859,13 +1858,13 @@ namespace CppDebugScript
         {
             //gen mov
             int opd1;
-            codes.Add(EncodeOpcode(InsEnum.MOV, isGlobal, isConstOrTemp, type, vindex));
+            codes.Add(EncodeOpcode(InsEnum.MOV, isGlobal, type, vindex));
             if (null == info.ResultValues) {
-                opd1 = EncodeOperand1(info.IsGlobal, info.IsConstOrTemp, info.ResultType, info.ResultIndex);
+                opd1 = EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex);
             }
             else {
-                int rindex = AddConst(info.ResultType, info.ResultValues[0]);
-                opd1 = EncodeConstOperand1(info.ResultType, rindex);
+                int index = AddConst(info.ResultType, info.ResultValues[0]);
+                opd1 = EncodeConstOperand1(info.ResultType, index);
             }
             codes.Add(opd1);
         }
@@ -1889,21 +1888,20 @@ namespace CppDebugScript
                         return;
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.ARRGET, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
-                    int opd1 = EncodeOperand1(vinfo2.IsGlobal, false, vinfo2.Type, vinfo2.Index);
+                    codes.Add(EncodeOpcode(InsEnum.ARRGET, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    int opd1 = EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index);
                     var opd2Info = opds[0];
                     int opd2;
                     if (null == opd2Info.ResultValues) {
-                        opd2 = EncodeOperand2(opd2Info.IsGlobal, opd2Info.IsConstOrTemp, opd2Info.ResultType, opd2Info.ResultIndex);
+                        opd2 = EncodeOperand2(opd2Info.IsGlobal, opd2Info.ResultType, opd2Info.ResultIndex);
                     }
                     else {
-                        int rindex = AddConst(opd2Info.ResultType, opd2Info.ResultValues[0]);
-                        opd2 = EncodeConstOperand2(opd2Info.ResultType, rindex);
+                        int index = AddConst(opd2Info.ResultType, opd2Info.ResultValues[0]);
+                        opd2 = EncodeConstOperand2(opd2Info.ResultType, index);
                     }
                     codes.Add(opd1 | opd2);
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -1932,22 +1930,21 @@ namespace CppDebugScript
                     }
                     if (tmpIndex >= 0) {
                         semanticInfo.IsGlobal = false;
-                        semanticInfo.IsConstOrTemp = true;
                         semanticInfo.ResultType = vinfo.Type;
                         semanticInfo.ResultCount = 0;
                         semanticInfo.ResultIndex = tmpIndex;
                         semanticInfo.ResultValues = null;
                         //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.ARRGET, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
-                        int opd1 = EncodeOperand1(vinfo.IsGlobal, false, vinfo.Type, vinfo.Index);
+                        codes.Add(EncodeOpcode(InsEnum.ARRGET, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                        int opd1 = EncodeOperand1(vinfo.IsGlobal, vinfo.Type, vinfo.Index);
                         var opd2Info = opds[0];
                         int opd2;
                         if (null == opd2Info.ResultValues) {
-                            opd2 = EncodeOperand2(opd2Info.IsGlobal, opd2Info.IsConstOrTemp, opd2Info.ResultType, opd2Info.ResultIndex);
+                            opd2 = EncodeOperand2(opd2Info.IsGlobal, opd2Info.ResultType, opd2Info.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opd2Info.ResultType, opd2Info.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opd2Info.ResultType, rindex);
+                            int index = AddConst(opd2Info.ResultType, opd2Info.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opd2Info.ResultType, index);
                         }
                         codes.Add(opd1 | opd2);
                     }
@@ -1958,20 +1955,20 @@ namespace CppDebugScript
         {
             //gen arrset
             int opd1, opd2;
-            codes.Add(EncodeOpcode(InsEnum.ARRSET, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+            codes.Add(EncodeOpcode(InsEnum.ARRSET, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
             if (null == info1.ResultValues) {
-                opd1 = EncodeOperand1(info1.IsGlobal, info1.IsConstOrTemp, info1.ResultType, info1.ResultIndex);
+                opd1 = EncodeOperand1(info1.IsGlobal, info1.ResultType, info1.ResultIndex);
             }
             else {
-                int rindex = AddConst(info1.ResultType, info1.ResultValues[0]);
-                opd1 = EncodeConstOperand1(info1.ResultType, rindex);
+                int index = AddConst(info1.ResultType, info1.ResultValues[0]);
+                opd1 = EncodeConstOperand1(info1.ResultType, index);
             }
             if (null == info2.ResultValues) {
-                opd2 = EncodeOperand2(info2.IsGlobal, info2.IsConstOrTemp, info2.ResultType, info2.ResultIndex);
+                opd2 = EncodeOperand2(info2.IsGlobal, info2.ResultType, info2.ResultIndex);
             }
             else {
-                int rindex = AddConst(info2.ResultType, info2.ResultValues[0]);
-                opd2 = EncodeConstOperand2(info2.ResultType, rindex);
+                int index = AddConst(info2.ResultType, info2.ResultValues[0]);
+                opd2 = EncodeConstOperand2(info2.ResultType, index);
             }
             codes.Add(opd1 | opd2);
         }
@@ -1991,13 +1988,12 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                         //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
-                        int rindex = AddConst(semanticInfo.ResultType, semanticInfo.ResultValues[0]);
-                        int opd = EncodeConstOperand1(semanticInfo.ResultType, rindex);
+                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        int index = AddConst(semanticInfo.ResultType, semanticInfo.ResultValues[0]);
+                        int opd = EncodeConstOperand1(semanticInfo.ResultType, index);
                         codes.Add(opd);
 
                         semanticInfo.IsGlobal = vinfo.IsGlobal;
-                        semanticInfo.IsConstOrTemp = false;
                         semanticInfo.ResultType = vinfo.Type;
                         semanticInfo.ResultCount = vinfo.Count;
                         semanticInfo.ResultIndex = vinfo.Index;
@@ -2015,33 +2011,32 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                         //gen write result
-                        codes.Add(EncodeOpcode(op, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(op, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                         int opd1 = 0;
                         if (opds.Count > 0) {
                             var opdInfo = opds[0];
                             if (null == opdInfo.ResultValues) {
-                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                             }
                         }
                         int opd2 = 0;
                         if (opds.Count > 1) {
                             var opdInfo = opds[1];
                             if (null == opdInfo.ResultValues) {
-                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                             }
                         }
                         codes.Add(opd1 | opd2);
 
                         semanticInfo.IsGlobal = vinfo.IsGlobal;
-                        semanticInfo.IsConstOrTemp = false;
                         semanticInfo.ResultType = vinfo.Type;
                         semanticInfo.ResultCount = vinfo.Count;
                         semanticInfo.ResultIndex = vinfo.Index;
@@ -2064,32 +2059,31 @@ namespace CppDebugScript
                         }
                         if (tmpIndex >= 0) {
                             semanticInfo.IsGlobal = false;
-                            semanticInfo.IsConstOrTemp = true;
                             semanticInfo.ResultCount = 0;
                             semanticInfo.ResultIndex = tmpIndex;
                             semanticInfo.ResultValues = null;
-                            codes.Add(EncodeOpcode(op, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            codes.Add(EncodeOpcode(op, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                             int opd1 = 0;
                             if (opds.Count > 0) {
                                 var opdInfo = opds[0];
                                 if (null == opdInfo.ResultValues) {
-                                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                    opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                    opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                                 }
                             }
                             int opd2 = 0;
                             if (opds.Count > 1) {
                                 var opdInfo = opds[1];
                                 if (null == opdInfo.ResultValues) {
-                                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                    opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                    opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                                 }
                             }
                             codes.Add(opd1 | opd2);
@@ -2112,18 +2106,18 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen api call
-                    codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                     int opd1 = 0;
                     int opd2 = 0;
                     opd1 = EncodeOperand1(api.ApiId);
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
@@ -2132,29 +2126,28 @@ namespace CppDebugScript
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
                             if (null == opdInfo.ResultValues) {
-                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                             }
                         }
                         opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
                             if (null == opdInfo.ResultValues) {
-                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                             }
                         }
                         codes.Add(opd1 | opd2);
                     }
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2177,24 +2170,23 @@ namespace CppDebugScript
                     }
                     if (tmpIndex >= 0) {
                         semanticInfo.IsGlobal = false;
-                        semanticInfo.IsConstOrTemp = true;
                         semanticInfo.ResultType = api.Type;
                         semanticInfo.ResultCount = 0;
                         semanticInfo.ResultIndex = tmpIndex;
                         semanticInfo.ResultValues = null;
                         //gen api call
-                        codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                        codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                         int opd1 = 0;
                         int opd2 = 0;
                         opd1 = EncodeOperand1(api.ApiId);
                         if (opds.Count > 0) {
                             var opdInfo = opds[0];
                             if (null == opdInfo.ResultValues) {
-                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                             }
                         }
                         codes.Add(opd1 | opd2);
@@ -2203,22 +2195,22 @@ namespace CppDebugScript
                             if (i < opds.Count) {
                                 var opdInfo = opds[i];
                                 if (null == opdInfo.ResultValues) {
-                                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                    opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                    opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                                 }
                             }
                             opd2 = 0;
                             if (i + 1 < opds.Count) {
                                 var opdInfo = opds[i + 1];
                                 if (null == opdInfo.ResultValues) {
-                                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                                 }
                                 else {
-                                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                    opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                    opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                                 }
                             }
                             codes.Add(opd1 | opd2);
@@ -2243,10 +2235,9 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.ARGC, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.ARGC, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2257,12 +2248,11 @@ namespace CppDebugScript
                 int tmpIndex = CurBlock().AllocTempInt();
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.IsConstOrTemp = true;
                     semanticInfo.ResultType = "int";
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.ARGC, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.ARGC, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                 }
             }
         }
@@ -2282,33 +2272,32 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.ARGV, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.ARGV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2319,33 +2308,32 @@ namespace CppDebugScript
                 int tmpIndex = CurBlock().AllocTempInt();
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.IsConstOrTemp = true;
                     semanticInfo.ResultType = "int";
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.ARGV, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.ARGV, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
@@ -2369,33 +2357,32 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.ADDR, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.ADDR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2406,33 +2393,32 @@ namespace CppDebugScript
                 int tmpIndex = CurBlock().AllocTempInt();
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.IsConstOrTemp = true;
                     semanticInfo.ResultType = "int";
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
@@ -2456,33 +2442,32 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.PTRGET, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.PTRGET, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2493,33 +2478,32 @@ namespace CppDebugScript
                 int tmpIndex = CurBlock().AllocTempInt();
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.IsConstOrTemp = true;
                     semanticInfo.ResultType = "int";
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
                         if (null == opdInfo.ResultValues) {
-                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                         }
                     }
                     int opd2 = 0;
                     if (opds.Count > 1) {
                         var opdInfo = opds[1];
                         if (null == opdInfo.ResultValues) {
-                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         else {
-                            int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                            opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                         }
                     }
                     codes.Add(opd1 | opd2);
@@ -2538,11 +2522,11 @@ namespace CppDebugScript
                 int opcode = 0;
                 var opdInfo = opds[0];
                 if (null == opdInfo.ResultValues) {
-                    opcode = EncodeOpcode(InsEnum.PTRSET, opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                    opcode = EncodeOpcode(InsEnum.PTRSET, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                 }
                 else {
-                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                    opcode = EncodeOpcode(InsEnum.PTRSET, true, true, opdInfo.ResultType, rindex);
+                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                    opcode = EncodeOpcode(InsEnum.PTRSET, true, opdInfo.ResultType, index);
                 }
                 codes.Add(opcode);
             }
@@ -2550,22 +2534,22 @@ namespace CppDebugScript
             if (opds.Count > 1) {
                 var opdInfo = opds[1];
                 if (null == opdInfo.ResultValues) {
-                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                    opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                 }
                 else {
-                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                    opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                    opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                 }
             }
             int opd2 = 0;
             if (opds.Count > 2) {
                 var opdInfo = opds[2];
                 if (null == opdInfo.ResultValues) {
-                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                    opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                 }
                 else {
-                    int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                    opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                    opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                 }
             }
             codes.Add(opd1 | opd2);
@@ -2589,35 +2573,34 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, vinfo.IsGlobal, false, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
                             if (null == opdInfo.ResultValues) {
-                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                             }
                         }
                         int opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
                             if (null == opdInfo.ResultValues) {
-                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                             }
                         }
                         codes.Add(opd1 | opd2);
                     }
 
                     semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.IsConstOrTemp = false;
                     semanticInfo.ResultType = vinfo.Type;
                     semanticInfo.ResultCount = vinfo.Count;
                     semanticInfo.ResultIndex = vinfo.Index;
@@ -2628,34 +2611,33 @@ namespace CppDebugScript
                 int tmpIndex = CurBlock().AllocTempInt();
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.IsConstOrTemp = true;
                     semanticInfo.ResultType = "int";
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, semanticInfo.IsGlobal, semanticInfo.IsConstOrTemp, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
                             if (null == opdInfo.ResultValues) {
-                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd1 = EncodeConstOperand1(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
                             }
                         }
                         int opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
                             if (null == opdInfo.ResultValues) {
-                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.IsConstOrTemp, opdInfo.ResultType, opdInfo.ResultIndex);
+                                opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                             }
                             else {
-                                int rindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                                opd2 = EncodeConstOperand2(opdInfo.ResultType, rindex);
+                                int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                                opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
                             }
                         }
                         codes.Add(opd1 | opd2);
@@ -3113,18 +3095,18 @@ namespace CppDebugScript
             offset = EncodeOffset(offset);
             return opcode | offset;
         }
-        private int EncodeOpcode(InsEnum opc, bool isGlobal, bool isConstOrTemp, string type, int index)
+        private int EncodeOpcode(InsEnum opc, bool isGlobal, string type, int index)
         {
             int opcode = (int)opc;
-            int operand = EncodeOperand2(isGlobal, isConstOrTemp, type, index);
+            int operand = EncodeOperand2(isGlobal, type, index);
             opcode |= operand;
             return opcode;
         }
-        private int EncodeOpcode(InsEnum opc, int argNum, bool isGlobal, bool isConstOrTemp, string type, int index)
+        private int EncodeOpcode(InsEnum opc, int argNum, bool isGlobal, string type, int index)
         {
             int opcode = (int)opc;
             opcode |= (argNum << 8);
-            int operand = EncodeOperand2(isGlobal, isConstOrTemp, type, index);
+            int operand = EncodeOperand2(isGlobal, type, index);
             opcode |= operand;
             return opcode;
         }
@@ -3132,23 +3114,23 @@ namespace CppDebugScript
         {
             return (apiIndex & 0xffff);
         }
-        private int EncodeOperand1(bool isGlobal, bool isConstOrTemp, string type, int index)
+        private int EncodeOperand1(bool isGlobal, string type, int index)
         {
-            int operand = ConstOrTemp2Tag(isConstOrTemp) | Global2Tag(isGlobal) | Type2Tag(type) | index;
+            int operand = Global2Tag(isGlobal) | Type2Tag(type) | index;
             return operand;
         }
-        private int EncodeOperand2(bool isGlobal, bool isConstOrTemp, string type, int index)
+        private int EncodeOperand2(bool isGlobal, string type, int index)
         {
-            int operand = EncodeOperand1(isGlobal, isConstOrTemp, type, index);
+            int operand = EncodeOperand1(isGlobal, type, index);
             return operand << 16;
         }
         private int EncodeConstOperand1(string type, int index)
         {
-            return EncodeOperand1(true, true, type, index);
+            return EncodeOperand1(true, type, index);
         }
         private int EncodeConstOperand2(string type, int index)
         {
-            return EncodeOperand2(true, true, type, index);
+            return EncodeOperand2(true, type, index);
         }
         private InsEnum DecodeInsEnum(int opcode)
         {
@@ -3159,31 +3141,29 @@ namespace CppDebugScript
             ins = (InsEnum)(opcode & 0xff);
             offset = DecodeOffset(opcode);
         }
-        private void DecodeOpcode(int opcode, out InsEnum ins, out int argNum, out bool isGlobal, out bool isConstOrTemp, out string type, out int index)
+        private void DecodeOpcode(int opcode, out InsEnum ins, out int argNum, out bool isGlobal, out string type, out int index)
         {
             ins = (InsEnum)(opcode & 0xff);
             argNum = ((opcode & 0xff00) >> 8);
             int operand = opcode >> 16;
-            DecodeOperand1(operand, out isGlobal, out isConstOrTemp, out type, out index);
+            DecodeOperand1(operand, out isGlobal, out type, out index);
         }
         private void DecodeOperand1(int operand, out int apiIndex)
         {
             apiIndex = (operand & 0xffff);
         }
-        private void DecodeOperand1(int operand, out bool isGlobal, out bool isConstOrTemp, out string type, out int index)
+        private void DecodeOperand1(int operand, out bool isGlobal, out string type, out int index)
         {
-            int varOrConst = ((operand & 0x8000) >> 15);
-            int localOrGlobal = ((operand & 0x4000) >> 14);
-            int ty = ((operand & 0x3000) >> 12);
-            index = (operand & 0xfff);
+            int localOrGlobal = ((operand & 0x8000) >> 15);
+            int ty = ((operand & 0x6000) >> 13);
+            index = (operand & 0x1fff);
             isGlobal = localOrGlobal != 0;
-            isConstOrTemp = varOrConst != 0;
             type = s_TypeNames[ty];
         }
-        private void DecodeOperand2(int operand, out bool isGlobal, out bool isConstOrTemp, out string type, out int index)
+        private void DecodeOperand2(int operand, out bool isGlobal, out string type, out int index)
         {
             operand >>= 16;
-            DecodeOperand1(operand, out isGlobal, out isConstOrTemp, out type, out index);
+            DecodeOperand1(operand, out isGlobal, out type, out index);
         }
 
         //program structure
@@ -3194,13 +3174,13 @@ namespace CppDebugScript
                 if (s_Type2Ids.TryGetValue(type, out var typeid)) {
                     switch (typeid) {
                         case TypeEnum.Int:
-                            info.Index = m_ConstIndexInfo.NextIntIndex++;
+                            info.Index = m_ConstIndexInfo.NextIntIndex--;
                             break;
                         case TypeEnum.Float:
-                            info.Index = m_ConstIndexInfo.NextFloatIndex++;
+                            info.Index = m_ConstIndexInfo.NextFloatIndex--;
                             break;
                         case TypeEnum.String:
-                            info.Index = m_ConstIndexInfo.NextStringIndex++;
+                            info.Index = m_ConstIndexInfo.NextStringIndex--;
                             break;
                     }
                 }
@@ -3416,9 +3396,9 @@ namespace CppDebugScript
 
         public sealed class ConstIndexInfo
         {
-            public int NextIntIndex = 0;
-            public int NextFloatIndex = 0;
-            public int NextStringIndex = 0;
+            public int NextIntIndex = c_max_variable_table_size - 1;
+            public int NextFloatIndex = c_max_variable_table_size - 1;
+            public int NextStringIndex = c_max_variable_table_size - 1;
         }
         public sealed class LexicalScopeInfo
         {
@@ -3429,45 +3409,45 @@ namespace CppDebugScript
             public int NextFloatVarIndex = 0;
             public int NextStringVarIndex = 0;
 
-            public int NextTempIntVarIndex = 0;
-            public int NextTempFloatVarIndex = 0;
-            public int NextTempStringVarIndex = 0;
+            public int NextTempIntVarIndex = c_max_variable_table_size - 1;
+            public int NextTempFloatVarIndex = c_max_variable_table_size - 1;
+            public int NextTempStringVarIndex = c_max_variable_table_size - 1;
 
             public int LoopContinue = 0;
             public List<int> LoopBreakFixes = null;
 
             public void ResetTempVars()
             {
-                NextTempIntVarIndex = 0;
-                NextTempFloatVarIndex = 0;
-                NextTempStringVarIndex = 0;
+                NextTempIntVarIndex = c_max_variable_table_size - 1;
+                NextTempFloatVarIndex = c_max_variable_table_size - 1;
+                NextTempStringVarIndex = c_max_variable_table_size - 1;
             }
             public int AllocTempInt()
             {
-                return NextTempIntVarIndex++;
+                return NextTempIntVarIndex--;
             }
             public int AllocTempFloat()
             {
-                return NextTempFloatVarIndex++;
+                return NextTempFloatVarIndex--;
             }
             public int AllocTempString()
             {
-                return NextTempStringVarIndex++;
+                return NextTempStringVarIndex--;
             }
             public int AllocTempIntArray(int ct)
             {
-                NextTempIntVarIndex += ct - 1;
-                return NextTempIntVarIndex++;
+                NextTempIntVarIndex -= ct - 1;
+                return NextTempIntVarIndex--;
             }
             public int AllocTempFloatArray(int ct)
             {
-                NextTempFloatVarIndex += ct - 1;
-                return NextTempFloatVarIndex++;
+                NextTempFloatVarIndex -= ct - 1;
+                return NextTempFloatVarIndex--;
             }
             public int AllocTempStringArray(int ct)
             {
-                NextTempStringVarIndex += ct - 1;
-                return NextTempStringVarIndex++;
+                NextTempStringVarIndex -= ct - 1;
+                return NextTempStringVarIndex--;
             }
         }
         public enum TargetOperationEnum
@@ -3484,7 +3464,6 @@ namespace CppDebugScript
             public string TargetName;
 
             public bool IsGlobal;
-            public bool IsConstOrTemp;
             public string ResultType;
             public int ResultCount;
             public int ResultIndex;
@@ -3498,7 +3477,6 @@ namespace CppDebugScript
                 TargetName = string.Empty;
 
                 IsGlobal = false;
-                IsConstOrTemp = false;
                 ResultType = string.Empty;
                 ResultCount = 0;
                 ResultIndex = 0;
@@ -3507,7 +3485,6 @@ namespace CppDebugScript
             public void CopyResultFrom(SemanticInfo other)
             {
                 IsGlobal = other.IsGlobal;
-                IsConstOrTemp = other.IsConstOrTemp;
                 ResultType = other.ResultType;
                 ResultCount = other.ResultCount;
                 ResultIndex = other.ResultIndex;
@@ -3531,11 +3508,6 @@ namespace CppDebugScript
         private Dictionary<string, StructInfo> m_PredefinedStructInfos = new Dictionary<string, StructInfo>();
         private Dictionary<string, StructInfo> m_StructInfos = new Dictionary<string, StructInfo>();
 
-        private enum VarConstEnum
-        {
-            Var = 0,
-            ConstOrTemp
-        }
         private enum LocalGlobalEnum
         {
             Local = 0,
@@ -3549,33 +3521,25 @@ namespace CppDebugScript
             String
         }
 
-        private static int ConstOrTemp2Tag(bool isConstOrTemp)
-        {
-            //bit 15: 0--var 1--const or temp
-            if (isConstOrTemp)
-                return (int)VarConstEnum.ConstOrTemp << 15;
-            else
-                return (int)VarConstEnum.Var << 15;
-        }
         private static int Global2Tag(bool isGlobal)
         {
-            //bit 14: 0--local 1--global
+            //bit 15: 0--local 1--global
             if (isGlobal)
-                return (int)LocalGlobalEnum.Global << 14;
+                return (int)LocalGlobalEnum.Global << 15;
             else
-                return (int)LocalGlobalEnum.Local << 14;
+                return (int)LocalGlobalEnum.Local << 15;
         }
         private static int Type2Tag(string type)
         {
-            //bit 12、13: 0--not use 1--int 2--float 3--string
+            //bit 13、14: 0--not use 1--int 2--float 3--string
             if (type == "int") {
-                return (int)TypeEnum.Int << 12;
+                return (int)TypeEnum.Int << 13;
             }
             else if (type == "float") {
-                return (int)TypeEnum.Float << 12;
+                return (int)TypeEnum.Float << 13;
             }
             else {
-                return (int)TypeEnum.String << 12;
+                return (int)TypeEnum.String << 13;
             }
         }
         private static int EncodeOffset(int offset)
@@ -3619,6 +3583,7 @@ namespace CppDebugScript
 
         private const int c_abs_offset_mask = 0x7fffffff;
         private const int c_offset_backward_flag = unchecked((int)0x80000000);
+        private const int c_max_variable_table_size = 8192;
 
         public static DebugScriptCompiler Instance
         {
@@ -3627,6 +3592,20 @@ namespace CppDebugScript
             }
         }
         private static DebugScriptCompiler s_Instance = new DebugScriptCompiler();
+    }
+    public class ReverseComparer<TKey> : IComparer<TKey>
+    {
+        private readonly IComparer<TKey> _baseComparer;
+
+        public ReverseComparer(IComparer<TKey> baseComparer)
+        {
+            _baseComparer = baseComparer ?? Comparer<TKey>.Default;
+        }
+
+        public int Compare(TKey x, TKey y)
+        {
+            return _baseComparer.Compare(y, x);
+        }
     }
     internal static class Literal
     {

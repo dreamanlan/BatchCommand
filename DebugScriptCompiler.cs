@@ -22,6 +22,7 @@ namespace CppDebugScript
         CALL = 0,
         RET,
         JMP,
+        JMPIF,
         JMPIFNOT,
         INC,
         INCV,
@@ -50,6 +51,14 @@ namespace CppDebugScript
         BITOR,
         BITXOR,
         BITNOT,
+        INT2FLT,
+        INT2STR,
+        FLT2INT,
+        FLT2STR,
+        STR2INT,
+        STR2FLT,
+        ITOF,
+        FTOI,
         ARGC,
         ARGV,
         ADDR,
@@ -371,6 +380,9 @@ namespace CppDebugScript
                     case InsEnum.JMP:
                         DumpJmp(txt, indent, codes, ref pos);
                         break;
+                    case InsEnum.JMPIF:
+                        DumpJmpIf(txt, indent, codes, ref pos);
+                        break;
                     case InsEnum.JMPIFNOT:
                         DumpJmpIfNot(txt, indent, codes, ref pos);
                         break;
@@ -452,6 +464,30 @@ namespace CppDebugScript
                     case InsEnum.BITNOT:
                         DumpUnary(txt, indent, codes, ref pos, "BITNOT");
                         break;
+                    case InsEnum.INT2FLT:
+                        DumpUnary(txt, indent, codes, ref pos, "INT2FLT");
+                        break;
+                    case InsEnum.INT2STR:
+                        DumpUnary(txt, indent, codes, ref pos, "INT2STR");
+                        break;
+                    case InsEnum.FLT2INT:
+                        DumpUnary(txt, indent, codes, ref pos, "FLT2INT");
+                        break;
+                    case InsEnum.FLT2STR:
+                        DumpUnary(txt, indent, codes, ref pos, "FLT2STR");
+                        break;
+                    case InsEnum.STR2INT:
+                        DumpUnary(txt, indent, codes, ref pos, "STR2INT");
+                        break;
+                    case InsEnum.STR2FLT:
+                        DumpUnary(txt, indent, codes, ref pos, "STR2FLT");
+                        break;
+                    case InsEnum.ITOF:
+                        DumpIToF(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.FTOI:
+                        DumpFToI(txt, indent, codes, ref pos);
+                        break;
                     case InsEnum.ARGC:
                         DumpArgc(txt, indent, codes, ref pos);
                         break;
@@ -518,6 +554,16 @@ namespace CppDebugScript
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var offset);
             txt.AppendLine("{0}{1}: JMP {2}", Literal.GetIndentString(indent), ix, offset);
+        }
+        private void DumpJmpIf(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var offset);
+            ++pos;
+            int operand = codes[pos];
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: JMPIF {2}, {3}", Literal.GetIndentString(indent), ix, offset, BuildVar(isGlobal1, type1, index1));
         }
         private void DumpJmpIfNot(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
@@ -598,6 +644,26 @@ namespace CppDebugScript
             DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
             DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
             txt.AppendLine("{0}{1}: {2} = {3} {4}, {5}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op, BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
+        }
+        private void DumpIToF(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            ++pos;
+            int operand = codes[pos];
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = ITOF {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
+        }
+        private void DumpFToI(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            ++pos;
+            int operand = codes[pos];
+            DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+            txt.AppendLine("{0}{1}: {2} = FTOI {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
         private void DumpArgc(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
@@ -917,7 +983,7 @@ namespace CppDebugScript
                         foreach (var jmp in exitFixes) {
                             int offset = exitTarget - jmp;
                             int opcode = codes[jmp];
-                            codes[jmp] = opcode | (offset << 8);
+                            codes[jmp] = opcode | EncodeOffset(offset);
                         }
                     }
                     else {
@@ -1206,7 +1272,7 @@ namespace CppDebugScript
                             int jmpTarget = codes.Count;
                             int offset = jmpTarget - jmpIfNot;
                             int opcode = codes[jmpIfNot];
-                            codes[jmpIfNot] = opcode | (offset << 8);
+                            codes[jmpIfNot] = opcode | EncodeOffset(offset);
                         }
                         else {
                             err.AppendFormat("Illegal if, if must have statements, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
@@ -1532,13 +1598,82 @@ namespace CppDebugScript
                     string op = callData.GetId();
                     int num = callData.GetParamNum();
                     var sinfos = new List<SemanticInfo>();
-                    for (int i = 0; i < num; ++i) {
-                        Dsl.ISyntaxComponent param = callData.GetParam(i);
-                        var sinfo = new SemanticInfo();
-                        CompileExpression(param, codes, err, ref sinfo);
-                        sinfos.Add(sinfo);
+                    if (callData.IsOperatorParamClass() && (op == "&&" || op == "||")) {
+                        //Short Circuit
+                        if (num == 2) {
+                            var param1 = callData.GetParam(0);
+                            var sinfo1 = new SemanticInfo();
+                            var tcodes1 = new List<int>();
+                            CompileExpression(param1, tcodes1, err, ref sinfo1);
+                            var param2 = callData.GetParam(0);
+                            var sinfo2 = new SemanticInfo();
+                            var tcodes2 = new List<int>();
+                            CompileExpression(param2, tcodes2, err, ref sinfo2);
+                            if (null == sinfo1.ResultValues && null == sinfo2.ResultValues) {
+                                codes.AddRange(tcodes1);
+                                int jmp = codes.Count;
+                                if (op == "&&") {
+                                    codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                }
+                                else {
+                                    codes.Add(EncodeOpcode(InsEnum.JMPIF));
+                                }
+                                codes.Add(EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex));
+                                codes.AddRange(tcodes2);
+                                sinfos.Add(sinfo1);
+                                sinfos.Add(sinfo2);
+
+                                int target = codes.Count;
+                                int offset = target - jmp;
+                                int opcode = codes[jmp];
+                                codes[jmp] = opcode | EncodeOffset(offset);
+                            }
+                            else if(null == sinfo1.ResultValues) {
+                                codes.AddRange(tcodes1);
+                                sinfos.Add(sinfo1);
+                                sinfos.Add(sinfo2);
+                            }
+                            else if(null == sinfo2.ResultValues) {
+                                int jmp = codes.Count;
+                                if (op == "&&") {
+                                    codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                }
+                                else {
+                                    codes.Add(EncodeOpcode(InsEnum.JMPIF));
+                                }
+                                int index = AddConst(sinfo1.ResultType, sinfo1.ResultValues[0]);
+                                int opd = EncodeConstOperand1(sinfo1.ResultType, index);
+                                codes.Add(opd);
+                                codes.AddRange(tcodes2);
+                                sinfos.Add(sinfo1);
+                                sinfos.Add(sinfo2);
+
+                                int target = codes.Count;
+                                int offset = target - jmp;
+                                int opcode = codes[jmp];
+                                codes[jmp] = opcode | EncodeOffset(offset);
+                            }
+                            else {
+                                codes.AddRange(tcodes1);
+                                codes.AddRange(tcodes2);
+                                sinfos.Add(sinfo1);
+                                sinfos.Add(sinfo2);
+                            }
+                        }
+                        else {
+                            err.AppendFormat("operator '&&' or '||' must have two arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
                     }
-                    if (callData.GetParamClass() == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR) {
+                    else {
+                        for (int i = 0; i < num; ++i) {
+                            var param = callData.GetParam(i);
+                            var sinfo = new SemanticInfo();
+                            CompileExpression(param, codes, err, ref sinfo);
+                            sinfos.Add(sinfo);
+                        }
+                    }
+                    if (callData.IsOperatorParamClass()) {
                         if (num == 2 && op != "!" && op != "~" || num == 1 && (op == "+" || op == "-" || op == "!" || op == "~")) {
                             if (op == "+") {
                                 if (num == 2) {
@@ -1624,7 +1759,13 @@ namespace CppDebugScript
                         TryGenArrGet(op, codes, sinfos, err, callData, ref semanticInfo);
                     }
                     else if (callData.IsParenthesisParamClass()) {
-                        if (op == "argc") {
+                        if (op == "itof") {
+                            TryGenIToF(codes, sinfos, err, callData, ref semanticInfo);
+                        }
+                        else if (op == "ftoi") {
+                            TryGenFToI(codes, sinfos, err, callData, ref semanticInfo);
+                        }
+                        else if (op == "argc") {
                             TryGenArgc(codes, sinfos, err, callData, ref semanticInfo);
                         }
                         else if (op == "argv") {
@@ -2219,6 +2360,174 @@ namespace CppDebugScript
                 }
             }
         }
+        private void TryGenIToF(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != "int") {
+                err.AppendFormat("itof must and only have one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    var vinfo = GetVarInfo(semanticInfo.TargetName);
+                    if (vinfo.Count > 0) {
+                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                    //gen write result
+                    codes.Add(EncodeOpcode(InsEnum.ITOF, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    int opd1 = 0;
+                    if (opds.Count > 0) {
+                        var opdInfo = opds[0];
+                        if (null == opdInfo.ResultValues) {
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
+                        }
+                    }
+                    int opd2 = 0;
+                    if (opds.Count > 1) {
+                        var opdInfo = opds[1];
+                        if (null == opdInfo.ResultValues) {
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
+                        }
+                    }
+                    codes.Add(opd1 | opd2);
+
+                    semanticInfo.IsGlobal = vinfo.IsGlobal;
+                    semanticInfo.ResultType = vinfo.Type;
+                    semanticInfo.ResultCount = vinfo.Count;
+                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = CurBlock().AllocTempInt();
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = "float";
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    codes.Add(EncodeOpcode(InsEnum.ARGV, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                    int opd1 = 0;
+                    if (opds.Count > 0) {
+                        var opdInfo = opds[0];
+                        if (null == opdInfo.ResultValues) {
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
+                        }
+                    }
+                    int opd2 = 0;
+                    if (opds.Count > 1) {
+                        var opdInfo = opds[1];
+                        if (null == opdInfo.ResultValues) {
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
+                        }
+                    }
+                    codes.Add(opd1 | opd2);
+                }
+            }
+        }
+        private void TryGenFToI(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != "float") {
+                err.AppendFormat("ftoi must and only have one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    var vinfo = GetVarInfo(semanticInfo.TargetName);
+                    if (vinfo.Count > 0) {
+                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                    //gen write result
+                    codes.Add(EncodeOpcode(InsEnum.FTOI, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    int opd1 = 0;
+                    if (opds.Count > 0) {
+                        var opdInfo = opds[0];
+                        if (null == opdInfo.ResultValues) {
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
+                        }
+                    }
+                    int opd2 = 0;
+                    if (opds.Count > 1) {
+                        var opdInfo = opds[1];
+                        if (null == opdInfo.ResultValues) {
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
+                        }
+                    }
+                    codes.Add(opd1 | opd2);
+
+                    semanticInfo.IsGlobal = vinfo.IsGlobal;
+                    semanticInfo.ResultType = vinfo.Type;
+                    semanticInfo.ResultCount = vinfo.Count;
+                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = CurBlock().AllocTempInt();
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = "int";
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    codes.Add(EncodeOpcode(InsEnum.ARGV, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                    int opd1 = 0;
+                    if (opds.Count > 0) {
+                        var opdInfo = opds[0];
+                        if (null == opdInfo.ResultValues) {
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
+                        }
+                    }
+                    int opd2 = 0;
+                    if (opds.Count > 1) {
+                        var opdInfo = opds[1];
+                        if (null == opdInfo.ResultValues) {
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        else {
+                            int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                            opd2 = EncodeConstOperand2(opdInfo.ResultType, index);
+                        }
+                    }
+                    codes.Add(opd1 | opd2);
+                }
+            }
+        }
         private void TryGenArgc(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 0) {
@@ -2649,8 +2958,12 @@ namespace CppDebugScript
         private string DeduceType(InsEnum op, List<SemanticInfo> opds)
         {
             if (opds.Count == 1) {
-                if (op == InsEnum.NOT || op == InsEnum.BITXOR)
+                if (op == InsEnum.NOT || op == InsEnum.BITXOR || op == InsEnum.FLT2INT || op == InsEnum.STR2INT)
                     return "int";
+                else if(op == InsEnum.INT2FLT || op == InsEnum.STR2FLT)
+                    return "float";
+                else if (op == InsEnum.INT2STR || op == InsEnum.FLT2STR)
+                    return "string";
                 return opds[0].ResultType;
             }
             else if (opds.Count == 2) {
@@ -2992,6 +3305,48 @@ namespace CppDebugScript
                         var opd = opds[0];
                         long.TryParse(opd.ResultValues[0], out var val);
                         ret.Add((~val).ToString());
+                    }
+                    break;
+                case InsEnum.INT2FLT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        long.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(((double)val).ToString());
+                    }
+                    break;
+                case InsEnum.INT2STR:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        long.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(val.ToString());
+                    }
+                    break;
+                case InsEnum.FLT2INT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        double.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(((long)val).ToString());
+                    }
+                    break;
+                case InsEnum.FLT2STR:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        double.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(val.ToString());
+                    }
+                    break;
+                case InsEnum.STR2INT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        long.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(val.ToString());
+                    }
+                    break;
+                case InsEnum.STR2FLT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        double.TryParse(opd.ResultValues[0], out var val);
+                        ret.Add(val.ToString());
                     }
                     break;
             }

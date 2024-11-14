@@ -43,6 +43,7 @@ namespace
         CALL = 0,
         RET,
         JMP,
+        JMPIF,
         JMPIFNOT,
         INC,
         INCV,
@@ -71,6 +72,14 @@ namespace
         BITOR,
         BITXOR,
         BITNOT,
+        INT2FLT,
+        INT2STR,
+        FLT2INT,
+        FLT2STR,
+        STR2INT,
+        STR2FLT,
+        ITOF,
+        FTOI,
         ARGC,
         ARGV,
         ADDR,
@@ -117,6 +126,17 @@ namespace
     {
         operand >>= 16;
         DecodeOperand1(operand, isGlobal, type, index);
+    }
+    static inline void DecodeOperand1(int32_t operand, bool& isGlobal, int32_t& index)
+    {
+        int32_t localOrGlobal = ((operand & 0x8000) >> 15);
+        index = (operand & 0x1fff);
+        isGlobal = localOrGlobal != 0;
+    }
+    static inline void DecodeOperand2(int32_t operand, bool& isGlobal, int32_t& index)
+    {
+        operand >>= 16;
+        DecodeOperand1(operand, isGlobal, index);
     }
     static inline void DecodeOpcode(int32_t opcode, InsEnum& ins, int32_t& offset)
     {
@@ -722,6 +742,39 @@ namespace
         DecodeOpcode(opcode, op, offset);
         pos = enterPos - 1 + offset;
     }
+    static inline void DoJmpIf(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        int32_t enterPos = pos;
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t offset;
+        DecodeOpcode(opcode, op, offset);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        switch (ty1) {
+        case TypeEnum::Int: {
+            int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+            if (val != 0) {
+                pos = enterPos - 1 + offset;
+            }
+        }break;
+        case TypeEnum::Float: {
+            double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+            if (val != 0) {
+                pos = enterPos - 1 + offset;
+            }
+        }break;
+        case TypeEnum::String: {
+            const std::string& val = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            if (val.length() > 0) {
+                pos = enterPos - 1 + offset;
+            }
+        }break;
+        }
+    }
     static inline void DoJmpIfNot(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         int32_t enterPos = pos;
@@ -744,6 +797,12 @@ namespace
         case TypeEnum::Float: {
             double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
             if (val == 0) {
+                pos = enterPos - 1 + offset;
+            }
+        }break;
+        case TypeEnum::String: {
+            const std::string& val = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            if (val.length() == 0) {
                 pos = enterPos - 1 + offset;
             }
         }break;
@@ -929,6 +988,46 @@ namespace
             SetVarString(isGlobal, index + ix, val, strLocals, strGlobals);
         }break;
         }
+    }
+    static inline void DoIToF(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+
+        _ASSERTE(ty == TypeEnum::Float);
+        _ASSERTE(ty1 == TypeEnum::Int);
+        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), fltLocals, fltGlobals);
+    }
+    static inline void DoFToI(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+
+        _ASSERTE(ty == TypeEnum::Int);
+        _ASSERTE(ty1 == TypeEnum::Float);
+        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        SetVarInt(isGlobal, index, *reinterpret_cast<int64_t*>(&val), intLocals, intGlobals);
     }
     static inline void DoArgc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc)
     {
@@ -1502,6 +1601,52 @@ namespace
         }
     };
 
+    struct ToFltOperation
+    {
+        static inline double CalcInt(int64_t val)
+        {
+            return static_cast<double>(val);
+        }
+        static inline double CalcFloat(double val)
+        {
+            return val;
+        }
+        static inline double CalcString(const std::string& val)
+        {
+            return std::atof(val.c_str());
+        }
+    };
+    struct ToIntOperation
+    {
+        static inline int64_t CalcInt(int64_t val)
+        {
+            return val;
+        }
+        static inline int64_t CalcFloat(double val)
+        {
+            return static_cast<int64_t>(val);
+        }
+        static inline int64_t CalcString(const std::string& val)
+        {
+            return std::atoll(val.c_str());
+        }
+    };
+    struct ToStrOperation
+    {
+        static inline std::string CalcInt(int64_t val)
+        {
+            return std::to_string(val);
+        }
+        static inline std::string CalcFloat(double val)
+        {
+            return std::to_string(val);
+        }
+        static inline std::string CalcString(const std::string& val)
+        {
+            return val;
+        }
+    };
+
     template<typename OperationT>
     static inline void DoUnary(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -1704,6 +1849,12 @@ namespace
 #define DoUnaryNEG DoUnary<NegOperation>
 #define DoUnaryNOT DoUnary<NotOperation>
 #define DoUnaryBITNOT DoUnary<BitNotOperation>
+#define DoUnaryINT2FLT DoUnary<ToFltOperation>
+#define DoUnaryINT2STR DoUnary<ToStrOperation>
+#define DoUnaryFLT2INT DoUnary<ToIntOperation>
+#define DoUnaryFLT2STR DoUnary<ToStrOperation>
+#define DoUnarySTR2INT DoUnary<ToIntOperation>
+#define DoUnarySTR2FLT DoUnary<ToFltOperation>
 #define DoBinaryADD DoBinary<AddOperation>
 #define DoBinarySUB DoBinary<SubOperation>
 #define DoBinaryMUL DoBinary<MulOperation>
@@ -1936,6 +2087,9 @@ namespace
                 case InsEnum::JMP:
                     DoJmp(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
+                case InsEnum::JMPIF:
+                    DoJmpIf(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
                 case InsEnum::JMPIFNOT:
                     DoJmpIfNot(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
@@ -2019,6 +2173,30 @@ namespace
                     break;
                 case InsEnum::BITNOT:
                     DoUnaryBITNOT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::INT2FLT:
+                    DoUnaryINT2FLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::INT2STR:
+                    DoUnaryINT2STR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::FLT2INT:
+                    DoUnaryFLT2INT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::FLT2STR:
+                    DoUnaryFLT2STR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::STR2INT:
+                    DoUnarySTR2INT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::STR2FLT:
+                    DoUnarySTR2FLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::ITOF:
+                    DoIToF(opcode, op, codes, pos, intLocals, fltLocals, intGlobals, fltGlobals);
+                    break;
+                case InsEnum::FTOI:
+                    DoFToI(opcode, op, codes, pos, intLocals, fltLocals, intGlobals, fltGlobals);
                     break;
                 case InsEnum::ARGC:
                     DoArgc(opcode, op, codes, pos, intLocals, intGlobals, argc);

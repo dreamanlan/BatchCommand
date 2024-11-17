@@ -14,6 +14,7 @@ public:
     static int32_t AddHook(const char* name, int32_t* onEnter, int32_t onEnterSize, int32_t* onExit, int32_t onExitSize);
     static int32_t ShareWith(int32_t hookId, const char* other);
     static void Start();
+    static void Load(const char* file);
 };
 
 class DebugScriptVM

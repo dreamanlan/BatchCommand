@@ -122,6 +122,13 @@ extern "C" {
         DebugScriptGlobal::Start();
     }
 
+    __declspec(dllexport) void CppDbgScp_Load(const char* file)
+    {
+        DebugScriptGlobal::Reset();
+        DebugScriptGlobal::Load(file);
+        DebugScriptGlobal::Start();
+    }
+
     __declspec(dllexport) int Test1(int a, double b, const char* c)
     {
         using HookWrapType = HookWrap<decltype(Test1)>;

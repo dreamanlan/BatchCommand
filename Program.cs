@@ -28,6 +28,8 @@ namespace BatchCommand
             BatchScript.Init();
             BatchScript.Register("compiledbgscp", "compiledbgscp(apiFile, struFile, scpFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
             BatchScript.Register("uploaddbgscp", "dumpdbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
+            BatchScript.Register("savedbgscp", "savedbgscp() api", new ExpressionFactoryHelper<SaveDbgScpExp>());
+            BatchScript.Register("loaddbgscp", "loaddbgscp() api", new ExpressionFactoryHelper<LoadDbgScpExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
 
             if (args.Length == 0) {
@@ -191,6 +193,30 @@ namespace BatchCommand
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             CppDebugScript.DebugScriptCompiler.Instance.UploadToCppVM();
+            return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class SaveDbgScpExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            string file = "bytecode.dat";
+            if (operands.Count > 0) {
+                file = operands[0].AsString;
+            }
+            CppDebugScript.DebugScriptCompiler.Instance.SaveByteCode(file);
+            return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class LoadDbgScpExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            string file = "bytecode.dat";
+            if (operands.Count > 0) {
+                file = operands[0].AsString;
+            }
+            CppDebugScript.DebugScriptCompiler.Instance.LoadByteCode(file);
             return BoxedValue.NullObject;
         }
     }

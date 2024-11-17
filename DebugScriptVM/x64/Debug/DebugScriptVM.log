@@ -1,3 +1,7 @@
 ﻿  DebugScriptVM.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2186,55): warning C4474: printf: 格式字符串中传递的参数太多
+      D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2186,55):
+      占位符和其参数预计 0 可变参数，但提供的却是 2 参数
+  
     正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

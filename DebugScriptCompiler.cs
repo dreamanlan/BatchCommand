@@ -1049,7 +1049,7 @@ namespace CppDebugScript
                             var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                             AddVar(vinfo);
 
-                            var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetName = name };
+                            var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
                             CompileExpression(param2, m_TempCodes, err, ref info);
                             CurBlock().ResetTempVars();
 
@@ -1524,7 +1524,7 @@ namespace CppDebugScript
                             }
                             else {
                                 var v2 = callData.GetParam(1);
-                                SemanticInfo info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetName = vinfo.Name };
+                                SemanticInfo info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetIndex = vinfo.Index };
                                 CompileExpression(v2, codes, err, ref info);
                                 CurBlock().ResetTempVars();
                             }
@@ -1544,7 +1544,7 @@ namespace CppDebugScript
                                 else {
                                     var info1 = new SemanticInfo { TargetType = TypeEnum.Int };
                                     CompileExpression(ixExp, codes, err, ref info1);
-                                    var info2 = new SemanticInfo { TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetName = vinfo.Name };
+                                    var info2 = new SemanticInfo { TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetIndex = vinfo.Index };
                                     CompileExpression(param2, codes, err, ref info2);
                                     CurBlock().ResetTempVars();
 
@@ -1561,7 +1561,7 @@ namespace CppDebugScript
                                     var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                                     AddVar(vinfo);
 
-                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetName = name };
+                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index};
                                     CompileExpression(param2, codes, err, ref info);
                                     CurBlock().ResetTempVars();
                                 }
@@ -1964,356 +1964,586 @@ namespace CppDebugScript
         }
         private void CompileExpression(Dsl.ISyntaxComponent comp, List<int> codes, StringBuilder err, ref SemanticInfo semanticInfo)
         {
-            var callData = comp as Dsl.FunctionData;
-            if (null != callData) {
-                if (!callData.HaveId()) {
-                    int paramNum = callData.GetParamNum();
-                    if (paramNum == 1 && callData.IsParenthesisParamClass()) {
-                        Dsl.ISyntaxComponent param = callData.GetParam(0);
-                        CompileExpression(param, codes, err, ref semanticInfo);
-                    }
-                    else if (paramNum >= 1 && callData.IsBracketParamClass()) {
-                        if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
-                            if (IsGlobalBlock()) {
-                                semanticInfo.ResultValues = new List<string>();
-                                for (int i = 0; i < callData.GetParamNum() && i < semanticInfo.TargetCount; ++i) {
-                                    var p = callData.GetParam(i);
-                                    var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
-                                    CompileExpression(p, codes, err, ref sinfo);
-                                    if (null == sinfo.ResultValues) {
-                                        err.AppendFormat("Illegal global init syntax, [%d] must be const value, code:{0}, line:{1}", i, comp.ToScriptString(false), comp.GetLine());
-                                        err.AppendLine();
-                                    }
-                                    else {
-                                        semanticInfo.ResultValues.Add(sinfo.ResultValues[0]);
-                                    }
+            var stmData = comp as Dsl.StatementData;
+            if (null != stmData) {
+                string id = stmData.GetId();
+                if (id == "?") {
+                    //cond ? exp1 : exp2 <= ?(cond){exp1;}:{exp2;}
+                    bool handled = false;
+                    if (stmData.GetFunctionNum() == 2) {
+                        var ifPart = stmData.First.AsFunction;
+                        var elsePart = stmData.Second.AsFunction;
+                        if (null != ifPart && null != elsePart && ifPart.IsHighOrder && ifPart.LowerOrderFunction.GetParamNum() == 1 && ifPart.GetParamNum() == 1 && !elsePart.IsHighOrder && elsePart.GetParamNum() == 1) {
+                            var ifExp = ifPart.LowerOrderFunction.GetParam(0);
+                            var exp1 = ifPart.GetParam(0);
+                            var exp2 = elsePart.GetParam(0);
+                            var info = new SemanticInfo { TargetType = TypeEnum.Int };
+                            CompileExpression(ifExp, codes, err, ref info);
+                            var tinfo = semanticInfo;
+                            if (semanticInfo.TargetOperation != TargetOperationEnum.VarAssign) {
+                                if (tinfo.TargetType == TypeEnum.NotUse)
+                                    tinfo.TargetType = TypeEnum.Int;
+                                int tmpIndex = -1;
+                                switch (tinfo.TargetType) {
+                                    case TypeEnum.Int:
+                                        tmpIndex = CurBlock().AllocTempInt();
+                                        break;
+                                    case TypeEnum.Float:
+                                        tmpIndex = CurBlock().AllocTempFloat();
+                                        break;
+                                    case TypeEnum.String:
+                                        tmpIndex = CurBlock().AllocTempString();
+                                        break;
                                 }
+                                Debug.Assert(tmpIndex >= 0);
+                                tinfo.TargetOperation = TargetOperationEnum.VarAssign;
+                                tinfo.TargetIsGlobal = false;
+                                tinfo.TargetCount = 0;
+                                tinfo.TargetIndex = tmpIndex;
+
+                                tinfo.ResultType = tinfo.TargetType;
+                                tinfo.ResultCount = 0;
+                                tinfo.ResultIndex = tmpIndex;
                             }
-                            else {
-                                var vinfo = GetVarInfo(semanticInfo.TargetName);
-                                for (int i = 0; i < callData.GetParamNum() && i < semanticInfo.TargetCount; ++i) {
-                                    var p = callData.GetParam(i);
-                                    var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
-                                    CompileExpression(p, codes, err, ref sinfo);
-                                    TryGenArrMov(vinfo.IsGlobal, vinfo.Type, vinfo.Index + i, codes, sinfo, err, p);
-                                }
-                                semanticInfo.IsGlobal = vinfo.IsGlobal;
-                                semanticInfo.ResultType = vinfo.Type;
-                                semanticInfo.ResultCount = vinfo.Count;
-                                semanticInfo.ResultIndex = vinfo.Index;
-                                semanticInfo.ResultValues = null;
-                            }
-                        }
-                        else {
-                            int tmpIndex = -1;
-                            TypeEnum type = TypeEnum.NotUse;
-                            for (int i = 0; i < callData.GetParamNum(); ++i) {
-                                var p = callData.GetParam(i);
-                                var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
-                                CompileExpression(p, codes, err, ref sinfo);
-                                if (i == 0) {
-                                    type = sinfo.TargetType;
-                                    if (type == TypeEnum.Int) {
-                                        tmpIndex = CurBlock().AllocTempIntArray(callData.GetParamNum());
-                                    }
-                                    else if (type == TypeEnum.Float) {
-                                        tmpIndex = CurBlock().AllocTempFloatArray(callData.GetParamNum());
-                                    }
-                                    else if (type == TypeEnum.String) {
-                                        tmpIndex = CurBlock().AllocTempFloatArray(callData.GetParamNum());
-                                    }
-                                }
-                                TryGenArrMov(false, TypeEnum.Int, tmpIndex + i, codes, sinfo, err, p);
-                            }
-                            semanticInfo.IsGlobal = false;
-                            semanticInfo.ResultType = type;
-                            semanticInfo.ResultCount = callData.GetParamNum();
-                            semanticInfo.ResultIndex = tmpIndex;
-                            semanticInfo.ResultValues = null;
-                        }
-                    }
-                    else {
-                        err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                        err.AppendLine();
-                    }
-                }
-                else {
-                    string op = callData.GetId();
-                    int num = callData.GetParamNum();
-                    var sinfos = new List<SemanticInfo>();
-                    if (callData.IsOperatorParamClass() && (op == "&&" || op == "||")) {
-                        //Short Circuit
-                        if (num == 2) {
-                            var param1 = callData.GetParam(0);
-                            var sinfo1 = new SemanticInfo();
+                            semanticInfo = tinfo;
+                            var sinfo1 = tinfo;
                             var tcodes1 = new List<int>();
-                            CompileExpression(param1, tcodes1, err, ref sinfo1);
-                            var param2 = callData.GetParam(0);
-                            var sinfo2 = new SemanticInfo();
+                            CompileExpression(exp1, tcodes1, err, ref sinfo1);
+                            var sinfo2 = tinfo;
                             var tcodes2 = new List<int>();
-                            CompileExpression(param2, tcodes2, err, ref sinfo2);
-                            if (null == sinfo1.ResultValues && null == sinfo2.ResultValues) {
-                                if(TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
-                                    sinfo1 = newInfo1;
+                            CompileExpression(exp2, tcodes2, err, ref sinfo2);
+                            if (null != info.ResultValues) {
+                                bool cond = false;
+                                if (info.ResultType == TypeEnum.Int || info.ResultType == TypeEnum.String) {
+                                    long.TryParse(info.ResultValues[0], out var v);
+                                    cond = v != 0;
                                 }
-                                if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
-                                    sinfo2 = newInfo2;
+                                else if (info.ResultType == TypeEnum.Float) {
+                                    double.TryParse(info.ResultValues[0], out var v);
+                                    cond = v != 0;
                                 }
+                                if (cond) {
+                                    codes.AddRange(tcodes1);
+                                }
+                                else {
+                                    codes.AddRange(tcodes2);
+                                }
+                            }
+                            else {
+                                if (TryGenConvert(codes, TypeEnum.Int, info, out var newInfo)) {
+                                    info = newInfo;
+                                }
+                                //gen jmpifnot
+                                int jmpIfNot = codes.Count;
+                                codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
+
                                 codes.AddRange(tcodes1);
                                 int jmp = codes.Count;
-                                if (op == "&&") {
-                                    codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                                }
-                                else {
-                                    codes.Add(EncodeOpcode(InsEnum.JMPIF));
-                                }
-                                codes.Add(EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex));
-                                codes.AddRange(tcodes2);
-                                sinfos.Add(sinfo1);
-                                sinfos.Add(sinfo2);
+                                codes.Add(EncodeOpcode(InsEnum.JMP));
 
-                                int target = codes.Count;
-                                int offset = target - jmp;
-                                int opcode = codes[jmp];
+                                //fix jmpIfNot offset
+                                int elseTarget = codes.Count;
+                                int offset = elseTarget - jmpIfNot;
+                                int opcode = codes[jmpIfNot];
+                                codes[jmpIfNot] = opcode | EncodeOffset(offset);
+
+                                codes.AddRange(tcodes2);
+
+                                //fix jmp offset
+                                int exitTarget = codes.Count;
+                                offset = exitTarget - jmp;
+                                opcode = codes[jmp];
                                 codes[jmp] = opcode | EncodeOffset(offset);
                             }
-                            else if(null == sinfo1.ResultValues) {
-                                if (TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
-                                    sinfo1 = newInfo1;
-                                }
-                                int index = AddConst(sinfo2.ResultType, sinfo2.ResultValues[0]);
-                                sinfo2.ResultIndex = index;
-                                sinfo2.IsGlobal = true;
-                                if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
-                                    sinfo2 = newInfo2;
-                                }
-                                codes.AddRange(tcodes1);
-                                codes.AddRange(tcodes2);
-                                sinfos.Add(sinfo1);
-                                sinfos.Add(sinfo2);
-                            }
-                            else if(null == sinfo2.ResultValues) {
-                                int index = AddConst(sinfo1.ResultType, sinfo1.ResultValues[0]);
-                                sinfo1.ResultIndex = index;
-                                sinfo1.IsGlobal = true;
-                                if (TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
-                                    sinfo1 = newInfo1;
-                                }
-                                if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
-                                    sinfo2 = newInfo2;
-                                }
-                                codes.AddRange(tcodes1);
-                                int jmp = codes.Count;
-                                if (op == "&&") {
-                                    codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                                }
-                                else {
-                                    codes.Add(EncodeOpcode(InsEnum.JMPIF));
-                                }
-                                int opd = EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex);
-                                codes.Add(opd);
-                                codes.AddRange(tcodes2);
-                                sinfos.Add(sinfo1);
-                                sinfos.Add(sinfo2);
-
-                                int target = codes.Count;
-                                int offset = target - jmp;
-                                int opcode = codes[jmp];
-                                codes[jmp] = opcode | EncodeOffset(offset);
-                            }
-                            else {
-                                codes.AddRange(tcodes1);
-                                codes.AddRange(tcodes2);
-                                sinfos.Add(sinfo1);
-                                sinfos.Add(sinfo2);
-                            }
-                        }
-                        else {
-                            err.AppendFormat("operator '&&' or '||' must have two arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
+                            CurBlock().ResetTempVars();
+                            handled = true;
                         }
                     }
-                    else {
-                        for (int i = 0; i < num; ++i) {
-                            var param = callData.GetParam(i);
-                            var sinfo = new SemanticInfo();
-                            CompileExpression(param, codes, err, ref sinfo);
-                            sinfos.Add(sinfo);
-                        }
-                    }
-                    if (callData.IsOperatorParamClass()) {
-                        if (num == 2 && op != "!" && op != "~" || num == 1 && (op == "+" || op == "-" || op == "!" || op == "~")) {
-                            if (op == "+") {
-                                if (num == 2) {
-                                    TryGenExpression(InsEnum.ADD, codes, sinfos, err, callData, ref semanticInfo);
-                                }
-                            }
-                            else if (op == "-") {
-                                if (num == 2) {
-                                    TryGenExpression(InsEnum.SUB, codes, sinfos, err, callData, ref semanticInfo);
-                                }
-                                else {
-                                    TryGenExpression(InsEnum.NEG, codes, sinfos, err, callData, ref semanticInfo);
-                                }
-                            }
-                            else if (op == "*") {
-                                TryGenExpression(InsEnum.MUL, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "/") {
-                                TryGenExpression(InsEnum.DIV, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "%") {
-                                TryGenExpression(InsEnum.MOD, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "&&") {
-                                TryGenExpression(InsEnum.AND, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "||") {
-                                TryGenExpression(InsEnum.OR, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "!") {
-                                TryGenExpression(InsEnum.NOT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == ">") {
-                                TryGenExpression(InsEnum.GT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == ">=") {
-                                TryGenExpression(InsEnum.GE, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "==") {
-                                TryGenExpression(InsEnum.EQ, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "!=") {
-                                TryGenExpression(InsEnum.NE, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "<=") {
-                                TryGenExpression(InsEnum.LE, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "<") {
-                                TryGenExpression(InsEnum.LT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "<<") {
-                                TryGenExpression(InsEnum.LSHIFT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == ">>") {
-                                TryGenExpression(InsEnum.RSHIFT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == ">>>") {
-                                TryGenExpression(InsEnum.URSHIFT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "&") {
-                                TryGenExpression(InsEnum.BITAND, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "|") {
-                                TryGenExpression(InsEnum.BITOR, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "^") {
-                                TryGenExpression(InsEnum.BITXOR, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "~") {
-                                TryGenExpression(InsEnum.BITNOT, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else {
-                                err.AppendFormat("operator '{0}' illegal, code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
-                                err.AppendLine();
-                            }
-                        }
-                        else {
-                            err.AppendFormat("operator '{0}' arg num {1} illegal, code:{2}, line:{3}", op, num, callData.ToScriptString(false), callData.GetLine());
-                            err.AppendLine();
-                        }
-                    }
-                    else if (callData.IsBracketParamClass() && num == 1) {
-                        TryGenArrGet(op, codes, sinfos, err, callData, ref semanticInfo);
-                    }
-                    else if (callData.IsParenthesisParamClass()) {
-                        if (op == "int2flt") {
-                            TryGenInt2Flt(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "int2str") {
-                            TryGenInt2Str(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "flt2int") {
-                            TryGenFlt2Int(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "flt2str") {
-                            TryGenFlt2Str(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "str2int") {
-                            TryGenStr2Int(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "str2flt") {
-                            TryGenStr2Flt(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "itof") {
-                            TryGenIToF(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "ftoi") {
-                            TryGenFToI(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "argc") {
-                            TryGenArgc(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "argv") {
-                            TryGenArgv(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "addr") {
-                            TryGenAddr(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "ptrget") {
-                            TryGenPtrGet(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "ptrset") {
-                            TryGenPtrSet(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else if (op == "jptr") {
-                            TryGenJaggedPtr(codes, sinfos, err, callData, ref semanticInfo);
-                        }
-                        else {
-                            ApiInfo info;
-                            if (!m_Apis.TryGetValue(op, out info)) {
-                                err.AppendFormat("Undefined api '{0}', code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
-                                err.AppendLine();
-                            }
-                            else {
-                                TryGenCallApi(info, codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                        }
-                    }
-                    else {
-                        err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    if(!handled) {
+                        err.AppendFormat("Illegal condition expression, expect 'cond ? exp1 : exp2', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
-                    }
-                }
-            }
-            else {
-                Dsl.ValueData valueData = comp as Dsl.ValueData;
-                if (null != valueData) {
-                    string val = valueData.GetId();
-                    switch (valueData.GetIdType()) {
-                        case Dsl.ValueData.NUM_TOKEN:
-                            if (val.Contains('.'))
-                                semanticInfo.ResultType = TypeEnum.Float;
-                            else
-                                semanticInfo.ResultType = TypeEnum.Int;
-                            semanticInfo.ResultValues = new List<string>();
-                            semanticInfo.ResultValues.Add(val);
-                            TryGenConst(val, codes, err, comp, ref semanticInfo);
-                            break;
-                        case Dsl.ValueData.STRING_TOKEN:
-                            semanticInfo.ResultType = TypeEnum.String;
-                            semanticInfo.ResultValues = new List<string>();
-                            semanticInfo.ResultValues.Add(val);
-                            TryGenConst(val, codes, err, comp, ref semanticInfo);
-                            break;
-                        case Dsl.ValueData.ID_TOKEN:
-                            TryGenVar(val, codes, err, comp, ref semanticInfo);
-                            break;
                     }
                 }
                 else {
                     err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                     err.AppendLine();
+                }
+            }
+            else {
+                var callData = comp as Dsl.FunctionData;
+                if (null != callData) {
+                    if (!callData.HaveId()) {
+                        int paramNum = callData.GetParamNum();
+                        if (paramNum == 1 && callData.IsParenthesisParamClass()) {
+                            Dsl.ISyntaxComponent param = callData.GetParam(0);
+                            CompileExpression(param, codes, err, ref semanticInfo);
+                        }
+                        else if (paramNum >= 1 && callData.IsBracketParamClass()) {
+                            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                                if (IsGlobalBlock()) {
+                                    semanticInfo.ResultValues = new List<string>();
+                                    for (int i = 0; i < callData.GetParamNum() && i < semanticInfo.TargetCount; ++i) {
+                                        var p = callData.GetParam(i);
+                                        var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
+                                        CompileExpression(p, codes, err, ref sinfo);
+                                        if (null == sinfo.ResultValues) {
+                                            err.AppendFormat("Illegal global init syntax, [%d] must be const value, code:{0}, line:{1}", i, comp.ToScriptString(false), comp.GetLine());
+                                            err.AppendLine();
+                                        }
+                                        else {
+                                            semanticInfo.ResultValues.Add(sinfo.ResultValues[0]);
+                                        }
+                                    }
+                                }
+                                else {
+                                    for (int i = 0; i < callData.GetParamNum() && i < semanticInfo.TargetCount; ++i) {
+                                        var p = callData.GetParam(i);
+                                        var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
+                                        CompileExpression(p, codes, err, ref sinfo);
+                                        TryGenArrMov(semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i, codes, sinfo, err, p);
+                                    }
+                                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                                    semanticInfo.ResultType = semanticInfo.TargetType;
+                                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                                    semanticInfo.ResultValues = null;
+                                }
+                            }
+                            else {
+                                int tmpIndex = -1;
+                                TypeEnum type = TypeEnum.NotUse;
+                                for (int i = 0; i < callData.GetParamNum(); ++i) {
+                                    var p = callData.GetParam(i);
+                                    var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
+                                    CompileExpression(p, codes, err, ref sinfo);
+                                    if (i == 0) {
+                                        type = sinfo.TargetType;
+                                        if (type == TypeEnum.Int) {
+                                            tmpIndex = CurBlock().AllocTempIntArray(callData.GetParamNum());
+                                        }
+                                        else if (type == TypeEnum.Float) {
+                                            tmpIndex = CurBlock().AllocTempFloatArray(callData.GetParamNum());
+                                        }
+                                        else if (type == TypeEnum.String) {
+                                            tmpIndex = CurBlock().AllocTempFloatArray(callData.GetParamNum());
+                                        }
+                                    }
+                                    TryGenArrMov(false, TypeEnum.Int, tmpIndex + i, codes, sinfo, err, p);
+                                }
+                                semanticInfo.IsGlobal = false;
+                                semanticInfo.ResultType = type;
+                                semanticInfo.ResultCount = callData.GetParamNum();
+                                semanticInfo.ResultIndex = tmpIndex;
+                                semanticInfo.ResultValues = null;
+                            }
+                        }
+                        else {
+                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                    }
+                    else {
+                        string op = callData.GetId();
+                        ApiInfo apiInfo;
+                        bool apiExists = m_Apis.TryGetValue(op, out apiInfo);
+                        int num = callData.GetParamNum();
+                        var sinfos = new List<SemanticInfo>();
+                        if(op == "expect") {
+                            if (callData.GetParamNum() == 2) {
+                                string type = callData.GetParamId(0);
+                                if (s_Type2Ids.TryGetValue(type, out var ty)) {
+                                    semanticInfo.TargetType = ty;
+                                }
+                                Dsl.ISyntaxComponent param = callData.GetParam(1);
+                                CompileExpression(param, codes, err, ref semanticInfo);
+                            }
+                            else {
+                                err.AppendFormat("expect 'expect(type, exp)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                            }
+                            return;
+                        }
+                        else if (op == "struct") {
+
+                            return;
+                        }
+                        else if (callData.IsOperatorParamClass() && op == "??") {
+                            //exp1 ?? exp2
+                            bool handled = false;
+                            if (num == 2) {
+                                var exp1 = callData.GetParam(0);
+                                var exp2 = callData.GetParam(1);
+                                var tinfo = semanticInfo;
+                                if (semanticInfo.TargetOperation != TargetOperationEnum.VarAssign) {
+                                    if (tinfo.TargetType == TypeEnum.NotUse)
+                                        tinfo.TargetType = TypeEnum.Int;
+                                    int tmpIndex = -1;
+                                    switch (tinfo.TargetType) {
+                                        case TypeEnum.Int:
+                                            tmpIndex = CurBlock().AllocTempInt();
+                                            break;
+                                        case TypeEnum.Float:
+                                            tmpIndex = CurBlock().AllocTempFloat();
+                                            break;
+                                        case TypeEnum.String:
+                                            tmpIndex = CurBlock().AllocTempString();
+                                            break;
+                                    }
+                                    Debug.Assert(tmpIndex >= 0);
+                                    tinfo.TargetOperation = TargetOperationEnum.VarAssign;
+                                    tinfo.TargetIsGlobal = false;
+                                    tinfo.TargetCount = 0;
+                                    tinfo.TargetIndex = tmpIndex;
+
+                                    tinfo.ResultType = tinfo.TargetType;
+                                    tinfo.ResultCount = 0;
+                                    tinfo.ResultIndex = tmpIndex;
+                                }
+                                semanticInfo = tinfo;
+                                var sinfo1 = tinfo;
+                                CompileExpression(exp1, codes, err, ref sinfo1);
+                                var sinfo2 = tinfo;
+                                var tcodes = new List<int>();
+                                CompileExpression(exp2, tcodes, err, ref sinfo2);
+                                if (null != sinfo1.ResultValues) {
+                                    bool cond = false;
+                                    if (sinfo1.ResultType == TypeEnum.Int || sinfo1.ResultType == TypeEnum.String) {
+                                        long.TryParse(sinfo1.ResultValues[0], out var v);
+                                        cond = v != 0;
+                                    }
+                                    else if (sinfo1.ResultType == TypeEnum.Float) {
+                                        double.TryParse(sinfo1.ResultValues[0], out var v);
+                                        cond = v != 0;
+                                    }
+                                    if (!cond) {
+                                        codes.AddRange(tcodes);
+                                    }
+                                }
+                                else {
+                                    if (TryGenConvert(codes, TypeEnum.Int, sinfo1, out var newInfo)) {
+                                        sinfo1 = newInfo;
+                                    }
+                                    //gen jmpifnot
+                                    int jmpIfNot = codes.Count;
+                                    codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                    codes.Add(EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex));
+
+                                    int jmp = codes.Count;
+                                    codes.Add(EncodeOpcode(InsEnum.JMP));
+
+                                    //fix jmpIfNot offset
+                                    int elseTarget = codes.Count;
+                                    int offset = elseTarget - jmpIfNot;
+                                    int opcode = codes[jmpIfNot];
+                                    codes[jmpIfNot] = opcode | EncodeOffset(offset);
+
+                                    codes.AddRange(tcodes);
+
+                                    //fix jmp offset
+                                    int exitTarget = codes.Count;
+                                    offset = exitTarget - jmp;
+                                    opcode = codes[jmp];
+                                    codes[jmp] = opcode | EncodeOffset(offset);
+                                }
+                                CurBlock().ResetTempVars();
+                                handled = true;
+                            }
+                            if (!handled) {
+                                err.AppendFormat("Illegal condition expression, expect 'exp1 ?? exp2', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                            }
+                            return;
+                        }
+                        else if (callData.IsOperatorParamClass() && (op == "&&" || op == "||")) {
+                            //Short Circuit
+                            if (num == 2) {
+                                var param1 = callData.GetParam(0);
+                                var sinfo1 = new SemanticInfo();
+                                var tcodes1 = new List<int>();
+                                CompileExpression(param1, tcodes1, err, ref sinfo1);
+                                var param2 = callData.GetParam(0);
+                                var sinfo2 = new SemanticInfo();
+                                var tcodes2 = new List<int>();
+                                CompileExpression(param2, tcodes2, err, ref sinfo2);
+                                if (null == sinfo1.ResultValues && null == sinfo2.ResultValues) {
+                                    if (TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
+                                        sinfo1 = newInfo1;
+                                    }
+                                    if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
+                                        sinfo2 = newInfo2;
+                                    }
+                                    codes.AddRange(tcodes1);
+                                    int jmp = codes.Count;
+                                    if (op == "&&") {
+                                        codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                    }
+                                    else {
+                                        codes.Add(EncodeOpcode(InsEnum.JMPIF));
+                                    }
+                                    codes.Add(EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex));
+                                    codes.AddRange(tcodes2);
+                                    sinfos.Add(sinfo1);
+                                    sinfos.Add(sinfo2);
+
+                                    int target = codes.Count;
+                                    int offset = target - jmp;
+                                    int opcode = codes[jmp];
+                                    codes[jmp] = opcode | EncodeOffset(offset);
+                                }
+                                else if (null == sinfo1.ResultValues) {
+                                    if (TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
+                                        sinfo1 = newInfo1;
+                                    }
+                                    int index = AddConst(sinfo2.ResultType, sinfo2.ResultValues[0]);
+                                    sinfo2.ResultIndex = index;
+                                    sinfo2.IsGlobal = true;
+                                    if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
+                                        sinfo2 = newInfo2;
+                                    }
+                                    codes.AddRange(tcodes1);
+                                    codes.AddRange(tcodes2);
+                                    sinfos.Add(sinfo1);
+                                    sinfos.Add(sinfo2);
+                                }
+                                else if (null == sinfo2.ResultValues) {
+                                    int index = AddConst(sinfo1.ResultType, sinfo1.ResultValues[0]);
+                                    sinfo1.ResultIndex = index;
+                                    sinfo1.IsGlobal = true;
+                                    if (TryGenConvert(tcodes1, TypeEnum.Int, sinfo1, out var newInfo1)) {
+                                        sinfo1 = newInfo1;
+                                    }
+                                    if (TryGenConvert(tcodes2, TypeEnum.Int, sinfo2, out var newInfo2)) {
+                                        sinfo2 = newInfo2;
+                                    }
+                                    codes.AddRange(tcodes1);
+                                    int jmp = codes.Count;
+                                    if (op == "&&") {
+                                        codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
+                                    }
+                                    else {
+                                        codes.Add(EncodeOpcode(InsEnum.JMPIF));
+                                    }
+                                    int opd = EncodeOperand1(sinfo1.IsGlobal, sinfo1.ResultType, sinfo1.ResultIndex);
+                                    codes.Add(opd);
+                                    codes.AddRange(tcodes2);
+                                    sinfos.Add(sinfo1);
+                                    sinfos.Add(sinfo2);
+
+                                    int target = codes.Count;
+                                    int offset = target - jmp;
+                                    int opcode = codes[jmp];
+                                    codes[jmp] = opcode | EncodeOffset(offset);
+                                }
+                                else {
+                                    codes.AddRange(tcodes1);
+                                    codes.AddRange(tcodes2);
+                                    sinfos.Add(sinfo1);
+                                    sinfos.Add(sinfo2);
+                                }
+                            }
+                            else {
+                                err.AppendFormat("operator '&&' or '||' must have two arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                            }
+                        }
+                        else {
+                            for (int i = 0; i < num; ++i) {
+                                var param = callData.GetParam(i);
+                                var sinfo = new SemanticInfo { TargetType = TypeEnum.Int };
+                                if (apiExists) {
+                                    Debug.Assert(null != apiInfo);
+                                    if (i < apiInfo.ParamTypes.Count) {
+                                        sinfo.TargetType = apiInfo.ParamTypes[i];
+                                    }
+                                    else if (apiInfo.Params == ParamsEnum.Ints) {
+                                        sinfo.TargetType = TypeEnum.Int;
+                                    }
+                                    else if (apiInfo.Params == ParamsEnum.Floats) {
+                                        sinfo.TargetType = TypeEnum.Float;
+                                    }
+                                    else if (apiInfo.Params == ParamsEnum.Strings) {
+                                        sinfo.TargetType = TypeEnum.String;
+                                    }
+                                }
+                                CompileExpression(param, codes, err, ref sinfo);
+                                sinfos.Add(sinfo);
+                            }
+                        }
+                        if (callData.IsOperatorParamClass()) {
+                            if (num == 2 && op != "!" && op != "~" || num == 1 && (op == "+" || op == "-" || op == "!" || op == "~")) {
+                                if (op == "+") {
+                                    if (num == 2) {
+                                        TryGenExpression(InsEnum.ADD, codes, sinfos, err, callData, ref semanticInfo);
+                                    }
+                                }
+                                else if (op == "-") {
+                                    if (num == 2) {
+                                        TryGenExpression(InsEnum.SUB, codes, sinfos, err, callData, ref semanticInfo);
+                                    }
+                                    else {
+                                        TryGenExpression(InsEnum.NEG, codes, sinfos, err, callData, ref semanticInfo);
+                                    }
+                                }
+                                else if (op == "*") {
+                                    TryGenExpression(InsEnum.MUL, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "/") {
+                                    TryGenExpression(InsEnum.DIV, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "%") {
+                                    TryGenExpression(InsEnum.MOD, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "&&") {
+                                    TryGenExpression(InsEnum.AND, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "||") {
+                                    TryGenExpression(InsEnum.OR, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "!") {
+                                    TryGenExpression(InsEnum.NOT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == ">") {
+                                    TryGenExpression(InsEnum.GT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == ">=") {
+                                    TryGenExpression(InsEnum.GE, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "==") {
+                                    TryGenExpression(InsEnum.EQ, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "!=") {
+                                    TryGenExpression(InsEnum.NE, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "<=") {
+                                    TryGenExpression(InsEnum.LE, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "<") {
+                                    TryGenExpression(InsEnum.LT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "<<") {
+                                    TryGenExpression(InsEnum.LSHIFT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == ">>") {
+                                    TryGenExpression(InsEnum.RSHIFT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == ">>>") {
+                                    TryGenExpression(InsEnum.URSHIFT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "&") {
+                                    TryGenExpression(InsEnum.BITAND, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "|") {
+                                    TryGenExpression(InsEnum.BITOR, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "^") {
+                                    TryGenExpression(InsEnum.BITXOR, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else if (op == "~") {
+                                    TryGenExpression(InsEnum.BITNOT, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                                else {
+                                    err.AppendFormat("operator '{0}' illegal, code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendLine();
+                                }
+                            }
+                            else {
+                                err.AppendFormat("operator '{0}' arg num {1} illegal, code:{2}, line:{3}", op, num, callData.ToScriptString(false), callData.GetLine());
+                                err.AppendLine();
+                            }
+                        }
+                        else if (callData.IsBracketParamClass() && num == 1) {
+                            TryGenArrGet(op, codes, sinfos, err, callData, ref semanticInfo);
+                        }
+                        else if (callData.IsParenthesisParamClass()) {
+                            if (op == "int2flt") {
+                                TryGenInt2Flt(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "int2str") {
+                                TryGenInt2Str(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "flt2int") {
+                                TryGenFlt2Int(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "flt2str") {
+                                TryGenFlt2Str(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "str2int") {
+                                TryGenStr2Int(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "str2flt") {
+                                TryGenStr2Flt(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "itof") {
+                                TryGenIToF(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "ftoi") {
+                                TryGenFToI(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "argc") {
+                                TryGenArgc(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "argv") {
+                                TryGenArgv(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "addr") {
+                                TryGenAddr(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "ptrget") {
+                                TryGenPtrGet(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "ptrset") {
+                                TryGenPtrSet(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "jptr") {
+                                TryGenJaggedPtr(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else {
+                                ApiInfo info;
+                                if (!m_Apis.TryGetValue(op, out info)) {
+                                    err.AppendFormat("Undefined api '{0}', code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendLine();
+                                }
+                                else {
+                                    TryGenCallApi(info, codes, sinfos, err, callData, ref semanticInfo);
+                                }
+                            }
+                        }
+                        else {
+                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                    }
+                }
+                else {
+                    Dsl.ValueData valueData = comp as Dsl.ValueData;
+                    if (null != valueData) {
+                        string val = valueData.GetId();
+                        switch (valueData.GetIdType()) {
+                            case Dsl.ValueData.NUM_TOKEN:
+                                if (val.Contains('.'))
+                                    semanticInfo.ResultType = TypeEnum.Float;
+                                else
+                                    semanticInfo.ResultType = TypeEnum.Int;
+                                semanticInfo.ResultValues = new List<string>();
+                                semanticInfo.ResultValues.Add(val);
+                                TryGenConst(val, codes, err, comp, ref semanticInfo);
+                                break;
+                            case Dsl.ValueData.STRING_TOKEN:
+                                semanticInfo.ResultType = TypeEnum.String;
+                                semanticInfo.ResultValues = new List<string>();
+                                semanticInfo.ResultValues.Add(val);
+                                TryGenConst(val, codes, err, comp, ref semanticInfo);
+                                break;
+                            case Dsl.ValueData.ID_TOKEN:
+                                TryGenVar(val, codes, err, comp, ref semanticInfo);
+                                break;
+                        }
+                    }
+                    else {
+                        err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
                 }
             }
         }
@@ -2403,8 +2633,7 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment a value to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
@@ -2413,21 +2642,21 @@ namespace CppDebugScript
                     int index = AddConst(info.ResultType, val);
                     info.ResultIndex = index;
                     info.IsGlobal = true;
-                    if(TryGenConvert(codes, vinfo.Type, info, out var newInfo)) {
+                    if(TryGenConvert(codes, semanticInfo.TargetType, info, out var newInfo)) {
                         info = newInfo;
                     }
-                    if (vinfo.Type == TypeEnum.Int)
-                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                    else if (vinfo.Type == TypeEnum.Float)
-                        codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                    else if (vinfo.Type == TypeEnum.String)
-                        codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    if (semanticInfo.TargetType == TypeEnum.Int)
+                        codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    else if (semanticInfo.TargetType == TypeEnum.Float)
+                        codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    else if (semanticInfo.TargetType == TypeEnum.String)
+                        codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -2438,53 +2667,47 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
                     var vinfo2 = GetVarInfo(id);
-                    if (null == vinfo) {
-                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", semanticInfo.TargetName, comp.ToScriptString(false), comp.GetLine());
-                        err.AppendLine();
-                        return;
-                    }
                     if (null == vinfo2) {
                         err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                         return;
                     }
-                    if (vinfo.Count > 0 || vinfo2.Count > 0) {
-                        if (vinfo.Count != vinfo2.Count) {
+                    if (semanticInfo.TargetCount > 0 || vinfo2.Count > 0) {
+                        if (semanticInfo.TargetCount != vinfo2.Count) {
                             err.AppendFormat("Can't assignment array with different size, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                             err.AppendLine();
                         }
-                        for (int i = 0; i < vinfo.Count && i < vinfo2.Count; ++i) {
+                        for (int i = 0; i < semanticInfo.TargetCount && i < vinfo2.Count; ++i) {
                             //gen write result
-                            if (vinfo.Type == vinfo2.Type) {
-                                if (vinfo.Type == TypeEnum.Int)
-                                    codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
-                                else if (vinfo.Type == TypeEnum.Float)
-                                    codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
-                                else if (vinfo.Type == TypeEnum.String)
-                                    codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
+                            if (semanticInfo.TargetType == vinfo2.Type) {
+                                if (semanticInfo.TargetType == TypeEnum.Int)
+                                    codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
+                                else if (semanticInfo.TargetType == TypeEnum.Float)
+                                    codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
+                                else if (semanticInfo.TargetType == TypeEnum.String)
+                                    codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
                                 codes.Add(EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index + i));
                             }
                             else {
-                                var info = new SemanticInfo { IsGlobal = false, ResultType = vinfo.Type };
-                                if (vinfo.Type == TypeEnum.Int) {
+                                var info = new SemanticInfo { IsGlobal = false, ResultType = semanticInfo.TargetType };
+                                if (semanticInfo.TargetType == TypeEnum.Int) {
                                     info.ResultIndex = CurBlock().AllocTempIntArray(vinfo2.Count);
                                 }
-                                else if(vinfo.Type == TypeEnum.Float) {
+                                else if(semanticInfo.TargetType == TypeEnum.Float) {
                                     info.ResultIndex = CurBlock().AllocTempFloatArray(vinfo2.Count);
                                 }
-                                else if(vinfo.Type == TypeEnum.String) {
+                                else if(semanticInfo.TargetType == TypeEnum.String) {
                                     info.ResultIndex = CurBlock().AllocTempStringArray(vinfo2.Count);
                                 }
 
                                 if(TryGenConvert(codes, info.ResultType, vinfo2, out var newInfo)) {
-                                    if (vinfo.Type == TypeEnum.Int)
-                                        codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
-                                    else if (vinfo.Type == TypeEnum.Float)
-                                        codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
-                                    else if (vinfo.Type == TypeEnum.String)
-                                        codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index + i));
+                                    if (semanticInfo.TargetType == TypeEnum.Int)
+                                        codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
+                                    else if (semanticInfo.TargetType == TypeEnum.Float)
+                                        codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
+                                    else if (semanticInfo.TargetType == TypeEnum.String)
+                                        codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
                                     codes.Add(EncodeOperand1(newInfo.IsGlobal, newInfo.ResultType, newInfo.ResultIndex + i));
                                 }
                             }
@@ -2492,43 +2715,43 @@ namespace CppDebugScript
                     }
                     else {
                         //gen write result
-                        if (vinfo.Type == vinfo2.Type) {
-                            if (vinfo.Type == TypeEnum.Int)
-                                codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                            else if (vinfo.Type == TypeEnum.Float)
-                                codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                            else if (vinfo.Type == TypeEnum.String)
-                                codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        if (semanticInfo.TargetType == vinfo2.Type) {
+                            if (semanticInfo.TargetType == TypeEnum.Int)
+                                codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                            else if (semanticInfo.TargetType == TypeEnum.Float)
+                                codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                            else if (semanticInfo.TargetType == TypeEnum.String)
+                                codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                             codes.Add(EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index));
                         }
                         else {
-                            var info = new SemanticInfo { IsGlobal = false, ResultType = vinfo.Type };
-                            if (vinfo.Type == TypeEnum.Int) {
+                            var info = new SemanticInfo { IsGlobal = false, ResultType = semanticInfo.TargetType };
+                            if (semanticInfo.TargetType == TypeEnum.Int) {
                                 info.ResultIndex = CurBlock().AllocTempInt();
                             }
-                            else if (vinfo.Type == TypeEnum.Float) {
+                            else if (semanticInfo.TargetType == TypeEnum.Float) {
                                 info.ResultIndex = CurBlock().AllocTempFloat();
                             }
-                            else if (vinfo.Type == TypeEnum.String) {
+                            else if (semanticInfo.TargetType == TypeEnum.String) {
                                 info.ResultIndex = CurBlock().AllocTempString();
                             }
 
                             if (TryGenConvert(codes, info.ResultType, vinfo2, out var newInfo)) {
-                                if (vinfo.Type == TypeEnum.Int)
-                                    codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                                else if (vinfo.Type == TypeEnum.Float)
-                                    codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                                else if (vinfo.Type == TypeEnum.String)
-                                    codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                                if (semanticInfo.TargetType == TypeEnum.Int)
+                                    codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                                else if (semanticInfo.TargetType == TypeEnum.Float)
+                                    codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                                else if (semanticInfo.TargetType == TypeEnum.String)
+                                    codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                                 codes.Add(EncodeOperand1(newInfo.IsGlobal, newInfo.ResultType, newInfo.ResultIndex));
                             }
                         }
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -2579,13 +2802,7 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
                     var vinfo2 = GetVarInfo(id);
-                    if (null == vinfo) {
-                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", semanticInfo.TargetName, comp.ToScriptString(false), comp.GetLine());
-                        err.AppendLine();
-                        return;
-                    }
                     if (null == vinfo2) {
                         err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
@@ -2608,13 +2825,13 @@ namespace CppDebugScript
                     }
                     //gen write result
                     SemanticInfo rinfo = new SemanticInfo();
-                    if (vinfo.Type == vinfo2.Type) {
-                        if (vinfo.Type == TypeEnum.Int)
-                            codes.Add(EncodeOpcode(InsEnum.ARRGET, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                        else if (vinfo.Type == TypeEnum.Float)
-                            codes.Add(EncodeOpcode(InsEnum.ARRGETFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                        else if (vinfo.Type == TypeEnum.String)
-                            codes.Add(EncodeOpcode(InsEnum.ARRGETSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    if (semanticInfo.TargetType == vinfo2.Type) {
+                        if (semanticInfo.TargetType == TypeEnum.Int)
+                            codes.Add(EncodeOpcode(InsEnum.ARRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        else if (semanticInfo.TargetType == TypeEnum.Float)
+                            codes.Add(EncodeOpcode(InsEnum.ARRGETFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        else if (semanticInfo.TargetType == TypeEnum.String)
+                            codes.Add(EncodeOpcode(InsEnum.ARRGETSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     else {
                         int tmpIndex = -1;
@@ -2631,7 +2848,7 @@ namespace CppDebugScript
                         }
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
-                            rinfo.ResultType = vinfo.Type;
+                            rinfo.ResultType = semanticInfo.TargetType;
                             rinfo.ResultCount = 0;
                             rinfo.ResultIndex = tmpIndex;
                             rinfo.ResultValues = null;
@@ -2647,14 +2864,14 @@ namespace CppDebugScript
                     int opd1 = EncodeOperand1(vinfo2.IsGlobal, vinfo2.Type, vinfo2.Index);
                     int opd2 = EncodeOperand2(info2.IsGlobal, info2.ResultType, info2.ResultIndex);
                     codes.Add(opd1 | opd2);
-                    if (vinfo.Type != vinfo2.Type) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != vinfo2.Type) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -2761,31 +2978,26 @@ namespace CppDebugScript
                     if (IsGlobalBlock()) {
                     }
                     else {
-                        var vinfo = GetVarInfo(semanticInfo.TargetName);
-                        if (vinfo.Count > 0) {
-                            err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
                         //gen write result
                         int index = AddConst(semanticInfo.ResultType, semanticInfo.ResultValues[0]);
                         var info = semanticInfo;
                         info.ResultIndex = index;
                         info.IsGlobal = true;
-                        if(TryGenConvert(codes, vinfo.Type, info, out var newInfo)) {
+                        if(TryGenConvert(codes, semanticInfo.TargetType, info, out var newInfo)) {
                             info = newInfo;
                         }
-                        if (vinfo.Type == TypeEnum.Int)
-                            codes.Add(EncodeOpcode(InsEnum.MOV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                        else if (vinfo.Type == TypeEnum.Float)
-                            codes.Add(EncodeOpcode(InsEnum.MOVFLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
-                        else if (vinfo.Type == TypeEnum.String)
-                            codes.Add(EncodeOpcode(InsEnum.MOVSTR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        if (semanticInfo.TargetType == TypeEnum.Int)
+                            codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        else if (semanticInfo.TargetType == TypeEnum.Float)
+                            codes.Add(EncodeOpcode(InsEnum.MOVFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        else if (semanticInfo.TargetType == TypeEnum.String)
+                            codes.Add(EncodeOpcode(InsEnum.MOVSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                         codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
 
-                        semanticInfo.IsGlobal = vinfo.IsGlobal;
-                        semanticInfo.ResultType = vinfo.Type;
-                        semanticInfo.ResultCount = vinfo.Count;
-                        semanticInfo.ResultIndex = vinfo.Index;
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     }
                 }
             }
@@ -2794,11 +3006,6 @@ namespace CppDebugScript
                     if (IsGlobalBlock()) {
                     }
                     else {
-                        var vinfo = GetVarInfo(semanticInfo.TargetName);
-                        if (vinfo.Count > 0) {
-                            err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
                         //gen write result
                         SemanticInfo info1 = new SemanticInfo(), info2 = new SemanticInfo();
                         if (opds.Count > 0) {
@@ -2815,8 +3022,8 @@ namespace CppDebugScript
                         }
 
                         var rinfo = semanticInfo;
-                        if (vinfo.Type == semanticInfo.ResultType) {
-                            codes.Add(EncodeOpcode(newOp, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        if (semanticInfo.TargetType == semanticInfo.ResultType) {
+                            codes.Add(EncodeOpcode(newOp, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                         }
                         else {
                             int tmpIndex = -1;
@@ -2842,14 +3049,14 @@ namespace CppDebugScript
                         int opd1 = EncodeOperand1(info1.IsGlobal, info1.ResultType, info1.ResultIndex);
                         int opd2 = EncodeOperand2(info2.IsGlobal, info2.ResultType, info2.ResultIndex);
                         codes.Add(opd1 | opd2);
-                        if (vinfo.Type != semanticInfo.ResultType) {
-                            TryGenConvert(codes, vinfo, rinfo);
+                        if (semanticInfo.TargetType != semanticInfo.ResultType) {
+                            TryGenConvert(codes, semanticInfo, rinfo);
                         }
 
-                        semanticInfo.IsGlobal = vinfo.IsGlobal;
-                        semanticInfo.ResultType = vinfo.Type;
-                        semanticInfo.ResultCount = vinfo.Count;
-                        semanticInfo.ResultIndex = vinfo.Index;
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                         semanticInfo.ResultValues = null;
                     }
                 }
@@ -2901,14 +3108,9 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
-                        err.AppendFormat("Can't assignment api result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                        err.AppendLine();
-                    }
                     //gen api call
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != api.Type) {
+                    if (semanticInfo.TargetType != api.Type) {
                         int tmpIndex = -1;
                         switch (api.Type) {
                             case TypeEnum.Int:
@@ -2931,7 +3133,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     int opd1 = 0;
                     int opd2 = 0;
@@ -2972,14 +3174,14 @@ namespace CppDebugScript
                         }
                         codes.Add(opd1 | opd2);
                     }
-                    if (vinfo.Type != api.Type) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != api.Type) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3059,17 +3261,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Float) {
+                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.INT2FLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.INT2FLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3083,10 +3284,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3125,17 +3326,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.String) {
-                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.String) {
+                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.INT2STR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.INT2STR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3149,10 +3349,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3191,17 +3391,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Int) {
+                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.FLT2INT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.FLT2INT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3215,10 +3414,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3257,17 +3456,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.String) {
-                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.String) {
+                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.FLT2STR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.FLT2STR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3281,10 +3479,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3323,17 +3521,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Int) {
+                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.STR2INT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.STR2INT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3347,10 +3544,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3389,17 +3586,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Float) {
+                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.STR2FLT, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.STR2FLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3413,10 +3609,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3455,17 +3651,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Float) {
+                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.ITOF, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.ITOF, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3479,10 +3674,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3521,17 +3716,16 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
-                    else if (vinfo.Type != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)vinfo.Type], comp.ToScriptString(false), comp.GetLine());
+                    else if (semanticInfo.TargetType != TypeEnum.Int) {
+                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.FTOI, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                    codes.Add(EncodeOpcode(InsEnum.FTOI, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -3545,10 +3739,10 @@ namespace CppDebugScript
                     }
                     codes.Add(opd1);
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3587,14 +3781,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != TypeEnum.Int) {
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
                         int tmpIndex = CurBlock().AllocTempInt();
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
@@ -3603,17 +3796,17 @@ namespace CppDebugScript
                             rinfo.ResultIndex = tmpIndex;
                             rinfo.ResultValues = null;
                             codes.Add(EncodeOpcode(InsEnum.ARGC, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
-                            TryGenConvert(codes, vinfo, rinfo);
+                            TryGenConvert(codes, semanticInfo, rinfo);
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.ARGC, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.ARGC, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3639,14 +3832,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != TypeEnum.Int) {
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
                         int tmpIndex = CurBlock().AllocTempInt();
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
@@ -3658,7 +3850,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.ARGV, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.ARGV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     int opd1 = 0;
                     if (opds.Count > 0) {
@@ -3672,14 +3864,14 @@ namespace CppDebugScript
                         }
                     }
                     codes.Add(opd1);
-                    if (vinfo.Type != TypeEnum.Int) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3719,14 +3911,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != TypeEnum.Int) {
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
                         int tmpIndex = CurBlock().AllocTempInt();
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
@@ -3738,7 +3929,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.ADDR, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     int opd1 = 0;
                     if (opds.Count > 0) {
@@ -3752,14 +3943,14 @@ namespace CppDebugScript
                         }
                     }
                     codes.Add(opd1);
-                    if (vinfo.Type != TypeEnum.Int) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3799,14 +3990,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != TypeEnum.Int) {
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
                         int tmpIndex = CurBlock().AllocTempInt();
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
@@ -3818,7 +4008,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.PTRGET, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     int opd1 = 0;
                     if (opds.Count > 0) {
@@ -3843,14 +4033,14 @@ namespace CppDebugScript
                         }
                     }
                     codes.Add(opd1 | opd2);
-                    if (vinfo.Type != TypeEnum.Int) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -3947,14 +4137,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
-                    var vinfo = GetVarInfo(semanticInfo.TargetName);
-                    if (vinfo.Count > 0) {
+                    if (semanticInfo.TargetCount > 0) {
                         err.AppendFormat("Can't assignment api result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
                     var rinfo = semanticInfo;
-                    if (vinfo.Type != TypeEnum.Int) {
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
                         int tmpIndex = CurBlock().AllocTempInt();
                         if (tmpIndex >= 0) {
                             rinfo.IsGlobal = false;
@@ -3966,7 +4155,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, vinfo.IsGlobal, vinfo.Type, vinfo.Index));
+                        codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
@@ -3993,14 +4182,14 @@ namespace CppDebugScript
                         }
                         codes.Add(opd1 | opd2);
                     }
-                    if (vinfo.Type != TypeEnum.Int) {
-                        TryGenConvert(codes, vinfo, rinfo);
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
                     }
 
-                    semanticInfo.IsGlobal = vinfo.IsGlobal;
-                    semanticInfo.ResultType = vinfo.Type;
-                    semanticInfo.ResultCount = vinfo.Count;
-                    semanticInfo.ResultIndex = vinfo.Index;
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
                     semanticInfo.ResultValues = null;
                 }
             }
@@ -4045,42 +4234,50 @@ namespace CppDebugScript
 
         private bool TryGenConvert(List<int> codes, VarInfo target, SemanticInfo opd)
         {
+            return TryGenConvert(codes, target.IsGlobal, target.Type, target.Index, opd);
+        }
+        private bool TryGenConvert(List<int> codes, SemanticInfo target, SemanticInfo opd)
+        {
+            return TryGenConvert(codes, target.TargetIsGlobal, target.TargetType, target.TargetIndex, opd);
+        }
+        private bool TryGenConvert(List<int> codes, bool isGlobal, TypeEnum type, int index, SemanticInfo opd)
+        {
             InsEnum op = InsEnum.NUM;
             if (opd.ResultType == TypeEnum.Int) {
-                if (target.Type == TypeEnum.Float) {
+                if (type == TypeEnum.Float) {
                     op = InsEnum.INT2FLT;
                 }
-                else if (target.Type == TypeEnum.String) {
+                else if (type == TypeEnum.String) {
                     op = InsEnum.INT2STR;
                 }
             }
             else if (opd.ResultType == TypeEnum.Float) {
-                if (target.Type == TypeEnum.Int) {
+                if (type == TypeEnum.Int) {
                     op = InsEnum.FLT2INT;
                 }
-                else if (target.Type == TypeEnum.String) {
+                else if (type == TypeEnum.String) {
                     op = InsEnum.FLT2STR;
                 }
             }
             else if (opd.ResultType == TypeEnum.String) {
-                if (target.Type == TypeEnum.Int) {
+                if (type == TypeEnum.Int) {
                     op = InsEnum.STR2INT;
                 }
-                else if (target.Type == TypeEnum.Float) {
+                else if (type == TypeEnum.Float) {
                     op = InsEnum.STR2FLT;
                 }
             }
             bool ret = false;
             if (op != InsEnum.NUM) {
-                codes.Add(EncodeOpcode(InsEnum.INT2FLT, target.IsGlobal, target.Type, target.Index));
+                codes.Add(EncodeOpcode(InsEnum.INT2FLT, isGlobal, type, index));
                 int opd1 = 0;
                 var opdInfo = opd;
                 if (null == opdInfo.ResultValues) {
                     opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                 }
                 else {
-                    int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                    opd1 = EncodeConstOperand1(opdInfo.ResultType, index);
+                    int cindex = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
+                    opd1 = EncodeConstOperand1(opdInfo.ResultType, cindex);
                 }
                 codes.Add(opd1);
             }
@@ -5126,9 +5323,10 @@ namespace CppDebugScript
         public struct SemanticInfo
         {
             public TargetOperationEnum TargetOperation;
+            public bool TargetIsGlobal;
             public TypeEnum TargetType;
             public int TargetCount;
-            public string TargetName;
+            public int TargetIndex;
 
             public bool IsGlobal;
             public TypeEnum ResultType;
@@ -5139,9 +5337,10 @@ namespace CppDebugScript
             public void Reset()
             {
                 TargetOperation = TargetOperationEnum.TypeInfo;
+                TargetIsGlobal = false;
                 TargetType = TypeEnum.NotUse;
                 TargetCount = 0;
-                TargetName = string.Empty;
+                TargetIndex = 0;
 
                 IsGlobal = false;
                 ResultType = TypeEnum.NotUse;

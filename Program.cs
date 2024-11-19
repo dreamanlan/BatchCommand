@@ -182,7 +182,7 @@ namespace BatchCommand
                     LogSystem.Warn("[ASM]:\n{0}", sb.ToString());
                 }
                 else {
-                    LogSystem.Warn("Compile DebugScript from {0} faild:{1}", scpFile, err);
+                    LogSystem.Warn("Compile DebugScript from {0} failed:{1}", scpFile, err);
                 }
             }
             return BoxedValue.NullObject;

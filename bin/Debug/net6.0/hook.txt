@@ -51,3 +51,24 @@ hook(Test1)
 		ptrset(argv(0),4,2);
 	};
 };
+
+hook("CommandBuffer::EndRenderPass")
+{
+	onenter{
+		dumpstack("CommandBuffer::EndRenderPass");
+		return 0;
+	};
+	onexit{
+		printf("CommandBuffer::EndRenderPass time:%d\n",time());
+	};
+};
+hook("CommandBuffer::End")
+{
+	onenter{
+		dumpstack("CommandBuffer::End");
+		return 0;
+	};
+	onexit{
+		printf("CommandBuffer::End time:%d\n",time());
+	};
+};

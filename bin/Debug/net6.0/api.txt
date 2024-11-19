@@ -1,4 +1,5 @@
 defapi(assert,int,noparams,[int,string]);
+defapi(dumpstack,void,noparams,[string]);
 defapi(printf,int,printf,[string]);
 defapi(format,string,printf,[string]);
 defapi(time,int,noparams,[]);

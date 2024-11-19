@@ -2995,6 +2995,9 @@ namespace CppDebugScript
                     case TypeEnum.String:
                         tmpIndex = CurBlock().AllocTempString();
                         break;
+                    default:
+                        tmpIndex = 0;
+                        break;
                 }
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;

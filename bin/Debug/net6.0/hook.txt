@@ -1,3 +1,9 @@
+struct(TestStru3)
+{
+	count : int32;
+	ptest2 : TestStru2[12];
+};
+
 @ga : int = 123;
 @gb : int[3] = [3,5,1];
 @gc : int = 456;
@@ -34,6 +40,7 @@ hook(Test)
 		$c = addr($e) + argv(0);
 		$d = $c < 1 ? 2 : 3;
 		$e[0] = $d ?? 1;
+		$f : int32 = struct($d, ptr(ptr(TestStru3.ptest2).ptest).size);
 		return 0;
 	};
 };

@@ -167,6 +167,7 @@ namespace CppDebugScript
                         var struInfo = ParseStruct(callData, err);
                         if (null != struInfo) {
                             m_PredefinedStructInfos.Add(struInfo.Name, struInfo);
+                            CalcStructOffsetAndSize(struInfo);
                         }
                     }
                 }
@@ -1089,6 +1090,7 @@ namespace CppDebugScript
                     var struInfo = ParseStruct(callData, err);
                     if (null != struInfo) {
                         m_StructInfos.Add(struInfo.Name, struInfo);
+                        CalcStructOffsetAndSize(struInfo);
                     }
                 }
                 else if (id == "hook") {
@@ -2150,7 +2152,7 @@ namespace CppDebugScript
                         int num = callData.GetParamNum();
                         var sinfos = new List<SemanticInfo>();
                         if(op == "expect") {
-                            if (callData.GetParamNum() == 2) {
+                            if (!callData.IsHighOrder && callData.GetParamNum() == 2) {
                                 string type = callData.GetParamId(0);
                                 if (s_Type2Ids.TryGetValue(type, out var ty)) {
                                     semanticInfo.TargetType = ty;
@@ -2165,7 +2167,22 @@ namespace CppDebugScript
                             return;
                         }
                         else if (op == "struct") {
-
+                            if (!callData.IsHighOrder && callData.GetParamNum() == 2) {
+                                Dsl.ISyntaxComponent param = callData.GetParam(0);
+                                var info = new SemanticInfo { TargetType = TypeEnum.Int };
+                                CompileExpression(param, codes, err, ref info);
+                                if (info.ResultType != TypeEnum.Int) {
+                                    err.AppendFormat("struct(addr, exp), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendLine();
+                                }
+                                var exp = callData.GetParam(1);
+                                TryGenStruct(exp, codes, info, err, ref semanticInfo);
+                                CurBlock().ResetTempVars();
+                            }
+                            else {
+                                err.AppendFormat("expect 'struct(addr, exp)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                            }
                             return;
                         }
                         else if (callData.IsOperatorParamClass() && op == "??") {
@@ -2562,6 +2579,10 @@ namespace CppDebugScript
                             var fname = fieldData.GetParamId(0);
                             var arrOrPtrs = new List<int>();
                             var ftype = ParseFieldType(fieldData.GetParam(1), err, arrOrPtrs);
+                            if (!s_FieldTypeNames.Contains(ftype) && !TryGetStruct(ftype, out var stru)) {
+                                err.AppendFormat("Unknown field type '{0}' must be defined first than '{1}', code:{2}, line:{3}", ftype, name, p.ToScriptString(false), p.GetLine());
+                                err.AppendLine();
+                            }
                             var finfo = new FieldInfo { Name = fname, Type = ftype, ArrayOrPtrs = arrOrPtrs };
                             struInfo.Fields.Add(finfo);
                         }
@@ -2579,6 +2600,53 @@ namespace CppDebugScript
             }
             return null;
         }
+        private void CalcStructOffsetAndSize(StructInfo struInfo)
+        {
+            int size = 0;
+            foreach(var field in struInfo.Fields) {
+                string type = field.Type;
+                field.Offset = size;
+                if (field.ArrayOrPtrs.Count > 0 && field.ArrayOrPtrs[0] <= 0) {
+                    field.Size = sizeof(long);
+                }
+                else if (type == "int8" || type == "uint8" || type == "char" || type == "byte") {
+                    field.Size = sizeof(byte);
+                }
+                else if (type == "int16" || type == "uint16" || type == "short" || type == "ushort") {
+                    field.Size = sizeof(short);
+                }
+                else if (type == "int32" || type == "uint32" || type == "int" || type == "uint") {
+                    field.Size = sizeof(int);
+                }
+                else if (type == "int64" || type == "uint64" || type == "long" || type == "ulong") {
+                    field.Size = sizeof(long);
+                }
+                else if (type == "float") {
+                    field.Size = sizeof(float);
+                }
+                else if (type == "double") {
+                    field.Size = sizeof(double);
+                }
+                else {
+                    if (TryGetStruct(field.Type, out var refStruInfo)) {
+                        field.Size = refStruInfo.Size;
+                    }
+                    else {
+                        field.Size = 0;
+                    }
+                }
+                int count = 1;
+                if (field.ArrayOrPtrs.Count > 0) {
+                    foreach (var v in field.ArrayOrPtrs) {
+                        if (v > 0)
+                            count *= v;
+                    }
+                }
+                field.TotalSize = field.Size * count;
+                size += field.TotalSize;
+            }
+            struInfo.Size = size;
+        }
         private string ParseFieldType(Dsl.ISyntaxComponent comp, StringBuilder err, List<int> arrOrPtrs)
         {
             var valData = comp as Dsl.ValueData;
@@ -2588,16 +2656,23 @@ namespace CppDebugScript
             else {
                 var funcData = comp as Dsl.FunctionData;
                 if (null != funcData && funcData.IsParenthesisParamClass() && funcData.GetParamNum() == 1 && !funcData.IsHighOrder && funcData.GetId() == "ptr") {
+                    string type = ParseFieldType(funcData.GetParam(0), err, arrOrPtrs);
+                    if (arrOrPtrs.Count > 0) {
+                        err.AppendFormat("Pointer in struct can only pointer to struct or base type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
                     arrOrPtrs.Add(0);
-                    return ParseFieldType(funcData.GetParam(0), err, arrOrPtrs);
+                    return type;
                 }
                 else if (null != funcData && funcData.IsBracketParamClass() && funcData.GetParamNum() == 1) {
+                    string type;
+                    if(funcData.IsHighOrder)
+                        type = ParseFieldType(funcData.LowerOrderFunction, err, arrOrPtrs);
+                    else
+                        type = funcData.GetId();
                     int.TryParse(funcData.GetParamId(0), out var count);
                     arrOrPtrs.Add(count);
-                    if(funcData.IsHighOrder)
-                        return ParseFieldType(funcData.LowerOrderFunction, err, arrOrPtrs);
-                    else
-                        return funcData.GetId();
+                    return type;
                 }
                 else {
                     err.AppendFormat("Unknown syntax in type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
@@ -2625,6 +2700,126 @@ namespace CppDebugScript
                 }
             }
             return string.Empty;
+        }
+        private bool TryGetStruct(string name, out StructInfo struInfo)
+        {
+            if(m_StructInfos.TryGetValue(name, out struInfo)) {
+                return true;
+            }
+            else if (m_PredefinedStructInfos.TryGetValue(name, out struInfo)) {
+                return true;
+            }
+            return false;
+        }
+        private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<int> offsets, out int lastSize, out StructInfo struInfo, out List<int> fieldIndexes)
+        {
+            bool success = true;
+            lastSize = 0;
+            struInfo = null;
+            fieldIndexes = null;
+            var valData = exp as Dsl.ValueData;
+            if (null != valData) {
+                string name = valData.GetId();
+                TryGetStruct(name, out struInfo);
+
+                offsets.Add(0);
+                lastSize = sizeof(long);
+            }
+            else {
+                var funcData = exp as Dsl.FunctionData;
+                if (null != funcData) {
+                    int num = funcData.GetParamNum();
+                    if (funcData.IsHighOrder) {
+                        success = success && CalcStructExpressionOffsets(funcData.LowerOrderFunction, err, offsets, out lastSize, out struInfo, out fieldIndexes);
+                    }
+                    else if (funcData.IsMemberParamClass()) {
+                        string name = funcData.GetId();
+                        TryGetStruct(name, out struInfo);
+
+                        offsets.Add(0);
+                    }
+                    if (funcData.IsMemberParamClass()) {
+                        string member = funcData.GetParamId(0);
+                        if (null != struInfo) {
+                            int fieldIndex = struInfo.Fields.FindIndex(fi => fi.Name == member);
+                            if (fieldIndex >= 0) {
+                                fieldIndexes = new List<int>();
+                                fieldIndexes.Add(fieldIndex);
+
+                                var field = struInfo.Fields[fieldIndex];
+                                offsets[offsets.Count - 1] += field.Offset;
+                                lastSize = field.TotalSize;
+                            }
+                            else {
+                                err.AppendFormat("Can't find the member '{0}' from the struct '{1}', code:{2}, line:{3}", member, struInfo.Name, exp.ToScriptString(false), exp.GetLine());
+                                err.AppendLine();
+                                success = false;
+                            }
+                        }
+                        else {
+                            err.AppendFormat("Can't resolve the struct for the member '{0}', code:{1}, line:{2}", member, exp.ToScriptString(false), exp.GetLine());
+                            err.AppendLine();
+                            success = false;
+                        }
+                    }
+                    else if (funcData.IsParenthesisParamClass() && num == 1 && funcData.GetId() == "ptr") {
+                        success = success && CalcStructExpressionOffsets(funcData.GetParam(0), err, offsets, out lastSize, out struInfo, out fieldIndexes);
+
+                        var field = struInfo.Fields[fieldIndexes[0]];
+                        TryGetStruct(field.Type, out struInfo);
+                        fieldIndexes = null;
+
+                        offsets.Add(0);
+                        lastSize = field.TotalSize;
+                    }
+                    else if(funcData.IsBracketParamClass() && num == 1) {
+                        int.TryParse(funcData.GetParamId(0), out var index);
+                        fieldIndexes.Add(index);
+
+                        var field = struInfo.Fields[fieldIndexes[0]];
+                        int arrNum = 1;
+                        int addNum = 0;
+                        for(int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
+                            int arrSize = field.ArrayOrPtrs[i];
+                            arrNum *= arrSize;
+                            if (i < fieldIndexes.Count) {
+                                int fix = fieldIndexes[i];
+                                addNum += fix * arrNum;
+                                break;
+                            }
+                        }
+                        offsets[offsets.Count - 1] += field.Size * addNum;
+                        lastSize = field.Size * addNum;
+                    }
+                    else {
+                        err.AppendFormat("Struct exp must be 'ptr(exp)' or 'exp[ix]' or 'exp.field', and exp is a recursive struct exp, code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                        err.AppendLine();
+                        success = false;
+                    }
+                }
+                else {
+                    err.AppendFormat("Unknown syntax in struct exp, code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                    err.AppendLine();
+                    success = false;
+                }
+            }
+            return success;
+        }
+
+        private void TryGenStruct(Dsl.ISyntaxComponent exp, List<int> codes, SemanticInfo info, StringBuilder err, ref SemanticInfo semanticInfo)
+        {
+            List<int> offsets = new List<int>();
+            if(CalcStructExpressionOffsets(exp, err, offsets, out var lastSize, out var struInfo, out var fieldIndexes)) {
+                var opds = new List<SemanticInfo>();
+                opds.Add(info);
+                var cinfo0 = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { lastSize.ToString() } };
+                opds.Add(cinfo0);
+                foreach (var offset in offsets) {
+                    var cinfo = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { offset.ToString() } };
+                    opds.Add(cinfo);
+                }
+                TryGenJaggedPtr(codes, opds, err, exp, ref semanticInfo);
+            }
         }
 
         private void TryGenConst(string val, List<int> codes, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
@@ -3995,21 +4190,7 @@ namespace CppDebugScript
                         err.AppendLine();
                     }
                     //gen write result
-                    var rinfo = semanticInfo;
-                    if (semanticInfo.TargetType != TypeEnum.Int) {
-                        int tmpIndex = CurBlock().AllocTempInt();
-                        if (tmpIndex >= 0) {
-                            rinfo.IsGlobal = false;
-                            rinfo.ResultType = TypeEnum.Int;
-                            rinfo.ResultCount = 0;
-                            rinfo.ResultIndex = tmpIndex;
-                            rinfo.ResultValues = null;
-                            codes.Add(EncodeOpcode(InsEnum.PTRGET, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
-                        }
-                    }
-                    else {
-                        codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
-                    }
+                    codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -4033,9 +4214,6 @@ namespace CppDebugScript
                         }
                     }
                     codes.Add(opd1 | opd2);
-                    if (semanticInfo.TargetType != TypeEnum.Int) {
-                        TryGenConvert(codes, semanticInfo, rinfo);
-                    }
 
                     semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
                     semanticInfo.ResultType = semanticInfo.TargetType;
@@ -4126,6 +4304,10 @@ namespace CppDebugScript
         }
         private void TryGenJaggedPtr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
+            if (opds.Count < 3) {
+                err.AppendFormat("jptr requires at least 3 integer parameters, jptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
             foreach(var opd in opds) {
                 if (opd.ResultType != TypeEnum.Int) {
                     err.AppendFormat("jptr must only have integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
@@ -5216,12 +5398,15 @@ namespace CppDebugScript
         {
             public string Name = string.Empty;
             public string Type = string.Empty;
-            public List<int> ArrayOrPtrs = new List<int>(); // <=0 -- pointer, >0 -- array size
             public int Offset = 0;
+            public int Size = 0;
+            public int TotalSize = 0;
+            public List<int> ArrayOrPtrs = new List<int>(); // <=0 -- pointer, >0 -- array size
         }
         public sealed class StructInfo
         {
             public string Name = string.Empty;
+            public int Size = 0;
             public List<FieldInfo> Fields = new List<FieldInfo>();
         }
 
@@ -5446,6 +5631,26 @@ namespace CppDebugScript
             { "string", TypeEnum.String }
         };
         private static string[] s_TypeNames = new[] { string.Empty, "int", "float", "string" };
+        private static HashSet<string> s_FieldTypeNames = new HashSet<string> {
+            "int8",
+            "uint8",
+            "char",
+            "byte",
+            "int16",
+            "uint16",
+            "short",
+            "ushort",
+            "int32",
+            "uint32",
+            "int",
+            "uint",
+            "int64",
+            "uint64",
+            "long",
+            "ulong",
+            "float",
+            "double"
+        };
 
         private const int c_abs_offset_mask = 0x7fffffff;
         private const int c_offset_backward_flag = unchecked((int)0x80000000);

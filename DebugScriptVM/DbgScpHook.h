@@ -108,7 +108,26 @@ struct HookWrap<RetT (classT::*)(ArgsT...)>
 {
     using RetType = RetT;
 
-    HookWrap(int hookId, RetT& ret, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&args)... }
+    HookWrap(int hookId, RetT& ret, classT& thisObj, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&thisObj), reinterpret_cast<int64_t>(&args)... }
+    {
+        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
+    }
+    ~HookWrap()
+    {
+        if (!m_Break) {
+            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
+        }
+    }
+    bool IsBreak()const { return m_Break; }
+
+    bool m_Break;
+    int m_HookId;
+    std::array<int64_t, sizeof...(ArgsT) + 2> m_Args;
+};
+template<typename classT, typename... ArgsT>
+struct HookWrap<void (classT::*)(ArgsT...)>
+{
+    HookWrap(int hookId, classT& thisObj, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&thisObj), reinterpret_cast<int64_t>(&args)... }
     {
         m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
     }
@@ -123,25 +142,6 @@ struct HookWrap<RetT (classT::*)(ArgsT...)>
     bool m_Break;
     int m_HookId;
     std::array<int64_t, sizeof...(ArgsT) + 1> m_Args;
-};
-template<typename classT, typename... ArgsT>
-struct HookWrap<void (classT::*)(ArgsT...)>
-{
-    HookWrap(int hookId, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT)> m_Args;
 };
 template<typename RetT>
 struct HookWrap<RetT()>
@@ -188,7 +188,26 @@ struct HookWrap<RetT(classT::*)()>
 {
     using RetType = RetT;
 
-    HookWrap(int hookId, RetT& ret) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret) }
+    HookWrap(int hookId, RetT& ret, classT& thisObj) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&thisObj) }
+    {
+        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
+    }
+    ~HookWrap()
+    {
+        if (!m_Break) {
+            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
+        }
+    }
+    bool IsBreak()const { return m_Break; }
+
+    bool m_Break;
+    int m_HookId;
+    std::array<int64_t, 2> m_Args;
+};
+template<typename classT>
+struct HookWrap<void (classT::*)()>
+{
+    HookWrap(int hookId, classT& thisObj) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&thisObj) }
     {
         m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
     }
@@ -203,25 +222,6 @@ struct HookWrap<RetT(classT::*)()>
     bool m_Break;
     int m_HookId;
     std::array<int64_t, 1> m_Args;
-};
-template<typename classT>
-struct HookWrap<void (classT::*)()>
-{
-    HookWrap(int hookId) :m_Break(false), m_HookId(hookId), m_Args{ }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, 0> m_Args;
 };
 
 template<typename... ArgsT>

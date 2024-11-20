@@ -127,8 +127,14 @@ namespace
         ARGC,
         ARGV,
         ADDR,
+        ADDRFLT,
+        ADDRSTR,
         PTRGET,
+        PTRGETFLT,
+        PTRGETSTR,
         PTRSET,
+        PTRSETFLT,
+        PTRSETSTR,
         JPTR,
         NUM
     };
@@ -1212,6 +1218,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        DebugAssert(ty == TypeEnum::Int);
 
         SetVarInt(isGlobal, index, argc, intLocals, intGlobals);
     }
@@ -1229,6 +1236,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Int);
 
         int64_t ix = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
         if (ix >= 0 && ix < argc) {
@@ -1253,36 +1262,50 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Int);
 
-        int64_t val = 0;
-        switch (ty1) {
-        case TypeEnum::Int:
-            if (isGlobal1) {
-                val = reinterpret_cast<int64_t>(intGlobals.data() + index1);
-            }
-            else {
-                val = reinterpret_cast<int64_t>(intLocals.data() + index1);
-            }
-            break;
-        case TypeEnum::Float:
-            if (isGlobal1) {
-                val = reinterpret_cast<int64_t>(fltGlobals.data() + index1);
-            }
-            else {
-                val = reinterpret_cast<int64_t>(fltLocals.data() + index1);
-            }
-            break;
-        case TypeEnum::String:
-            if (isGlobal1) {
-                val = reinterpret_cast<int64_t>(strGlobals.data() + index1);
-            }
-            else {
-                val = reinterpret_cast<int64_t>(strLocals.data() + index1);
-            }
-            break;
-        default:
-            break;
-        }
+        int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? intGlobals.data() : intLocals.data()) + index1);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+    }
+    static inline void DoAddrFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Float);
+
+        int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? fltGlobals.data() : fltLocals.data()) + index1);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+    }
+    static inline void DoAddrStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::String);
+
+        int64_t val = reinterpret_cast<int64_t>((isGlobal ? strGlobals.data() : strLocals.data()) + index1);
         SetVarInt(isGlobal, index, val, intLocals, intGlobals);
     }
     static inline int64_t ReadMemory(int64_t addr, int64_t offset, int64_t size)
@@ -1378,40 +1401,81 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
-        switch (ty) {
-        case TypeEnum::Int: {
-            int64_t val = ReadMemory(addr, 0, size);
-            SetVarInt(isGlobal, index, val, intLocals, intGlobals);
-        }break;
-        case TypeEnum::Float: {
-            double val = 0;
-            switch (size) {
-            case 4:
-                val = *reinterpret_cast<float*>(addr);
-                break;
-            case 8:
-                val = *reinterpret_cast<double*>(addr);
-                break;
-            default:
-                int64_t ival = ReadMemory(addr, 0, size);
-                val = *reinterpret_cast<double*>(&ival);
-                break;
-            }
-            SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
-        }break;
-        case TypeEnum::String: {
-            //dangerous!!!
-            std::string val = reinterpret_cast<const char*>(addr);
-            SetVarString(isGlobal, index, val, strLocals, strGlobals);
-        }break;
+        int64_t val = ReadMemory(addr, 0, size);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+    }
+    static inline void DoPtrGetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty == TypeEnum::Float);
+        DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::Int);
+
+        int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        double val = 0;
+        switch (size) {
+        case 4:
+            val = *reinterpret_cast<float*>(addr);
+            break;
+        case 8:
+            val = *reinterpret_cast<double*>(addr);
+            break;
         default:
+            int64_t ival = ReadMemory(addr, 0, size);
+            val = *reinterpret_cast<double*>(&ival);
             break;
         }
+        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+    }
+    static inline void DoPtrGetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty == TypeEnum::String);
+        DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::Int);
+
+        int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        //dangerous!!!
+        std::string val = reinterpret_cast<const char*>(addr);
+        SetVarString(isGlobal, index, val, strLocals, strGlobals);
     }
     static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -1433,44 +1497,85 @@ namespace
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        switch (ty2) {
-        case TypeEnum::Int: {
-            int64_t val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
-            WriteMemory(addr, 0, size, val);
-        }break;
-        case TypeEnum::Float: {
-            double val = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
-            switch (size) {
-            case 4:
-                *reinterpret_cast<float*>(addr) = static_cast<float>(val);
-                break;
-            case 8:
-                *reinterpret_cast<double*>(addr) = val;
-                break;
-            default:
-                int64_t ival = *reinterpret_cast<int64_t*>(&val);
-                WriteMemory(addr, 0, size, ival);
-                break;
-            }
-        }break;
-        case TypeEnum::String: {
-            //dangerous!!!
-            const std::string& val = GetVarString(isGlobal2, index2, strLocals, strGlobals);
-            char* tstr = reinterpret_cast<char*>(addr);
-#if _MSC_VER || WIN32 || WIN64
-            strcpy_s(tstr, std::strlen(tstr), val.c_str());
-#else
-            auto slen = std::strlen(tstr);
-            strncpy(tstr, val.c_str(), slen);
-            tstr[slen] = 0;
-#endif
-        }break;
+        int64_t val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        WriteMemory(addr, 0, size, val);
+    }
+    static inline void DoPtrSetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::Float);
+
+        int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        double val = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+        switch (size) {
+        case 4:
+            *reinterpret_cast<float*>(addr) = static_cast<float>(val);
+            break;
+        case 8:
+            *reinterpret_cast<double*>(addr) = val;
+            break;
         default:
+            int64_t ival = *reinterpret_cast<int64_t*>(&val);
+            WriteMemory(addr, 0, size, ival);
             break;
         }
+    }
+    static inline void DoPtrSetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Int);
+        DebugAssert(ty2 == TypeEnum::String);
+
+        int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        //dangerous!!!
+        const std::string& val = GetVarString(isGlobal2, index2, strLocals, strGlobals);
+        char* tstr = reinterpret_cast<char*>(addr);
+#if _MSC_VER || WIN32 || WIN64
+        strcpy_s(tstr, std::strlen(tstr), val.c_str());
+#else
+        auto slen = std::strlen(tstr);
+        strncpy(tstr, val.c_str(), slen);
+        tstr[slen] = 0;
+#endif
     }
     static inline void DoJaggedPtr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -2220,6 +2325,14 @@ namespace
         {
             g_DebugScriptStarted = true;
         }
+        void Pause()
+        {
+            g_DebugScriptStarted = false;
+        }
+        void Resume()
+        {
+            g_DebugScriptStarted = true;
+        }
         void Load(const char* file)
         {
             std::ifstream ifs(file, std::ios::in | std::ios::binary);
@@ -2618,11 +2731,29 @@ namespace
                 case InsEnum::ADDR:
                     DoAddr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
+                case InsEnum::ADDRFLT:
+                    DoAddrFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::ADDRSTR:
+                    DoAddrStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
                 case InsEnum::PTRGET:
                     DoPtrGet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
+                case InsEnum::PTRGETFLT:
+                    DoPtrGetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::PTRGETSTR:
+                    DoPtrGetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
                 case InsEnum::PTRSET:
                     DoPtrSet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::PTRSETFLT:
+                    DoPtrSetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::PTRSETSTR:
+                    DoPtrSetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
                 case InsEnum::JPTR:
                     DoJaggedPtr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
@@ -2691,6 +2822,14 @@ int32_t DebugScriptGlobal::ShareWith(int32_t hookId, const char* other)
 void DebugScriptGlobal::Start()
 {
     GetDebugScriptGlobal()->Start();
+}
+void DebugScriptGlobal::Pause()
+{
+    GetDebugScriptGlobal()->Pause();
+}
+void DebugScriptGlobal::Resume()
+{
+    GetDebugScriptGlobal()->Resume();
 }
 void DebugScriptGlobal::Load(const char* file)
 {

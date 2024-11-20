@@ -89,8 +89,14 @@ namespace CppDebugScript
         ARGC,
         ARGV,
         ADDR,
+        ADDRFLT,
+        ADDRSTR,
         PTRGET,
+        PTRGETFLT,
+        PTRGETSTR,
         PTRSET,
+        PTRSETFLT,
+        PTRSETSTR,
         JPTR,
         NUM
     }
@@ -767,13 +773,31 @@ namespace CppDebugScript
                         DumpArgv(txt, indent, codes, ref pos);
                         break;
                     case InsEnum.ADDR:
-                        DumpAddr(txt, indent, codes, ref pos);
+                        DumpAddr(txt, indent, codes, ref pos, "ADDR");
+                        break;
+                    case InsEnum.ADDRFLT:
+                        DumpAddr(txt, indent, codes, ref pos, "ADDRFLT");
+                        break;
+                    case InsEnum.ADDRSTR:
+                        DumpAddr(txt, indent, codes, ref pos, "ADDRSTR");
                         break;
                     case InsEnum.PTRGET:
-                        DumpPtrGet(txt, indent, codes, ref pos);
+                        DumpPtrGet(txt, indent, codes, ref pos, "PTRGET");
+                        break;
+                    case InsEnum.PTRGETFLT:
+                        DumpPtrGet(txt, indent, codes, ref pos, "PTRGETFLT");
+                        break;
+                    case InsEnum.PTRGETSTR:
+                        DumpPtrGet(txt, indent, codes, ref pos, "PTRGETSTR");
                         break;
                     case InsEnum.PTRSET:
-                        DumpPtrSet(txt, indent, codes, ref pos);
+                        DumpPtrSet(txt, indent, codes, ref pos, "PTRSET");
+                        break;
+                    case InsEnum.PTRSETFLT:
+                        DumpPtrSet(txt, indent, codes, ref pos, "PTRSETFLT");
+                        break;
+                    case InsEnum.PTRSETSTR:
+                        DumpPtrSet(txt, indent, codes, ref pos, "PTRSETSTR");
                         break;
                     case InsEnum.JPTR:
                         DumpJaggedPtr(txt, indent, codes, ref pos);
@@ -954,7 +978,7 @@ namespace CppDebugScript
             DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
             txt.AppendLine("{0}{1}: {2} = ARGV {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
         }
-        private void DumpAddr(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        private void DumpAddr(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
         {
             int ix = pos;
             int opcode = codes[pos];
@@ -962,9 +986,9 @@ namespace CppDebugScript
             ++pos;
             int operand = codes[pos];
             DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
-            txt.AppendLine("{0}{1}: {2} = ADDR {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1));
+            txt.AppendLine("{0}{1}: {2} = {3} {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op, BuildVar(isGlobal1, type1, index1));
         }
-        private void DumpPtrGet(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        private void DumpPtrGet(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
         {
             int ix = pos;
             int opcode = codes[pos];
@@ -973,9 +997,9 @@ namespace CppDebugScript
             int operand = codes[pos];
             DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
             DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: {2} = PTRGET {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
+            txt.AppendLine("{0}{1}: {2} = {3} {4}, {5}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op, BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
-        private void DumpPtrSet(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        private void DumpPtrSet(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
         {
             int ix = pos;
             int opcode = codes[pos];
@@ -984,7 +1008,7 @@ namespace CppDebugScript
             int operand = codes[pos];
             DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
             DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
-            txt.AppendLine("{0}{1}: PTRSET {2}, {3}, {4}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
+            txt.AppendLine("{0}{1}: {2} {3}, {4}, {5}", Literal.GetIndentString(indent), ix, op, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
         private void DumpJaggedPtr(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
@@ -2829,7 +2853,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment a value to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign a value to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -2870,7 +2894,7 @@ namespace CppDebugScript
                     }
                     if (semanticInfo.TargetCount > 0 || vinfo2.Count > 0) {
                         if (semanticInfo.TargetCount != vinfo2.Count) {
-                            err.AppendFormat("Can't assignment array with different size, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign array with different size, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                             err.AppendLine();
                         }
                         for (int i = 0; i < semanticInfo.TargetCount && i < vinfo2.Count; ++i) {
@@ -3457,11 +3481,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3522,11 +3546,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.String) {
-                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3587,11 +3611,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3652,11 +3676,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.String) {
-                        err.AppendFormat("Can't assignment string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3717,11 +3741,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3782,11 +3806,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3847,11 +3871,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Float) {
-                        err.AppendFormat("Can't assignment float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3912,11 +3936,11 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     else if (semanticInfo.TargetType != TypeEnum.Int) {
-                        err.AppendFormat("Can't assignment int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -3977,7 +4001,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -4028,7 +4052,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -4107,7 +4131,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -4120,11 +4144,39 @@ namespace CppDebugScript
                             rinfo.ResultCount = 0;
                             rinfo.ResultIndex = tmpIndex;
                             rinfo.ResultValues = null;
-                            codes.Add(EncodeOpcode(InsEnum.ADDR, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            switch (opds[0].ResultType) {
+                                case TypeEnum.Int:
+                                    codes.Add(EncodeOpcode(InsEnum.ADDR, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                                    break;
+                                case TypeEnum.Float:
+                                    codes.Add(EncodeOpcode(InsEnum.ADDRFLT, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                                    break;
+                                case TypeEnum.String:
+                                    codes.Add(EncodeOpcode(InsEnum.ADDRSTR, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                                    break;
+                                default:
+                                    err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendLine();
+                                    break;
+                            }
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        switch (opds[0].ResultType) {
+                            case TypeEnum.Int:
+                                codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                                break;
+                            case TypeEnum.Float:
+                                codes.Add(EncodeOpcode(InsEnum.ADDRFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                                break;
+                            case TypeEnum.String:
+                                codes.Add(EncodeOpcode(InsEnum.ADDRSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                                break;
+                            default:
+                                err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                                break;
+                        }
                     }
                     int opd1 = 0;
                     if (opds.Count > 0) {
@@ -4157,7 +4209,21 @@ namespace CppDebugScript
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    switch (opds[0].ResultType) {
+                        case TypeEnum.Int:
+                            codes.Add(EncodeOpcode(InsEnum.ADDR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        case TypeEnum.Float:
+                            codes.Add(EncodeOpcode(InsEnum.ADDRFLT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        case TypeEnum.String:
+                            codes.Add(EncodeOpcode(InsEnum.ADDRSTR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        default:
+                            err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                            break;
+                    }
 
                     int opd1 = 0;
                     if (opds.Count > 0) {
@@ -4186,11 +4252,25 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    switch (semanticInfo.TargetType) {
+                        case TypeEnum.Int:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                            break;
+                        case TypeEnum.Float:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGETFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                            break;
+                        case TypeEnum.String:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGETSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                            break;
+                        default:
+                            err.AppendFormat("ptrget must be assigned to an int/float/string variable, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                            break;
+                    }
                     int opd1 = 0;
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
@@ -4270,11 +4350,39 @@ namespace CppDebugScript
                 int opcode = 0;
                 var opdInfo = opds[0];
                 if (null == opdInfo.ResultValues) {
-                    opcode = EncodeOpcode(InsEnum.PTRSET, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                    switch (opds[2].TargetType) {
+                        case TypeEnum.Int:
+                            opcode = EncodeOpcode(InsEnum.PTRSET, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                            break;
+                        case TypeEnum.Float:
+                            opcode = EncodeOpcode(InsEnum.PTRSETFLT, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                            break;
+                        case TypeEnum.String:
+                            opcode = EncodeOpcode(InsEnum.PTRSETSTR, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                            break;
+                        default:
+                            err.AppendFormat("ptrset's third argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                            break;
+                    }
                 }
                 else {
                     int index = AddConst(opdInfo.ResultType, opdInfo.ResultValues[0]);
-                    opcode = EncodeOpcode(InsEnum.PTRSET, true, opdInfo.ResultType, index);
+                    switch (opds[2].TargetType) {
+                        case TypeEnum.Int:
+                            opcode = EncodeOpcode(InsEnum.PTRSET, true, opdInfo.ResultType, index);
+                            break;
+                        case TypeEnum.Float:
+                            opcode = EncodeOpcode(InsEnum.PTRSETFLT, true, opdInfo.ResultType, index);
+                            break;
+                        case TypeEnum.String:
+                            opcode = EncodeOpcode(InsEnum.PTRSETSTR, true, opdInfo.ResultType, index);
+                            break;
+                        default:
+                            err.AppendFormat("ptrset's third argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                            break;
+                    }
                 }
                 codes.Add(opcode);
             }
@@ -4320,7 +4428,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assignment api result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign api result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5768,6 +5876,10 @@ namespace CppDebugScript
         internal extern static int CppDbgScp_ShareWith(int hookId, IntPtr other);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
         internal extern static void CppDbgScp_StartVM();
+        [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
+        internal extern static void CppDbgScp_PauseVM();
+        [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
+        internal extern static void CppDbgScp_ResumeVM();
 
 #pragma warning disable CA2101
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]

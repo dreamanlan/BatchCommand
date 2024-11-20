@@ -56,6 +56,14 @@ extern "C" {
     {
         DebugScriptGlobal::Start();
     }
+    __declspec(dllexport) void CppDbgScp_PauseVM()
+    {
+        DebugScriptGlobal::Pause();
+    }
+    __declspec(dllexport) void CppDbgScp_ResumeVM()
+    {
+        DebugScriptGlobal::Resume();
+    }
 
     __declspec(dllexport) void CppDbgScp_Load(const char* file)
     {

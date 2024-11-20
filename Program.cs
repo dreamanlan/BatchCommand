@@ -227,9 +227,16 @@ namespace BatchCommand
             int a = CppDebugScript.CppDbgScpInterface.Test1(123, 123.456, "test1");
             LogSystem.Warn("retval a:{0}", a);
             int b = CppDebugScript.CppDbgScpInterface.Test2(1234, 1234.456, "test2");
-            LogSystem.Warn("retval b:{0}", a);
+            LogSystem.Warn("retval b:{0}", b);
             CppDebugScript.CppDbgScpInterface.Test3(12345, 12345.456, "test3");
             CppDebugScript.CppDbgScpInterface.Test4(123456, 123456.456, "test4");
+
+            int ma = CppDebugScript.CppDbgScpInterface.TestMacro1(123, 123.456, "testmacro1");
+            LogSystem.Warn("retval ma:{0}", ma);
+            int mb = CppDebugScript.CppDbgScpInterface.TestMacro2(1234, 1234.456, "testmacro2");
+            LogSystem.Warn("retval mb:{0}", mb);
+            CppDebugScript.CppDbgScpInterface.TestMacro3(12345, 12345.456, "testmacro3");
+            CppDebugScript.CppDbgScpInterface.TestMacro4(123456, 123456.456, "testmacro4");
             return BoxedValue.NullObject;
         }
     }

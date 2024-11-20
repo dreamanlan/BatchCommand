@@ -66,6 +66,10 @@ namespace
         INCFLT,
         INCV,
         INCVFLT,
+        DEC,
+        DECFLT,
+        DECV,
+        DECVFLT,
         MOV,
         MOVFLT,
         MOVSTR,
@@ -918,25 +922,43 @@ namespace
     }
     static inline void DoInc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
+        ++pos;
+        int32_t operand = codes[pos];
         int32_t argNum;
         bool isGlobal;
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Int);
-        int64_t val = GetVarInt(isGlobal, index, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val + 1, intLocals, intGlobals);
+        DebugAssert(ty1 == TypeEnum::Int);
+        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        ++val;
+        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
     }
     static inline void DoIncFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
+        ++pos;
+        int32_t operand = codes[pos];
         int32_t argNum;
         bool isGlobal;
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Float);
-        double val = GetVarFloat(isGlobal, index, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val + 1, fltLocals, fltGlobals);
+        DebugAssert(ty1 == TypeEnum::Float);
+        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        ++val;
+        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
     }
     static inline void DoIncVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -952,10 +974,16 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Int);
-        int64_t inc = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        int64_t val = GetVarInt(isGlobal, index, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val + inc, intLocals, intGlobals);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        int64_t inc = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        val += inc;
+        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
     }
     static inline void DoIncValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -971,10 +999,106 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Float);
-        double inc = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
-        double val = GetVarFloat(isGlobal, index, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val + inc, fltLocals, fltGlobals);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
+        double inc = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        val += inc;
+        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+    }
+    static inline void DoDec(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Int);
+        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        --val;
+        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+    }
+    static inline void DoDecFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        DebugAssert(ty == TypeEnum::Float);
+        DebugAssert(ty1 == TypeEnum::Float);
+        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        --val;
+        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+    }
+    static inline void DoDecVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        int64_t inc = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        val -= inc;
+        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+    }
+    static inline void DoDecValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+        bool isGlobal2;
+        TypeEnum ty2;
+        int32_t index2;
+        DecodeOperand2(operand, isGlobal2, ty2, index2);
+        DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
+        double inc = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        val -= inc;
+        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
     }
     static inline void DoMov(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -2547,6 +2671,18 @@ namespace
                     break;
                 case InsEnum::INCVFLT:
                     DoIncValFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::DEC:
+                    DoDec(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::DECFLT:
+                    DoDecFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::DECV:
+                    DoDecVal(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    break;
+                case InsEnum::DECVFLT:
+                    DoDecValFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                     break;
                 case InsEnum::MOV:
                     DoMov(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);

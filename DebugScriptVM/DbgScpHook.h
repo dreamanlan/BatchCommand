@@ -39,27 +39,6 @@ struct HookWrap
     std::array<int64_t, sizeof...(ArgsT)> m_Args;
 };
 template<typename RetT, typename... ArgsT>
-struct HookWrap<RetT, ArgsT...>
-{
-    using RetType = RetT;
-
-    HookWrap(int hookId, RetT& ret, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT) + 1> m_Args;
-};
-template<typename RetT, typename... ArgsT>
 struct HookWrap<RetT(ArgsT...)>
 {
     using RetType = RetT;
@@ -221,14 +200,9 @@ struct HookWrap<void (classT::*)()>
 };
 
 template<typename... ArgsT>
-static inline HookWrap<ArgsT...> Create(int hookId, ArgsT&... args)
+static inline HookWrap<ArgsT...> CreateHookWrap(int hookId, ArgsT&... args)
 {
     return HookWrap<ArgsT...>(hookId, args...);
-}
-template<typename RetT, typename... ArgsT>
-static inline HookWrap<RetT, ArgsT...> Create(int hookId, RetT& retVal, ArgsT&... args)
-{
-    return HookWrap<RetT, ArgsT...>(hookId, retVal, args...);
 }
 
 #if PLATFORM_WIN || PLATFORM_WINRT || PLATFORM_XBOXONE || _MSC_VER || _WIN32 || _WIN64
@@ -249,12 +223,33 @@ if (placeHolder.IsBreak())return;
 
 /*
 //for handwriting
+using HookWrapType = HookWrap<ObjT, Arg1, Arg2>;
+thread_local static int32_t s_hook_id = -1;
+thread_local static uint32_t s_serial_num = 0;
+CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
+HookWrapType placeHolder(s_hook_id, obj, arg1, arg2);
+if (placeHolder.IsBreak())return;
+*/
+
+/*
+//for handwriting
 using HookWrapType = HookWrap<RetT,Arg1,Arg2>;
 thread_local static int32_t s_hook_id = -1;
 thread_local static uint32_t s_serial_num = 0;
 CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
 RetT retVal{};
 HookWrapType placeHolder(s_hook_id, retVal, arg1, arg2);
+if (placeHolder.IsBreak())return retVal;
+*/
+
+/*
+//for handwriting
+using HookWrapType = HookWrap<RetT, ObjT,Arg1,Arg2>;
+thread_local static int32_t s_hook_id = -1;
+thread_local static uint32_t s_serial_num = 0;
+CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
+RetT retVal{};
+HookWrapType placeHolder(s_hook_id, retVal, obj, arg1, arg2);
 if (placeHolder.IsBreak())return retVal;
 */
 

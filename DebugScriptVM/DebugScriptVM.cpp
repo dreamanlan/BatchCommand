@@ -35,14 +35,16 @@ namespace
     static std::chrono::time_point<std::chrono::high_resolution_clock> g_start_time{};
 
     static const int c_max_variable_table_size = 8192;
+    static const int c_max_stack_depth = 128;
+    static const int c_max_local_variable_table_size = c_max_variable_table_size * c_max_stack_depth;
 
     using IntGlobals = std::array<int64_t, c_max_variable_table_size>;
     using FloatGlobals = std::array<double, c_max_variable_table_size>;
     using StringGlobals = std::array<std::string, c_max_variable_table_size>;
 
-    using IntLocals = std::array<int64_t, c_max_variable_table_size>;
-    using FloatLocals = std::array<double, c_max_variable_table_size>;
-    using StringLocals = std::array<std::string, c_max_variable_table_size>;
+    using IntLocals = std::array<int64_t, c_max_local_variable_table_size>;
+    using FloatLocals = std::array<double, c_max_local_variable_table_size>;
+    using StringLocals = std::array<std::string, c_max_local_variable_table_size>;
 
     static inline void DebugAssert(bool v)
     {
@@ -140,6 +142,9 @@ namespace
         PTRSETFLT,
         PTRSETSTR,
         JPTR,
+        STKIX,
+        HOOKID,
+        HOOKVER,
         NUM
     };
     enum class TypeEnum
@@ -194,29 +199,29 @@ namespace
         DecodeOperand1(operand, isGlobal, type, index);
     }
 
-    static inline int64_t GetVarInt(bool isGlobal, int32_t index, IntLocals& intLocals, IntGlobals& intGlobals)
+    static inline int64_t GetVarInt(bool isGlobal, int32_t index, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
     {
-        return isGlobal ? intGlobals[index] : intLocals[index];
+        return isGlobal ? intGlobals[index] : intLocals[stackBase + index];
     }
-    static inline double GetVarFloat(bool isGlobal, int32_t index, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
+    static inline double GetVarFloat(bool isGlobal, int32_t index, int32_t stackBase, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
     {
-        return isGlobal ? fltGlobals[index] : fltLocals[index];
+        return isGlobal ? fltGlobals[index] : fltLocals[stackBase + index];
     }
-    static inline const std::string& GetVarString(bool isGlobal, int32_t index, StringLocals& strLocals, StringGlobals& strGlobals)
+    static inline const std::string& GetVarString(bool isGlobal, int32_t index, int32_t stackBase, StringLocals& strLocals, StringGlobals& strGlobals)
     {
-        return isGlobal ? strGlobals[index] : strLocals[index];
+        return isGlobal ? strGlobals[index] : strLocals[stackBase + index];
     }
-    static inline void SetVarInt(bool isGlobal, int32_t index, int64_t val, IntLocals& intLocals, IntGlobals& intGlobals)
+    static inline void SetVarInt(bool isGlobal, int32_t index, int64_t val, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
     {
-        (isGlobal ? intGlobals[index] : intLocals[index]) = val;
+        (isGlobal ? intGlobals[index] : intLocals[stackBase + index]) = val;
     }
-    static inline void SetVarFloat(bool isGlobal, int32_t index, double val, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
+    static inline void SetVarFloat(bool isGlobal, int32_t index, double val, int32_t stackBase, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
     {
-        (isGlobal ? fltGlobals[index] : fltLocals[index]) = val;
+        (isGlobal ? fltGlobals[index] : fltLocals[stackBase + index]) = val;
     }
-    static inline void SetVarString(bool isGlobal, int32_t index, const std::string& val, StringLocals& strLocals, StringGlobals& strGlobals)
+    static inline void SetVarString(bool isGlobal, int32_t index, const std::string& val, int32_t stackBase, StringLocals& strLocals, StringGlobals& strGlobals)
     {
-        (isGlobal ? strGlobals[index] : strLocals[index]) = val;
+        (isGlobal ? strGlobals[index] : strLocals[stackBase + index]) = val;
     }
 
     static inline uint8_t ReadByte(std::ifstream& ifs)
@@ -559,7 +564,7 @@ namespace
     template<ApiEnum>
     struct Api
     {
-        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             //static_assert(false, "Unimplemented api !");
             return 0;
@@ -568,13 +573,13 @@ namespace
     template<>
     struct Api<ApiEnum::Assert>
     {
-        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
             DecodeOperand2(firstOperand, isGlobal, ty, index);
-            int64_t cond = GetVarInt(isGlobal, index, intLocals, intGlobals);
+            int64_t cond = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             if (argNum == 1) {
                 DebugAssert(cond != 0);
             }
@@ -585,7 +590,7 @@ namespace
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand1(operand, isGlobal2, ty2, index2);
-                const std::string& msg = GetVarString(isGlobal2, index2, strLocals, strGlobals);
+                const std::string& msg = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                 DebugAssertMsg(cond != 0, msg.c_str());
             }
             return 0;
@@ -594,27 +599,27 @@ namespace
     template<>
     struct Api<ApiEnum::DumpStack>
     {
-        static inline void Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
             DecodeOperand2(firstOperand, isGlobal, ty, index);
             DebugAssert(ty == TypeEnum::String);
-            const std::string& prefix = GetVarString(isGlobal, index, strLocals, strGlobals);
+            const std::string& prefix = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
             //DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
         }
     };
     template<>
     struct Api<ApiEnum::Printf>
     {
-        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
             DecodeOperand2(firstOperand, isGlobal, ty, index);
-            const std::string& fmt = GetVarString(isGlobal, index, strLocals, strGlobals);
+            const std::string& fmt = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             std::vector<int64_t> args{};
             args.reserve(argNum - 1);
@@ -632,14 +637,14 @@ namespace
                     DecodeOperand1(operand, isGlobal1, ty1, index1);
                     switch (ty1) {
                     case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+                        val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                     }break;
                     case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+                        double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
                         val = *reinterpret_cast<int64_t*>(&v);
                     }break;
                     case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         val = reinterpret_cast<int64_t>(v.c_str());
                     }break;
                     default:
@@ -657,14 +662,14 @@ namespace
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
                     switch (ty2) {
                     case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+                        val = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                     }break;
                     case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+                        double v = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
                         val = *reinterpret_cast<int64_t*>(&v);
                     }break;
                     case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal2, index2, strLocals, strGlobals);
+                        const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                         val = reinterpret_cast<int64_t>(v.c_str());
                     }break;
                     default:
@@ -682,13 +687,13 @@ namespace
     template<>
     struct Api<ApiEnum::Format>
     {
-        static inline std::string Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline std::string Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
             DecodeOperand2(firstOperand, isGlobal, ty, index);
-            const std::string& fmt = GetVarString(isGlobal, index, strLocals, strGlobals);
+            const std::string& fmt = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             std::vector<int64_t> args{};
             args.reserve(argNum - 1);
@@ -709,14 +714,14 @@ namespace
                     DecodeOperand1(operand, isGlobal1, ty1, index1);
                     switch (ty1) {
                     case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+                        val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                     }break;
                     case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+                        double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
                         val = *reinterpret_cast<int64_t*>(&v);
                     }break;
                     case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         val = reinterpret_cast<int64_t>(v.c_str());
                     }break;
                     default:
@@ -734,14 +739,14 @@ namespace
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
                     switch (ty2) {
                     case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+                        val = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                     }break;
                     case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+                        double v = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
                         val = *reinterpret_cast<int64_t*>(&v);
                     }break;
                     case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal2, index2, strLocals, strGlobals);
+                        const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                         val = reinterpret_cast<int64_t>(v.c_str());
                     }break;
                     default:
@@ -760,7 +765,7 @@ namespace
     template<>
     struct Api<ApiEnum::Time>
     {
-        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             auto&& duration = std::chrono::high_resolution_clock::now() - g_start_time;
             auto&& ms = std::chrono::duration_cast<std::chrono::microseconds>(duration);
@@ -770,7 +775,7 @@ namespace
     template<>
     struct Api<ApiEnum::FloatTime>
     {
-        static inline double Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline double Call(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             using double_microseconds = std::chrono::duration<double, std::micro>;
             auto&& duration = std::chrono::high_resolution_clock::now() - g_start_time;
@@ -778,7 +783,7 @@ namespace
             return ms.count();
         }
     };
-    static inline void DoCall(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoCall(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -792,38 +797,38 @@ namespace
         ApiEnum api = static_cast<ApiEnum>(apiIndex);
         switch (api) {
         case ApiEnum::Assert: {
-            int64_t val = Api<ApiEnum::Assert>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            int64_t val = Api<ApiEnum::Assert>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::DumpStack: {
-            Api<ApiEnum::DumpStack>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            Api<ApiEnum::DumpStack>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
         }break;
         case ApiEnum::Printf: {
-            int64_t val = Api<ApiEnum::Printf>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            int64_t val = Api<ApiEnum::Printf>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, intLocals, intGlobals);;
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
         }break;
         case ApiEnum::Format: {
-            std::string val = Api<ApiEnum::Format>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            std::string val = Api<ApiEnum::Format>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::String);
-            SetVarString(isGlobal, index, val, strLocals, strGlobals);
+            SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
         }break;
         case ApiEnum::Time: {
-            int64_t val = Api<ApiEnum::Time>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            int64_t val = Api<ApiEnum::Time>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::FloatTime: {
-            double val = Api<ApiEnum::FloatTime>::Call(argNum, operand, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            double val = Api<ApiEnum::FloatTime>::Call(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Float);
-            SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
         }break;
         default:
             break;
         }
     }
-    static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)
+    static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)
     {
         int32_t argNum;
         bool isGlobal;
@@ -832,25 +837,25 @@ namespace
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
         switch (ty) {
         case TypeEnum::Int: {
-            int64_t val = GetVarInt(isGlobal, index, intLocals, intGlobals);
+            int64_t val = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             retVal = val != 0;
         }break;
         case TypeEnum::Float: {
-            double val = GetVarFloat(isGlobal, index, fltLocals, fltGlobals);
+            double val = GetVarFloat(isGlobal, index, stackBase, fltLocals, fltGlobals);
             retVal = val != 0;
         }break;
         default:
             break;
         }
     }
-    static inline void DoJmp(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoJmp(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         int32_t enterPos = pos;
         int32_t offset;
         DecodeOpcode(opcode, op, offset);
         pos = enterPos - 1 + offset;
     }
-    static inline void DoJmpIf(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoJmpIf(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         int32_t enterPos = pos;
         ++pos;
@@ -864,19 +869,19 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         switch (ty1) {
         case TypeEnum::Int: {
-            int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+            int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             if (val != 0) {
                 pos = enterPos - 1 + offset;
             }
         }break;
         case TypeEnum::Float: {
-            double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+            double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             if (val != 0) {
                 pos = enterPos - 1 + offset;
             }
         }break;
         case TypeEnum::String: {
-            const std::string& val = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            const std::string& val = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             if (val.length() > 0) {
                 pos = enterPos - 1 + offset;
             }
@@ -885,7 +890,7 @@ namespace
             break;
         }
     }
-    static inline void DoJmpIfNot(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoJmpIfNot(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         int32_t enterPos = pos;
         ++pos;
@@ -899,19 +904,19 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         switch (ty1) {
         case TypeEnum::Int: {
-            int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+            int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             if (val == 0) {
                 pos = enterPos - 1 + offset;
             }
         }break;
         case TypeEnum::Float: {
-            double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+            double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             if (val == 0) {
                 pos = enterPos - 1 + offset;
             }
         }break;
         case TypeEnum::String: {
-            const std::string& val = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            const std::string& val = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             if (val.length() == 0) {
                 pos = enterPos - 1 + offset;
             }
@@ -920,7 +925,7 @@ namespace
             break;
         }
     }
-    static inline void DoInc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoInc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -935,12 +940,12 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Int);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         ++val;
-        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoIncFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoIncFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -955,12 +960,12 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Float);
         DebugAssert(ty1 == TypeEnum::Float);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         ++val;
-        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoIncVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoIncVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -979,13 +984,13 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
-        int64_t inc = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t inc = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         val += inc;
-        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoIncValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoIncValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1004,13 +1009,13 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
-        double inc = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        double inc = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         val += inc;
-        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoDec(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoDec(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1025,12 +1030,12 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Int);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         --val;
-        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoDecFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoDecFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1045,12 +1050,12 @@ namespace
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty == TypeEnum::Float);
         DebugAssert(ty1 == TypeEnum::Float);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         --val;
-        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoDecVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoDecVal(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1069,13 +1074,13 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
-        int64_t inc = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t inc = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         val -= inc;
-        SetVarInt(isGlobal1, index1, val, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoDecValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoDecValFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1094,13 +1099,13 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
-        double inc = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+        double inc = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         val -= inc;
-        SetVarFloat(isGlobal1, index1, val, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoMov(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoMov(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1115,10 +1120,10 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Int);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoMovFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoMovFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1133,10 +1138,10 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Float);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoMovStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoMovStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1151,10 +1156,10 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
         DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::String);
-        const std::string& val = GetVarString(isGlobal1, index1, strLocals, strGlobals);
-        SetVarString(isGlobal, index, val, strLocals, strGlobals);
+        const std::string& val = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+        SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
     }
-    static inline void DoArrayGet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArrayGet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1173,11 +1178,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, intLocals, intGlobals));
-        int64_t val = GetVarInt(isGlobal1, index1 + ix, intLocals, intGlobals);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
+        int64_t val = GetVarInt(isGlobal1, index1 + ix, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoArrayGetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArrayGetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1196,11 +1201,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Int && ty == TypeEnum::Float);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, intLocals, intGlobals));
-        double val = GetVarFloat(isGlobal1, index1 + ix, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
+        double val = GetVarFloat(isGlobal1, index1 + ix, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoArrayGetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArrayGetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1219,11 +1224,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::String && ty2 == TypeEnum::Int && ty == TypeEnum::String);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, intLocals, intGlobals));
-        const std::string& val = GetVarString(isGlobal1, index1 + ix, strLocals, strGlobals);
-        SetVarString(isGlobal, index, val, strLocals, strGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
+        const std::string& val = GetVarString(isGlobal1, index1 + ix, stackBase, strLocals, strGlobals);
+        SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
     }
-    static inline void DoArraySet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArraySet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1242,11 +1247,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, intLocals, intGlobals));
-        int64_t val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
-        SetVarInt(isGlobal, index + ix, val, intLocals, intGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
+        int64_t val = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+        SetVarInt(isGlobal, index + ix, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoArraySetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArraySetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1265,11 +1270,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, intLocals, intGlobals));
-        double val = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
-        SetVarFloat(isGlobal, index + ix, val, fltLocals, fltGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
+        double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index + ix, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoArraySetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoArraySetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1288,11 +1293,11 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
         DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::String && ty == TypeEnum::String);
-        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, intLocals, intGlobals));
-        const std::string& val = GetVarString(isGlobal2, index2, strLocals, strGlobals);
-        SetVarString(isGlobal, index + ix, val, strLocals, strGlobals);
+        int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
+        const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+        SetVarString(isGlobal, index + ix, val, stackBase, strLocals, strGlobals);
     }
-    static inline void DoIToF(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    static inline void DoIToF(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1309,10 +1314,10 @@ namespace
 
         DebugAssert(ty == TypeEnum::Float);
         DebugAssert(ty1 == TypeEnum::Int);
-        int64_t val = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), fltLocals, fltGlobals);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoFToI(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    static inline void DoFToI(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1329,14 +1334,11 @@ namespace
 
         DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Float);
-        double val = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
-        SetVarInt(isGlobal, index, *reinterpret_cast<int64_t*>(&val), intLocals, intGlobals);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+        SetVarInt(isGlobal, index, *reinterpret_cast<int64_t*>(&val), stackBase, intLocals, intGlobals);
     }
-    static inline void DoArgc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc)
+    static inline void DoArgc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc)
     {
-        ++pos;
-        int32_t operand = codes[pos];
-
         int32_t argNum;
         bool isGlobal;
         TypeEnum ty;
@@ -1344,9 +1346,9 @@ namespace
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
         DebugAssert(ty == TypeEnum::Int);
 
-        SetVarInt(isGlobal, index, argc, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, argc, stackBase, intLocals, intGlobals);
     }
-    static inline void DoArgv(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc, int64_t argv[])
+    static inline void DoArgv(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc, int64_t argv[])
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1363,16 +1365,16 @@ namespace
         DebugAssert(ty == TypeEnum::Int);
         DebugAssert(ty1 == TypeEnum::Int);
 
-        int64_t ix = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t ix = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         if (ix >= 0 && ix < argc) {
             int64_t val = argv[ix];
-            SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }
         else {
-            SetVarInt(isGlobal, index, 0, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, 0, stackBase, intLocals, intGlobals);
         }
     }
-    static inline void DoAddr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoAddr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1390,9 +1392,9 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? intGlobals.data() : intLocals.data()) + index1);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoAddrFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoAddrFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1410,9 +1412,9 @@ namespace
         DebugAssert(ty1 == TypeEnum::Float);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? fltGlobals.data() : fltLocals.data()) + index1);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoAddrStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoAddrStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1430,7 +1432,7 @@ namespace
         DebugAssert(ty1 == TypeEnum::String);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal ? strGlobals.data() : strLocals.data()) + index1);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
     static inline int64_t ReadMemory(int64_t addr, int64_t offset, int64_t size)
     {
@@ -1507,7 +1509,7 @@ namespace
             break;
         }
     }
-    static inline void DoPtrGet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrGet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1529,12 +1531,12 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::Int);
 
-        int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         int64_t val = ReadMemory(addr, 0, size);
-        SetVarInt(isGlobal, index, val, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
-    static inline void DoPtrGetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrGetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1556,8 +1558,8 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::Int);
 
-        int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         double val = 0;
         switch (size) {
         case 4:
@@ -1571,9 +1573,9 @@ namespace
             val = *reinterpret_cast<double*>(&ival);
             break;
         }
-        SetVarFloat(isGlobal, index, val, fltLocals, fltGlobals);
+        SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoPtrGetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrGetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1595,13 +1597,13 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::Int);
 
-        int64_t addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         //dangerous!!!
         std::string val = reinterpret_cast<const char*>(addr);
-        SetVarString(isGlobal, index, val, strLocals, strGlobals);
+        SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
     }
-    static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1623,12 +1625,12 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::Int);
 
-        int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        int64_t val = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+        int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        int64_t val = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         WriteMemory(addr, 0, size, val);
     }
-    static inline void DoPtrSetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrSetFlt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1650,9 +1652,9 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::Float);
 
-        int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
-        double val = GetVarFloat(isGlobal2, index2, fltLocals, fltGlobals);
+        int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
         switch (size) {
         case 4:
             *reinterpret_cast<float*>(addr) = static_cast<float>(val);
@@ -1666,7 +1668,7 @@ namespace
             break;
         }
     }
-    static inline void DoPtrSetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoPtrSetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1688,10 +1690,10 @@ namespace
         DebugAssert(ty1 == TypeEnum::Int);
         DebugAssert(ty2 == TypeEnum::String);
 
-        int64_t addr = GetVarInt(isGlobal, index, intLocals, intGlobals);
-        int64_t size = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+        int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+        int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         //dangerous!!!
-        const std::string& val = GetVarString(isGlobal2, index2, strLocals, strGlobals);
+        const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
         char* tstr = reinterpret_cast<char*>(addr);
 #if _MSC_VER || WIN32 || WIN64
         strcpy_s(tstr, std::strlen(tstr), val.c_str());
@@ -1701,7 +1703,7 @@ namespace
         tstr[slen] = 0;
 #endif
     }
-    static inline void DoJaggedPtr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoJaggedPtr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
     {
         int32_t argNum;
         bool isGlobal;
@@ -1722,14 +1724,14 @@ namespace
                 DecodeOperand1(operand, isGlobal1, ty1, index1);
                 DebugAssert(ty1 == TypeEnum::Int);
                 if (i == 0) {
-                    addr = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+                    addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
                 else if (i == argNum - 1) {
-                    int64_t offset = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+                    int64_t offset = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                     addr = ReadMemory(addr, offset, lastSize);
                 }
                 else {
-                    int64_t offset = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+                    int64_t offset = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                     addr = *reinterpret_cast<int64_t*>(addr + offset);
                 }
             }
@@ -1740,492 +1742,525 @@ namespace
                 DecodeOperand2(operand, isGlobal2, ty2, index2);
                 DebugAssert(ty2 == TypeEnum::Int);
                 if (i == 0) {
-                    lastSize = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+                    lastSize = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                 }
                 else if (i + 1 == argNum - 1) {
-                    int64_t offset = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+                    int64_t offset = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                     addr = ReadMemory(addr, offset, lastSize);
                 }
                 else {
-                    int64_t offset = GetVarInt(isGlobal2, index2, intLocals, intGlobals);
+                    int64_t offset = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                     addr = *reinterpret_cast<int64_t*>(addr + offset);
                 }
             }
         }
-        SetVarInt(isGlobal, index, addr, intLocals, intGlobals);
+        SetVarInt(isGlobal, index, addr, stackBase, intLocals, intGlobals);
+    }
+    static inline void DoStackIndex(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        DebugAssert(ty == TypeEnum::Int);
+
+        SetVarInt(isGlobal, index, stackBase / c_max_variable_table_size, stackBase, intLocals, intGlobals);
+    }
+    static inline void DoHookId(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals, int32_t hookId)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        DebugAssert(ty == TypeEnum::Int);
+
+        SetVarInt(isGlobal, index, hookId, stackBase, intLocals, intGlobals);
+    }
+    static inline void DoHookVer(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        DebugAssert(ty == TypeEnum::Int);
+
+        SetVarInt(isGlobal, index, g_DebugScriptSerialNum, stackBase, intLocals, intGlobals);
     }
 
     //unary or binary operation
     struct NegOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
-            int64_t val = GetVarInt(argIsGlobal, argIndex, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, -val, intLocals, intGlobals);
+            int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, -val, stackBase, intLocals, intGlobals);
         }
     };
     struct NegFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && argTy == TypeEnum::Float);
-            double val = GetVarFloat(argIsGlobal, argIndex, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, -val, fltLocals, fltGlobals);
+            double val = GetVarFloat(argIsGlobal, argIndex, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, -val, stackBase, fltLocals, fltGlobals);
         }
     };
     struct AddOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 + val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 + val2, stackBase, intLocals, intGlobals);
         }
     };
     struct AddFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, val1 + val2, fltLocals, fltGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, val1 + val2, stackBase, fltLocals, fltGlobals);
         }
     };
     struct AddStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::String && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarString(isGlobal, index, val1 + val2, strLocals, strGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarString(isGlobal, index, val1 + val2, stackBase, strLocals, strGlobals);
         }
     };
     struct SubOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 - val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 - val2, stackBase, intLocals, intGlobals);
         }
     };
     struct SubFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, val1 - val2, fltLocals, fltGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, val1 - val2, stackBase, fltLocals, fltGlobals);
         }
     };
     struct MulOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 * val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 * val2, stackBase, intLocals, intGlobals);
         }
     };
     struct MulFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, val1 * val2, fltLocals, fltGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, val1 * val2, stackBase, fltLocals, fltGlobals);
         }
     };
     struct DivOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 / val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 / val2, stackBase, intLocals, intGlobals);
         }
     };
     struct DivFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, val1 / val2, fltLocals, fltGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, val1 / val2, stackBase, fltLocals, fltGlobals);
         }
     };
     struct ModOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 % val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 % val2, stackBase, intLocals, intGlobals);
         }
     };
     struct ModFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarFloat(isGlobal, index, std::fmod(val1, val2), fltLocals, fltGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, std::fmod(val1, val2), stackBase, fltLocals, fltGlobals);
         }
     };
     struct AndOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 && val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 && val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct OrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 || val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 || val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct NotOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
-            int64_t val = GetVarInt(argIsGlobal, argIndex, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val ? 1 : 0, intLocals, intGlobals);
+            int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GTOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GTFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GTStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GEOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GEFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct GEStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct EQOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct EQFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct EQStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct NEOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct NEFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct NEStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LEOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LEFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LEStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LTOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LTFltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
-            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, fltLocals, fltGlobals);
-            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, fltLocals, fltGlobals);
-            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, intLocals, intGlobals);
+            double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
+            double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
+            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LTStrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
-            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, strLocals, strGlobals);
-            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, strLocals, strGlobals);
-            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, intLocals, intGlobals);
+            const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
+            const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
+            SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     };
     struct LShiftOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 << static_cast<int>(val2), intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 << static_cast<int>(val2), stackBase, intLocals, intGlobals);
         }
     };
     struct RShiftOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 >> static_cast<int>(val2), intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 >> static_cast<int>(val2), stackBase, intLocals, intGlobals);
         }
     };
     struct URShiftOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, static_cast<int64_t>(static_cast<uint64_t>(val1) >> static_cast<int>(val2)), intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, static_cast<int64_t>(static_cast<uint64_t>(val1) >> static_cast<int>(val2)), stackBase, intLocals, intGlobals);
         }
     };
     struct BitAndOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 & val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 & val2, stackBase, intLocals, intGlobals);
         }
     };
     struct BitOrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 | val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 | val2, stackBase, intLocals, intGlobals);
         }
     };
     struct BitXorOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
-            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, intLocals, intGlobals);
-            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, val1 ^ val2, intLocals, intGlobals);
+            int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
+            int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, val1 ^ val2, stackBase, intLocals, intGlobals);
         }
     };
     struct BitNotOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
-            int64_t val = GetVarInt(argIsGlobal, argIndex, intLocals, intGlobals);
-            SetVarInt(isGlobal, index, ~val, intLocals, intGlobals);
+            int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, ~val, stackBase, intLocals, intGlobals);
         }
     };
 
     struct Int2FltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Float);
-            int64_t ival = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+            int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             double res = Convert<double>(ival);
-            SetVarFloat(isGlobal, index, res, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
         }
     };
     struct Int2StrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
-            int64_t ival = GetVarInt(isGlobal1, index1, intLocals, intGlobals);
+            int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             std::string res = Convert<std::string>(ival);
-            SetVarString(isGlobal, index, res, strLocals, strGlobals);
+            SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
         }
     };
     struct Flt2IntOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Int);
-            double fval = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+            double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             int64_t res = Convert<int64_t>(fval);
-            SetVarInt(isGlobal, index, res, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
         }
     };
     struct Flt2StrOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::String);
-            double fval = GetVarFloat(isGlobal1, index1, fltLocals, fltGlobals);
+            double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             std::string res = Convert<std::string>(fval);
-            SetVarString(isGlobal, index, res, strLocals, strGlobals);
+            SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
         }
     };
     struct Str2IntOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
-            const std::string& sval = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             int64_t res = Convert<int64_t>(sval);
-            SetVarInt(isGlobal, index, res, intLocals, intGlobals);
+            SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
         }
     };
     struct Str2FltOperation
     {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Float);
-            const std::string& sval = GetVarString(isGlobal1, index1, strLocals, strGlobals);
+            const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             double res = Convert<double>(sval);
-            SetVarFloat(isGlobal, index, res, fltLocals, fltGlobals);
+            SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
         }
     };
 
     template<typename OperationT>
-    static inline void DoUnary(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoUnary(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -2240,10 +2275,10 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
 
-        OperationT::Calc(isGlobal, ty, index, isGlobal1, ty1, index1, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+        OperationT::Calc(isGlobal, ty, index, isGlobal1, ty1, index1, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
     }
     template<typename OperationT>
-    static inline void DoBinary(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoBinary(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -2262,7 +2297,7 @@ namespace
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
 
-        OperationT::Calc(isGlobal, ty, index, isGlobal1, ty1, index1, isGlobal2, ty2, index2, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+        OperationT::Calc(isGlobal, ty, index, isGlobal1, ty1, index1, isGlobal2, ty2, index2, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
     }
 
 #define DoUnaryNEG DoUnary<NegOperation>
@@ -2582,6 +2617,24 @@ namespace
 
     struct DebugScriptVMImpl
     {
+        struct AutoStackAllocator
+        {
+            AutoStackAllocator(int32_t& depth) :m_Depth(depth)
+            {
+                ++m_Depth;
+            }
+            inline int32_t StackBase()const
+            {
+                return (m_Depth - 1) * c_max_variable_table_size;
+            }
+            ~AutoStackAllocator() {
+                --m_Depth;
+            }
+        private:
+            int32_t m_Depth;
+        };
+
+        int32_t m_StackDepth{0};
         IntLocals m_IntLocals{};
         FloatLocals m_FloatLocals{};
         StringLocals m_StringLocals{};
@@ -2595,6 +2648,7 @@ namespace
         }
         void Reset()
         {
+            m_StackDepth = 0;
             m_IntLocals.fill(0);
             m_FloatLocals.fill(0);
             m_StringLocals.fill(std::string());
@@ -2612,7 +2666,7 @@ namespace
                 if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
                     return false;
                 const HookData& data = g_pDebugScriptGlobal->m_HookDatas[id];
-                return Run(data.m_OnEnter, argc, argv);
+                return Run(data.m_OnEnter, id, argc, argv);
             }
             return false;
         }
@@ -2625,12 +2679,12 @@ namespace
                 if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
                     return false;
                 const HookData& data = g_pDebugScriptGlobal->m_HookDatas[id];
-                return Run(data.m_OnExit, argc, argv);
+                return Run(data.m_OnExit, id, argc, argv);
             }
             return false;
         }
 
-        bool Run(const std::vector<int32_t>& codes, int32_t argc, int64_t argv[])
+        bool Run(const std::vector<int32_t>& codes, int32_t id, int32_t argc, int64_t argv[])
         {
             auto&& intGlobals = g_pDebugScriptGlobal->m_IntGlobals;
             auto&& fltGlobals = g_pDebugScriptGlobal->m_FloatGlobals;
@@ -2641,261 +2695,274 @@ namespace
             auto&& strLocals = m_StringLocals;
 
             bool ret = false;
-            for (int32_t pos = 0; pos < codes.size(); ++pos) {
-                int32_t opcode = codes[pos];
-                InsEnum op = DecodeInsEnum(opcode);
-                switch (op) {
-                case InsEnum::CALL:
-                    DoCall(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::RET:
-                    DoRet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, ret);
-                    return ret;
-                case InsEnum::JMP:
-                    DoJmp(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::JMPIF:
-                    DoJmpIf(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::JMPIFNOT:
-                    DoJmpIfNot(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INC:
-                    DoInc(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INCFLT:
-                    DoIncFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INCV:
-                    DoIncVal(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INCVFLT:
-                    DoIncValFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DEC:
-                    DoDec(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DECFLT:
-                    DoDecFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DECV:
-                    DoDecVal(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DECVFLT:
-                    DoDecValFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MOV:
-                    DoMov(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MOVFLT:
-                    DoMovFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MOVSTR:
-                    DoMovStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRGET:
-                    DoArrayGet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRGETFLT:
-                    DoArrayGetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRGETSTR:
-                    DoArrayGetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRSET:
-                    DoArraySet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRSETFLT:
-                    DoArraySetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ARRSETSTR:
-                    DoArraySetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NEG:
-                    DoUnaryNEG(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NEGFLT:
-                    DoUnaryNEGFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ADD:
-                    DoBinaryADD(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ADDFLT:
-                    DoBinaryADDFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ADDSTR:
-                    DoBinaryADDSTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::SUB:
-                    DoBinarySUB(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::SUBFLT:
-                    DoBinarySUBFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MUL:
-                    DoBinaryMUL(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MULFLT:
-                    DoBinaryMULFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DIV:
-                    DoBinaryDIV(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::DIVFLT:
-                    DoBinaryDIVFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MOD:
-                    DoBinaryMOD(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::MODFLT:
-                    DoBinaryMODFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::AND:
-                    DoBinaryAND(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::OR:
-                    DoBinaryOR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NOT:
-                    DoUnaryNOT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GT:
-                    DoBinaryGT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GTFLT:
-                    DoBinaryGTFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GTSTR:
-                    DoBinaryGTSTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GE:
-                    DoBinaryGE(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GEFLT:
-                    DoBinaryGEFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::GESTR:
-                    DoBinaryGESTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::EQ:
-                    DoBinaryEQ(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::EQFLT:
-                    DoBinaryEQFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::EQSTR:
-                    DoBinaryEQSTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NE:
-                    DoBinaryNE(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NEFLT:
-                    DoBinaryNEFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::NESTR:
-                    DoBinaryNESTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LE:
-                    DoBinaryLE(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LEFLT:
-                    DoBinaryLEFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LESTR:
-                    DoBinaryLESTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LT:
-                    DoBinaryLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LTFLT:
-                    DoBinaryLTFLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LTSTR:
-                    DoBinaryLTSTR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::LSHIFT:
-                    DoBinaryLSHIFT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::RSHIFT:
-                    DoBinaryRSHIFT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::URSHIFT:
-                    DoBinaryURSHIFT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::BITAND:
-                    DoBinaryBITAND(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::BITOR:
-                    DoBinaryBITOR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::BITXOR:
-                    DoBinaryBITXOR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::BITNOT:
-                    DoUnaryBITNOT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INT2FLT:
-                    DoUnaryINT2FLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::INT2STR:
-                    DoUnaryINT2STR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::FLT2INT:
-                    DoUnaryFLT2INT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::FLT2STR:
-                    DoUnaryFLT2STR(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::STR2INT:
-                    DoUnarySTR2INT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::STR2FLT:
-                    DoUnarySTR2FLT(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ITOF:
-                    DoIToF(opcode, op, codes, pos, intLocals, fltLocals, intGlobals, fltGlobals);
-                    break;
-                case InsEnum::FTOI:
-                    DoFToI(opcode, op, codes, pos, intLocals, fltLocals, intGlobals, fltGlobals);
-                    break;
-                case InsEnum::ARGC:
-                    DoArgc(opcode, op, codes, pos, intLocals, intGlobals, argc);
-                    break;
-                case InsEnum::ARGV:
-                    DoArgv(opcode, op, codes, pos, intLocals, intGlobals, argc, argv);
-                    break;
-                case InsEnum::ADDR:
-                    DoAddr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ADDRFLT:
-                    DoAddrFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::ADDRSTR:
-                    DoAddrStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRGET:
-                    DoPtrGet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRGETFLT:
-                    DoPtrGetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRGETSTR:
-                    DoPtrGetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRSET:
-                    DoPtrSet(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRSETFLT:
-                    DoPtrSetFlt(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::PTRSETSTR:
-                    DoPtrSetStr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                case InsEnum::JPTR:
-                    DoJaggedPtr(opcode, op, codes, pos, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                    break;
-                default:
-                    break;
+            AutoStackAllocator autoStk(m_StackDepth);
+            int32_t stackBase = autoStk.StackBase();
+            if (stackBase + c_max_variable_table_size <= c_max_local_variable_table_size) {
+                for (int32_t pos = 0; pos < codes.size(); ++pos) {
+                    int32_t opcode = codes[pos];
+                    InsEnum op = DecodeInsEnum(opcode);
+                    switch (op) {
+                    case InsEnum::CALL:
+                        DoCall(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::RET:
+                        DoRet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, ret);
+                        return ret;
+                    case InsEnum::JMP:
+                        DoJmp(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::JMPIF:
+                        DoJmpIf(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::JMPIFNOT:
+                        DoJmpIfNot(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INC:
+                        DoInc(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INCFLT:
+                        DoIncFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INCV:
+                        DoIncVal(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INCVFLT:
+                        DoIncValFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DEC:
+                        DoDec(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DECFLT:
+                        DoDecFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DECV:
+                        DoDecVal(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DECVFLT:
+                        DoDecValFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MOV:
+                        DoMov(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MOVFLT:
+                        DoMovFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MOVSTR:
+                        DoMovStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRGET:
+                        DoArrayGet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRGETFLT:
+                        DoArrayGetFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRGETSTR:
+                        DoArrayGetStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRSET:
+                        DoArraySet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRSETFLT:
+                        DoArraySetFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ARRSETSTR:
+                        DoArraySetStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NEG:
+                        DoUnaryNEG(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NEGFLT:
+                        DoUnaryNEGFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ADD:
+                        DoBinaryADD(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ADDFLT:
+                        DoBinaryADDFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ADDSTR:
+                        DoBinaryADDSTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::SUB:
+                        DoBinarySUB(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::SUBFLT:
+                        DoBinarySUBFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MUL:
+                        DoBinaryMUL(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MULFLT:
+                        DoBinaryMULFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DIV:
+                        DoBinaryDIV(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::DIVFLT:
+                        DoBinaryDIVFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MOD:
+                        DoBinaryMOD(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::MODFLT:
+                        DoBinaryMODFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::AND:
+                        DoBinaryAND(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::OR:
+                        DoBinaryOR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NOT:
+                        DoUnaryNOT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GT:
+                        DoBinaryGT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GTFLT:
+                        DoBinaryGTFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GTSTR:
+                        DoBinaryGTSTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GE:
+                        DoBinaryGE(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GEFLT:
+                        DoBinaryGEFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::GESTR:
+                        DoBinaryGESTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::EQ:
+                        DoBinaryEQ(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::EQFLT:
+                        DoBinaryEQFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::EQSTR:
+                        DoBinaryEQSTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NE:
+                        DoBinaryNE(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NEFLT:
+                        DoBinaryNEFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::NESTR:
+                        DoBinaryNESTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LE:
+                        DoBinaryLE(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LEFLT:
+                        DoBinaryLEFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LESTR:
+                        DoBinaryLESTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LT:
+                        DoBinaryLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LTFLT:
+                        DoBinaryLTFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LTSTR:
+                        DoBinaryLTSTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::LSHIFT:
+                        DoBinaryLSHIFT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::RSHIFT:
+                        DoBinaryRSHIFT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::URSHIFT:
+                        DoBinaryURSHIFT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::BITAND:
+                        DoBinaryBITAND(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::BITOR:
+                        DoBinaryBITOR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::BITXOR:
+                        DoBinaryBITXOR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::BITNOT:
+                        DoUnaryBITNOT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INT2FLT:
+                        DoUnaryINT2FLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::INT2STR:
+                        DoUnaryINT2STR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::FLT2INT:
+                        DoUnaryFLT2INT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::FLT2STR:
+                        DoUnaryFLT2STR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::STR2INT:
+                        DoUnarySTR2INT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::STR2FLT:
+                        DoUnarySTR2FLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ITOF:
+                        DoIToF(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                        break;
+                    case InsEnum::FTOI:
+                        DoFToI(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                        break;
+                    case InsEnum::ARGC:
+                        DoArgc(opcode, op, codes, pos, stackBase, intLocals, intGlobals, argc);
+                        break;
+                    case InsEnum::ARGV:
+                        DoArgv(opcode, op, codes, pos, stackBase, intLocals, intGlobals, argc, argv);
+                        break;
+                    case InsEnum::ADDR:
+                        DoAddr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ADDRFLT:
+                        DoAddrFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ADDRSTR:
+                        DoAddrStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRGET:
+                        DoPtrGet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRGETFLT:
+                        DoPtrGetFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRGETSTR:
+                        DoPtrGetStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRSET:
+                        DoPtrSet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRSETFLT:
+                        DoPtrSetFlt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::PTRSETSTR:
+                        DoPtrSetStr(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::JPTR:
+                        DoJaggedPtr(opcode, op, codes, pos, stackBase, intLocals, intGlobals);
+                        break;
+                    case InsEnum::STKIX:
+                        DoStackIndex(opcode, op, codes, pos, stackBase, intLocals, intGlobals);
+                        break;
+                    case InsEnum::HOOKID:
+                        DoHookId(opcode, op, codes, pos, stackBase, intLocals, intGlobals, id);
+                        break;
+                    case InsEnum::HOOKVER:
+                        DoHookVer(opcode, op, codes, pos, stackBase, intLocals, intGlobals);
+                        break;
+                    default:
+                        break;
+                    }
                 }
             }
             return ret;

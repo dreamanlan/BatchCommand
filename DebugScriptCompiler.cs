@@ -102,6 +102,9 @@ namespace CppDebugScript
         PTRSETFLT,
         PTRSETSTR,
         JPTR,
+        STKIX,
+        HOOKID,
+        HOOKVER,
         NUM
     }
     public sealed class DebugScriptCompiler
@@ -818,6 +821,15 @@ namespace CppDebugScript
                     case InsEnum.JPTR:
                         DumpJaggedPtr(txt, indent, codes, ref pos);
                         break;
+                    case InsEnum.STKIX:
+                        DumpStackIndex(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.HOOKID:
+                        DumpHookId(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.HOOKVER:
+                        DumpHookVer(txt, indent, codes, ref pos);
+                        break;
                 }
             }
         }
@@ -1036,6 +1048,27 @@ namespace CppDebugScript
                 }
             }
             txt.AppendLine();
+        }
+        private void DumpStackIndex(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: {2} = STKIX", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+        }
+        private void DumpHookId(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: {2} = HOOKID", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+        }
+        private void DumpHookVer(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.AppendLine("{0}{1}: {2} = HOOKVER", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
         }
         private string BuildVar(bool isGlobal, TypeEnum type, int index)
         {
@@ -2255,6 +2288,15 @@ namespace CppDebugScript
                             }
                             else if (op == "jptr") {
                                 TryGenJaggedPtr(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "stkix") {
+                                TryGenStackIndex(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "hookid") {
+                                TryGenHookId(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "hookver") {
+                                TryGenHookVer(codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else {
                                 ApiInfo info;
@@ -4481,7 +4523,160 @@ namespace CppDebugScript
                 }
             }
         }
-        
+        private void TryGenStackIndex(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 0) {
+                err.AppendFormat("stkix must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    if (semanticInfo.TargetCount > 0) {
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                    //gen write result
+                    var rinfo = semanticInfo;
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        int tmpIndex = CurBlock().AllocTempInt();
+                        if (tmpIndex >= 0) {
+                            rinfo.IsGlobal = false;
+                            rinfo.ResultType = TypeEnum.Int;
+                            rinfo.ResultCount = 0;
+                            rinfo.ResultIndex = tmpIndex;
+                            rinfo.ResultValues = null;
+                            codes.Add(EncodeOpcode(InsEnum.STKIX, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            TryGenConvert(codes, semanticInfo, rinfo);
+                        }
+                    }
+                    else {
+                        codes.Add(EncodeOpcode(InsEnum.STKIX, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    }
+
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = CurBlock().AllocTempInt();
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = TypeEnum.Int;
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    codes.Add(EncodeOpcode(InsEnum.STKIX, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                }
+            }
+        }
+        private void TryGenHookId(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 0) {
+                err.AppendFormat("hookid must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    if (semanticInfo.TargetCount > 0) {
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                    //gen write result
+                    var rinfo = semanticInfo;
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        int tmpIndex = CurBlock().AllocTempInt();
+                        if (tmpIndex >= 0) {
+                            rinfo.IsGlobal = false;
+                            rinfo.ResultType = TypeEnum.Int;
+                            rinfo.ResultCount = 0;
+                            rinfo.ResultIndex = tmpIndex;
+                            rinfo.ResultValues = null;
+                            codes.Add(EncodeOpcode(InsEnum.HOOKID, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            TryGenConvert(codes, semanticInfo, rinfo);
+                        }
+                    }
+                    else {
+                        codes.Add(EncodeOpcode(InsEnum.HOOKID, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    }
+
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = CurBlock().AllocTempInt();
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = TypeEnum.Int;
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    codes.Add(EncodeOpcode(InsEnum.HOOKID, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                }
+            }
+        }
+        private void TryGenHookVer(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 0) {
+                err.AppendFormat("hookver must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    if (semanticInfo.TargetCount > 0) {
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                    //gen write result
+                    var rinfo = semanticInfo;
+                    if (semanticInfo.TargetType != TypeEnum.Int) {
+                        int tmpIndex = CurBlock().AllocTempInt();
+                        if (tmpIndex >= 0) {
+                            rinfo.IsGlobal = false;
+                            rinfo.ResultType = TypeEnum.Int;
+                            rinfo.ResultCount = 0;
+                            rinfo.ResultIndex = tmpIndex;
+                            rinfo.ResultValues = null;
+                            codes.Add(EncodeOpcode(InsEnum.HOOKVER, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            TryGenConvert(codes, semanticInfo, rinfo);
+                        }
+                    }
+                    else {
+                        codes.Add(EncodeOpcode(InsEnum.HOOKVER, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    }
+
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = CurBlock().AllocTempInt();
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = TypeEnum.Int;
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    codes.Add(EncodeOpcode(InsEnum.HOOKVER, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                }
+            }
+        }
+
         private void TryGenMov(bool isGlobal, TypeEnum type, int vindex, List<int> codes, SemanticInfo info, StringBuilder err, Dsl.ISyntaxComponent comp)
         {
             //gen mov

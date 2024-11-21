@@ -72,6 +72,7 @@ hook(Test1)
 		printf(">>> %f\n", inc($j));
 		printf(">>> %f\n", inc($j, 2.0));
 		printf(">>> %f\n", inc($j, 3.0));
+		printf("%d %d %d", stkix(), hookid(), hookver());
 		return 1;
 	};
 	onexit{

@@ -213,43 +213,39 @@ static inline HookWrap<ArgsT...> CreateHookWrap(int hookId, ArgsT&... args)
 
 /*
 //for handwriting
-using HookWrapType = HookWrap<Arg1,Arg2>;
 thread_local static int32_t s_hook_id = -1;
 thread_local static uint32_t s_serial_num = 0;
 CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
-HookWrapType placeHolder(s_hook_id, arg1, arg2);
+auto&& placeHolder = CreateHookWrap(s_hook_id, arg1, arg2);
 if (placeHolder.IsBreak())return;
 */
 
 /*
 //for handwriting
-using HookWrapType = HookWrap<ObjT, Arg1, Arg2>;
 thread_local static int32_t s_hook_id = -1;
 thread_local static uint32_t s_serial_num = 0;
 CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
-HookWrapType placeHolder(s_hook_id, obj, arg1, arg2);
+auto&& placeHolder = CreateHookWrap(s_hook_id, obj, arg1, arg2);
 if (placeHolder.IsBreak())return;
 */
 
 /*
 //for handwriting
-using HookWrapType = HookWrap<RetT,Arg1,Arg2>;
 thread_local static int32_t s_hook_id = -1;
 thread_local static uint32_t s_serial_num = 0;
 CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
 RetT retVal{};
-HookWrapType placeHolder(s_hook_id, retVal, arg1, arg2);
+auto&& placeHolder = CreateHookWrap(s_hook_id, retVal, arg1, arg2);
 if (placeHolder.IsBreak())return retVal;
 */
 
 /*
 //for handwriting
-using HookWrapType = HookWrap<RetT, ObjT,Arg1,Arg2>;
 thread_local static int32_t s_hook_id = -1;
 thread_local static uint32_t s_serial_num = 0;
 CheckFuncHook("func_sig_str", s_hook_id, s_serial_num);
 RetT retVal{};
-HookWrapType placeHolder(s_hook_id, retVal, obj, arg1, arg2);
+auto&& placeHolder = CreateHookWrap(s_hook_id, retVal, obj, arg1, arg2);
 if (placeHolder.IsBreak())return retVal;
 */
 

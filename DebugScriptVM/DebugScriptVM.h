@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string>
 
 class DebugScriptGlobal
 {
@@ -31,3 +32,33 @@ public:
 
 extern uint32_t g_DebugScriptSerialNum;
 extern bool g_DebugScriptStarted;
+
+enum class ExternApiTypeEnum
+{
+    NotUse = 0,
+    Int,
+    Float,
+    String
+};
+struct ExternApiArg
+{
+    ExternApiTypeEnum Type;
+    union
+    {
+        int64_t IntVal;
+        double FloatVal;
+        const char* StringVal;
+    };
+};
+struct ExternApiRetVal
+{
+    ExternApiTypeEnum Type;
+    union
+    {
+        int64_t IntVal;
+        double FloatVal;
+    };
+    std::string StringVal{};
+};
+
+extern ExternApiRetVal CppDbgScp_CallExternApi(int api, ExternApiArg args[], int32_t argNum);

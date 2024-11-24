@@ -101,7 +101,7 @@ namespace CppDebugScript
         PTRSET,
         PTRSETFLT,
         PTRSETSTR,
-        JPTR,
+        CASCADEPTR,
         STKIX,
         HOOKID,
         HOOKVER,
@@ -112,6 +112,7 @@ namespace CppDebugScript
         public string LoadApiDefine(string txt)
         {
             int apiId = 0;
+            int externApiId = 100;
             m_Apis.Clear();
 
             Dsl.DslFile file = new Dsl.DslFile();
@@ -121,36 +122,87 @@ namespace CppDebugScript
                     var id = dslInfo.GetId();
                     if (id == "defapi") {
                         var call = dslInfo as Dsl.FunctionData;
+                        bool handled = false;
+                        if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                            int pnum = call.GetParamNum();
+                            if (pnum == 4) {
+                                var name = call.GetParamId(0);
+                                var type = call.GetParamId(1);
+                                var paramsStr = call.GetParamId(2);
+
+                                s_Type2Ids.TryGetValue(type, out var rty);
+
+                                ParamsEnum paramsEnum = ParamsEnum.NoParams;
+                                if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
+                                    int.TryParse(paramsStr, out var v);
+                                    paramsEnum = (ParamsEnum)v;
+                                }
+                                else {
+                                    Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
+                                }
+
+                                var api = new ApiInfo { ApiId = apiId, Name = name, Type = rty, Params = paramsEnum };
+                                ++apiId;
+
+                                var pts = call.GetParam(3) as Dsl.FunctionData;
+                                foreach (var p in pts.Params) {
+                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                    api.ParamTypes.Add(ty);
+                                }
+
+                                m_Apis.Add(name, api);
+                                handled = true;
+                            }
+                        }
+                        if(!handled) {
+                            err.AppendFormat("expect defapi(ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendLine();
+                        }
+                    }
+                    else if(id == "defexternapi") {
                         var func = dslInfo as Dsl.FunctionData;
-                        if (null != func) {
-                            call = func.ThisOrLowerOrderCall;
-                        }
-                        if (!call.IsValid())
-                            continue;
-                        var name = call.GetParamId(0);
-                        var type = call.GetParamId(1);
-                        var paramsStr = call.GetParamId(2);
+                        bool handled = false;
+                        if (null != func && func.IsHighOrder && func.LowerOrderFunction.IsFunction && func.HaveStatement()) {
+                            var call = func.LowerOrderFunction;
+                            int pnum = call.GetParamNum();
+                            if (pnum == 3) {
+                                var type = call.GetParamId(0);
+                                var paramsStr = call.GetParamId(1);
 
-                        s_Type2Ids.TryGetValue(type, out var rty);
+                                s_Type2Ids.TryGetValue(type, out var rty);
 
-                        ParamsEnum paramsEnum = ParamsEnum.NoParams;
-                        if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
-                            int.TryParse(paramsStr, out var v);
-                            paramsEnum = (ParamsEnum)v;
-                        }
-                        else {
-                            Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
-                        }
+                                ParamsEnum paramsEnum = ParamsEnum.NoParams;
+                                if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
+                                    int.TryParse(paramsStr, out var v);
+                                    paramsEnum = (ParamsEnum)v;
+                                }
+                                else {
+                                    Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
+                                }
 
-                        var api = new ApiInfo { ApiId = apiId, Name = name, Type = rty, Params = paramsEnum };
-                        ++apiId;
+                                var paramTypes = new List<TypeEnum>();
+                                var pts = call.GetParam(2) as Dsl.FunctionData;
+                                foreach (var p in pts.Params) {
+                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                    paramTypes.Add(ty);
+                                }
 
-                        var pts = call.GetParam(3) as Dsl.FunctionData;
-                        foreach (var p in pts.Params) {
-                            s_Type2Ids.TryGetValue(p.GetId(), out var ty);
-                            api.ParamTypes.Add(ty);
+                                foreach (var p in func.Params) {
+                                    var fd = p as Dsl.FunctionData;
+                                    if (null != fd && fd.GetId() == "add" && fd.GetParamNum() == 1) {
+                                        string name = fd.GetParamId(0);
+                                        var api = new ApiInfo { ApiId = externApiId, Name = name, Type = rty, Params = paramsEnum };
+                                        ++externApiId;
+                                        m_Apis.Add(name, api);
+                                    }
+                                }
+                                handled = true;
+                            }
                         }
-                        m_Apis.Add(name, api);
+                        if(!handled) {
+                            err.AppendFormat("expect defexternapi(ret_type,params_type,[param_type,...]){ add(name); }; code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendLine();
+                        }
                     }
                 }
             }
@@ -818,8 +870,8 @@ namespace CppDebugScript
                     case InsEnum.PTRSETSTR:
                         DumpPtrSet(txt, indent, codes, ref pos, "PTRSETSTR");
                         break;
-                    case InsEnum.JPTR:
-                        DumpJaggedPtr(txt, indent, codes, ref pos);
+                    case InsEnum.CASCADEPTR:
+                        DumpCascadePtr(txt, indent, codes, ref pos);
                         break;
                     case InsEnum.STKIX:
                         DumpStackIndex(txt, indent, codes, ref pos);
@@ -1022,12 +1074,12 @@ namespace CppDebugScript
             DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
             txt.AppendLine("{0}{1}: {2} {3}, {4}, {5}", Literal.GetIndentString(indent), ix, op, BuildVar(isGlobal, type, index), BuildVar(isGlobal1, type1, index1), BuildVar(isGlobal2, type2, index2));
         }
-        private void DumpJaggedPtr(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        private void DumpCascadePtr(StringBuilder txt, int indent, List<int> codes, ref int pos)
         {
             int ix = pos;
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
-            txt.Append("{0}{1}: {2} = JPTR", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            txt.Append("{0}{1}: {2} = CASCADEPTR", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
             for (int i = 0; i < argNum + 1; i += 2) {
                 ++pos;
                 int operand = codes[pos];
@@ -2286,8 +2338,8 @@ namespace CppDebugScript
                             else if (op == "ptrset") {
                                 TryGenPtrSet(codes, sinfos, err, callData, ref semanticInfo);
                             }
-                            else if (op == "jptr") {
-                                TryGenJaggedPtr(codes, sinfos, err, callData, ref semanticInfo);
+                            else if (op == "cascadeptr") {
+                                TryGenCascadePtr(codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else if (op == "stkix") {
                                 TryGenStackIndex(codes, sinfos, err, callData, ref semanticInfo);
@@ -2601,7 +2653,7 @@ namespace CppDebugScript
                     var cinfo = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { offset.ToString() } };
                     opds.Add(cinfo);
                 }
-                TryGenJaggedPtr(codes, opds, err, exp, ref semanticInfo);
+                TryGenCascadePtr(codes, opds, err, exp, ref semanticInfo);
             }
         }
 
@@ -4436,15 +4488,15 @@ namespace CppDebugScript
             }
             codes.Add(opd1 | opd2);
         }
-        private void TryGenJaggedPtr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        private void TryGenCascadePtr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count < 3) {
-                err.AppendFormat("jptr requires at least 3 integer parameters, jptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("cascadeptr requires at least 3 integer parameters, cascadeptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                 err.AppendLine();
             }
             foreach(var opd in opds) {
                 if (opd.ResultType != TypeEnum.Int) {
-                    err.AppendFormat("jptr must only has integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("cascadeptr must only has integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                     err.AppendLine();
                     break;
                 }
@@ -4467,11 +4519,11 @@ namespace CppDebugScript
                             rinfo.ResultCount = 0;
                             rinfo.ResultIndex = tmpIndex;
                             rinfo.ResultValues = null;
-                            codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            codes.Add(EncodeOpcode(InsEnum.CASCADEPTR, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        codes.Add(EncodeOpcode(InsEnum.CASCADEPTR, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
@@ -4506,7 +4558,7 @@ namespace CppDebugScript
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
                     //gen write result
-                    codes.Add(EncodeOpcode(InsEnum.JPTR, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.CASCADEPTR, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
                         if (i < opds.Count) {

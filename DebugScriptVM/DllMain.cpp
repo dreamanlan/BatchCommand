@@ -15,6 +15,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
+ExternApiRetVal CppDbgScp_CallExternApi(int api, ExternApiArg args[], int32_t argNum)
+{
+    ExternApiRetVal retVal{ ExternApiTypeEnum::Int, 0 };
+    retVal.IntVal = 0;
+    return retVal;
+}
+
 extern "C" {
     __declspec(dllexport) void CppDbgScp_ResetVM()
     {

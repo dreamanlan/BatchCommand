@@ -4,3 +4,4 @@ defapi(printf,int,printf,[string]);
 defapi(format,string,printf,[string]);
 defapi(time,int,noparams,[]);
 defapi(floattime,float,noparams,[]);
+defapi(dumpcascadeptr,int,ints,[int]);

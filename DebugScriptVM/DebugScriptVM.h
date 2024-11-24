@@ -33,6 +33,7 @@ public:
 extern uint32_t g_DebugScriptSerialNum;
 extern bool g_DebugScriptStarted;
 
+static const int c_extern_api_start_id = 100;
 enum class ExternApiTypeEnum
 {
     NotUse = 0,

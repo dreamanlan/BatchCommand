@@ -590,7 +590,6 @@ namespace
         Time,
         FloatTime,
         DumpCascadePtr,
-        ExternApiBegin = 100,
         Num
     };
     struct Api
@@ -932,44 +931,49 @@ namespace
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
         int32_t apiIndex;
         DecodeOperand1(operand, apiIndex);
-        ApiEnum api = static_cast<ApiEnum>(apiIndex);
-        switch (api) {
-        case ApiEnum::ScriptAssert: {
-            int64_t val = Api::ScriptAssert(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-        }break;
-        case ApiEnum::DumpStack: {
-            Api::DumpStack(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-        }break;
-        case ApiEnum::Printf: {
-            int64_t val = Api::Printf(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
-        }break;
-        case ApiEnum::Format: {
-            std::string val = Api::Format(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::String);
-            SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
-        }break;
-        case ApiEnum::Time: {
-            int64_t val = Api::Time(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-        }break;
-        case ApiEnum::FloatTime: {
-            double val = Api::FloatTime(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Float);
-            SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
-        }break;
-        case ApiEnum::DumpCascadePtr: {
-            int64_t val = Api::DumpCascadePtr(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
-            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-        }break;
-        default: {
+        DebugAssert(apiIndex >= 0);
+        if (apiIndex < c_extern_api_start_id) {
+            ApiEnum api = static_cast<ApiEnum>(apiIndex);
+            switch (api) {
+            case ApiEnum::ScriptAssert: {
+                int64_t val = Api::ScriptAssert(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::Int);
+                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+            }break;
+            case ApiEnum::DumpStack: {
+                Api::DumpStack(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            }break;
+            case ApiEnum::Printf: {
+                int64_t val = Api::Printf(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::Int);
+                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
+            }break;
+            case ApiEnum::Format: {
+                std::string val = Api::Format(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::String);
+                SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+            }break;
+            case ApiEnum::Time: {
+                int64_t val = Api::Time(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::Int);
+                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+            }break;
+            case ApiEnum::FloatTime: {
+                double val = Api::FloatTime(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::Float);
+                SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
+            }break;
+            case ApiEnum::DumpCascadePtr: {
+                int64_t val = Api::DumpCascadePtr(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                DebugAssert(ty == TypeEnum::Int);
+                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+            }break;
+            default: {
+            }break;
+            }
+        }
+        else {
             Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-        }break;
         }
     }
     static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)

@@ -15,6 +15,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
+enum class ExternApiEnum
+{
+    FirstApi = c_extern_api_start_id,
+    Num
+};
+
 ExternApiRetVal CppDbgScp_CallExternApi(int api, ExternApiArg args[], int32_t argNum)
 {
     ExternApiRetVal retVal{ ExternApiTypeEnum::Int, 0 };

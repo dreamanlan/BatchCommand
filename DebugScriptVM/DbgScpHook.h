@@ -38,151 +38,10 @@ struct HookWrap
     int m_HookId;
     std::array<int64_t, sizeof...(ArgsT)> m_Args;
 };
-template<typename RetT, typename... ArgsT>
-struct HookWrap<RetT(ArgsT...)>
-{
-    using RetType = RetT;
-
-    HookWrap(int hookId, RetT& ret, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT) + 1> m_Args;
-};
-template<typename... ArgsT>
-struct HookWrap<void(ArgsT...)>
-{
-    HookWrap(int hookId, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT)> m_Args;
-};
-template<typename RetT, typename classT, typename... ArgsT>
-struct HookWrap<RetT (classT::*)(ArgsT...)>
-{
-    using RetType = RetT;
-
-    HookWrap(int hookId, RetT& ret, classT& thisObj, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&thisObj), reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT) + 2> m_Args;
-};
-template<typename classT, typename... ArgsT>
-struct HookWrap<void (classT::*)(ArgsT...)>
-{
-    HookWrap(int hookId, classT& thisObj, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&thisObj), reinterpret_cast<int64_t>(&args)... }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, sizeof...(ArgsT) + 1> m_Args;
-};
-template<typename RetT>
-struct HookWrap<RetT()>
-{
-    using RetType = RetT;
-
-    HookWrap(int hookId, RetT& ret) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret) }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, 1> m_Args;
-};
 template<>
-struct HookWrap<void()>
+struct HookWrap<>
 {
-    HookWrap(int hookId) :m_Break(false), m_HookId(hookId), m_Args{ }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, 0> m_Args;
-};
-template<typename RetT, typename classT>
-struct HookWrap<RetT(classT::*)()>
-{
-    using RetType = RetT;
-
-    HookWrap(int hookId, RetT& ret, classT& thisObj) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&ret), reinterpret_cast<int64_t>(&thisObj) }
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, 2> m_Args;
-};
-template<typename classT>
-struct HookWrap<void (classT::*)()>
-{
-    HookWrap(int hookId, classT& thisObj) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&thisObj) }
+    HookWrap(int hookId) :m_Break(false), m_HookId(hookId), m_Args{}
     {
         m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
     }
@@ -203,6 +62,11 @@ template<typename... ArgsT>
 static inline HookWrap<ArgsT...> CreateHookWrap(int hookId, ArgsT&... args)
 {
     return HookWrap<ArgsT...>(hookId, args...);
+}
+template<>
+static inline HookWrap<> CreateHookWrap(int hookId)
+{
+    return HookWrap<>(hookId);
 }
 
 #if PLATFORM_WIN || PLATFORM_WINRT || PLATFORM_XBOXONE || _MSC_VER || _WIN32 || _WIN64
@@ -249,28 +113,26 @@ auto&& placeHolder = CreateHookWrap(s_hook_id, retVal, obj, arg1, arg2);
 if (placeHolder.IsBreak())return retVal;
 */
 
-#define DBGSCP_HOOK0(func_sig_str, func)   \
-using HookWrapType = HookWrap<decltype(func)>;\
+#define DBGSCP_HOOK0(func_sig_str, ret_type)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-typename HookWrapType::RetType h_ret_val{};\
-HookWrapType placeHolder(s_hook_id, h_ret_val);\
+ret_type h_ret_val{};\
+auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val);\
 if (placeHolder.IsBreak())return h_ret_val;
 
 #define BEGIN_DBGSCP_HOOK0()    \
         auto _hook_func_ = [&]() {
 
-#define END_DBGSCP_HOOK0(func_sig_str, func)  \
+#define END_DBGSCP_HOOK0(func_sig_str, ret_type)  \
 };\
-using HookWrapType = HookWrap<decltype(func)>;\
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-typename HookWrapType::RetType h_ret_val{};\
+ret_type h_ret_val{};\
 do\
 {\
-    HookWrapType placeHolder(s_hook_id, h_ret_val);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val);\
     if (placeHolder.IsBreak()) {\
         return h_ret_val;\
     }\
@@ -281,28 +143,26 @@ do\
 } while (false);\
 return h_ret_val;
 
-#define DBGSCP_HOOK(func_sig_str, func, ...)   \
-using HookWrapType = HookWrap<decltype(func)>;\
+#define DBGSCP_HOOK(func_sig_str, ret_type, ...)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-typename HookWrapType::RetType h_ret_val{};\
-HookWrapType placeHolder(s_hook_id, h_ret_val, __VA_ARGS__);\
+ret_type h_ret_val{};\
+auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, __VA_ARGS__);\
 if (placeHolder.IsBreak())return h_ret_val;
 
 #define BEGIN_DBGSCP_HOOK()    \
         auto _hook_func_ = [&]() {
 
-#define END_DBGSCP_HOOK(func_sig_str, func, ...)  \
+#define END_DBGSCP_HOOK(func_sig_str, ret_type, ...)  \
 };\
-using HookWrapType = HookWrap<decltype(func)>;\
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-typename HookWrapType::RetType h_ret_val{};\
+ret_type h_ret_val{};\
 do\
 {\
-    HookWrapType placeHolder(s_hook_id, h_ret_val, __VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, __VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return h_ret_val;\
     }\
@@ -313,26 +173,24 @@ do\
 } while (false);\
 return h_ret_val;
 
-#define DBGSCP_HOOK_VOID0(func_sig_str, func)   \
-using HookWrapType = HookWrap<decltype(func)>;\
+#define DBGSCP_HOOK_VOID0(func_sig_str)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-HookWrapType placeHolder(s_hook_id);\
+auto&& placeHolder = CreateHookWrap(s_hook_id);\
 if (placeHolder.IsBreak())return;
 
 #define BEGIN_DBGSCP_HOOK_VOID0()    \
         auto _hook_func_ = [&]() {
 
-#define END_DBGSCP_HOOK_VOID0(func_sig_str, func)  \
+#define END_DBGSCP_HOOK_VOID0(func_sig_str)  \
 };\
-using HookWrapType = HookWrap<decltype(func)>;\
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
 do\
 {\
-    HookWrapType placeHolder(s_hook_id);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id);\
     if (placeHolder.IsBreak()) {\
         return;\
     }\
@@ -342,26 +200,24 @@ do\
     }\
 } while (false);
 
-#define DBGSCP_HOOK_VOID(func_sig_str, func, ...)   \
-using HookWrapType = HookWrap<decltype(func)>;\
+#define DBGSCP_HOOK_VOID(func_sig_str, ...)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-HookWrapType placeHolder(s_hook_id, __VA_ARGS__);\
+auto&& placeHolder = CreateHookWrap(s_hook_id, __VA_ARGS__);\
 if (placeHolder.IsBreak())return;
 
 #define BEGIN_DBGSCP_HOOK_VOID()    \
         auto _hook_func_ = [&]() {
 
-#define END_DBGSCP_HOOK_VOID(func_sig_str, func, ...)  \
+#define END_DBGSCP_HOOK_VOID(func_sig_str, ...)  \
 };\
-using HookWrapType = HookWrap<decltype(func)>;\
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
 do\
 {\
-    HookWrapType placeHolder(s_hook_id, __VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id, __VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return;\
     }\

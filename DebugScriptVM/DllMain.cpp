@@ -87,12 +87,11 @@ extern "C" {
 
     __declspec(dllexport) int Test1(int a, double b, const char* c)
     {
-        using HookWrapType = HookWrap<decltype(Test1)>;
         thread_local static int32_t s_hook_id = -1;
         thread_local static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
-        typename HookWrapType::RetType h_ret_val{};
-        HookWrapType placeHolder(s_hook_id, h_ret_val, a, b, c);
+        int h_ret_val{};
+        auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
         if (placeHolder.IsBreak())
             return h_ret_val;
 
@@ -104,14 +103,13 @@ extern "C" {
             printf("a:%d b:%f c:%s\n", a, b, c);
             return 0;
             };
-        using HookWrapType = HookWrap<decltype(Test2)>;
         thread_local static int32_t s_hook_id = -1;
         thread_local static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
-        typename HookWrapType::RetType h_ret_val{};
+        int h_ret_val{};
         do
         {
-            HookWrapType placeHolder(s_hook_id, h_ret_val, a, b, c);
+            auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
             if (placeHolder.IsBreak()) {
                 return h_ret_val;
             }
@@ -124,11 +122,10 @@ extern "C" {
     }
     __declspec(dllexport) void Test3(int a, double b, const char* c)
     {
-        using HookWrapType = HookWrap<decltype(Test3)>;
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
-        HookWrapType placeHolder(s_hook_id, a, b, c);
+        auto&& placeHolder = CreateHookWrap(s_hook_id, a, b, c);
         if (placeHolder.IsBreak())
             return;
     }
@@ -137,13 +134,12 @@ extern "C" {
         auto f = [&]() {
             printf("a:%d b:%f c:%s\n", a, b, c);
             };
-        using HookWrapType = HookWrap<decltype(Test4)>;
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
         do
         {
-            HookWrapType placeHolder(s_hook_id, a, b, c);
+            auto&& placeHolder = CreateHookWrap(s_hook_id, a, b, c);
             if (placeHolder.IsBreak()) {
                 return;
             }
@@ -156,7 +152,7 @@ extern "C" {
 
     __declspec(dllexport) int TestMacro1(int a, double b, const char* c)
     {
-        DBGSCP_HOOK("TestMacro1", TestMacro1, a, b, c)
+        DBGSCP_HOOK("TestMacro1", int, a, b, c)
 
         return 0;
     }
@@ -165,16 +161,16 @@ extern "C" {
         BEGIN_DBGSCP_HOOK()
             printf("a:%d b:%f c:%s\n", a, b, c);
             return 0;
-        END_DBGSCP_HOOK("TestMacro2", TestMacro2, a, b, c)
+        END_DBGSCP_HOOK("TestMacro2", int, a, b, c)
     }
     __declspec(dllexport) void TestMacro3(int a, double b, const char* c)
     {
-        DBGSCP_HOOK_VOID("TestMacro3", TestMacro3, a, b, c)
+        DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
     }
     __declspec(dllexport) void TestMacro4(int a, double b, const char* c)
     {
         BEGIN_DBGSCP_HOOK_VOID()
             printf("a:%d b:%f c:%s\n", a, b, c);
-        END_DBGSCP_HOOK_VOID("TestMacro4", TestMacro4, a, b, c)
+        END_DBGSCP_HOOK_VOID("TestMacro4", a, b, c)
     }
 }

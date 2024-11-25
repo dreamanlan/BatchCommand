@@ -96,6 +96,7 @@ extern "C" {
             return h_ret_val;
 
         return 0;
+
     }
     __declspec(dllexport) int Test2(int a, double b, const char* c)
     {

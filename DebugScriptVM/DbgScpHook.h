@@ -38,35 +38,11 @@ struct HookWrap
     int m_HookId;
     std::array<int64_t, sizeof...(ArgsT)> m_Args;
 };
-template<>
-struct HookWrap<>
-{
-    HookWrap(int hookId) :m_Break(false), m_HookId(hookId), m_Args{}
-    {
-        m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-    }
-    ~HookWrap()
-    {
-        if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
-        }
-    }
-    bool IsBreak()const { return m_Break; }
-
-    bool m_Break;
-    int m_HookId;
-    std::array<int64_t, 1> m_Args;
-};
 
 template<typename... ArgsT>
 static inline HookWrap<ArgsT...> CreateHookWrap(int hookId, ArgsT&... args)
 {
     return HookWrap<ArgsT...>(hookId, args...);
-}
-template<>
-static inline HookWrap<> CreateHookWrap(int hookId)
-{
-    return HookWrap<>(hookId);
 }
 
 #if PLATFORM_WIN || PLATFORM_WINRT || PLATFORM_XBOXONE || _MSC_VER || _WIN32 || _WIN64

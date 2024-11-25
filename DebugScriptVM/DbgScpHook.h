@@ -89,42 +89,13 @@ auto&& placeHolder = CreateHookWrap(s_hook_id, retVal, obj, arg1, arg2);
 if (placeHolder.IsBreak())return retVal;
 */
 
-#define DBGSCP_HOOK0(func_sig_str, ret_type)   \
-thread_local static int32_t s_hook_id = -1;\
-thread_local static uint32_t s_serial_num = 0;\
-CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-ret_type h_ret_val{};\
-auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val);\
-if (placeHolder.IsBreak())return h_ret_val;
-
-#define BEGIN_DBGSCP_HOOK0()    \
-        auto _hook_func_ = [&]() {
-
-#define END_DBGSCP_HOOK0(func_sig_str, ret_type)  \
-};\
-thread_local static int32_t s_hook_id = -1;\
-thread_local static uint32_t s_serial_num = 0;\
-CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-ret_type h_ret_val{};\
-do\
-{\
-    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val);\
-    if (placeHolder.IsBreak()) {\
-        return h_ret_val;\
-    }\
-    else\
-    {\
-        h_ret_val = _hook_func_();\
-    }\
-} while (false);\
-return h_ret_val;
-
+//Maybe we should replace ', ##' with ' __VA_OPT(, ) ' on C++20, which is the standard way
 #define DBGSCP_HOOK(func_sig_str, ret_type, ...)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
 ret_type h_ret_val{};\
-auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, __VA_ARGS__);\
+auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, ##__VA_ARGS__);\
 if (placeHolder.IsBreak())return h_ret_val;
 
 #define BEGIN_DBGSCP_HOOK()    \
@@ -138,7 +109,7 @@ CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
 ret_type h_ret_val{};\
 do\
 {\
-    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, __VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, ##__VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return h_ret_val;\
     }\
@@ -149,38 +120,11 @@ do\
 } while (false);\
 return h_ret_val;
 
-#define DBGSCP_HOOK_VOID0(func_sig_str)   \
-thread_local static int32_t s_hook_id = -1;\
-thread_local static uint32_t s_serial_num = 0;\
-CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-auto&& placeHolder = CreateHookWrap(s_hook_id);\
-if (placeHolder.IsBreak())return;
-
-#define BEGIN_DBGSCP_HOOK_VOID0()    \
-        auto _hook_func_ = [&]() {
-
-#define END_DBGSCP_HOOK_VOID0(func_sig_str)  \
-};\
-thread_local static int32_t s_hook_id = -1;\
-thread_local static uint32_t s_serial_num = 0;\
-CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-do\
-{\
-    auto&& placeHolder = CreateHookWrap(s_hook_id);\
-    if (placeHolder.IsBreak()) {\
-        return;\
-    }\
-    else\
-    {\
-        _hook_func_();\
-    }\
-} while (false);
-
 #define DBGSCP_HOOK_VOID(func_sig_str, ...)   \
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
-auto&& placeHolder = CreateHookWrap(s_hook_id, __VA_ARGS__);\
+auto&& placeHolder = CreateHookWrap(s_hook_id, ##__VA_ARGS__);\
 if (placeHolder.IsBreak())return;
 
 #define BEGIN_DBGSCP_HOOK_VOID()    \
@@ -193,7 +137,7 @@ thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
 do\
 {\
-    auto&& placeHolder = CreateHookWrap(s_hook_id, __VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(s_hook_id, ##__VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return;\
     }\

@@ -9,7 +9,7 @@ struct(TestStru3)
 @gc : int = 456;
 @gd : string = "this is a test";
 
-hook(Test)
+hook(CompileTest)
 {
 	onenter{
 		$a : int = 12;
@@ -74,7 +74,11 @@ hook(Test1)
 		printf(">>> %f\n", inc($j));
 		printf(">>> %f\n", inc($j, 2.0));
 		printf(">>> %f\n", inc($j, 3.0));
-		printf("%d %d %d", stkix(), hookid(), hookver());
+		printf("%d %d %d\n", stkix(), hookid(), hookver());
+		printf("str contains %d %d\n", stringcontains("test","es","te"), stringnotcontains("test","es","fg"));
+		printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
+		printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
+		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
 		return 1;
 	};
 	onexit{
@@ -103,7 +107,7 @@ hook("CommandBuffer::BeginRenderPass")
 {
 	onenter{
 		printf("CommandBuffer::BeginRenderPass enter time:%d\n",time());
-		dumpstack("CommandBuffer::BeginRenderPass");
+		//dumpstack("CommandBuffer::BeginRenderPass");
 		return 0;
 	};
 	onexit{
@@ -114,7 +118,7 @@ hook("CommandBuffer::EndRenderPass")
 {
 	onenter{
 		printf("CommandBuffer::EndRenderPass enter time:%d\n",time());
-		dumpstack("CommandBuffer::EndRenderPass");
+		//dumpstack("CommandBuffer::EndRenderPass");
 		return 0;
 	};
 	onexit{
@@ -125,7 +129,7 @@ hook("CommandBuffer::Begin")
 {
 	onenter{
 		printf("CommandBuffer::Begin enter time:%d\n",time());
-		dumpstack("CommandBuffer::Begin");
+		//dumpstack("CommandBuffer::Begin");
 		return 0;
 	};
 	onexit{
@@ -136,7 +140,7 @@ hook("CommandBuffer::End")
 {
 	onenter{
 		printf("CommandBuffer::End enter time:%d\n",time());
-		dumpstack("CommandBuffer::End");
+		//dumpstack("CommandBuffer::End");
 		return 0;
 	};
 	onexit{
@@ -147,7 +151,7 @@ hook("TaskExecutor::HandleCommandStream")
 {
 	onenter{
 		printf("TaskExecutor::HandleCommandStream enter time:%d\n",time());
-		dumpstack("TaskExecutor::HandleCommandStream");
+		//dumpstack("TaskExecutor::HandleCommandStream");
 		return 0;
 	};
 	onexit{
@@ -196,5 +200,24 @@ hook("PipelineCreateInfo::Configure")
 	};
 	onexit{
 		printf("PipelineCreateInfo::Configure exit time:%d\n",time());
+	};
+};
+hook("CreateGraphicsPipeline")
+{
+	onenter{
+		printf("CreateGraphicsPipeline enter time:%d\n",time());
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
+		printf("this:%x\n", $a);
+		$name:string = format("%s",$c);
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+			assert(0);
+		};
+		//dumpstack("CreateGraphicsPipeline");
+		return 0;
+	};
+	onexit{
+		printf("CreateGraphicsPipeline exit time:%d\n",time());
 	};
 };

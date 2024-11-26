@@ -59,7 +59,7 @@ namespace
     //this enum must sync with InsEnum in DebugScriptCompiler.cs
     enum class InsEnum
     {
-        CALL = 0,
+        CALLEXTERN = 0,
         RET,
         JMP,
         JMPIF,
@@ -145,6 +145,8 @@ namespace
         STKIX,
         HOOKID,
         HOOKVER,
+        CALLINTERN_FIRST = 100,
+        CALLINTERN_LAST = 255,
         NUM
     };
     enum class TypeEnum
@@ -590,6 +592,12 @@ namespace
         Time,
         FloatTime,
         DumpCascadePtr,
+        StringContains,
+        StringContainsAny,
+        StringNotContains,
+        StringNotContainsAny,
+        StringFind,
+        StringRightFind,
         Num
     };
     struct Api
@@ -687,80 +695,88 @@ namespace
                 break;
             }
         }
-        static inline int64_t ScriptAssert(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t ScriptAssert(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
+            ++pos;
+            int operand = codes[pos];
+
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
-            DecodeOperand2(firstOperand, isGlobal, ty, index);
+            DecodeOperand1(operand, isGlobal, ty, index);
             DebugAssert(ty == TypeEnum::Int);
             int64_t cond = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             if (argNum == 1) {
                 DebugAssert(cond != 0);
             }
             else if (argNum == 2) {
-                ++pos;
-                int operand = codes[pos];
                 bool isGlobal2;
                 TypeEnum ty2;
                 int32_t index2;
-                DecodeOperand1(operand, isGlobal2, ty2, index2);
+                DecodeOperand2(operand, isGlobal2, ty2, index2);
                 DebugAssert(ty2 == TypeEnum::String);
                 const std::string& msg = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                 DebugAssertMsg(cond != 0, msg.c_str());
             }
             return 0;
         }
-        static inline void DumpStack(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void DumpStack(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
+            ++pos;
+            int operand = codes[pos];
+
             bool isGlobal;
             TypeEnum ty;
             int32_t index;
-            DecodeOperand2(firstOperand, isGlobal, ty, index);
+            DecodeOperand1(operand, isGlobal, ty, index);
             DebugAssert(ty == TypeEnum::String);
             const std::string& prefix = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
             //DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
         }
-        static inline int64_t Printf(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Printf(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            bool isGlobal;
-            TypeEnum ty;
-            int32_t index;
-            DecodeOperand2(firstOperand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
-            const std::string& fmt = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
-
+            const std::string* pStr = nullptr;
             std::vector<int64_t> args{};
             args.reserve(argNum - 1);
 
-            for (int i = 1; i < argNum; i += 2) {
+            for (int i = 0; i < argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
 
                 if (i < argNum) {
-                    int64_t val = 0;
-
-                    bool isGlobal1;
-                    TypeEnum ty1;
-                    int32_t index1;
-                    DecodeOperand1(operand, isGlobal1, ty1, index1);
-                    switch (ty1) {
-                    case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-                    }break;
-                    case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
-                        val = *reinterpret_cast<int64_t*>(&v);
-                    }break;
-                    case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
-                        val = reinterpret_cast<int64_t>(v.c_str());
-                    }break;
-                    default:
-                        break;
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        pStr = &GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                     }
+                    else {
+                        int64_t val = 0;
 
-                    args.push_back(val);
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        switch (ty1) {
+                        case TypeEnum::Int: {
+                            val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                        }break;
+                        case TypeEnum::Float: {
+                            double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+                            val = *reinterpret_cast<int64_t*>(&v);
+                        }break;
+                        case TypeEnum::String: {
+                            const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                            val = reinterpret_cast<int64_t>(v.c_str());
+                        }break;
+                        default:
+                            break;
+                        }
+
+                        args.push_back(val);
+                    }
                 }
                 if (i + 1 < argNum) {
                     int64_t val = 0;
@@ -789,52 +805,57 @@ namespace
                 }
             }
 
+            const std::string& fmt = *pStr;
             int64_t ct = myprintf(fmt.c_str(), args.data());
             return ct;
         }
-        static inline std::string Format(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline std::string Format(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            bool isGlobal;
-            TypeEnum ty;
-            int32_t index;
-            DecodeOperand2(firstOperand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
-            const std::string& fmt = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
-
+            const std::string* pStr = nullptr;
             std::vector<int64_t> args{};
             args.reserve(argNum - 1);
             const int c_strbuf_size = 4096;
             std::vector<int8_t> strbuf(c_strbuf_size + 1);
             char* pbuf = reinterpret_cast<char*>(strbuf.data());
 
-            for (int i = 1; i < argNum; i += 2) {
+            for (int i = 0; i < argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
 
                 if (i < argNum) {
-                    int64_t val = 0;
-
-                    bool isGlobal1;
-                    TypeEnum ty1;
-                    int32_t index1;
-                    DecodeOperand1(operand, isGlobal1, ty1, index1);
-                    switch (ty1) {
-                    case TypeEnum::Int: {
-                        val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-                    }break;
-                    case TypeEnum::Float: {
-                        double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
-                        val = *reinterpret_cast<int64_t*>(&v);
-                    }break;
-                    case TypeEnum::String: {
-                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
-                        val = reinterpret_cast<int64_t>(v.c_str());
-                    }break;
-                    default:
-                        break;
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        pStr = &GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                     }
+                    else {
+                        int64_t val = 0;
 
-                    args.push_back(val);
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        switch (ty1) {
+                        case TypeEnum::Int: {
+                            val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                        }break;
+                        case TypeEnum::Float: {
+                            double v = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+                            val = *reinterpret_cast<int64_t*>(&v);
+                        }break;
+                        case TypeEnum::String: {
+                            const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                            val = reinterpret_cast<int64_t>(v.c_str());
+                        }break;
+                        default:
+                            break;
+                        }
+
+                        args.push_back(val);
+                    }
                 }
                 if (i + 1 < argNum) {
                     int64_t val = 0;
@@ -863,47 +884,52 @@ namespace
                 }
             }
 
+            const std::string& fmt = *pStr;
             int64_t ct = mysnprintf(pbuf, c_strbuf_size + 1, fmt.c_str(), args.data());
             pbuf[c_strbuf_size] = 0;
             return std::string(pbuf);
         }
-        static inline int64_t Time(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t Time(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             auto&& duration = std::chrono::high_resolution_clock::now() - g_start_time;
             auto&& ms = std::chrono::duration_cast<std::chrono::microseconds>(duration);
             return ms.count();
         }
-        static inline double FloatTime(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline double FloatTime(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             using double_microseconds = std::chrono::duration<double, std::micro>;
             auto&& duration = std::chrono::high_resolution_clock::now() - g_start_time;
             auto&& ms = std::chrono::duration_cast<double_microseconds>(duration);
             return ms.count();
         }
-        static inline int64_t DumpCascadePtr(int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline int64_t DumpCascadePtr(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            bool isGlobal;
-            TypeEnum ty;
-            int32_t index;
-            DecodeOperand2(firstOperand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
-            int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
-
+            int64_t addr = 0;
             std::vector<int32_t> args{};
             args.reserve(argNum - 1);
 
-            for (int i = 1; i < argNum; i += 2) {
+            for (int i = 0; i < argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
 
                 if (i < argNum) {
-                    bool isGlobal1;
-                    TypeEnum ty1;
-                    int32_t index1;
-                    DecodeOperand1(operand, isGlobal1, ty1, index1);
-                    DebugAssert(ty1 == TypeEnum::Int);
-                    int32_t val = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
-                    args.push_back(val);
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::Int);
+                        addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+                    }
+                    else {
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        DebugAssert(ty1 == TypeEnum::Int);
+                        int32_t val = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
+                        args.push_back(val);
+                    }
                 }
                 if (i + 1 < argNum) {
                     bool isGlobal2;
@@ -919,8 +945,357 @@ namespace
             int64_t taddr = dumpcascadeptr(addr, args.data(), argNum - 1);
             return taddr;
         }
+        static inline int64_t StringContains(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            const std::string* pStr = nullptr;
+            int retVal = 1;
+
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+
+                if (i < argNum) {
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+                        pStr = &str;
+                    }
+                    else {
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        DebugAssert(ty1 == TypeEnum::String);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                        const std::string& str = *pStr;
+                        if (v.length() > 0 && str.find(v) == std::string::npos) {
+                            retVal = 0;
+                            break;
+                        }
+                    }
+                }
+                if (i + 1 < argNum) {
+                    bool isGlobal2;
+                    TypeEnum ty2;
+                    int32_t index2;
+                    DecodeOperand2(operand, isGlobal2, ty2, index2);
+                    DebugAssert(ty2 == TypeEnum::String);
+                    const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+                    const std::string& str = *pStr;
+                    if (v.length() > 0 && str.find(v) == std::string::npos) {
+                        retVal = 0;
+                        break;
+                    }
+                }
+            }
+            return retVal;
+        }
+        static inline int64_t StringContainsAny(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            const std::string* pStr = nullptr;
+            int retVal = 0;
+
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+
+                if (i < argNum) {
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+                        pStr = &str;
+                    }
+                    else {
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        DebugAssert(ty1 == TypeEnum::String);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                        const std::string& str = *pStr;
+                        if (v.length() > 0 && str.find(v) != std::string::npos) {
+                            retVal = 1;
+                            break;
+                        }
+                    }
+                }
+                if (i + 1 < argNum) {
+                    bool isGlobal2;
+                    TypeEnum ty2;
+                    int32_t index2;
+                    DecodeOperand2(operand, isGlobal2, ty2, index2);
+                    DebugAssert(ty2 == TypeEnum::String);
+                    const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+                    const std::string& str = *pStr;
+                    if (v.length() > 0 && str.find(v) != std::string::npos) {
+                        retVal = 1;
+                        break;
+                    }
+                }
+            }
+            return retVal;
+        }
+        static inline int64_t StringNotContains(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            const std::string* pStr = nullptr;
+            int retVal = 1;
+
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+
+                if (i < argNum) {
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+                        pStr = &str;
+                    }
+                    else {
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        DebugAssert(ty1 == TypeEnum::String);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                        const std::string& str = *pStr;
+                        if (v.length() > 0 && str.find(v) != std::string::npos) {
+                            retVal = 0;
+                            break;
+                        }
+                    }
+                }
+                if (i + 1 < argNum) {
+                    bool isGlobal2;
+                    TypeEnum ty2;
+                    int32_t index2;
+                    DecodeOperand2(operand, isGlobal2, ty2, index2);
+                    DebugAssert(ty2 == TypeEnum::String);
+                    const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+                    const std::string& str = *pStr;
+                    if (v.length() > 0 && str.find(v) != std::string::npos) {
+                        retVal = 0;
+                        break;
+                    }
+                }
+            }
+            return retVal;
+        }
+        static inline int64_t StringNotContainsAny(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            const std::string* pStr = nullptr;
+            int retVal = 0;
+
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+
+                if (i < argNum) {
+                    if (i == 0) {
+                        bool isGlobal;
+                        TypeEnum ty;
+                        int32_t index;
+                        DecodeOperand1(operand, isGlobal, ty, index);
+                        DebugAssert(ty == TypeEnum::String);
+                        const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+                        pStr = &str;
+                    }
+                    else {
+                        bool isGlobal1;
+                        TypeEnum ty1;
+                        int32_t index1;
+                        DecodeOperand1(operand, isGlobal1, ty1, index1);
+                        DebugAssert(ty1 == TypeEnum::String);
+                        const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+                        const std::string& str = *pStr;
+                        if (v.length() > 0 && str.find(v) == std::string::npos) {
+                            retVal = 1;
+                            break;
+                        }
+                    }
+                }
+                if (i + 1 < argNum) {
+                    bool isGlobal2;
+                    TypeEnum ty2;
+                    int32_t index2;
+                    DecodeOperand2(operand, isGlobal2, ty2, index2);
+                    DebugAssert(ty2 == TypeEnum::String);
+                    const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+                    const std::string& str = *pStr;
+                    if (v.length() > 0 && str.find(v) == std::string::npos) {
+                        retVal = 1;
+                        break;
+                    }
+                }
+            }
+            return retVal;
+        }
+        static inline int64_t StringFind(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::String);
+            const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::String);
+            const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+
+            int64_t start = 0;
+            if (argNum > 2) {
+                ++pos;
+                int operand2 = codes[pos];
+
+                bool isGlobal2;
+                TypeEnum ty2;
+                int32_t index2;
+                DecodeOperand1(operand2, isGlobal2, ty2, index2);
+                DebugAssert(ty2 == TypeEnum::Int);
+                start = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+            }
+
+            auto&& rpos = str.find(v, start);
+            if (rpos == std::string::npos)
+                return -1;
+            else
+                return static_cast<int64_t>(rpos);
+        }
+        static inline int64_t StringRightFind(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::String);
+            const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::String);
+            const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+
+            std::size_t start = std::string::npos;
+            if (argNum > 2) {
+                ++pos;
+                int operand2 = codes[pos];
+
+                bool isGlobal2;
+                TypeEnum ty2;
+                int32_t index2;
+                DecodeOperand1(operand2, isGlobal2, ty2, index2);
+                DebugAssert(ty2 == TypeEnum::Int);
+                start = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+            }
+
+            auto&& rpos = str.rfind(v, start);
+            if (rpos == std::string::npos)
+                return -1;
+            else
+                return static_cast<int64_t>(rpos);
+        }
     };
-    static inline void DoCall(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoCallIntern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        int apiIndex = static_cast<int>(op) - static_cast<int>(InsEnum::CALLINTERN_FIRST);
+        ApiEnum api = static_cast<ApiEnum>(apiIndex);
+        switch (api) {
+        case ApiEnum::ScriptAssert: {
+            int64_t val = Api::ScriptAssert(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::DumpStack: {
+            Api::DumpStack(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+        }break;
+        case ApiEnum::Printf: {
+            int64_t val = Api::Printf(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
+        }break;
+        case ApiEnum::Format: {
+            std::string val = Api::Format(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::String);
+            SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+        }break;
+        case ApiEnum::Time: {
+            int64_t val = Api::Time(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::FloatTime: {
+            double val = Api::FloatTime(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Float);
+            SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
+        }break;
+        case ApiEnum::DumpCascadePtr: {
+            int64_t val = Api::DumpCascadePtr(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringContains: {
+            int64_t val = Api::StringContains(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringContainsAny: {
+            int64_t val = Api::StringContainsAny(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringNotContains: {
+            int64_t val = Api::StringNotContains(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringNotContainsAny: {
+            int64_t val = Api::StringNotContainsAny(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringFind: {
+            int64_t val = Api::StringFind(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::StringRightFind: {
+            int64_t val = Api::StringRightFind(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        default: {
+        }break;
+        }
+    }
+    static inline void DoCallExtern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -932,49 +1307,7 @@ namespace
         int32_t apiIndex;
         DecodeOperand1(operand, apiIndex);
         DebugAssert(apiIndex >= 0);
-        if (apiIndex < c_extern_api_start_id) {
-            ApiEnum api = static_cast<ApiEnum>(apiIndex);
-            switch (api) {
-            case ApiEnum::ScriptAssert: {
-                int64_t val = Api::ScriptAssert(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::Int);
-                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-            }break;
-            case ApiEnum::DumpStack: {
-                Api::DumpStack(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            }break;
-            case ApiEnum::Printf: {
-                int64_t val = Api::Printf(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::Int);
-                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
-            }break;
-            case ApiEnum::Format: {
-                std::string val = Api::Format(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::String);
-                SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
-            }break;
-            case ApiEnum::Time: {
-                int64_t val = Api::Time(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::Int);
-                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-            }break;
-            case ApiEnum::FloatTime: {
-                double val = Api::FloatTime(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::Float);
-                SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
-            }break;
-            case ApiEnum::DumpCascadePtr: {
-                int64_t val = Api::DumpCascadePtr(argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                DebugAssert(ty == TypeEnum::Int);
-                SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
-            }break;
-            default: {
-            }break;
-            }
-        }
-        else {
-            Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-        }
+        Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
     }
     static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)
     {
@@ -2850,8 +3183,8 @@ namespace
                     int32_t opcode = codes[pos];
                     InsEnum op = DecodeInsEnum(opcode);
                     switch (op) {
-                    case InsEnum::CALL:
-                        DoCall(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                    case InsEnum::CALLEXTERN:
+                        DoCallExtern(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
                     case InsEnum::RET:
                         DoRet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, ret);
@@ -3109,6 +3442,9 @@ namespace
                         DoHookVer(opcode, op, codes, pos, stackBase, intLocals, intGlobals);
                         break;
                     default:
+                        if (op >= InsEnum::CALLINTERN_FIRST && op <= InsEnum::CALLINTERN_LAST) {
+                            DoCallIntern(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        }
                         break;
                     }
                 }

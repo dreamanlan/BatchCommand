@@ -1,7 +1,19 @@
-defapi(assert,int,noparams,[int,string]);
+defapi(assert,int,noparams,[int,string]){
+	minparamnum(1);
+};
 defapi(dumpstack,void,noparams,[string]);
 defapi(printf,int,printf,[string]);
 defapi(format,string,printf,[string]);
 defapi(time,int,noparams,[]);
 defapi(floattime,float,noparams,[]);
 defapi(dumpcascadeptr,int,ints,[int]);
+defapi(stringcontains,int,strings,[string]);
+defapi(stringcontainsany,int,strings,[string]);
+defapi(stringnotcontains,int,strings,[string]);
+defapi(stringnotcontainsany,int,strings,[string]);
+defapi(stringfind,int,noparams,[string,string,int]){
+	minparamnum(2);
+};
+defapi(stringrfind,int,ints,[string,string,int]){
+	minparamnum(2);
+};

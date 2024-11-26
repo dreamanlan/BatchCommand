@@ -19,7 +19,7 @@ namespace CppDebugScript
     /// </summary>
     public enum InsEnum : int
     {
-        CALL = 0,
+        CALLEXTERN = 0,
         RET,
         JMP,
         JMPIF,
@@ -105,6 +105,8 @@ namespace CppDebugScript
         STKIX,
         HOOKID,
         HOOKVER,
+        CALLINTERN_FIRST = 100,
+        CALLINTERN_LAST = 255,
         NUM
     }
     public sealed class DebugScriptCompiler
@@ -112,7 +114,7 @@ namespace CppDebugScript
         public string LoadApiDefine(string txt)
         {
             int apiId = 0;
-            int externApiId = 100;
+            int externApiId = 0;
             m_Apis.Clear();
 
             Dsl.DslFile file = new Dsl.DslFile();
@@ -120,9 +122,15 @@ namespace CppDebugScript
             if (file.LoadFromString(txt, (msg) => { err.AppendLine(msg); })) {
                 foreach (var dslInfo in file.DslInfos) {
                     var id = dslInfo.GetId();
-                    if (id == "defapi") {
-                        var call = dslInfo as Dsl.FunctionData;
+                    if (id == "defapi" || id == "defexternapi") {
                         bool handled = false;
+                        var fd = dslInfo as Dsl.FunctionData;
+                        var call = fd;
+                        bool existsOptions = false;
+                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                            call = fd.LowerOrderFunction;
+                            existsOptions = true;
+                        }
                         if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
                             int pnum = call.GetParamNum();
                             if (pnum == 4) {
@@ -141,8 +149,12 @@ namespace CppDebugScript
                                     Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
                                 }
 
-                                var api = new ApiInfo { ApiId = apiId, Name = name, Type = rty, Params = paramsEnum };
-                                ++apiId;
+                                var api = new ApiInfo { isExtern = id == "defexternapi", ApiId = apiId, Name = name, Type = rty, Params = paramsEnum };
+
+                                if (id == "defexternapi")
+                                    ++externApiId;
+                                else
+                                    ++apiId;
 
                                 var pts = call.GetParam(3) as Dsl.FunctionData;
                                 foreach (var p in pts.Params) {
@@ -150,57 +162,26 @@ namespace CppDebugScript
                                     api.ParamTypes.Add(ty);
                                 }
 
+                                if (existsOptions) {
+                                    foreach(var syn in fd.Params) {
+                                        var fcall = syn as Dsl.FunctionData;
+                                        if (null != fcall) {
+                                            string pname = fcall.GetId();
+                                            if (pname == "minparamnum") {
+                                                int.TryParse(fcall.GetParamId(0), out api.MinParamNum);
+                                            }
+                                        }
+                                    }
+                                }
+                                if (api.MinParamNum == 0)
+                                    api.MinParamNum = api.ParamTypes.Count;
+
                                 m_Apis.Add(name, api);
                                 handled = true;
                             }
                         }
                         if(!handled) {
-                            err.AppendFormat("expect defapi(ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
-                            err.AppendLine();
-                        }
-                    }
-                    else if(id == "defexternapi") {
-                        var func = dslInfo as Dsl.FunctionData;
-                        bool handled = false;
-                        if (null != func && func.IsHighOrder && func.LowerOrderFunction.IsFunction && func.HaveStatement()) {
-                            var call = func.LowerOrderFunction;
-                            int pnum = call.GetParamNum();
-                            if (pnum == 3) {
-                                var type = call.GetParamId(0);
-                                var paramsStr = call.GetParamId(1);
-
-                                s_Type2Ids.TryGetValue(type, out var rty);
-
-                                ParamsEnum paramsEnum = ParamsEnum.NoParams;
-                                if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
-                                    int.TryParse(paramsStr, out var v);
-                                    paramsEnum = (ParamsEnum)v;
-                                }
-                                else {
-                                    Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
-                                }
-
-                                var paramTypes = new List<TypeEnum>();
-                                var pts = call.GetParam(2) as Dsl.FunctionData;
-                                foreach (var p in pts.Params) {
-                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
-                                    paramTypes.Add(ty);
-                                }
-
-                                foreach (var p in func.Params) {
-                                    var fd = p as Dsl.FunctionData;
-                                    if (null != fd && fd.GetId() == "add" && fd.GetParamNum() == 1) {
-                                        string name = fd.GetParamId(0);
-                                        var api = new ApiInfo { ApiId = externApiId, Name = name, Type = rty, Params = paramsEnum };
-                                        ++externApiId;
-                                        m_Apis.Add(name, api);
-                                    }
-                                }
-                                handled = true;
-                            }
-                        }
-                        if(!handled) {
-                            err.AppendFormat("expect defexternapi(ret_type,params_type,[param_type,...]){ add(name); }; code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendFormat("expect defapi/defexternapi(ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -624,8 +605,8 @@ namespace CppDebugScript
                 int opcode = codes[pos];
                 InsEnum op = DecodeInsEnum(opcode);
                 switch (op) {
-                    case InsEnum.CALL:
-                        DumpCall(txt, indent, codes, ref pos, "CALL");
+                    case InsEnum.CALLEXTERN:
+                        DumpCallExtern(txt, indent, codes, ref pos);
                         break;
                     case InsEnum.RET:
                         DumpRet(txt, indent, codes, ref pos);
@@ -882,15 +863,50 @@ namespace CppDebugScript
                     case InsEnum.HOOKVER:
                         DumpHookVer(txt, indent, codes, ref pos);
                         break;
+                    default:
+                        if (op >= InsEnum.CALLINTERN_FIRST && op <= InsEnum.CALLINTERN_LAST) {
+                            int apiIndex = (int)(op - InsEnum.CALLINTERN_FIRST);
+                            if (apiIndex >= 0) {
+                                DumpCallIntern(txt, indent, codes, ref pos, op);
+                            }
+                        }
+                        break;
                 }
             }
         }
-        private void DumpCall(StringBuilder txt, int indent, List<int> codes, ref int pos, string op)
+        private void DumpCallIntern(StringBuilder txt, int indent, List<int> codes, ref int pos, InsEnum op)
         {
             int ix = pos;
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
-            txt.Append("{0}{1}: {2} = {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), op);
+            txt.Append("{0}{1}: {2} = CALLINTERN {3}", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index), (int)(op - InsEnum.CALLINTERN_FIRST));
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i <= argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 <= argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
+        }
+        private void DumpCallExtern(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = CALLEXTERN", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
             for (int i = 0; i < argNum + 1; i += 2) {
                 ++pos;
                 int operand = codes[pos];
@@ -2357,7 +2373,10 @@ namespace CppDebugScript
                                     err.AppendLine();
                                 }
                                 else {
-                                    TryGenCallApi(info, codes, sinfos, err, callData, ref semanticInfo);
+                                    if(info.isExtern)
+                                        TryGenCallExternApi(info, codes, sinfos, err, callData, ref semanticInfo);
+                                    else
+                                        TryGenCallInternApi(info, codes, sinfos, err, callData, ref semanticInfo);
                                 }
                             }
                         }
@@ -3571,7 +3590,110 @@ namespace CppDebugScript
                 }
             }
         }
-        private void TryGenCallApi(ApiInfo api, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        private void TryGenCallInternApi(ApiInfo api, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            InsEnum op = InsEnum.CALLINTERN_FIRST + api.ApiId;
+            CheckType(api, opds, err, comp);
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    //gen api call
+                    var rinfo = semanticInfo;
+                    if (semanticInfo.TargetType != api.Type) {
+                        int tmpIndex = -1;
+                        switch (api.Type) {
+                            case TypeEnum.Int:
+                                tmpIndex = CurBlock().AllocTempInt();
+                                break;
+                            case TypeEnum.Float:
+                                tmpIndex = CurBlock().AllocTempFloat();
+                                break;
+                            case TypeEnum.String:
+                                tmpIndex = CurBlock().AllocTempString();
+                                break;
+                        }
+                        if (tmpIndex >= 0) {
+                            rinfo.IsGlobal = false;
+                            rinfo.ResultType = api.Type;
+                            rinfo.ResultCount = 0;
+                            rinfo.ResultIndex = tmpIndex;
+                            rinfo.ResultValues = null;
+                            codes.Add(EncodeOpcode(op, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                        }
+                    }
+                    else {
+                        codes.Add(EncodeOpcode(op, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    }
+                    for (int i = 0; i < opds.Count; i += 2) {
+                        int opd1 = 0;
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        int opd2 = 0;
+                        if (i + 1 < opds.Count) {
+                            var opdInfo = opds[i + 1];
+                            ConvertArgument(codes, api, i + 1, ref opdInfo);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        codes.Add(opd1 | opd2);
+                    }
+                    if (semanticInfo.TargetType != api.Type) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
+                    }
+
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = -1;
+                switch (api.Type) {
+                    case TypeEnum.Int:
+                        tmpIndex = CurBlock().AllocTempInt();
+                        break;
+                    case TypeEnum.Float:
+                        tmpIndex = CurBlock().AllocTempFloat();
+                        break;
+                    case TypeEnum.String:
+                        tmpIndex = CurBlock().AllocTempString();
+                        break;
+                    default:
+                        tmpIndex = 0;
+                        break;
+                }
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = api.Type;
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+                    //gen api call
+                    codes.Add(EncodeOpcode(op, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    for (int i = 0; i < opds.Count; i += 2) {
+                        int opd1 = 0;
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        int opd2 = 0;
+                        if (i + 1 < opds.Count) {
+                            var opdInfo = opds[i + 1];
+                            ConvertArgument(codes, api, i + 1, ref opdInfo);
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        codes.Add(opd1 | opd2);
+                    }
+                }
+            }
+        }
+        private void TryGenCallExternApi(ApiInfo api, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             CheckType(api, opds, err, comp);
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -3599,11 +3721,11 @@ namespace CppDebugScript
                             rinfo.ResultCount = 0;
                             rinfo.ResultIndex = tmpIndex;
                             rinfo.ResultValues = null;
-                            codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                            codes.Add(EncodeOpcode(InsEnum.CALLEXTERN, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
                         }
                     }
                     else {
-                        codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        codes.Add(EncodeOpcode(InsEnum.CALLEXTERN, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                     }
                     int opd1 = 0;
                     int opd2 = 0;
@@ -3663,7 +3785,7 @@ namespace CppDebugScript
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
                     //gen api call
-                    codes.Add(EncodeOpcode(InsEnum.CALL, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    codes.Add(EncodeOpcode(InsEnum.CALLEXTERN, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                     int opd1 = 0;
                     int opd2 = 0;
                     opd1 = EncodeOperand1(api.ApiId);
@@ -5488,6 +5610,10 @@ namespace CppDebugScript
         }
         private void CheckType(ApiInfo api, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp)
         {
+            if (opds.Count < api.MinParamNum) {
+                err.AppendFormat("'{0}' must have at least {1} arguments, code:{2}, line:{3}", api.Name, api.MinParamNum, comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
             for (int i = 0; i < opds.Count; ++i) {
                 TypeEnum rtype = opds[i].ResultType;
                 TypeEnum type = api.GetParamType(i, rtype);
@@ -5744,15 +5870,17 @@ namespace CppDebugScript
         }
         public sealed class ApiInfo
         {
+            public bool isExtern = false;
             public int ApiId = 0;
             public string Name = string.Empty;
             public TypeEnum Type = TypeEnum.NotUse;
             public ParamsEnum Params = ParamsEnum.NoParams;
             public List<TypeEnum> ParamTypes = new List<TypeEnum>();
+            public int MinParamNum = 0;
 
             public TypeEnum GetParamType(int ix, TypeEnum argType)
             {
-                TypeEnum paramType = argType;
+                TypeEnum paramType = TypeEnum.NotUse;
                 if (ix < ParamTypes.Count) {
                     paramType = ParamTypes[ix];
                 }
@@ -5769,6 +5897,9 @@ namespace CppDebugScript
                 }
                 else if (Params == ParamsEnum.Strings) {
                     paramType = TypeEnum.String;
+                }
+                else if(Params == ParamsEnum.Printf) {
+                    paramType = argType;
                 }
                 return paramType;
             }

@@ -202,9 +202,11 @@ hook("VKGpuProgram::Create")
 		$d:int = ptrget(argv(3),8);
 		$name:string = format("%s",$d);
 		printf("shader:%s\n", $name);
+		/*
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
+		*/
 		return 0;
 	};
 	onexit{
@@ -221,10 +223,12 @@ hook("VKGpuProgram::Prepare")
 		$c:int = ptrget(argv(2),8);
 		$d:int = ptrget(argv(3),8);
 		printf("this:%x\n", $a);
+		/*
 		$name:string = format("%s",$d);
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
+		*/
 		return 0;
 	};
 	onexit{
@@ -306,7 +310,7 @@ hook("CreateGraphicsPipeline")
 		$c:int = ptrget(argv(2),8);
 		printf("this:%x\n", $a);
 		$name:string = format("%s",$c);
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
 		//dumpstack("CreateGraphicsPipeline");

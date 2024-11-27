@@ -2144,7 +2144,7 @@ namespace CppDebugScript
                                 var sinfo1 = new SemanticInfo();
                                 var tcodes1 = new List<int>();
                                 CompileExpression(param1, tcodes1, err, ref sinfo1);
-                                var param2 = callData.GetParam(0);
+                                var param2 = callData.GetParam(1);
                                 var sinfo2 = new SemanticInfo();
                                 var tcodes2 = new List<int>();
                                 CompileExpression(param2, tcodes2, err, ref sinfo2);

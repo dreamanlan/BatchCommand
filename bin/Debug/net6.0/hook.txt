@@ -201,7 +201,8 @@ hook("VKGpuProgram::Create")
 		$c:int = ptrget(argv(2),8);
 		$d:int = ptrget(argv(3),8);
 		$name:string = format("%s",$d);
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+		printf("shader:%s\n", $name);
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
 		return 0;

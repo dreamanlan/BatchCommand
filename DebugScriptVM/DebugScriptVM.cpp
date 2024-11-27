@@ -15,7 +15,7 @@
 #include <cstdarg>
 #include <sstream>
 #include <fstream>
-#if _MSC_VER && _MSC_VER >= 1941
+#if _MSC_VER && _MSC_VER >= 1939
 #include <shared_mutex>
 #define USE_STD_SHARED_MUTEX 1
 #else

@@ -162,7 +162,7 @@ hook("ScratchBuffer::ClearPool")
 {
 	onenter{
 		printf("ScratchBuffer::ClearPool enter time:%d\n",time());
-		dumpstack("ScratchBuffer::ClearPool");
+		//dumpstack("ScratchBuffer::ClearPool");
 		return 0;
 	};
 	onexit{
@@ -173,7 +173,7 @@ hook("ScratchBuffer::TryLocklessAlloc")
 {
 	onenter{
 		printf("ScratchBuffer::TryLocklessAlloc enter time:%d\n",time());
-		dumpstack("ScratchBuffer::TryLocklessAlloc");
+		//dumpstack("ScratchBuffer::TryLocklessAlloc");
 		return 0;
 	};
 	onexit{
@@ -184,18 +184,112 @@ hook("ScratchBuffer::TrimMemory")
 {
 	onenter{
 		printf("ScratchBuffer::TrimMemory enter time:%d\n",time());
-		dumpstack("ScratchBuffer::TrimMemory");
+		//dumpstack("ScratchBuffer::TrimMemory");
 		return 0;
 	};
 	onexit{
 		printf("ScratchBuffer::TrimMemory exit time:%d\n",time());
 	};
 };
+hook("VKGpuProgram::Create")
+{
+	onenter{
+		printf("VKGpuProgram::Create enter time:%d\n",time());
+		//dumpstack("VKGpuProgram::Create");
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
+		$d:int = ptrget(argv(3),8);
+		$name:string = format("%s",$d);
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+			assert(0);
+		};
+		return 0;
+	};
+	onexit{
+		printf("VKGpuProgram::Create exit time:%d\n",time());
+	};
+};
+hook("VKGpuProgram::Prepare")
+{
+	onenter{
+		printf("VKGpuProgram::Prepare enter time:%d\n",time());
+		//dumpstack("VKGpuProgram::Prepare");
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
+		$d:int = ptrget(argv(3),8);
+		printf("this:%x\n", $a);
+		$name:string = format("%s",$d);
+		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad"){
+			assert(0);
+		};
+		return 0;
+	};
+	onexit{
+		printf("VKGpuProgram::Prepare exit time:%d\n",time());
+	};
+};
+hook("GraphicsPipelineProvider::GetShaderModule")
+{
+	onenter{
+		printf("GraphicsPipelineProvider::GetShaderModule enter time:%d\n",time());
+		//dumpstack("VKGpuProgram::Create");
+		$a:int = ptrget(argv(7),8);
+		$b:int = ptrget(argv(7)+8,8);
+		printf("GraphicsPipelineProvider::GetShaderModule key:%8.8x %8.8x\n",$a,$b);
+		return 0;
+	};
+	onexit{
+		$a:int = ptrget(argv(0),8);
+		printf("GraphicsPipelineProvider::GetShaderModule ret:%x\n",$a);
+		printf("GraphicsPipelineProvider::GetShaderModule exit time:%d\n",time());
+	};
+};
+hook("GraphicsPipelineProvider::DeleteShaderModule")
+{
+	onenter{
+		printf("GraphicsPipelineProvider::DeleteShaderModule enter time:%d\n",time());
+		dumpstack("GraphicsPipelineProvider::DeleteShaderModule");
+		$a:int = ptrget(argv(1),8);
+		printf("GraphicsPipelineProvider::DeleteShaderModule obj:%x\n",$a);
+		return 0;
+	};
+	onexit{
+		printf("GraphicsPipelineProvider::DeleteShaderModule exit time:%d\n",time());
+	};
+};
+hook("GraphicsPipelineProvider::GetPipelineCacheAndLayout")
+{
+	onenter{
+		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout enter time:%d\n",time());
+		//dumpstack("GraphicsPipelineProvider::GetPipelineCacheAndLayout");
+		return 0;
+	};
+	onexit{
+		$a:int = ptrget(argv(0),8);
+		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout ret:%x\n",$a);
+		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout exit time:%d\n",time());
+	};
+};
+hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
+{
+	onenter{
+		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%d\n",time());
+		dumpstack("GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
+		$a:int = ptrget(argv(1),8);
+		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout obj:%x\n",$a);
+		return 0;
+	};
+	onexit{
+		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%d\n",time());
+	};
+};
 hook("PipelineCreateInfo::Configure")
 {
 	onenter{
 		printf("PipelineCreateInfo::Configure enter time:%d\n",time());
-		dumpstack("PipelineCreateInfo::Configure");
+		//dumpstack("PipelineCreateInfo::Configure");
 		return 0;
 	};
 	onexit{

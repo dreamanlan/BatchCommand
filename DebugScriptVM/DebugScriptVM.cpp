@@ -288,92 +288,6 @@ namespace
 #error printf_impl macro conflict
 #endif
 
-    static int myprintf(const char* fmt, int64_t args[]) {
-        const char* p = fmt;
-        int i = 0;
-        int ct = 0;
-
-        while (*p) {
-            if (*p == '%') {
-                char tmpFmt[64] = { *p };
-                int nextTmpIx = 1;
-                bool cont = true;
-                while (*p && cont) {
-                    ++p;
-                    tmpFmt[nextTmpIx++] = *p;
-                    tmpFmt[nextTmpIx] = 0;
-                    switch (*p) {
-                    case 'd':
-                    case 'i':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'u':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'o':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'x':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'X':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'f':
-                    case 'F':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'e':
-                    case 'E':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        break;
-                    case 'g':
-                    case 'G':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'a':
-                    case 'A':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 'c':
-                        ct += printf_impl(tmpFmt, args[i++]);
-                        cont = false;
-                        break;
-                    case 's':
-                        ct += printf_impl(tmpFmt, reinterpret_cast<const char*>(args[i++]));
-                        cont = false;
-                        break;
-                    case 'p':
-                        ct += printf_impl(tmpFmt, reinterpret_cast<const void*>(args[i++]));
-                        cont = false;
-                        break;
-                    case 'n':
-                        ct += printf_impl("%d", ct);
-                        cont = false;
-                        break;
-                    case '%':
-                        ct += printf_impl(tmpFmt);
-                        cont = false;
-                        break;
-                    }
-                }
-            }
-            else {
-                printf_impl("%c", *p);
-                ++ct;
-            }
-            ++p;
-        }
-        return ct;
-    }
     static int mysnprintf(char* buffer, std::size_t buf_size, const char* fmt, int64_t args[]) {
         const char* p = fmt;
         int i = 0;
@@ -457,6 +371,14 @@ namespace
             }
             ++p;
         }
+        return ct;
+    }
+    static int myprintf(const char* fmt, int64_t args[]) {
+        const int c_buf_size = 1024 * 4 + 1;
+        char buf[c_buf_size];
+        int ct = mysnprintf(buf, c_buf_size, fmt, args);
+        buf[ct < c_buf_size ? ct : c_buf_size - 1] = 0;
+        printf_impl("%s", buf);
         return ct;
     }
     static inline int64_t dumpcascadeptr(int64_t addr, int32_t offsets[], int32_t num)

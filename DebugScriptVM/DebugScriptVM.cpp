@@ -15,6 +15,7 @@
 #include <cstdarg>
 #include <sstream>
 #include <fstream>
+#include <memory>
 #if _MSC_VER && _MSC_VER >= 1939
 #include <shared_mutex>
 #define USE_STD_SHARED_MUTEX 1
@@ -543,6 +544,12 @@ namespace
         SubString,
         CStrStr,
         CStrCmp,
+        Malloc,
+        Free,
+        MemCpy,
+        MemSet,
+        MemSave,
+        MemLoad,
         Num
     };
     struct Api
@@ -1254,6 +1261,173 @@ namespace
                 return std::strcmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2));
             }
         }
+        static inline int64_t Malloc(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t size = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            void* fptr = std::malloc(static_cast<size_t>(size));
+            return reinterpret_cast<int64_t>(fptr);
+        }
+        static inline void Free(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            std::free(reinterpret_cast<void*>(addr));
+        }
+        static inline int64_t MemCpy(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::Int);
+            int64_t src = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+
+            ++pos;
+            int operand2 = codes[pos];
+
+            bool isGlobal2;
+            TypeEnum ty2;
+            int32_t index2;
+            DecodeOperand1(operand2, isGlobal2, ty2, index2);
+            DebugAssert(ty2 == TypeEnum::Int);
+            std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+
+            void* fptr = std::memcpy(reinterpret_cast<void*>(dest), reinterpret_cast<const void*>(src), size);
+            return reinterpret_cast<int64_t>(fptr);
+        }
+        static inline int64_t MemSet(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::Int);
+            int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+
+            ++pos;
+            int operand2 = codes[pos];
+
+            bool isGlobal2;
+            TypeEnum ty2;
+            int32_t index2;
+            DecodeOperand1(operand2, isGlobal2, ty2, index2);
+            DebugAssert(ty2 == TypeEnum::Int);
+            std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+
+            void* fptr = std::memset(reinterpret_cast<void*>(dest), static_cast<int>(val), size);
+            return reinterpret_cast<int64_t>(fptr);
+        }
+        static inline int64_t MemSave(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t src = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::Int);
+            std::size_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+
+            ++pos;
+            int operand2 = codes[pos];
+
+            bool isGlobal2;
+            TypeEnum ty2;
+            int32_t index2;
+            DecodeOperand1(operand2, isGlobal2, ty2, index2);
+            DebugAssert(ty2 == TypeEnum::String);
+            const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+
+            std::ofstream ofile(file, std::ios::out | std::ios::binary);
+            if (ofile.fail())
+                return 0;
+            ofile.write(reinterpret_cast<const char*>(src), size);
+            int64_t ret = static_cast<int64_t>(ofile.tellp());
+            ofile.close();
+            return ret;
+        }
+        static inline int64_t MemLoad(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            bool isGlobal1;
+            TypeEnum ty1;
+            int32_t index1;
+            DecodeOperand2(operand, isGlobal1, ty1, index1);
+            DebugAssert(ty1 == TypeEnum::Int);
+            std::size_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+
+            ++pos;
+            int operand2 = codes[pos];
+
+            bool isGlobal2;
+            TypeEnum ty2;
+            int32_t index2;
+            DecodeOperand1(operand2, isGlobal2, ty2, index2);
+            DebugAssert(ty2 == TypeEnum::String);
+            const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+
+            std::ifstream ifile(file, std::ios::out | std::ios::binary);
+            if (ifile.fail())
+                return 0;
+            ifile.read(reinterpret_cast<char*>(dest), size);
+            int64_t ret = static_cast<int64_t>(ifile.tellg());
+            ifile.close();
+            return ret;
+        }
     };
     static inline void DoCallIntern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -1340,6 +1514,34 @@ namespace
         }break;
         case ApiEnum::CStrCmp: {
             int64_t val = Api::CStrCmp(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::Malloc: {
+            int64_t val = Api::Malloc(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::Free: {
+            Api::Free(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+        }break;
+        case ApiEnum::MemCpy: {
+            int64_t val = Api::MemCpy(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::MemSet: {
+            int64_t val = Api::MemSet(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::MemSave: {
+            int64_t val = Api::MemSave(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
+        case ApiEnum::MemLoad: {
+            int64_t val = Api::MemLoad(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
@@ -2323,34 +2525,6 @@ namespace
         SetVarInt(isGlobal, index, g_DebugScriptSerialNum, stackBase, intLocals, intGlobals);
     }
 
-    struct FFI_Auto_Old
-    {
-        template<typename... ArgsT>
-        static inline void Call(int64_t addr, bool isGlobal, TypeEnum ty, int index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, ArgsT... args)
-        {
-            switch (ty) {
-            case TypeEnum::Int: {
-                typedef int64_t(*Fptr)(ArgsT...);
-                int64_t rval = reinterpret_cast<Fptr>(addr)(args...);
-                SetVarInt(isGlobal, index, rval, stackBase, intLocals, intGlobals);
-            }break;
-            case TypeEnum::Float: {
-                typedef double(*Fptr)(ArgsT...);
-                double rval = reinterpret_cast<Fptr>(addr)(args...);
-                SetVarFloat(isGlobal, index, rval, stackBase, fltLocals, fltGlobals);
-            }break;
-            case TypeEnum::String: {
-                typedef const char* (*Fptr)(ArgsT...);
-                const char* rval = reinterpret_cast<Fptr>(addr)(args...);
-                SetVarString(isGlobal, index, rval, stackBase, strLocals, strGlobals);
-            }break;
-            default: {
-                typedef void(*Fptr)(ArgsT...);
-                reinterpret_cast<Fptr>(addr)(args...);
-            }break;
-            }
-        }
-    };
     template<typename... ArgsT>
     struct FFI_Auto
     {

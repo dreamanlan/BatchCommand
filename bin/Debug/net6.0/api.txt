@@ -24,3 +24,9 @@ defapi(cstrstr,int,noparams,[int,int]);
 defapi(cstrcmp,int,noparams,[int,int,int]){
 	minparamnum(2);
 };
+defapi(malloc,int,noparams,[int]);
+defapi(free,void,noparams,[int]);
+defapi(memcpy,int,noparams,[int,int,int]);
+defapi(memset,int,noparams,[int,int,int]);
+defapi(memsave,int,noparams,[int,int,string]);
+defapi(memload,int,noparams,[int,int,string]);

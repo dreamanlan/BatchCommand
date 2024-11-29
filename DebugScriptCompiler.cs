@@ -105,6 +105,21 @@ namespace CppDebugScript
         STKIX,
         HOOKID,
         HOOKVER,
+        FFIAUTO,
+        FFIMANUAL,
+        FFIMANUALSTACK,
+        RESERVE12,
+        RESERVE11,
+        RESERVE10,
+        RESERVE9,
+        RESERVE8,
+        RESERVE7,
+        RESERVE6,
+        RESERVE5,
+        RESERVE4,
+        RESERVE3,
+        RESERVE2,
+        RESERVE1,
         CALLINTERN_FIRST = 100,
         CALLINTERN_LAST = 255,
         NUM
@@ -116,6 +131,7 @@ namespace CppDebugScript
             int apiId = 0;
             int externApiId = 0;
             m_Apis.Clear();
+            m_Protos.Clear();
 
             Dsl.DslFile file = new Dsl.DslFile();
             var err = new StringBuilder();
@@ -181,21 +197,97 @@ namespace CppDebugScript
                             }
                         }
                         if(!handled) {
-                            err.AppendFormat("expect defapi/defexternapi(ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendFormat("expect defapi/defexternapi(name,ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendLine();
+                        }
+                    }
+                    else if (id == "defproto") {
+                        bool handled = false;
+                        var fd = dslInfo as Dsl.FunctionData;
+                        var call = fd;
+                        bool existsOptions = false;
+                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                            call = fd.LowerOrderFunction;
+                            existsOptions = true;
+                        }
+                        if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                            int pnum = call.GetParamNum();
+                            if (pnum >= 4 && pnum <= 6) {
+                                var name = call.GetParamId(0);
+                                var type = call.GetParamId(1);
+                                var paramsStr = call.GetParamId(2);
+
+                                s_Type2Ids.TryGetValue(type, out var rty);
+
+                                ParamsEnum paramsEnum = ParamsEnum.NoParams;
+                                if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
+                                    int.TryParse(paramsStr, out var v);
+                                    paramsEnum = (ParamsEnum)v;
+                                }
+                                else {
+                                    Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
+                                }
+
+                                var proto = new ProtoInfo { Name = name, Type = rty, Params = paramsEnum };
+
+                                if (pnum >= 4) {
+                                    var ptsInt = call.GetParam(3) as Dsl.FunctionData;
+                                    foreach (var p in ptsInt.Params) {
+                                        s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                        proto.IntParams.Add(ty);
+                                    }
+                                }
+                                if (pnum >= 5) {
+                                    var ptsFloat = call.GetParam(4) as Dsl.FunctionData;
+                                    foreach (var p in ptsFloat.Params) {
+                                        s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                        proto.FloatParams.Add(ty);
+                                    }
+                                }
+                                if (pnum >= 6) {
+                                    var ptsStack = call.GetParam(5) as Dsl.FunctionData;
+                                    foreach (var p in ptsStack.Params) {
+                                        s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                        proto.StackParams.Add(ty);
+                                    }
+                                }
+
+                                if (existsOptions) {
+                                    foreach (var syn in fd.Params) {
+                                        var fcall = syn as Dsl.FunctionData;
+                                        if (null != fcall) {
+                                            string pname = fcall.GetId();
+                                            if (pname == "minstackparamnum") {
+                                                int.TryParse(fcall.GetParamId(0), out proto.MinStackParamNum);
+                                            }
+                                            else if(pname == "manualstack") {
+                                                proto.ManualStack = fcall.GetParamId(0) == "true";
+                                            }
+                                        }
+                                    }
+                                }
+                                if (proto.MinStackParamNum == 0) {
+                                    proto.MinStackParamNum = proto.StackParams.Count;
+                                }
+                                if (proto.ManualStack) {
+                                    proto.MinStackParamNum = 2;
+                                    proto.StackParams.Clear();
+                                    proto.StackParams.Add(TypeEnum.Int);//addr
+                                    proto.StackParams.Add(TypeEnum.Int);//size
+                                }
+
+                                m_Protos.Add(name, proto);
+                                handled = true;
+                            }
+                        }
+                        if (!handled) {
+                            err.AppendFormat("expect defproto(name,ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
                             err.AppendLine();
                         }
                     }
                 }
             }
             return err.ToString();
-        }
-        public Dictionary<string, int> BuildApiIds()
-        {
-            var dict = new Dictionary<string, int>();
-            foreach (var pair in m_Apis) {
-                dict.Add(pair.Key, pair.Value.ApiId);
-            }
-            return dict;
         }
         public string LoadStructDefine(string txt)
         {
@@ -863,6 +955,15 @@ namespace CppDebugScript
                     case InsEnum.HOOKVER:
                         DumpHookVer(txt, indent, codes, ref pos);
                         break;
+                    case InsEnum.FFIAUTO:
+                        DumpFFIAuto(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.FFIMANUAL:
+                        DumpFFIManual(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.FFIMANUALSTACK:
+                        DumpFFIManualStack(txt, indent, codes, ref pos);
+                        break;
                     default:
                         if (op >= InsEnum.CALLINTERN_FIRST && op <= InsEnum.CALLINTERN_LAST) {
                             int apiIndex = (int)(op - InsEnum.CALLINTERN_FIRST);
@@ -883,7 +984,7 @@ namespace CppDebugScript
             for (int i = 0; i < argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
-                if (i <= argNum) {
+                if (i < argNum) {
                     if (i == 0) {
                         txt.Append(' ');
                     }
@@ -893,7 +994,7 @@ namespace CppDebugScript
                     DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
                     txt.Append(BuildVar(isGlobal1, type1, index1));
                 }
-                if (i + 1 <= argNum) {
+                if (i + 1 < argNum) {
                     txt.Append(", ");
                     DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
                     txt.Append(BuildVar(isGlobal2, type2, index2));
@@ -1099,7 +1200,7 @@ namespace CppDebugScript
             for (int i = 0; i < argNum + 1; i += 2) {
                 ++pos;
                 int operand = codes[pos];
-                if (i <= argNum) {
+                if (i < argNum) {
                     if (i == 0) {
                         txt.Append(' ');
                     }
@@ -1109,7 +1210,7 @@ namespace CppDebugScript
                     DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
                     txt.Append(BuildVar(isGlobal1, type1, index1));
                 }
-                if (i + 1 <= argNum) {
+                if (i + 1 < argNum) {
                     txt.Append(", ");
                     DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
                     txt.Append(BuildVar(isGlobal2, type2, index2));
@@ -1137,6 +1238,103 @@ namespace CppDebugScript
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             txt.AppendLine("{0}{1}: {2} = HOOKVER", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+        }
+        private void DumpFFIAuto(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = FFIAUTO", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i < argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 < argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
+        }
+        private void DumpFFIManual(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = FFIMANUAL", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            ++pos;
+            int operand0 = codes[pos];
+            DecodeOperand1(operand0, out var num1);
+            DecodeOperand2(operand0, out var num2);
+            txt.Append(' ');
+            txt.Append(num1);
+            txt.Append(' ');
+            txt.Append(num2);
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i < argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 < argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
+        }
+        private void DumpFFIManualStack(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = FFIMANUALSTACK", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            ++pos;
+            int operand0 = codes[pos];
+            DecodeOperand1(operand0, out var num1);
+            DecodeOperand2(operand0, out var num2);
+            txt.Append(' ');
+            txt.Append(num1);
+            txt.Append(' ');
+            txt.Append(num2);
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i < argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 < argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
         }
         private string BuildVar(bool isGlobal, TypeEnum type, int index)
         {
@@ -2010,7 +2208,7 @@ namespace CppDebugScript
                     if (!callData.HaveId()) {
                         int paramNum = callData.GetParamNum();
                         if (paramNum == 1 && callData.IsParenthesisParamClass()) {
-                            Dsl.ISyntaxComponent param = callData.GetParam(0);
+                            var param = callData.GetParam(0);
                             CompileExpression(param, codes, err, ref semanticInfo);
                         }
                         else if (paramNum >= 1 && callData.IsBracketParamClass()) {
@@ -2089,7 +2287,7 @@ namespace CppDebugScript
                                 if (s_Type2Ids.TryGetValue(type, out var ty)) {
                                     semanticInfo.TargetType = ty;
                                 }
-                                Dsl.ISyntaxComponent param = callData.GetParam(1);
+                                var param = callData.GetParam(1);
                                 CompileExpression(param, codes, err, ref semanticInfo);
                             }
                             else {
@@ -2100,7 +2298,7 @@ namespace CppDebugScript
                         }
                         else if (op == "struct") {
                             if (!callData.IsHighOrder && callData.GetParamNum() == 2) {
-                                Dsl.ISyntaxComponent param = callData.GetParam(0);
+                                var param = callData.GetParam(0);
                                 var info = new SemanticInfo { TargetType = TypeEnum.Int };
                                 CompileExpression(param, codes, err, ref info);
                                 if (info.ResultType != TypeEnum.Int) {
@@ -2115,6 +2313,33 @@ namespace CppDebugScript
                                 err.AppendLine();
                             }
                             return;
+                        }
+                        else if (op == "ffi") {
+                            if (!callData.IsHighOrder && callData.GetParamNum() >= 2) {
+                                var proto = callData.GetParam(0);
+                                var protoInfo = ParseProto(proto, err);
+                                for (int i = 1; i < num; ++i) {
+                                    var param = callData.GetParam(i);
+                                    var sinfo = new SemanticInfo { TargetType = TypeEnum.Int };
+                                    Debug.Assert(null != protoInfo);
+                                    sinfo.TargetType = protoInfo.GetParamType(i - 1, sinfo.TargetType);
+                                    CompileExpression(param, codes, err, ref sinfo);
+                                    if (i == 1) {
+                                        if (sinfo.ResultType != TypeEnum.Int) {
+                                            err.AppendFormat("ffi(proto, addr, ...), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                            err.AppendLine();
+                                        }
+                                    }
+                                    sinfos.Add(sinfo);
+                                }
+                                TryGenFFI(protoInfo, codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else {
+                                err.AppendFormat("expect 'ffi(proto, addr, ...)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendLine();
+                            }
+                            return;
+
                         }
                         else if (callData.IsOperatorParamClass() && op == "??") {
                             //exp1 ?? exp2
@@ -2419,6 +2644,99 @@ namespace CppDebugScript
             }
         }
 
+        private ProtoInfo ParseProto(Dsl.ISyntaxComponent exp, StringBuilder err)
+        {
+            ProtoInfo proto = null;
+            string id = exp.GetId();
+            if (exp is Dsl.ValueData) {
+                m_Protos.TryGetValue(id, out proto);
+            }
+            else {
+                bool handled = false;
+                if (id == "proto") {
+                    var fd = exp as Dsl.FunctionData;
+                    var call = fd;
+                    bool existsOptions = false;
+                    if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                        call = fd.LowerOrderFunction;
+                        existsOptions = true;
+                    }
+                    if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                        int pnum = call.GetParamNum();
+                        if (pnum >= 3 && pnum <= 5) {
+                            var type = call.GetParamId(0);
+                            var paramsStr = call.GetParamId(1);
+
+                            s_Type2Ids.TryGetValue(type, out var rty);
+
+                            ParamsEnum paramsEnum = ParamsEnum.NoParams;
+                            if (paramsStr.Length > 0 && char.IsNumber(paramsStr[0])) {
+                                int.TryParse(paramsStr, out var v);
+                                paramsEnum = (ParamsEnum)v;
+                            }
+                            else {
+                                Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
+                            }
+
+                            proto = new ProtoInfo { Name = "proto", Type = rty, Params = paramsEnum };
+
+                            if (pnum >= 3) {
+                                var ptsInt = call.GetParam(2) as Dsl.FunctionData;
+                                foreach (var p in ptsInt.Params) {
+                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                    proto.IntParams.Add(ty);
+                                }
+                            }
+                            if (pnum >= 4) {
+                                var ptsFloat = call.GetParam(3) as Dsl.FunctionData;
+                                foreach (var p in ptsFloat.Params) {
+                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                    proto.FloatParams.Add(ty);
+                                }
+                            }
+                            if (pnum >= 5) {
+                                var ptsStack = call.GetParam(4) as Dsl.FunctionData;
+                                foreach (var p in ptsStack.Params) {
+                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
+                                    proto.StackParams.Add(ty);
+                                }
+                            }
+
+                            if (existsOptions) {
+                                foreach (var syn in fd.Params) {
+                                    var fcall = syn as Dsl.FunctionData;
+                                    if (null != fcall) {
+                                        string pname = fcall.GetId();
+                                        if (pname == "minstackparamnum") {
+                                            int.TryParse(fcall.GetParamId(0), out proto.MinStackParamNum);
+                                        }
+                                        else if (pname == "manualstack") {
+                                            proto.ManualStack = fcall.GetParamId(0) == "true";
+                                        }
+                                    }
+                                }
+                            }
+                            if (proto.MinStackParamNum == 0) {
+                                proto.MinStackParamNum = proto.StackParams.Count;
+                            }
+                            if (proto.ManualStack) {
+                                proto.MinStackParamNum = 2;
+                                proto.StackParams.Clear();
+                                proto.StackParams.Add(TypeEnum.Int);//addr
+                                proto.StackParams.Add(TypeEnum.Int);//size
+                            }
+
+                            handled = true;
+                        }
+                    }
+                }
+                if (!handled) {
+                    err.AppendFormat("expect proto(ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                    err.AppendLine();
+                }
+            }
+            return proto;
+        }
         private StructInfo ParseStruct(Dsl.FunctionData callData, StringBuilder err)
         {
             if (callData.IsHighOrder) {
@@ -3598,6 +3916,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
                     //gen api call
                     var rinfo = semanticInfo;
                     if (semanticInfo.TargetType != api.Type) {
@@ -3629,13 +3954,11 @@ namespace CppDebugScript
                         int opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
                             opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         int opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
-                            ConvertArgument(codes, api, i + 1, ref opdInfo);
                             opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         codes.Add(opd1 | opd2);
@@ -3673,19 +3996,25 @@ namespace CppDebugScript
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
+
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
                     //gen api call
                     codes.Add(EncodeOpcode(op, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                     for (int i = 0; i < opds.Count; i += 2) {
                         int opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
                             opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         int opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
-                            ConvertArgument(codes, api, i + 1, ref opdInfo);
                             opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         codes.Add(opd1 | opd2);
@@ -3700,6 +4029,13 @@ namespace CppDebugScript
                 if (IsGlobalBlock()) {
                 }
                 else {
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
                     //gen api call
                     var rinfo = semanticInfo;
                     if (semanticInfo.TargetType != api.Type) {
@@ -3732,7 +4068,6 @@ namespace CppDebugScript
                     opd1 = EncodeOperand1(api.ApiId);
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
-                        ConvertArgument(codes, api, 0, ref opdInfo);
                         opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                     }
                     codes.Add(opd1 | opd2);
@@ -3740,13 +4075,11 @@ namespace CppDebugScript
                         opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
                             opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
-                            ConvertArgument(codes, api, i + 1, ref opdInfo);
                             opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         codes.Add(opd1 | opd2);
@@ -3784,6 +4117,14 @@ namespace CppDebugScript
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
+
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            ConvertArgument(codes, api, i, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
                     //gen api call
                     codes.Add(EncodeOpcode(InsEnum.CALLEXTERN, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                     int opd1 = 0;
@@ -3791,7 +4132,6 @@ namespace CppDebugScript
                     opd1 = EncodeOperand1(api.ApiId);
                     if (opds.Count > 0) {
                         var opdInfo = opds[0];
-                        ConvertArgument(codes, api, 0, ref opdInfo);
                         opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                     }
                     codes.Add(opd1 | opd2);
@@ -3799,13 +4139,11 @@ namespace CppDebugScript
                         opd1 = 0;
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
                             opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         opd2 = 0;
                         if (i + 1 < opds.Count) {
                             var opdInfo = opds[i + 1];
-                            ConvertArgument(codes, api, i + 1, ref opdInfo);
                             opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         codes.Add(opd1 | opd2);
@@ -4850,6 +5188,131 @@ namespace CppDebugScript
                 }
             }
         }
+        private void TryGenFFI(ProtoInfo proto, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            InsEnum op = CheckType(proto, opds, err, comp);
+            if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                if (IsGlobalBlock()) {
+                }
+                else {
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            if (i == 0)
+                                ConvertArgument(codes, TypeEnum.Int, ref opdInfo);
+                            else
+                                ConvertArgument(codes, proto, i - 1, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
+                    //gen api call
+                    var rinfo = semanticInfo;
+                    if (semanticInfo.TargetType != proto.Type) {
+                        int tmpIndex = -1;
+                        switch (proto.Type) {
+                            case TypeEnum.Int:
+                                tmpIndex = CurBlock().AllocTempInt();
+                                break;
+                            case TypeEnum.Float:
+                                tmpIndex = CurBlock().AllocTempFloat();
+                                break;
+                            case TypeEnum.String:
+                                tmpIndex = CurBlock().AllocTempString();
+                                break;
+                        }
+                        if (tmpIndex >= 0) {
+                            rinfo.IsGlobal = false;
+                            rinfo.ResultType = proto.Type;
+                            rinfo.ResultCount = 0;
+                            rinfo.ResultIndex = tmpIndex;
+                            rinfo.ResultValues = null;
+                            codes.Add(EncodeOpcode(op, opds.Count, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
+                        }
+                    }
+                    else {
+                        codes.Add(EncodeOpcode(op, opds.Count, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                    }
+                    if (op != InsEnum.FFIAUTO) {
+                        codes.Add(EncodeOperand1(proto.IntParams.Count) | EncodeOperand2(proto.FloatParams.Count));
+                    }
+                    for (int i = 0; i < opds.Count; i += 2) {
+                        int opd1 = 0;
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        int opd2 = 0;
+                        if (i + 1 < opds.Count) {
+                            var opdInfo = opds[i + 1];
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        codes.Add(opd1 | opd2);
+                    }
+                    if (semanticInfo.TargetType != proto.Type) {
+                        TryGenConvert(codes, semanticInfo, rinfo);
+                    }
+
+                    semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                    semanticInfo.ResultType = semanticInfo.TargetType;
+                    semanticInfo.ResultCount = semanticInfo.TargetCount;
+                    semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                    semanticInfo.ResultValues = null;
+                }
+            }
+            else {
+                int tmpIndex = -1;
+                switch (proto.Type) {
+                    case TypeEnum.Int:
+                        tmpIndex = CurBlock().AllocTempInt();
+                        break;
+                    case TypeEnum.Float:
+                        tmpIndex = CurBlock().AllocTempFloat();
+                        break;
+                    case TypeEnum.String:
+                        tmpIndex = CurBlock().AllocTempString();
+                        break;
+                    default:
+                        tmpIndex = 0;
+                        break;
+                }
+                if (tmpIndex >= 0) {
+                    semanticInfo.IsGlobal = false;
+                    semanticInfo.ResultType = proto.Type;
+                    semanticInfo.ResultCount = 0;
+                    semanticInfo.ResultIndex = tmpIndex;
+                    semanticInfo.ResultValues = null;
+
+                    for (int i = 0; i < opds.Count; ++i) {
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            if (i == 0)
+                                ConvertArgument(codes, TypeEnum.Int, ref opdInfo);
+                            else
+                                ConvertArgument(codes, proto, i - 1, ref opdInfo);
+                            opds[i] = opdInfo;
+                        }
+                    }
+                    //gen api call
+                    codes.Add(EncodeOpcode(op, opds.Count, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                    if (op != InsEnum.FFIAUTO) {
+                        codes.Add(EncodeOperand1(proto.IntParams.Count) | EncodeOperand2(proto.FloatParams.Count));
+                    }
+                    for (int i = 0; i < opds.Count; i += 2) {
+                        int opd1 = 0;
+                        if (i < opds.Count) {
+                            var opdInfo = opds[i];
+                            opd1 = EncodeOperand1(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        int opd2 = 0;
+                        if (i + 1 < opds.Count) {
+                            var opdInfo = opds[i + 1];
+                            opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
+                        }
+                        codes.Add(opd1 | opd2);
+                    }
+                }
+            }
+        }
 
         private void TryGenMov(bool isGlobal, TypeEnum type, int vindex, List<int> codes, SemanticInfo info, StringBuilder err, Dsl.ISyntaxComponent comp)
         {
@@ -4919,6 +5382,11 @@ namespace CppDebugScript
         private void ConvertArgument(List<int> codes, ApiInfo api, int argIx, ref SemanticInfo opdInfo)
         {
             var ptype = api.GetParamType(argIx, opdInfo.ResultType);
+            ConvertArgument(codes, ptype, ref opdInfo);
+        }
+        private void ConvertArgument(List<int> codes, ProtoInfo proto, int argIx, ref SemanticInfo opdInfo)
+        {
+            var ptype = proto.GetParamType(argIx, opdInfo.ResultType);
             ConvertArgument(codes, ptype, ref opdInfo);
         }
         private int EncodeOperand1Helper(ref SemanticInfo opdInfo)
@@ -5623,6 +6091,38 @@ namespace CppDebugScript
                 }
             }
         }
+        private InsEnum CheckType(ProtoInfo proto, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp)
+        {
+            if (opds.Count < 1 + proto.IntParams.Count + proto.FloatParams.Count + proto.MinStackParamNum) {
+                err.AppendFormat("'{0}' must have at least {1} arguments, code:{2}, line:{3}", proto.Name, proto.MinStackParamNum, comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            for (int i = 0; i < opds.Count; ++i) {
+                TypeEnum rtype = opds[i].ResultType;
+                if (i == 0) {
+                    //addr
+                    if (TypeEnum.Int != rtype) {
+                        err.AppendFormat("argument {0} addr's type '{1}' dismatch '{2}', code:{3}, line:{4}", i, rtype, TypeEnum.Int, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                }
+                else {
+                    TypeEnum type = proto.GetParamType(i - 1, rtype);
+                    if (type != rtype) {
+                        err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", proto.Name, i, rtype, type, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendLine();
+                    }
+                }
+            }
+            InsEnum op = InsEnum.FFIMANUAL;
+            if (proto.ManualStack) {
+                op = InsEnum.FFIMANUALSTACK;
+            }
+            else if (proto.Params == ParamsEnum.NoParams && proto.FloatParams.Count == 0 && proto.StackParams.Count == 0) {
+                op = InsEnum.FFIAUTO;
+            }
+            return op;
+        }
 
         private int EncodeOpcode(InsEnum opc)
         {
@@ -5650,9 +6150,14 @@ namespace CppDebugScript
             opcode |= operand;
             return opcode;
         }
-        private int EncodeOperand1(int apiIndex)
+        private int EncodeOperand1(int num)
         {
-            return (apiIndex & 0xffff);
+            return (num & 0xffff);
+        }
+        private int EncodeOperand2(int num)
+        {
+            int operand = EncodeOperand1(num);
+            return operand << 16;
         }
         private int EncodeOperand1(bool isGlobal, TypeEnum type, int index)
         {
@@ -5680,9 +6185,14 @@ namespace CppDebugScript
             int operand = opcode >> 16;
             DecodeOperand1(operand, out isGlobal, out type, out index);
         }
-        private void DecodeOperand1(int operand, out int apiIndex)
+        private void DecodeOperand1(int operand, out int num)
         {
-            apiIndex = (operand & 0xffff);
+            num = (operand & 0xffff);
+        }
+        private void DecodeOperand2(int operand, out int num)
+        {
+            operand >>= 16;
+            DecodeOperand1(operand, out num);
         }
         private void DecodeOperand1(int operand, out bool isGlobal, out TypeEnum type, out int index)
         {
@@ -5904,6 +6414,46 @@ namespace CppDebugScript
                 return paramType;
             }
         }
+        public sealed class ProtoInfo
+        {
+            public string Name = string.Empty;
+            public TypeEnum Type = TypeEnum.NotUse;
+            public ParamsEnum Params = ParamsEnum.NoParams;
+            public List<TypeEnum> IntParams = new List<TypeEnum>();
+            public List<TypeEnum> FloatParams = new List<TypeEnum>();
+            public List<TypeEnum> StackParams = new List<TypeEnum>();
+            public int MinStackParamNum = 0;
+            public bool ManualStack = false;
+
+            public TypeEnum GetParamType(int ix, TypeEnum argType)
+            {
+                TypeEnum paramType = TypeEnum.NotUse;
+                if (ix < IntParams.Count) {
+                    paramType = IntParams[ix];
+                }
+                else if (ix < IntParams.Count + FloatParams.Count) {
+                    paramType = FloatParams[ix - IntParams.Count];
+                }
+                else if (Params == ParamsEnum.LastType) {
+                    if (StackParams.Count > 0) {
+                        paramType = StackParams[StackParams.Count - 1];
+                    }
+                }
+                else if (Params == ParamsEnum.Ints) {
+                    paramType = TypeEnum.Int;
+                }
+                else if (Params == ParamsEnum.Floats) {
+                    paramType = TypeEnum.Float;
+                }
+                else if (Params == ParamsEnum.Strings) {
+                    paramType = TypeEnum.String;
+                }
+                else if (Params == ParamsEnum.Printf) {
+                    paramType = argType;
+                }
+                return paramType;
+            }
+        }
 
         public sealed class FieldInfo
         {
@@ -6074,6 +6624,7 @@ namespace CppDebugScript
         private int m_UniqueNumber = 0;
 
         private Dictionary<string, ApiInfo> m_Apis = new Dictionary<string, ApiInfo>();
+        private Dictionary<string, ProtoInfo> m_Protos = new Dictionary<string, ProtoInfo>();
         private Dictionary<string, StructInfo> m_PredefinedStructInfos = new Dictionary<string, StructInfo>();
         private Dictionary<string, StructInfo> m_StructInfos = new Dictionary<string, StructInfo>();
 

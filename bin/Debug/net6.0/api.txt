@@ -14,6 +14,13 @@ defapi(stringnotcontainsany,int,strings,[string]);
 defapi(stringfind,int,noparams,[string,string,int]){
 	minparamnum(2);
 };
-defapi(stringrfind,int,ints,[string,string,int]){
+defapi(stringrfind,int,noparams,[string,string,int]){
+	minparamnum(2);
+};
+defapi(substring,string,noparams,[string,int,int]){
+	minparamnum(2);
+};
+defapi(cstrstr,int,noparams,[int,int]);
+defapi(cstrcmp,int,noparams,[int,int,int]){
 	minparamnum(2);
 };

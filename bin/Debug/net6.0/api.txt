@@ -30,3 +30,9 @@ defapi(memcpy,int,noparams,[int,int,int]);
 defapi(memset,int,noparams,[int,int,int]);
 defapi(memsave,int,noparams,[int,int,string]);
 defapi(memload,int,noparams,[int,int,string]);
+
+defexternapi(LoadLib,int,noparams,[string]);
+defexternapi(GetProc,int,noparams,[int,string]);
+defexternapi(LoadLibAndGetProc,int,noparams,[string,string]);
+defexternapi(FreeLib,int,noparams,[int]);
+defexternapi(FreeLibByPath,int,noparams,[string]);

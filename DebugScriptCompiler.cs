@@ -165,9 +165,10 @@ namespace CppDebugScript
                                     Enum.TryParse<ParamsEnum>(paramsStr, true, out paramsEnum);
                                 }
 
-                                var api = new ApiInfo { isExtern = id == "defexternapi", ApiId = apiId, Name = name, Type = rty, Params = paramsEnum };
+                                bool isExternApi = id == "defexternapi";
+                                var api = new ApiInfo { isExtern = isExternApi, ApiId = isExternApi ? externApiId : apiId, Name = name, Type = rty, Params = paramsEnum };
 
-                                if (id == "defexternapi")
+                                if (isExternApi)
                                     ++externApiId;
                                 else
                                     ++apiId;

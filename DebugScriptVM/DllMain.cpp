@@ -1,5 +1,9 @@
 #include <windows.h>
+#include <string>
+#include <unordered_map>
 #include "DbgScpHook.h"
+
+static std::unordered_map<std::string, int64_t> g_Lib2Addresses{};
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
@@ -17,7 +21,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 enum class ExternApiEnum
 {
-    FirstApi = c_extern_api_start_id,
+    LoadLib = c_extern_api_start_id,
+    GetProc,
+    LoadLibAndGetProc,
+    FreeLib,
+    FreeLibByPath,
     Num
 };
 
@@ -25,6 +33,86 @@ ExternApiRetVal CppDbgScp_CallExternApi(int api, ExternApiArg args[], int32_t ar
 {
     ExternApiRetVal retVal{ ExternApiTypeEnum::Int, 0 };
     retVal.IntVal = 0;
+    switch (static_cast<ExternApiEnum>(api)) {
+    case ExternApiEnum::LoadLib: {
+        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::String) {
+            if (args[0].StringVal) {
+                auto&& pStr = args[0].StringVal;
+                int64_t addr = 0;
+                auto&& it = g_Lib2Addresses.find(pStr);
+                if (it == g_Lib2Addresses.end()) {
+                    void* ptr = LoadLibraryA(pStr);
+                    addr = reinterpret_cast<int64_t>(ptr);
+                    if (ptr) {
+                        g_Lib2Addresses.insert(std::make_pair(pStr, addr));
+                    }
+                }
+                else {
+                    addr = it->second;
+                }
+                retVal.IntVal = addr;
+            }
+        }
+    }break;
+    case ExternApiEnum::GetProc: {
+        if (argNum == 2 && args[0].Type == ExternApiTypeEnum::Int && args[1].Type == ExternApiTypeEnum::String) {
+            if (args[0].IntVal && args[1].StringVal) {
+                int64_t addr = args[0].IntVal;
+                auto&& pStr = args[1].StringVal;
+                auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), pStr);
+                retVal.IntVal = reinterpret_cast<int64_t>(ptr);
+            }
+        }
+    }break;
+    case ExternApiEnum::LoadLibAndGetProc: {
+        if (argNum == 2 && args[0].Type == ExternApiTypeEnum::String && args[1].Type == ExternApiTypeEnum::String) {
+            if (args[0].StringVal && args[1].StringVal) {
+                auto&& pLibStr = args[0].StringVal;
+                auto&& pProcStr = args[1].StringVal;
+                int64_t addr = 0;
+                auto&& it = g_Lib2Addresses.find(pLibStr);
+                if (it == g_Lib2Addresses.end()) {
+                    void* ptr = LoadLibraryA(pLibStr);
+                    addr = reinterpret_cast<int64_t>(ptr);
+                    if (ptr) {
+                        g_Lib2Addresses.insert(std::make_pair(pLibStr, addr));
+                    }
+                }
+                else {
+                    addr = it->second;
+                }
+                if (addr) {
+                    auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), pProcStr);
+                    retVal.IntVal = reinterpret_cast<int64_t>(ptr);
+                }
+            }
+        }
+    }break;
+    case ExternApiEnum::FreeLib: {
+        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::Int) {
+            if (args[0].IntVal) {
+                int64_t addr = args[0].IntVal;
+                FreeLibrary(reinterpret_cast<HMODULE>(addr));
+                retVal.IntVal = 1;
+            }
+        }
+    }break;
+    case ExternApiEnum::FreeLibByPath: {
+        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::String) {
+            if (args[0].StringVal) {
+                auto&& pStr = args[0].StringVal;
+                auto&& it = g_Lib2Addresses.find(pStr);
+                if (it != g_Lib2Addresses.end()) {
+                    FreeLibrary(reinterpret_cast<HMODULE>(it->second));
+                    g_Lib2Addresses.erase(it);
+                    retVal.IntVal = 1;
+                }
+            }
+        }
+    }break;
+    default:
+        break;
+    }
     return retVal;
 }
 

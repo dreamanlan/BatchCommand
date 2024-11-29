@@ -81,6 +81,8 @@ hook(Test1)
 		printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
 		printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
 		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
+		printf("load:%x\n", LoadLib("kernel32.dll"));
+		printf("proc:%x\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
 		return 1;
 	};
 	onexit{

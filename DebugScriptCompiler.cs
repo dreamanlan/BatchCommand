@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.ComponentModel.DataAnnotations;
@@ -425,14 +426,14 @@ namespace CppDebugScript
             CollectConstInfo(TypeEnum.Int, consts);
             foreach(var pair in consts) {
                 var info = pair.Value;
-                long.TryParse(info.StrValue, out var v);
+                TryParseLong(info.StrValue, out var v);
                 CppDbgScpInterface.CppDbgScp_AllocConstInt(v);
             }
             consts.Clear();
             CollectConstInfo(TypeEnum.Float, consts);
             foreach (var pair in consts) {
                 var info = pair.Value;
-                double.TryParse(info.StrValue, out var v);
+                TryParseDouble(info.StrValue, out var v);
                 CppDbgScpInterface.CppDbgScp_AllocConstFloat(v);
             }
             consts.Clear();
@@ -453,7 +454,7 @@ namespace CppDebugScript
                 }
                 else {
                     foreach (var strVal in info.InitValues) {
-                        long.TryParse(strVal, out var v);
+                        TryParseLong(strVal, out var v);
                         CppDbgScpInterface.CppDbgScp_AllocGlobalInt(v);
                     }
                 }
@@ -467,7 +468,7 @@ namespace CppDebugScript
                 }
                 else {
                     foreach (var strVal in info.InitValues) {
-                        double.TryParse(strVal, out var v);
+                        TryParseDouble(strVal, out var v);
                         CppDbgScpInterface.CppDbgScp_AllocGlobalFloat(v);
                     }
                 }
@@ -533,7 +534,7 @@ namespace CppDebugScript
 
                 foreach (var pair in consts) {
                     var info = pair.Value;
-                    long.TryParse(info.StrValue, out var v);
+                    TryParseLong(info.StrValue, out var v);
 
                     //int const
                     sw.Write(v);
@@ -546,7 +547,7 @@ namespace CppDebugScript
 
                 foreach (var pair in consts) {
                     var info = pair.Value;
-                    double.TryParse(info.StrValue, out var v);
+                    TryParseDouble(info.StrValue, out var v);
 
                     //float const
                     sw.Write(v);
@@ -578,7 +579,7 @@ namespace CppDebugScript
                     }
                     else {
                         foreach (var strVal in info.InitValues) {
-                            long.TryParse(strVal, out var v);
+                            TryParseLong(strVal, out var v);
                             sw.Write(v);
                         }
                     }
@@ -596,7 +597,7 @@ namespace CppDebugScript
                     }
                     else {
                         foreach (var strVal in info.InitValues) {
-                            double.TryParse(strVal, out var v);
+                            TryParseDouble(strVal, out var v);
                             sw.Write(v);
                         }
                     }
@@ -3000,11 +3001,11 @@ namespace CppDebugScript
             bool cond = false;
             if (null != info.ResultValues) {
                 if (info.ResultType == TypeEnum.Int || info.ResultType == TypeEnum.String) {
-                    long.TryParse(info.ResultValues[0], out var v);
+                    TryParseLong(info.ResultValues[0], out var v);
                     cond = v != 0;
                 }
                 else if (info.ResultType == TypeEnum.Float) {
-                    double.TryParse(info.ResultValues[0], out var v);
+                    TryParseDouble(info.ResultValues[0], out var v);
                     cond = v != 0;
                 }
                 if (cond) {
@@ -3142,11 +3143,11 @@ namespace CppDebugScript
             bool cond = false;
             if (null != info.ResultValues) {
                 if (info.ResultType == TypeEnum.Int || info.ResultType == TypeEnum.String) {
-                    long.TryParse(info.ResultValues[0], out var v);
+                    TryParseLong(info.ResultValues[0], out var v);
                     cond = v != 0;
                 }
                 else if (info.ResultType == TypeEnum.Float) {
-                    double.TryParse(info.ResultValues[0], out var v);
+                    TryParseDouble(info.ResultValues[0], out var v);
                     cond = v != 0;
                 }
                 if (cond) {
@@ -5674,11 +5675,11 @@ namespace CppDebugScript
                     if (opds.Count == 1) {
                         var opd = opds[0];
                         if (opd.ResultType == TypeEnum.String) {
-                            double.TryParse(opd.ResultValues[0], out var val);
+                            TryParseDouble(opd.ResultValues[0], out var val);
                             ret.Add((-val).ToString());
                         }
                         else {
-                            long.TryParse(opd.ResultValues[0], out var val);
+                            TryParseLong(opd.ResultValues[0], out var val);
                             ret.Add((-val).ToString());
                         }
                     }
@@ -5692,13 +5693,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 + val2).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 + val2).ToString());
                         }
                     }
@@ -5708,13 +5709,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 - val2).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 - val2).ToString());
                         }
                     }
@@ -5724,13 +5725,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 * val2).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 * val2).ToString());
                         }
                     }
@@ -5740,13 +5741,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 / val2).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 / val2).ToString());
                         }
                     }
@@ -5756,13 +5757,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 % val2).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 % val2).ToString());
                         }
                     }
@@ -5772,13 +5773,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 != 0 && val2 != 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 != 0 && val2 != 0).ToString());
                         }
                     }
@@ -5788,13 +5789,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 != 0 || val2 != 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 != 0 || val2 != 0).ToString());
                         }
                     }
@@ -5803,11 +5804,11 @@ namespace CppDebugScript
                     if (opds.Count == 1) {
                         var opd = opds[0];
                         if (opd.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd.ResultValues[0], out var val);
+                            TryParseDouble(opd.ResultValues[0], out var val);
                             ret.Add((val == 0).ToString());
                         }
                         else {
-                            long.TryParse(opd.ResultValues[0], out var val);
+                            TryParseLong(opd.ResultValues[0], out var val);
                             ret.Add((val == 0).ToString());
                         }
                     }
@@ -5817,13 +5818,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 > val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 > val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5833,13 +5834,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 >= val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 >= val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5849,13 +5850,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 == val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 == val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5865,13 +5866,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 != val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 != val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5881,13 +5882,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 <= val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 <= val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5897,13 +5898,13 @@ namespace CppDebugScript
                         var opd1 = opds[0];
                         var opd2 = opds[1];
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
-                            double.TryParse(opd1.ResultValues[0], out var val1);
-                            double.TryParse(opd2.ResultValues[1], out var val2);
+                            TryParseDouble(opd1.ResultValues[0], out var val1);
+                            TryParseDouble(opd2.ResultValues[1], out var val2);
                             ret.Add((val1 < val2 ? 1 : 0).ToString());
                         }
                         else {
-                            long.TryParse(opd1.ResultValues[0], out var val1);
-                            long.TryParse(opd2.ResultValues[0], out var val2);
+                            TryParseLong(opd1.ResultValues[0], out var val1);
+                            TryParseLong(opd2.ResultValues[0], out var val2);
                             ret.Add((val1 < val2 ? 1 : 0).ToString());
                         }
                     }
@@ -5912,7 +5913,7 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
-                        long.TryParse(opd1.ResultValues[0], out var val1);
+                        TryParseLong(opd1.ResultValues[0], out var val1);
                         int.TryParse(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 << val2).ToString());
                     }
@@ -5921,7 +5922,7 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
-                        long.TryParse(opd1.ResultValues[0], out var val1);
+                        TryParseLong(opd1.ResultValues[0], out var val1);
                         int.TryParse(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 >> val2).ToString());
                     }
@@ -5939,8 +5940,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
-                        long.TryParse(opd1.ResultValues[0], out var val1);
-                        long.TryParse(opd2.ResultValues[0], out var val2);
+                        TryParseLong(opd1.ResultValues[0], out var val1);
+                        TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 & val2).ToString());
                     }
                     break;
@@ -5948,8 +5949,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
-                        long.TryParse(opd1.ResultValues[0], out var val1);
-                        long.TryParse(opd2.ResultValues[0], out var val2);
+                        TryParseLong(opd1.ResultValues[0], out var val1);
+                        TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 | val2).ToString());
                     }
                     break;
@@ -5957,64 +5958,64 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
-                        long.TryParse(opd1.ResultValues[0], out var val1);
-                        long.TryParse(opd2.ResultValues[0], out var val2);
+                        TryParseLong(opd1.ResultValues[0], out var val1);
+                        TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 ^ val2).ToString());
                     }
                     break;
                 case InsEnum.BITNOT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        long.TryParse(opd.ResultValues[0], out var val);
+                        TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add((~val).ToString());
                     }
                     break;
                 case InsEnum.INT2FLT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        long.TryParse(opd.ResultValues[0], out var val);
+                        TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(((double)val).ToString());
                     }
                     break;
                 case InsEnum.INT2STR:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        long.TryParse(opd.ResultValues[0], out var val);
+                        TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
                     break;
                 case InsEnum.FLT2INT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        double.TryParse(opd.ResultValues[0], out var val);
+                        TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(((long)val).ToString());
                     }
                     break;
                 case InsEnum.FLT2STR:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        double.TryParse(opd.ResultValues[0], out var val);
+                        TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
                     break;
                 case InsEnum.STR2INT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        long.TryParse(opd.ResultValues[0], out var val);
+                        TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
                     break;
                 case InsEnum.STR2FLT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        double.TryParse(opd.ResultValues[0], out var val);
+                        TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
                     break;
                 case InsEnum.ITOF:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        long.TryParse(opd.ResultValues[0], out var val);
+                        TryParseLong(opd.ResultValues[0], out var val);
                         double v;
                         unsafe {
                             v = *(double*)&val;
@@ -6025,7 +6026,7 @@ namespace CppDebugScript
                 case InsEnum.FTOI:
                     if (opds.Count == 1) {
                         var opd = opds[0];
-                        double.TryParse(opd.ResultValues[0], out var val);
+                        TryParseDouble(opd.ResultValues[0], out var val);
                         long v;
                         unsafe {
                             v = *(long*)&val;
@@ -6694,6 +6695,82 @@ namespace CppDebugScript
             return false;
         }
 
+        private static bool TryParseLong(string str, out long val)
+        {
+            string type = string.Empty;
+            double dval;
+            bool r = TryParseNumeric(str, ref type, out val, out dval);
+            if (type == "float") {
+                val = (long)dval;
+            }
+            return r;
+        }
+        private static bool TryParseDouble(string str, out double val)
+        {
+            string type = string.Empty;
+            long lval;
+            bool r = TryParseNumeric(str, ref type, out lval, out val);
+            if (type != "float") {
+                val = lval;
+            }
+            return r;
+        }
+        private static bool TryParseNumeric(string str, ref string type, out long lval, out double dval)
+        {
+            bool ret = false;
+            lval = 0;
+            dval = 0;
+            if (str.Length > 2 && str[0] == '0' && str[1] == 'x') {
+                char c = str[str.Length - 1];
+                if (c == 'u' || c == 'U') {
+                    str = str.Substring(0, str.Length - 1);
+                }
+                if (ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
+                    str = v.ToString();
+                }
+                type = "uint";
+            }
+            else if (str.Length >= 2) {
+                char c = str[str.Length - 1];
+                if (c == 'u' || c == 'U') {
+                    str = str.Substring(0, str.Length - 1);
+                    type = "uint";
+                }
+                else if (c == 'f' || c == 'F') {
+                    str = str.Substring(0, str.Length - 1);
+                    c = str[str.Length - 1];
+                    if (c == 'l' || c == 'L') {
+                        str = str.Substring(0, str.Length - 1);
+                    }
+                    type = "float";
+                }
+            }
+            if (type == "float" || str.IndexOfAny(s_FloatExponent) > 0) {
+                if (double.TryParse(str, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
+                    dval = v;
+                    type = "float";
+                    ret = true;
+                }
+            }
+            else if (str.Length > 1 && str[0] == '0') {
+                ulong v = Convert.ToUInt64(str, 8);
+                lval = (long)v;
+                type = "uint";
+                ret = true;
+            }
+            if (long.TryParse(str, out var lv)) {
+                lval = lv;
+                if (lv > int.MaxValue || type == "uint") {
+                    type = "uint";
+                }
+                else {
+                    type = "int";
+                }
+                ret = true;
+            }
+            return ret;
+        }
+
         private static Dictionary<string, TypeEnum> s_Type2Ids = new Dictionary<string, TypeEnum>() {
             { string.Empty, TypeEnum.NotUse },
             { "int", TypeEnum.Int },
@@ -6725,6 +6802,10 @@ namespace CppDebugScript
         private const int c_abs_offset_mask = 0x7fffffff;
         private const int c_offset_backward_flag = unchecked((int)0x80000000);
         private const int c_max_variable_table_size = 8192;
+
+        private static char[] s_FloatExponent = new char[] { 'e', 'E', '.' };
+        private static string s_FloatFormat = "###########################0.00#####";
+        private static string s_DoubleFormat = "###########################0.00##############";
 
         public static DebugScriptCompiler Instance
         {

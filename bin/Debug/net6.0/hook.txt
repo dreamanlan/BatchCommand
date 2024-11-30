@@ -81,8 +81,8 @@ hook(Test1)
 		printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
 		printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
 		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
-		printf("load:%x\n", LoadLib("kernel32.dll"));
-		printf("proc:%x\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
+		printf("load:%llx\n", LoadLib("kernel32.dll"));
+		printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
 		return 1;
 	};
 	onexit{
@@ -203,9 +203,9 @@ hook("VKGpuProgram::Create")
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
-		$d:int = ptrget(argv(3),8);
-		$name:string = format("%s",$d);
-		printf("shader:%s\n", $name);
+		$d:string = ptrget(argv(3),8);
+		$name:string = $d;
+		printf("shader:%s\n", $d);
 		/*
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
@@ -225,10 +225,10 @@ hook("VKGpuProgram::Prepare")
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
-		$d:int = ptrget(argv(3),8);
-		printf("this:%x\n", $a);
+		$d:string = ptrget(argv(3),8);
+		printf("this:%llx\n", $a);
 		/*
-		$name:string = format("%s",$d);
+		$name:string = $d;
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
@@ -311,9 +311,15 @@ hook("CreateGraphicsPipeline")
 		printf("CreateGraphicsPipeline enter time:%d\n",time());
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
-		$c:int = ptrget(argv(2),8);
-		printf("this:%x\n", $a);
-		$name:string = format("%s",$c);
+		$c:string = ptrget(argv(2),8);
+		$dev:int = ptrget($a, 8);
+		printf("this:%llx device:%llx\n", $a, $dev);
+		$addr:int = cascadeptr($dev, 8, 0x8, 0x68, 0x1390);
+		printf("this:%llx device:%llx addr:%llx\n", $a, $dev, $addr);
+		$log:int = ptrget($addr+0x140, 8);
+		printf("this:%llx device:%llx log:%d\n", $a, $dev, $log);
+		ptrset($addr+0x140, 8, 1);
+		$name:string = $c;
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};

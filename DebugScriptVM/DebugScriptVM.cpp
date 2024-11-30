@@ -2335,7 +2335,7 @@ namespace
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         //dangerous!!!
-        std::string val = reinterpret_cast<const char*>(addr);
+        std::string val = *reinterpret_cast<const char**>(addr);
         SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
     }
     static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2429,7 +2429,7 @@ namespace
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         //dangerous!!!
         const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
-        char* tstr = reinterpret_cast<char*>(addr);
+        char* tstr = *reinterpret_cast<char**>(addr);
 #if _MSC_VER || WIN32 || WIN64
         strcpy_s(tstr, std::strlen(tstr), val.c_str());
 #else

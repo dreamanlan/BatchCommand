@@ -1,6 +1,5 @@
 #include "DebugScriptVM.h"
 #include "string.h"
-#include <array>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -24,6 +23,8 @@
 #include "Runtime/Threads/ReadWriteLock.h"
 #endif
 
+using namespace DebugScript;
+
 uint32_t g_DebugScriptSerialNum = 0;
 bool g_DebugScriptStarted = false;
 
@@ -34,18 +35,6 @@ namespace
     static DebugScriptGlobalImpl* g_pDebugScriptGlobal = nullptr;
     static thread_local DebugScriptVMImpl* g_pDebugScriptVM = nullptr;
     static std::chrono::time_point<std::chrono::high_resolution_clock> g_start_time{};
-
-    static const int c_max_variable_table_size = 8192;
-    static const int c_max_stack_depth = 128;
-    static const int c_max_local_variable_table_size = c_max_variable_table_size * c_max_stack_depth;
-
-    using IntGlobals = std::array<int64_t, c_max_variable_table_size>;
-    using FloatGlobals = std::array<double, c_max_variable_table_size>;
-    using StringGlobals = std::array<std::string, c_max_variable_table_size>;
-
-    using IntLocals = std::array<int64_t, c_max_local_variable_table_size>;
-    using FloatLocals = std::array<double, c_max_local_variable_table_size>;
-    using StringLocals = std::array<std::string, c_max_local_variable_table_size>;
 
     static inline void DebugAssert(bool v)
     {
@@ -123,14 +112,18 @@ namespace
         BITOR,
         BITXOR,
         BITNOT,
-        INT2FLT,
         INT2STR,
-        FLT2INT,
         FLT2STR,
         STR2INT,
         STR2FLT,
-        ITOF,
-        FTOI,
+        CASTFLTINT,
+        CASTSTRINT,
+        CASTINTFLT,
+        CASTINTSTR,
+        ASINT,
+        ASFLOAT,
+        ASLONG,
+        ASDOUBLE,
         ARGC,
         ARGV,
         ADDR,
@@ -149,11 +142,6 @@ namespace
         FFIAUTO,
         FFIMANUAL,
         FFIMANUALSTACK,
-        RESERVE12,
-        RESERVE11,
-        RESERVE10,
-        RESERVE9,
-        RESERVE8,
         RESERVE7,
         RESERVE6,
         RESERVE5,
@@ -164,13 +152,6 @@ namespace
         CALLINTERN_FIRST = 100,
         CALLINTERN_LAST = 255,
         NUM
-    };
-    enum class TypeEnum
-    {
-        NotUse = 0,
-        Int,
-        Float,
-        String
     };
     static const int32_t c_abs_offset_mask = 0x7fffffff;
     static const int32_t c_offset_backward_flag = static_cast<int32_t>(0x80000000);
@@ -220,31 +201,6 @@ namespace
         argNum = ((opcode & 0xff00) >> 8);
         int32_t operand = opcode >> 16;
         DecodeOperand1(operand, isGlobal, type, index);
-    }
-
-    static inline int64_t GetVarInt(bool isGlobal, int32_t index, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
-    {
-        return isGlobal ? intGlobals[index] : intLocals[stackBase + index];
-    }
-    static inline double GetVarFloat(bool isGlobal, int32_t index, int32_t stackBase, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
-    {
-        return isGlobal ? fltGlobals[index] : fltLocals[stackBase + index];
-    }
-    static inline const std::string& GetVarString(bool isGlobal, int32_t index, int32_t stackBase, StringLocals& strLocals, StringGlobals& strGlobals)
-    {
-        return isGlobal ? strGlobals[index] : strLocals[stackBase + index];
-    }
-    static inline void SetVarInt(bool isGlobal, int32_t index, int64_t val, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
-    {
-        (isGlobal ? intGlobals[index] : intLocals[stackBase + index]) = val;
-    }
-    static inline void SetVarFloat(bool isGlobal, int32_t index, double val, int32_t stackBase, FloatLocals& fltLocals, FloatGlobals& fltGlobals)
-    {
-        (isGlobal ? fltGlobals[index] : fltLocals[stackBase + index]) = val;
-    }
-    static inline void SetVarString(bool isGlobal, int32_t index, const std::string& val, int32_t stackBase, StringLocals& strLocals, StringGlobals& strGlobals)
-    {
-        (isGlobal ? strGlobals[index] : strLocals[stackBase + index]) = val;
     }
 
     static inline uint8_t ReadByte(std::ifstream& ifs)
@@ -490,7 +446,7 @@ namespace
     template<>
     inline int64_t Convert<int64_t, std::string>(const std::string& v)
     {
-        return std::atoll(v.c_str());
+        return std::stoll(v.c_str(), nullptr, 0);
     }
 
     template<>
@@ -506,7 +462,7 @@ namespace
     template<>
     inline double Convert<double, std::string>(const std::string& v)
     {
-        return std::atof(v.c_str());
+        return std::stod(v.c_str(), nullptr);
     }
 
     template<>
@@ -535,6 +491,7 @@ namespace
         Time,
         FloatTime,
         DumpCascadePtr,
+        StringLength,
         StringContains,
         StringContainsAny,
         StringNotContains,
@@ -542,6 +499,7 @@ namespace
         StringFind,
         StringRightFind,
         SubString,
+        CStrLen,
         CStrStr,
         CStrCmp,
         Malloc,
@@ -554,33 +512,27 @@ namespace
     };
     struct Api
     {
-        static inline void CallExternApi(int api, bool isGlobal, TypeEnum ty, int index, int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        static inline void CallExternApi(int api, bool isGlobal, TypeEnum ty, int index, int argNum, int32_t firstOperand, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, std::vector<ExternApiArgOrRetVal>& args)
         {
             //ExternApi
-            bool isGlobal0;
-            TypeEnum ty0;
-            int32_t index0;
-            DecodeOperand2(firstOperand, isGlobal0, ty0, index0);
+            ExternApiArgOrRetVal retVal{};
+            retVal.Type = ty;
+            retVal.IsGlobal = isGlobal;
+            retVal.Index = index;
 
-            std::vector<ExternApiArg> args{};
-            args.reserve(argNum);
-
-            ExternApiArg arg0{};
-            arg0.Type = static_cast<ExternApiTypeEnum>(ty0);
-            switch (ty0) {
-            case TypeEnum::Int: {
-                arg0.IntVal = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
-            }break;
-            case TypeEnum::Float: {
-                arg0.FloatVal = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
-            }break;
-            case TypeEnum::String: {
-                arg0.StringVal = GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str();
-            }break;
-            default:
-                break;
+            if (static_cast<int>(args.size()) < argNum) {
+                args.resize(argNum);
             }
-            args.push_back(arg0);
+
+            if (argNum > 0) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand2(firstOperand, isGlobal0, ty0, index0);
+                args[0].Type = ty0;
+                args[0].IsGlobal = isGlobal0;
+                args[0].Index = index0;
+            }
 
             for (int i = 1; i < argNum; i += 2) {
                 ++pos;
@@ -591,61 +543,22 @@ namespace
                     TypeEnum ty1;
                     int32_t index1;
                     DecodeOperand1(operand, isGlobal1, ty1, index1);
-                    ExternApiArg arg1{};
-                    arg1.Type = static_cast<ExternApiTypeEnum>(ty1);
-                    switch (ty1) {
-                    case TypeEnum::Int: {
-                        arg1.IntVal = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-                    }break;
-                    case TypeEnum::Float: {
-                        arg1.FloatVal = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
-                    }break;
-                    case TypeEnum::String: {
-                        arg1.StringVal = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str();
-                    }break;
-                    default:
-                        break;
-                    }
-                    args.push_back(arg1);
+                    args[i].Type = ty1;
+                    args[i].IsGlobal = isGlobal1;
+                    args[i].Index = index1;
                 }
                 if (i + 1 < argNum) {
                     bool isGlobal2;
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    ExternApiArg arg2{};
-                    arg2.Type = static_cast<ExternApiTypeEnum>(ty2);
-                    switch (ty2) {
-                    case TypeEnum::Int: {
-                        arg2.IntVal = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
-                    }break;
-                    case TypeEnum::Float: {
-                        arg2.FloatVal = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
-                    }break;
-                    case TypeEnum::String: {
-                        arg2.StringVal = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals).c_str();
-                    }break;
-                    default:
-                        break;
-                    }
-                    args.push_back(arg2);
+                    args[i + 1].Type = ty2;
+                    args[i + 1].IsGlobal = isGlobal2;
+                    args[i + 1].Index = index2;
                 }
             }
 
-            ExternApiRetVal val = CppDbgScp_CallExternApi(api, args.data(), argNum);
-            switch (val.Type) {
-            case ExternApiTypeEnum::NotUse:
-                break;
-            case ExternApiTypeEnum::Int:
-                SetVarInt(isGlobal, index, val.IntVal, stackBase, intLocals, intGlobals);
-                break;
-            case ExternApiTypeEnum::Float:
-                SetVarFloat(isGlobal, index, val.FloatVal, stackBase, fltLocals, fltGlobals);
-                break;
-            case ExternApiTypeEnum::String:
-                SetVarString(isGlobal, index, val.StringVal, stackBase, strLocals, strGlobals);
-                break;
-            }
+            CppDbgScp_CallExternApi(api, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args.data(), argNum, retVal);
         }
         static inline int64_t ScriptAssert(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -896,6 +809,20 @@ namespace
 
             int64_t taddr = dumpcascadeptr(addr, args.data(), argNum - 1);
             return taddr;
+        }
+        static inline int64_t StringLength(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::String);
+            const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
+
+            return static_cast<int64_t>(str.length());
         }
         static inline int64_t StringContains(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1204,6 +1131,20 @@ namespace
             auto&& rstr = str.substr(off, count);
             return rstr;
         }
+        static inline int64_t CStrLen(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            ++pos;
+            int operand = codes[pos];
+
+            bool isGlobal;
+            TypeEnum ty;
+            int32_t index;
+            DecodeOperand1(operand, isGlobal, ty, index);
+            DebugAssert(ty == TypeEnum::Int);
+            int64_t strAddr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
+
+            return static_cast<int64_t>(std::strlen(reinterpret_cast<const char*>(strAddr)));
+        }
         static inline int64_t CStrStr(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
             ++pos;
@@ -1472,6 +1413,11 @@ namespace
             DebugAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
+        case ApiEnum::StringLength: {
+            int64_t val = Api::StringLength(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
         case ApiEnum::StringContains: {
             int64_t val = Api::StringContains(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
@@ -1506,6 +1452,11 @@ namespace
             std::string val = Api::SubString(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::String);
             SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+        }break;
+        case ApiEnum::CStrLen: {
+            int64_t val = Api::CStrLen(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::CStrStr: {
             int64_t val = Api::CStrStr(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
@@ -1549,7 +1500,7 @@ namespace
         }break;
         }
     }
-    static inline void DoCallExtern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    static inline void DoCallExtern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, std::vector<ExternApiArgOrRetVal>& args)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -1561,7 +1512,7 @@ namespace
         int32_t apiIndex;
         DecodeOperand1(operand, apiIndex);
         DebugAssert(apiIndex >= 0);
-        Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+        Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args);
     }
     static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)
     {
@@ -2032,7 +1983,30 @@ namespace
         const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
         SetVarString(isGlobal, index + ix, val, stackBase, strLocals, strGlobals);
     }
-    static inline void DoIToF(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    static inline void DoAsInt(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+
+        DebugAssert(ty == TypeEnum::Int);
+        DebugAssert(ty1 == TypeEnum::Float);
+        double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+        float fv = static_cast<float>(val);
+        int32_t iv = *reinterpret_cast<int32_t*>(&fv);
+        int64_t lv = iv;
+        SetVarInt(isGlobal, index, lv, stackBase, intLocals, intGlobals);
+    }
+    static inline void DoAsFloat(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -2050,9 +2024,12 @@ namespace
         DebugAssert(ty == TypeEnum::Float);
         DebugAssert(ty1 == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-        SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), stackBase, fltLocals, fltGlobals);
+        int32_t iv = static_cast<int32_t>(val);
+        float fv = *reinterpret_cast<float*>(&iv);
+        double dv = fv;
+        SetVarFloat(isGlobal, index, dv, stackBase, fltLocals, fltGlobals);
     }
-    static inline void DoFToI(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    static inline void DoAsLong(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
     {
         ++pos;
         int32_t operand = codes[pos];
@@ -2071,6 +2048,26 @@ namespace
         DebugAssert(ty1 == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         SetVarInt(isGlobal, index, *reinterpret_cast<int64_t*>(&val), stackBase, intLocals, intGlobals);
+    }
+    static inline void DoAsDouble(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals)
+    {
+        ++pos;
+        int32_t operand = codes[pos];
+
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+        bool isGlobal1;
+        TypeEnum ty1;
+        int32_t index1;
+        DecodeOperand1(operand, isGlobal1, ty1, index1);
+
+        DebugAssert(ty == TypeEnum::Float);
+        DebugAssert(ty1 == TypeEnum::Int);
+        int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+        SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), stackBase, fltLocals, fltGlobals);
     }
     static inline void DoArgc(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals, int32_t argc)
     {
@@ -2525,6 +2522,48 @@ namespace
         SetVarInt(isGlobal, index, g_DebugScriptSerialNum, stackBase, intLocals, intGlobals);
     }
 
+    struct StackArgumentSpace
+    {
+        static const int c_max_stack_arg_num = 32;
+
+        int64_t stack_space[c_max_stack_arg_num];
+    };
+    extern int64_t get_first_stack_arg_addr(int64_t r0, int64_t r1, int64_t r2, int64_t r3, int64_t r4, int64_t r5, int64_t r6, int64_t r7, int64_t r8, StackArgumentSpace stack_space)
+    {
+        //r0 ~ r7 for register arg on arm; rdi、rsi、rdx、rcx、r8、r9 for register arg on x86_64, rcx、rdx、r8、r9 for register arg on x64, the arguments passed in memory are pushed on
+        //the stack in reversed(right to left) order.
+        //debug builds on msvc, all arguments are on the stack, but the compiler fakes the argument passing rules.
+#if defined(_MSC_VER) && defined(_M_X64)
+        //x64
+        return reinterpret_cast<int64_t>(&r4);
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+        //arm64
+        return reinterpret_cast<int64_t>(&r8);
+#elif defined(__GNUC__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r6);
+#elif defined(__clang__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r6);
+#elif defined(__APPLE__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r6);
+#elif defined(__GNUC__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r8);
+#elif defined(__clang__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r8);
+#elif defined(__APPLE__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r8);
+#else
+        #error unknown architecture !!!
+        //arm64
+        return reinterpret_cast<int64_t>(&r8);
+#endif
+    }
+
     template<typename... ArgsT>
     struct FFI_Auto
     {
@@ -2558,13 +2597,12 @@ namespace
     {
         int64_t CallApiInt(int64_t addr, int64_t stackArgs[], int64_t stackArgNum, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef int64_t(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgNum <= c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
-                    stacks[c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
+                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2572,13 +2610,12 @@ namespace
         }
         double CallApiFloat(int64_t addr, int64_t stackArgs[], int64_t stackArgNum, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef double(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgNum <= c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
-                    stacks[c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
+                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2586,13 +2623,12 @@ namespace
         }
         const char* CallApiString(int64_t addr, int64_t stackArgs[], int64_t stackArgNum, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef const char* (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgNum <= c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
-                    stacks[c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
+                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2600,13 +2636,12 @@ namespace
         }
         void CallApiVoid(int64_t addr, int64_t stackArgs[], int64_t stackArgNum, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef void (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgNum <= c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
-                    stacks[c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
+                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
                 }
                 reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2637,48 +2672,44 @@ namespace
     {
         int64_t CallApiInt(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef int64_t(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(const_cast<char*>(reinterpret_cast<volatile char*>(stacks)) + (c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return 0;
         }
         double CallApiFloat(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef double(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(const_cast<char*>(reinterpret_cast<volatile char*>(stacks)) + (c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return 0;
         }
         const char* CallApiString(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef const char* (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(const_cast<char*>(reinterpret_cast<volatile char*>(stacks)) + (c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return nullptr;
         }
         void CallApiVoid(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
-            const int c_max_stack_arg_num = 32;
             typedef void (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            volatile int64_t stacks[c_max_stack_arg_num];
-            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(const_cast<char*>(reinterpret_cast<volatile char*>(stacks)) + (c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
+            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 reinterpret_cast<Fptr>(addr)(args...);
             }
         }
@@ -2887,7 +2918,7 @@ namespace
         int32_t intNum;
         DecodeOperand1(operand0, intNum);
         int32_t fltNum;
-        DecodeOperand1(operand0, fltNum);
+        DecodeOperand2(operand0, fltNum);
 
         const int c_max_count = 8;
         int64_t addr = 0;
@@ -2918,28 +2949,28 @@ namespace
                     }
                 }
             }
-            else if (i >= intNum && i < intNum + fnum) {
+            else if (i >= 1 + intNum && i < 1 + intNum + fnum) {
                 bool isGlobal0;
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 DebugAssert(ty0 == TypeEnum::Float);
-                fargs[i - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
+                fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
             }
-            else if (i >= intNum + fltNum && i < argNum) {
+            else if (i >= 1 + intNum + fltNum && i < argNum) {
                 bool isGlobal0;
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (ty0 == TypeEnum::Int) {
-                    stacks[i - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                    stacks[i - 1 - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else if (ty0 == TypeEnum::Float) {
                     double fv = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
-                    stacks[i - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
                 }
                 else {
-                    stacks[i - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                    stacks[i - 1 - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
                 }
             }
             if (i + 1 < inum) {
@@ -2955,15 +2986,15 @@ namespace
                     args[i] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
                 }
             }
-            else if (i + 1 >= intNum && i + 1 < intNum + fnum) {
+            else if (i + 1 >= 1 + intNum && i + 1 < 1 + intNum + fnum) {
                 bool isGlobal1;
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
                 DebugAssert(ty1 == TypeEnum::Float);
-                args[i + 1 - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                args[i - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             }
-            else if (i + 1 >= intNum + fltNum && i + 1 < argNum) {
+            else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
                 bool isGlobal1;
                 TypeEnum ty1;
                 int32_t index1;
@@ -2981,7 +3012,7 @@ namespace
             }
         }
 
-#define CASE_K1_MANUAL(K1, K2) case K1: VariadicFactory<FFI_Manual>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks, argNum - intNum - fltNum, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
+#define CASE_K1_MANUAL(K1, K2) case K1: VariadicFactory<FFI_Manual>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks, argNum - 1 - intNum - fltNum, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
 
 #define CALL_FFI_MANUAL(K2) \
         switch (inum - 1) {\
@@ -3024,7 +3055,7 @@ namespace
         int32_t intNum;
         DecodeOperand1(operand0, intNum);
         int32_t fltNum;
-        DecodeOperand1(operand0, fltNum);
+        DecodeOperand2(operand0, fltNum);
 
         const int c_max_count = 8;
         int64_t addr = 0;
@@ -3055,28 +3086,28 @@ namespace
                     }
                 }
             }
-            else if (i >= intNum && i < intNum + fnum) {
+            else if (i >= 1 + intNum && i < 1 + intNum + fnum) {
                 bool isGlobal0;
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 DebugAssert(ty0 == TypeEnum::Float);
-                fargs[i - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
+                fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
             }
-            else if (i >= intNum + fltNum && i < argNum) {
+            else if (i >= 1 + intNum + fltNum && i < argNum) {
                 bool isGlobal0;
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (ty0 == TypeEnum::Int) {
-                    stacks[i - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                    stacks[i - 1 - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else if (ty0 == TypeEnum::Float) {
                     double fv = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
-                    stacks[i - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
                 }
                 else {
-                    stacks[i - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                    stacks[i - 1 - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
                 }
             }
             if (i + 1 < inum) {
@@ -3092,15 +3123,15 @@ namespace
                     args[i] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
                 }
             }
-            else if (i + 1 >= intNum && i + 1 < intNum + fnum) {
+            else if (i + 1 >= 1 + intNum && i + 1 < 1 + intNum + fnum) {
                 bool isGlobal1;
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
                 DebugAssert(ty1 == TypeEnum::Float);
-                args[i + 1 - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                args[i - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             }
-            else if (i + 1 >= intNum + fltNum && i + 1 < argNum) {
+            else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
                 bool isGlobal1;
                 TypeEnum ty1;
                 int32_t index1;
@@ -3558,16 +3589,6 @@ namespace
         }
     };
 
-    struct Int2FltOperation
-    {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
-        {
-            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Float);
-            int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-            double res = Convert<double>(ival);
-            SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
-        }
-    };
     struct Int2StrOperation
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -3576,16 +3597,6 @@ namespace
             int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             std::string res = Convert<std::string>(ival);
             SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
-        }
-    };
-    struct Flt2IntOperation
-    {
-        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
-        {
-            DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Int);
-            double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
-            int64_t res = Convert<int64_t>(fval);
-            SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
         }
     };
     struct Flt2StrOperation
@@ -3616,6 +3627,46 @@ namespace
             const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             double res = Convert<double>(sval);
             SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
+        }
+    };
+    struct CastFltIntOperation
+    {
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Int);
+            double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+            int64_t res = Convert<int64_t>(fval);
+            SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
+        }
+    };
+    struct CastStrIntOperation
+    {
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
+            const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
+            int64_t res = reinterpret_cast<int64_t>(sval.c_str());
+            SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
+        }
+    };
+    struct CastIntFltOperation
+    {
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Float);
+            int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+            double res = Convert<double>(ival);
+            SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
+        }
+    };
+    struct CastIntStrOperation
+    {
+        static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
+            int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+            const char* res = reinterpret_cast<const char*>(ival);
+            SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
         }
     };
 
@@ -3664,12 +3715,14 @@ namespace
 #define DoUnaryNEGFLT DoUnary<NegFltOperation>
 #define DoUnaryNOT DoUnary<NotOperation>
 #define DoUnaryBITNOT DoUnary<BitNotOperation>
-#define DoUnaryINT2FLT DoUnary<Int2FltOperation>
 #define DoUnaryINT2STR DoUnary<Int2StrOperation>
-#define DoUnaryFLT2INT DoUnary<Flt2IntOperation>
 #define DoUnaryFLT2STR DoUnary<Flt2StrOperation>
 #define DoUnarySTR2INT DoUnary<Str2IntOperation>
 #define DoUnarySTR2FLT DoUnary<Str2FltOperation>
+#define DoUnaryCASTFLTINT DoUnary<CastFltIntOperation>
+#define DoUnaryCASTSTRINT DoUnary<CastStrIntOperation>
+#define DoUnaryCASTINTFLT DoUnary<CastIntFltOperation>
+#define DoUnaryCASTINTSTR DoUnary<CastIntStrOperation>
 #define DoBinaryADD DoBinary<AddOperation>
 #define DoBinaryADDFLT DoBinary<AddFltOperation>
 #define DoBinaryADDSTR DoBinary<AddStrOperation>
@@ -3999,6 +4052,8 @@ namespace
         FloatLocals m_FloatLocals{};
         StringLocals m_StringLocals{};
 
+        std::vector<ExternApiArgOrRetVal> m_ExternApiArgs{};
+
         int32_t FindHook(const std::string& name)const
         {
             DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
@@ -4063,7 +4118,7 @@ namespace
                     InsEnum op = DecodeInsEnum(opcode);
                     switch (op) {
                     case InsEnum::CALLEXTERN:
-                        DoCallExtern(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        DoCallExtern(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, m_ExternApiArgs);
                         break;
                     case InsEnum::RET:
                         DoRet(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, ret);
@@ -4251,14 +4306,8 @@ namespace
                     case InsEnum::BITNOT:
                         DoUnaryBITNOT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
-                    case InsEnum::INT2FLT:
-                        DoUnaryINT2FLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                        break;
                     case InsEnum::INT2STR:
                         DoUnaryINT2STR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-                        break;
-                    case InsEnum::FLT2INT:
-                        DoUnaryFLT2INT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
                     case InsEnum::FLT2STR:
                         DoUnaryFLT2STR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
@@ -4269,11 +4318,29 @@ namespace
                     case InsEnum::STR2FLT:
                         DoUnarySTR2FLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
-                    case InsEnum::ITOF:
-                        DoIToF(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                    case InsEnum::CASTFLTINT:
+                        DoUnaryCASTFLTINT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
-                    case InsEnum::FTOI:
-                        DoFToI(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                    case InsEnum::CASTSTRINT:
+                        DoUnaryCASTSTRINT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::CASTINTFLT:
+                        DoUnaryCASTINTFLT(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::CASTINTSTR:
+                        DoUnaryCASTINTSTR(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::ASINT:
+                        DoAsInt(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                        break;
+                    case InsEnum::ASFLOAT:
+                        DoAsFloat(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                        break;
+                    case InsEnum::ASLONG:
+                        DoAsLong(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
+                        break;
+                    case InsEnum::ASDOUBLE:
+                        DoAsDouble(opcode, op, codes, pos, stackBase, intLocals, fltLocals, intGlobals, fltGlobals);
                         break;
                     case InsEnum::ARGC:
                         DoArgc(opcode, op, codes, pos, stackBase, intLocals, intGlobals, argc);

@@ -1,6 +1,9 @@
 #include <windows.h>
 #include <string>
+#include <vector>
 #include <unordered_map>
+#include <sstream>
+#include <fstream>
 #include "DbgScpHook.h"
 
 static std::unordered_map<std::string, int64_t> g_Lib2Addresses{};
@@ -19,101 +22,263 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
+void TestFFI0(int a1, int a2, int a3, int a4, float f1, float f2, int64_t sv1, int64_t sv2)
+{
+
+}
+
+static inline std::vector<std::string> string_split(const std::string& input, char delimiter, int max_fields) {
+    std::istringstream input_stream(input);
+    std::vector<std::string> tokens;
+    std::string token;
+
+    while (std::getline(input_stream, token, delimiter)) {
+        if (token.length() > 0) {
+            tokens.push_back(token);
+        }
+        if (tokens.size() >= max_fields) {
+            break;
+        }
+    }
+
+    return tokens;
+}
+
+static inline int64_t test_find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
+    const char* txt =
+        "72c9804000-72c9900000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9900000-72c9ba1000 r-xp 000fc000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9ba1000-72c9bb1000 r--p 0039d000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9bb1000-72c9bd2000 rw-p 003ac000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "754670a000-754671e000 r--p 00000000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "754671e000-7546737000 r-xp 00014000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "7546737000-7546739000 r--p 0002d000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "7546739000-754673a000 rw-p 0002e000 fe:09 19286849                       /system/lib64/libvulkan.so\n";
+    std::istringstream input_stream(txt);
+
+    std::string line;
+    while (std::getline(input_stream, line)) {
+        //72d2e1b000-72d2f17000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so
+        if (line.find(so) != std::string::npos) {
+            auto&& strs = string_split(line, ' ', 3);
+            if (strs.size() >= 3) {
+                if (strs[1] == attr) {
+                    int64_t offset = std::stoll(strs[2], nullptr, 16);
+                    if (incFirst || offset > 0) {
+                        size_t pos = strs[0].find_first_of('-');
+                        auto&& startStr = strs[0].substr(0, pos);
+                        match = line;
+                        fields.assign(strs.cbegin(), strs.cend());
+                        return std::stoll(startStr, nullptr, 16);
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
+    std::ostringstream path;
+    path << "/proc/" << pid << "/maps";
+
+    std::ifstream maps_file(path.str());
+    if (!maps_file.is_open()) {
+        //return 0;
+        return test_find_loaded_segments(pid, so, attr, incFirst, match, fields);
+    }
+
+    std::string line;
+    while (std::getline(maps_file, line)) {
+        //72d2e1b000-72d2f17000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so
+        if (line.find(so) != std::string::npos) {
+            auto&& strs = string_split(line, ' ', 3);
+            if (strs.size() >= 3) {
+                if (strs[1] == attr) {
+                    int64_t offset = std::stoll(strs[2], nullptr, 16);
+                    if (incFirst || offset > 0) {
+                        size_t pos = strs[0].find_first_of('-');
+                        auto&& startStr = strs[0].substr(0, pos);
+                        match = line;
+                        fields.assign(strs.cbegin(), strs.cend());
+                        return std::stoll(startStr, nullptr, 16);
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 enum class ExternApiEnum
 {
-    LoadLib = c_extern_api_start_id,
+    TestFFI = c_extern_api_start_id,
+    LoadLib,
     GetProc,
     LoadLibAndGetProc,
     FreeLib,
     FreeLibByPath,
+    GetPID,
+    GetTID,
+    FindSegment,
     Num
 };
 
-ExternApiRetVal CppDbgScp_CallExternApi(int api, ExternApiArg args[], int32_t argNum)
+struct ExternApi
 {
-    ExternApiRetVal retVal{ ExternApiTypeEnum::Int, 0 };
-    retVal.IntVal = 0;
+    static inline void TestFFI(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t ix = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t addr = 0;
+        switch (ix) {
+        case 0:
+            addr = reinterpret_cast<int64_t>(TestFFI0);
+            break;
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, addr, stackBase, intLocals, intGlobals);
+    }
+    static inline void LoadLib(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        auto&& str = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+        int64_t addr = 0;
+        auto&& it = g_Lib2Addresses.find(str);
+        if (it == g_Lib2Addresses.end()) {
+            void* ptr = LoadLibraryA(str.c_str());
+            addr = reinterpret_cast<int64_t>(ptr);
+            if (ptr) {
+                g_Lib2Addresses.insert(std::make_pair(str, addr));
+            }
+        }
+        else {
+            addr = it->second;
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, addr, stackBase, intLocals, intGlobals);
+    }
+    static inline void GetProc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        auto&& str = DebugScript::GetVarString(args[1].IsGlobal, args[1].Index, stackBase, strLocals, strGlobals);
+        auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), str.c_str());
+        int64_t rval = reinterpret_cast<int64_t>(ptr);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void LoadLibAndGetProc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t rval = 0;
+        int64_t addr = 0;
+        auto&& lib = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+        auto&& proc = DebugScript::GetVarString(args[1].IsGlobal, args[1].Index, stackBase, strLocals, strGlobals);
+        auto&& it = g_Lib2Addresses.find(lib);
+        if (it == g_Lib2Addresses.end()) {
+            void* ptr = LoadLibraryA(lib.c_str());
+            addr = reinterpret_cast<int64_t>(ptr);
+            if (ptr) {
+                g_Lib2Addresses.insert(std::make_pair(lib, addr));
+            }
+        }
+        else {
+            addr = it->second;
+        }
+        if (addr) {
+            auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), proc.c_str());
+            rval = reinterpret_cast<int64_t>(ptr);
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void FreeLib(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        FreeLibrary(reinterpret_cast<HMODULE>(addr));
+        int64_t rval = 1;
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void FreeLibByPath(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t rval = 0;
+        auto&& str = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+        auto&& it = g_Lib2Addresses.find(str);
+        if (it != g_Lib2Addresses.end()) {
+            FreeLibrary(reinterpret_cast<HMODULE>(it->second));
+            g_Lib2Addresses.erase(it);
+            rval = 1;
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void GetPID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t rval = 0;
+#ifdef WIN32
+        rval = static_cast<int64_t>(GetCurrentProcessId());
+#else
+        rval = static_cast<int64_t>(getpid());
+#endif
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void GetTID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t rval = 0;
+#ifdef WIN32
+        rval = static_cast<int64_t>(GetCurrentThreadId());
+#else
+        //rval = static_cast<int64_t>(pthread_self());
+        rval = static_cast<int64_t>(gettid());
+#endif
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+    static inline void FindSegment(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t pid = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        auto&& so = DebugScript::GetVarString(args[1].IsGlobal, args[1].Index, stackBase, strLocals, strGlobals);
+        auto&& attr = DebugScript::GetVarString(args[2].IsGlobal, args[2].Index, stackBase, strLocals, strGlobals);
+        bool incFirst = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        std::string match;
+        std::vector<std::string> fields;
+        int64_t rval = find_loaded_segments(pid, so, attr, incFirst, match, fields);
+        if (rval) {
+            printf("find segment: '%s'\n", match.c_str());
+            if (argNum > 4) {
+                for (int ix = 0; ix < static_cast<int>(fields.size()); ++ix) {
+                    DebugScript::SetVarString(args[4].IsGlobal, args[4].Index + ix, fields[ix], stackBase, strLocals, strGlobals);
+                }
+            }
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
+    }
+};
+
+void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+{
     switch (static_cast<ExternApiEnum>(api)) {
-    case ExternApiEnum::LoadLib: {
-        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::String) {
-            if (args[0].StringVal) {
-                auto&& pStr = args[0].StringVal;
-                int64_t addr = 0;
-                auto&& it = g_Lib2Addresses.find(pStr);
-                if (it == g_Lib2Addresses.end()) {
-                    void* ptr = LoadLibraryA(pStr);
-                    addr = reinterpret_cast<int64_t>(ptr);
-                    if (ptr) {
-                        g_Lib2Addresses.insert(std::make_pair(pStr, addr));
-                    }
-                }
-                else {
-                    addr = it->second;
-                }
-                retVal.IntVal = addr;
-            }
-        }
-    }break;
-    case ExternApiEnum::GetProc: {
-        if (argNum == 2 && args[0].Type == ExternApiTypeEnum::Int && args[1].Type == ExternApiTypeEnum::String) {
-            if (args[0].IntVal && args[1].StringVal) {
-                int64_t addr = args[0].IntVal;
-                auto&& pStr = args[1].StringVal;
-                auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), pStr);
-                retVal.IntVal = reinterpret_cast<int64_t>(ptr);
-            }
-        }
-    }break;
-    case ExternApiEnum::LoadLibAndGetProc: {
-        if (argNum == 2 && args[0].Type == ExternApiTypeEnum::String && args[1].Type == ExternApiTypeEnum::String) {
-            if (args[0].StringVal && args[1].StringVal) {
-                auto&& pLibStr = args[0].StringVal;
-                auto&& pProcStr = args[1].StringVal;
-                int64_t addr = 0;
-                auto&& it = g_Lib2Addresses.find(pLibStr);
-                if (it == g_Lib2Addresses.end()) {
-                    void* ptr = LoadLibraryA(pLibStr);
-                    addr = reinterpret_cast<int64_t>(ptr);
-                    if (ptr) {
-                        g_Lib2Addresses.insert(std::make_pair(pLibStr, addr));
-                    }
-                }
-                else {
-                    addr = it->second;
-                }
-                if (addr) {
-                    auto&& ptr = GetProcAddress(reinterpret_cast<HMODULE>(addr), pProcStr);
-                    retVal.IntVal = reinterpret_cast<int64_t>(ptr);
-                }
-            }
-        }
-    }break;
-    case ExternApiEnum::FreeLib: {
-        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::Int) {
-            if (args[0].IntVal) {
-                int64_t addr = args[0].IntVal;
-                FreeLibrary(reinterpret_cast<HMODULE>(addr));
-                retVal.IntVal = 1;
-            }
-        }
-    }break;
-    case ExternApiEnum::FreeLibByPath: {
-        if (argNum == 1 && args[0].Type == ExternApiTypeEnum::String) {
-            if (args[0].StringVal) {
-                auto&& pStr = args[0].StringVal;
-                auto&& it = g_Lib2Addresses.find(pStr);
-                if (it != g_Lib2Addresses.end()) {
-                    FreeLibrary(reinterpret_cast<HMODULE>(it->second));
-                    g_Lib2Addresses.erase(it);
-                    retVal.IntVal = 1;
-                }
-            }
-        }
-    }break;
+    case ExternApiEnum::TestFFI:
+        ExternApi::TestFFI(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::LoadLib:
+        ExternApi::LoadLib(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetProc:
+        ExternApi::GetProc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::LoadLibAndGetProc:
+        ExternApi::LoadLibAndGetProc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::FreeLib:
+        ExternApi::FreeLib(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::FreeLibByPath:
+        ExternApi::FreeLibByPath(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetPID:
+        ExternApi::GetPID(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetTID:
+        ExternApi::GetTID(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::FindSegment:
+        ExternApi::FindSegment(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
     default:
         break;
     }
-    return retVal;
 }
 
 extern "C" {

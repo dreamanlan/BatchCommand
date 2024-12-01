@@ -1,2 +1,5 @@
 ﻿  DebugScriptVM.cpp
+  DllMain.cpp
+  正在生成代码...
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2538,1): warning C4172: 返回局部变量的地址或临时 : r4
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

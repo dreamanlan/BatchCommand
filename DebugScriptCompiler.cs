@@ -83,14 +83,18 @@ namespace CppDebugScript
         BITOR,
         BITXOR,
         BITNOT,
-        INT2FLT,
         INT2STR,
-        FLT2INT,
         FLT2STR,
         STR2INT,
         STR2FLT,
-        ITOF,
-        FTOI,
+        CASTFLTINT,
+        CASTSTRINT,
+        CASTINTFLT,
+        CASTINTSTR,
+        ASINT,
+        ASFLOAT,
+        ASLONG,
+        ASDOUBLE,
         ARGC,
         ARGV,
         ADDR,
@@ -109,11 +113,6 @@ namespace CppDebugScript
         FFIAUTO,
         FFIMANUAL,
         FFIMANUALSTACK,
-        RESERVE12,
-        RESERVE11,
-        RESERVE10,
-        RESERVE9,
-        RESERVE8,
         RESERVE7,
         RESERVE6,
         RESERVE5,
@@ -176,12 +175,13 @@ namespace CppDebugScript
 
                                 var pts = call.GetParam(3) as Dsl.FunctionData;
                                 foreach (var p in pts.Params) {
-                                    s_Type2Ids.TryGetValue(p.GetId(), out var ty);
-                                    api.ParamTypes.Add(ty);
+                                    string pt = ParseType(p, err, out var ct);
+                                    s_Type2Ids.TryGetValue(pt, out var ty);
+                                    api.ParamTypes.Add(new ApiParamType { Type = ty, Count = ct });
                                 }
 
                                 if (existsOptions) {
-                                    foreach(var syn in fd.Params) {
+                                    foreach (var syn in fd.Params) {
                                         var fcall = syn as Dsl.FunctionData;
                                         if (null != fcall) {
                                             string pname = fcall.GetId();
@@ -198,7 +198,7 @@ namespace CppDebugScript
                                 handled = true;
                             }
                         }
-                        if(!handled) {
+                        if (!handled) {
                             err.AppendFormat("expect defapi/defexternapi(name,ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
                             err.AppendLine();
                         }
@@ -262,7 +262,7 @@ namespace CppDebugScript
                                             if (pname == "minstackparamnum") {
                                                 int.TryParse(fcall.GetParamId(0), out proto.MinStackParamNum);
                                             }
-                                            else if(pname == "manualstack") {
+                                            else if (pname == "manualstack") {
                                                 proto.ManualStack = fcall.GetParamId(0) == "true";
                                             }
                                         }
@@ -351,9 +351,14 @@ namespace CppDebugScript
             int indent = 0;
             txt.AppendLine("consts:");
             ++indent;
-            foreach(var pair in m_ConstInfos) {
-                var info = pair.Value;
-                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), info.StrValue, info.Type, c_max_variable_table_size - 1 - info.Index);
+            foreach (var pair in m_IntConstInfos) {
+                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), pair.Key, TypeEnum.Int, c_max_variable_table_size - 1 - pair.Value);
+            }
+            foreach (var pair in m_FltConstInfos) {
+                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), pair.Key, TypeEnum.Float, c_max_variable_table_size - 1 - pair.Value);
+            }
+            foreach (var pair in m_StrConstInfos) {
+                txt.AppendLine("{0}value:{1} type:{2} index:{3}", Literal.GetIndentString(indent), pair.Key, TypeEnum.String, c_max_variable_table_size - 1 - pair.Value);
             }
             --indent;
             txt.AppendLine();
@@ -378,7 +383,7 @@ namespace CppDebugScript
             ++indent;
             foreach (var pair in m_VarInfos) {
                 string name = pair.Key;
-                foreach(var pair2 in pair.Value) {
+                foreach (var pair2 in pair.Value) {
                     int block = pair2.Key;
                     if (block > 0) {
                         var info = pair2.Value;
@@ -394,7 +399,7 @@ namespace CppDebugScript
                 txt.AppendLine("hook:{0}", hook.Name);
                 if (hook.ShareWith.Count > 0) {
                     txt.Append("share with:");
-                    foreach(var name in hook.ShareWith) {
+                    foreach (var name in hook.ShareWith) {
                         txt.Append(' ');
                         txt.Append(name);
                     }
@@ -422,26 +427,25 @@ namespace CppDebugScript
             CppDbgScpInterface.CppDbgScp_ResetVM();
 
             var comparer = new ReverseComparer<int>(Comparer<int>.Default);
-            var consts = new SortedDictionary<int, ConstInfo>(comparer);
+            var consts = new SortedDictionary<int, string>(comparer);
             CollectConstInfo(TypeEnum.Int, consts);
-            foreach(var pair in consts) {
-                var info = pair.Value;
-                TryParseLong(info.StrValue, out var v);
+            foreach (var pair in consts) {
+                var strv = pair.Value;
+                TryParseLong(strv, out var v);
                 CppDbgScpInterface.CppDbgScp_AllocConstInt(v);
             }
             consts.Clear();
             CollectConstInfo(TypeEnum.Float, consts);
             foreach (var pair in consts) {
-                var info = pair.Value;
-                TryParseDouble(info.StrValue, out var v);
+                var strv = pair.Value;
+                TryParseDouble(strv, out var v);
                 CppDbgScpInterface.CppDbgScp_AllocConstFloat(v);
             }
             consts.Clear();
             CollectConstInfo(TypeEnum.String, consts);
             foreach (var pair in consts) {
-                var info = pair.Value;
-                var v = info.StrValue;
-                IntPtr str = Marshal.StringToHGlobalAnsi(v);
+                var strv = pair.Value;
+                IntPtr str = Marshal.StringToHGlobalAnsi(strv);
                 CppDbgScpInterface.CppDbgScp_AllocConstString(str);
             }
 
@@ -489,8 +493,8 @@ namespace CppDebugScript
                 }
             }
 
-            foreach(var hook in m_Hooks) {
-                IntPtr name = Marshal.StringToHGlobalAnsi(hook.Name); 
+            foreach (var hook in m_Hooks) {
+                IntPtr name = Marshal.StringToHGlobalAnsi(hook.Name);
                 IntPtr enterPtr = Marshal.AllocHGlobal(hook.OnEnter.Count * sizeof(int));
                 IntPtr exitPtr = Marshal.AllocHGlobal(hook.OnExit.Count * sizeof(int));
 
@@ -500,7 +504,7 @@ namespace CppDebugScript
                 int hookId = CppDbgScpInterface.CppDbgScp_AddHook(name, enterPtr, hook.OnEnter.Count, exitPtr, hook.OnExit.Count);
                 LogSystem.Warn("hook:{0} id:{1}", hook.Name, hookId);
 
-                foreach(var other in hook.ShareWith) {
+                foreach (var other in hook.ShareWith) {
                     IntPtr otherFunc = Marshal.StringToHGlobalAnsi(other);
                     int rid = CppDbgScpInterface.CppDbgScp_ShareWith(hookId, otherFunc);
                     LogSystem.Warn("share with:{0} id:{1}", other, rid);
@@ -523,7 +527,7 @@ namespace CppDebugScript
                 sw.Write(0);
 
                 var comparer = new ReverseComparer<int>(Comparer<int>.Default);
-                var consts = new SortedDictionary<int, ConstInfo>(comparer);
+                var consts = new SortedDictionary<int, string>(comparer);
                 int constNum = CollectConstInfo(TypeEnum.Int, consts);
 
                 var strDict = new Dictionary<string, int>();
@@ -533,8 +537,8 @@ namespace CppDebugScript
                 sw.Write(constNum);
 
                 foreach (var pair in consts) {
-                    var info = pair.Value;
-                    TryParseLong(info.StrValue, out var v);
+                    var strv = pair.Value;
+                    TryParseLong(strv, out var v);
 
                     //int const
                     sw.Write(v);
@@ -546,8 +550,8 @@ namespace CppDebugScript
                 sw.Write(constNum);
 
                 foreach (var pair in consts) {
-                    var info = pair.Value;
-                    TryParseDouble(info.StrValue, out var v);
+                    var strv = pair.Value;
+                    TryParseDouble(strv, out var v);
 
                     //float const
                     sw.Write(v);
@@ -559,11 +563,10 @@ namespace CppDebugScript
                 sw.Write(constNum);
 
                 foreach (var pair in consts) {
-                    var info = pair.Value;
-                    var v = info.StrValue;
+                    var strv = pair.Value;
 
                     //string const
-                    sw.Write(AddStringTable(v, strDict, strTable));
+                    sw.Write(AddStringTable(strv, strDict, strTable));
                 }
 
                 var globals = new SortedDictionary<int, VarInfo>();
@@ -624,7 +627,7 @@ namespace CppDebugScript
                 foreach (var hook in m_Hooks) {
                     sw.Write(AddStringTable(hook.Name, strDict, strTable));
                     sw.Write(hook.OnEnter.Count);
-                    foreach(var v in hook.OnEnter) {
+                    foreach (var v in hook.OnEnter) {
                         sw.Write(v);
                     }
                     sw.Write(hook.OnExit.Count);
@@ -639,7 +642,7 @@ namespace CppDebugScript
 
                 int strTableOffset = (int)sw.BaseStream.Position;
                 sw.Write(strTable.Count);
-                foreach(var str in strTable) {
+                foreach (var str in strTable) {
                     sw.Write(str);
                 }
 
@@ -654,13 +657,24 @@ namespace CppDebugScript
             CppDbgScpInterface.CppDbgScp_Load(file);
         }
 
-        private int CollectConstInfo(TypeEnum type, SortedDictionary<int, ConstInfo> constInfos)
+        private int CollectConstInfo(TypeEnum type, SortedDictionary<int, string> constInfos)
         {
-            foreach(var pair in m_ConstInfos) {
-                var info = pair.Value;
-                if(info.Type == type) {
-                    constInfos.Add(info.Index, info);
-                }
+            switch (type) {
+                case TypeEnum.Int:
+                    foreach (var pair in m_IntConstInfos) {
+                        constInfos.Add(pair.Value, pair.Key);
+                    }
+                    break;
+                case TypeEnum.Float:
+                    foreach (var pair in m_FltConstInfos) {
+                        constInfos.Add(pair.Value, pair.Key);
+                    }
+                    break;
+                case TypeEnum.String:
+                    foreach (var pair in m_StrConstInfos) {
+                        constInfos.Add(pair.Value, pair.Key);
+                    }
+                    break;
             }
             return constInfos.Count;
         }
@@ -692,7 +706,7 @@ namespace CppDebugScript
             }
             return ix;
         }
-        
+
         private void DumpAsm(StringBuilder txt, int indent, List<int> codes)
         {
             for (int pos = 0; pos < codes.Count; ++pos) {
@@ -888,14 +902,8 @@ namespace CppDebugScript
                     case InsEnum.BITNOT:
                         DumpUnary(txt, indent, codes, ref pos, "BITNOT");
                         break;
-                    case InsEnum.INT2FLT:
-                        DumpUnary(txt, indent, codes, ref pos, "INT2FLT");
-                        break;
                     case InsEnum.INT2STR:
                         DumpUnary(txt, indent, codes, ref pos, "INT2STR");
-                        break;
-                    case InsEnum.FLT2INT:
-                        DumpUnary(txt, indent, codes, ref pos, "FLT2INT");
                         break;
                     case InsEnum.FLT2STR:
                         DumpUnary(txt, indent, codes, ref pos, "FLT2STR");
@@ -906,11 +914,29 @@ namespace CppDebugScript
                     case InsEnum.STR2FLT:
                         DumpUnary(txt, indent, codes, ref pos, "STR2FLT");
                         break;
-                    case InsEnum.ITOF:
-                        DumpUnary(txt, indent, codes, ref pos, "ITOF");
+                    case InsEnum.CASTFLTINT:
+                        DumpUnary(txt, indent, codes, ref pos, "CASTFLTINT");
                         break;
-                    case InsEnum.FTOI:
-                        DumpUnary(txt, indent, codes, ref pos, "FTOI");
+                    case InsEnum.CASTSTRINT:
+                        DumpUnary(txt, indent, codes, ref pos, "CASTSTRINT");
+                        break;
+                    case InsEnum.CASTINTFLT:
+                        DumpUnary(txt, indent, codes, ref pos, "CASTINTFLT");
+                        break;
+                    case InsEnum.CASTINTSTR:
+                        DumpUnary(txt, indent, codes, ref pos, "CASTINTSTR");
+                        break;
+                    case InsEnum.ASINT:
+                        DumpUnary(txt, indent, codes, ref pos, "ASINT");
+                        break;
+                    case InsEnum.ASFLOAT:
+                        DumpUnary(txt, indent, codes, ref pos, "ASFLOAT");
+                        break;
+                    case InsEnum.ASLONG:
+                        DumpUnary(txt, indent, codes, ref pos, "ASLONG");
+                        break;
+                    case InsEnum.ASDOUBLE:
+                        DumpUnary(txt, indent, codes, ref pos, "ASDOUBLE");
                         break;
                     case InsEnum.ARGC:
                         DumpArgc(txt, indent, codes, ref pos);
@@ -1341,17 +1367,37 @@ namespace CppDebugScript
         private string BuildVar(bool isGlobal, TypeEnum type, int index)
         {
             if (type == TypeEnum.NotUse)
-                return string.Empty;
+                return "void";
             bool isConstOrTemp = index >= c_max_variable_table_size / 2;
             string name = isGlobal ? (isConstOrTemp ? "Const" : "Global") : (isConstOrTemp ? "Temp" : "Local");
 
             string val = string.Empty;
             if (isGlobal && isConstOrTemp) {
-                foreach (var pair in m_ConstInfos) {
-                    if (pair.Value.Type == type && pair.Value.Index == index) {
-                        val = pair.Value.StrValue;
+                switch (type) {
+                    case TypeEnum.Int:
+                        foreach (var pair in m_IntConstInfos) {
+                            if (pair.Value == index) {
+                                val = pair.Key;
+                                break;
+                            }
+                        }
                         break;
-                    }
+                    case TypeEnum.Float:
+                        foreach (var pair in m_FltConstInfos) {
+                            if (pair.Value == index) {
+                                val = pair.Key;
+                                break;
+                            }
+                        }
+                        break;
+                    case TypeEnum.String:
+                        foreach (var pair in m_StrConstInfos) {
+                            if (pair.Value == index) {
+                                val = pair.Key;
+                                break;
+                            }
+                        }
+                        break;
                 }
             }
             int cindex = isConstOrTemp ? c_max_variable_table_size - 1 - index : index;
@@ -1424,7 +1470,7 @@ namespace CppDebugScript
                         Debug.Assert(null != head);
                         string name = head.GetParamId(0);
                         var hookInfo = new HookInfo { Name = name };
-                        for(int i = 1; i < head.GetParamNum(); ++i) {
+                        for (int i = 1; i < head.GetParamNum(); ++i) {
                             hookInfo.ShareWith.Add(head.GetParamId(i));
                         }
                         PushHookInfo(hookInfo);
@@ -1839,7 +1885,7 @@ namespace CppDebugScript
                                     var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                                     AddVar(vinfo);
 
-                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index};
+                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
                                     CompileExpression(param2, codes, err, ref info);
                                     CurBlock().ResetTempVars();
                                 }
@@ -2194,7 +2240,7 @@ namespace CppDebugScript
                             handled = true;
                         }
                     }
-                    if(!handled) {
+                    if (!handled) {
                         err.AppendFormat("Illegal condition expression, expect 'cond ? exp1 : exp2', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                         err.AppendLine();
                     }
@@ -2283,7 +2329,7 @@ namespace CppDebugScript
                         bool apiExists = m_Apis.TryGetValue(op, out apiInfo);
                         int num = callData.GetParamNum();
                         var sinfos = new List<SemanticInfo>();
-                        if(op == "expect") {
+                        if (op == "expect") {
                             if (!callData.IsHighOrder && callData.GetParamNum() == 2) {
                                 string type = callData.GetParamId(0);
                                 if (s_Type2Ids.TryGetValue(type, out var ty)) {
@@ -2444,7 +2490,8 @@ namespace CppDebugScript
                                 var sinfo = new SemanticInfo { TargetType = TypeEnum.Int };
                                 if (apiExists) {
                                     Debug.Assert(null != apiInfo);
-                                    sinfo.TargetType = apiInfo.GetParamType(i, sinfo.TargetType);
+                                    sinfo.TargetType = apiInfo.GetParamType(i, sinfo.TargetType, out var ct);
+                                    sinfo.TargetCount = ct;
                                 }
                                 CompileExpression(param, codes, err, ref sinfo);
                                 sinfos.Add(sinfo);
@@ -2542,14 +2589,8 @@ namespace CppDebugScript
                             else if (op == "dec") {
                                 TryGenDec(codes, sinfos, err, callData, ref semanticInfo);
                             }
-                            else if (op == "int2flt") {
-                                TryGenInt2Flt(codes, sinfos, err, callData, ref semanticInfo);
-                            }
                             else if (op == "int2str") {
                                 TryGenInt2Str(codes, sinfos, err, callData, ref semanticInfo);
-                            }
-                            else if (op == "flt2int") {
-                                TryGenFlt2Int(codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else if (op == "flt2str") {
                                 TryGenFlt2Str(codes, sinfos, err, callData, ref semanticInfo);
@@ -2560,11 +2601,26 @@ namespace CppDebugScript
                             else if (op == "str2flt") {
                                 TryGenStr2Flt(codes, sinfos, err, callData, ref semanticInfo);
                             }
-                            else if (op == "itof") {
-                                TryGenIToF(codes, sinfos, err, callData, ref semanticInfo);
+                            else if (op == "castint") {
+                                TryGenCastInt(codes, sinfos, err, callData, ref semanticInfo);
                             }
-                            else if (op == "ftoi") {
-                                TryGenFToI(codes, sinfos, err, callData, ref semanticInfo);
+                            else if (op == "castflt") {
+                                TryGenCastFlt(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "caststr") {
+                                TryGenCastStr(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "asint") {
+                                TryGenAsInt(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "asfloat") {
+                                TryGenAsFloat(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "aslong") {
+                                TryGenAsLong(codes, sinfos, err, callData, ref semanticInfo);
+                            }
+                            else if (op == "asdouble") {
+                                TryGenAsDouble(codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else if (op == "argc") {
                                 TryGenArgc(codes, sinfos, err, callData, ref semanticInfo);
@@ -2600,7 +2656,7 @@ namespace CppDebugScript
                                     err.AppendLine();
                                 }
                                 else {
-                                    if(info.isExtern)
+                                    if (info.isExtern)
                                         TryGenCallExternApi(info, codes, sinfos, err, callData, ref semanticInfo);
                                     else
                                         TryGenCallInternApi(info, codes, sinfos, err, callData, ref semanticInfo);
@@ -2777,7 +2833,7 @@ namespace CppDebugScript
         private void CalcStructOffsetAndSize(StructInfo struInfo)
         {
             int size = 0;
-            foreach(var field in struInfo.Fields) {
+            foreach (var field in struInfo.Fields) {
                 string type = field.Type;
                 field.Offset = size;
                 if (field.ArrayOrPtrs.Count > 0 && field.ArrayOrPtrs[0] <= 0) {
@@ -2840,7 +2896,7 @@ namespace CppDebugScript
                 }
                 else if (null != funcData && funcData.IsBracketParamClass() && funcData.GetParamNum() == 1) {
                     string type;
-                    if(funcData.IsHighOrder)
+                    if (funcData.IsHighOrder)
                         type = ParseFieldType(funcData.LowerOrderFunction, err, arrOrPtrs);
                     else
                         type = funcData.GetId();
@@ -2877,7 +2933,7 @@ namespace CppDebugScript
         }
         private bool TryGetStruct(string name, out StructInfo struInfo)
         {
-            if(m_StructInfos.TryGetValue(name, out struInfo)) {
+            if (m_StructInfos.TryGetValue(name, out struInfo)) {
                 return true;
             }
             else if (m_PredefinedStructInfos.TryGetValue(name, out struInfo)) {
@@ -2946,14 +3002,14 @@ namespace CppDebugScript
                         offsets.Add(0);
                         lastSize = field.TotalSize;
                     }
-                    else if(funcData.IsBracketParamClass() && num == 1) {
+                    else if (funcData.IsBracketParamClass() && num == 1) {
                         int.TryParse(funcData.GetParamId(0), out var index);
                         fieldIndexes.Add(index);
 
                         var field = struInfo.Fields[fieldIndexes[0]];
                         int arrNum = 1;
                         int addNum = 0;
-                        for(int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
+                        for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
                             int arrSize = field.ArrayOrPtrs[i];
                             arrNum *= arrSize;
                             if (i < fieldIndexes.Count) {
@@ -2983,7 +3039,7 @@ namespace CppDebugScript
         private void TryGenStruct(Dsl.ISyntaxComponent exp, List<int> codes, SemanticInfo info, StringBuilder err, ref SemanticInfo semanticInfo)
         {
             List<int> offsets = new List<int>();
-            if(CalcStructExpressionOffsets(exp, err, offsets, out var lastSize, out var struInfo, out var fieldIndexes)) {
+            if (CalcStructExpressionOffsets(exp, err, offsets, out var lastSize, out var struInfo, out var fieldIndexes)) {
                 var opds = new List<SemanticInfo>();
                 opds.Add(info);
                 var cinfo0 = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { lastSize.ToString() } };
@@ -3109,7 +3165,7 @@ namespace CppDebugScript
                         codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
 
                         codes.AddRange(tcodes1);
-                        if(!TryGenConvert(codes, tinfo, info1)) {
+                        if (!TryGenConvert(codes, tinfo, info1)) {
                             TryGenMov(tinfo.TargetIsGlobal, tinfo.TargetType, tinfo.TargetIndex, codes, info1, err, comp);
                         }
 
@@ -3595,14 +3651,14 @@ namespace CppDebugScript
                                 if (semanticInfo.TargetType == TypeEnum.Int) {
                                     info.ResultIndex = CurBlock().AllocTempIntArray(vinfo2.Count);
                                 }
-                                else if(semanticInfo.TargetType == TypeEnum.Float) {
+                                else if (semanticInfo.TargetType == TypeEnum.Float) {
                                     info.ResultIndex = CurBlock().AllocTempFloatArray(vinfo2.Count);
                                 }
-                                else if(semanticInfo.TargetType == TypeEnum.String) {
+                                else if (semanticInfo.TargetType == TypeEnum.String) {
                                     info.ResultIndex = CurBlock().AllocTempStringArray(vinfo2.Count);
                                 }
 
-                                if(TryGenConvert(codes, info.ResultType, vinfo2, out var newInfo)) {
+                                if (TryGenConvert(codes, info.ResultType, vinfo2, out var newInfo)) {
                                     if (semanticInfo.TargetType == TypeEnum.Int)
                                         codes.Add(EncodeOpcode(InsEnum.MOV, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex + i));
                                     else if (semanticInfo.TargetType == TypeEnum.Float)
@@ -3673,7 +3729,7 @@ namespace CppDebugScript
         }
         private void TryGenArrGet(string id, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
-            if(opds.Count != 1) {
+            if (opds.Count != 1) {
                 err.AppendFormat("arrget must has and only has one argument, code:{0}, line:{1}", id, comp.ToScriptString(false), comp.GetLine());
                 err.AppendLine();
                 return;
@@ -3805,7 +3861,7 @@ namespace CppDebugScript
             CheckType(op, opds, err, comp);
             semanticInfo.ResultType = DeduceType(op, opds, out var casts, out var newOp);
             semanticInfo.ResultValues = TryCalcConst(op, opds);
-            if(!TryGenConstResult(codes, ref semanticInfo)) {
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
                 if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
                     if (IsGlobalBlock()) {
                     }
@@ -3921,7 +3977,7 @@ namespace CppDebugScript
                     for (int i = 0; i < opds.Count; ++i) {
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
+                            ConvertArgument(codes, api, i, err, comp, ref opdInfo);
                             opds[i] = opdInfo;
                         }
                     }
@@ -4002,7 +4058,7 @@ namespace CppDebugScript
                     for (int i = 0; i < opds.Count; ++i) {
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
+                            ConvertArgument(codes, api, i, err, comp, ref opdInfo);
                             opds[i] = opdInfo;
                         }
                     }
@@ -4034,7 +4090,7 @@ namespace CppDebugScript
                     for (int i = 0; i < opds.Count; ++i) {
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
+                            ConvertArgument(codes, api, i, err, comp, ref opdInfo);
                             opds[i] = opdInfo;
                         }
                     }
@@ -4123,7 +4179,7 @@ namespace CppDebugScript
                     for (int i = 0; i < opds.Count; ++i) {
                         if (i < opds.Count) {
                             var opdInfo = opds[i];
-                            ConvertArgument(codes, api, i, ref opdInfo);
+                            ConvertArgument(codes, api, i, err, comp, ref opdInfo);
                             opds[i] = opdInfo;
                         }
                     }
@@ -4149,63 +4205,6 @@ namespace CppDebugScript
                             opd2 = EncodeOperand2(opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         }
                         codes.Add(opd1 | opd2);
-                    }
-                }
-            }
-        }
-        private void TryGenInt2Flt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
-        {
-            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("int2flt must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                err.AppendLine();
-            }
-            semanticInfo.ResultType = TypeEnum.Float;
-            semanticInfo.ResultValues = TryCalcConst(InsEnum.INT2FLT, opds);
-            if (!TryGenConstResult(codes, ref semanticInfo)) {
-                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
-                    if (IsGlobalBlock()) {
-                    }
-                    else {
-                        if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.INT2FLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
-
-                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
-                        semanticInfo.ResultType = semanticInfo.TargetType;
-                        semanticInfo.ResultCount = semanticInfo.TargetCount;
-                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
-                        semanticInfo.ResultValues = null;
-                    }
-                }
-                else {
-                    int tmpIndex = CurBlock().AllocTempInt();
-                    if (tmpIndex >= 0) {
-                        semanticInfo.IsGlobal = false;
-                        semanticInfo.ResultType = TypeEnum.Float;
-                        semanticInfo.ResultCount = 0;
-                        semanticInfo.ResultIndex = tmpIndex;
-                        semanticInfo.ResultValues = null;
-                        codes.Add(EncodeOpcode(InsEnum.INT2FLT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
-
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
                     }
                 }
             }
@@ -4256,63 +4255,6 @@ namespace CppDebugScript
                         semanticInfo.ResultIndex = tmpIndex;
                         semanticInfo.ResultValues = null;
                         codes.Add(EncodeOpcode(InsEnum.INT2STR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
-
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
-                    }
-                }
-            }
-        }
-        private void TryGenFlt2Int(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
-        {
-            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("flt2int must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                err.AppendLine();
-            }
-            semanticInfo.ResultType = TypeEnum.Int;
-            semanticInfo.ResultValues = TryCalcConst(InsEnum.FLT2INT, opds);
-            if (!TryGenConstResult(codes, ref semanticInfo)) {
-                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
-                    if (IsGlobalBlock()) {
-                    }
-                    else {
-                        if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        else if (semanticInfo.TargetType != TypeEnum.Int) {
-                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.FLT2INT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
-
-                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
-                        semanticInfo.ResultType = semanticInfo.TargetType;
-                        semanticInfo.ResultCount = semanticInfo.TargetCount;
-                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
-                        semanticInfo.ResultValues = null;
-                    }
-                }
-                else {
-                    int tmpIndex = CurBlock().AllocTempInt();
-                    if (tmpIndex >= 0) {
-                        semanticInfo.IsGlobal = false;
-                        semanticInfo.ResultType = TypeEnum.Int;
-                        semanticInfo.ResultCount = 0;
-                        semanticInfo.ResultIndex = tmpIndex;
-                        semanticInfo.ResultValues = null;
-                        codes.Add(EncodeOpcode(InsEnum.FLT2INT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                         int opd1 = 0;
                         if (opds.Count > 0) {
@@ -4495,71 +4437,15 @@ namespace CppDebugScript
                 }
             }
         }
-        private void TryGenIToF(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        private void TryGenCastInt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
-            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("itof must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                err.AppendLine();
-            }
-            semanticInfo.ResultType = TypeEnum.Float;
-            semanticInfo.ResultValues = TryCalcConst(InsEnum.ITOF, opds);
-            if (!TryGenConstResult(codes, ref semanticInfo)) {
-                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
-                    if (IsGlobalBlock()) {
-                    }
-                    else {
-                        if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
-                            err.AppendLine();
-                        }
-                        //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.ITOF, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
-
-                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
-                        semanticInfo.ResultType = semanticInfo.TargetType;
-                        semanticInfo.ResultCount = semanticInfo.TargetCount;
-                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
-                        semanticInfo.ResultValues = null;
-                    }
-                }
-                else {
-                    int tmpIndex = CurBlock().AllocTempInt();
-                    if (tmpIndex >= 0) {
-                        semanticInfo.IsGlobal = false;
-                        semanticInfo.ResultType = TypeEnum.Float;
-                        semanticInfo.ResultCount = 0;
-                        semanticInfo.ResultIndex = tmpIndex;
-                        semanticInfo.ResultValues = null;
-                        codes.Add(EncodeOpcode(InsEnum.ITOF, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
-
-                        int opd1 = 0;
-                        if (opds.Count > 0) {
-                            var opdInfo = opds[0];
-                            opd1 = EncodeOperand1Helper(ref opdInfo);
-                        }
-                        codes.Add(opd1);
-                    }
-                }
-            }
-        }
-        private void TryGenFToI(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
-        {
-            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("ftoi must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+            InsEnum op = (opds[0].ResultType == TypeEnum.Float ? InsEnum.CASTFLTINT : InsEnum.CASTSTRINT);
+            if (opds.Count != 1 || (opds[0].ResultType != TypeEnum.Float && opds[0].ResultType != TypeEnum.String)) {
+                err.AppendFormat("castint must and only has one float/string argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Int;
-            semanticInfo.ResultValues = TryCalcConst(InsEnum.FTOI, opds);
+            semanticInfo.ResultValues = TryCalcConst(op, opds);
             if (!TryGenConstResult(codes, ref semanticInfo)) {
                 if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
                     if (IsGlobalBlock()) {
@@ -4574,7 +4460,7 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                         //gen write result
-                        codes.Add(EncodeOpcode(InsEnum.FTOI, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        codes.Add(EncodeOpcode(op, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                         int opd1 = 0;
                         if (opds.Count > 0) {
                             var opdInfo = opds[0];
@@ -4597,7 +4483,349 @@ namespace CppDebugScript
                         semanticInfo.ResultCount = 0;
                         semanticInfo.ResultIndex = tmpIndex;
                         semanticInfo.ResultValues = null;
-                        codes.Add(EncodeOpcode(InsEnum.FTOI, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                        codes.Add(EncodeOpcode(op, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenCastFlt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
+                err.AppendFormat("castflt must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.Float;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.CASTINTFLT, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.Float) {
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.CASTINTFLT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.Float;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.CASTINTFLT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenCastStr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
+                err.AppendFormat("caststr must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.String;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.CASTINTSTR, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.String) {
+                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.CASTINTSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.String;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.CASTINTSTR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenAsInt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
+                err.AppendFormat("asint must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.Int;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.ASINT, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.Int) {
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.ASINT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.Int;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.ASINT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenAsFloat(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
+                err.AppendFormat("asfloat must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.Float;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.ASFLOAT, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.Float) {
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.ASFLOAT, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.Float;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.ASFLOAT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenAsLong(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
+                err.AppendFormat("aslong must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.Int;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.ASLONG, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.Int) {
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.ASLONG, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.Int;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.ASLONG, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+                    }
+                }
+            }
+        }
+        private void TryGenAsDouble(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
+        {
+            if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
+                err.AppendFormat("asdouble must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendLine();
+            }
+            semanticInfo.ResultType = TypeEnum.Float;
+            semanticInfo.ResultValues = TryCalcConst(InsEnum.ASDOUBLE, opds);
+            if (!TryGenConstResult(codes, ref semanticInfo)) {
+                if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
+                    if (IsGlobalBlock()) {
+                    }
+                    else {
+                        if (semanticInfo.TargetCount > 0) {
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (semanticInfo.TargetType != TypeEnum.Float) {
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                        }
+                        //gen write result
+                        codes.Add(EncodeOpcode(InsEnum.ASDOUBLE, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
+                        int opd1 = 0;
+                        if (opds.Count > 0) {
+                            var opdInfo = opds[0];
+                            opd1 = EncodeOperand1Helper(ref opdInfo);
+                        }
+                        codes.Add(opd1);
+
+                        semanticInfo.IsGlobal = semanticInfo.TargetIsGlobal;
+                        semanticInfo.ResultType = semanticInfo.TargetType;
+                        semanticInfo.ResultCount = semanticInfo.TargetCount;
+                        semanticInfo.ResultIndex = semanticInfo.TargetIndex;
+                        semanticInfo.ResultValues = null;
+                    }
+                }
+                else {
+                    int tmpIndex = CurBlock().AllocTempInt();
+                    if (tmpIndex >= 0) {
+                        semanticInfo.IsGlobal = false;
+                        semanticInfo.ResultType = TypeEnum.Float;
+                        semanticInfo.ResultCount = 0;
+                        semanticInfo.ResultIndex = tmpIndex;
+                        semanticInfo.ResultValues = null;
+                        codes.Add(EncodeOpcode(InsEnum.ASDOUBLE, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
 
                         int opd1 = 0;
                         if (opds.Count > 0) {
@@ -4956,7 +5184,7 @@ namespace CppDebugScript
                 err.AppendFormat("cascadeptr requires at least 3 integer parameters, cascadeptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                 err.AppendLine();
             }
-            foreach(var opd in opds) {
+            foreach (var opd in opds) {
                 if (opd.ResultType != TypeEnum.Int) {
                     err.AppendFormat("cascadeptr must only has integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
                     err.AppendLine();
@@ -5381,10 +5609,15 @@ namespace CppDebugScript
                 }
             }
         }
-        private void ConvertArgument(List<int> codes, ApiInfo api, int argIx, ref SemanticInfo opdInfo)
+        private void ConvertArgument(List<int> codes, ApiInfo api, int argIx, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo opdInfo)
         {
-            var ptype = api.GetParamType(argIx, opdInfo.ResultType);
-            ConvertArgument(codes, ptype, ref opdInfo);
+            var ptype = api.GetParamType(argIx, opdInfo.ResultType, out var ct);
+            if (ct == 0) {
+                ConvertArgument(codes, ptype, ref opdInfo);
+            }
+            else if (ptype != opdInfo.ResultType || ct != opdInfo.ResultCount) {
+                err.AppendFormat("can't implicit cast array argument {0}, api '{1}', code:{2}, line:{3}", argIx, api.Name, comp, comp.GetLine());
+            }
         }
         private void ConvertArgument(List<int> codes, ProtoInfo proto, int argIx, ref SemanticInfo opdInfo)
         {
@@ -5459,7 +5692,7 @@ namespace CppDebugScript
             InsEnum op = InsEnum.NUM;
             if (opd.ResultType == TypeEnum.Int) {
                 if (type == TypeEnum.Float) {
-                    op = InsEnum.INT2FLT;
+                    op = InsEnum.CASTINTFLT;
                 }
                 else if (type == TypeEnum.String) {
                     op = InsEnum.INT2STR;
@@ -5467,7 +5700,7 @@ namespace CppDebugScript
             }
             else if (opd.ResultType == TypeEnum.Float) {
                 if (type == TypeEnum.Int) {
-                    op = InsEnum.FLT2INT;
+                    op = InsEnum.CASTFLTINT;
                 }
                 else if (type == TypeEnum.String) {
                     op = InsEnum.FLT2STR;
@@ -5488,7 +5721,7 @@ namespace CppDebugScript
             casts = new List<TypeEnum>();
             newOp = op;
             if (opds.Count == 1) {
-                if(op == InsEnum.NOT || op == InsEnum.BITNOT) {
+                if (op == InsEnum.NOT || op == InsEnum.BITNOT) {
                     casts.Add(TypeEnum.Int);
                 }
                 else if (opds[0].ResultType == TypeEnum.String) {
@@ -5586,7 +5819,7 @@ namespace CppDebugScript
                 }
                 switch (op) {
                     case InsEnum.ADD:
-                        if (opds[0].ResultType==TypeEnum.String || opds[1].ResultType == TypeEnum.String) {
+                        if (opds[0].ResultType == TypeEnum.String || opds[1].ResultType == TypeEnum.String) {
                             casts.Add(TypeEnum.String);
                             casts.Add(TypeEnum.String);
                         }
@@ -5970,25 +6203,11 @@ namespace CppDebugScript
                         ret.Add((~val).ToString());
                     }
                     break;
-                case InsEnum.INT2FLT:
-                    if (opds.Count == 1) {
-                        var opd = opds[0];
-                        TryParseLong(opd.ResultValues[0], out var val);
-                        ret.Add(((double)val).ToString());
-                    }
-                    break;
                 case InsEnum.INT2STR:
                     if (opds.Count == 1) {
                         var opd = opds[0];
                         TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
-                    }
-                    break;
-                case InsEnum.FLT2INT:
-                    if (opds.Count == 1) {
-                        var opd = opds[0];
-                        TryParseDouble(opd.ResultValues[0], out var val);
-                        ret.Add(((long)val).ToString());
                     }
                     break;
                 case InsEnum.FLT2STR:
@@ -6012,24 +6231,68 @@ namespace CppDebugScript
                         ret.Add(val.ToString());
                     }
                     break;
-                case InsEnum.ITOF:
+                case InsEnum.CASTFLTINT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        TryParseDouble(opd.ResultValues[0], out var val);
+                        ret.Add(((long)val).ToString());
+                    }
+                    break;
+                case InsEnum.CASTSTRINT:
+                    ret = null;
+                    break;
+                case InsEnum.CASTINTFLT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
                         TryParseLong(opd.ResultValues[0], out var val);
-                        double v;
+                        ret.Add(((double)val).ToString());
+                    }
+                    break;
+                case InsEnum.CASTINTSTR:
+                    ret = null;
+                    break;
+                case InsEnum.ASINT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        TryParseDouble(opd.ResultValues[0], out var val);
+                        int v;
+                        float fv = (float)val;
                         unsafe {
-                            v = *(double*)&val;
+                            v = *(int*)&fv;
                         }
                         ret.Add(v.ToString());
                     }
                     break;
-                case InsEnum.FTOI:
+                case InsEnum.ASFLOAT:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        TryParseLong(opd.ResultValues[0], out var val);
+                        float v;
+                        int iv = (int)val;
+                        unsafe {
+                            v = *(float*)&iv;
+                        }
+                        ret.Add(v.ToString());
+                    }
+                    break;
+                case InsEnum.ASLONG:
                     if (opds.Count == 1) {
                         var opd = opds[0];
                         TryParseDouble(opd.ResultValues[0], out var val);
                         long v;
                         unsafe {
                             v = *(long*)&val;
+                        }
+                        ret.Add(v.ToString());
+                    }
+                    break;
+                case InsEnum.ASDOUBLE:
+                    if (opds.Count == 1) {
+                        var opd = opds[0];
+                        TryParseLong(opd.ResultValues[0], out var val);
+                        double v;
+                        unsafe {
+                            v = *(double*)&val;
                         }
                         ret.Add(v.ToString());
                     }
@@ -6086,17 +6349,23 @@ namespace CppDebugScript
             }
             for (int i = 0; i < opds.Count; ++i) {
                 TypeEnum rtype = opds[i].ResultType;
-                TypeEnum type = api.GetParamType(i, rtype);
+                int rct = opds[i].ResultCount;
+                TypeEnum type = api.GetParamType(i, rtype, out var ct);
                 if (type != rtype) {
                     err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rtype, type, comp.ToScriptString(false), comp.GetLine());
+                    err.AppendLine();
+                }
+                else if (ct != rct) {
+                    err.AppendFormat("'{0}' argument {1}'s count '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rct, ct, comp.ToScriptString(false), comp.GetLine());
                     err.AppendLine();
                 }
             }
         }
         private InsEnum CheckType(ProtoInfo proto, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp)
         {
-            if (opds.Count < 1 + proto.IntParams.Count + proto.FloatParams.Count + proto.MinStackParamNum) {
-                err.AppendFormat("'{0}' must have at least {1} arguments, code:{2}, line:{3}", proto.Name, proto.MinStackParamNum, comp.ToScriptString(false), comp.GetLine());
+            int minParamNum = 1 + proto.IntParams.Count + proto.FloatParams.Count + proto.MinStackParamNum;
+            if (opds.Count < minParamNum) {
+                err.AppendFormat("ffi '{0}' must have at least {1} arguments, code:{2}, line:{3}", proto.Name, minParamNum, comp.ToScriptString(false), comp.GetLine());
                 err.AppendLine();
             }
             for (int i = 0; i < opds.Count; ++i) {
@@ -6213,22 +6482,28 @@ namespace CppDebugScript
         //program structure
         private int AddConst(TypeEnum type, string val)
         {
-            if (!m_ConstInfos.TryGetValue(val, out var info)) {
-                info = new ConstInfo { StrValue = val, Type = type };
-                switch (type) {
-                    case TypeEnum.Int:
-                        info.Index = m_ConstIndexInfo.NextIntIndex--;
-                        break;
-                    case TypeEnum.Float:
-                        info.Index = m_ConstIndexInfo.NextFloatIndex--;
-                        break;
-                    case TypeEnum.String:
-                        info.Index = m_ConstIndexInfo.NextStringIndex--;
-                        break;
-                }
-                m_ConstInfos.Add(val, info);
+            int index = -1;
+            switch (type) {
+                case TypeEnum.Int:
+                    if (!m_IntConstInfos.TryGetValue(val, out index)) {
+                        index = m_ConstIndexInfo.NextIntIndex--;
+                        m_IntConstInfos.Add(val, index);
+                    }
+                    break;
+                case TypeEnum.Float:
+                    if (!m_FltConstInfos.TryGetValue(val, out index)) {
+                        index = m_ConstIndexInfo.NextFloatIndex--;
+                        m_FltConstInfos.Add(val, index);
+                    }
+                    break;
+                case TypeEnum.String:
+                    if (!m_StrConstInfos.TryGetValue(val, out index)) {
+                        index = m_ConstIndexInfo.NextStringIndex--;
+                        m_StrConstInfos.Add(val, index);
+                    }
+                    break;
             }
-            return info.Index;
+            return index;
         }
         private int AddVar(VarInfo varInfo)
         {
@@ -6360,7 +6635,9 @@ namespace CppDebugScript
             m_TempCodes.Clear();
             m_StructInfos.Clear();
             m_ConstIndexInfo.Reset();
-            m_ConstInfos.Clear();
+            m_IntConstInfos.Clear();
+            m_FltConstInfos.Clear();
+            m_StrConstInfos.Clear();
             m_VarInfos.Clear();
             m_Hooks.Clear();
             m_HookParseStack.Clear();
@@ -6380,6 +6657,11 @@ namespace CppDebugScript
             LastType,
             Num
         }
+        public sealed class ApiParamType
+        {
+            public TypeEnum Type = TypeEnum.NotUse;
+            public int Count = 0;
+        }
         public sealed class ApiInfo
         {
             public bool isExtern = false;
@@ -6387,18 +6669,23 @@ namespace CppDebugScript
             public string Name = string.Empty;
             public TypeEnum Type = TypeEnum.NotUse;
             public ParamsEnum Params = ParamsEnum.NoParams;
-            public List<TypeEnum> ParamTypes = new List<TypeEnum>();
+            public List<ApiParamType> ParamTypes = new List<ApiParamType>();
             public int MinParamNum = 0;
 
-            public TypeEnum GetParamType(int ix, TypeEnum argType)
+            public TypeEnum GetParamType(int ix, TypeEnum argType, out int count)
             {
+                count = 0;
                 TypeEnum paramType = TypeEnum.NotUse;
                 if (ix < ParamTypes.Count) {
-                    paramType = ParamTypes[ix];
+                    var pt = ParamTypes[ix];
+                    paramType = pt.Type;
+                    count = pt.Count;
                 }
                 else if (Params == ParamsEnum.LastType) {
                     if (ParamTypes.Count > 0) {
-                        paramType = ParamTypes[ParamTypes.Count - 1];
+                        var pt = ParamTypes[ParamTypes.Count - 1];
+                        paramType = pt.Type;
+                        count = pt.Count;
                     }
                 }
                 else if (Params == ParamsEnum.Ints) {
@@ -6410,7 +6697,7 @@ namespace CppDebugScript
                 else if (Params == ParamsEnum.Strings) {
                     paramType = TypeEnum.String;
                 }
-                else if(Params == ParamsEnum.Printf) {
+                else if (Params == ParamsEnum.Printf) {
                     paramType = argType;
                 }
                 return paramType;
@@ -6435,6 +6722,9 @@ namespace CppDebugScript
                 }
                 else if (ix < IntParams.Count + FloatParams.Count) {
                     paramType = FloatParams[ix - IntParams.Count];
+                }
+                else if (ix < IntParams.Count + FloatParams.Count + StackParams.Count) {
+                    paramType = StackParams[ix - IntParams.Count - FloatParams.Count];
                 }
                 else if (Params == ParamsEnum.LastType) {
                     if (StackParams.Count > 0) {
@@ -6476,7 +6766,6 @@ namespace CppDebugScript
         public sealed class ConstInfo
         {
             public string StrValue = string.Empty;
-            public TypeEnum Type = TypeEnum.NotUse;
             public int Index = 0;
         }
         public sealed class VarInfo
@@ -6615,7 +6904,9 @@ namespace CppDebugScript
 
         private List<int> m_TempCodes = new List<int>();
         private ConstIndexInfo m_ConstIndexInfo = new ConstIndexInfo();
-        private Dictionary<string, ConstInfo> m_ConstInfos = new Dictionary<string, ConstInfo>();
+        private Dictionary<string, int> m_IntConstInfos = new Dictionary<string, int>();
+        private Dictionary<string, int> m_FltConstInfos = new Dictionary<string, int>();
+        private Dictionary<string, int> m_StrConstInfos = new Dictionary<string, int>();
         private Dictionary<string, Dictionary<int, VarInfo>> m_VarInfos = new Dictionary<string, Dictionary<int, VarInfo>>();
         public List<HookInfo> m_Hooks = new List<HookInfo>();
 
@@ -6660,8 +6951,11 @@ namespace CppDebugScript
             else if (type == TypeEnum.Float) {
                 return (int)TypeEnum.Float << 13;
             }
-            else {
+            else if (type == TypeEnum.String) {
                 return (int)TypeEnum.String << 13;
+            }
+            else {
+                return (int)TypeEnum.NotUse << 13;
             }
         }
         private static int EncodeOffset(int offset)
@@ -6802,10 +7096,7 @@ namespace CppDebugScript
         private const int c_abs_offset_mask = 0x7fffffff;
         private const int c_offset_backward_flag = unchecked((int)0x80000000);
         private const int c_max_variable_table_size = 8192;
-
         private static char[] s_FloatExponent = new char[] { 'e', 'E', '.' };
-        private static string s_FloatFormat = "###########################0.00#####";
-        private static string s_DoubleFormat = "###########################0.00##############";
 
         public static DebugScriptCompiler Instance
         {
@@ -6929,7 +7220,7 @@ namespace CppDebugScript
         internal extern static void CppDbgScp_Load([MarshalAs(UnmanagedType.LPStr)] string file);
 
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static int Test1(int a, double b, [MarshalAs(UnmanagedType.LPStr)]string c);
+        internal extern static int Test1(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
         internal extern static int Test2(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]

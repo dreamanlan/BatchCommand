@@ -7,6 +7,7 @@ defapi(format,string,printf,[string]);
 defapi(time,int,noparams,[]);
 defapi(floattime,float,noparams,[]);
 defapi(dumpcascadeptr,int,ints,[int]);
+defapi(stringlength,int,noparams,[string]);
 defapi(stringcontains,int,strings,[string]);
 defapi(stringcontainsany,int,strings,[string]);
 defapi(stringnotcontains,int,strings,[string]);
@@ -20,6 +21,7 @@ defapi(stringrfind,int,noparams,[string,string,int]){
 defapi(substring,string,noparams,[string,int,int]){
 	minparamnum(2);
 };
+defapi(cstrlen,int,noparams,[int]);
 defapi(cstrstr,int,noparams,[int,int]);
 defapi(cstrcmp,int,noparams,[int,int,int]){
 	minparamnum(2);
@@ -31,8 +33,14 @@ defapi(memset,int,noparams,[int,int,int]);
 defapi(memsave,int,noparams,[int,int,string]);
 defapi(memload,int,noparams,[int,int,string]);
 
+defexternapi(TestFFI,int,noparams,[int]);
 defexternapi(LoadLib,int,noparams,[string]);
 defexternapi(GetProc,int,noparams,[int,string]);
 defexternapi(LoadLibAndGetProc,int,noparams,[string,string]);
 defexternapi(FreeLib,int,noparams,[int]);
 defexternapi(FreeLibByPath,int,noparams,[string]);
+defexternapi(GetPID,int,noparams,[]);
+defexternapi(GetTID,int,noparams,[]);
+defexternapi(FindSegment,int,noparams,[int,string,string,int,string[3]]){
+	minparamnum(4);
+};

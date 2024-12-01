@@ -99,6 +99,12 @@ hook(TestMacro1)
 		$c:int = ptrget(argv(3),8);
 		printf("dbg a:%d b:%f c:%s\n",$a,$b,$c);
 		ptrset(argv(0), 4, $a==1234 ? 1 : (0 ?? 2));
+		$fields:string[3];
+		$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",0,$fields);
+		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
+		printf("%d %d %d %f %s\n", stringlength("str1"), cstrlen(castint("str2")), castint(1.24), castflt(123), caststr(castint("teststr")));
+		printf("%d %f %lld %f\n", asint(1.234), asfloat(asint(1.234)), aslong(1.234), asdouble(aslong(1.234)));
+		ffi(proto(void,noparams,[int,int,int,int],[float,float],[int,int]),TestFFI(0),1,2,3,4,5.0,6.0,7,8);
 		return 1;
 	};
 	onexit{
@@ -319,6 +325,9 @@ hook("CreateGraphicsPipeline")
 		$log:int = ptrget($addr+0x140, 8);
 		printf("this:%llx device:%llx log:%d\n", $a, $dev, $log);
 		ptrset($addr+0x140, 8, 1);
+		$fields:string[3];
+		$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",0,$fields);
+		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		$name:string = $c;
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);

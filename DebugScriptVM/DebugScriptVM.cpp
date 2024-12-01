@@ -484,7 +484,8 @@ namespace
     //this enum must sync with ApiInfo::ApiId from DebugScriptCompiler.cs
     enum class ApiEnum
     {
-        ScriptAssert = 0,
+        Platform = 0,
+        ScriptAssert,
         DumpStack,
         Printf,
         Format,
@@ -559,6 +560,14 @@ namespace
             }
 
             CppDbgScp_CallExternApi(api, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args.data(), argNum, retVal);
+        }
+        static inline int64_t Platform(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+        {
+#if _WIN32 || _WIN64
+            return 0; //win
+#else
+            return 1; //other
+#endif
         }
         static inline int64_t ScriptAssert(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1380,6 +1389,11 @@ namespace
         int apiIndex = static_cast<int>(op) - static_cast<int>(InsEnum::CALLINTERN_FIRST);
         ApiEnum api = static_cast<ApiEnum>(apiIndex);
         switch (api) {
+        case ApiEnum::Platform: {
+            int64_t val = Api::Platform(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+            DebugAssert(ty == TypeEnum::Int);
+            SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
+        }break;
         case ApiEnum::ScriptAssert: {
             int64_t val = Api::ScriptAssert(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
             DebugAssert(ty == TypeEnum::Int);
@@ -2522,17 +2536,25 @@ namespace
         SetVarInt(isGlobal, index, g_DebugScriptSerialNum, stackBase, intLocals, intGlobals);
     }
 
-    struct StackArgumentSpace
-    {
-        static const int c_max_stack_arg_num = 32;
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4172)
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-local-addr"
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-stack-address"
+#endif
 
-        int64_t stack_space[c_max_stack_arg_num];
-    };
-    extern int64_t get_first_stack_arg_addr(int64_t r0, int64_t r1, int64_t r2, int64_t r3, int64_t r4, int64_t r5, int64_t r6, int64_t r7, int64_t r8, StackArgumentSpace stack_space)
+    extern int64_t get_first_stack_arg_addr(int64_t r0, int64_t r1, int64_t r2, int64_t r3, int64_t r4, int64_t r5, int64_t r6, int64_t r7
+        , int64_t r8, int64_t r9, int64_t r10, int64_t r11, int64_t r12, int64_t r13, int64_t r14, int64_t r15
+        , int64_t r16, int64_t r17, int64_t r18, int64_t r19, int64_t r20, int64_t r21, int64_t r22, int64_t r23)
     {
         //r0 ~ r7 for register arg on arm; rdi、rsi、rdx、rcx、r8、r9 for register arg on x86_64, rcx、rdx、r8、r9 for register arg on x64, the arguments passed in memory are pushed on
         //the stack in reversed(right to left) order.
         //debug builds on msvc, all arguments are on the stack, but the compiler fakes the argument passing rules.
+
 #if defined(_MSC_VER) && defined(_M_X64)
         //x64
         return reinterpret_cast<int64_t>(&r4);
@@ -2563,6 +2585,52 @@ namespace
         return reinterpret_cast<int64_t>(&r8);
 #endif
     }
+    extern int64_t get_last_stack_arg_addr(int64_t r0, int64_t r1, int64_t r2, int64_t r3, int64_t r4, int64_t r5, int64_t r6, int64_t r7
+        , int64_t r8, int64_t r9, int64_t r10, int64_t r11, int64_t r12, int64_t r13, int64_t r14, int64_t r15
+        , int64_t r16, int64_t r17, int64_t r18, int64_t r19, int64_t r20, int64_t r21, int64_t r22, int64_t r23)
+    {
+        //r0 ~ r7 for register arg on arm; rdi、rsi、rdx、rcx、r8、r9 for register arg on x86_64, rcx、rdx、r8、r9 for register arg on x64, the arguments passed in memory are pushed on
+        //the stack in reversed(right to left) order.
+        //debug builds on msvc, all arguments are on the stack, but the compiler fakes the argument passing rules.
+
+#if defined(_MSC_VER) && defined(_M_X64)
+        //x64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(_MSC_VER) && defined(_M_ARM64)
+        //arm64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__GNUC__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__clang__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__APPLE__) && defined(__x86_64__)
+        //x86_64 or amd64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__GNUC__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__clang__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r23);
+#elif defined(__APPLE__) && defined(__aarch64__)
+        //arm64
+        return reinterpret_cast<int64_t>(&r23);
+#else
+#error unknown architecture !!!
+//arm64
+        return reinterpret_cast<int64_t>(&r23);
+#endif
+    }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
     template<typename... ArgsT>
     struct FFI_Auto
@@ -2595,14 +2663,15 @@ namespace
     template<typename... ArgsT>
     struct FFI_Manual
     {
+        static const int c_max_stack_arg_num = 16;
         int64_t CallApiInt(int64_t addr, int64_t stackArgs[], int64_t stackArgNum, ArgsT... args)
         {
             typedef int64_t(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
-                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgNum <= c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
+                    stacks[ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2612,10 +2681,10 @@ namespace
         {
             typedef double(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
-                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgNum <= c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
+                    stacks[ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2625,10 +2694,10 @@ namespace
         {
             typedef const char* (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
-                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgNum <= c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
+                    stacks[ix] = stackArgs[ix];
                 }
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2638,10 +2707,10 @@ namespace
         {
             typedef void (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgNum <= StackArgumentSpace::c_max_stack_arg_num) {
-                for (ix = 0; ix < stackArgNum && ix < StackArgumentSpace::c_max_stack_arg_num; ++ix) {
-                    stacks[StackArgumentSpace::c_max_stack_arg_num - stackArgNum + ix] = stackArgs[ix];
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgNum <= c_max_stack_arg_num) {
+                for (ix = 0; ix < stackArgNum && ix < c_max_stack_arg_num; ++ix) {
+                    stacks[ix] = stackArgs[ix];
                 }
                 reinterpret_cast<Fptr>(addr)(args...);
             }
@@ -2670,13 +2739,14 @@ namespace
     template<typename... ArgsT>
     struct FFI_ManualStack
     {
+        static const int c_max_stack_arg_num = 16;
         int64_t CallApiInt(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
             typedef int64_t(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return 0;
@@ -2685,9 +2755,9 @@ namespace
         {
             typedef double(*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return 0;
@@ -2696,9 +2766,9 @@ namespace
         {
             typedef const char* (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 return reinterpret_cast<Fptr>(addr)(args...);
             }
             return nullptr;
@@ -2707,9 +2777,9 @@ namespace
         {
             typedef void (*Fptr)(ArgsT...);
             int64_t ix = 0;
-            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, StackArgumentSpace{}));
-            if (stackArgSize <= StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t)) {
-                std::memcpy(reinterpret_cast<char*>(stacks) + (StackArgumentSpace::c_max_stack_arg_num * sizeof(int64_t) - stackArgSize), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
+            int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
+            if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
+                std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
                 reinterpret_cast<Fptr>(addr)(args...);
             }
         }
@@ -2801,6 +2871,14 @@ namespace
 #define ARRAY_TO_ARGS14(arr) ARRAY_TO_ARGS13(arr), arr[13]
 #define ARRAY_TO_ARGS15(arr) ARRAY_TO_ARGS14(arr), arr[14]
 #define ARRAY_TO_ARGS16(arr) ARRAY_TO_ARGS15(arr), arr[15]
+#define ARRAY_TO_ARGS17(arr) ARRAY_TO_ARGS16(arr), arr[16]
+#define ARRAY_TO_ARGS18(arr) ARRAY_TO_ARGS17(arr), arr[17]
+#define ARRAY_TO_ARGS19(arr) ARRAY_TO_ARGS18(arr), arr[18]
+#define ARRAY_TO_ARGS20(arr) ARRAY_TO_ARGS19(arr), arr[19]
+#define ARRAY_TO_ARGS21(arr) ARRAY_TO_ARGS20(arr), arr[20]
+#define ARRAY_TO_ARGS22(arr) ARRAY_TO_ARGS21(arr), arr[21]
+#define ARRAY_TO_ARGS23(arr) ARRAY_TO_ARGS22(arr), arr[22]
+#define ARRAY_TO_ARGS24(arr) ARRAY_TO_ARGS23(arr), arr[23]
 #define ARRAY_TO_ARGS(arr, num) ARRAY_TO_ARGS##num(arr)
 
     static inline void DoFFIAuto(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2811,7 +2889,7 @@ namespace
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
 
-        const int c_max_count = 17;
+        const int c_max_count = 25;
         int64_t addr = 0;
         int64_t args[c_max_count - 1];
 
@@ -2903,6 +2981,30 @@ namespace
             break;
         case 17:
             VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 16>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 16));
+            break;
+        case 18:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 17>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 17));
+            break;
+        case 19:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 18>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 18));
+            break;
+        case 20:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 19>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 19));
+            break;
+        case 21:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 20>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 20));
+            break;
+        case 22:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 21>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 21));
+            break;
+        case 23:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 22>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 22));
+            break;
+        case 24:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 23>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 23));
+            break;
+        case 25:
+            VariadicFactory<FFI_Auto>::Build(typename RepeatType1<int64_t, 24>::holder_type()).Call(addr, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, 24));
             break;
         }
     }

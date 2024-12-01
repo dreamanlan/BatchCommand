@@ -104,7 +104,8 @@ hook(TestMacro1)
 		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		printf("%d %d %d %f %s\n", stringlength("str1"), cstrlen(castint("str2")), castint(1.24), castflt(123), caststr(castint("teststr")));
 		printf("%d %f %lld %f\n", asint(1.234), asfloat(asint(1.234)), aslong(1.234), asdouble(aslong(1.234)));
-		ffi(proto(void,noparams,[int,int,int,int],[float,float],[int,int]),TestFFI(0),1,2,3,4,5.0,6.0,7,8);
+		ffi(proto(void,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]),TestFFI(0),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
+		printf("platform:%d\n",platform());
 		return 1;
 	};
 	onexit{

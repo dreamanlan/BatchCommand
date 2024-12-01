@@ -1,3 +1,4 @@
+defapi(platform,int,noparams,[]);
 defapi(assert,int,noparams,[int,string]){
 	minparamnum(1);
 };

@@ -1,2 +1,43 @@
-﻿  DllMain.cpp
+﻿  DebugScriptVM.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3137,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3137,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3137,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3137,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3137,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3138,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3138,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3138,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3138,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3138,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3139,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3139,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3139,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3139,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3139,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3140,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3140,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3140,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3140,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3140,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3141,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3141,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3141,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3141,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3141,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3142,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3142,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3142,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3142,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3142,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3143,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3143,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3143,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3143,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3143,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3144,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3144,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3144,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3144,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3144,17): warning C4244:         ]
+    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

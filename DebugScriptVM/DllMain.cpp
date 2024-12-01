@@ -22,9 +22,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
-void TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, double f1, double f2, int64_t sv1, int64_t sv2)
+int TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, float f1, float f2, int64_t sv1, int64_t sv2)
 {
     printf("%d %d %d %d %d %d %d %d %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
+    return 0;
+}
+int64_t TestFFI1(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, double f1, double f2, int64_t sv1, int64_t sv2)
+{
+    printf("%lld %lld %lld %lld %lld %lld %lld %lld %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
+    return 1;
 }
 
 static inline std::vector<std::string> string_split(const std::string& input, char delimiter, int max_fields) {
@@ -133,6 +139,9 @@ struct ExternApi
         switch (ix) {
         case 0:
             addr = reinterpret_cast<int64_t>(TestFFI0);
+            break;
+        case 1:
+            addr = reinterpret_cast<int64_t>(TestFFI1);
             break;
         }
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, addr, stackBase, intLocals, intGlobals);

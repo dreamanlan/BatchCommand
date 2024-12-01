@@ -142,8 +142,8 @@ namespace
         FFIAUTO,
         FFIMANUAL,
         FFIMANUALSTACK,
-        RESERVE7,
-        RESERVE6,
+        FFIMANUALDBL,
+        FFIMANUALSTACKDBL,
         RESERVE5,
         RESERVE4,
         RESERVE3,
@@ -3057,7 +3057,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 DebugAssert(ty0 == TypeEnum::Float);
-                fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
+                fargs[i - 1 - intNum] = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
             }
             else if (i >= 1 + intNum + fltNum && i < argNum) {
                 bool isGlobal0;
@@ -3068,8 +3068,8 @@ namespace
                     stacks[i - 1 - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else if (ty0 == TypeEnum::Float) {
-                    double fv = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
-                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                    float fv = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
+                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int32_t*>(&fv);
                 }
                 else {
                     stacks[i - 1 - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
@@ -3094,7 +3094,7 @@ namespace
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
                 DebugAssert(ty1 == TypeEnum::Float);
-                args[i - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                fargs[i - intNum] = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
                 bool isGlobal1;
@@ -3105,8 +3105,8 @@ namespace
                     stacks[i - intNum - fltNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
                 else if (ty1 == TypeEnum::Float) {
-                    double fv = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
-                    stacks[i - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                    float fv = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
+                    stacks[i - intNum - fltNum] = *reinterpret_cast<int32_t*>(&fv);
                 }
                 else {
                     stacks[i - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
@@ -3114,7 +3114,7 @@ namespace
             }
         }
 
-#define CASE_K1_MANUAL(K1, K2) case K1: VariadicFactory<FFI_Manual>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks, argNum - 1 - intNum - fltNum, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
+#define CASE_K1_MANUAL(K1, K2) case K1: VariadicFactory<FFI_Manual>::Build(typename RepeatType2<int64_t, float, K2, K1>::holder_type()).Call(addr, stacks, argNum - 1 - intNum - fltNum, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
 
 #define CALL_FFI_MANUAL(K2) \
         switch (inum - 1) {\
@@ -3146,6 +3146,143 @@ namespace
         //*/
     }
     static inline void DoFFIManualStack(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+
+        int32_t operand0 = codes[++pos];
+        int32_t intNum;
+        DecodeOperand1(operand0, intNum);
+        int32_t fltNum;
+        DecodeOperand2(operand0, fltNum);
+
+        const int c_max_count = 8;
+        int64_t addr = 0;
+        int64_t args[c_max_count];
+        float fargs[c_max_count];
+        int64_t stacks[c_max_count * 4];
+
+        int inum = std::min(intNum + 1, c_max_count + 1);
+        int fnum = std::min(fltNum, c_max_count);
+
+        for (int i = 0; i < argNum; i += 2) {
+            int32_t operand = codes[++pos];
+            if (i < inum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                if (i == 0) {
+                    DebugAssert(ty0 == TypeEnum::Int);
+                    addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                }
+                else {
+                    if (ty0 == TypeEnum::Int) {
+                        args[i - 1] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                    }
+                    else {
+                        args[i - 1] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                    }
+                }
+            }
+            else if (i >= 1 + intNum && i < 1 + intNum + fnum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                DebugAssert(ty0 == TypeEnum::Float);
+                fargs[i - 1 - intNum] = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
+            }
+            else if (i >= 1 + intNum + fltNum && i < argNum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                if (ty0 == TypeEnum::Int) {
+                    stacks[i - 1 - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                }
+                else if (ty0 == TypeEnum::Float) {
+                    float fv = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
+                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int32_t*>(&fv);
+                }
+                else {
+                    stacks[i - 1 - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+            if (i + 1 < inum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                if (ty1 == TypeEnum::Int) {
+                    args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                }
+                else {
+                    args[i] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+            else if (i + 1 >= 1 + intNum && i + 1 < 1 + intNum + fnum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                DebugAssert(ty1 == TypeEnum::Float);
+                fargs[i - intNum] = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
+            }
+            else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                if (ty1 == TypeEnum::Int) {
+                    stacks[i - intNum - fltNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                }
+                else if (ty1 == TypeEnum::Float) {
+                    float fv = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
+                    stacks[i - intNum - fltNum] = *reinterpret_cast<int32_t*>(&fv);
+                }
+                else {
+                    stacks[i - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+        }
+
+#define CASE_K1_MANUALSTACK(K1, K2) case K1: VariadicFactory<FFI_ManualStack>::Build(typename RepeatType2<int64_t, float, K2, K1>::holder_type()).Call(addr, stacks[0], stacks[1], isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
+
+#define CALL_FFI_MANUALSTACK(K2) \
+        switch (inum - 1) {\
+        CASE_K1_MANUALSTACK(0, K2)\
+        CASE_K1_MANUALSTACK(1, K2)\
+        CASE_K1_MANUALSTACK(2, K2)\
+        CASE_K1_MANUALSTACK(3, K2)\
+        CASE_K1_MANUALSTACK(4, K2)\
+        CASE_K1_MANUALSTACK(5, K2)\
+        CASE_K1_MANUALSTACK(6, K2)\
+        CASE_K1_MANUALSTACK(7, K2)\
+        CASE_K1_MANUALSTACK(8, K2)\
+        }
+
+#define CASE_K2_MANUALSTACK(K2) case K2: CALL_FFI_MANUALSTACK(K2) break;
+
+        ///*
+        switch (fnum) {
+            CASE_K2_MANUALSTACK(0)
+                CASE_K2_MANUALSTACK(1)
+                CASE_K2_MANUALSTACK(2)
+                CASE_K2_MANUALSTACK(3)
+                CASE_K2_MANUALSTACK(4)
+                CASE_K2_MANUALSTACK(5)
+                CASE_K2_MANUALSTACK(6)
+                CASE_K2_MANUALSTACK(7)
+                CASE_K2_MANUALSTACK(8)
+        }
+        //*/
+    }
+    static inline void DoFFIManualDbl(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
         int32_t argNum;
         bool isGlobal;
@@ -3231,7 +3368,7 @@ namespace
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
                 DebugAssert(ty1 == TypeEnum::Float);
-                args[i - intNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                fargs[i - intNum] = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
                 bool isGlobal1;
@@ -3251,34 +3388,171 @@ namespace
             }
         }
 
-#define CASE_K1_MANUALSTACK(K1, K2) case K1: VariadicFactory<FFI_ManualStack>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks[0], stacks[1], isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
+#define CASE_K1_MANUALDBL(K1, K2) case K1: VariadicFactory<FFI_Manual>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks, argNum - 1 - intNum - fltNum, isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
 
-#define CALL_FFI_MANUALSTACK(K2) \
+#define CALL_FFI_MANUALDBL(K2) \
         switch (inum - 1) {\
-        CASE_K1_MANUALSTACK(0, K2)\
-        CASE_K1_MANUALSTACK(1, K2)\
-        CASE_K1_MANUALSTACK(2, K2)\
-        CASE_K1_MANUALSTACK(3, K2)\
-        CASE_K1_MANUALSTACK(4, K2)\
-        CASE_K1_MANUALSTACK(5, K2)\
-        CASE_K1_MANUALSTACK(6, K2)\
-        CASE_K1_MANUALSTACK(7, K2)\
-        CASE_K1_MANUALSTACK(8, K2)\
-        }
+        CASE_K1_MANUALDBL(0, K2)\
+        CASE_K1_MANUALDBL(1, K2)\
+        CASE_K1_MANUALDBL(2, K2)\
+        CASE_K1_MANUALDBL(3, K2)\
+        CASE_K1_MANUALDBL(4, K2)\
+        CASE_K1_MANUALDBL(5, K2)\
+        CASE_K1_MANUALDBL(6, K2)\
+        CASE_K1_MANUALDBL(7, K2)\
+        CASE_K1_MANUALDBL(8, K2)\
+        };
 
-#define CASE_K2_MANUALSTACK(K2) case K2: CALL_FFI_MANUALSTACK(K2) break;
+#define CASE_K2_MANUALDBL(K2) case K2: CALL_FFI_MANUALDBL(K2) break;
 
         ///*
         switch (fnum) {
-            CASE_K2_MANUALSTACK(0)
-                CASE_K2_MANUALSTACK(1)
-                CASE_K2_MANUALSTACK(2)
-                CASE_K2_MANUALSTACK(3)
-                CASE_K2_MANUALSTACK(4)
-                CASE_K2_MANUALSTACK(5)
-                CASE_K2_MANUALSTACK(6)
-                CASE_K2_MANUALSTACK(7)
-                CASE_K2_MANUALSTACK(8)
+            CASE_K2_MANUALDBL(0)
+                CASE_K2_MANUALDBL(1)
+                CASE_K2_MANUALDBL(2)
+                CASE_K2_MANUALDBL(3)
+                CASE_K2_MANUALDBL(4)
+                CASE_K2_MANUALDBL(5)
+                CASE_K2_MANUALDBL(6)
+                CASE_K2_MANUALDBL(7)
+                CASE_K2_MANUALDBL(8)
+        }
+        //*/
+    }
+    static inline void DoFFIManualStackDbl(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
+    {
+        int32_t argNum;
+        bool isGlobal;
+        TypeEnum ty;
+        int32_t index;
+        DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
+
+        int32_t operand0 = codes[++pos];
+        int32_t intNum;
+        DecodeOperand1(operand0, intNum);
+        int32_t fltNum;
+        DecodeOperand2(operand0, fltNum);
+
+        const int c_max_count = 8;
+        int64_t addr = 0;
+        int64_t args[c_max_count];
+        double fargs[c_max_count];
+        int64_t stacks[c_max_count * 4];
+
+        int inum = std::min(intNum + 1, c_max_count + 1);
+        int fnum = std::min(fltNum, c_max_count);
+
+        for (int i = 0; i < argNum; i += 2) {
+            int32_t operand = codes[++pos];
+            if (i < inum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                if (i == 0) {
+                    DebugAssert(ty0 == TypeEnum::Int);
+                    addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                }
+                else {
+                    if (ty0 == TypeEnum::Int) {
+                        args[i - 1] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                    }
+                    else {
+                        args[i - 1] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                    }
+                }
+            }
+            else if (i >= 1 + intNum && i < 1 + intNum + fnum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                DebugAssert(ty0 == TypeEnum::Float);
+                fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
+            }
+            else if (i >= 1 + intNum + fltNum && i < argNum) {
+                bool isGlobal0;
+                TypeEnum ty0;
+                int32_t index0;
+                DecodeOperand1(operand, isGlobal0, ty0, index0);
+                if (ty0 == TypeEnum::Int) {
+                    stacks[i - 1 - intNum - fltNum] = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
+                }
+                else if (ty0 == TypeEnum::Float) {
+                    double fv = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
+                    stacks[i - 1 - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                }
+                else {
+                    stacks[i - 1 - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal0, index0, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+            if (i + 1 < inum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                if (ty1 == TypeEnum::Int) {
+                    args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                }
+                else {
+                    args[i] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+            else if (i + 1 >= 1 + intNum && i + 1 < 1 + intNum + fnum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                DebugAssert(ty1 == TypeEnum::Float);
+                fargs[i - intNum] = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+            }
+            else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
+                bool isGlobal1;
+                TypeEnum ty1;
+                int32_t index1;
+                DecodeOperand2(operand, isGlobal1, ty1, index1);
+                if (ty1 == TypeEnum::Int) {
+                    stacks[i - intNum - fltNum] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
+                }
+                else if (ty1 == TypeEnum::Float) {
+                    double fv = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
+                    stacks[i - intNum - fltNum] = *reinterpret_cast<int64_t*>(&fv);
+                }
+                else {
+                    stacks[i - intNum - fltNum] = reinterpret_cast<int64_t>(GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals).c_str());
+                }
+            }
+        }
+
+#define CASE_K1_MANUALSTACKDBL(K1, K2) case K1: VariadicFactory<FFI_ManualStack>::Build(typename RepeatType2<int64_t, double, K2, K1>::holder_type()).Call(addr, stacks[0], stacks[1], isGlobal, ty, index, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals ARRAY_TO_ARGS(args, K1) ARRAY_TO_ARGS(fargs, K2)); break;
+
+#define CALL_FFI_MANUALSTACKDBL(K2) \
+        switch (inum - 1) {\
+        CASE_K1_MANUALSTACKDBL(0, K2)\
+        CASE_K1_MANUALSTACKDBL(1, K2)\
+        CASE_K1_MANUALSTACKDBL(2, K2)\
+        CASE_K1_MANUALSTACKDBL(3, K2)\
+        CASE_K1_MANUALSTACKDBL(4, K2)\
+        CASE_K1_MANUALSTACKDBL(5, K2)\
+        CASE_K1_MANUALSTACKDBL(6, K2)\
+        CASE_K1_MANUALSTACKDBL(7, K2)\
+        CASE_K1_MANUALSTACKDBL(8, K2)\
+        }
+
+#define CASE_K2_MANUALSTACKDBL(K2) case K2: CALL_FFI_MANUALSTACKDBL(K2) break;
+
+        ///*
+        switch (fnum) {
+            CASE_K2_MANUALSTACKDBL(0)
+                CASE_K2_MANUALSTACKDBL(1)
+                CASE_K2_MANUALSTACKDBL(2)
+                CASE_K2_MANUALSTACKDBL(3)
+                CASE_K2_MANUALSTACKDBL(4)
+                CASE_K2_MANUALSTACKDBL(5)
+                CASE_K2_MANUALSTACKDBL(6)
+                CASE_K2_MANUALSTACKDBL(7)
+                CASE_K2_MANUALSTACKDBL(8)
         }
         //*/
     }
@@ -4497,6 +4771,12 @@ namespace
                         break;
                     case InsEnum::FFIMANUALSTACK:
                         DoFFIManualStack(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::FFIMANUALDBL:
+                        DoFFIManualDbl(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
+                        break;
+                    case InsEnum::FFIMANUALSTACKDBL:
+                        DoFFIManualStackDbl(opcode, op, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
                         break;
                     default:
                         if (op >= InsEnum::CALLINTERN_FIRST && op <= InsEnum::CALLINTERN_LAST) {

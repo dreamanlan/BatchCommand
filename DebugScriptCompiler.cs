@@ -113,8 +113,8 @@ namespace CppDebugScript
         FFIAUTO,
         FFIMANUAL,
         FFIMANUALSTACK,
-        RESERVE7,
-        RESERVE6,
+        FFIMANUALDBL,
+        FFIMANUALSTACKDBL,
         RESERVE5,
         RESERVE4,
         RESERVE3,
@@ -264,6 +264,9 @@ namespace CppDebugScript
                                             }
                                             else if (pname == "manualstack") {
                                                 proto.ManualStack = fcall.GetParamId(0) == "true";
+                                            }
+                                            else if (pname == "doublefloat") {
+                                                proto.DoubleFloat = fcall.GetParamId(0) == "true";
                                             }
                                         }
                                     }
@@ -992,6 +995,12 @@ namespace CppDebugScript
                     case InsEnum.FFIMANUALSTACK:
                         DumpFFIManualStack(txt, indent, codes, ref pos);
                         break;
+                    case InsEnum.FFIMANUALDBL:
+                        DumpFFIManualDbl(txt, indent, codes, ref pos);
+                        break;
+                    case InsEnum.FFIMANUALSTACKDBL:
+                        DumpFFIManualStackDbl(txt, indent, codes, ref pos);
+                        break;
                     default:
                         if (op >= InsEnum.CALLINTERN_FIRST && op <= InsEnum.CALLINTERN_LAST) {
                             int apiIndex = (int)(op - InsEnum.CALLINTERN_FIRST);
@@ -1335,6 +1344,76 @@ namespace CppDebugScript
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             txt.Append("{0}{1}: {2} = FFIMANUALSTACK", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            ++pos;
+            int operand0 = codes[pos];
+            DecodeOperand1(operand0, out var num1);
+            DecodeOperand2(operand0, out var num2);
+            txt.Append(' ');
+            txt.Append(num1);
+            txt.Append(' ');
+            txt.Append(num2);
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i < argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 < argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
+        }
+        private void DumpFFIManualDbl(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = FFIMANUALDBL", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
+            ++pos;
+            int operand0 = codes[pos];
+            DecodeOperand1(operand0, out var num1);
+            DecodeOperand2(operand0, out var num2);
+            txt.Append(' ');
+            txt.Append(num1);
+            txt.Append(' ');
+            txt.Append(num2);
+            for (int i = 0; i < argNum; i += 2) {
+                ++pos;
+                int operand = codes[pos];
+                if (i < argNum) {
+                    if (i == 0) {
+                        txt.Append(' ');
+                    }
+                    else {
+                        txt.Append(", ");
+                    }
+                    DecodeOperand1(operand, out var isGlobal1, out var type1, out var index1);
+                    txt.Append(BuildVar(isGlobal1, type1, index1));
+                }
+                if (i + 1 < argNum) {
+                    txt.Append(", ");
+                    DecodeOperand2(operand, out var isGlobal2, out var type2, out var index2);
+                    txt.Append(BuildVar(isGlobal2, type2, index2));
+                }
+            }
+            txt.AppendLine();
+        }
+        private void DumpFFIManualStackDbl(StringBuilder txt, int indent, List<int> codes, ref int pos)
+        {
+            int ix = pos;
+            int opcode = codes[pos];
+            DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
+            txt.Append("{0}{1}: {2} = FFIMANUALSTACKDBL", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
             ++pos;
             int operand0 = codes[pos];
             DecodeOperand1(operand0, out var num1);
@@ -2770,6 +2849,9 @@ namespace CppDebugScript
                                         }
                                         else if (pname == "manualstack") {
                                             proto.ManualStack = fcall.GetParamId(0) == "true";
+                                        }
+                                        else if (pname == "doublefloat") {
+                                            proto.DoubleFloat = fcall.GetParamId(0) == "true";
                                         }
                                     }
                                 }
@@ -6387,7 +6469,13 @@ namespace CppDebugScript
             }
             InsEnum op = InsEnum.FFIMANUAL;
             if (proto.ManualStack) {
-                op = InsEnum.FFIMANUALSTACK;
+                if(proto.DoubleFloat)
+                    op = InsEnum.FFIMANUALSTACKDBL;
+                else
+                    op = InsEnum.FFIMANUALSTACK;
+            }
+            else if (proto.DoubleFloat) {
+                op = InsEnum.FFIMANUALDBL;
             }
             else if (proto.Params == ParamsEnum.NoParams && proto.FloatParams.Count == 0 && proto.StackParams.Count == 0) {
                 op = InsEnum.FFIAUTO;
@@ -6713,6 +6801,7 @@ namespace CppDebugScript
             public List<TypeEnum> StackParams = new List<TypeEnum>();
             public int MinStackParamNum = 0;
             public bool ManualStack = false;
+            public bool DoubleFloat = false;
 
             public TypeEnum GetParamType(int ix, TypeEnum argType)
             {

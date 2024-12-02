@@ -1610,6 +1610,7 @@ namespace CppDebugScript
                     //if(exp){...}elif(exp){...}else{...};
                     if (stmData.GetFunctionNum() >= 2) {
                         int jmpIfNot = 0;
+                        bool existsElse = false;
                         List<int> exitFixes = new List<int>();
                         for (int i = 0; i < stmData.GetFunctionNum(); ++i) {
                             if (i > 0) {
@@ -1622,6 +1623,7 @@ namespace CppDebugScript
                             var f = stmData.GetFunction(i);
                             string fid = f.GetId();
                             if (fid == "else") {
+                                existsElse = true;
                                 //block
                                 PushBlock(true, false);
                                 var callData = f.AsFunction;
@@ -1697,6 +1699,13 @@ namespace CppDebugScript
                                 err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false), f.GetLine());
                                 err.AppendLine();
                             }
+                        }
+                        if (!existsElse) {
+                            //fix jmpIfNot
+                            int jmpTarget = codes.Count;
+                            int offset = jmpTarget - jmpIfNot;
+                            int opcode = codes[jmpIfNot];
+                            codes[jmpIfNot] = opcode | (offset << 8);
                         }
                         //fix jmp offset
                         int exitTarget = codes.Count;

@@ -343,3 +343,38 @@ hook("CreateGraphicsPipeline")
 		printf("CreateGraphicsPipeline exit time:%d\n",time());
 	};
 };
+hook("MemoryManager::GetAllocator")
+{
+	onenter{
+		//printf("MemoryManager::GetAllocator enter time:%d\n",time());
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::GetAllocator exit time:%d\n",time());
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),4);
+		if ($a == 0) {
+			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
+			dumpstack("MemoryManager::GetAllocator");
+		}
+		elif($c >= 166) {
+			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
+			//dumpstack("MemoryManager::GetAllocator");
+		};
+	};
+};
+hook("MemoryManager::GetAllocatorOnNull")
+{
+	onenter{
+		printf("MemoryManager::GetAllocatorOnNull enter time:%d\n",time());
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		printf("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
+		dumpstack("MemoryManager::GetAllocatorOnNull");
+		return 0;
+	};
+	onexit{
+		printf("MemoryManager::GetAllocatorOnNull exit time:%d\n",time());
+	};
+};

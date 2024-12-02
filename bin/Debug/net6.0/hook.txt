@@ -40,8 +40,10 @@ hook(CompileTest)
 		$c = addr($e) + argv(0);
 		$d = $c < 1 ? 2 : 3;
 		$e[0] = $d ?? 1;
-		$f : int32 = struct($d, ptr(ptr(TestStru3.ptest2).ptest).size);
-		$g : int64 = dumpcascadeptr(addr($e), 0x08, 0x08);
+		$f : int = struct($d, ptr(ptr(TestStru3.ptest2).ptest).size);
+		$g : int = dumpcascadeptr(addr($e), 0x08, 0x08);
+		$h1 : int = offset(TestStru3.ptest2[3].size);
+		$h2 : int = size(TestStru3);
 		ffi(proto(void,noparams,[int,int],[],[]),0x1234,121,121);
 		ffi(proto(void,noparams,[int],[float],[]),0x1235,123,123.00);
 		return 0;

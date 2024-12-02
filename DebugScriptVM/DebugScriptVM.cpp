@@ -1151,8 +1151,10 @@ namespace
             DecodeOperand1(operand, isGlobal, ty, index);
             DebugAssert(ty == TypeEnum::Int);
             int64_t strAddr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
-
-            return static_cast<int64_t>(std::strlen(reinterpret_cast<const char*>(strAddr)));
+            if (strAddr)
+                return static_cast<int64_t>(std::strlen(reinterpret_cast<const char*>(strAddr)));
+            else
+                return 0;
         }
         static inline int64_t CStrStr(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1172,8 +1174,10 @@ namespace
             DecodeOperand2(operand, isGlobal1, ty1, index1);
             DebugAssert(ty1 == TypeEnum::Int);
             int64_t strAddr2 = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-
-            return reinterpret_cast<int64_t>(std::strstr(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2)));
+            if (strAddr && strAddr2)
+                return reinterpret_cast<int64_t>(std::strstr(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2)));
+            else
+                return 0;
         }
         static inline int64_t CStrCmp(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1194,21 +1198,26 @@ namespace
             DebugAssert(ty1 == TypeEnum::Int);
             int64_t strAddr2 = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
-            if (argNum > 2) {
-                ++pos;
-                int operand2 = codes[pos];
+            if (strAddr && strAddr2) {
+                if (argNum > 2) {
+                    ++pos;
+                    int operand2 = codes[pos];
 
-                bool isGlobal2;
-                TypeEnum ty2;
-                int32_t index2;
-                DecodeOperand1(operand2, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::Int);
-                std::size_t count = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
+                    bool isGlobal2;
+                    TypeEnum ty2;
+                    int32_t index2;
+                    DecodeOperand1(operand2, isGlobal2, ty2, index2);
+                    DebugAssert(ty2 == TypeEnum::Int);
+                    std::size_t count = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
-                return std::strncmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2), count);
+                    return std::strncmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2), count);
+                }
+                else {
+                    return std::strcmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2));
+                }
             }
             else {
-                return std::strcmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2));
+                return 0;
             }
         }
         static inline int64_t Malloc(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -1237,8 +1246,9 @@ namespace
             DecodeOperand1(operand, isGlobal, ty, index);
             DebugAssert(ty == TypeEnum::Int);
             int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
-
-            std::free(reinterpret_cast<void*>(addr));
+            if (addr) {
+                std::free(reinterpret_cast<void*>(addr));
+            }
         }
         static inline int64_t MemCpy(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1269,8 +1279,13 @@ namespace
             DebugAssert(ty2 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
-            void* fptr = std::memcpy(reinterpret_cast<void*>(dest), reinterpret_cast<const void*>(src), size);
-            return reinterpret_cast<int64_t>(fptr);
+            if (dest && src) {
+                void* fptr = std::memcpy(reinterpret_cast<void*>(dest), reinterpret_cast<const void*>(src), size);
+                return reinterpret_cast<int64_t>(fptr);
+            }
+            else {
+                return 0;
+            }
         }
         static inline int64_t MemSet(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1301,8 +1316,13 @@ namespace
             DebugAssert(ty2 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
-            void* fptr = std::memset(reinterpret_cast<void*>(dest), static_cast<int>(val), size);
-            return reinterpret_cast<int64_t>(fptr);
+            if (dest) {
+                void* fptr = std::memset(reinterpret_cast<void*>(dest), static_cast<int>(val), size);
+                return reinterpret_cast<int64_t>(fptr);
+            }
+            else {
+                return 0;
+            }
         }
         static inline int64_t MemSave(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1333,13 +1353,18 @@ namespace
             DebugAssert(ty2 == TypeEnum::String);
             const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
 
-            std::ofstream ofile(file, std::ios::out | std::ios::binary);
-            if (ofile.fail())
+            if (src) {
+                std::ofstream ofile(file, std::ios::out | std::ios::binary);
+                if (ofile.fail())
+                    return 0;
+                ofile.write(reinterpret_cast<const char*>(src), size);
+                int64_t ret = static_cast<int64_t>(ofile.tellp());
+                ofile.close();
+                return ret;
+            }
+            else {
                 return 0;
-            ofile.write(reinterpret_cast<const char*>(src), size);
-            int64_t ret = static_cast<int64_t>(ofile.tellp());
-            ofile.close();
-            return ret;
+            }
         }
         static inline int64_t MemLoad(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -1370,13 +1395,18 @@ namespace
             DebugAssert(ty2 == TypeEnum::String);
             const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
 
-            std::ifstream ifile(file, std::ios::out | std::ios::binary);
-            if (ifile.fail())
+            if (dest) {
+                std::ifstream ifile(file, std::ios::out | std::ios::binary);
+                if (ifile.fail())
+                    return 0;
+                ifile.read(reinterpret_cast<char*>(dest), size);
+                int64_t ret = static_cast<int64_t>(ifile.tellg());
+                ifile.close();
+                return ret;
+            }
+            else {
                 return 0;
-            ifile.read(reinterpret_cast<char*>(dest), size);
-            int64_t ret = static_cast<int64_t>(ifile.tellg());
-            ifile.close();
-            return ret;
+            }
         }
     };
     static inline void DoCallIntern(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2182,77 +2212,83 @@ namespace
     }
     static inline int64_t ReadMemory(int64_t addr, int64_t offset, int64_t size)
     {
+        DebugAssert(addr != 0);
         int64_t retVal = 0;
-        switch (size) {
-        case 0:
-            retVal = 0;
-            break;
-        case 1:
-            retVal = *reinterpret_cast<int8_t*>(addr + offset);
-            break;
-        case 2:
-            retVal = *reinterpret_cast<int16_t*>(addr + offset);
-            break;
-        case 3:
-            retVal = *reinterpret_cast<int16_t*>(addr + offset);
-            retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int16_t))) << (sizeof(int16_t) * 8);
-            break;
-        case 4:
-            retVal = *reinterpret_cast<int32_t*>(addr + offset);
-            break;
-        case 5:
-            retVal = *reinterpret_cast<int32_t*>(addr + offset);
-            retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
-            break;
-        case 6:
-            retVal = *reinterpret_cast<int32_t*>(addr + offset);
-            retVal |= static_cast<int64_t>(*reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
-            break;
-        case 7:
-            retVal = *reinterpret_cast<int32_t*>(addr + offset);
-            retVal |= static_cast<int64_t>(*reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
-            retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t) + sizeof(int16_t))) << ((sizeof(int32_t) + sizeof(int16_t)) * 8);
-            break;
-        default:
-            retVal = *reinterpret_cast<int64_t*>(addr + offset);
-            break;
+        if (addr) {
+            switch (size) {
+            case 0:
+                retVal = 0;
+                break;
+            case 1:
+                retVal = *reinterpret_cast<int8_t*>(addr + offset);
+                break;
+            case 2:
+                retVal = *reinterpret_cast<int16_t*>(addr + offset);
+                break;
+            case 3:
+                retVal = *reinterpret_cast<int16_t*>(addr + offset);
+                retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int16_t))) << (sizeof(int16_t) * 8);
+                break;
+            case 4:
+                retVal = *reinterpret_cast<int32_t*>(addr + offset);
+                break;
+            case 5:
+                retVal = *reinterpret_cast<int32_t*>(addr + offset);
+                retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
+                break;
+            case 6:
+                retVal = *reinterpret_cast<int32_t*>(addr + offset);
+                retVal |= static_cast<int64_t>(*reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
+                break;
+            case 7:
+                retVal = *reinterpret_cast<int32_t*>(addr + offset);
+                retVal |= static_cast<int64_t>(*reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t))) << (sizeof(int32_t) * 8);
+                retVal |= static_cast<int64_t>(*reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t) + sizeof(int16_t))) << ((sizeof(int32_t) + sizeof(int16_t)) * 8);
+                break;
+            default:
+                retVal = *reinterpret_cast<int64_t*>(addr + offset);
+                break;
+            }
         }
         return retVal;
     }
     static inline void WriteMemory(int64_t addr, int64_t offset, int64_t size, int64_t val)
     {
-        switch (size) {
-        case 0:
-            break;
-        case 1:
-            *reinterpret_cast<int8_t*>(addr + offset) = static_cast<int8_t>(val);
-            break;
-        case 2:
-            *reinterpret_cast<int16_t*>(addr + offset) = static_cast<int16_t>(val);
-            break;
-        case 3:
-            *reinterpret_cast<int16_t*>(addr + offset) = static_cast<int16_t>(val & 0xffff);
-            *reinterpret_cast<int8_t*>(addr + offset + sizeof(int16_t)) = static_cast<int8_t>((val & 0xff0000) >> (sizeof(int16_t) * 8));
-            break;
-        case 4:
-            *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val);
-            break;
-        case 5:
-            *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
-            *reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t)) = static_cast<int8_t>((val & 0xff00000000) >> (sizeof(int32_t) * 8));
-            break;
-        case 6:
-            *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
-            *reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t)) = static_cast<int16_t>((val & 0xffff00000000) >> (sizeof(int32_t) * 8));
-            break;
-        case 7:
-            *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
-            *reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t)) = static_cast<int16_t>((val & 0xffff00000000) >> (sizeof(int32_t) * 8));
-            *reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t) + sizeof(int16_t)) = static_cast<int8_t>((val & 0xff000000000000) >> ((sizeof(int32_t) + sizeof(int16_t)) * 8));
-            break;
-        default:
-            *reinterpret_cast<int64_t*>(addr + offset) = static_cast<int64_t>(val);
-            break;
+        DebugAssert(addr != 0);
+        if (addr) {
+            switch (size) {
+            case 0:
+                break;
+            case 1:
+                *reinterpret_cast<int8_t*>(addr + offset) = static_cast<int8_t>(val);
+                break;
+            case 2:
+                *reinterpret_cast<int16_t*>(addr + offset) = static_cast<int16_t>(val);
+                break;
+            case 3:
+                *reinterpret_cast<int16_t*>(addr + offset) = static_cast<int16_t>(val & 0xffff);
+                *reinterpret_cast<int8_t*>(addr + offset + sizeof(int16_t)) = static_cast<int8_t>((val & 0xff0000) >> (sizeof(int16_t) * 8));
+                break;
+            case 4:
+                *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val);
+                break;
+            case 5:
+                *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
+                *reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t)) = static_cast<int8_t>((val & 0xff00000000) >> (sizeof(int32_t) * 8));
+                break;
+            case 6:
+                *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
+                *reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t)) = static_cast<int16_t>((val & 0xffff00000000) >> (sizeof(int32_t) * 8));
+                break;
+            case 7:
+                *reinterpret_cast<int32_t*>(addr + offset) = static_cast<int32_t>(val & 0xffffffff);
+                *reinterpret_cast<int16_t*>(addr + offset + sizeof(int32_t)) = static_cast<int16_t>((val & 0xffff00000000) >> (sizeof(int32_t) * 8));
+                *reinterpret_cast<int8_t*>(addr + offset + sizeof(int32_t) + sizeof(int16_t)) = static_cast<int8_t>((val & 0xff000000000000) >> ((sizeof(int32_t) + sizeof(int16_t)) * 8));
+                break;
+            default:
+                *reinterpret_cast<int64_t*>(addr + offset) = static_cast<int64_t>(val);
+                break;
+            }
         }
     }
     static inline void DoPtrGet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2307,17 +2343,20 @@ namespace
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         double val = 0;
-        switch (size) {
-        case 4:
-            val = *reinterpret_cast<float*>(addr);
-            break;
-        case 8:
-            val = *reinterpret_cast<double*>(addr);
-            break;
-        default:
-            int64_t ival = ReadMemory(addr, 0, size);
-            val = *reinterpret_cast<double*>(&ival);
-            break;
+        DebugAssert(addr != 0);
+        if (addr) {
+            switch (size) {
+            case 4:
+                val = *reinterpret_cast<float*>(addr);
+                break;
+            case 8:
+                val = *reinterpret_cast<double*>(addr);
+                break;
+            default:
+                int64_t ival = ReadMemory(addr, 0, size);
+                val = *reinterpret_cast<double*>(&ival);
+                break;
+            }
         }
         SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
@@ -2345,9 +2384,12 @@ namespace
 
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
-        //dangerous!!!
-        std::string val = *reinterpret_cast<const char**>(addr);
-        SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+        DebugAssert(addr != 0);
+        if (addr) {
+            //dangerous!!!
+            std::string val = *reinterpret_cast<const char**>(addr);
+            SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+        }
     }
     static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {
@@ -2400,18 +2442,21 @@ namespace
 
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-        double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
-        switch (size) {
-        case 4:
-            *reinterpret_cast<float*>(addr) = static_cast<float>(val);
-            break;
-        case 8:
-            *reinterpret_cast<double*>(addr) = val;
-            break;
-        default:
-            int64_t ival = *reinterpret_cast<int64_t*>(&val);
-            WriteMemory(addr, 0, size, ival);
-            break;
+        DebugAssert(addr != 0);
+        if (addr) {
+            double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
+            switch (size) {
+            case 4:
+                *reinterpret_cast<float*>(addr) = static_cast<float>(val);
+                break;
+            case 8:
+                *reinterpret_cast<double*>(addr) = val;
+                break;
+            default:
+                int64_t ival = *reinterpret_cast<int64_t*>(&val);
+                WriteMemory(addr, 0, size, ival);
+                break;
+            }
         }
     }
     static inline void DoPtrSetStr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2438,16 +2483,19 @@ namespace
 
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-        //dangerous!!!
-        const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
-        char* tstr = *reinterpret_cast<char**>(addr);
+        DebugAssert(addr != 0);
+        if (addr) {
+            //dangerous!!!
+            const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
+            char* tstr = *reinterpret_cast<char**>(addr);
 #if _MSC_VER || WIN32 || WIN64
-        strcpy_s(tstr, std::strlen(tstr), val.c_str());
+            strcpy_s(tstr, std::strlen(tstr), val.c_str());
 #else
-        auto slen = std::strlen(tstr);
-        strncpy(tstr, val.c_str(), slen);
-        tstr[slen] = 0;
+            auto slen = std::strlen(tstr);
+            strncpy(tstr, val.c_str(), slen);
+            tstr[slen] = 0;
 #endif
+        }
     }
     static inline void DoCascadePtr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)
     {
@@ -2478,7 +2526,10 @@ namespace
                 }
                 else {
                     int64_t offset = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-                    addr = *reinterpret_cast<int64_t*>(addr + offset);
+                    DebugAssert(addr != 0);
+                    if (addr) {
+                        addr = *reinterpret_cast<int64_t*>(addr + offset);
+                    }
                 }
             }
             if (i + 1 < argNum) {
@@ -2496,7 +2547,10 @@ namespace
                 }
                 else {
                     int64_t offset = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
-                    addr = *reinterpret_cast<int64_t*>(addr + offset);
+                    DebugAssert(addr != 0);
+                    if (addr) {
+                        addr = *reinterpret_cast<int64_t*>(addr + offset);
+                    }
                 }
             }
         }

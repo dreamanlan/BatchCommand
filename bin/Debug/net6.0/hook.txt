@@ -109,6 +109,7 @@ hook(TestMacro1)
 		$r:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]),TestFFI(0),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
 		$r2:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]){doublefloat(true);},TestFFI(1),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
 		printf("platform:%d ffi:%d %d\n",platform(),$r,$r2);
+		MemoryProtect(0x80004000,1024,3);
 		return 1;
 	};
 	onexit{
@@ -360,7 +361,7 @@ hook("MemoryManager::GetAllocator")
 		}
 		elif($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
+			dumpstack("MemoryManager::GetAllocator");
 		};
 	};
 };

@@ -45,3 +45,6 @@ defexternapi(GetTID,int,noparams,[]);
 defexternapi(FindSegment,int,noparams,[int,string,string,int,string[3]]){
 	minparamnum(4);
 };
+defexternapi(MemoryProtect,void,noparams,[int,int,int,int]){
+	minparamnum(3);
+};

@@ -6,6 +6,14 @@
 #include <fstream>
 #include "DbgScpHook.h"
 
+#if PLATFORM_WIN
+#include "windows.h"
+#elif UNITY_POSIX
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 static std::unordered_map<std::string, int64_t> g_Lib2Addresses{};
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
@@ -116,6 +124,94 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
     return 0;
 }
 
+static inline size_t GetPagetSize()
+{
+#if PLATFORM_WIN
+    SYSTEM_INFO sysInfo;
+    GetSystemInfo(&sysInfo);
+    return static_cast<size_t>(sysInfo.dwPageSize);
+#elif UNITY_POSIX
+    return static_cast<size_t>(getpagesize());
+#else
+    return 4096;
+#endif
+}
+static inline int64_t AlignToPageSize(int64_t addr, size_t pageSize)
+{
+    return static_cast<int64_t>(static_cast<size_t>(addr) & ~(pageSize - 1));
+}
+static inline size_t RoundToPageSize(size_t size, size_t pageSize)
+{
+    return (size + pageSize - 1) & ~(pageSize - 1);
+}
+static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, int32_t quickflag, int32_t rawflag)
+{
+    addr = AlignToPageSize(addr, pageSize);
+    size = RoundToPageSize(size, pageSize);
+    /*
+#define PAGE_NOACCESS           0x01
+#define PAGE_READONLY           0x02
+#define PAGE_READWRITE          0x04
+#define PAGE_WRITECOPY          0x08
+#define PAGE_EXECUTE            0x10
+#define PAGE_EXECUTE_READ       0x20
+#define PAGE_EXECUTE_READWRITE  0x40
+#define PAGE_EXECUTE_WRITECOPY  0x80
+#define PAGE_GUARD             0x100
+#define PAGE_NOCACHE           0x200
+#define PAGE_WRITECOMBINE      0x400
+    */
+    /*
+#define PROT_READ 0x1
+#define PROT_WRITE 0x2
+#define PROT_EXEC 0x4
+#define PROT_SEM 0x8
+#define PROT_NONE 0x0
+#define PROT_GROWSDOWN 0x01000000
+#define PROT_GROWSUP 0x02000000
+    */
+#if PLATFORM_WIN || _WIN32 || _WIN64
+    DWORD flag = rawflag;
+    if (quickflag >= 0) {
+        switch (quickflag) {
+        case 0:
+            flag = PAGE_NOACCESS;
+            break;
+        case 1:
+            flag = PAGE_READONLY;
+            break;
+        case 2:
+            flag = PAGE_READWRITE;
+            break;
+        case 3:
+            flag = PAGE_EXECUTE_READWRITE;
+            break;
+        }
+    }
+    DWORD oldProtect;
+    VirtualProtect(reinterpret_cast<void*>(addr), size, flag, &oldProtect);
+#elif UNITY_POSIX
+    int flag = rawflag;
+    if (quickflag >= 0) {
+        switch (quickflag) {
+        case 0:
+            flag = PROT_NONE;
+            break;
+        case 1:
+            flag = PROT_READ;
+            break;
+        case 2:
+            flag = PROT_READ | PROT_WRITE;
+            break;
+        case 3:
+            flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+            break;
+        }
+    }
+    mprotect(reinterpret_cast<char*>(addr), size, flag);
+#endif
+}
+
 enum class ExternApiEnum
 {
     TestFFI = c_extern_api_start_id,
@@ -127,6 +223,7 @@ enum class ExternApiEnum
     GetPID,
     GetTID,
     FindSegment,
+    MemoryProtect,
     Num
 };
 
@@ -253,6 +350,18 @@ struct ExternApi
         }
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
     }
+    static inline void MemoryProtect(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        size_t size = static_cast<size_t>(DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals));
+        int quickflag = static_cast<int>(DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals));
+        int rawflag = 0;
+        if (argNum > 3) {
+            rawflag = static_cast<int>(DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals));
+        }
+        size_t pageSize = GetPagetSize();
+        SetMemoryProtect(addr, size, pageSize, quickflag, rawflag);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -284,6 +393,9 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::FindSegment:
         ExternApi::FindSegment(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::MemoryProtect:
+        ExternApi::MemoryProtect(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

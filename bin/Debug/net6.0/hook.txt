@@ -122,56 +122,56 @@ hook(TestMacro1)
 hook("CommandBuffer::BeginRenderPass")
 {
 	onenter{
-		printf("CommandBuffer::BeginRenderPass enter time:%d\n",time());
+		//printf("CommandBuffer::BeginRenderPass enter time:%d\n",time());
 		//dumpstack("CommandBuffer::BeginRenderPass");
 		return 0;
 	};
 	onexit{
-		printf("CommandBuffer::BeginRenderPass exit time:%d\n",time());
+		//printf("CommandBuffer::BeginRenderPass exit time:%d\n",time());
 	};
 };
 hook("CommandBuffer::EndRenderPass")
 {
 	onenter{
-		printf("CommandBuffer::EndRenderPass enter time:%d\n",time());
+		//printf("CommandBuffer::EndRenderPass enter time:%d\n",time());
 		//dumpstack("CommandBuffer::EndRenderPass");
 		return 0;
 	};
 	onexit{
-		printf("CommandBuffer::EndRenderPass exit time:%d\n",time());
+		//printf("CommandBuffer::EndRenderPass exit time:%d\n",time());
 	};
 };
 hook("CommandBuffer::Begin")
 {
 	onenter{
-		printf("CommandBuffer::Begin enter time:%d\n",time());
+		//printf("CommandBuffer::Begin enter time:%d\n",time());
 		//dumpstack("CommandBuffer::Begin");
 		return 0;
 	};
 	onexit{
-		printf("CommandBuffer::Begin exit time:%d\n",time());
+		//printf("CommandBuffer::Begin exit time:%d\n",time());
 	};
 };
 hook("CommandBuffer::End")
 {
 	onenter{
-		printf("CommandBuffer::End enter time:%d\n",time());
+		//printf("CommandBuffer::End enter time:%d\n",time());
 		//dumpstack("CommandBuffer::End");
 		return 0;
 	};
 	onexit{
-		printf("CommandBuffer::End exit time:%d\n",time());
+		//printf("CommandBuffer::End exit time:%d\n",time());
 	};
 };
 hook("TaskExecutor::HandleCommandStream")
 {
 	onenter{
-		printf("TaskExecutor::HandleCommandStream enter time:%d\n",time());
+		//printf("TaskExecutor::HandleCommandStream enter time:%d\n",time());
 		//dumpstack("TaskExecutor::HandleCommandStream");
 		return 0;
 	};
 	onexit{
-		printf("TaskExecutor::HandleCommandStream exit time:%d\n",time());
+		//printf("TaskExecutor::HandleCommandStream exit time:%d\n",time());
 	};
 };
 hook("ScratchBuffer::ClearPool")
@@ -188,12 +188,12 @@ hook("ScratchBuffer::ClearPool")
 hook("ScratchBuffer::TryLocklessAlloc")
 {
 	onenter{
-		printf("ScratchBuffer::TryLocklessAlloc enter time:%d\n",time());
+		//printf("ScratchBuffer::TryLocklessAlloc enter time:%d\n",time());
 		//dumpstack("ScratchBuffer::TryLocklessAlloc");
 		return 0;
 	};
 	onexit{
-		printf("ScratchBuffer::TryLocklessAlloc exit time:%d\n",time());
+		//printf("ScratchBuffer::TryLocklessAlloc exit time:%d\n",time());
 	};
 };
 hook("ScratchBuffer::TrimMemory")
@@ -341,6 +341,13 @@ hook("CreateGraphicsPipeline")
 		printf("this:%llx device:%llx log:%d\n", $a, $dev, $log);
 		ptrset($addr+0x630, 4, 1);
 		
+		//adreno eng vendor scope
+		$addr2:int = cascadeptr($dev, 8, 0x8, 0x70, 0x1948, 0x88);
+		printf("this:%llx device:%llx addr:%llx\n", $a, $dev, $addr2);
+		$log2:int = ptrget($addr2+0xc78, 4);
+		printf("this:%llx device:%llx scope log:%d\n", $a, $dev, $log2);
+		ptrset($addr2+0xc78, 4, 1);
+		
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",1,$fields);
 		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
@@ -394,7 +401,11 @@ hook("MemoryManager::GetAllocator")
 			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
 			dumpstack("MemoryManager::GetAllocator");
 		}
-		elif($c >= 166) {
+		elif ($c >= 100) {
+			printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
+			//dumpstack("MemoryManager::GetAllocator");
+		}
+		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
 			dumpstack("MemoryManager::GetAllocator");
 		};

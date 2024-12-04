@@ -178,7 +178,15 @@ namespace BatchCommand
                 if (CppDebugScript.DebugScriptCompiler.Instance.Compile(txt, out err)) {
                     LogSystem.Warn("Compile {0} finished.", scpFile);
                     var sb = new StringBuilder();
-                    CppDebugScript.DebugScriptCompiler.Instance.DumpAsm(sb);
+                    try {
+                        CppDebugScript.DebugScriptCompiler.Instance.DumpAsm(sb);
+                    }
+                    catch (Exception e) {
+                        sb.AppendLine();
+                        sb.AppendLine();
+                        sb.AppendLine("========[Exception]========");
+                        sb.AppendLine(e.ToString());
+                    }
                     LogSystem.Warn("[ASM]:\n{0}", sb.ToString());
                 }
                 else {

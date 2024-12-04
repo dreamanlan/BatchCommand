@@ -1045,7 +1045,7 @@ namespace CppDebugScript
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             txt.Append("{0}{1}: {2} = CALLEXTERN", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
-            for (int i = 0; i < argNum + 1; i += 2) {
+            for (int i = 0; i <= argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
                 if (i <= argNum) {
@@ -1234,7 +1234,7 @@ namespace CppDebugScript
             int opcode = codes[pos];
             DecodeOpcode(opcode, out var ins, out var argNum, out var isGlobal, out var type, out var index);
             txt.Append("{0}{1}: {2} = CASCADEPTR", Literal.GetIndentString(indent), ix, BuildVar(isGlobal, type, index));
-            for (int i = 0; i < argNum + 1; i += 2) {
+            for (int i = 0; i < argNum; i += 2) {
                 ++pos;
                 int operand = codes[pos];
                 if (i < argNum) {

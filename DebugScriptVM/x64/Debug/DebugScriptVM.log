@@ -1,2 +1,42 @@
-﻿  DllMain.cpp
+﻿  DebugScriptVM.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3191,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3191,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3191,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3191,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3191,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3192,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3192,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3192,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3192,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3192,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3193,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3193,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3193,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3193,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3193,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3194,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3194,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3194,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3194,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3194,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3195,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3195,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3195,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3195,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3195,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3196,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3196,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3196,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3196,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3196,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3197,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3197,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3197,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3197,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3197,17): warning C4244:         ]
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3198,17): warning C4244: “参数”: 从“double”转换到“TypeT”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3198,17): warning C4244:         with
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3198,17): warning C4244:         [
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3198,17): warning C4244:             TypeT=float
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(3198,17): warning C4244:         ]
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

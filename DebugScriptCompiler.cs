@@ -1500,7 +1500,7 @@ namespace CppDebugScript
                             var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                             AddVar(vinfo);
 
-                            var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
+                            var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetIsGlobal = vinfo.IsGlobal, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
                             CompileExpression(param2, m_TempCodes, err, ref info);
                             CurBlock().ResetTempVars();
 
@@ -1936,7 +1936,7 @@ namespace CppDebugScript
                             }
                             else {
                                 var v2 = callData.GetParam(1);
-                                SemanticInfo info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetIndex = vinfo.Index };
+                                SemanticInfo info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetIsGlobal = vinfo.IsGlobal, TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetIndex = vinfo.Index };
                                 CompileExpression(v2, codes, err, ref info);
                                 CurBlock().ResetTempVars();
                             }
@@ -1973,7 +1973,7 @@ namespace CppDebugScript
                                     var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                                     AddVar(vinfo);
 
-                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
+                                    var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetIsGlobal = vinfo.IsGlobal, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
                                     CompileExpression(param2, codes, err, ref info);
                                     CurBlock().ResetTempVars();
                                 }
@@ -5227,14 +5227,45 @@ namespace CppDebugScript
                 }
             }
             else {
-                int tmpIndex = CurBlock().AllocTempInt();
+                TypeEnum retType = semanticInfo.TargetType;
+                int tmpIndex = -1;
+                switch (semanticInfo.TargetType) {
+                    case TypeEnum.Int:
+                        tmpIndex = CurBlock().AllocTempInt();
+                        break;
+                    case TypeEnum.Float:
+                        tmpIndex = CurBlock().AllocTempFloat();
+                        break;
+                    case TypeEnum.String:
+                        tmpIndex = CurBlock().AllocTempString();
+                        break;
+                    default:
+                        retType = TypeEnum.Int;
+                        tmpIndex = CurBlock().AllocTempInt();
+                        break;
+                }
                 if (tmpIndex >= 0) {
                     semanticInfo.IsGlobal = false;
-                    semanticInfo.ResultType = TypeEnum.Int;
+                    semanticInfo.ResultType = retType;
                     semanticInfo.ResultCount = 0;
                     semanticInfo.ResultIndex = tmpIndex;
                     semanticInfo.ResultValues = null;
-                    codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+
+                    switch (semanticInfo.TargetType) {
+                        case TypeEnum.Int:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGET, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        case TypeEnum.Float:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGETFLT, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        case TypeEnum.String:
+                            codes.Add(EncodeOpcode(InsEnum.PTRGETSTR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
+                            break;
+                        default:
+                            err.AppendFormat("ptrget must be return int/float/string value, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendLine();
+                            break;
+                    }
 
                     int opd1 = 0;
                     if (opds.Count > 0) {

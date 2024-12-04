@@ -2488,8 +2488,8 @@ namespace
             //dangerous!!!
             const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
             char* tstr = *reinterpret_cast<char**>(addr);
-#if _MSC_VER || WIN32 || WIN64
-            strcpy_s(tstr, std::strlen(tstr), val.c_str());
+#if _MSC_VER || _WIN32 || _WIN64
+            strcpy_s(tstr, std::strlen(tstr) + 1, val.c_str());
 #else
             auto slen = std::strlen(tstr);
             strncpy(tstr, val.c_str(), slen);

@@ -239,6 +239,8 @@ namespace BatchCommand
             CppDebugScript.CppDbgScpInterface.Test3(12345, 12345.456, "test3");
             CppDebugScript.CppDbgScpInterface.Test4(123456, 123456.456, "test4");
 
+            Console.WriteLine("--------");
+
             int ma = CppDebugScript.CppDbgScpInterface.TestMacro1(123, 123.456, "testmacro1");
             LogSystem.Warn("retval ma:{0}", ma);
             int mb = CppDebugScript.CppDbgScpInterface.TestMacro2(1234, 1234.456, "testmacro2");

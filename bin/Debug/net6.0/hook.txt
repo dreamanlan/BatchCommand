@@ -51,14 +51,14 @@ hook(CompileTest)
 	};
 };
 
-hook(Test1)
+hook(DbgScp_TestVoid)
 {
 	onenter{
-		$a:int = ptrget(argv(1),4);
-		$b:int = ptrget(argv(2),8);
-		$c:int = ptrget(argv(3),8);
+		$a:int = ptrget(argv(0),4);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
 		printf("dbg a:%d b:%f c:%s\n",$a,$b,$c);
-		dumpcascadeptr(argv(3),0);
+		dumpcascadeptr(argv(2),0);
 		if($a==123){
 			ptrset(argv(0),4,1);
 		}
@@ -90,11 +90,10 @@ hook(Test1)
 	};
 	onexit{
 		printf("dbg time:%d\n",time());
-		ptrset(argv(0),4,2);
 	};
 };
 
-hook(TestMacro1)
+hook(DbgScp_TestInt)
 {
 	onenter{
 		$a:int = ptrget(argv(1),4);
@@ -111,6 +110,7 @@ hook(TestMacro1)
 		$r2:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]){doublefloat(true);},TestFFI(1),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
 		printf("platform:%d ffi:%d %d\n",platform(),$r,$r2);
 		MemoryProtect(0x80004000,1024,3);
+		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
 		return 1;
 	};
 	onexit{
@@ -217,7 +217,7 @@ hook("VKGpuProgram::Create")
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
 		$name:string = $d;
-		printf("shader:%s\n", $d);
+		printf("VKGpuProgram shader:%s\n", $d);
 		/*
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
@@ -238,7 +238,7 @@ hook("VKGpuProgram::Prepare")
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
-		printf("this:%llx\n", $a);
+		printf("VKGpuProgram this:%llx\n", $a);
 		/*
 		$name:string = $d;
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
@@ -309,12 +309,12 @@ hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
 hook("PipelineCreateInfo::Configure")
 {
 	onenter{
-		printf("PipelineCreateInfo::Configure enter time:%d\n",time());
+		//printf("PipelineCreateInfo::Configure enter time:%d\n",time());
 		//dumpstack("PipelineCreateInfo::Configure");
 		return 0;
 	};
 	onexit{
-		printf("PipelineCreateInfo::Configure exit time:%d\n",time());
+		//printf("PipelineCreateInfo::Configure exit time:%d\n",time());
 	};
 };
 hook("CreateGraphicsPipeline")
@@ -325,8 +325,9 @@ hook("CreateGraphicsPipeline")
 		$b:int = ptrget(argv(1),8);
 		$c:string = ptrget(argv(2),8);
 		$dev:int = ptrget($a, 8);
-		printf("this:%llx device:%llx\n", $a, $dev);
+		printf("CreateGraphicsPipeline this:%llx device:%llx thread:%d\n", $a, $dev, GetTID());
 		
+		/*
 		//MI 12 pro
 		//$addr:int = cascadeptr($dev, 8, 0x8, 0x68, 0x1390);
 		//printf("this:%llx device:%llx addr:%llx\n", $a, $dev, $addr);
@@ -357,7 +358,6 @@ hook("CreateGraphicsPipeline")
 			printf("old dir: %s\n", caststr($seg + 0x04A9D8));
 			
 			MemoryProtect($seg + 0x040000, 0x10000, 2);
-			///*
 			$tstr:int = castint("/sdcard/Download/");
 			$size:int = cstrlen($tstr);
 			memcpy($seg + 0x04A9D8, $tstr, $size);
@@ -371,7 +371,6 @@ hook("CreateGraphicsPipeline")
 			memcpy($seg + 0x04CBEA, $tstr, $size);
 			memcpy($seg + 0x04CC19, $tstr, $size);
 			memcpy($seg + 0x04CC2B, $tstr, $size);
-			//*/
 			
 			@g_dir_chged = 1;			
 		};
@@ -379,6 +378,7 @@ hook("CreateGraphicsPipeline")
 		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
 			assert(0);
 		};
+		*/
 		//dumpstack("CreateGraphicsPipeline");
 		return 0;
 	};

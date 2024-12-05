@@ -48,3 +48,6 @@ defexternapi(FindSegment,int,noparams,[int,string,string,int,string[3]]){
 defexternapi(MemoryProtect,void,noparams,[int,int,int,int]){
 	minparamnum(3);
 };
+defexternapi(GetDeviceModel,string,noparams,[]);
+defexternapi(GetGpu,string,noparams,[]);
+defexternapi(GetGpuVer,string,noparams,[]);

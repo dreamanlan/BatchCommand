@@ -30,6 +30,24 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     return TRUE;
 }
 
+void DbgScp_TestVoid(int a, double b, const char* c)
+{
+    BEGIN_DBGSCP_HOOK_VOID()
+
+        printf("DbgScp_TestVoid a:%d b:%f c:%s\n", a, b, c);
+
+    END_DBGSCP_HOOK_VOID("DbgScp_TestVoid", a, b, c);
+}
+int DbgScp_TestInt(int a, double b, const char* c)
+{
+    BEGIN_DBGSCP_HOOK()
+
+        printf("DbgScp_TestInt a:%d b:%f c:%s\n", a, b, c);
+        return 0;
+
+    END_DBGSCP_HOOK("DbgScp_TestInt", int, a, b, c);
+}
+
 int TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, float f1, float f2, int64_t sv1, int64_t sv2)
 {
     printf("%d %d %d %d %d %d %d %d %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
@@ -224,6 +242,9 @@ enum class ExternApiEnum
     GetTID,
     FindSegment,
     MemoryProtect,
+    GetDeviceModel,
+    GetGpu,
+    GetGpuVer,
     Num
 };
 
@@ -362,6 +383,21 @@ struct ExternApi
         size_t pageSize = GetPagetSize();
         SetMemoryProtect(addr, size, pageSize, quickflag, rawflag);
     }
+    static inline void GetDeviceModel(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        const char* name = "[device_model]";
+        DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
+    }
+    static inline void GetGpu(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        const char* name = "[gpu]";
+        DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
+    }
+    static inline void GetGpuVer(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        const char* name = "[gpu_ver]";
+        DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -396,6 +432,15 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::MemoryProtect:
         ExternApi::MemoryProtect(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetDeviceModel:
+        ExternApi::GetDeviceModel(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetGpu:
+        ExternApi::GetGpu(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetGpuVer:
+        ExternApi::GetGpuVer(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;
@@ -468,9 +513,7 @@ extern "C" {
         auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
         if (placeHolder.IsBreak())
             return h_ret_val;
-
         return 0;
-
     }
     __declspec(dllexport) int Test2(int a, double b, const char* c)
     {
@@ -529,7 +572,7 @@ extern "C" {
     {
         DBGSCP_HOOK("TestMacro1", int, a, b, c)
 
-        return 0;
+        return DbgScp_TestInt(a, b, c);;
     }
     __declspec(dllexport) int TestMacro2(int a, double b, const char* c)
     {
@@ -541,6 +584,7 @@ extern "C" {
     __declspec(dllexport) void TestMacro3(int a, double b, const char* c)
     {
         DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
+        DbgScp_TestVoid(a, b, c);
     }
     __declspec(dllexport) void TestMacro4(int a, double b, const char* c)
     {

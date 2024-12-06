@@ -36,7 +36,7 @@ void DbgScp_TestVoid(int a, double b, const char* c)
 
         printf("DbgScp_TestVoid a:%d b:%f c:%s\n", a, b, c);
 
-    END_DBGSCP_HOOK_VOID("DbgScp_TestVoid", a, b, c);
+    END_DBGSCP_HOOK_VOID("DbgScp_TestVoid", a, b, c)
 }
 int DbgScp_TestInt(int a, double b, const char* c)
 {
@@ -45,7 +45,7 @@ int DbgScp_TestInt(int a, double b, const char* c)
         printf("DbgScp_TestInt a:%d b:%f c:%s\n", a, b, c);
         return 0;
 
-    END_DBGSCP_HOOK("DbgScp_TestInt", int, a, b, c);
+    END_DBGSCP_HOOK("DbgScp_TestInt", int, a, b, c)
 }
 
 int TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, float f1, float f2, int64_t sv1, int64_t sv2)
@@ -245,6 +245,7 @@ enum class ExternApiEnum
     GetDeviceModel,
     GetGpu,
     GetGpuVer,
+    CheckMemory,
     Num
 };
 
@@ -398,6 +399,16 @@ struct ExternApi
         const char* name = "[gpu_ver]";
         DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
     }
+    static inline void CheckMemory(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        //unity memory check
+#if ENABLE_MEM_PROFILER
+        int64_t memId = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        auto&& id = static_cast<MemLabelIdentifier>(memId);
+        ValidateAllocatorIntegrity(MemLabelId(id));
+#endif
+    }
+
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -441,6 +452,9 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetGpuVer:
         ExternApi::GetGpuVer(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::CheckMemory:
+        ExternApi::CheckMemory(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

@@ -86,6 +86,7 @@ hook(DbgScp_TestVoid)
 		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
 		printf("load:%llx\n", LoadLib("kernel32.dll"));
 		printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
+		CheckMemory(28);
 		return 1;
 	};
 	onexit{
@@ -401,9 +402,10 @@ hook("MemoryManager::GetAllocator")
 			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
 			dumpstack("MemoryManager::GetAllocator");
 		}
-		elif ($c >= 100) {
+		elif ($c == 153) {
 			printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
 			//dumpstack("MemoryManager::GetAllocator");
+			assert(0);
 		}
 		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
@@ -423,5 +425,19 @@ hook("MemoryManager::GetAllocatorOnNull")
 	};
 	onexit{
 		printf("MemoryManager::GetAllocatorOnNull exit time:%d\n",time());
+	};
+};
+hook("PipelineStateCollection::PrecachePSOsProgressively")
+{
+	onenter{
+		$a:int = ptrget(argv(1),8);
+		$b:int = ptrget(argv(2),4);
+		printf("PipelineStateCollection::PrecachePSOsProgressively enter time:%d thread:%d batch:%d->256\n",time(),GetTID(),$b);
+		ptrset(argv(2),4,256);
+		return 0;
+	};
+	onexit{
+		$r:int = ptrget(argv(0),4);
+		printf("PipelineStateCollection::PrecachePSOsProgressively exit time:%d ret:%d\n",time(),$r);
 	};
 };

@@ -51,3 +51,4 @@ defexternapi(MemoryProtect,void,noparams,[int,int,int,int]){
 defexternapi(GetDeviceModel,string,noparams,[]);
 defexternapi(GetGpu,string,noparams,[]);
 defexternapi(GetGpuVer,string,noparams,[]);
+defexternapi(CheckMemory,void,noparams,[int]);

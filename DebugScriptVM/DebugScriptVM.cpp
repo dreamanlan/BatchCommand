@@ -23,6 +23,40 @@
 #include "Runtime/Threads/ReadWriteLock.h"
 #endif
 
+#ifndef COMPILER_BUILTIN_EXPECT
+#if __clang__
+#define COMPILER_BUILTIN_EXPECT(X_, Y_)              __builtin_expect((X_), (Y_))
+#elif __GNUC__
+#define COMPILER_BUILTIN_EXPECT(X_, Y_)              __builtin_expect((X_), (Y_))
+#else
+#define COMPILER_BUILTIN_EXPECT(X_, Y_)             (X_)
+#endif
+#endif
+
+#ifndef OPTIMIZER_LIKELY
+#define OPTIMIZER_LIKELY(EXPR_)     COMPILER_BUILTIN_EXPECT(!!(EXPR_), 1)
+#endif
+
+#ifndef OPTIMIZER_UNLIKELY
+#define OPTIMIZER_UNLIKELY(EXPR_)   COMPILER_BUILTIN_EXPECT(!!(EXPR_), 0)
+#endif
+
+#ifndef LIKELY_ATTR
+#if _MSC_VER && _MSC_VER >= 1939
+#define LIKELY_ATTR [[likely]]
+#else
+#define LIKELY_ATTR
+#endif
+#endif
+
+#ifndef UNLIKELY_ATTR
+#if _MSC_VER && _MSC_VER >= 1939
+#define UNLIKELY_ATTR [[unlikely]]
+#else
+#define UNLIKELY_ATTR
+#endif
+#endif
+
 using namespace DebugScript;
 
 uint32_t g_DebugScriptSerialNum = 0;
@@ -34,6 +68,7 @@ namespace
     struct DebugScriptVMImpl;
     static DebugScriptGlobalImpl* g_pDebugScriptGlobal = nullptr;
     static thread_local DebugScriptVMImpl* g_pDebugScriptVM = nullptr;
+    static thread_local bool g_IsInNewDebugScriptVM = false;
     static std::chrono::time_point<std::chrono::high_resolution_clock> g_start_time{};
 
     static inline void DebugAssert(bool v)
@@ -2605,8 +2640,8 @@ namespace
         , int64_t r8, int64_t r9, int64_t r10, int64_t r11, int64_t r12, int64_t r13, int64_t r14, int64_t r15
         , int64_t r16, int64_t r17, int64_t r18, int64_t r19, int64_t r20, int64_t r21, int64_t r22, int64_t r23)
     {
-        //r0 ~ r7 for register arg on arm; rdi、rsi、rdx、rcx、r8、r9 for register arg on x86_64, rcx、rdx、r8、r9 for register arg on x64, the arguments passed in memory are pushed on
-        //the stack in reversed(right to left) order.
+        //r0 ~ r7 for register arg on arm; rdi,rsi,rdx,rcx,r8,r9 for register arg on x86_64, rcx,rdx,r8,r9 for register arg on x64, the arguments passed in memory are pushed on
+        //the stack in reversed (right to left) order.
         //debug builds on msvc, all arguments are on the stack, but the compiler fakes the argument passing rules.
 
 #if defined(_MSC_VER) && defined(_M_X64)
@@ -2643,8 +2678,8 @@ namespace
         , int64_t r8, int64_t r9, int64_t r10, int64_t r11, int64_t r12, int64_t r13, int64_t r14, int64_t r15
         , int64_t r16, int64_t r17, int64_t r18, int64_t r19, int64_t r20, int64_t r21, int64_t r22, int64_t r23)
     {
-        //r0 ~ r7 for register arg on arm; rdi、rsi、rdx、rcx、r8、r9 for register arg on x86_64, rcx、rdx、r8、r9 for register arg on x64, the arguments passed in memory are pushed on
-        //the stack in reversed(right to left) order.
+        //r0 ~ r7 for register arg on arm; rdi,rsi,rdx,rcx,r8,r9 for register arg on x86_64, rcx,rdx,r8,r9 for register arg on x64, the arguments passed in memory are pushed on
+        //the stack in reversed (right to left) order.
         //debug builds on msvc, all arguments are on the stack, but the compiler fakes the argument passing rules.
 
 #if defined(_MSC_VER) && defined(_M_X64)
@@ -4504,7 +4539,8 @@ namespace
         }
         bool RunOnEnter(int32_t id, int32_t argc, int64_t argv[])
         {
-            if (CanRun())
+            UNLIKELY_ATTR
+            if (OPTIMIZER_UNLIKELY(CanRun()))
             {
                 DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
 
@@ -4517,7 +4553,8 @@ namespace
         }
         bool RunOnExit(int32_t id, int32_t argc, int64_t argv[])
         {
-            if (CanRun())
+            UNLIKELY_ATTR
+            if (OPTIMIZER_UNLIKELY(CanRun()))
             {
                 DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
 
@@ -4843,6 +4880,19 @@ namespace
             return ret;
         }
     };
+    struct AutoMark
+    {
+        AutoMark(bool& flag) :m_Flag(flag)
+        {
+            m_Flag = true;
+        }
+        ~AutoMark()
+        {
+            m_Flag = false;
+        }
+    private:
+        bool& m_Flag;
+    };
 
     DebugScriptGlobalImpl* GetDebugScriptGlobal()
     {
@@ -4854,7 +4904,11 @@ namespace
 
     DebugScriptVMImpl* GetDebugScriptVM()
     {
+        if (g_IsInNewDebugScriptVM) {
+            return nullptr;
+        }
         if (nullptr == g_pDebugScriptVM) {
+            AutoMark mark(g_IsInNewDebugScriptVM);
             g_pDebugScriptVM = new DebugScriptVMImpl();
         }
         return g_pDebugScriptVM;
@@ -4916,22 +4970,42 @@ void DebugScriptGlobal::Load(const char* file)
 
 int32_t DebugScriptVM::FindHook(const char* name)
 {
-    return GetDebugScriptVM()->FindHook(name);
+    auto&& vm = GetDebugScriptVM();
+    UNLIKELY_ATTR
+    if (OPTIMIZER_UNLIKELY(!vm))
+        return -1;
+    return vm->FindHook(name);
 }
 void DebugScriptVM::Reset()
 {
-    GetDebugScriptVM()->Reset();
+    auto&& vm = GetDebugScriptVM();
+    UNLIKELY_ATTR
+    if (OPTIMIZER_UNLIKELY(!vm))
+        return;
+    vm->Reset();
 }
 bool DebugScriptVM::CanRun()
 {
-    return GetDebugScriptVM()->CanRun();
+    auto&& vm = GetDebugScriptVM();
+    UNLIKELY_ATTR
+    if (OPTIMIZER_UNLIKELY(!vm))
+        return false;
+    return vm->CanRun();
 }
 bool DebugScriptVM::RunHookOnEnter(int32_t id, int32_t argc, int64_t argv[])
 {
-    return GetDebugScriptVM()->RunOnEnter(id, argc, argv);
+    auto&& vm = GetDebugScriptVM();
+    UNLIKELY_ATTR
+    if (OPTIMIZER_UNLIKELY(!vm))
+        return false;
+    return vm->RunOnEnter(id, argc, argv);
 }
 bool DebugScriptVM::RunHookOnExit(int32_t id, int32_t argc, int64_t argv[])
 {
-    return GetDebugScriptVM()->RunOnExit(id, argc, argv);
+    auto&& vm = GetDebugScriptVM();
+    UNLIKELY_ATTR
+    if (OPTIMIZER_UNLIKELY(!vm))
+        return false;
+    return vm->RunOnExit(id, argc, argv);
 }
 

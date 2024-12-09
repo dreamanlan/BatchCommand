@@ -405,7 +405,7 @@ hook("MemoryManager::GetAllocator")
 		elif ($c == 153) {
 			printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
 			//dumpstack("MemoryManager::GetAllocator");
-			assert(0);
+			//assert(0);
 		}
 		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);

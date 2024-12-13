@@ -57,6 +57,13 @@
 #endif
 #endif
 
+#ifndef printf_impl
+#define printf_impl printf
+#define my_printf_impl
+#else
+#error printf_impl macro conflict
+#endif
+
 using namespace DebugScript;
 
 uint32_t g_DebugScriptSerialNum = 0;
@@ -293,13 +300,6 @@ namespace
         return str;
     }
 
-#ifndef printf_impl
-#define printf_impl printf
-#define my_printf_impl
-#else
-#error printf_impl macro conflict
-#endif
-
     static int mysnprintf(char* buffer, std::size_t buf_size, const char* fmt, int64_t args[]) {
         const char* p = fmt;
         int i = 0;
@@ -410,11 +410,6 @@ namespace
         }
         return reinterpret_cast<int64_t>(pBuf);
     }
-
-#ifdef my_printf_impl
-#undef printf_impl
-#undef my_printf_impl
-#endif
 
     template<typename RetT, typename... ArgsT>
     struct RetTypeT
@@ -3114,7 +3109,7 @@ namespace
         const int c_max_count = 8;
         int64_t addr = 0;
         int64_t args[c_max_count];
-        double fargs[c_max_count];
+        float fargs[c_max_count];
         int64_t stacks[c_max_count * 4];
 
         int inum = std::min(intNum + 1, c_max_count + 1);
@@ -4370,16 +4365,16 @@ namespace
         {
             g_DebugScriptStarted = true;
         }
-        void Load(const char* file)
+        bool Load(const char* file)
         {
             std::ifstream ifs(file, std::ios::in | std::ios::binary);
             if (ifs.fail())
-                return;
+                return false;
 
             //tag:DSBC 0x43425344
             int tag = ReadInt32(ifs);
             if (tag != 0x43425344)
-                return;
+                return false;
 
             //str table offset
             int offset = ReadInt32(ifs);
@@ -4464,7 +4459,7 @@ namespace
                 ifs.read(reinterpret_cast<char*>(onExit.data()), onExitNum * sizeof(int32_t));
 
                 int32_t hookId = AddHook(name, std::move(onEnter), std::move(onExit));
-                printf("hook:%s id:%d\n", name, hookId);
+                printf_impl("hook:%s id:%d\n", name, hookId);
 
                 //shader name count
                 int shareNameNum = ReadInt32(ifs);
@@ -4472,11 +4467,12 @@ namespace
                     int shareNameIx = ReadInt32(ifs);
                     const char* other = shareNameIx >= 0 && shareNameIx < static_cast<int>(strTable.size()) ? strTable[shareNameIx].c_str() : "";
                     ShareWith(hookId, other);
-                    printf("share with:%s id:%d\n", other, hookId);
+                    printf_impl("share with:%s id:%d\n", other, hookId);
                 }
             }
 
             ifs.close();
+            return true;
         }
         read_write_lock& GetReadWriteLock()
         {
@@ -4963,9 +4959,9 @@ void DebugScriptGlobal::Resume()
 {
     GetDebugScriptGlobal()->Resume();
 }
-void DebugScriptGlobal::Load(const char* file)
+bool DebugScriptGlobal::Load(const char* file)
 {
-    GetDebugScriptGlobal()->Load(file);
+    return GetDebugScriptGlobal()->Load(file);
 }
 
 int32_t DebugScriptVM::FindHook(const char* name)
@@ -5008,4 +5004,9 @@ bool DebugScriptVM::RunHookOnExit(int32_t id, int32_t argc, int64_t argv[])
         return false;
     return vm->RunOnExit(id, argc, argv);
 }
+
+#ifdef my_printf_impl
+#undef printf_impl
+#undef my_printf_impl
+#endif
 

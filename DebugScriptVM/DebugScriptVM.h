@@ -18,7 +18,7 @@ public:
     static void Start();
     static void Pause();
     static void Resume();
-    static void Load(const char* file);
+    static bool Load(const char* file);
 };
 
 class DebugScriptVM

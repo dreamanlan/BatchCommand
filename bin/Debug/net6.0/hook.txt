@@ -147,6 +147,13 @@ hook("CommandBuffer::Begin")
 	onenter{
 		//printf("CommandBuffer::Begin enter time:%d\n",time());
 		//dumpstack("CommandBuffer::Begin");
+		//pThis, _type, renderPass, framebuffer, subpass, renderpassID, allowSW
+		
+		$type:int = ptrget(argv(1),4);
+		$allowSW:int = ptrget(argv(6),4);
+		if($type==2 && $allowSW==0){
+			assert(0);
+		};
 		return 0;
 	};
 	onexit{

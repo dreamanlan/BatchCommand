@@ -448,3 +448,51 @@ hook("PipelineStateCollection::PrecachePSOsProgressively")
 		printf("PipelineStateCollection::PrecachePSOsProgressively exit time:%d ret:%d\n",time(),$r);
 	};
 };
+hook("vk::MemoryAllocator::Allocate")
+{
+	onenter{
+		
+	};
+	onexit{
+		$r:int = ptrget(argv(0),8);
+		if($r==0){
+			assert(0);
+		}
+		else{
+			//printf("vk::AllocMemory: %llx\n", $r);
+		};
+	};
+};
+hook("vk::MemoryAllocator::Free")
+{
+	onenter{
+		$addr:int = ptrget(argv(2),8);
+		//printf("vk::FreeMemory: %llx\n", $addr);
+	};
+	onexit{
+	};
+};
+hook("vk::DataBuffer::CreateResource")
+{
+	onenter{
+		
+	};
+	onexit{
+		$r:int = ptrget(argv(0),8);
+		if($r==0){
+			assert(0);
+		};
+	};
+};
+hook("vk::DataBuffer::AccessBuffer")
+{
+	onenter{
+		
+	};
+	onexit{
+		$r:int = ptrget(argv(0),8);
+		if($r==0){
+			assert(0);
+		};
+	};
+};

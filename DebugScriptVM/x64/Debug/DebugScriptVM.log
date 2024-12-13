@@ -1,10 +1,2 @@
-﻿  DebugScriptVM.cpp
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4538,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4552,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4970,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4978,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4986,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4994,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5002,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-    正在创建库 F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
+﻿  DllMain.cpp
   DebugScriptVM.vcxproj -> F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

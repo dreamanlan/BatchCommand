@@ -22,18 +22,19 @@ static inline void CheckFuncHook(const char* name, int32_t& hook_id, uint32_t& s
 template<typename... ArgsT>
 struct HookWrap
 {
-    HookWrap(int hookId, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Args{ reinterpret_cast<int64_t>(&args)... }
+    HookWrap(int hookId, bool& retry, ArgsT&... args) :m_Retry(retry), m_Break(false), m_HookId(hookId), m_Args{reinterpret_cast<int64_t>(&args)...}
     {
         m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
     }
     ~HookWrap()
     {
         if (!m_Break) {
-            DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
+            m_Retry = DebugScriptVM::RunHookOnExit(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
         }
     }
     bool IsBreak()const { return m_Break; }
 
+    bool& m_Retry;
     bool m_Break;
     int m_HookId;
     std::array<int64_t, sizeof...(ArgsT)> m_Args;
@@ -42,7 +43,13 @@ struct HookWrap
 template<typename... ArgsT>
 static inline HookWrap<ArgsT...> CreateHookWrap(int hookId, ArgsT&... args)
 {
-    return HookWrap<ArgsT...>(hookId, args...);
+    bool retry = false;
+    return HookWrap<ArgsT...>(hookId, retry, args...);
+}
+template<typename... ArgsT>
+static inline HookWrap<ArgsT...> CreateHookWrap(bool& retry, int hookId, ArgsT&... args)
+{
+    return HookWrap<ArgsT...>(hookId, retry, args...);
 }
 
 #if PLATFORM_WIN || PLATFORM_WINRT || PLATFORM_XBOXONE || _MSC_VER || _WIN32 || _WIN64
@@ -106,10 +113,11 @@ if (placeHolder.IsBreak())return h_ret_val;
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
+bool retry{};\
 ret_type h_ret_val{};\
 do\
 {\
-    auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, ##__VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(retry, s_hook_id, h_ret_val, ##__VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return h_ret_val;\
     }\
@@ -118,6 +126,9 @@ do\
         h_ret_val = _hook_func_();\
     }\
 } while (false);\
+if (retry) {\
+    h_ret_val = _hook_func_();\
+}\
 return h_ret_val;
 
 #define DBGSCP_HOOK_VOID(func_sig_str, ...)   \
@@ -135,9 +146,10 @@ if (placeHolder.IsBreak())return;
 thread_local static int32_t s_hook_id = -1;\
 thread_local static uint32_t s_serial_num = 0;\
 CheckFuncHook(func_sig_str, s_hook_id, s_serial_num);\
+bool retry{};\
 do\
 {\
-    auto&& placeHolder = CreateHookWrap(s_hook_id, ##__VA_ARGS__);\
+    auto&& placeHolder = CreateHookWrap(retry, s_hook_id, ##__VA_ARGS__);\
     if (placeHolder.IsBreak()) {\
         return;\
     }\
@@ -145,4 +157,7 @@ do\
     {\
         _hook_func_();\
     }\
-} while (false);
+} while (false);\
+if (retry) {\
+    _hook_func_();\
+}

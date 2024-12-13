@@ -22,7 +22,7 @@ static inline void CheckFuncHook(const char* name, int32_t& hook_id, uint32_t& s
 template<typename... ArgsT>
 struct HookWrap
 {
-    HookWrap(int hookId, bool& retry, ArgsT&... args) :m_Retry(retry), m_Break(false), m_HookId(hookId), m_Args{reinterpret_cast<int64_t>(&args)...}
+    HookWrap(int hookId, bool& retry, ArgsT&... args) :m_Break(false), m_HookId(hookId), m_Retry(retry), m_Args{reinterpret_cast<int64_t>(&args)...}
     {
         m_Break = DebugScriptVM::RunHookOnEnter(m_HookId, static_cast<int32_t>(m_Args.size()), m_Args.data());
     }
@@ -34,9 +34,9 @@ struct HookWrap
     }
     bool IsBreak()const { return m_Break; }
 
-    bool& m_Retry;
     bool m_Break;
     int m_HookId;
+    bool& m_Retry;
     std::array<int64_t, sizeof...(ArgsT)> m_Args;
 };
 

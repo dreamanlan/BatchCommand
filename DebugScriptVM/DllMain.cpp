@@ -538,10 +538,11 @@ extern "C" {
         thread_local static int32_t s_hook_id = -1;
         thread_local static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
+        bool retry{};
         int h_ret_val{};
         do
         {
-            auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
+            auto&& placeHolder = CreateHookWrap(retry, s_hook_id, h_ret_val, a, b, c);
             if (placeHolder.IsBreak()) {
                 return h_ret_val;
             }
@@ -550,6 +551,9 @@ extern "C" {
                 h_ret_val = f();
             }
         } while (false);
+        if (retry) {
+            h_ret_val = f();
+        }
         return h_ret_val;
     }
     __declspec(dllexport) void Test3(int a, double b, const char* c)
@@ -569,9 +573,10 @@ extern "C" {
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
         CheckFuncHook(__FUNCTION__, s_hook_id, s_serial_num);
+        bool retry{};
         do
         {
-            auto&& placeHolder = CreateHookWrap(s_hook_id, a, b, c);
+            auto&& placeHolder = CreateHookWrap(retry, s_hook_id, a, b, c);
             if (placeHolder.IsBreak()) {
                 return;
             }
@@ -580,6 +585,9 @@ extern "C" {
                 f();
             }
         } while (false);
+        if (retry) {
+            f();
+        }
     }
 
     __declspec(dllexport) int TestMacro1(int a, double b, const char* c)

@@ -5,6 +5,8 @@ struct(TestStru3)
 };
 
 @g_dir_chged : int = 0;
+@g_last_time : int = 0;
+
 @ga : int = 123;
 @gb : int[3] = [3,5,1];
 @gc : int = 456;
@@ -151,8 +153,8 @@ hook("CommandBuffer::Begin")
 		
 		$type:int = ptrget(argv(1),4);
 		$allowSW:int = ptrget(argv(6),4);
-		if($type==2 && $allowSW==0){
-			assert(0);
+		if($type==2 && $allowSW!=0){
+			//assert(0);
 		};
 		return 0;
 	};
@@ -494,5 +496,25 @@ hook("vk::DataBuffer::AccessBuffer")
 		if($r==0){
 			assert(0);
 		};
+	};
+};
+hook("UpdateMemoryBudget")
+{
+	onenter{
+		$curTime:int = time();
+		if($curTime - @g_last_time > 10000000){
+			@g_last_time = $curTime;
+			
+			$heapIndex:int = ptrget(argv(1),4);
+			$heapBudget:int = ptrget(argv(2),8);
+			$heapUsage:int = ptrget(argv(3),8);
+			$minHeadroomBytesEnable:int = ptrget(argv(4),8);
+			$minHeadroomBytesDisable:int = ptrget(argv(5),8);
+			$ix:int = ptrget(argv(6),4);
+			$ct:int = ptrget(argv(7),4);
+			printf("UpdateMemoryBudget: %d %d %lld %lld\n", $ix, $heapIndex, $heapBudget, $heapUsage);
+		};
+	};
+	onexit{
 	};
 };

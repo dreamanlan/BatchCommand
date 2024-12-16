@@ -15,12 +15,16 @@
 #include <sstream>
 #include <fstream>
 #include <memory>
-#if _MSC_VER && _MSC_VER >= 1939
+
+#if PLATFORM_WIN //for unity
+#include "Runtime/Threads/ReadWriteLock.h"
+#include "Runtime/Logging/LogAssert.h"
+#elif _MSC_VER && _MSC_VER >= 1939
 #include <shared_mutex>
 #define USE_STD_SHARED_MUTEX 1
-#else
-//for unity engine
+#else //for unity
 #include "Runtime/Threads/ReadWriteLock.h"
+#include "Runtime/Logging/LogAssert.h"
 #endif
 
 #ifndef COMPILER_BUILTIN_EXPECT
@@ -58,10 +62,28 @@
 #endif
 
 #ifndef printf_impl
+#if PLATFORM_WIN //for unity
+#define printf_impl printf_console
+#elif _MSC_VER
 #define printf_impl printf
+#else //for unity
+#define printf_impl printf_console
+#endif
 #define my_printf_impl
 #else
 #error printf_impl macro conflict
+#endif
+
+#if _MSC_VER
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+__declspec(dllimport) long __stdcall IsDebuggerPresent();
+
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 using namespace DebugScript;
@@ -78,14 +100,27 @@ namespace
     static thread_local bool g_IsInNewDebugScriptVM = false;
     static std::chrono::time_point<std::chrono::high_resolution_clock> g_start_time{};
 
-    static inline void DebugAssert(bool v)
+    static inline void MyAssert(bool v)
     {
+#if PLATFORM_WIN //for unity
+        DebugAssert(v);
+#elif _MSC_VER
         _ASSERT(v);
+#else //for unity
+        DebugAssert(v);
+#endif
     }
-    static inline void DebugAssertMsg(bool v, const char* msg)
+    static inline void MyDebugBreak()
     {
-        printf("%s\n", msg);
-        _ASSERT(v);
+#if PLATFORM_WIN //for unity
+        DEBUG_BREAK;
+#elif _MSC_VER
+        if (IsDebuggerPresent()) {
+            __debugbreak();
+        }
+#else //for unity
+        DEBUG_BREAK;
+#endif
     }
 
     //this enum must sync with InsEnum in DebugScriptCompiler.cs
@@ -593,10 +628,14 @@ namespace
         }
         static inline int64_t Platform(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-#if _WIN32 || _WIN64
+#if PLATFORM_WIN || _MSC_VER
             return 0; //win
+#elif PLATFORM_ANDROID
+            return 1; //android
+#elif PLATFORM_IOS
+            return 2; //iOS
 #else
-            return 1; //other
+            return 3; //other
 #endif
         }
         static inline int64_t ScriptAssert(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -608,19 +647,24 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t cond = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             if (argNum == 1) {
-                DebugAssert(cond != 0);
+                if (cond == 0) {
+                    MyDebugBreak();
+                }
             }
             else if (argNum == 2) {
                 bool isGlobal2;
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand2(operand, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::String);
+                MyAssert(ty2 == TypeEnum::String);
                 const std::string& msg = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
-                DebugAssertMsg(cond != 0, msg.c_str());
+                if (cond == 0) {
+                    printf_impl("DebugBreak:%s\n", msg.c_str());
+                    MyDebugBreak();
+                }
             }
             return 0;
         }
@@ -633,9 +677,15 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             const std::string& prefix = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
-            //DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
+#if PLATFORM_WIN //for unity
+            DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
+#elif _MSC_VER
+            printf_impl("%s%s:%d\n", prefix.c_str(), __FILE__, __LINE__);
+#else //for unity
+            DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
+#endif
         }
         static inline int64_t Printf(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -653,7 +703,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         pStr = &GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                     }
                     else {
@@ -732,7 +782,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         pStr = &GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                     }
                     else {
@@ -822,7 +872,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::Int);
+                        MyAssert(ty == TypeEnum::Int);
                         addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
                     }
                     else {
@@ -830,7 +880,7 @@ namespace
                         TypeEnum ty1;
                         int32_t index1;
                         DecodeOperand1(operand, isGlobal1, ty1, index1);
-                        DebugAssert(ty1 == TypeEnum::Int);
+                        MyAssert(ty1 == TypeEnum::Int);
                         int32_t val = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
                         args.push_back(val);
                     }
@@ -840,7 +890,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::Int);
+                    MyAssert(ty2 == TypeEnum::Int);
                     int32_t val = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
                     args.push_back(val);
                 }
@@ -858,7 +908,7 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             return static_cast<int64_t>(str.length());
@@ -878,7 +928,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                         pStr = &str;
                     }
@@ -887,7 +937,7 @@ namespace
                         TypeEnum ty1;
                         int32_t index1;
                         DecodeOperand1(operand, isGlobal1, ty1, index1);
-                        DebugAssert(ty1 == TypeEnum::String);
+                        MyAssert(ty1 == TypeEnum::String);
                         const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         const std::string& str = *pStr;
                         if (v.length() > 0 && str.find(v) == std::string::npos) {
@@ -901,7 +951,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::String);
+                    MyAssert(ty2 == TypeEnum::String);
                     const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                     const std::string& str = *pStr;
                     if (v.length() > 0 && str.find(v) == std::string::npos) {
@@ -927,7 +977,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                         pStr = &str;
                     }
@@ -936,7 +986,7 @@ namespace
                         TypeEnum ty1;
                         int32_t index1;
                         DecodeOperand1(operand, isGlobal1, ty1, index1);
-                        DebugAssert(ty1 == TypeEnum::String);
+                        MyAssert(ty1 == TypeEnum::String);
                         const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         const std::string& str = *pStr;
                         if (v.length() > 0 && str.find(v) != std::string::npos) {
@@ -950,7 +1000,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::String);
+                    MyAssert(ty2 == TypeEnum::String);
                     const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                     const std::string& str = *pStr;
                     if (v.length() > 0 && str.find(v) != std::string::npos) {
@@ -976,7 +1026,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                         pStr = &str;
                     }
@@ -985,7 +1035,7 @@ namespace
                         TypeEnum ty1;
                         int32_t index1;
                         DecodeOperand1(operand, isGlobal1, ty1, index1);
-                        DebugAssert(ty1 == TypeEnum::String);
+                        MyAssert(ty1 == TypeEnum::String);
                         const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         const std::string& str = *pStr;
                         if (v.length() > 0 && str.find(v) != std::string::npos) {
@@ -999,7 +1049,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::String);
+                    MyAssert(ty2 == TypeEnum::String);
                     const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                     const std::string& str = *pStr;
                     if (v.length() > 0 && str.find(v) != std::string::npos) {
@@ -1025,7 +1075,7 @@ namespace
                         TypeEnum ty;
                         int32_t index;
                         DecodeOperand1(operand, isGlobal, ty, index);
-                        DebugAssert(ty == TypeEnum::String);
+                        MyAssert(ty == TypeEnum::String);
                         const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
                         pStr = &str;
                     }
@@ -1034,7 +1084,7 @@ namespace
                         TypeEnum ty1;
                         int32_t index1;
                         DecodeOperand1(operand, isGlobal1, ty1, index1);
-                        DebugAssert(ty1 == TypeEnum::String);
+                        MyAssert(ty1 == TypeEnum::String);
                         const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
                         const std::string& str = *pStr;
                         if (v.length() > 0 && str.find(v) == std::string::npos) {
@@ -1048,7 +1098,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand2(operand, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::String);
+                    MyAssert(ty2 == TypeEnum::String);
                     const std::string& v = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                     const std::string& str = *pStr;
                     if (v.length() > 0 && str.find(v) == std::string::npos) {
@@ -1068,14 +1118,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::String);
+            MyAssert(ty1 == TypeEnum::String);
             const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
 
             int64_t start = 0;
@@ -1087,7 +1137,7 @@ namespace
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand1(operand2, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::Int);
+                MyAssert(ty2 == TypeEnum::Int);
                 start = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
             }
 
@@ -1106,14 +1156,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::String);
+            MyAssert(ty1 == TypeEnum::String);
             const std::string& v = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
 
             std::size_t start = std::string::npos;
@@ -1125,7 +1175,7 @@ namespace
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand1(operand2, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::Int);
+                MyAssert(ty2 == TypeEnum::Int);
                 start = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
             }
 
@@ -1144,14 +1194,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             const std::string& str = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             std::size_t off = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             std::size_t count = std::string::npos;
@@ -1163,7 +1213,7 @@ namespace
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand1(operand2, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::Int);
+                MyAssert(ty2 == TypeEnum::Int);
                 count = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
             }
 
@@ -1179,7 +1229,7 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t strAddr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             if (strAddr)
                 return static_cast<int64_t>(std::strlen(reinterpret_cast<const char*>(strAddr)));
@@ -1195,14 +1245,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t strAddr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             int64_t strAddr2 = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             if (strAddr && strAddr2)
                 return reinterpret_cast<int64_t>(std::strstr(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2)));
@@ -1218,14 +1268,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t strAddr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             int64_t strAddr2 = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             if (strAddr && strAddr2) {
@@ -1237,7 +1287,7 @@ namespace
                     TypeEnum ty2;
                     int32_t index2;
                     DecodeOperand1(operand2, isGlobal2, ty2, index2);
-                    DebugAssert(ty2 == TypeEnum::Int);
+                    MyAssert(ty2 == TypeEnum::Int);
                     std::size_t count = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
                     return std::strncmp(reinterpret_cast<const char*>(strAddr), reinterpret_cast<const char*>(strAddr2), count);
@@ -1259,7 +1309,7 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t size = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             void* fptr = std::malloc(static_cast<size_t>(size));
@@ -1274,7 +1324,7 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
             if (addr) {
                 std::free(reinterpret_cast<void*>(addr));
@@ -1289,14 +1339,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             int64_t src = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             ++pos;
@@ -1306,7 +1356,7 @@ namespace
             TypeEnum ty2;
             int32_t index2;
             DecodeOperand1(operand2, isGlobal2, ty2, index2);
-            DebugAssert(ty2 == TypeEnum::Int);
+            MyAssert(ty2 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
             if (dest && src) {
@@ -1326,14 +1376,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             ++pos;
@@ -1343,7 +1393,7 @@ namespace
             TypeEnum ty2;
             int32_t index2;
             DecodeOperand1(operand2, isGlobal2, ty2, index2);
-            DebugAssert(ty2 == TypeEnum::Int);
+            MyAssert(ty2 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
 
             if (dest) {
@@ -1363,14 +1413,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t src = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             ++pos;
@@ -1380,7 +1430,7 @@ namespace
             TypeEnum ty2;
             int32_t index2;
             DecodeOperand1(operand2, isGlobal2, ty2, index2);
-            DebugAssert(ty2 == TypeEnum::String);
+            MyAssert(ty2 == TypeEnum::String);
             const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
 
             if (src) {
@@ -1405,14 +1455,14 @@ namespace
             TypeEnum ty;
             int32_t index;
             DecodeOperand1(operand, isGlobal, ty, index);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             int64_t dest = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
 
             bool isGlobal1;
             TypeEnum ty1;
             int32_t index1;
             DecodeOperand2(operand, isGlobal1, ty1, index1);
-            DebugAssert(ty1 == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Int);
             std::size_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
 
             ++pos;
@@ -1422,7 +1472,7 @@ namespace
             TypeEnum ty2;
             int32_t index2;
             DecodeOperand1(operand2, isGlobal2, ty2, index2);
-            DebugAssert(ty2 == TypeEnum::String);
+            MyAssert(ty2 == TypeEnum::String);
             const std::string& file = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
 
             if (dest) {
@@ -1451,12 +1501,12 @@ namespace
         switch (api) {
         case ApiEnum::Platform: {
             int64_t val = Api::Platform(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::ScriptAssert: {
             int64_t val = Api::ScriptAssert(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::DumpStack: {
@@ -1464,87 +1514,87 @@ namespace
         }break;
         case ApiEnum::Printf: {
             int64_t val = Api::Printf(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);;
         }break;
         case ApiEnum::Format: {
             std::string val = Api::Format(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
         }break;
         case ApiEnum::Time: {
             int64_t val = Api::Time(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::FloatTime: {
             double val = Api::FloatTime(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float);
             SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
         }break;
         case ApiEnum::DumpCascadePtr: {
             int64_t val = Api::DumpCascadePtr(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringLength: {
             int64_t val = Api::StringLength(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringContains: {
             int64_t val = Api::StringContains(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringContainsAny: {
             int64_t val = Api::StringContainsAny(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringNotContains: {
             int64_t val = Api::StringNotContains(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringNotContainsAny: {
             int64_t val = Api::StringNotContainsAny(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringFind: {
             int64_t val = Api::StringFind(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::StringRightFind: {
             int64_t val = Api::StringRightFind(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::SubString: {
             std::string val = Api::SubString(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String);
             SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
         }break;
         case ApiEnum::CStrLen: {
             int64_t val = Api::CStrLen(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::CStrStr: {
             int64_t val = Api::CStrStr(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::CStrCmp: {
             int64_t val = Api::CStrCmp(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::Malloc: {
             int64_t val = Api::Malloc(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::Free: {
@@ -1552,22 +1602,22 @@ namespace
         }break;
         case ApiEnum::MemCpy: {
             int64_t val = Api::MemCpy(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::MemSet: {
             int64_t val = Api::MemSet(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::MemSave: {
             int64_t val = Api::MemSave(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         case ApiEnum::MemLoad: {
             int64_t val = Api::MemLoad(argNum, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals);
-            DebugAssert(ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int);
             SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
         }break;
         default: {
@@ -1585,7 +1635,7 @@ namespace
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
         int32_t apiIndex;
         DecodeOperand1(operand, apiIndex);
-        DebugAssert(apiIndex >= 0);
+        MyAssert(apiIndex >= 0);
         Api::CallExternApi(apiIndex, isGlobal, ty, index, argNum, operand, codes, pos, stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args);
     }
     static inline void DoRet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals, bool& retVal)
@@ -1698,8 +1748,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         ++val;
         SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
@@ -1718,8 +1768,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Float);
-        DebugAssert(ty1 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         ++val;
         SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
@@ -1743,7 +1793,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
         int64_t inc = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         val += inc;
@@ -1768,7 +1818,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
         double inc = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         val += inc;
@@ -1788,8 +1838,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         --val;
         SetVarInt(isGlobal1, index1, val, stackBase, intLocals, intGlobals);
@@ -1808,8 +1858,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Float);
-        DebugAssert(ty1 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         --val;
         SetVarFloat(isGlobal1, index1, val, stackBase, fltLocals, fltGlobals);
@@ -1833,7 +1883,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
         int64_t inc = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         val -= inc;
@@ -1858,7 +1908,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
         double inc = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         val -= inc;
@@ -1879,7 +1929,7 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
@@ -1897,7 +1947,7 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
     }
@@ -1915,7 +1965,7 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::String);
+        MyAssert(ty1 == TypeEnum::String && ty == TypeEnum::String);
         const std::string& val = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
         SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
     }
@@ -1937,7 +1987,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
         int64_t val = GetVarInt(isGlobal1, index1 + ix, stackBase, intLocals, intGlobals);
         SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
@@ -1960,7 +2010,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Int && ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Float && ty2 == TypeEnum::Int && ty == TypeEnum::Float);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
         double val = GetVarFloat(isGlobal1, index1 + ix, stackBase, fltLocals, fltGlobals);
         SetVarFloat(isGlobal, index, val, stackBase, fltLocals, fltGlobals);
@@ -1983,7 +2033,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::String && ty2 == TypeEnum::Int && ty == TypeEnum::String);
+        MyAssert(ty1 == TypeEnum::String && ty2 == TypeEnum::Int && ty == TypeEnum::String);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals));
         const std::string& val = GetVarString(isGlobal1, index1 + ix, stackBase, strLocals, strGlobals);
         SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
@@ -2006,7 +2056,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Int && ty == TypeEnum::Int);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
         int64_t val = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         SetVarInt(isGlobal, index + ix, val, stackBase, intLocals, intGlobals);
@@ -2029,7 +2079,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::Float && ty == TypeEnum::Float);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
         double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
         SetVarFloat(isGlobal, index + ix, val, stackBase, fltLocals, fltGlobals);
@@ -2052,7 +2102,7 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::String && ty == TypeEnum::String);
+        MyAssert(ty1 == TypeEnum::Int && ty2 == TypeEnum::String && ty == TypeEnum::String);
         int32_t ix = static_cast<int32_t>(GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals));
         const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
         SetVarString(isGlobal, index + ix, val, stackBase, strLocals, strGlobals);
@@ -2072,8 +2122,8 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
 
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         float fv = static_cast<float>(val);
         int32_t iv = *reinterpret_cast<int32_t*>(&fv);
@@ -2095,8 +2145,8 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
 
-        DebugAssert(ty == TypeEnum::Float);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int32_t iv = static_cast<int32_t>(val);
         float fv = *reinterpret_cast<float*>(&iv);
@@ -2118,8 +2168,8 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
 
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Float);
         double val = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
         SetVarInt(isGlobal, index, *reinterpret_cast<int64_t*>(&val), stackBase, intLocals, intGlobals);
     }
@@ -2138,8 +2188,8 @@ namespace
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
 
-        DebugAssert(ty == TypeEnum::Float);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Int);
         int64_t val = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         SetVarFloat(isGlobal, index, *reinterpret_cast<double*>(&val), stackBase, fltLocals, fltGlobals);
     }
@@ -2150,7 +2200,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
-        DebugAssert(ty == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
 
         SetVarInt(isGlobal, index, argc, stackBase, intLocals, intGlobals);
     }
@@ -2168,8 +2218,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
 
         int64_t ix = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         if (ix >= 0 && ix < argc) {
@@ -2194,8 +2244,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? intGlobals.data() : intLocals.data()) + index1);
         SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
@@ -2214,8 +2264,8 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Float);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal1 ? fltGlobals.data() : fltLocals.data()) + index1);
         SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
@@ -2234,15 +2284,15 @@ namespace
         TypeEnum ty1;
         int32_t index1;
         DecodeOperand1(operand, isGlobal1, ty1, index1);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::String);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::String);
 
         int64_t val = reinterpret_cast<int64_t>((isGlobal ? strGlobals.data() : strLocals.data()) + index1);
         SetVarInt(isGlobal, index, val, stackBase, intLocals, intGlobals);
     }
     static inline int64_t ReadMemory(int64_t addr, int64_t offset, int64_t size)
     {
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         int64_t retVal = 0;
         if (addr) {
             switch (size) {
@@ -2284,7 +2334,7 @@ namespace
     }
     static inline void WriteMemory(int64_t addr, int64_t offset, int64_t size, int64_t val)
     {
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         if (addr) {
             switch (size) {
             case 0:
@@ -2339,9 +2389,9 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
@@ -2366,14 +2416,14 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::Float);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Float);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         double val = 0;
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         if (addr) {
             switch (size) {
             case 4:
@@ -2408,13 +2458,13 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::String);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::String);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         if (addr) {
             //dangerous!!!
             std::string val = *reinterpret_cast<const char**>(addr);
@@ -2439,9 +2489,9 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::Int);
 
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
@@ -2466,13 +2516,13 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::Float);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::Float);
 
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         if (addr) {
             double val = GetVarFloat(isGlobal2, index2, stackBase, fltLocals, fltGlobals);
             switch (size) {
@@ -2507,13 +2557,13 @@ namespace
         TypeEnum ty2;
         int32_t index2;
         DecodeOperand2(operand, isGlobal2, ty2, index2);
-        DebugAssert(ty == TypeEnum::Int);
-        DebugAssert(ty1 == TypeEnum::Int);
-        DebugAssert(ty2 == TypeEnum::String);
+        MyAssert(ty == TypeEnum::Int);
+        MyAssert(ty1 == TypeEnum::Int);
+        MyAssert(ty2 == TypeEnum::String);
 
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-        DebugAssert(addr != 0);
+        MyAssert(addr != 0);
         if (addr) {
             //dangerous!!!
             const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
@@ -2534,7 +2584,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
-        DebugAssert(ty == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
 
         int64_t addr = 0;
         int64_t lastSize = 0;
@@ -2546,7 +2596,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand1(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int);
+                MyAssert(ty1 == TypeEnum::Int);
                 if (i == 0) {
                     addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -2556,7 +2606,7 @@ namespace
                 }
                 else {
                     int64_t offset = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
-                    DebugAssert(addr != 0);
+                    MyAssert(addr != 0);
                     if (addr) {
                         addr = *reinterpret_cast<int64_t*>(addr + offset);
                     }
@@ -2567,7 +2617,7 @@ namespace
                 TypeEnum ty2;
                 int32_t index2;
                 DecodeOperand2(operand, isGlobal2, ty2, index2);
-                DebugAssert(ty2 == TypeEnum::Int);
+                MyAssert(ty2 == TypeEnum::Int);
                 if (i == 0) {
                     lastSize = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
                 }
@@ -2577,7 +2627,7 @@ namespace
                 }
                 else {
                     int64_t offset = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
-                    DebugAssert(addr != 0);
+                    MyAssert(addr != 0);
                     if (addr) {
                         addr = *reinterpret_cast<int64_t*>(addr + offset);
                     }
@@ -2593,7 +2643,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
-        DebugAssert(ty == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
 
         SetVarInt(isGlobal, index, stackBase / c_max_variable_table_size, stackBase, intLocals, intGlobals);
     }
@@ -2604,7 +2654,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
-        DebugAssert(ty == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
 
         SetVarInt(isGlobal, index, hookId, stackBase, intLocals, intGlobals);
     }
@@ -2615,7 +2665,7 @@ namespace
         TypeEnum ty;
         int32_t index;
         DecodeOpcode(opcode, op, argNum, isGlobal, ty, index);
-        DebugAssert(ty == TypeEnum::Int);
+        MyAssert(ty == TypeEnum::Int);
 
         SetVarInt(isGlobal, index, g_DebugScriptSerialNum, stackBase, intLocals, intGlobals);
     }
@@ -2987,7 +3037,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (i == 0) {
-                    DebugAssert(ty0 == TypeEnum::Int);
+                    MyAssert(ty0 == TypeEnum::Int);
                     addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else {
@@ -3004,7 +3054,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                MyAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
                 if (ty1 == TypeEnum::Int) {
                     args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -3123,7 +3173,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (i == 0) {
-                    DebugAssert(ty0 == TypeEnum::Int);
+                    MyAssert(ty0 == TypeEnum::Int);
                     addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else {
@@ -3140,7 +3190,7 @@ namespace
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
-                DebugAssert(ty0 == TypeEnum::Float);
+                MyAssert(ty0 == TypeEnum::Float);
                 fargs[i - 1 - intNum] = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
             }
             else if (i >= 1 + intNum + fltNum && i < argNum) {
@@ -3164,7 +3214,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                MyAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
                 if (ty1 == TypeEnum::Int) {
                     args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -3177,7 +3227,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Float);
+                MyAssert(ty1 == TypeEnum::Float);
                 fargs[i - intNum] = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
@@ -3260,7 +3310,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (i == 0) {
-                    DebugAssert(ty0 == TypeEnum::Int);
+                    MyAssert(ty0 == TypeEnum::Int);
                     addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else {
@@ -3277,7 +3327,7 @@ namespace
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
-                DebugAssert(ty0 == TypeEnum::Float);
+                MyAssert(ty0 == TypeEnum::Float);
                 fargs[i - 1 - intNum] = static_cast<float>(GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals));
             }
             else if (i >= 1 + intNum + fltNum && i < argNum) {
@@ -3301,7 +3351,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                MyAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
                 if (ty1 == TypeEnum::Int) {
                     args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -3314,7 +3364,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Float);
+                MyAssert(ty1 == TypeEnum::Float);
                 fargs[i - intNum] = static_cast<float>(GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals));
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
@@ -3397,7 +3447,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (i == 0) {
-                    DebugAssert(ty0 == TypeEnum::Int);
+                    MyAssert(ty0 == TypeEnum::Int);
                     addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else {
@@ -3414,7 +3464,7 @@ namespace
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
-                DebugAssert(ty0 == TypeEnum::Float);
+                MyAssert(ty0 == TypeEnum::Float);
                 fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
             }
             else if (i >= 1 + intNum + fltNum && i < argNum) {
@@ -3438,7 +3488,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                MyAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
                 if (ty1 == TypeEnum::Int) {
                     args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -3451,7 +3501,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Float);
+                MyAssert(ty1 == TypeEnum::Float);
                 fargs[i - intNum] = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
@@ -3534,7 +3584,7 @@ namespace
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
                 if (i == 0) {
-                    DebugAssert(ty0 == TypeEnum::Int);
+                    MyAssert(ty0 == TypeEnum::Int);
                     addr = GetVarInt(isGlobal0, index0, stackBase, intLocals, intGlobals);
                 }
                 else {
@@ -3551,7 +3601,7 @@ namespace
                 TypeEnum ty0;
                 int32_t index0;
                 DecodeOperand1(operand, isGlobal0, ty0, index0);
-                DebugAssert(ty0 == TypeEnum::Float);
+                MyAssert(ty0 == TypeEnum::Float);
                 fargs[i - 1 - intNum] = GetVarFloat(isGlobal0, index0, stackBase, fltLocals, fltGlobals);
             }
             else if (i >= 1 + intNum + fltNum && i < argNum) {
@@ -3575,7 +3625,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
+                MyAssert(ty1 == TypeEnum::Int || ty1 == TypeEnum::String);
                 if (ty1 == TypeEnum::Int) {
                     args[i] = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
                 }
@@ -3588,7 +3638,7 @@ namespace
                 TypeEnum ty1;
                 int32_t index1;
                 DecodeOperand2(operand, isGlobal1, ty1, index1);
-                DebugAssert(ty1 == TypeEnum::Float);
+                MyAssert(ty1 == TypeEnum::Float);
                 fargs[i - intNum] = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             }
             else if (i + 1 >= 1 + intNum + fltNum && i + 1 < argNum) {
@@ -3646,7 +3696,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
             int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, -val, stackBase, intLocals, intGlobals);
         }
@@ -3655,7 +3705,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && argTy == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && argTy == TypeEnum::Float);
             double val = GetVarFloat(argIsGlobal, argIndex, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, -val, stackBase, fltLocals, fltGlobals);
         }
@@ -3664,7 +3714,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 + val2, stackBase, intLocals, intGlobals);
@@ -3674,7 +3724,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, val1 + val2, stackBase, fltLocals, fltGlobals);
@@ -3684,7 +3734,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::String && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::String && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarString(isGlobal, index, val1 + val2, stackBase, strLocals, strGlobals);
@@ -3694,7 +3744,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 - val2, stackBase, intLocals, intGlobals);
@@ -3704,7 +3754,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, val1 - val2, stackBase, fltLocals, fltGlobals);
@@ -3714,7 +3764,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 * val2, stackBase, intLocals, intGlobals);
@@ -3724,7 +3774,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, val1 * val2, stackBase, fltLocals, fltGlobals);
@@ -3734,7 +3784,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 / val2, stackBase, intLocals, intGlobals);
@@ -3744,7 +3794,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, val1 / val2, stackBase, fltLocals, fltGlobals);
@@ -3754,7 +3804,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 % val2, stackBase, intLocals, intGlobals);
@@ -3764,7 +3814,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Float && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarFloat(isGlobal, index, std::fmod(val1, val2), stackBase, fltLocals, fltGlobals);
@@ -3774,7 +3824,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 && val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3784,7 +3834,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 || val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3794,7 +3844,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
             int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val ? 1 : 0, stackBase, intLocals, intGlobals);
         }
@@ -3803,7 +3853,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3813,7 +3863,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3823,7 +3873,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 > val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3833,7 +3883,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3843,7 +3893,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3853,7 +3903,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 >= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3863,7 +3913,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3873,7 +3923,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3883,7 +3933,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 == val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3893,7 +3943,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3903,7 +3953,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3913,7 +3963,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 != val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3923,7 +3973,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3933,7 +3983,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3943,7 +3993,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 <= val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3953,7 +4003,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3963,7 +4013,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Float && arg2Ty == TypeEnum::Float);
             double val1 = GetVarFloat(arg1IsGlobal, arg1Index, stackBase, fltLocals, fltGlobals);
             double val2 = GetVarFloat(arg2IsGlobal, arg2Index, stackBase, fltLocals, fltGlobals);
             SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3973,7 +4023,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::String && arg2Ty == TypeEnum::String);
             const std::string& val1 = GetVarString(arg1IsGlobal, arg1Index, stackBase, strLocals, strGlobals);
             const std::string& val2 = GetVarString(arg2IsGlobal, arg2Index, stackBase, strLocals, strGlobals);
             SetVarInt(isGlobal, index, val1 < val2 ? 1 : 0, stackBase, intLocals, intGlobals);
@@ -3983,7 +4033,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 << static_cast<int>(val2), stackBase, intLocals, intGlobals);
@@ -3993,7 +4043,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 >> static_cast<int>(val2), stackBase, intLocals, intGlobals);
@@ -4003,7 +4053,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, static_cast<int64_t>(static_cast<uint64_t>(val1) >> static_cast<int>(val2)), stackBase, intLocals, intGlobals);
@@ -4013,7 +4063,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 & val2, stackBase, intLocals, intGlobals);
@@ -4023,7 +4073,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 | val2, stackBase, intLocals, intGlobals);
@@ -4033,7 +4083,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool arg1IsGlobal, TypeEnum arg1Ty, int arg1Index, bool arg2IsGlobal, TypeEnum arg2Ty, int arg2Index, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && arg1Ty == TypeEnum::Int && arg2Ty == TypeEnum::Int);
             int64_t val1 = GetVarInt(arg1IsGlobal, arg1Index, stackBase, intLocals, intGlobals);
             int64_t val2 = GetVarInt(arg2IsGlobal, arg2Index, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, val1 ^ val2, stackBase, intLocals, intGlobals);
@@ -4043,7 +4093,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool argIsGlobal, TypeEnum argTy, int argIndex, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
+            MyAssert(ty == TypeEnum::Int && argTy == TypeEnum::Int);
             int64_t val = GetVarInt(argIsGlobal, argIndex, stackBase, intLocals, intGlobals);
             SetVarInt(isGlobal, index, ~val, stackBase, intLocals, intGlobals);
         }
@@ -4053,7 +4103,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
+            MyAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
             int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             std::string res = Convert<std::string>(ival);
             SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
@@ -4063,7 +4113,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::String);
+            MyAssert(ty1 == TypeEnum::Float && ty == TypeEnum::String);
             double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             std::string res = Convert<std::string>(fval);
             SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);
@@ -4073,7 +4123,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
             const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             int64_t res = Convert<int64_t>(sval);
             SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
@@ -4083,7 +4133,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Float);
+            MyAssert(ty1 == TypeEnum::String && ty == TypeEnum::Float);
             const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             double res = Convert<double>(sval);
             SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
@@ -4093,7 +4143,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::Float && ty == TypeEnum::Int);
             double fval = GetVarFloat(isGlobal1, index1, stackBase, fltLocals, fltGlobals);
             int64_t res = Convert<int64_t>(fval);
             SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
@@ -4103,7 +4153,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
+            MyAssert(ty1 == TypeEnum::String && ty == TypeEnum::Int);
             const std::string& sval = GetVarString(isGlobal1, index1, stackBase, strLocals, strGlobals);
             int64_t res = reinterpret_cast<int64_t>(sval.c_str());
             SetVarInt(isGlobal, index, res, stackBase, intLocals, intGlobals);
@@ -4113,7 +4163,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Float);
+            MyAssert(ty1 == TypeEnum::Int && ty == TypeEnum::Float);
             int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             double res = Convert<double>(ival);
             SetVarFloat(isGlobal, index, res, stackBase, fltLocals, fltGlobals);
@@ -4123,7 +4173,7 @@ namespace
     {
         static inline void Calc(bool isGlobal, TypeEnum ty, int index, bool isGlobal1, TypeEnum ty1, int index1, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-            DebugAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
+            MyAssert(ty1 == TypeEnum::Int && ty == TypeEnum::String);
             int64_t ival = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
             const char* res = reinterpret_cast<const char*>(ival);
             SetVarString(isGlobal, index, res, stackBase, strLocals, strGlobals);

@@ -4404,6 +4404,8 @@ namespace
         int32_t ShareWith(int32_t hookId, const char* other)
         {
             if (hookId >= 0 && hookId < static_cast<int32_t>(m_HookDatas.size())) {
+                write_locker lock(m_Mutex);
+
                 m_HookMap.insert(std::make_pair(std::string(other), hookId));
                 return hookId;
             }

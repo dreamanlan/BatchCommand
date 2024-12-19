@@ -11,7 +11,6 @@ static inline void CheckFuncHook(const char* name, int32_t& hook_id, uint32_t& s
         if (serial_num < g_DebugScriptSerialNum) {
             if (hook_id >= 0) {
                 hook_id = -1;
-                DebugScriptVM::Reset();
             }
             hook_id = DebugScriptVM::FindHook(name);
             serial_num = g_DebugScriptSerialNum;

@@ -4580,13 +4580,6 @@ namespace
             int32_t id = g_pDebugScriptGlobal->FindHook(name);
             return id;
         }
-        void Reset()
-        {
-            m_StackDepth = 0;
-            m_IntLocals.fill(0);
-            m_FloatLocals.fill(0);
-            m_StringLocals.fill(std::string());
-        }
         bool CanRun()const
         {
             return g_DebugScriptStarted;
@@ -5029,14 +5022,6 @@ int32_t DebugScriptVM::FindHook(const char* name)
     if (OPTIMIZER_UNLIKELY(!vm))
         return -1;
     return vm->FindHook(name);
-}
-void DebugScriptVM::Reset()
-{
-    auto&& vm = GetDebugScriptVM();
-    UNLIKELY_ATTR
-    if (OPTIMIZER_UNLIKELY(!vm))
-        return;
-    vm->Reset();
 }
 bool DebugScriptVM::CanRun()
 {

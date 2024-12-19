@@ -25,7 +25,6 @@ class DebugScriptVM
 {
 public:
     static int32_t FindHook(const char* name);
-    static void Reset();
     static bool CanRun();
     static bool RunHookOnEnter(int32_t id, int32_t argc, int64_t argv[]);
     static bool RunHookOnExit(int32_t id, int32_t argc, int64_t argv[]);

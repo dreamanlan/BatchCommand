@@ -323,9 +323,9 @@ hook("MemoryManager::Allocate_Temp_Null")
 		printf("MemoryManager::Allocate_Temp_Null enter time:%d size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
 		
 		//retry
-		ptrset(argv(1),4, 1);
+		//ptrset(argv(1),4, 1);
 		
-		assert(0);
+		//assert(0);
 		return 0;
 	};
 	onexit{

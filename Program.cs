@@ -26,10 +26,10 @@ namespace BatchCommand
             };
 
             BatchScript.Init();
-            BatchScript.Register("compiledbgscp", "compiledbgscp(apiFile, struFile, scpFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
+            BatchScript.Register("compiledbgscp", "compiledbgscp(scpFile, struFile, apiFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
             BatchScript.Register("uploaddbgscp", "dumpdbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
-            BatchScript.Register("savedbgscp", "savedbgscp() api", new ExpressionFactoryHelper<SaveDbgScpExp>());
-            BatchScript.Register("loaddbgscp", "loaddbgscp() api", new ExpressionFactoryHelper<LoadDbgScpExp>());
+            BatchScript.Register("savedbgscp", "savedbgscp(dataFile) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
+            BatchScript.Register("loaddbgscp", "loaddbgscp(dataFile) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
 
             if (args.Length == 0) {
@@ -147,13 +147,17 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            string apiFile = "api.txt";
-            string struFile = "struct.txt";
             string scpFile = "hook.txt";
-            if (operands.Count >= 3) {
-                apiFile = operands[0].AsString;
+            string struFile = "struct.txt";
+            string apiFile = "api.txt";
+            if (operands.Count > 0) {
+                scpFile = operands[0].AsString;
+            }
+            if (operands.Count > 1) {
                 struFile = operands[1].AsString;
-                scpFile = operands[2].AsString;
+            }
+            if (operands.Count > 2) {
+                apiFile = operands[2].AsString;
             }
             if (!string.IsNullOrEmpty(apiFile) && !string.IsNullOrEmpty(struFile) && !string.IsNullOrEmpty(scpFile)) {
                 string txt = File.ReadAllText(apiFile);

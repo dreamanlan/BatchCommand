@@ -122,101 +122,6 @@ hook(DbgScp_TestInt)
 	};
 };
 
-hook("CommandBuffer::BeginRenderPass")
-{
-	onenter{
-		//printf("CommandBuffer::BeginRenderPass enter time:%d\n",time());
-		//dumpstack("CommandBuffer::BeginRenderPass");
-		return 0;
-	};
-	onexit{
-		//printf("CommandBuffer::BeginRenderPass exit time:%d\n",time());
-	};
-};
-hook("CommandBuffer::EndRenderPass")
-{
-	onenter{
-		//printf("CommandBuffer::EndRenderPass enter time:%d\n",time());
-		//dumpstack("CommandBuffer::EndRenderPass");
-		return 0;
-	};
-	onexit{
-		//printf("CommandBuffer::EndRenderPass exit time:%d\n",time());
-	};
-};
-hook("CommandBuffer::Begin")
-{
-	onenter{
-		//printf("CommandBuffer::Begin enter time:%d\n",time());
-		//dumpstack("CommandBuffer::Begin");
-		//pThis, _type, renderPass, framebuffer, subpass, renderpassID, allowSW
-		
-		$type:int = ptrget(argv(1),4);
-		$allowSW:int = ptrget(argv(6),4);
-		if($type==2 && $allowSW!=0){
-			//assert(0);
-		};
-		return 0;
-	};
-	onexit{
-		//printf("CommandBuffer::Begin exit time:%d\n",time());
-	};
-};
-hook("CommandBuffer::End")
-{
-	onenter{
-		//printf("CommandBuffer::End enter time:%d\n",time());
-		//dumpstack("CommandBuffer::End");
-		return 0;
-	};
-	onexit{
-		//printf("CommandBuffer::End exit time:%d\n",time());
-	};
-};
-hook("TaskExecutor::HandleCommandStream")
-{
-	onenter{
-		//printf("TaskExecutor::HandleCommandStream enter time:%d\n",time());
-		//dumpstack("TaskExecutor::HandleCommandStream");
-		return 0;
-	};
-	onexit{
-		//printf("TaskExecutor::HandleCommandStream exit time:%d\n",time());
-	};
-};
-hook("ScratchBuffer::ClearPool")
-{
-	onenter{
-		printf("ScratchBuffer::ClearPool enter time:%d\n",time());
-		//dumpstack("ScratchBuffer::ClearPool");
-		return 0;
-	};
-	onexit{
-		printf("ScratchBuffer::ClearPool exit time:%d\n",time());
-	};
-};
-hook("ScratchBuffer::TryLocklessAlloc")
-{
-	onenter{
-		//printf("ScratchBuffer::TryLocklessAlloc enter time:%d\n",time());
-		//dumpstack("ScratchBuffer::TryLocklessAlloc");
-		return 0;
-	};
-	onexit{
-		//printf("ScratchBuffer::TryLocklessAlloc exit time:%d\n",time());
-	};
-};
-hook("ScratchBuffer::TrimMemory")
-{
-	onenter{
-		printf("ScratchBuffer::TrimMemory enter time:%d\n",time());
-		//dumpstack("ScratchBuffer::TrimMemory");
-		return 0;
-	};
-	onexit{
-		printf("ScratchBuffer::TrimMemory exit time:%d\n",time());
-	};
-};
 hook("VKGpuProgram::Create")
 {
 	onenter{
@@ -237,28 +142,6 @@ hook("VKGpuProgram::Create")
 	};
 	onexit{
 		printf("VKGpuProgram::Create exit time:%d\n",time());
-	};
-};
-hook("VKGpuProgram::Prepare")
-{
-	onenter{
-		printf("VKGpuProgram::Prepare enter time:%d\n",time());
-		//dumpstack("VKGpuProgram::Prepare");
-		$a:int = ptrget(argv(0),8);
-		$b:int = ptrget(argv(1),8);
-		$c:int = ptrget(argv(2),8);
-		$d:string = ptrget(argv(3),8);
-		printf("VKGpuProgram this:%llx\n", $a);
-		/*
-		$name:string = $d;
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
-			assert(0);
-		};
-		*/
-		return 0;
-	};
-	onexit{
-		printf("VKGpuProgram::Prepare exit time:%d\n",time());
 	};
 };
 hook("GraphicsPipelineProvider::GetShaderModule")
@@ -314,17 +197,6 @@ hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
 	};
 	onexit{
 		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%d\n",time());
-	};
-};
-hook("PipelineCreateInfo::Configure")
-{
-	onenter{
-		//printf("PipelineCreateInfo::Configure enter time:%d\n",time());
-		//dumpstack("PipelineCreateInfo::Configure");
-		return 0;
-	};
-	onexit{
-		//printf("PipelineCreateInfo::Configure exit time:%d\n",time());
 	};
 };
 hook("CreateGraphicsPipeline")
@@ -436,6 +308,55 @@ hook("MemoryManager::GetAllocatorOnNull")
 		printf("MemoryManager::GetAllocatorOnNull exit time:%d\n",time());
 	};
 };
+hook("MemoryManager::Allocate_Temp_Null")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		//$retry:int = ptrget(argv(1),4);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		printf("MemoryManager::Allocate_Temp_Null enter time:%d size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		
+		//retry
+		ptrset(argv(1),4, 1);
+		
+		assert(0);
+		return 0;
+	};
+	onexit{
+		printf("MemoryManager::Allocate_Temp_Null exit time:%d\n",time());
+	};
+};
+hook("MemoryManager::Allocate_NonTemp_Null")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		//$retry:int = ptrget(argv(1),4);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		printf("MemoryManager::Allocate_NonTemp_Null enter time:%d size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		
+		//retry
+		ptrset(argv(1),4, 1);
+		
+		assert(0);
+		
+		return 0;
+	};
+	onexit{
+		printf("MemoryManager::Allocate_NonTemp_Null exit time:%d\n",time());
+	};
+};
 hook("PipelineStateCollection::PrecachePSOsProgressively")
 {
 	onenter{
@@ -514,6 +435,22 @@ hook("UpdateMemoryBudget")
 			$ct:int = ptrget(argv(7),4);
 			printf("UpdateMemoryBudget: %d %d %lld %lld\n", $ix, $heapIndex, $heapBudget, $heapUsage);
 		};
+	};
+	onexit{
+	};
+};
+hook("RenderingCommandBufferState::GetAndCheckRT")
+{
+	onenter{
+		/*
+		$pindex:int = ptrget(argv(3),4);
+		$pname:string = ptrget(argv(4),8);
+		$desc:string = ptrget(argv(5),8);
+		$bufname:string = ptrget(argv(6),8);
+		if ($pindex != -1) {
+			printf("GetAndCheckRT index:%d name:%s desc:%s buf:%s\n", $pindex, $pname, $desc, $bufname);
+		};
+		*/
 	};
 	onexit{
 	};

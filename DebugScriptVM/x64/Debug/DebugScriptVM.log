@@ -1,4 +1,4 @@
 ﻿  DllMain.cpp
-F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(340,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
-F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(350,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
+F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(343,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
+F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(353,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
   DebugScriptVM.vcxproj -> F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

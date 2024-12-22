@@ -10,9 +10,12 @@
 #include "windows.h"
 #elif PLATFORM_ANDROID
 #include <sys/types.h>
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #elif UNITY_POSIX
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <unistd.h>
 #include <pthread.h>
 #endif
 
@@ -352,7 +355,7 @@ struct ExternApi
 #elif PLATFORM_ANDROID
         return static_cast<int64_t>(gettid());
 #elif UNITY_POSIX
-        return static_cast<int64_t>(pthread_self());
+        return reinterpret_cast<int64_t>(pthread_self());
 #endif
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
     }

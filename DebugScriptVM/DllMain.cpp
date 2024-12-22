@@ -8,10 +8,12 @@
 
 #if PLATFORM_WIN
 #include "windows.h"
-#elif UNITY_POSIX
+#elif PLATFORM_ANDROID
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#elif UNITY_POSIX
+#include <pthread.h>
 #endif
 
 static std::unordered_map<std::string, int64_t> g_Lib2Addresses{};
@@ -335,9 +337,9 @@ struct ExternApi
     static inline void GetPID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         int64_t rval = 0;
-#ifdef WIN32
+#ifdef PLATFORM_WIN || WIN32
         rval = static_cast<int64_t>(GetCurrentProcessId());
-#else
+#elif UNITY_POSIX
         rval = static_cast<int64_t>(getpid());
 #endif
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
@@ -345,11 +347,12 @@ struct ExternApi
     static inline void GetTID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         int64_t rval = 0;
-#ifdef WIN32
+#ifdef PLATFORM_WIN || WIN32
         rval = static_cast<int64_t>(GetCurrentThreadId());
-#else
-        //rval = static_cast<int64_t>(pthread_self());
-        rval = static_cast<int64_t>(gettid());
+#elif PLATFORM_ANDROID
+        return static_cast<int64_t>(gettid());
+#elif UNITY_POSIX
+        return static_cast<int64_t>(pthread_self());
 #endif
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, rval, stackBase, intLocals, intGlobals);
     }

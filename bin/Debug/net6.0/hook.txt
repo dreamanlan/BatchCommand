@@ -320,12 +320,12 @@ hook("MemoryManager::Allocate_Temp_Null")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
-		printf("MemoryManager::Allocate_Temp_Null enter time:%d size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		//printf("MemoryManager::Allocate_Temp_Null enter time:%d size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
 		
 		//retry
 		//ptrset(argv(1),4, 1);
 		
-		//assert(0);
+		assert(0);
 		return 0;
 	};
 	onexit{
@@ -451,6 +451,22 @@ hook("RenderingCommandBufferState::GetAndCheckRT")
 			printf("GetAndCheckRT index:%d name:%s desc:%s buf:%s\n", $pindex, $pname, $desc, $bufname);
 		};
 		*/
+	};
+	onexit{
+	};
+};
+hook("TlsfDuplicateFreeMemory")
+{
+	onenter{
+		assert(0);
+	};
+	onexit{
+	};
+};
+hook("LogOnTlsfAssert")
+{
+	onenter{
+		assert(0);
 	};
 	onexit{
 	};

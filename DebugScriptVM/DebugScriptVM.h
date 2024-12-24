@@ -36,7 +36,7 @@ extern bool g_DebugScriptStarted;
 namespace DebugScript
 {
     static const int c_max_variable_table_size = 8192;
-    static const int c_max_stack_depth = 128;
+    static const int c_max_stack_depth = 1; //no reentry
     static const int c_max_local_variable_table_size = c_max_variable_table_size * c_max_stack_depth;
 
     using IntGlobals = std::array<int64_t, c_max_variable_table_size>;

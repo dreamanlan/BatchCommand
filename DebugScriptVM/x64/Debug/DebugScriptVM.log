@@ -1,13 +1,8 @@
 ﻿  DebugScriptVM.cpp
-  DllMain.cpp
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4589,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4603,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5021,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5029,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5037,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
 F:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5045,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(343,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
-F:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(353,1): warning C4067: 预处理器指令后有意外标记 - 应输入换行符
-  正在生成代码...
-    正在创建库 F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> F:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

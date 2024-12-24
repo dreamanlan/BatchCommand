@@ -4563,7 +4563,7 @@ namespace
                 --m_Depth;
             }
         private:
-            int32_t m_Depth;
+            int32_t& m_Depth;
         };
 
         int32_t m_StackDepth{0};

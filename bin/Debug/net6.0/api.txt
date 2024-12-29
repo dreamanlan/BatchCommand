@@ -52,3 +52,8 @@ defexternapi(GetDeviceModel,string,noparams,[]);
 defexternapi(GetGpu,string,noparams,[]);
 defexternapi(GetGpuVer,string,noparams,[]);
 defexternapi(CheckMemory,void,noparams,[int]);
+defexternapi(UnityAlloc,int,noparams,[int,int,int,int]);
+defexternapi(UnityRealloc,int,noparams,[int,int,int,int,int]);
+defexternapi(UnityDealloc,int,noparams,[int,int]){
+	minparamnum(1);
+};

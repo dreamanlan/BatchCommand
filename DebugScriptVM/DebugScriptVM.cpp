@@ -61,19 +61,6 @@
 #endif
 #endif
 
-#ifndef printf_impl
-#if PLATFORM_WIN //for unity
-#define printf_impl printf_console
-#elif _MSC_VER
-#define printf_impl printf
-#else //for unity
-#define printf_impl printf_console
-#endif
-#define my_printf_impl
-#else
-#error printf_impl macro conflict
-#endif
-
 #if _MSC_VER
 #ifdef __cplusplus
 extern "C" {
@@ -341,7 +328,28 @@ namespace
         return str;
     }
 
-    static int mysnprintf(char* buffer, std::size_t buf_size, const char* fmt, int64_t args[]) {
+    static void myputs(const char* str)
+    {
+#if PLATFORM_WIN //for unity
+        DebugStringToFile(str, __FILE_STRIPPED__, __LINE__, -1, kDontExtractStacktrace | kScriptingWarning);
+#elif _MSC_VER
+        puts(str);
+#else //for unity
+        DebugStringToFile(str, __FILE_STRIPPED__, __LINE__, -1, kDontExtractStacktrace | kScriptingWarning);
+#endif
+    }
+    static int myprintf(const char* fmt, ...)
+    {
+        const int c_buf_size = 1024 * 4 + 1;
+        char buf[c_buf_size];
+        va_list vl;
+        va_start(vl, fmt);
+        int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
+        va_end(vl);
+        myputs(buf);
+        return r;
+    }
+    static int script_snprintf(char* buffer, std::size_t buf_size, const char* fmt, int64_t args[]) {
         const char* p = fmt;
         int i = 0;
         int ct = 0;
@@ -426,25 +434,25 @@ namespace
         }
         return ct;
     }
-    static int myprintf(const char* fmt, int64_t args[]) {
+    static int script_printf(const char* fmt, int64_t args[]) {
         const int c_buf_size = 1024 * 4 + 1;
         char buf[c_buf_size];
-        int ct = mysnprintf(buf, c_buf_size, fmt, args);
+        int ct = script_snprintf(buf, c_buf_size, fmt, args);
         buf[ct < c_buf_size ? ct : c_buf_size - 1] = 0;
-        printf_impl("%s", buf);
+        myputs(buf);
         return ct;
     }
     static inline int64_t dumpcascadeptr(int64_t addr, int32_t offsets[], int32_t num)
     {
         const char* pBuf = reinterpret_cast<const char*>(addr);
         if (pBuf) {
-            printf_impl("[DebugInfo] DumpCascadePointer, object:%p\n", pBuf);
+            myprintf("[DebugInfo] DumpCascadePointer, object:%p\n", pBuf);
             for (int i = 0; i < num; ++i) {
                 int offset = offsets[i];
                 if (offset < 0)
                     break;
                 pBuf = *reinterpret_cast<const char* const*>(pBuf + offset);
-                printf_impl("[DebugInfo] DumpCascadePointer, offset:%x ptr:%p\n", offset, pBuf);
+                myprintf("[DebugInfo] DumpCascadePointer, offset:%x ptr:%p\n", offset, pBuf);
                 if (!pBuf)
                     break;
             }
@@ -668,7 +676,7 @@ namespace
                 MyAssert(ty2 == TypeEnum::String);
                 const std::string& msg = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
                 if (cond == 0) {
-                    printf_impl("DebugBreak:%s\n", msg.c_str());
+                    myprintf("DebugBreak:%s\n", msg.c_str());
                     MyDebugBreak();
                 }
             }
@@ -688,7 +696,7 @@ namespace
 #if PLATFORM_WIN //for unity
             DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
 #elif _MSC_VER
-            printf_impl("%s%s:%d\n", prefix.c_str(), __FILE__, __LINE__);
+            myprintf("%s%s:%d\n", prefix.c_str(), __FILE__, __LINE__);
 #else //for unity
             DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
 #endif
@@ -766,7 +774,7 @@ namespace
             }
 
             const std::string& fmt = *pStr;
-            int64_t ct = myprintf(fmt.c_str(), args.data());
+            int64_t ct = script_printf(fmt.c_str(), args.data());
             return ct;
         }
         static inline std::string Format(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -845,7 +853,7 @@ namespace
             }
 
             const std::string& fmt = *pStr;
-            int64_t ct = mysnprintf(pbuf, c_strbuf_size + 1, fmt.c_str(), args.data());
+            int64_t ct = script_snprintf(pbuf, c_strbuf_size + 1, fmt.c_str(), args.data());
             pbuf[c_strbuf_size] = 0;
             return std::string(pbuf);
         }
@@ -4517,7 +4525,7 @@ namespace
                 ifs.read(reinterpret_cast<char*>(onExit.data()), onExitNum * sizeof(int32_t));
 
                 int32_t hookId = AddHook(name, std::move(onEnter), std::move(onExit));
-                printf_impl("hook:%s id:%d\n", name, hookId);
+                myprintf("hook:%s id:%d\n", name, hookId);
 
                 //shader name count
                 int shareNameNum = ReadInt32(ifs);
@@ -4525,7 +4533,7 @@ namespace
                     int shareNameIx = ReadInt32(ifs);
                     const char* other = shareNameIx >= 0 && shareNameIx < static_cast<int>(strTable.size()) ? strTable[shareNameIx].c_str() : "";
                     ShareWith(hookId, other);
-                    printf_impl("share with:%s id:%d\n", other, hookId);
+                    myprintf("share with:%s id:%d\n", other, hookId);
                 }
             }
 
@@ -5047,9 +5055,4 @@ bool DebugScriptVM::RunHookOnExit(int32_t id, int32_t argc, int64_t argv[])
         return false;
     return vm->RunOnExit(id, argc, argv);
 }
-
-#ifdef my_printf_impl
-#undef printf_impl
-#undef my_printf_impl
-#endif
 

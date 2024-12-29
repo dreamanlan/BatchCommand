@@ -251,6 +251,9 @@ enum class ExternApiEnum
     GetGpu,
     GetGpuVer,
     CheckMemory,
+    UnityAlloc,
+    UnityRealloc,
+    UnityDealloc,
     Num
 };
 
@@ -340,7 +343,7 @@ struct ExternApi
     static inline void GetPID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         int64_t rval = 0;
-#ifdef PLATFORM_WIN || WIN32
+#if defined(PLATFORM_WIN) || defined(WIN32)
         rval = static_cast<int64_t>(GetCurrentProcessId());
 #elif UNITY_POSIX
         rval = static_cast<int64_t>(getpid());
@@ -350,7 +353,7 @@ struct ExternApi
     static inline void GetTID(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         int64_t rval = 0;
-#ifdef PLATFORM_WIN || WIN32
+#if defined(PLATFORM_WIN) || defined(WIN32)
         rval = static_cast<int64_t>(GetCurrentThreadId());
 #elif PLATFORM_ANDROID
         return static_cast<int64_t>(gettid());
@@ -414,7 +417,40 @@ struct ExternApi
         ValidateAllocatorIntegrity(MemLabelId(id));
 #endif
     }
-
+    static inline void UnityAlloc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t size = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t align = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int64_t label = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
+        int64_t option = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        int64_t addr = 0;
+        size_t _size = static_cast<size_t>(size);
+        size_t _align = static_cast<size_t>(align);
+        addr = reinterpret_cast<int64_t>(std::malloc((_size + _align - 1) & ~(_align - 1)));
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, addr, stackBase, intLocals, intGlobals);
+    }
+    static inline void UnityRealloc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t oldAddr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int64_t align = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
+        int64_t label = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        int64_t option = DebugScript::GetVarInt(args[4].IsGlobal, args[4].Index, stackBase, intLocals, intGlobals);
+        int64_t addr = 0;
+        size_t _size = static_cast<size_t>(size);
+        size_t _align = static_cast<size_t>(align);
+        addr = reinterpret_cast<int64_t>(std::realloc(reinterpret_cast<void*>(oldAddr), (_size + _align - 1) & ~(_align - 1)));
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, addr, stackBase, intLocals, intGlobals);
+    }
+    static inline void UnityDealloc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t label = 0;
+        if (argNum > 1) {
+            label = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        }
+        std::free(reinterpret_cast<void*>(addr));
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -461,6 +497,15 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::CheckMemory:
         ExternApi::CheckMemory(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::UnityAlloc:
+        ExternApi::UnityAlloc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::UnityRealloc:
+        ExternApi::UnityRealloc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::UnityDealloc:
+        ExternApi::UnityDealloc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

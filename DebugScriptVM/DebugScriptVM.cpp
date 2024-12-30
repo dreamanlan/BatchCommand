@@ -27,6 +27,43 @@
 #include "Runtime/Logging/LogAssert.h"
 #endif
 
+#if UNITY_APPLE
+#include <execinfo.h>
+#elif PLATFORM_ANDROID
+#include "PlatformDependent/AndroidPlayer/Source/AndroidBacktrace.h"
+#elif PLATFORM_SWITCH
+#include "PlatformDependent/Switch/Source/Diagnostics/SwitchBacktrace.h"
+#elif PLATFORM_LUMIN
+#include "PlatformDependent/Lumin/Source/LuminBacktrace.h"
+#elif PLATFORM_PLAYSTATION
+#include "PlatformDependent/SonyCommon/Player/Native/PlayStationStackTrace.h"
+#else
+#define BACKTRACE_UNIMPLEMENTED 1
+#endif
+
+static void MyDumpCallstackConsole(const char* prefix, const char* file, int line)
+{
+#if PLATFORM_WIN //for unity
+    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
+#elif _MSC_VER
+    printf("%s%s:%d\n", prefix, file, line);
+#else //for unity
+    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
+#endif
+
+#if !BACKTRACE_UNIMPLEMENTED
+    const size_t kMaxDepth = 100;
+
+    void* stackAddr[kMaxDepth];
+    int     stackDepth = (int)backtrace(stackAddr, kMaxDepth);
+    char** stackSymbol = backtrace_symbols(stackAddr, stackDepth);
+
+    for (int i = 1, n = stackDepth; i < n; ++i)
+        printf_console_type(kLogTypeWarning, " #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
+    free(stackSymbol);
+#endif
+}
+
 #ifndef COMPILER_BUILTIN_EXPECT
 #if __clang__
 #define COMPILER_BUILTIN_EXPECT(X_, Y_)              __builtin_expect((X_), (Y_))
@@ -331,11 +368,11 @@ namespace
     static void myputs(const char* str)
     {
 #if PLATFORM_WIN //for unity
-        DebugStringToFile(str, __FILE_STRIPPED__, __LINE__, -1, kDontExtractStacktrace | kScriptingWarning);
+        printf_console_type(kLogTypeWarning, "%s", str);
 #elif _MSC_VER
         puts(str);
 #else //for unity
-        DebugStringToFile(str, __FILE_STRIPPED__, __LINE__, -1, kDontExtractStacktrace | kScriptingWarning);
+        printf_console_type(kLogTypeWarning, "%s", str);
 #endif
     }
     static int myprintf(const char* fmt, ...)
@@ -693,13 +730,7 @@ namespace
             DecodeOperand1(operand, isGlobal, ty, index);
             MyAssert(ty == TypeEnum::String);
             const std::string& prefix = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
-#if PLATFORM_WIN //for unity
-            DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
-#elif _MSC_VER
-            myprintf("%s%s:%d\n", prefix.c_str(), __FILE__, __LINE__);
-#else //for unity
-            DumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
-#endif
+			MyDumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
         }
         static inline int64_t Printf(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {

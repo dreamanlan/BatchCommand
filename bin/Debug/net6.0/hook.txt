@@ -497,8 +497,8 @@ hook("DynamicHeapAllocator::Allocate")
 		$this:int = ptrget(argv(1),8);
 		$size:int = ptrget(argv(2),8);
 		$align:int = ptrget(argv(3),4);
-		$locking:int = ptrget(argv(4),4);
-		$tlsf:int = ptrget(argv(5),4);
+		$locking:int = ptrget(argv(4),1);
+		$tlsf:int = ptrget(argv(5),1);
 		printf("DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
 		if($size==48){
 			dumpstack("DynamicHeapAllocator::Allocate");
@@ -512,8 +512,8 @@ hook("DynamicHeapAllocator::Deallocate")
 	onexit{
 		$this:int = ptrget(argv(0),8);
 		$addr:int = ptrget(argv(1),8);
-		$locking:int = ptrget(argv(2),4);
-		$tlsf:int = ptrget(argv(3),4);
+		$locking:int = ptrget(argv(2),1);
+		$tlsf:int = ptrget(argv(3),1);
 		printf("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
 	};
 };

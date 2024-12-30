@@ -89,6 +89,8 @@ hook(DbgScp_TestVoid)
 		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
 		printf("load:%llx\n", LoadLib("kernel32.dll"));
 		printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
+		$addr:int = 0x800010004003;
+		printf("%llx\n", $addr & (~0x03));
 		CheckMemory(28);
 		@g_in_test = 1;
 		loop($i,1,20){
@@ -123,7 +125,7 @@ hook(DbgScp_TestInt)
 		//duplicate free memory
 		$mem:int = UnityAlloc(10000000,16,153,0);
 		UnityDealloc($mem,153);
-		UnityDealloc($mem,153);
+		//UnityDealloc($mem,153);
 		return 1;
 	};
 	onexit{
@@ -174,7 +176,7 @@ hook("GraphicsPipelineProvider::DeleteShaderModule")
 {
 	onenter{
 		printf("GraphicsPipelineProvider::DeleteShaderModule enter time:%lld\n",time());
-		dumpstack("GraphicsPipelineProvider::DeleteShaderModule");
+		dumpstack("#GraphicsPipelineProvider::DeleteShaderModule");
 		$a:int = ptrget(argv(1),8);
 		printf("GraphicsPipelineProvider::DeleteShaderModule obj:%x\n",$a);
 		return 0;
@@ -200,7 +202,7 @@ hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
 {
 	onenter{
 		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%lld\n",time());
-		dumpstack("GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
+		dumpstack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
 		$a:int = ptrget(argv(1),8);
 		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout obj:%x\n",$a);
 		return 0;
@@ -291,19 +293,19 @@ hook("MemoryManager::GetAllocator")
 		$c:int = ptrget(argv(2),4);
 		if ($a == 0) {
 			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
-			dumpstack("MemoryManager::GetAllocator");
+			//dumpstack("MemoryManager::GetAllocator");
 		}
 		elif ($c == 2) {
 			//assert(0);
 		}
 		elif ($c == 153) {
-			printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
+			//printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
 			//dumpstack("MemoryManager::GetAllocator");
 			//assert(0);
 		}
 		elif ($c >= 166) {
 			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
-			dumpstack("MemoryManager::GetAllocator");
+			//dumpstack("MemoryManager::GetAllocator");
 		};
 	};
 };
@@ -314,7 +316,7 @@ hook("MemoryManager::GetAllocatorOnNull")
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		printf("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
-		dumpstack("MemoryManager::GetAllocatorOnNull");
+		//dumpstack("MemoryManager::GetAllocatorOnNull");
 		return 0;
 	};
 	onexit{
@@ -499,21 +501,33 @@ hook("DynamicHeapAllocator::Allocate")
 		$align:int = ptrget(argv(3),4);
 		$locking:int = ptrget(argv(4),1);
 		$tlsf:int = ptrget(argv(5),1);
-		printf("DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
-		if($size==48){
-			dumpstack("DynamicHeapAllocator::Allocate");
+		//printf("DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
+		if($size>=32 && $size<=64){
+			printf("#DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
+			dumpstack("#DynamicHeapAllocator::Allocate");
 		};
 	};
 };
 hook("DynamicHeapAllocator::Deallocate")
 {
 	onenter{
+		$this:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$locking:int = ptrget(argv(2),1);
+		$tlsf:int = ptrget(argv(3),1);
+		//printf("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
+		$size:int = ptrget($addr-8,8);
+		$realSize:int = $size & (~0x03);
+		if($realSize>=32 && $realSize<=64){
+			printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%llx\n",time(),$locking,$tlsf,$addr,$size);
+			dumpstack("#DynamicHeapAllocator::Deallocate");
+		};
 	};
 	onexit{
 		$this:int = ptrget(argv(0),8);
 		$addr:int = ptrget(argv(1),8);
 		$locking:int = ptrget(argv(2),1);
 		$tlsf:int = ptrget(argv(3),1);
-		printf("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
+		//printf("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
 	};
 };

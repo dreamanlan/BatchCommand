@@ -6,6 +6,7 @@ using System.Text;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
+using System.Linq;
 
 namespace BatchCommand
 {
@@ -26,11 +27,12 @@ namespace BatchCommand
             };
 
             BatchScript.Init();
-            BatchScript.Register("compiledbgscp", "compiledbgscp(scpFile, struFile, apiFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
+            BatchScript.Register("compiledbgscp", "compiledbgscp(scpFile,struFile,apiFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
             BatchScript.Register("uploaddbgscp", "dumpdbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
             BatchScript.Register("savedbgscp", "savedbgscp(dataFile) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
             BatchScript.Register("loaddbgscp", "loaddbgscp(dataFile) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
+            BatchScript.Register("addrs2lines", "addrs2lines(textBase,textSeg,dbg,file,outfile) api", new ExpressionFactoryHelper<Addrs2LinesExp>());
 
             if (args.Length == 0) {
                 scpFile = "main.dsl";
@@ -253,5 +255,102 @@ namespace BatchCommand
             CppDebugScript.CppDbgScpInterface.TestMacro4(123456, 123456.456, "testmacro4");
             return BoxedValue.NullObject;
         }
+    }
+    internal sealed class Addrs2LinesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            ulong textBase = 0x72a4d6a000;
+            ulong textSeg = 0x55a000;
+            string dbg = "E:\\AndroidPlayerDebug\\rel\\Symbols\\arm64-v8a\\libunity.dbg.so";
+            string file = "C:\\sdk_full\\platform-tools\\temp.txt";
+            string ofile = file;
+            if (operands.Count > 0) {
+                textBase = operands[0].GetULong();
+            }
+            if (operands.Count > 1) {
+                textSeg = operands[1].GetULong();
+            }
+            if (operands.Count > 2) {
+                dbg = operands[2].GetString();
+            }
+            if (operands.Count > 3) {
+                file = operands[3].GetString();
+                ofile = file;
+            }
+            if(operands.Count > 4) {
+                ofile = operands[4].GetString();
+            }
+            int ct = 0;
+            if (File.Exists(file)) {
+                var addrHashSet = new HashSet<ulong>();
+                var dict = new Dictionary<int, ulong>();
+
+                var lines = File.ReadAllLines(file);
+                for (int ix = 0; ix < lines.Length; ++ix) {
+                    string line = lines[ix];
+                    var fs = line.Split(s_WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
+                    if (fs.Length > 10 && fs[10].Contains("libunity.so") && fs[8].StartsWith("0x")) {
+                        int si = line.IndexOf(fs[10]);
+                        lines[ix] = line.Substring(0, si + fs[10].Length);
+                        if(ulong.TryParse(fs[8].Substring(2), System.Globalization.NumberStyles.HexNumber, null, out var addr)) {
+                            ulong offset = addr - textBase + textSeg;
+                            addrHashSet.Add(offset);
+                            dict.Add(ix, offset);
+                        }
+                    }
+                }
+
+                var addrs = addrHashSet.ToArray();
+                var symDict = new Dictionary<ulong, string>();
+
+                var coption = new ProcessStartOption();
+                for (int ix = 0; ix < addrs.Length; ix += c_BatchCount) {
+                    var inputs = new List<string>();
+                    for (int i = ix; i < ix + c_BatchCount && i < addrs.Length; ++i) {
+                        inputs.Add(addrs[i].ToString("x"));
+                    }
+
+                    if (OperatingSystem.IsWindows()) {
+                        var output = new StringBuilder();
+                        var error = new StringBuilder();
+                        int cr = ProcessHelper.RunProcess("addr2line", " -f -C -e " + dbg, coption, 5000, null, null, inputs, output, error, false, false, Encoding.UTF8);
+                        if (cr == 0) {
+                            string results = output.ToString();
+                            var syms = results.Split(s_Seps, StringSplitOptions.RemoveEmptyEntries);
+                            for(int i = 0; i < syms.Length - 1; i += 2) {
+                                ulong offset = addrs[ix + i / 2];
+                                string sym = syms[i] + " " + syms[i + 1];
+                                symDict.TryAdd(offset, sym);
+                            }
+                            ct += inputs.Count;
+
+                            var pos = Console.GetCursorPosition();
+                            Console.Write(ct + "/" + addrs.Length);
+                            Console.SetCursorPosition(pos.Left, pos.Top);
+                        }
+                        else {
+                            Console.WriteLine("run addr2line failed, exit code:{0}", cr);
+                        }
+                    }
+                }
+
+                for (int ix = 0; ix < lines.Length; ++ix) {
+                    string line = lines[ix];
+                    if(dict.TryGetValue(ix, out var offset) && symDict.TryGetValue(offset, out var sym)) {
+                        lines[ix] = line + " " + sym;
+                    }
+                }
+                File.WriteAllLines(ofile, lines);
+            }
+            else {
+                Console.WriteLine("Can't find '{0}' !", file);
+            }
+            return ct;
+        }
+
+        private static char[] s_WhiteSpaces = new char[] { ' ', '\t' };
+        private static char[] s_Seps = new char[] { '\r', '\n' };
+        private const int c_BatchCount = 500;
     }
 }

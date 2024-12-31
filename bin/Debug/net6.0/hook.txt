@@ -126,6 +126,10 @@ hook(DbgScp_TestInt)
 		$mem:int = UnityAlloc(10000000,16,153,0);
 		UnityDealloc($mem,153);
 		//UnityDealloc($mem,153);
+		$i:int;
+		loop($i,1,165){
+			CheckMemory($i);
+		};
 		return 1;
 	};
 	onexit{
@@ -312,7 +316,7 @@ hook("MemoryManager::GetAllocator")
 hook("MemoryManager::GetAllocatorOnNull")
 {
 	onenter{
-		printf("MemoryManager::GetAllocatorOnNull enter time:%lld\n",time());
+		//printf("MemoryManager::GetAllocatorOnNull enter time:%lld\n",time());
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		printf("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
@@ -320,7 +324,7 @@ hook("MemoryManager::GetAllocatorOnNull")
 		return 0;
 	};
 	onexit{
-		printf("MemoryManager::GetAllocatorOnNull exit time:%lld\n",time());
+		//printf("MemoryManager::GetAllocatorOnNull exit time:%lld\n",time());
 	};
 };
 hook("MemoryManager::Allocate_Temp_Null")
@@ -335,7 +339,7 @@ hook("MemoryManager::Allocate_Temp_Null")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
-		printf("MemoryManager::Allocate_Temp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		//printf("MemoryManager::Allocate_Temp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
 		
 		if ($label == 2) {
 			if(@g_in_test==0){
@@ -348,7 +352,7 @@ hook("MemoryManager::Allocate_Temp_Null")
 		return 0;
 	};
 	onexit{
-		printf("MemoryManager::Allocate_Temp_Null exit time:%lld\n",time());
+		//printf("MemoryManager::Allocate_Temp_Null exit time:%lld\n",time());
 	};
 };
 hook("MemoryManager::Allocate_NonTemp_Null")
@@ -504,7 +508,7 @@ hook("DynamicHeapAllocator::Allocate")
 		//printf("DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
 		if($size>=32 && $size<=64){
 			printf("#DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
-			dumpstack("#DynamicHeapAllocator::Allocate");
+			//dumpstack("#DynamicHeapAllocator::Allocate");
 		};
 	};
 };
@@ -519,8 +523,8 @@ hook("DynamicHeapAllocator::Deallocate")
 		$size:int = ptrget($addr-8,8);
 		$realSize:int = $size & (~0x03);
 		if($realSize>=32 && $realSize<=64){
-			printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%llx\n",time(),$locking,$tlsf,$addr,$size);
-			dumpstack("#DynamicHeapAllocator::Deallocate");
+			printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:0x%llx\n",time(),$locking,$tlsf,$addr,$size);
+			//dumpstack("#DynamicHeapAllocator::Deallocate");
 		};
 	};
 	onexit{

@@ -411,10 +411,11 @@ struct ExternApi
     static inline void CheckMemory(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         //unity memory check
-#if ENABLE_MEM_PROFILER
         int64_t memId = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+#if ENABLE_MEMORY_MANAGER
         auto&& id = static_cast<MemLabelIdentifier>(memId);
-        ValidateAllocatorIntegrity(MemLabelId(id));
+        //We must also define the USE_MEMORY_DEBUGGING in the unity version. We cannot simply define the ENABLE_MEM_PROFILER because the compile error.
+        GetMemoryManager().GetAllocator(MemLabelId{ id })->CheckIntegrity();
 #endif
     }
     static inline void UnityAlloc(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)

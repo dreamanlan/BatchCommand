@@ -57,3 +57,6 @@ defexternapi(UnityRealloc,int,noparams,[int,int,int,int,int]);
 defexternapi(UnityDealloc,int,noparams,[int,int]){
 	minparamnum(1);
 };
+defexternapi(WriteLog,int,noparams,[string]);
+defexternapi(FlushLog,int,noparams,[]);
+defexternapi(LogCallStack,int,noparams,[string]);

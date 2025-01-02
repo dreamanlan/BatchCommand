@@ -94,8 +94,10 @@ hook(DbgScp_TestVoid)
 		CheckMemory(28);
 		@g_in_test = 1;
 		loop($i,1,20){
-			UnityAlloc(4096*1024,8,2,0);
+			$mem:int = UnityAlloc(4096*1024,8,2,0);
+			WriteLog(format("prealloc:%llx\n", $mem));
 		};
+		FlushLog();
 		@g_in_test = 0;
 		return 1;
 	};
@@ -122,11 +124,13 @@ hook(DbgScp_TestInt)
 		printf("platform:%d ffi:%d %d\n",platform(),$r,$r2);
 		MemoryProtect(0x80004000,1024,3);
 		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
-		//duplicate free memory
-		$mem:int = UnityAlloc(10000000,16,153,0);
-		UnityDealloc($mem,153);
-		//UnityDealloc($mem,153);
 		$i:int;
+		loop($i,0,100){
+			$mem:int = UnityAlloc(64,16,153,0);
+			WriteLog(format("alloc addr:%llx size:64\n",$mem));
+			UnityDealloc($mem,153);
+			WriteLog(format("dealloc addr:%llx size:64\n",$mem));
+		};
 		loop($i,1,165){
 			CheckMemory($i);
 		};
@@ -481,6 +485,12 @@ hook("RenderingCommandBufferState::GetAndCheckRT")
 hook("TlsfDuplicateFreeMemory")
 {
 	onenter{
+		$prefix:string = ptrget(argv(0),8);
+		$ptr:int = ptrget(argv(1),8);
+		$str:string = format("TlsfDuplicateFreeMemory %s ptr:%llx\n",$prefix,$ptr);
+		printf("%s",$str);
+		WriteLog($str);
+		LogCallStack("TlsfDuplicateFreeMemory");
 		assert(0);
 	};
 	onexit{
@@ -489,6 +499,20 @@ hook("TlsfDuplicateFreeMemory")
 hook("LogOnTlsfAssert")
 {
 	onenter{
+		LogCallStack("LogOnTlsfAssert");
+		assert(0);
+	};
+	onexit{
+	};
+};
+hook("LogOnTlsfMemory")
+{
+	onenter{
+		$ptr:int = ptrget(argv(0),8);
+		$str:string = format("LogOnTlsfMemory ptr:%llx\n",$ptr);
+		printf("%s",$str);
+		WriteLog($str);
+		LogCallStack("LogOnTlsfMemory");
 		assert(0);
 	};
 	onexit{
@@ -497,6 +521,20 @@ hook("LogOnTlsfAssert")
 hook("DynamicHeapAllocator::Allocate")
 {
 	onenter{
+		$this:int = ptrget(argv(1),8);
+		$size:int = ptrget(argv(2),8);
+		$align:int = ptrget(argv(3),4);
+		$locking:int = ptrget(argv(4),1);
+		if($locking==0){
+			//ptrset(argv(4),1,1);
+		};
+		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld tid:%d\n",time(),$align,$locking,$size,GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+		if($size>=32 && $size<=96){
+			//printf("#DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld tid:%d\n",time(),$align,$locking,$size,GetTID());
+			//dumpstack("#DynamicHeapAllocator::Allocate");
+		};
 	};
 	onexit{
 		$addr:int = ptrget(argv(0),8);
@@ -505,9 +543,11 @@ hook("DynamicHeapAllocator::Allocate")
 		$align:int = ptrget(argv(3),4);
 		$locking:int = ptrget(argv(4),1);
 		$tlsf:int = ptrget(argv(5),1);
-		//printf("DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
-		if($size>=32 && $size<=64){
-			printf("#DynamicHeapAllocator::Allocate exit time:%lld size:%lld align:%d locking:%d tlsf:%d addr:%llx\n",time(),$size,$align,$locking,$tlsf,$addr);
+		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+		if($size>=32 && $size<=96){
+			//printf("#DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,GetTID());
 			//dumpstack("#DynamicHeapAllocator::Allocate");
 		};
 	};
@@ -519,11 +559,15 @@ hook("DynamicHeapAllocator::Deallocate")
 		$addr:int = ptrget(argv(1),8);
 		$locking:int = ptrget(argv(2),1);
 		$tlsf:int = ptrget(argv(3),1);
-		//printf("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
-		$size:int = ptrget($addr-8,8);
-		$realSize:int = $size & (~0x03);
-		if($realSize>=32 && $realSize<=64){
-			printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:0x%llx\n",time(),$locking,$tlsf,$addr,$size);
+		$size:int = ptrget(argv(4),8);
+		if($locking==0){
+			//ptrset(argv(2),1,1);
+		};
+		$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+		if($size>=32 && $size<=96){
+			//printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
 			//dumpstack("#DynamicHeapAllocator::Deallocate");
 		};
 	};
@@ -532,6 +576,13 @@ hook("DynamicHeapAllocator::Deallocate")
 		$addr:int = ptrget(argv(1),8);
 		$locking:int = ptrget(argv(2),1);
 		$tlsf:int = ptrget(argv(3),1);
-		//printf("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx\n",time(),$locking,$tlsf,$addr);
+		$size:int = ptrget(argv(4),8);
+		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+		if($size>=32 && $size<=96){
+			//printf("#DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
+			//dumpstack("#DynamicHeapAllocator::Deallocate");
+		};
 	};
 };

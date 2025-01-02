@@ -365,12 +365,12 @@ namespace
         return str;
     }
 
-    static void myputs(const char* str)
+    static void print_string(const char* str)
     {
 #if PLATFORM_WIN //for unity
         printf_console_type(kLogTypeWarning, "%s", str);
 #elif _MSC_VER
-        puts(str);
+        printf("%s", str);
 #else //for unity
         printf_console_type(kLogTypeWarning, "%s", str);
 #endif
@@ -383,7 +383,7 @@ namespace
         va_start(vl, fmt);
         int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
         va_end(vl);
-        myputs(buf);
+        print_string(buf);
         return r;
     }
     static int script_snprintf(char* buffer, std::size_t buf_size, const char* fmt, int64_t args[]) {
@@ -476,7 +476,7 @@ namespace
         char buf[c_buf_size];
         int ct = script_snprintf(buf, c_buf_size, fmt, args);
         buf[ct < c_buf_size ? ct : c_buf_size - 1] = 0;
-        myputs(buf);
+        print_string(buf);
         return ct;
     }
     static inline int64_t dumpcascadeptr(int64_t addr, int32_t offsets[], int32_t num)
@@ -4341,12 +4341,36 @@ namespace
         std::atomic_uint32_t m_RuntimeVersion{};
 #if USE_STD_SHARED_MUTEX
         using read_write_lock = std::shared_mutex;
-        using read_locker = std::shared_lock<std::shared_mutex>;
         using write_locker = std::lock_guard<std::shared_mutex>;
+        struct read_locker
+        {
+            read_locker(std::shared_mutex& mutex, bool lock):m_shared_lock(mutex, std::defer_lock_t())
+            {
+                if (lock)
+                    m_shared_lock.lock();
+            }
+            ~read_locker()
+            {}
+            std::shared_lock<std::shared_mutex> m_shared_lock;
+        };
 #else
         using read_write_lock = ReadWriteLock;
-        using read_locker = typename ReadWriteLock::AutoReadLock;
         using write_locker = typename ReadWriteLock::AutoWriteLock;
+        struct read_locker
+        {
+            read_locker(ReadWriteLock& mutex, bool lock) :m_mutex(mutex), m_lock(lock)
+            {
+                if (lock)
+                    m_mutex.ReadLock();
+            }
+            ~read_locker()
+            {
+                if (m_lock)
+                    m_mutex.ReadUnlock();
+            }
+            ReadWriteLock& m_mutex;
+            bool m_lock;
+        };
 #endif
         read_write_lock m_Mutex{};
 
@@ -4614,7 +4638,7 @@ namespace
 
         int32_t FindHook(const std::string& name)const
         {
-            DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
+            DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock(), m_StackDepth != 0);
 
             int32_t id = g_pDebugScriptGlobal->FindHook(name);
             return id;
@@ -4628,7 +4652,7 @@ namespace
             UNLIKELY_ATTR
             if (OPTIMIZER_UNLIKELY(CanRun()))
             {
-                DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
+                DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock(), m_StackDepth != 0);
 
                 if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
                     return false;
@@ -4642,7 +4666,7 @@ namespace
             UNLIKELY_ATTR
             if (OPTIMIZER_UNLIKELY(CanRun()))
             {
-                DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock());
+                DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock(), m_StackDepth != 0);
 
                 if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
                     return false;

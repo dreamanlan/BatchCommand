@@ -1,9 +1,11 @@
 #include <windows.h>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <sstream>
 #include <fstream>
+#include <stdio.h>
 #include "DbgScpHook.h"
 
 #if PLATFORM_WIN
@@ -19,7 +21,95 @@
 #include <pthread.h>
 #endif
 
+#if UNITY_APPLE
+#include <execinfo.h>
+#elif PLATFORM_ANDROID
+#include "PlatformDependent/AndroidPlayer/Source/AndroidBacktrace.h"
+#elif PLATFORM_SWITCH
+#include "PlatformDependent/Switch/Source/Diagnostics/SwitchBacktrace.h"
+#elif PLATFORM_LUMIN
+#include "PlatformDependent/Lumin/Source/LuminBacktrace.h"
+#elif PLATFORM_PLAYSTATION
+#include "PlatformDependent/SonyCommon/Player/Native/PlayStationStackTrace.h"
+#else
+#define BACKTRACE_UNIMPLEMENTED 1
+#endif
+
 static std::unordered_map<std::string, int64_t> g_Lib2Addresses{};
+static const std::streamsize c_log_buffer_size = 8 * 1024 * 1024;
+static std::vector<char> g_SwapBuffer(c_log_buffer_size + 1);
+static std::stringstream g_LogBuffer{};
+static std::recursive_mutex g_LogBufferMutex{};
+static bool g_FirstLog = true;
+
+static inline bool DbgScp_FlushLog_NoLock(const char* pstr, size_t len)
+{
+    bool r = false;
+    FILE* fp = fopen("dbgscp_log.txt", g_FirstLog ? "wt" : "at");
+    if (fp) {
+        auto&& pos = g_LogBuffer.tellp();
+        std::streampos curPos = 0;
+        g_LogBuffer.seekg(curPos, std::ios::beg);
+        while (curPos < pos) {
+            std::streamsize size = pos - curPos;
+            if (size > c_log_buffer_size) {
+                size = c_log_buffer_size;
+            }
+            g_LogBuffer.read(g_SwapBuffer.data(), size);
+            fwrite(g_SwapBuffer.data(), 1, size, fp);
+            curPos += size;
+        }
+        if (pstr) {
+            fwrite(pstr, 1, len, fp);
+        }
+        fclose(fp);
+        g_LogBuffer.str("");
+        g_FirstLog = false;
+        r = true;
+    }
+    return r;
+}
+static inline bool DbgScp_FlushLog()
+{
+    std::lock_guard<std::recursive_mutex> lock(g_LogBufferMutex);
+
+    return DbgScp_FlushLog_NoLock(nullptr, 0);
+}
+static inline bool DbgScp_WriteLog(const std::string& str)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_LogBufferMutex);
+
+    bool r = true;
+    auto&& pos = g_LogBuffer.tellp();
+    if (pos + static_cast<std::streamoff>(str.length()) > c_log_buffer_size) {
+        r = DbgScp_FlushLog_NoLock(str.c_str(), str.length());
+    }
+    else {
+        g_LogBuffer << str;
+    }
+    return r;
+}
+static inline void DbgScp_LogCallstack(const char* prefix, const char* file, int line)
+{
+    const int c_buf_size = 1024 * 4 + 1;
+    char buf[c_buf_size];
+    snprintf(buf, c_buf_size, "%s%s:%d\n", prefix, file, line);
+    DbgScp_WriteLog(buf);
+
+#if !BACKTRACE_UNIMPLEMENTED
+    const size_t kMaxDepth = 100;
+
+    void* stackAddr[kMaxDepth];
+    int stackDepth = (int)backtrace(stackAddr, kMaxDepth);
+    char** stackSymbol = backtrace_symbols(stackAddr, stackDepth);
+
+    for (int i = 1, n = stackDepth; i < n; ++i) {
+        snprintf(buf, c_buf_size, " #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
+        DbgScp_WriteLog(buf);
+    }
+    free(stackSymbol);
+#endif
+}
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
@@ -254,6 +344,9 @@ enum class ExternApiEnum
     UnityAlloc,
     UnityRealloc,
     UnityDealloc,
+    WriteLog,
+    FlushLog,
+    LogCallStack,
     Num
 };
 
@@ -452,6 +545,23 @@ struct ExternApi
         }
         std::free(reinterpret_cast<void*>(addr));
     }
+    static inline void WriteLog(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        const std::string& str = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+        bool r = DbgScp_WriteLog(str);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
+    static inline void FlushLog(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        bool r = DbgScp_FlushLog();
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
+    static inline void LogCallStack(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        const std::string& str = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+        DbgScp_LogCallstack(str.c_str(), __FILE__, __LINE__);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, 1, stackBase, intLocals, intGlobals);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -507,6 +617,15 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::UnityDealloc:
         ExternApi::UnityDealloc(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::WriteLog:
+        ExternApi::WriteLog(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::FlushLog:
+        ExternApi::FlushLog(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::LogCallStack:
+        ExternApi::LogCallStack(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

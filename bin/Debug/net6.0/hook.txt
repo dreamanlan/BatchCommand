@@ -376,12 +376,55 @@ hook("MemoryManager::Allocate_NonTemp_Null")
 		//retry
 		ptrset(argv(1),4, 1);
 		
+		FlushLog();
 		assert(0);
 		
 		return 0;
 	};
 	onexit{
 		printf("MemoryManager::Allocate_NonTemp_Null exit time:%lld\n",time());
+	};
+};
+hook("MemoryManager::Allocate_Temp_NotNull")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::Allocate_Temp_NotNull exit time:%lld\n",time());
+	};
+};
+hook("MemoryManager::Allocate_NonTemp_NotNull")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		$str:string = format("MemoryManager::Allocate_NonTemp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::Allocate_NonTemp_NotNull exit time:%lld\n",time());
 	};
 };
 hook("PipelineStateCollection::PrecachePSOsProgressively")
@@ -406,6 +449,7 @@ hook("vk::MemoryAllocator::Allocate")
 	onexit{
 		$r:int = ptrget(argv(0),8);
 		if($r==0){
+			FlushLog();
 			assert(0);
 		}
 		else{
@@ -430,6 +474,7 @@ hook("vk::DataBuffer::CreateResource")
 	onexit{
 		$r:int = ptrget(argv(0),8);
 		if($r==0){
+			FlushLog();
 			assert(0);
 		};
 	};
@@ -442,6 +487,7 @@ hook("vk::DataBuffer::AccessBuffer")
 	onexit{
 		$r:int = ptrget(argv(0),8);
 		if($r==0){
+			FlushLog();
 			assert(0);
 		};
 	};
@@ -491,6 +537,7 @@ hook("TlsfDuplicateFreeMemory")
 		printf("%s",$str);
 		WriteLog($str);
 		LogCallStack("TlsfDuplicateFreeMemory");
+		FlushLog();
 		assert(0);
 	};
 	onexit{
@@ -500,6 +547,7 @@ hook("LogOnTlsfAssert")
 {
 	onenter{
 		LogCallStack("LogOnTlsfAssert");
+		FlushLog();
 		assert(0);
 	};
 	onexit{
@@ -513,6 +561,7 @@ hook("LogOnTlsfMemory")
 		printf("%s",$str);
 		WriteLog($str);
 		LogCallStack("LogOnTlsfMemory");
+		FlushLog();
 		assert(0);
 	};
 	onexit{
@@ -525,10 +574,12 @@ hook("DynamicHeapAllocator::Allocate")
 		$size:int = ptrget(argv(2),8);
 		$align:int = ptrget(argv(3),4);
 		$locking:int = ptrget(argv(4),1);
+		$tlsfInst:int = ptrget(argv(6),8);
+		$tlsfPool:int = ptrget(argv(7),8);
 		if($locking==0){
 			//ptrset(argv(4),1,1);
 		};
-		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld tid:%d\n",time(),$align,$locking,$size,GetTID());
+		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
 		if($size>=32 && $size<=96){
@@ -543,9 +594,12 @@ hook("DynamicHeapAllocator::Allocate")
 		$align:int = ptrget(argv(3),4);
 		$locking:int = ptrget(argv(4),1);
 		$tlsf:int = ptrget(argv(5),1);
-		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,GetTID());
+		$tlsfInst:int = ptrget(argv(6),8);
+		$tlsfPool:int = ptrget(argv(7),8);
+		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
+		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
 		if($size>=32 && $size<=96){
 			//printf("#DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,GetTID());
 			//dumpstack("#DynamicHeapAllocator::Allocate");
@@ -557,15 +611,34 @@ hook("DynamicHeapAllocator::Deallocate")
 	onenter{
 		$this:int = ptrget(argv(0),8);
 		$addr:int = ptrget(argv(1),8);
-		$locking:int = ptrget(argv(2),1);
-		$tlsf:int = ptrget(argv(3),1);
-		$size:int = ptrget(argv(4),8);
+		$size:int = ptrget(argv(2),8);
+		$locking:int = ptrget(argv(3),1);
+		$tlsf:int = ptrget(argv(4),1);
+		$tlsfInst:int = ptrget(argv(5),8);
+		$tlsfPool:int = ptrget(argv(6),8);
 		if($locking==0){
 			//ptrset(argv(2),1,1);
 		};
-		$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
+		$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
+		$info_size:int;
+		$info_align:int;
+		$info_locking:int;
+		$info_tlsf:int;
+		$info_tlsf_inst:int;
+		$info_tlsf_pool:int;
+		$info_tid:int;
+		$info_main_thread:int;
+		$cur_tid:int;
+		$cur_main_thread:int;
+		$alloc_name:string;
+		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name) && $tlsfInst != $info_tlsf_inst){
+			$str2:string = format("DynamicHeapAllocator::Deallocate on different tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name);
+			printf("%s",$str2);
+			WriteLog($str2);
+		};
+		RemoveMemoryInfo($addr);
 		if($size>=32 && $size<=96){
 			//printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
 			//dumpstack("#DynamicHeapAllocator::Deallocate");
@@ -574,10 +647,12 @@ hook("DynamicHeapAllocator::Deallocate")
 	onexit{
 		$this:int = ptrget(argv(0),8);
 		$addr:int = ptrget(argv(1),8);
-		$locking:int = ptrget(argv(2),1);
-		$tlsf:int = ptrget(argv(3),1);
-		$size:int = ptrget(argv(4),8);
-		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
+		$size:int = ptrget(argv(2),8);
+		$locking:int = ptrget(argv(3),1);
+		$tlsf:int = ptrget(argv(4),1);
+		$tlsfInst:int = ptrget(argv(5),8);
+		$tlsfPool:int = ptrget(argv(6),8);
+		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
 		if($size>=32 && $size<=96){

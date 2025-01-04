@@ -34,6 +34,16 @@
 #define BACKTRACE_UNIMPLEMENTED 1
 #endif
 
+struct WatchPointCommandInfo
+{
+    short cmd;//0--nothing 1--add 2--remove
+    short flag;//0--nothing 1--read 2--write 3--readwrite
+    int size;
+    int64_t addr;
+};
+
+WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0 };
+
 int64_t GetProcessId()
 {
 #if PLATFORM_WIN || _MSC_VER
@@ -523,13 +533,15 @@ enum class ExternApiEnum
     UnityDealloc,
     WriteLog,
     FlushLog,
-    LogCallStack,
+    LogStack,
     AddMemoryInfo,
     RemoveMemoryInfo,
     GetMemoryInfo,
     IsMainThread,
     ThreadSleep,
     ThreadYield,
+    SetWatchPoint,
+    GetWatchPoint,
     Num
 };
 
@@ -717,7 +729,7 @@ struct ExternApi
         bool r = DbgScp_FlushLog();
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
     }
-    static inline void LogCallStack(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    static inline void LogStack(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         const std::string& str = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
         DbgScp_LogCallstack(str.c_str(), __FILE__, __LINE__);
@@ -805,6 +817,30 @@ struct ExternApi
 #endif
 #endif
     }
+    static inline void SetWatchPoint(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t cmd = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t flag = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
+        int64_t addr = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        g_WatchPointCommandInfo.cmd = static_cast<short>(cmd);
+        g_WatchPointCommandInfo.flag = static_cast<short>(flag);
+        g_WatchPointCommandInfo.size = static_cast<int>(size);
+        g_WatchPointCommandInfo.addr = addr;
+    }
+    static inline void GetWatchPoint(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, g_WatchPointCommandInfo.cmd, stackBase, intLocals, intGlobals);
+        if (argNum > 1) {
+            DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, g_WatchPointCommandInfo.flag, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 2) {
+            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, g_WatchPointCommandInfo.size, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 3) {
+            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, g_WatchPointCommandInfo.addr, stackBase, intLocals, intGlobals);
+        }
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -867,8 +903,8 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
     case ExternApiEnum::FlushLog:
         ExternApi::FlushLog(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
-    case ExternApiEnum::LogCallStack:
-        ExternApi::LogCallStack(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+    case ExternApiEnum::LogStack:
+        ExternApi::LogStack(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     case ExternApiEnum::AddMemoryInfo:
         ExternApi::AddMemoryInfo(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
@@ -887,6 +923,12 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::ThreadYield:
         ExternApi::ThreadYield(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::SetWatchPoint:
+        ExternApi::SetWatchPoint(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetWatchPoint:
+        ExternApi::GetWatchPoint(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

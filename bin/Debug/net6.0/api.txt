@@ -59,7 +59,7 @@ defexternapi(UnityDealloc,int,noparams,[int,int]){
 };
 defexternapi(WriteLog,int,noparams,[string]);
 defexternapi(FlushLog,int,noparams,[]);
-defexternapi(LogCallStack,int,noparams,[string]);
+defexternapi(LogStack,int,noparams,[string]);
 defexternapi(AddMemoryInfo,int,noparams,[int,int,int,int,int,int,int]);
 defexternapi(RemoveMemoryInfo,int,noparams,[int]);
 defexternapi(GetMemoryInfo,int,noparams,[int,int,int,int,int,int,int,int,int,int,int,string]){
@@ -68,3 +68,7 @@ defexternapi(GetMemoryInfo,int,noparams,[int,int,int,int,int,int,int,int,int,int
 defexternapi(IsMainThread,int,noparams,[]);
 defexternapi(ThreadSleep,void,noparams,[int]);
 defexternapi(ThreadYield,void,noparams,[]);
+defexternapi(SetWatchPoint,void,noparams,[int,int,int,int]);
+defexternapi(GetWatchPoint,int,noparams,[int,int,int]){
+	minparamnum(0);
+};

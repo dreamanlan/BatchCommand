@@ -97,6 +97,11 @@ hook(DbgScp_TestVoid)
 			$mem:int = UnityAlloc(4096*1024,8,2,0);
 			WriteLog(format("prealloc:%llx\n", $mem));
 		};
+		$fields:string[3];
+		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
+		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
+		printf("%s",$seg_str);
+		WriteLog($seg_str);
 		FlushLog();
 		@g_in_test = 0;
 		return 1;
@@ -145,89 +150,100 @@ hook(DbgScp_TestInt)
 hook("VKGpuProgram::Create")
 {
 	onenter{
-		printf("VKGpuProgram::Create enter time:%lld\n",time());
-		//dumpstack("VKGpuProgram::Create");
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
-		$name:string = $d;
-		printf("VKGpuProgram shader:%s\n", $d);
-		/*
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
-			assert(0);
-		};
-		*/
+		
+		$str:string = format("VKGpuProgram::Create enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
+		printf("%s",$str);
+		WriteLog($str);
+		
 		return 0;
 	};
 	onexit{
-		printf("VKGpuProgram::Create exit time:%lld\n",time());
+		$str:string = format("VKGpuProgram::Create exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::GetShaderModule")
 {
 	onenter{
-		printf("GraphicsPipelineProvider::GetShaderModule enter time:%lld\n",time());
-		//dumpstack("VKGpuProgram::Create");
 		$a:int = ptrget(argv(7),8);
 		$b:int = ptrget(argv(7)+8,8);
-		printf("GraphicsPipelineProvider::GetShaderModule key:%8.8x %8.8x\n",$a,$b);
+		$str:string = format("GraphicsPipelineProvider::GetShaderModule enter time:%lld thread:%d key:%8.8x %8.8x\n",time(),GetTID(),$a,$b);
+		printf("%s",$str);
+		WriteLog($str);
 		return 0;
 	};
 	onexit{
 		$a:int = ptrget(argv(0),8);
-		printf("GraphicsPipelineProvider::GetShaderModule ret:%x\n",$a);
-		printf("GraphicsPipelineProvider::GetShaderModule exit time:%lld\n",time());
+		$str:string = format("GraphicsPipelineProvider::GetShaderModule exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::DeleteShaderModule")
 {
 	onenter{
-		printf("GraphicsPipelineProvider::DeleteShaderModule enter time:%lld\n",time());
-		dumpstack("#GraphicsPipelineProvider::DeleteShaderModule");
 		$a:int = ptrget(argv(1),8);
-		printf("GraphicsPipelineProvider::DeleteShaderModule obj:%x\n",$a);
+		$str:string = format("GraphicsPipelineProvider::DeleteShaderModule enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
+		printf("%s",$str);
+		WriteLog($str);
+		dumpstack("#GraphicsPipelineProvider::DeleteShaderModule");
+		LogStack("#GraphicsPipelineProvider::DeleteShaderModule");
 		return 0;
 	};
 	onexit{
-		printf("GraphicsPipelineProvider::DeleteShaderModule exit time:%lld\n",time());
+		$str:string = format("GraphicsPipelineProvider::DeleteShaderModule exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::GetPipelineCacheAndLayout")
 {
 	onenter{
-		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout enter time:%lld\n",time());
+		$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout enter time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
 		//dumpstack("GraphicsPipelineProvider::GetPipelineCacheAndLayout");
 		return 0;
 	};
 	onexit{
 		$a:int = ptrget(argv(0),8);
-		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout ret:%x\n",$a);
-		printf("GraphicsPipelineProvider::GetPipelineCacheAndLayout exit time:%lld\n",time());
+		$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
 {
 	onenter{
-		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%lld\n",time());
-		dumpstack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
 		$a:int = ptrget(argv(1),8);
-		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout obj:%x\n",$a);
+		$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
+		printf("%s",$str);
+		WriteLog($str);
+		dumpstack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
+		LogStack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
 		return 0;
 	};
 	onexit{
-		printf("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%lld\n",time());
+		$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("CreateGraphicsPipeline")
 {
 	onenter{
-		printf("CreateGraphicsPipeline enter time:%lld\n",time());
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		$c:string = ptrget(argv(2),8);
 		$dev:int = ptrget($a, 8);
-		printf("CreateGraphicsPipeline this:%llx device:%llx thread:%d\n", $a, $dev, GetTID());
+		$str:string = format("CreateGraphicsPipeline enter time:%lld thread:%d this:%llx device:%llx\n",time(),GetTID(),$a,$dev);
+		printf("%s",$str);
+		WriteLog($str);
 		
 		/*
 		//MI 12 pro
@@ -276,26 +292,22 @@ hook("CreateGraphicsPipeline")
 			
 			@g_dir_chged = 1;			
 		};
-		$name:string = $c;
-		if($name=="Hidden/VFX/5035155_gpu_zzy/System/Output Particle Quad" || $name=="Hidden/VFX/Simple_Mesh_particle/System/Output Particle Quad"){
-			assert(0);
-		};
 		*/
 		//dumpstack("CreateGraphicsPipeline");
 		return 0;
 	};
 	onexit{
-		printf("CreateGraphicsPipeline exit time:%lld\n",time());
+		$str:string = format("CreateGraphicsPipeline exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("MemoryManager::GetAllocator")
 {
 	onenter{
-		//printf("MemoryManager::GetAllocator enter time:%lld\n",time());
 		return 0;
 	};
 	onexit{
-		//printf("MemoryManager::GetAllocator exit time:%lld\n",time());
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),4);
@@ -320,15 +332,17 @@ hook("MemoryManager::GetAllocator")
 hook("MemoryManager::GetAllocatorOnNull")
 {
 	onenter{
-		//printf("MemoryManager::GetAllocatorOnNull enter time:%lld\n",time());
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
-		printf("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
+		
+		$str:string = format("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
+		printf("%s",$str);
+		WriteLog($str);
+		
 		//dumpstack("MemoryManager::GetAllocatorOnNull");
 		return 0;
 	};
 	onexit{
-		//printf("MemoryManager::GetAllocatorOnNull exit time:%lld\n",time());
 	};
 };
 hook("MemoryManager::Allocate_Temp_Null")
@@ -343,6 +357,7 @@ hook("MemoryManager::Allocate_Temp_Null")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
+		
 		//printf("MemoryManager::Allocate_Temp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
 		
 		if ($label == 2) {
@@ -371,7 +386,10 @@ hook("MemoryManager::Allocate_NonTemp_Null")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
-		printf("MemoryManager::Allocate_NonTemp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		
+		$str:string = format("MemoryManager::Allocate_NonTemp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
 		
 		//retry
 		ptrset(argv(1),4, 1);
@@ -382,7 +400,9 @@ hook("MemoryManager::Allocate_NonTemp_Null")
 		return 0;
 	};
 	onexit{
-		printf("MemoryManager::Allocate_NonTemp_Null exit time:%lld\n",time());
+		$str:string = format("MemoryManager::Allocate_NonTemp_Null exit time:%lld\n",time());
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 hook("MemoryManager::Allocate_Temp_NotNull")
@@ -397,9 +417,11 @@ hook("MemoryManager::Allocate_Temp_NotNull")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
+		
 		$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
 		printf("%s",$str);
 		WriteLog($str);
+		
 		return 0;
 	};
 	onexit{
@@ -418,9 +440,11 @@ hook("MemoryManager::Allocate_NonTemp_NotNull")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
+		
 		$str:string = format("MemoryManager::Allocate_NonTemp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
 		printf("%s",$str);
 		WriteLog($str);
+		
 		return 0;
 	};
 	onexit{
@@ -432,19 +456,159 @@ hook("PipelineStateCollection::PrecachePSOsProgressively")
 	onenter{
 		$a:int = ptrget(argv(1),8);
 		$b:int = ptrget(argv(2),4);
-		printf("PipelineStateCollection::PrecachePSOsProgressively enter time:%lld thread:%d batch:%d->256\n",time(),GetTID(),$b);
+		
+		$str:string = format("PipelineStateCollection::PrecachePSOsProgressively enter time:%lld thread:%d batch:%d->256\n",time(),GetTID(),$b);
+		printf("%s",$str);
+		WriteLog($str);
+		
 		ptrset(argv(2),4,256);
 		return 0;
 	};
 	onexit{
 		$r:int = ptrget(argv(0),4);
-		printf("PipelineStateCollection::PrecachePSOsProgressively exit time:%lld ret:%d\n",time(),$r);
+		$str:string = format("PipelineStateCollection::PrecachePSOsProgressively exit time:%lld thread:%d ret:%d\n",time(),GetTID(),$r);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("VKAsyncPipelineCompiler")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$pso:int = ptrget(argv(1),8);
+		
+		$str:string = format("VKAsyncPipelineCompiler time:%lld thread:%d this:%llx pso:%llx\n",time(),GetTID(),$this,$pso);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCompiler::Create")
+{
+	onenter{
+		$this:int = ptrget(argv(1),8);
+		
+		$str:string = format("VKAsyncPipelineCompiler::Create enter time:%lld thread:%d this:%llx main thread:%d\n",time(),GetTID(),$this,IsMainThread());
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+		$ret:int = ptrget(argv(0),1);
+		$this:int = ptrget(argv(1),8);
+		
+		$str:string = format("VKAsyncPipelineCompiler::Create exit time:%lld thread:%d this:%llx ret:%d main thread:%d\n",time(),GetTID(),$this,$ret,IsMainThread());
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("CreatePipelineJob")
+{
+	onenter{
+		$jobData:int = ptrget(argv(0),8);
+		
+		$str:string = format("CreatePipelineJob time:%lld thread:%d jobData:%llx\n",time(),GetTID(),$jobData);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCompiler::OnPipelineCreated")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$scheduler:int = ptrget(argv(4),8);
+		
+		$str:string = format("VKAsyncPipelineCompiler::OnPipelineCreated time:%lld thread:%d this:%llx scheduler:%llx\n",time(),GetTID(),$this,$scheduler);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCreationScheduler")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		
+		$str:string = format("VKAsyncPipelineCreationScheduler time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("~VKAsyncPipelineCreationScheduler")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		
+		$str:string = format("~VKAsyncPipelineCreationScheduler time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCreationScheduler::EnqueueJob")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$jobData:int = ptrget(argv(1),8);
+		
+		$str:string = format("VKAsyncPipelineCreationScheduler::EnqueueJob time:%lld thread:%d this:%llx jobData:%llx\n",time(),GetTID(),$this,$jobData);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCreationScheduler::ProcessNextJob")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		
+		$str:string = format("VKAsyncPipelineCreationScheduler::ProcessNextJob time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("VKAsyncPipelineCreationScheduler::OnJobCompleted")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		
+		$str:string = format("VKAsyncPipelineCreationScheduler::OnJobCompleted time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
 	};
 };
 hook("vk::MemoryAllocator::Allocate")
 {
 	onenter{
-		
 	};
 	onexit{
 		$r:int = ptrget(argv(0),8);
@@ -536,7 +700,7 @@ hook("TlsfDuplicateFreeMemory")
 		$str:string = format("TlsfDuplicateFreeMemory %s ptr:%llx\n",$prefix,$ptr);
 		printf("%s",$str);
 		WriteLog($str);
-		LogCallStack("TlsfDuplicateFreeMemory");
+		LogStack("TlsfDuplicateFreeMemory");
 		FlushLog();
 		assert(0);
 	};
@@ -546,7 +710,7 @@ hook("TlsfDuplicateFreeMemory")
 hook("LogOnTlsfAssert")
 {
 	onenter{
-		LogCallStack("LogOnTlsfAssert");
+		LogStack("LogOnTlsfAssert");
 		FlushLog();
 		assert(0);
 	};
@@ -560,7 +724,7 @@ hook("LogOnTlsfMemory")
 		$str:string = format("LogOnTlsfMemory ptr:%llx\n",$ptr);
 		printf("%s",$str);
 		WriteLog($str);
-		LogCallStack("LogOnTlsfMemory");
+		LogStack("LogOnTlsfMemory");
 		FlushLog();
 		assert(0);
 	};
@@ -576,16 +740,12 @@ hook("DynamicHeapAllocator::Allocate")
 		$locking:int = ptrget(argv(4),1);
 		$tlsfInst:int = ptrget(argv(6),8);
 		$tlsfPool:int = ptrget(argv(7),8);
-		if($locking==0){
-			//ptrset(argv(4),1,1);
-		};
-		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$tlsfInst,$tlsfPool,GetTID());
-		printf("%s",$str);
-		WriteLog($str);
-		if($size>=32 && $size<=96){
-			//printf("#DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld tid:%d\n",time(),$align,$locking,$size,GetTID());
-			//dumpstack("#DynamicHeapAllocator::Allocate");
-		};
+		$allocSize:int = ptrget(argv(8),8);
+		$allocAlign:int = ptrget(argv(9),4);
+		
+		//$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 	onexit{
 		$addr:int = ptrget(argv(0),8);
@@ -596,14 +756,14 @@ hook("DynamicHeapAllocator::Allocate")
 		$tlsf:int = ptrget(argv(5),1);
 		$tlsfInst:int = ptrget(argv(6),8);
 		$tlsfPool:int = ptrget(argv(7),8);
-		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+		$allocSize:int = ptrget(argv(8),8);
+		$allocAlign:int = ptrget(argv(9),4);
+		
+		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
+		
 		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
-		if($size>=32 && $size<=96){
-			//printf("#DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,GetTID());
-			//dumpstack("#DynamicHeapAllocator::Allocate");
-		};
 	};
 };
 hook("DynamicHeapAllocator::Deallocate")
@@ -616,12 +776,11 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsf:int = ptrget(argv(4),1);
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
-		if($locking==0){
-			//ptrset(argv(2),1,1);
-		};
+		
 		$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
 		printf("%s",$str);
 		WriteLog($str);
+		
 		$info_size:int;
 		$info_align:int;
 		$info_locking:int;
@@ -638,11 +797,8 @@ hook("DynamicHeapAllocator::Deallocate")
 			printf("%s",$str2);
 			WriteLog($str2);
 		};
+		
 		RemoveMemoryInfo($addr);
-		if($size>=32 && $size<=96){
-			//printf("#DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
-			//dumpstack("#DynamicHeapAllocator::Deallocate");
-		};
 	};
 	onexit{
 		$this:int = ptrget(argv(0),8);
@@ -652,12 +808,9 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsf:int = ptrget(argv(4),1);
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
-		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
-		printf("%s",$str);
-		WriteLog($str);
-		if($size>=32 && $size<=96){
-			//printf("#DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld tid:%d\n",time(),$locking,$tlsf,$addr,$size,GetTID());
-			//dumpstack("#DynamicHeapAllocator::Deallocate");
-		};
+		
+		//$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };

@@ -177,6 +177,8 @@ struct MemoryInfo
 
 static std::unordered_map<int64_t, MemoryInfo> g_MemoryInfos{};
 static std::recursive_mutex g_MemoryInfoMutex{};
+static std::unordered_map<int64_t, int64_t> g_MemoryFlags{};
+static std::recursive_mutex g_MemoryFlagMutex{};
 
 static inline bool DbgScp_AddMemoryInfo(int64_t addr, size_t size, size_t align, bool locking, bool tlsf, int64_t inst, int64_t pool)
 {
@@ -193,7 +195,7 @@ static inline bool DbgScp_RemoveMemoryInfo(int64_t addr)
     auto&& r = g_MemoryInfos.erase(addr);
     return r > 0;
 }
-static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& align, bool& locking, bool& tlsf, int64_t& inst, int64_t& pool, int64_t& tid, bool& is_main_thread, int64_t& cur_tid, bool& cur_is_main_thread, const char*& alloc_name)
+static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& align, bool& locking, bool& tlsf, int64_t& inst, int64_t& pool, int64_t& tid, bool& is_main_thread, int64_t& cur_tid, bool& cur_is_main_thread, const char*& alloc_name, const char*& second_alloc_name)
 {
     std::lock_guard<std::recursive_mutex> lock(g_MemoryInfoMutex);
 
@@ -217,21 +219,63 @@ static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& alig
 #if ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
-            auto&& alloc = ptr->GetAllocatorContainingPtr(reinterpret_cast<void*>(addr));
+            auto&& lla = ptr->GetLowLevelAllocator();
+            auto&& block_info = lla.GetBlockInfoFromPointer(reinterpret_cast<void*>(addr));
+            auto&& alloc = lla.GetAllocatorFromIdentifier(block_info.allocatorIdentifier);
             if (alloc) {
                 alloc_name = alloc->GetName();
             }
             else {
                 alloc_name = "[unknown]";
             }
+            if (block_info.secondaryAllocatorIdentifier != 0) {
+                auto&& salloc = lla.GetAllocatorFromIdentifier(block_info.secondaryAllocatorIdentifier);
+                if (salloc) {
+                    second_alloc_name = salloc->GetName();
+                }
+                else {
+                    second_alloc_name = "[unknown]";
+                }
+            }
+            else {
+                second_alloc_name = "";
+            }
         }
         else {
             alloc_name = "";
+            second_alloc_name = "";
         }
 #else
         alloc_name = "";
+        second_alloc_name = "";
 #endif
 
+        r = true;
+    }
+    return r;
+}
+static inline bool DbgScp_AddMemoryFlag(int64_t addr, int64_t flag)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_MemoryFlagMutex);
+
+    auto&& r = g_MemoryFlags.insert(std::make_pair(addr, flag));
+    return r.second;
+}
+static inline bool DbgScp_RemoveMemoryFlag(int64_t addr)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_MemoryFlagMutex);
+
+    auto&& r = g_MemoryFlags.erase(addr);
+    return r > 0;
+}
+static inline bool DbgScp_GetMemoryFlag(int64_t addr, int64_t& flag)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_MemoryFlagMutex);
+
+    bool r = false;
+    auto&& it = g_MemoryFlags.find(addr);
+    if (it != g_MemoryFlags.end()) {
+        flag = it->second;
         r = true;
     }
     return r;
@@ -534,9 +578,13 @@ enum class ExternApiEnum
     WriteLog,
     FlushLog,
     LogStack,
+    GetBlockInfo,
     AddMemoryInfo,
     RemoveMemoryInfo,
     GetMemoryInfo,
+    AddMemoryFlag,
+    RemoveMemoryFlag,
+    GetMemoryFlag,
     IsMainThread,
     ThreadSleep,
     ThreadYield,
@@ -735,6 +783,64 @@ struct ExternApi
         DbgScp_LogCallstack(str.c_str(), __FILE__, __LINE__);
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, 1, stackBase, intLocals, intGlobals);
     }
+    static inline void GetBlockInfo(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t id1 = 0, id2 = 0, type = 0, offset = 0;
+        const char* alloc_name = "";
+        const char* second_alloc_name = "";
+        bool r = false;
+#if ENABLE_MEMORY_MANAGER
+        auto&& ptr = GetMemoryManagerPtr();
+        if (ptr) {
+            r = true;
+            auto&& lla = ptr->GetLowLevelAllocator();
+            auto&& block_info = lla.GetBlockInfoFromPointer(reinterpret_cast<void*>(addr));
+            id1 = block_info.allocatorIdentifier;
+            id2 = block_info.secondaryAllocatorIdentifier;
+            type = block_info.blockType;
+            offset = block_info.offset;
+            auto&& alloc = lla.GetAllocatorFromIdentifier(block_info.allocatorIdentifier);
+            if (alloc) {
+                alloc_name = alloc->GetName();
+            }
+            else {
+                alloc_name = "[unknown]";
+            }
+            if (block_info.secondaryAllocatorIdentifier != 0) {
+                auto&& salloc = lla.GetAllocatorFromIdentifier(block_info.secondaryAllocatorIdentifier);
+                if (salloc) {
+                    second_alloc_name = salloc->GetName();
+                }
+                else {
+                    second_alloc_name = "[unknown]";
+                }
+            }
+            else {
+                second_alloc_name = "";
+            }
+        }
+#endif
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+        if (argNum > 1) {
+            DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, id1, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 2) {
+            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, id2, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 3) {
+            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, type, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 4) {
+            DebugScript::SetVarInt(args[4].IsGlobal, args[4].Index, offset, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 5) {
+            DebugScript::SetVarString(args[5].IsGlobal, args[5].Index, alloc_name, stackBase, strLocals, strGlobals);
+        }
+        if (argNum > 6) {
+            DebugScript::SetVarString(args[6].IsGlobal, args[6].Index, second_alloc_name, stackBase, strLocals, strGlobals);
+        }
+    }
     static inline void AddMemoryInfo(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
@@ -760,7 +866,8 @@ struct ExternApi
         bool locking = false, tlsf = false, is_main_thread = false, cur_is_main_thread = false;
         int64_t inst = 0, pool = 0, tid = 0, cur_tid = 0;
         const char* alloc_name = "";
-        bool r = DbgScp_GetMemoryInfo(addr, size, align, locking, tlsf, inst, pool, tid, is_main_thread, cur_tid, cur_is_main_thread, alloc_name);
+        const char* second_alloc_name = "";
+        bool r = DbgScp_GetMemoryInfo(addr, size, align, locking, tlsf, inst, pool, tid, is_main_thread, cur_tid, cur_is_main_thread, alloc_name, second_alloc_name);
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
         if (argNum > 1) {
             DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, size, stackBase, intLocals, intGlobals);
@@ -794,6 +901,32 @@ struct ExternApi
         }
         if (argNum > 11) {
             DebugScript::SetVarString(args[11].IsGlobal, args[11].Index, alloc_name, stackBase, strLocals, strGlobals);
+        }
+        if (argNum > 12) {
+            DebugScript::SetVarString(args[12].IsGlobal, args[12].Index, second_alloc_name, stackBase, strLocals, strGlobals);
+        }
+    }
+    static inline void AddMemoryFlag(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t flag = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        bool r = DbgScp_AddMemoryFlag(addr, flag);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
+    static inline void RemoveMemoryFlag(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        bool r = DbgScp_RemoveMemoryFlag(addr);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
+    static inline void GetMemoryFlag(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t flag = 0;
+        bool r = DbgScp_GetMemoryFlag(addr, flag);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+        if (argNum > 1) {
+            DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, flag, stackBase, intLocals, intGlobals);
         }
     }
     static inline void IsMainThread(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -906,6 +1039,9 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
     case ExternApiEnum::LogStack:
         ExternApi::LogStack(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
+    case ExternApiEnum::GetBlockInfo:
+        ExternApi::GetBlockInfo(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
     case ExternApiEnum::AddMemoryInfo:
         ExternApi::AddMemoryInfo(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
@@ -914,6 +1050,15 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetMemoryInfo:
         ExternApi::GetMemoryInfo(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::AddMemoryFlag:
+        ExternApi::AddMemoryFlag(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::RemoveMemoryFlag:
+        ExternApi::RemoveMemoryFlag(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetMemoryFlag:
+        ExternApi::GetMemoryFlag(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     case ExternApiEnum::IsMainThread:
         ExternApi::IsMainThread(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);

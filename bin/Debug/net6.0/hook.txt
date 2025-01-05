@@ -136,9 +136,11 @@ hook(DbgScp_TestInt)
 			UnityDealloc($mem,153);
 			WriteLog(format("dealloc addr:%llx size:64\n",$mem));
 		};
+		/*
 		loop($i,1,165){
 			CheckMemory($i);
 		};
+		*/
 		return 1;
 	};
 	onexit{
@@ -300,155 +302,6 @@ hook("CreateGraphicsPipeline")
 		$str:string = format("CreateGraphicsPipeline exit time:%lld thread:%d\n",time(),GetTID());
 		printf("%s",$str);
 		WriteLog($str);
-	};
-};
-hook("MemoryManager::GetAllocator")
-{
-	onenter{
-		return 0;
-	};
-	onexit{
-		$a:int = ptrget(argv(0),8);
-		$b:int = ptrget(argv(1),8);
-		$c:int = ptrget(argv(2),4);
-		if ($a == 0) {
-			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
-		}
-		elif ($c == 2) {
-			//assert(0);
-		}
-		elif ($c == 153) {
-			//printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
-			//assert(0);
-		}
-		elif ($c >= 166) {
-			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
-			//dumpstack("MemoryManager::GetAllocator");
-		};
-	};
-};
-hook("MemoryManager::GetAllocatorOnNull")
-{
-	onenter{
-		$a:int = ptrget(argv(0),8);
-		$b:int = ptrget(argv(1),8);
-		
-		$str:string = format("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		//dumpstack("MemoryManager::GetAllocatorOnNull");
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("MemoryManager::Allocate_Temp_Null")
-{
-	onenter{
-		//$ret:int = ptrget(argv(0),8);
-		//$retry:int = ptrget(argv(1),4);
-		$this:int = ptrget(argv(2),8);
-		$size:int = ptrget(argv(3),8);
-		$align:int = ptrget(argv(4),8);
-		$label:int = ptrget(argv(5),4);
-		$option:int = ptrget(argv(6),4);
-		$file:string = ptrget(argv(7),8);
-		$line:int = ptrget(argv(8),4);
-		
-		//printf("MemoryManager::Allocate_Temp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
-		
-		if ($label == 2) {
-			if(@g_in_test==0){
-				//retry
-				//ptrset(argv(1),4, 1);
-				
-				//assert(0);
-			};
-		};
-		return 0;
-	};
-	onexit{
-		//printf("MemoryManager::Allocate_Temp_Null exit time:%lld\n",time());
-	};
-};
-hook("MemoryManager::Allocate_NonTemp_Null")
-{
-	onenter{
-		//$ret:int = ptrget(argv(0),8);
-		//$retry:int = ptrget(argv(1),4);
-		$this:int = ptrget(argv(2),8);
-		$size:int = ptrget(argv(3),8);
-		$align:int = ptrget(argv(4),8);
-		$label:int = ptrget(argv(5),4);
-		$option:int = ptrget(argv(6),4);
-		$file:string = ptrget(argv(7),8);
-		$line:int = ptrget(argv(8),4);
-		
-		$str:string = format("MemoryManager::Allocate_NonTemp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		//retry
-		ptrset(argv(1),4, 1);
-		
-		FlushLog();
-		assert(0);
-		
-		return 0;
-	};
-	onexit{
-		$str:string = format("MemoryManager::Allocate_NonTemp_Null exit time:%lld\n",time());
-		printf("%s",$str);
-		WriteLog($str);
-	};
-};
-hook("MemoryManager::Allocate_Temp_NotNull")
-{
-	onenter{
-		//$ret:int = ptrget(argv(0),8);
-		$addr:int = ptrget(argv(1),8);
-		$this:int = ptrget(argv(2),8);
-		$size:int = ptrget(argv(3),8);
-		$align:int = ptrget(argv(4),8);
-		$label:int = ptrget(argv(5),4);
-		$option:int = ptrget(argv(6),4);
-		$file:string = ptrget(argv(7),8);
-		$line:int = ptrget(argv(8),4);
-		
-		$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-		//printf("MemoryManager::Allocate_Temp_NotNull exit time:%lld\n",time());
-	};
-};
-hook("MemoryManager::Allocate_NonTemp_NotNull")
-{
-	onenter{
-		//$ret:int = ptrget(argv(0),8);
-		$addr:int = ptrget(argv(1),8);
-		$this:int = ptrget(argv(2),8);
-		$size:int = ptrget(argv(3),8);
-		$align:int = ptrget(argv(4),8);
-		$label:int = ptrget(argv(5),4);
-		$option:int = ptrget(argv(6),4);
-		$file:string = ptrget(argv(7),8);
-		$line:int = ptrget(argv(8),4);
-		
-		$str:string = format("MemoryManager::Allocate_NonTemp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-		//printf("MemoryManager::Allocate_NonTemp_NotNull exit time:%lld\n",time());
 	};
 };
 hook("PipelineStateCollection::PrecachePSOsProgressively")
@@ -692,6 +545,157 @@ hook("RenderingCommandBufferState::GetAndCheckRT")
 	onexit{
 	};
 };
+hook("MemoryManager::GetAllocator")
+{
+	onenter{
+		return 0;
+	};
+	onexit{
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),4);
+		if ($a == 0) {
+			printf("MemoryManager::GetAllocator memlabel:%d return null\n", $c);
+			//dumpstack("MemoryManager::GetAllocator");
+		}
+		elif ($c == 2) {
+			//assert(0);
+		}
+		elif ($c == 153) {
+			//printf("MemoryManager::GetAllocator memlabel:%d allocator\n", $c);
+			//dumpstack("MemoryManager::GetAllocator");
+			//assert(0);
+		}
+		elif ($c >= 166) {
+			printf("MemoryManager::GetAllocator memlabel:%d use custom allocator\n", $c);
+			//dumpstack("MemoryManager::GetAllocator");
+		};
+	};
+};
+hook("MemoryManager::GetAllocatorOnNull")
+{
+	onenter{
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		
+		$str:string = format("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		//dumpstack("MemoryManager::GetAllocatorOnNull");
+		return 0;
+	};
+	onexit{
+	};
+};
+hook("MemoryManager::Allocate_Temp_Null")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		//$retry:int = ptrget(argv(1),4);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		
+		//printf("MemoryManager::Allocate_Temp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		
+		if ($label == 2) {
+			if(@g_in_test==0){
+				//retry
+				//ptrset(argv(1),4, 1);
+				
+				//assert(0);
+			};
+		};
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::Allocate_Temp_Null exit time:%lld\n",time());
+	};
+};
+hook("MemoryManager::Allocate_NonTemp_Null")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		//$retry:int = ptrget(argv(1),4);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		
+		$str:string = format("MemoryManager::Allocate_NonTemp_Null enter time:%lld size:%lld align:%lld label:%d opt:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		//retry
+		ptrset(argv(1),4, 1);
+		
+		FlushLog();
+		assert(0);
+		
+		return 0;
+	};
+	onexit{
+		$str:string = format("MemoryManager::Allocate_NonTemp_Null exit time:%lld\n",time());
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("MemoryManager::Allocate_Temp_NotNull")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		
+		$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::Allocate_Temp_NotNull exit time:%lld\n",time());
+	};
+};
+hook("MemoryManager::Allocate_NonTemp_NotNull")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$this:int = ptrget(argv(2),8);
+		$size:int = ptrget(argv(3),8);
+		$align:int = ptrget(argv(4),8);
+		$label:int = ptrget(argv(5),4);
+		$option:int = ptrget(argv(6),4);
+		$file:string = ptrget(argv(7),8);
+		$line:int = ptrget(argv(8),4);
+		
+		$str:string = format("MemoryManager::Allocate_NonTemp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
+		printf("%s",$str);
+		WriteLog($str);
+		
+		AddMemoryFlag($addr, 1);
+		
+		return 0;
+	};
+	onexit{
+		//printf("MemoryManager::Allocate_NonTemp_NotNull exit time:%lld\n",time());
+	};
+};
 hook("TlsfDuplicateFreeMemory")
 {
 	onenter{
@@ -759,9 +763,11 @@ hook("DynamicHeapAllocator::Allocate")
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
 		
-		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		if($allocSize==$size+31){
+			$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+			printf("%s",$str);
+			WriteLog($str);
+		};
 		
 		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
 	};
@@ -777,9 +783,9 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
 		
-		$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 		
 		$info_size:int;
 		$info_align:int;
@@ -792,10 +798,35 @@ hook("DynamicHeapAllocator::Deallocate")
 		$cur_tid:int;
 		$cur_main_thread:int;
 		$alloc_name:string;
-		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name) && $tlsfInst != $info_tlsf_inst){
-			$str2:string = format("DynamicHeapAllocator::Deallocate on different tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name);
-			printf("%s",$str2);
-			WriteLog($str2);
+		$second_alloc_name:string;
+		
+		$flag:int;
+		
+		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
+			if(GetMemoryFlag($addr,$flag)){
+				if($flag==1){
+					$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+					printf("%s",$str2);
+					WriteLog($str2);
+				};
+			}
+			elif($tlsfInst != $info_tlsf_inst){
+				$str2:string = format("DynamicHeapAllocator::Deallocate on different tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+				printf("%s",$str2);
+				WriteLog($str2);
+			}
+			elif($cur_tid != $info_tid){
+				$str2:string = format("DynamicHeapAllocator::Deallocate on different thread locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+				printf("%s",$str2);
+				WriteLog($str2);
+			};
+		}
+		elif(GetMemoryFlag($addr,$flag)){
+			if($flag==1){
+				$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+				printf("%s",$str2);
+				WriteLog($str2);
+			};
 		};
 		
 		RemoveMemoryInfo($addr);

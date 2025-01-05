@@ -60,9 +60,17 @@ defexternapi(UnityDealloc,int,noparams,[int,int]){
 defexternapi(WriteLog,int,noparams,[string]);
 defexternapi(FlushLog,int,noparams,[]);
 defexternapi(LogStack,int,noparams,[string]);
+defexternapi(GetBlockInfo,int,noparams,[int,int,int,int,int,string,string]){
+	minparamnum(1);
+};
 defexternapi(AddMemoryInfo,int,noparams,[int,int,int,int,int,int,int]);
 defexternapi(RemoveMemoryInfo,int,noparams,[int]);
-defexternapi(GetMemoryInfo,int,noparams,[int,int,int,int,int,int,int,int,int,int,int,string]){
+defexternapi(GetMemoryInfo,int,noparams,[int,int,int,int,int,int,int,int,int,int,int,string,string]){
+	minparamnum(1);
+};
+defexternapi(AddMemoryFlag,int,noparams,[int,int]);
+defexternapi(RemoveMemoryFlag,int,noparams,[int]);
+defexternapi(GetMemoryFlag,int,noparams,[int,int]){
 	minparamnum(1);
 };
 defexternapi(IsMainThread,int,noparams,[]);

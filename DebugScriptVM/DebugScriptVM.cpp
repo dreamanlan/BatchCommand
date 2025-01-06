@@ -2521,6 +2521,9 @@ namespace
                 SetVarString(isGlobal, index, std::string(), stackBase, strLocals, strGlobals);
             }
         }
+        else {
+            SetVarString(isGlobal, index, std::string(), stackBase, strLocals, strGlobals);
+        }
     }
     static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
     {

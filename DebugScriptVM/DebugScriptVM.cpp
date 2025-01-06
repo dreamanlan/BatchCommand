@@ -2512,8 +2512,14 @@ namespace
         MyAssert(addr != 0);
         if (addr) {
             //dangerous!!!
-            std::string val = *reinterpret_cast<const char**>(addr);
-            SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+            const char* tstr = *reinterpret_cast<const char**>(addr);
+            if (tstr) {
+                std::string val = tstr;
+                SetVarString(isGlobal, index, val, stackBase, strLocals, strGlobals);
+            }
+            else {
+                SetVarString(isGlobal, index, std::string(), stackBase, strLocals, strGlobals);
+            }
         }
     }
     static inline void DoPtrSet(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
@@ -2613,13 +2619,15 @@ namespace
             //dangerous!!!
             const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
             char* tstr = *reinterpret_cast<char**>(addr);
+            if (tstr) {
 #if _MSC_VER || _WIN32 || _WIN64
-            strcpy_s(tstr, std::strlen(tstr) + 1, val.c_str());
+                strcpy_s(tstr, std::strlen(tstr) + 1, val.c_str());
 #else
-            auto slen = std::strlen(tstr);
-            strncpy(tstr, val.c_str(), slen);
-            tstr[slen] = 0;
+                auto slen = std::strlen(tstr);
+                strncpy(tstr, val.c_str(), slen);
+                tstr[slen] = 0;
 #endif
+            }
         }
     }
     static inline void DoCascadePtr(int32_t opcode, InsEnum op, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, IntGlobals& intGlobals)

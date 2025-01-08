@@ -34,17 +34,7 @@
 #define BACKTRACE_UNIMPLEMENTED 1
 #endif
 
-struct WatchPointCommandInfo
-{
-    short cmd;//0--nothing 1--add 2--remove
-    short flag;//0--nothing 1--read 2--write 3--readwrite
-    int size;
-    int64_t addr;
-};
-
-WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0 };
-
-int64_t GetProcessId()
+static inline int64_t GetProcessId()
 {
 #if PLATFORM_WIN || _MSC_VER
     return static_cast<int64_t>(GetCurrentProcessId());
@@ -53,8 +43,7 @@ int64_t GetProcessId()
 #endif
     return 0;
 }
-
-int64_t GetThreadId()
+static inline int64_t GetThreadId()
 {
 #if PLATFORM_WIN || _MSC_VER
     return static_cast<int64_t>(GetCurrentThreadId());
@@ -65,6 +54,16 @@ int64_t GetThreadId()
 #endif
     return 0;
 }
+
+struct WatchPointCommandInfo
+{
+    short cmd;//0--nothing 1--add 2--remove
+    short flag;//0--nothing 1--read 2--write 3--readwrite
+    int size;
+    int64_t addr;
+};
+
+WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0 };
 
 static const int c_max_log_file_num = 16;
 static const int c_max_log_file_size = 1024 * 1024 * 1024;
@@ -293,6 +292,10 @@ extern "C" void LogOnTlsfMemory(void* ptr)
 {
     DBGSCP_HOOK_VOID("LogOnTlsfMemory", ptr)
 }
+extern "C" void FlushDbgScpLog()
+{
+    DbgScp_FlushLog();
+}
 
 void DbgScp_TestVoid(int a, double b, const char* c)
 {
@@ -302,7 +305,6 @@ void DbgScp_TestVoid(int a, double b, const char* c)
 
     END_DBGSCP_HOOK_VOID("DbgScp_TestVoid", a, b, c)
 }
-
 int DbgScp_TestInt(int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
@@ -339,6 +341,40 @@ static inline std::vector<std::string> string_split(const std::string& input, ch
     }
 
     return tokens;
+}
+
+static inline int64_t test_find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
+    const char* txt =
+        "72c9804000-72c9900000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9900000-72c9ba1000 r-xp 000fc000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9ba1000-72c9bb1000 r--p 0039d000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "72c9bb1000-72c9bd2000 rw-p 003ac000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
+        "754670a000-754671e000 r--p 00000000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "754671e000-7546737000 r-xp 00014000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "7546737000-7546739000 r--p 0002d000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
+        "7546739000-754673a000 rw-p 0002e000 fe:09 19286849                       /system/lib64/libvulkan.so\n";
+    std::istringstream input_stream(txt);
+
+    std::string line;
+    while (std::getline(input_stream, line)) {
+        //72d2e1b000-72d2f17000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so
+        if (line.find(so) != std::string::npos) {
+            auto&& strs = string_split(line, ' ', 3);
+            if (strs.size() >= 3) {
+                if (strs[1] == attr) {
+                    int64_t offset = std::stoll(strs[2], nullptr, 16);
+                    if (incFirst || offset > 0) {
+                        size_t pos = strs[0].find_first_of('-');
+                        auto&& startStr = strs[0].substr(0, pos);
+                        match = line;
+                        fields.assign(strs.cbegin(), strs.cend());
+                        return std::stoll(startStr, nullptr, 16);
+                    }
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 static std::unordered_map<std::string, void*> g_Lib2Addresses{};
@@ -396,41 +432,6 @@ static inline bool UnloadDynamicLibrary(const std::string& str)
     }
 	return r;
 }
-
-static inline int64_t test_find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
-    const char* txt =
-        "72c9804000-72c9900000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
-        "72c9900000-72c9ba1000 r-xp 000fc000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
-        "72c9ba1000-72c9bb1000 r--p 0039d000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
-        "72c9bb1000-72c9bd2000 rw-p 003ac000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so\n"
-        "754670a000-754671e000 r--p 00000000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
-        "754671e000-7546737000 r-xp 00014000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
-        "7546737000-7546739000 r--p 0002d000 fe:09 19286849                       /system/lib64/libvulkan.so\n"
-        "7546739000-754673a000 rw-p 0002e000 fe:09 19286849                       /system/lib64/libvulkan.so\n";
-    std::istringstream input_stream(txt);
-
-    std::string line;
-    while (std::getline(input_stream, line)) {
-        //72d2e1b000-72d2f17000 r--p 00000000 fe:0c 31612032                       /vendor/lib64/hw/vulkan.adreno.so
-        if (line.find(so) != std::string::npos) {
-            auto&& strs = string_split(line, ' ', 3);
-            if (strs.size() >= 3) {
-                if (strs[1] == attr) {
-                    int64_t offset = std::stoll(strs[2], nullptr, 16);
-                    if (incFirst || offset > 0) {
-                        size_t pos = strs[0].find_first_of('-');
-                        auto&& startStr = strs[0].substr(0, pos);
-                        match = line;
-                        fields.assign(strs.cbegin(), strs.cend());
-                        return std::stoll(startStr, nullptr, 16);
-                    }
-                }
-            }
-        }
-    }
-    return 0;
-}
-
 static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
     std::ostringstream path;
     path << "/proc/" << pid << "/maps";
@@ -467,7 +468,6 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
     }
     return 0;
 }
-
 static inline size_t GetPagetSize()
 {
 #if PLATFORM_WIN

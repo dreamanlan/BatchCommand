@@ -7,6 +7,7 @@ struct(TestStru3)
 @g_dir_chged : int = 0;
 @g_last_time : int = 0;
 @g_in_test : int = 0;
+@g_enable_dealloc_log : int = 0;
 
 @ga : int = 123;
 @gb : int[3] = [3,5,1];
@@ -61,38 +62,43 @@ hook(DbgScp_TestVoid)
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		printf("dbg a:%d b:%f c:%s\n",$a,$b,$c);
-		dumpcascadeptr(argv(2),0);
-		if($a==123){
-			ptrset(argv(0),4,1);
-		}
-		else{ 
-			ptrset(argv(0),4,0);
+		if(platform()==0){
+			//test code on windows
+			dumpcascadeptr(argv(2),0);
+			if($a==123){
+				ptrset(argv(0),4,1);
+			}
+			else{ 
+				ptrset(argv(0),4,0);
+			};
+			$i:int = 0;
+			loop($i,0,10){
+				printf("+%d\n",$i);
+			};
+			$j:float = $i;
+			while($j>0){
+				printf("-%f\n",$j);
+				//$j=$j-1;
+				dec($j,2.0);
+			};
+			printf(">>> %f\n", $j);
+			printf(">>> %f\n", inc($j));
+			printf(">>> %f\n", inc($j, 2.0));
+			printf(">>> %f\n", inc($j, 3.0));
+			printf("%d %d %d\n", stkix(), hookid(), hookver());
+			printf("str contains %d %d\n", stringcontains("test","es","te"), stringnotcontains("test","es","fg"));
+			printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
+			printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
+			printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
+			printf("load:%llx\n", LoadLib("kernel32.dll"));
+			printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
+			$addr:int = 0x800010004003;
+			printf("%llx\n", $addr & (~0x03));
+			CheckMemory(28);
 		};
-		$i:int = 0;
-		loop($i,0,10){
-			printf("+%d\n",$i);
-		};
-		$j:float = $i;
-		while($j>0){
-			printf("-%f\n",$j);
-			//$j=$j-1;
-			dec($j,2.0);
-		};
-		printf(">>> %f\n", $j);
-		printf(">>> %f\n", inc($j));
-		printf(">>> %f\n", inc($j, 2.0));
-		printf(">>> %f\n", inc($j, 3.0));
-		printf("%d %d %d\n", stkix(), hookid(), hookver());
-		printf("str contains %d %d\n", stringcontains("test","es","te"), stringnotcontains("test","es","fg"));
-		printf("str contains any %d %d\n", stringcontainsany("test","es","te"), stringnotcontainsany("test","es","fg"));
-		printf("str find %d %d\n", stringfind("test","es"), stringrfind("test","es"));
-		printf("str find2 %d %d\n", stringfind("test","es",1), stringrfind("test","es",0));
-		printf("load:%llx\n", LoadLib("kernel32.dll"));
-		printf("proc:%llx\n", LoadLibAndGetProc("user32.dll","MessageBoxA"));
-		$addr:int = 0x800010004003;
-		printf("%llx\n", $addr & (~0x03));
-		CheckMemory(28);
+		
 		@g_in_test = 1;
+		$i:int;
 		loop($i,1,20){
 			$mem:int = UnityAlloc(4096*1024,8,2,0);
 			WriteLog(format("prealloc:%llx\n", $mem));
@@ -118,16 +124,20 @@ hook(DbgScp_TestInt)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("dbg a:%d b:%f c:%s\n",$a,$b,$c);
-		ptrset(argv(0), 4, $a==1234 ? 1 : (0 ?? 2));
-		$fields:string[3];
-		$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",0,$fields);
-		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
-		printf("%d %d %d %f %s\n", stringlength("str1"), cstrlen(castint("str2")), castint(1.24), castflt(123), caststr(castint("teststr")));
-		printf("%d %f %lld %f\n", asint(1.234), asfloat(asint(1.234)), aslong(1.234), asdouble(aslong(1.234)));
-		$r:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]),TestFFI(0),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
-		$r2:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]){doublefloat(true);},TestFFI(1),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
-		printf("platform:%d ffi:%d %d\n",platform(),$r,$r2);
-		MemoryProtect(0x80004000,1024,3);
+		if(platform()==0){
+			//test code on windows
+			ptrset(argv(0), 4, $a==1234 ? 1 : (0 ?? 2));
+			$fields:string[3];
+			$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",0,$fields);
+			printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
+			printf("%d %d %d %f %s\n", stringlength("str1"), cstrlen(castint("str2")), castint(1.24), castflt(123), caststr(castint("teststr")));
+			printf("%d %f %lld %f\n", asint(1.234), asfloat(asint(1.234)), aslong(1.234), asdouble(aslong(1.234)));
+			$r:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]),TestFFI(0),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
+			$r2:int = ffi(proto(int,noparams,[int,int,int,int],[],[int,int,int,int,float,float,int,int]){doublefloat(true);},TestFFI(1),1,2,3,4,5,6,7,8,9.0,10.0,11,12);
+			printf("platform:%d ffi:%d %d\n",platform(),$r,$r2);
+			MemoryProtect(0x80004000,1024,3);
+		};
+		
 		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
 		$i:int;
 		loop($i,0,100){
@@ -141,6 +151,7 @@ hook(DbgScp_TestInt)
 			CheckMemory($i);
 		};
 		*/
+		@g_enable_dealloc_log = 1;
 		return 1;
 	};
 	onexit{
@@ -661,9 +672,9 @@ hook("MemoryManager::Allocate_Temp_NotNull")
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
 		
-		$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("MemoryManager::Allocate_Temp_NotNull enter time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
+		//printf("%s",$str);
+		//WriteLog($str);
 		
 		return 0;
 	};
@@ -688,12 +699,109 @@ hook("MemoryManager::Allocate_NonTemp_NotNull")
 		printf("%s",$str);
 		WriteLog($str);
 		
-		AddMemoryFlag($addr, 1);
-		
+		if(stringcontains($file,"VKAsyncPipelineCompiler.cpp") && $line==272){
+			AddMemoryFlag($addr, 2);
+			FlushLog();
+			
+			//SetWatchPoint(cmd,flag,size,addr); cmd:1--add 2--remove flag:1--read 2--write 3--readwrite
+			SetWatchPoint(1,2,8,$addr);
+			//bp to notify lldb
+			assert(0);			
+		}
+		else{
+			AddMemoryFlag($addr, 1);
+		};
 		return 0;
 	};
 	onexit{
 		//printf("MemoryManager::Allocate_NonTemp_NotNull exit time:%lld\n",time());
+	};
+};
+hook("MemoryManager::Deallocate_NonTemp")
+{
+	onenter{
+		//printf("MemoryManager::Deallocate_NonTemp arg0:%llx arg1:%llx arg2:%llx arg3:%llx arg4:%llx\n", argv(0), argv(1), argv(2), argv(3), argv(4));
+		//assert(0);
+		$this:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$label:int = ptrget(argv(2),4);
+		$strInt:int = ptrget(argv(3),8);		
+		$file:string = "";
+		if($strInt){
+			$file = caststr($strInt);
+		}
+		else{
+			//assert(0);
+		};
+		$line:int = ptrget(argv(4),4);
+		
+		if(@g_enable_dealloc_log>0){
+			$info_size:int;
+			$info_align:int;
+			$info_locking:int;
+			$info_tlsf:int;
+			$info_tlsf_inst:int;
+			$info_tlsf_pool:int;
+			$info_tid:int;
+			$info_main_thread:int;
+			$cur_tid:int;
+			$cur_main_thread:int;
+			$alloc_name:string;
+			$second_alloc_name:string;
+			
+			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
+				if($info_size==624){
+					$str:string = format("MemoryManager::Deallocate_NonTemp ptr:%llx label:%d tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$label,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
+					printf("%s",$str);
+					WriteLog($str);
+				};
+			};
+		}
+		else{			
+			$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx addr:%llx label:%lld file:%s line:%lld\n", $this, $addr, $label, $file, $line);
+			printf("%s",$str);
+			WriteLog($str);
+		};
+	};
+	onexit{
+		
+	};
+};
+hook("MemoryManager::Deallocate")
+{
+	onenter{
+		//$this:int = ptrget(argv(0),8);
+		$addr:int = ptrget(argv(1),8);
+		$strInt:int = ptrget(argv(2),8);		
+		$file:string = "";
+		if($strInt){
+			$file = caststr($strInt);
+		};
+		$line:int = ptrget(argv(3),4);
+		
+		$info_size:int;
+		$info_align:int;
+		$info_locking:int;
+		$info_tlsf:int;
+		$info_tlsf_inst:int;
+		$info_tlsf_pool:int;
+		$info_tid:int;
+		$info_main_thread:int;
+		$cur_tid:int;
+		$cur_main_thread:int;
+		$alloc_name:string;
+		$second_alloc_name:string;
+		
+		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
+			if($info_size==624){
+				$str:string = format("MemoryManager::Deallocate ptr:%llx tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
+				printf("%s",$str);
+				WriteLog($str);
+			};
+		};
+	};
+	onexit{
+		
 	};
 };
 hook("TlsfDuplicateFreeMemory")
@@ -763,11 +871,9 @@ hook("DynamicHeapAllocator::Allocate")
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
 		
-		if($allocSize==$size+31){
-			$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
-			printf("%s",$str);
-			WriteLog($str);
-		};
+		//$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 		
 		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
 	};
@@ -801,35 +907,41 @@ hook("DynamicHeapAllocator::Deallocate")
 		$second_alloc_name:string;
 		
 		$flag:int;
+		GetMemoryFlag($addr,$flag);
 		
 		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
-			if(GetMemoryFlag($addr,$flag)){
-				if($flag==1){
-					$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
-					printf("%s",$str2);
-					WriteLog($str2);
-				};
-			}
-			elif($tlsfInst != $info_tlsf_inst){
+			if($tlsfInst != $info_tlsf_inst){
 				$str2:string = format("DynamicHeapAllocator::Deallocate on different tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
 				printf("%s",$str2);
 				WriteLog($str2);
 			}
-			elif($cur_tid != $info_tid){
-				$str2:string = format("DynamicHeapAllocator::Deallocate on different thread locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+			elif($flag>0){
+				$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 tlsf locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
 				printf("%s",$str2);
 				WriteLog($str2);
+			}
+			elif($cur_tid != $info_tid){
+				//$str2:string = format("DynamicHeapAllocator::Deallocate on different thread locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+				//printf("%s",$str2);
+				//WriteLog($str2);
 			};
 		}
-		elif(GetMemoryFlag($addr,$flag)){
-			if($flag==1){
-				$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
-				printf("%s",$str2);
-				WriteLog($str2);
-			};
+		elif($flag>0){
+			$str2:string = format("DynamicHeapAllocator::Deallocate flag==1 time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+			printf("%s",$str2);
+			WriteLog($str2);
+		};
+				
+		if($flag==2){
+			FlushLog();
+			//SetWatchPoint(cmd,flag,size,addr); cmd:1--add 2--remove flag:1--read 2--write 3--readwrite
+			SetWatchPoint(2,2,8,$addr);
+			//bp to notify lldb
+			assert(0);
 		};
 		
 		RemoveMemoryInfo($addr);
+		RemoveMemoryFlag($addr);
 	};
 	onexit{
 		$this:int = ptrget(argv(0),8);

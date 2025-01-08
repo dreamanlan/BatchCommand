@@ -290,10 +290,20 @@ namespace BatchCommand
                 for (int ix = 0; ix < lines.Length; ++ix) {
                     string line = lines[ix];
                     var fs = line.Split(s_WhiteSpaces, StringSplitOptions.RemoveEmptyEntries);
+                    string strAddr = string.Empty;
+                    string so = string.Empty;
                     if (fs.Length > 10 && fs[10].Contains("libunity.so") && fs[8].StartsWith("0x")) {
-                        int si = line.IndexOf(fs[10]);
-                        lines[ix] = line.Substring(0, si + fs[10].Length);
-                        if(ulong.TryParse(fs[8].Substring(2), System.Globalization.NumberStyles.HexNumber, null, out var addr)) {
+                        strAddr = fs[8];
+                        so = fs[10];
+                    }
+                    else if(fs.Length>3 && fs[3].Contains("libunity.so") && fs[1].StartsWith("0x")) {
+                        strAddr = fs[1];
+                        so = fs[3];
+                    }
+                    if(!string.IsNullOrEmpty(strAddr) && !string.IsNullOrEmpty(so)) {
+                        int si = line.IndexOf(so);
+                        lines[ix] = line.Substring(0, si + so.Length);
+                        if (ulong.TryParse(strAddr.Substring(2), System.Globalization.NumberStyles.HexNumber, null, out var addr)) {
                             ulong offset = addr - textBase + textSeg;
                             addrHashSet.Add(offset);
                             dict.Add(ix, offset);

@@ -61,9 +61,33 @@ struct WatchPointCommandInfo
     short flag;//0--nothing 1--read 2--write 3--readwrite
     int size;
     int64_t addr;
+    int64_t tid;
 };
 
-WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0 };
+static std::recursive_mutex g_WatchPointMutex{};
+WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0,0 };
+
+static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, int64_t tid)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+
+    g_WatchPointCommandInfo.cmd = cmd;
+    g_WatchPointCommandInfo.flag = flag;
+    g_WatchPointCommandInfo.size = size;
+    g_WatchPointCommandInfo.addr = addr;
+    g_WatchPointCommandInfo.tid = tid;
+}
+static inline short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+
+    flag = g_WatchPointCommandInfo.flag;
+    size = g_WatchPointCommandInfo.size;
+    addr = g_WatchPointCommandInfo.addr;
+    tid = g_WatchPointCommandInfo.tid;
+
+    return g_WatchPointCommandInfo.cmd;
+}
 
 static const int c_max_log_file_num = 16;
 static const int c_max_log_file_size = 1024 * 1024 * 1024;
@@ -280,10 +304,6 @@ static inline bool DbgScp_GetMemoryFlag(int64_t addr, int64_t& flag)
     return r;
 }
 
-extern "C" void LogCallStackOnDuplicateFreeMemory(const char* prefix, void* ptr)
-{
-    DBGSCP_HOOK_VOID("TlsfDuplicateFreeMemory", prefix, ptr)
-}
 extern "C" void LogOnTlsfAssert()
 {
     DBGSCP_HOOK_VOID("LogOnTlsfAssert")
@@ -297,22 +317,47 @@ extern "C" void FlushDbgScpLog()
     DbgScp_FlushLog();
 }
 
-void DbgScp_TestVoid(int a, double b, const char* c)
+static inline void DbgScp_Set(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK_VOID()
 
-    printf("DbgScp_TestVoid a:%d b:%f c:%s\n", a, b, c);
+    printf("DbgScp_Set cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
 
-    END_DBGSCP_HOOK_VOID("DbgScp_TestVoid", a, b, c)
+    END_DBGSCP_HOOK_VOID("DbgScp_Set", cmd, a, b, c)
 }
-int DbgScp_TestInt(int a, double b, const char* c)
+static inline int DbgScp_Get(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
 
-    printf("DbgScp_TestInt a:%d b:%f c:%s\n", a, b, c);
+    printf("DbgScp_Get cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
     return 0;
 
-    END_DBGSCP_HOOK("DbgScp_TestInt", int, a, b, c)
+    END_DBGSCP_HOOK("DbgScp_Get", int, cmd, a, b, c)
+}
+
+static inline int TestMacro1(int a, double b, const char* c)
+{
+    DBGSCP_HOOK("TestMacro1", int, a, b, c)
+        printf("TestMacro1 a:%d b:%f c:%s\n", a, b, c);
+    return 0;
+}
+static inline int TestMacro2(int a, double b, const char* c)
+{
+    BEGIN_DBGSCP_HOOK()
+        printf("TestMacro2 a:%d b:%f c:%s\n", a, b, c);
+    return 0;
+    END_DBGSCP_HOOK("TestMacro2", int, a, b, c)
+}
+static inline void TestMacro3(int a, double b, const char* c)
+{
+    DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
+        printf("TestMacro3 a:%d b:%f c:%s\n", a, b, c);
+}
+static inline void TestMacro4(int a, double b, const char* c)
+{
+    BEGIN_DBGSCP_HOOK_VOID()
+        printf("TestMacro4 a:%d b:%f c:%s\n", a, b, c);
+    END_DBGSCP_HOOK_VOID("TestMacro4", a, b, c)
 }
 
 int TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, float f1, float f2, int64_t sv1, int64_t sv2)
@@ -956,22 +1001,28 @@ struct ExternApi
         int64_t flag = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
         int64_t size = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
         int64_t addr = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
-        g_WatchPointCommandInfo.cmd = static_cast<short>(cmd);
-        g_WatchPointCommandInfo.flag = static_cast<short>(flag);
-        g_WatchPointCommandInfo.size = static_cast<int>(size);
-        g_WatchPointCommandInfo.addr = addr;
+        int64_t tid = DebugScript::GetVarInt(args[4].IsGlobal, args[4].Index, stackBase, intLocals, intGlobals);
+        DbgScp_SetWatchPoint(static_cast<short>(cmd), static_cast<short>(flag), static_cast<int>(size), addr, tid);
     }
     static inline void GetWatchPoint(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, g_WatchPointCommandInfo.cmd, stackBase, intLocals, intGlobals);
+        short flag = 0;
+        int size = 0;
+        int64_t addr = 0;
+        int64_t tid = 0;
+        short cmd = DbgScp_GetWatchPoint(flag, size, addr, tid);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, cmd, stackBase, intLocals, intGlobals);
         if (argNum > 1) {
-            DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, g_WatchPointCommandInfo.flag, stackBase, intLocals, intGlobals);
+            DebugScript::SetVarInt(args[1].IsGlobal, args[1].Index, flag, stackBase, intLocals, intGlobals);
         }
         if (argNum > 2) {
-            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, g_WatchPointCommandInfo.size, stackBase, intLocals, intGlobals);
+            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, size, stackBase, intLocals, intGlobals);
         }
         if (argNum > 3) {
-            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, g_WatchPointCommandInfo.addr, stackBase, intLocals, intGlobals);
+            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, addr, stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 4) {
+            DebugScript::SetVarInt(args[4].IsGlobal, args[4].Index, tid, stackBase, intLocals, intGlobals);
         }
     }
 };
@@ -1151,7 +1202,7 @@ extern "C" {
         DebugScriptGlobal::Start();
     }
 
-    __declspec(dllexport) int Test1(int a, double b, const char* c)
+    __declspec(dllexport) int Test1Export(int a, double b, const char* c)
     {
         thread_local static int32_t s_hook_id = -1;
         thread_local static uint32_t s_serial_num = 0;
@@ -1160,12 +1211,13 @@ extern "C" {
         auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
         if (placeHolder.IsBreak())
             return h_ret_val;
+        printf("Test1 a:%d b:%f c:%s\n", a, b, c);
         return 0;
     }
-    __declspec(dllexport) int Test2(int a, double b, const char* c)
+    __declspec(dllexport) int Test2Export(int a, double b, const char* c)
     {
         auto f = [&]() {
-            printf("a:%d b:%f c:%s\n", a, b, c);
+            printf("Test2 a:%d b:%f c:%s\n", a, b, c);
             return 0;
             };
         thread_local static int32_t s_hook_id = -1;
@@ -1189,7 +1241,7 @@ extern "C" {
         }
         return h_ret_val;
     }
-    __declspec(dllexport) void Test3(int a, double b, const char* c)
+    __declspec(dllexport) void Test3Export(int a, double b, const char* c)
     {
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
@@ -1197,11 +1249,12 @@ extern "C" {
         auto&& placeHolder = CreateHookWrap(s_hook_id, a, b, c);
         if (placeHolder.IsBreak())
             return;
+        printf("Test3 a:%d b:%f c:%s\n", a, b, c);
     }
-    __declspec(dllexport) void Test4(int a, double b, const char* c)
+    __declspec(dllexport) void Test4Export(int a, double b, const char* c)
     {
         auto f = [&]() {
-            printf("a:%d b:%f c:%s\n", a, b, c);
+            printf("Test4 a:%d b:%f c:%s\n", a, b, c);
             };
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
@@ -1223,28 +1276,20 @@ extern "C" {
         }
     }
 
-    __declspec(dllexport) int TestMacro1(int a, double b, const char* c)
+    __declspec(dllexport) int TestMacro1Export(int a, double b, const char* c)
     {
-        DBGSCP_HOOK("TestMacro1", int, a, b, c)
-
-        return DbgScp_TestInt(a, b, c);;
+        return TestMacro1(a, b, c);
     }
-    __declspec(dllexport) int TestMacro2(int a, double b, const char* c)
+    __declspec(dllexport) int TestMacro2Export(int a, double b, const char* c)
     {
-        BEGIN_DBGSCP_HOOK()
-            printf("a:%d b:%f c:%s\n", a, b, c);
-            return 0;
-        END_DBGSCP_HOOK("TestMacro2", int, a, b, c)
+        return TestMacro2(a, b, c);
     }
-    __declspec(dllexport) void TestMacro3(int a, double b, const char* c)
+    __declspec(dllexport) void TestMacro3Export(int a, double b, const char* c)
     {
-        DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
-        DbgScp_TestVoid(a, b, c);
+        TestMacro3(a, b, c);
     }
-    __declspec(dllexport) void TestMacro4(int a, double b, const char* c)
+    __declspec(dllexport) void TestMacro4Export(int a, double b, const char* c)
     {
-        BEGIN_DBGSCP_HOOK_VOID()
-            printf("a:%d b:%f c:%s\n", a, b, c);
-        END_DBGSCP_HOOK_VOID("TestMacro4", a, b, c)
+        TestMacro4(a, b, c);
     }
 }

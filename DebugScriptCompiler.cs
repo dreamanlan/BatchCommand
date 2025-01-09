@@ -7375,22 +7375,22 @@ namespace CppDebugScript
         internal extern static void CppDbgScp_Load([MarshalAs(UnmanagedType.LPStr)] string file);
 
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static int Test1(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static int Test1Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static int Test2(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static int Test2Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static void Test3(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static void Test3Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static void Test4(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static void Test4Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
 
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static int TestMacro1(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static int TestMacro1Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static int TestMacro2(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static int TestMacro2Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static void TestMacro3(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static void TestMacro3Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
-        internal extern static void TestMacro4(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        internal extern static void TestMacro4Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
 #pragma warning restore CA2101
     }
 }

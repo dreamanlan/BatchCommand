@@ -34,6 +34,7 @@ def close_file():
 	global file_object
 	if file_object is not None:
 		file_object.close()
+	file_object = None
 
 def write_to_file(content):
 	global file_object
@@ -117,6 +118,15 @@ def start():
 				write_to_file('\n')
 				print(sinfo)
 	process = target.GetProcess()
+	debugger.HandleCommand("target stop-hook delete")
+	debugger.HandleCommand("target stop-hook add -P lldb_bpdata.MyStopHook")
+	process.Continue()
+
+def resume():
+	debugger = lldb.debugger
+	target = debugger.GetSelectedTarget()
+	process = target.GetProcess()
+	debugger.HandleCommand("target stop-hook delete")
 	debugger.HandleCommand("target stop-hook add -P lldb_bpdata.MyStopHook")
 	process.Continue()
 
@@ -159,40 +169,51 @@ class MyStopHook(object):
 		flag = target.EvaluateExpression("g_WatchPointCommandInfo.flag").signed
 		size = target.EvaluateExpression("g_WatchPointCommandInfo.size").signed
 		addr = target.EvaluateExpression("g_WatchPointCommandInfo.addr").signed
+		tid = target.EvaluateExpression("g_WatchPointCommandInfo.tid").signed
 
-		cmd_info = "cmd:{} flag:{} size:{} addr:{:016x}".format(cmd,flag,size,addr)
+		cmd_info = ""
+		if addr!=0 and size>0:
+			mem_error = lldb.SBError()
+			mem_val = process.ReadMemory(addr,size,mem_error)
+			if mem_error.Success():
+				#val = struct.unpack('q',bytearray(mem_val))
+				val = int.from_bytes(bytearray(mem_val), byteorder='little')
+				cmd_info = "cmd:{} flag:{} size:{} addr:{:016x} value:{:016x} tid:{}".format(cmd,flag,size,addr,val,tid)
+			else:
+				cmd_info = "cmd:{} flag:{} size:{} addr:{:016x} value:(failed) tid:{}".format(cmd,flag,size,addr,tid)
+		else:
+			cmd_info = "cmd:{} flag:{} size:{} addr:{:016x} value:(unread) tid:{}".format(cmd,flag,size,addr,tid)
+
 		write_to_file(cmd_info)
 		write_to_file('\n')
 		stream.Print(cmd_info)
 		stream.Print('\n')
 
-		if cmd==1:
-			error = lldb.SBError()
-			target.WatchAddress(addr,size,False,True,error)
-			mem_val = process.ReadMemory(addr,size,error)
-			if error.Success():
-				#wp_val = struct.unpack('q',bytearray(mem_val))
-				wp_val = int.from_bytes(bytearray(mem_val), byteorder='little')
-				wp_info = "watch point value:{:016x}".format(wp_val)
-				write_to_file(wp_info)
-				write_to_file('\n')
-				stream.Print(wp_info)
-				stream.Print('\n')
-		elif cmd==2:
-			for i in range(target.num_watchpoints):
-				wp = target.watchpoint[i]
-				if wp.GetWatchAddress() == addr:
-					wp.SetEnabled(False)
-					target.DeleteWatchpoint(wp.GetID())
-					break
+		if thread.stop_reason == lldb.eStopReasonSignal and thread.id == tid:
+			sig = thread.GetStopReasonDataAtIndex(0)
+			if sig == 5:
+				if cmd == 1:
+					while target.num_watchpoints>=4:
+						wp = target.watchpoint[0]
+						wp.SetEnabled(False)
+						target.DeleteWatchpoint(wp.GetID())
+					wp_error = lldb.SBError()
+					target.WatchAddress(addr,size,False,True,wp_error)
+					target.EvaluateExpression("g_WatchPointCommandInfo.cmd=0")
+				elif cmd == 2:
+					for i in range(target.num_watchpoints):
+						wp = target.watchpoint[i]
+						if wp.GetWatchAddress() == addr:
+							wp.SetEnabled(False)
+							target.DeleteWatchpoint(wp.GetID())
+							target.EvaluateExpression("g_WatchPointCommandInfo.cmd=0")
+							break
 
 		wp_info = "num_watchpoints:{}".format(target.num_watchpoints)
 		write_to_file(wp_info)
 		write_to_file('\n')
 		stream.Print(wp_info)
 		stream.Print('\n')
-
-		target.EvaluateExpression("g_WatchPointCommandInfo.cmd=0")
 
 		ret = False
 		if thread.stop_reason == lldb.eStopReasonWatchpoint:

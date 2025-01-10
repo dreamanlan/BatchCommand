@@ -2,8 +2,8 @@
 @g_dir_chged : int = 0;
 @g_last_time : int = 0;
 @g_in_test : int = 0;
-@g_enable_dealloc_log : int = 0;
 @g_enable_watch_point : int = 0;
+@g_enable_mem_log : int = 0;
 
 //======test code begin======
 struct(TestStru3)
@@ -204,7 +204,6 @@ hook(DbgScp_Get)
 			CheckMemory($i);
 		};
 		*/
-		@g_enable_dealloc_log = 1;
 		return 0;
 	};
 	onexit{
@@ -704,9 +703,11 @@ hook("MemoryManager::Allocate_NonTemp")
 		
 		$tid:int = GetTID();
 		
-		$str:string = format("MemoryManager::Allocate_NonTemp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,$tid,$file,$line);
-		printf("%s",$str);
-		WriteLog($str);
+		if(@g_enable_mem_log>0){
+			$str:string = format("MemoryManager::Allocate_NonTemp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,$tid,$file,$line);
+			printf("%s",$str);
+			WriteLog($str);
+		};
 		
 		if($addr==0){
 		}
@@ -763,7 +764,7 @@ hook("MemoryManager::Deallocate_NonTemp")
 		$file:string = ptrget(argv(3),8);
 		$line:int = ptrget(argv(4),4);
 		
-		if(@g_enable_dealloc_log>0){
+		if(@g_enable_mem_log>0){
 			$info_size:int;
 			$info_align:int;
 			$info_locking:int;
@@ -781,12 +782,12 @@ hook("MemoryManager::Deallocate_NonTemp")
 				$str:string = format("MemoryManager::Deallocate_NonTemp ptr:%llx label:%d tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$label,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
 				printf("%s",$str);
 				WriteLog($str);
+			}
+			else{			
+				$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx addr:%llx label:%lld file:%s line:%lld\n", $this, $addr, $label, $file, $line);
+				printf("%s",$str);
+				WriteLog($str);
 			};
-		}
-		else{			
-			$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx addr:%llx label:%lld file:%s line:%lld\n", $this, $addr, $label, $file, $line);
-			printf("%s",$str);
-			WriteLog($str);
 		};
 	};
 };
@@ -802,23 +803,25 @@ hook("MemoryManager::Deallocate")
 		};
 		$line:int = ptrget(argv(3),4);
 		
-		$info_size:int;
-		$info_align:int;
-		$info_locking:int;
-		$info_tlsf:int;
-		$info_tlsf_inst:int;
-		$info_tlsf_pool:int;
-		$info_tid:int;
-		$info_main_thread:int;
-		$cur_tid:int;
-		$cur_main_thread:int;
-		$alloc_name:string;
-		$second_alloc_name:string;
-		
-		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
-			$str:string = format("MemoryManager::Deallocate ptr:%llx tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
-			printf("%s",$str);
-			WriteLog($str);
+		if(@g_enable_mem_log>0){
+			$info_size:int;
+			$info_align:int;
+			$info_locking:int;
+			$info_tlsf:int;
+			$info_tlsf_inst:int;
+			$info_tlsf_pool:int;
+			$info_tid:int;
+			$info_main_thread:int;
+			$cur_tid:int;
+			$cur_main_thread:int;
+			$alloc_name:string;
+			$second_alloc_name:string;
+			
+			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
+				$str:string = format("MemoryManager::Deallocate ptr:%llx tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
+				printf("%s",$str);
+				WriteLog($str);
+			};
 		};
 	};
 	onexit{
@@ -880,10 +883,12 @@ hook("DynamicHeapAllocator::Allocate")
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
 		
-		if($size>=32){
-			$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
-			printf("%s",$str);
-			WriteLog($str);
+		if(@g_enable_mem_log>0){
+			if($size>=32){
+				$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+				printf("%s",$str);
+				WriteLog($str);
+			};
 		};
 	};
 	onexit{
@@ -898,10 +903,12 @@ hook("DynamicHeapAllocator::Allocate")
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
 		
-		//if($size>=32){
-		//	$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
-		//	printf("%s",$str);
-		//	WriteLog($str);
+		//if(@g_enable_mem_log>0){
+		//	if($size>=32){
+		//		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+		//		printf("%s",$str);
+		//		WriteLog($str);
+		//	};
 		//};
 		
 		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
@@ -920,48 +927,50 @@ hook("DynamicHeapAllocator::Deallocate")
 		
 		$tid:int = GetTID();
 		
-		if($size>=32){
-			$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,$tid);
-			printf("%s",$str);
-			WriteLog($str);
-		};
-		
-		$info_size:int;
-		$info_align:int;
-		$info_locking:int;
-		$info_tlsf:int;
-		$info_tlsf_inst:int;
-		$info_tlsf_pool:int;
-		$info_tid:int;
-		$info_main_thread:int;
-		$cur_tid:int;
-		$cur_main_thread:int;
-		$alloc_name:string;
-		$second_alloc_name:string;
-		
-		$flag:int;
-		GetMemoryFlag($addr,$flag);
-		
-		if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
-			$str2:string = format("DynamicHeapAllocator::Deallocate flag==%d locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$flag,$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
-			printf("%s",$str2);
-			WriteLog($str2);
-		}
-		elif($flag>0){
-			$str2:string = format("DynamicHeapAllocator::Deallocate flag==%d time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",$flag,time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,$tid);
-			printf("%s",$str2);
-			WriteLog($str2);
-		};
-				
-		if($flag==2 && @g_enable_watch_point){
-			$str2:string = format("DynamicHeapAllocator::Deallocate remove watch point time:%lld addr:%llx size:%lld tid:%d\n",time(),$addr,$size,$tid);
-			printf("%s",$str2);
-			WriteLog($str2);
-			FlushLog();
-			//SetWatchPoint(cmd,flag,size,addr,tid); cmd:1--add 2--remove flag:1--read 2--write 3--readwrite
-			SetWatchPoint(2,2,8,$addr-0x28,$tid);
-			//bp to notify lldb
-			assert(0);
+		if(@g_enable_mem_log>0){
+			if($size>=32){
+				$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,$tid);
+				printf("%s",$str);
+				WriteLog($str);
+			};
+			
+			$info_size:int;
+			$info_align:int;
+			$info_locking:int;
+			$info_tlsf:int;
+			$info_tlsf_inst:int;
+			$info_tlsf_pool:int;
+			$info_tid:int;
+			$info_main_thread:int;
+			$cur_tid:int;
+			$cur_main_thread:int;
+			$alloc_name:string;
+			$second_alloc_name:string;
+			
+			$flag:int;
+			GetMemoryFlag($addr,$flag);
+			
+			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
+				$str2:string = format("DynamicHeapAllocator::Deallocate flag==%d locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$flag,$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
+				printf("%s",$str2);
+				WriteLog($str2);
+			}
+			elif($flag>0){
+				$str2:string = format("DynamicHeapAllocator::Deallocate flag==%d time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",$flag,time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,$tid);
+				printf("%s",$str2);
+				WriteLog($str2);
+			};
+					
+			if($flag==2 && @g_enable_watch_point){
+				$str2:string = format("DynamicHeapAllocator::Deallocate remove watch point time:%lld addr:%llx size:%lld tid:%d\n",time(),$addr,$size,$tid);
+				printf("%s",$str2);
+				WriteLog($str2);
+				FlushLog();
+				//SetWatchPoint(cmd,flag,size,addr,tid); cmd:1--add 2--remove flag:1--read 2--write 3--readwrite
+				SetWatchPoint(2,2,8,$addr-0x28,$tid);
+				//bp to notify lldb
+				assert(0);
+			};
 		};
 		
 		RemoveMemoryInfo($addr);
@@ -976,10 +985,12 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
 		
-		//if($size>=32){
-		//	$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
-		//	printf("%s",$str);
-		//	WriteLog($str);
+		//if(@g_enable_mem_log>0){
+		//	if($size>=32){
+		//		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
+		//		printf("%s",$str);
+		//		WriteLog($str);
+		//	};
 		//};
 	};
 };

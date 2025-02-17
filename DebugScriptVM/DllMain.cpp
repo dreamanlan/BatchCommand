@@ -42,8 +42,14 @@ char** backtrace_symbols(void* const* buffer, int size);
     defined(PLATFORM_LUMIN) ||
     defined(PLATFORM_PLAYSTATION) // for unity
 #include "Runtime/Logging/LogAssert.h"
-#endif
-
+int mylog_printf(const char* fmt, ...) {
+    va_list vl;
+    va_start(vl, fmt);
+    printf_consolev(kLogTypeWarning, fmt, vl);
+    va_end(vl);
+    return 1;
+}
+#else
 int mylog_printf(const char* fmt, ...) {
     const int c_buf_size = 1024 * 4 + 1;
     char buf[c_buf_size];
@@ -51,25 +57,13 @@ int mylog_printf(const char* fmt, ...) {
     va_start(vl, fmt);
     int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
     va_end(vl);
-    std::stringstream ss;
-    ss << buf;
-    printf("%s", ss.str().c_str());
+    printf("%s", buf);
     return r;
 }
-void mylog_dump_callstack(const char* prefix, const char* file, int line) {
-#if defined(PLATFORM_WIN) // for unity
-    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
-#elif defined(_MSC_VER)
-    mylog_printf("%s%s:%d\n", prefix, file, line);
-#elif defined(UNITY_APPLE) ||
-    defined(PLATFORM_ANDROID) ||
-    defined(PLATFORM_SWITCH) ||
-    defined(PLATFORM_LUMIN) ||
-    defined(PLATFORM_PLAYSTATION) // for unity
-    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
-#else
-    mylog_printf("%s%s:%d\n", prefix, file, line);
 #endif
+
+void mylog_dump_callstack(const char* prefix, const char* file, int line) {
+    mylog_printf("%s%s:%d\n", prefix, file, line);
 
 #if !BACKTRACE_UNIMPLEMENTED
     const size_t kMaxDepth = 100;
@@ -79,7 +73,7 @@ void mylog_dump_callstack(const char* prefix, const char* file, int line) {
     char** stackSymbol = backtrace_symbols(stackAddr, stackDepth);
 
     for (int i = 1, n = stackDepth; i < n; ++i)
-        printf_console_type(kLogTypeWarning, " #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
+        mylog_printf(" #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
     free(stackSymbol);
 #endif
 }
@@ -88,11 +82,11 @@ void mylog_assert(bool v) {
     DebugAssert(v);
 #elif defined(_MSC_VER)
     _ASSERT(v);
-#elif defined(UNITY_APPLE) ||
-    defined(PLATFORM_ANDROID) ||
-    defined(PLATFORM_SWITCH) ||
-    defined(PLATFORM_LUMIN) ||
-    defined(PLATFORM_PLAYSTATION) // for unity
+#elif defined(UNITY_APPLE)
+    || defined(PLATFORM_ANDROID)
+    || defined(PLATFORM_SWITCH)
+    || defined(PLATFORM_LUMIN)
+    || defined(PLATFORM_PLAYSTATION) // for unity
     DebugAssert(v);
 #else
     assert(v);

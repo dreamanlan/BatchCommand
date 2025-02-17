@@ -7207,7 +7207,7 @@ namespace CppDebugScript
                 type = "uint";
                 ret = true;
             }
-            if (long.TryParse(str, out var lv)) {
+            else if (long.TryParse(str, out var lv)) {
                 lval = lv;
                 if (lv > int.MaxValue || type == "uint") {
                     type = "uint";
@@ -7215,6 +7215,11 @@ namespace CppDebugScript
                 else {
                     type = "int";
                 }
+                ret = true;
+            }
+            else if (ulong.TryParse(str, out var uv)) {
+                lval = (long)uv;
+                type = "uint";
                 ret = true;
             }
             return ret;

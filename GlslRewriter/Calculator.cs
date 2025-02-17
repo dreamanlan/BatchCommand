@@ -1584,7 +1584,7 @@ namespace GlslRewriter
                 type = "uint";
                 ret = true;
             }
-            if (long.TryParse(str, out var lv)) {
+            else if (long.TryParse(str, out var lv)) {
                 if (lv > int.MaxValue || type == "uint") {
                     val.Set((uint)lv);
                     type = "uint";
@@ -1593,6 +1593,11 @@ namespace GlslRewriter
                     val.Set((int)lv);
                     type = "int";
                 }
+                ret = true;
+            }
+            else if (ulong.TryParse(str, out var uv)) {
+                val.Set(uv);
+                type = "uint";
                 ret = true;
             }
             else if(TryParseBool(str, out var bv)) {

@@ -16,58 +16,32 @@
 #include <fstream>
 #include <memory>
 
-#if PLATFORM_WIN //for unity
+#if defined(PLATFORM_WIN) //for unity
 #include "Runtime/Threads/ReadWriteLock.h"
-#include "Runtime/Logging/LogAssert.h"
-#elif _MSC_VER && _MSC_VER >= 1939
+#elif defined(_MSC_VER) && _MSC_VER >= 1939
 #include <shared_mutex>
 #define USE_STD_SHARED_MUTEX 1
-#else //for unity
+#elif defined(PLATFORM_WIN) ||
+    defined(UNITY_APPLE) ||
+    defined(PLATFORM_ANDROID) ||
+    defined(PLATFORM_SWITCH) ||
+    defined(PLATFORM_LUMIN) ||
+    defined(PLATFORM_PLAYSTATION) // for unity
 #include "Runtime/Threads/ReadWriteLock.h"
-#include "Runtime/Logging/LogAssert.h"
-#endif
-
-#if UNITY_APPLE
-#include <execinfo.h>
-#elif PLATFORM_ANDROID
-#include "PlatformDependent/AndroidPlayer/Source/AndroidBacktrace.h"
-#elif PLATFORM_SWITCH
-#include "PlatformDependent/Switch/Source/Diagnostics/SwitchBacktrace.h"
-#elif PLATFORM_LUMIN
-#include "PlatformDependent/Lumin/Source/LuminBacktrace.h"
-#elif PLATFORM_PLAYSTATION
-#include "PlatformDependent/SonyCommon/Player/Native/PlayStationStackTrace.h"
 #else
-#define BACKTRACE_UNIMPLEMENTED 1
+#include "rwlock.h"
 #endif
 
-static void MyDumpCallstackConsole(const char* prefix, const char* file, int line)
-{
-#if PLATFORM_WIN //for unity
-    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
-#elif _MSC_VER
-    printf("%s%s:%d\n", prefix, file, line);
-#else //for unity
-    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
-#endif
+#include "debug_break.h"
 
-#if !BACKTRACE_UNIMPLEMENTED
-    const size_t kMaxDepth = 100;
-
-    void* stackAddr[kMaxDepth];
-    int     stackDepth = (int)backtrace(stackAddr, kMaxDepth);
-    char** stackSymbol = backtrace_symbols(stackAddr, stackDepth);
-
-    for (int i = 1, n = stackDepth; i < n; ++i)
-        printf_console_type(kLogTypeWarning, " #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
-    free(stackSymbol);
-#endif
-}
+extern int mylog_printf(const char* fmt, ...);
+extern void mylog_dump_callstack(const char* prefix, const char* file, int line);
+extern void mylog_assert(bool v);
 
 #ifndef COMPILER_BUILTIN_EXPECT
-#if __clang__
+#if defined(__clang__)
 #define COMPILER_BUILTIN_EXPECT(X_, Y_)              __builtin_expect((X_), (Y_))
-#elif __GNUC__
+#elif defined(__GNUC__)
 #define COMPILER_BUILTIN_EXPECT(X_, Y_)              __builtin_expect((X_), (Y_))
 #else
 #define COMPILER_BUILTIN_EXPECT(X_, Y_)             (X_)
@@ -83,7 +57,7 @@ static void MyDumpCallstackConsole(const char* prefix, const char* file, int lin
 #endif
 
 #ifndef LIKELY_ATTR
-#if _MSC_VER && _MSC_VER >= 1939
+#if defined(_MSC_VER) && _MSC_VER >= 1939
 #define LIKELY_ATTR [[likely]]
 #else
 #define LIKELY_ATTR
@@ -91,28 +65,10 @@ static void MyDumpCallstackConsole(const char* prefix, const char* file, int lin
 #endif
 
 #ifndef UNLIKELY_ATTR
-#if _MSC_VER && _MSC_VER >= 1939
+#if defined(_MSC_VER) && _MSC_VER >= 1939
 #define UNLIKELY_ATTR [[unlikely]]
 #else
 #define UNLIKELY_ATTR
-#endif
-#endif
-
-#if _MSC_VER
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#if PLATFORM_WIN
-__declspec(dllimport) BOOL __stdcall IsDebuggerPresent();
-#elif _WIN64
-__declspec(dllimport) long __stdcall IsDebuggerPresent();
-#else
-__declspec(dllimport) int __stdcall IsDebuggerPresent();
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 #endif
 
@@ -132,25 +88,13 @@ namespace
 
     static inline void MyAssert(bool v)
     {
-#if PLATFORM_WIN //for unity
-        DebugAssert(v);
-#elif _MSC_VER
-        _ASSERT(v);
-#else //for unity
-        DebugAssert(v);
-#endif
+        mylog_assert(v);
     }
     static inline void MyDebugBreak()
     {
-#if PLATFORM_WIN //for unity
-        DEBUG_BREAK;
-#elif _MSC_VER
-        if (IsDebuggerPresent()) {
-            __debugbreak();
+        if (IsDebuggerAttached_Native()) {
+            DEBUG_BREAK();
         }
-#else //for unity
-        DEBUG_BREAK;
-#endif
     }
 
     //this enum must sync with InsEnum in DebugScriptCompiler.cs
@@ -367,13 +311,7 @@ namespace
 
     static void print_string(const char* str)
     {
-#if PLATFORM_WIN //for unity
-        printf_console_type(kLogTypeWarning, "%s", str);
-#elif _MSC_VER
-        printf("%s", str);
-#else //for unity
-        printf_console_type(kLogTypeWarning, "%s", str);
-#endif
+        mylog_printf("%s", str);
     }
     static int myprintf(const char* fmt, ...)
     {
@@ -679,12 +617,12 @@ namespace
         }
         static inline int64_t Platform(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
-#if PLATFORM_WIN || _MSC_VER
+#if defined(_MSC_VER)
             return 0; //win
-#elif PLATFORM_ANDROID
+#elif defined(__ANDROID__)
             return 1; //android
-#elif PLATFORM_IOS
-            return 2; //iOS
+#elif defined(__APPLE__)
+            return 2; //apple
 #else
             return 3; //other
 #endif
@@ -730,7 +668,7 @@ namespace
             DecodeOperand1(operand, isGlobal, ty, index);
             MyAssert(ty == TypeEnum::String);
             const std::string& prefix = GetVarString(isGlobal, index, stackBase, strLocals, strGlobals);
-			MyDumpCallstackConsole(prefix.c_str(), __FILE__, __LINE__);
+            mylog_dump_callstack(prefix.c_str(), __FILE__, __LINE__);
         }
         static inline int64_t Printf(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)
         {
@@ -885,6 +823,7 @@ namespace
 
             const std::string& fmt = *pStr;
             int64_t ct = script_snprintf(pbuf, c_strbuf_size + 1, fmt.c_str(), args.data());
+            MyAssert(ct <= c_strbuf_size);
             pbuf[c_strbuf_size] = 0;
             return std::string(pbuf);
         }
@@ -2510,6 +2449,7 @@ namespace
         int64_t addr = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal2, index2, stackBase, intLocals, intGlobals);
         MyAssert(addr != 0);
+        MyAssert(size == static_cast<int64_t>(sizeof(char*)));
         if (addr) {
             //dangerous!!!
             const char* tstr = *reinterpret_cast<const char**>(addr);
@@ -2618,12 +2558,13 @@ namespace
         int64_t addr = GetVarInt(isGlobal, index, stackBase, intLocals, intGlobals);
         int64_t size = GetVarInt(isGlobal1, index1, stackBase, intLocals, intGlobals);
         MyAssert(addr != 0);
+        MyAssert(size == static_cast<int64_t>(sizeof(char*)));
         if (addr) {
             //dangerous!!!
             const std::string& val = GetVarString(isGlobal2, index2, stackBase, strLocals, strGlobals);
             char* tstr = *reinterpret_cast<char**>(addr);
             if (tstr) {
-#if _MSC_VER || _WIN32 || _WIN64
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
                 strcpy_s(tstr, std::strlen(tstr) + 1, val.c_str());
 #else
                 auto slen = std::strlen(tstr);
@@ -2775,6 +2716,8 @@ namespace
         return reinterpret_cast<int64_t>(&r8);
 #endif
     }
+
+    [[maybe_unused]]
     extern int64_t get_last_stack_arg_addr(int64_t r0, int64_t r1, int64_t r2, int64_t r3, int64_t r4, int64_t r5, int64_t r6, int64_t r7
         , int64_t r8, int64_t r9, int64_t r10, int64_t r11, int64_t r12, int64_t r13, int64_t r14, int64_t r15
         , int64_t r16, int64_t r17, int64_t r18, int64_t r19, int64_t r20, int64_t r21, int64_t r22, int64_t r23)
@@ -2933,7 +2876,6 @@ namespace
         int64_t CallApiInt(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
             typedef int64_t(*Fptr)(ArgsT...);
-            int64_t ix = 0;
             int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
             if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
                 std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
@@ -2944,7 +2886,6 @@ namespace
         double CallApiFloat(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
             typedef double(*Fptr)(ArgsT...);
-            int64_t ix = 0;
             int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
             if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
                 std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
@@ -2955,7 +2896,6 @@ namespace
         const char* CallApiString(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
             typedef const char* (*Fptr)(ArgsT...);
-            int64_t ix = 0;
             int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
             if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
                 std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
@@ -2966,7 +2906,6 @@ namespace
         void CallApiVoid(int64_t addr, int64_t stackArgAddr, int64_t stackArgSize, ArgsT... args)
         {
             typedef void (*Fptr)(ArgsT...);
-            int64_t ix = 0;
             int64_t* stacks = reinterpret_cast<int64_t*>(get_first_stack_arg_addr(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24));
             if (stackArgSize <= c_max_stack_arg_num * sizeof(int64_t)) {
                 std::memcpy(reinterpret_cast<char*>(stacks), reinterpret_cast<const void*>(stackArgAddr), stackArgSize);
@@ -4435,7 +4374,7 @@ namespace
         {
             write_locker lock(m_Mutex);
 
-            if (m_NextIntGlobalIndex < m_IntGlobals.size()) {
+            if (m_NextIntGlobalIndex < static_cast<int32_t>(m_IntGlobals.size())) {
                 m_IntGlobals[m_NextIntGlobalIndex++] = val;
             }
         }
@@ -4443,7 +4382,7 @@ namespace
         {
             write_locker lock(m_Mutex);
 
-            if (m_NextFloatGlobalIndex < m_FloatGlobals.size()) {
+            if (m_NextFloatGlobalIndex < static_cast<int32_t>(m_FloatGlobals.size())) {
                 m_FloatGlobals[m_NextFloatGlobalIndex++] = val;
             }
         }
@@ -4451,7 +4390,7 @@ namespace
         {
             write_locker lock(m_Mutex);
 
-            if (m_NextStringGlobalIndex < m_StringGlobals.size()) {
+            if (m_NextStringGlobalIndex < static_cast<int32_t>(m_StringGlobals.size())) {
                 m_StringGlobals[m_NextStringGlobalIndex++] = val;
             }
         }
@@ -4665,7 +4604,7 @@ namespace
             {
                 DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock(), m_StackDepth != 0);
 
-                if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
+                if (id < 0 || id >= static_cast<int32_t>(g_pDebugScriptGlobal->m_HookDatas.size()))
                     return false;
                 const HookData& data = g_pDebugScriptGlobal->m_HookDatas[id];
                 return Run(data.m_OnEnter, id, argc, argv);
@@ -4679,7 +4618,7 @@ namespace
             {
                 DebugScriptGlobalImpl::read_locker lock(g_pDebugScriptGlobal->GetReadWriteLock(), m_StackDepth != 0);
 
-                if (id < 0 || id >= g_pDebugScriptGlobal->m_HookDatas.size())
+                if (id < 0 || id >= static_cast<int32_t>(g_pDebugScriptGlobal->m_HookDatas.size()))
                     return false;
                 const HookData& data = g_pDebugScriptGlobal->m_HookDatas[id];
                 return Run(data.m_OnExit, id, argc, argv);
@@ -4701,7 +4640,7 @@ namespace
             AutoStackAllocator autoStk(m_StackDepth);
             int32_t stackBase = autoStk.StackBase();
             if (stackBase + c_max_variable_table_size <= c_max_local_variable_table_size) {
-                for (int32_t pos = 0; pos < codes.size(); ++pos) {
+                for (int32_t pos = 0; pos < static_cast<int32_t>(codes.size()); ++pos) {
                     int32_t opcode = codes[pos];
                     InsEnum op = DecodeInsEnum(opcode);
                     switch (op) {

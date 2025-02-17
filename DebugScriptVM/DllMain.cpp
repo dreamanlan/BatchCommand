@@ -1,55 +1,120 @@
-#include "DbgScpHook.h"
-#include <mutex>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <sstream>
 #include <fstream>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include <stdio.h>
+#include "DbgScpHook.h"
 
-#if PLATFORM_WIN || _MSC_VER
+#if defined(PLATFORM_WIN) || defined(_MSC_VER)
 #include "windows.h"
-#elif PLATFORM_ANDROID
-#include <sys/types.h>
+#elif defined(PLATFORM_ANDROID) || defined(__ANDROID__)
 #include <sys/mman.h>
-#include <unistd.h>
-#elif UNITY_POSIX
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <unistd.h>
+#elif defined(UNITY_POSIX) || defined(__APPLE__)
 #include <pthread.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
-#if UNITY_APPLE
+#if defined(UNITY_APPLE) || defined(__APPLE__)
 #include <execinfo.h>
-#elif PLATFORM_ANDROID
+#elif defined(PLATFORM_ANDROID)
 #include "PlatformDependent/AndroidPlayer/Source/AndroidBacktrace.h"
-#elif PLATFORM_SWITCH
+#elif defined(PLATFORM_SWITCH)
 #include "PlatformDependent/Switch/Source/Diagnostics/SwitchBacktrace.h"
-#elif PLATFORM_LUMIN
+#elif defined(PLATFORM_LUMIN)
 #include "PlatformDependent/Lumin/Source/LuminBacktrace.h"
-#elif PLATFORM_PLAYSTATION
+#elif defined(PLATFORM_PLAYSTATION)
 #include "PlatformDependent/SonyCommon/Player/Native/PlayStationStackTrace.h"
+#elif defined(__ANDROID__)
+int backtrace(void** buffer, int size);
+char** backtrace_symbols(void* const* buffer, int size);
 #else
 #define BACKTRACE_UNIMPLEMENTED 1
 #endif
 
+#if defined(PLATFORM_WIN)
+|| defined(UNITY_APPLE) || defined(PLATFORM_ANDROID) || defined(PLATFORM_SWITCH) ||
+    defined(PLATFORM_LUMIN) ||
+    defined(PLATFORM_PLAYSTATION) // for unity
+#include "Runtime/Logging/LogAssert.h"
+#endif
+
+int mylog_printf(const char* fmt, ...) {
+    const int c_buf_size = 1024 * 4 + 1;
+    char buf[c_buf_size];
+    va_list vl;
+    va_start(vl, fmt);
+    int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
+    va_end(vl);
+    std::stringstream ss;
+    ss << buf;
+    printf("%s", ss.str().c_str());
+    return r;
+}
+void mylog_dump_callstack(const char* prefix, const char* file, int line) {
+#if defined(PLATFORM_WIN) // for unity
+    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
+#elif defined(_MSC_VER)
+    mylog_printf("%s%s:%d\n", prefix, file, line);
+#elif defined(UNITY_APPLE) ||
+    defined(PLATFORM_ANDROID) ||
+    defined(PLATFORM_SWITCH) ||
+    defined(PLATFORM_LUMIN) ||
+    defined(PLATFORM_PLAYSTATION) // for unity
+    printf_console_type(kLogTypeWarning, "%s%s:%d\n", prefix, file, line);
+#else
+    mylog_printf("%s%s:%d\n", prefix, file, line);
+#endif
+
+#if !BACKTRACE_UNIMPLEMENTED
+    const size_t kMaxDepth = 100;
+
+    void* stackAddr[kMaxDepth];
+    int stackDepth = (int)backtrace(stackAddr, kMaxDepth);
+    char** stackSymbol = backtrace_symbols(stackAddr, stackDepth);
+
+    for (int i = 1, n = stackDepth; i < n; ++i)
+        printf_console_type(kLogTypeWarning, " #%02d %p %s\n", i - 1, stackAddr[i], stackSymbol[i]);
+    free(stackSymbol);
+#endif
+}
+void mylog_assert(bool v) {
+#if defined(PLATFORM_WIN) // for unity
+    DebugAssert(v);
+#elif defined(_MSC_VER)
+    _ASSERT(v);
+#elif defined(UNITY_APPLE) ||
+    defined(PLATFORM_ANDROID) ||
+    defined(PLATFORM_SWITCH) ||
+    defined(PLATFORM_LUMIN) ||
+    defined(PLATFORM_PLAYSTATION) // for unity
+    DebugAssert(v);
+#else
+    assert(v);
+#endif
+}
+
 static inline int64_t GetProcessId()
 {
-#if PLATFORM_WIN || _MSC_VER
+#if defined(PLATFORM_WIN) || defined(_MSC_VER)
     return static_cast<int64_t>(GetCurrentProcessId());
-#elif UNITY_POSIX
+#elif defined(__APPLE__) || defined(__ANDROID__) || defined(UNITY_POSIX)
     return static_cast<int64_t>(getpid());
 #endif
     return 0;
 }
 static inline int64_t GetThreadId()
 {
-#if PLATFORM_WIN || _MSC_VER
+#if defined(PLATFORM_WIN) || defined(_MSC_VER)
     return static_cast<int64_t>(GetCurrentThreadId());
-#elif PLATFORM_ANDROID
+#elif defined(PLATFORM_ANDROID) || defined(__ANDROID__)
     return static_cast<int64_t>(gettid());
-#elif UNITY_POSIX
+#elif defined(UNITY_POSIX) || defined(__APPLE__)
     return reinterpret_cast<int64_t>(pthread_self());
 #endif
     return 0;
@@ -65,10 +130,10 @@ struct WatchPointCommandInfo
 };
 
 static std::recursive_mutex g_WatchPointMutex{};
-WatchPointCommandInfo g_WatchPointCommandInfo{ 0,0,0,0,0 };
+WatchPointCommandInfo g_WatchPointCommandInfo{ 0, 0, 0, 0, 0 };
 
-static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, int64_t tid)
-{
+static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr,
+    int64_t tid) {
     std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
 
     g_WatchPointCommandInfo.cmd = cmd;
@@ -77,8 +142,7 @@ static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t
     g_WatchPointCommandInfo.addr = addr;
     g_WatchPointCommandInfo.tid = tid;
 }
-static inline short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid)
-{
+static inline short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid) {
     std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
 
     flag = g_WatchPointCommandInfo.flag;
@@ -95,18 +159,27 @@ static const std::streamsize c_log_buffer_size = 8 * 1024 * 1024;
 static std::vector<char> g_SwapBuffer(c_log_buffer_size);
 static std::stringstream g_LogBuffer{};
 static std::recursive_mutex g_LogBufferMutex{};
-static std::string g_LogFile[c_max_log_file_num] = {
-    "dbgscp_log_0.txt","dbgscp_log_1.txt","dbgscp_log_2.txt","dbgscp_log_3.txt"
-    "dbgscp_log_4.txt","dbgscp_log_5.txt","dbgscp_log_6.txt","dbgscp_log_7.txt",
-    "dbgscp_log_8.txt","dbgscp_log_9.txt","dbgscp_log_10.txt","dbgscp_log_11.txt",
-    "dbgscp_log_12.txt","dbgscp_log_13.txt","dbgscp_log_14.txt","dbgscp_log_15.txt"
-};
+static std::string g_LogFile[c_max_log_file_num] = { "dbgscp_log_0.txt",
+                                                    "dbgscp_log_1.txt",
+                                                    "dbgscp_log_2.txt",
+                                                    "dbgscp_log_3.txt"
+                                                    "dbgscp_log_4.txt",
+                                                    "dbgscp_log_5.txt",
+                                                    "dbgscp_log_6.txt",
+                                                    "dbgscp_log_7.txt",
+                                                    "dbgscp_log_8.txt",
+                                                    "dbgscp_log_9.txt",
+                                                    "dbgscp_log_10.txt",
+                                                    "dbgscp_log_11.txt",
+                                                    "dbgscp_log_12.txt",
+                                                    "dbgscp_log_13.txt",
+                                                    "dbgscp_log_14.txt",
+                                                    "dbgscp_log_15.txt" };
 static int g_LogIndex = 0;
 static bool g_FirstLog = true;
 static uint64_t g_LogSize = 0;
 
-static inline bool DbgScp_FlushLog_NoLock(const char* pstr, size_t len)
-{
+static inline bool DbgScp_FlushLog_NoLock(const char* pstr, size_t len) {
     bool r = false;
     if (g_LogIndex < c_max_log_file_num) {
         FILE* fp = fopen(g_LogFile[g_LogIndex].c_str(), g_FirstLog ? "wt" : "at");
@@ -321,7 +394,7 @@ static inline void DbgScp_Set(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK_VOID()
 
-    printf("DbgScp_Set cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
+        mylog_printf("DbgScp_Set cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
 
     END_DBGSCP_HOOK_VOID("DbgScp_Set", cmd, a, b, c)
 }
@@ -329,7 +402,7 @@ static inline int DbgScp_Get(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
 
-    printf("DbgScp_Get cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
+        mylog_printf("DbgScp_Get cmd:%d a:%d b:%f c:%s\n", cmd, a, b, c);
     return 0;
 
     END_DBGSCP_HOOK("DbgScp_Get", int, cmd, a, b, c)
@@ -338,36 +411,36 @@ static inline int DbgScp_Get(int cmd, int a, double b, const char* c)
 static inline int TestMacro1(int a, double b, const char* c)
 {
     DBGSCP_HOOK("TestMacro1", int, a, b, c)
-        printf("TestMacro1 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("TestMacro1 a:%d b:%f c:%s\n", a, b, c);
     return 0;
 }
 static inline int TestMacro2(int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
-        printf("TestMacro2 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("TestMacro2 a:%d b:%f c:%s\n", a, b, c);
     return 0;
     END_DBGSCP_HOOK("TestMacro2", int, a, b, c)
 }
 static inline void TestMacro3(int a, double b, const char* c)
 {
     DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
-        printf("TestMacro3 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("TestMacro3 a:%d b:%f c:%s\n", a, b, c);
 }
 static inline void TestMacro4(int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK_VOID()
-        printf("TestMacro4 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("TestMacro4 a:%d b:%f c:%s\n", a, b, c);
     END_DBGSCP_HOOK_VOID("TestMacro4", a, b, c)
 }
 
 int TestFFI0(int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, float f1, float f2, int64_t sv1, int64_t sv2)
 {
-    printf("%d %d %d %d %d %d %d %d %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
+    mylog_printf("%d %d %d %d %d %d %d %d %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
     return 0;
 }
 int64_t TestFFI1(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, double f1, double f2, int64_t sv1, int64_t sv2)
 {
-    printf("%lld %lld %lld %lld %lld %lld %lld %lld %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
+    mylog_printf("%lld %lld %lld %lld %lld %lld %lld %lld %f %f %lld %lld\n", a1, a2, a3, a4, a5, a6, a7, a8, f1, f2, sv1, sv2);
     return 1;
 }
 
@@ -426,7 +499,7 @@ static std::unordered_map<std::string, void*> g_Lib2Addresses{};
 
 static inline void* LoadDynamicLibrary(const std::string& str)
 {
-	void* ptr = 0;
+    void* ptr = 0;
     auto&& it = g_Lib2Addresses.find(str);
     if (it == g_Lib2Addresses.end()) {
         ptr = LoadLibraryA(str.c_str());
@@ -437,15 +510,15 @@ static inline void* LoadDynamicLibrary(const std::string& str)
     else {
         ptr = it->second;
     }
-	return ptr;
+    return ptr;
 }
 static inline void* LookupSymbol(void* module, const std::string& str)
 {
-	return GetProcAddress(reinterpret_cast<HMODULE>(module), str.c_str());
+    return GetProcAddress(reinterpret_cast<HMODULE>(module), str.c_str());
 }
 static inline void* LoadAndLookupSymbol(const std::string& lib, const std::string& proc)
 {
-	void* ptr = 0;
+    void* ptr = 0;
     auto&& it = g_Lib2Addresses.find(lib);
     if (it == g_Lib2Addresses.end()) {
         ptr = LoadLibraryA(lib.c_str());
@@ -458,24 +531,24 @@ static inline void* LoadAndLookupSymbol(const std::string& lib, const std::strin
     }
     if (ptr) {
         auto&& p = GetProcAddress(reinterpret_cast<HMODULE>(ptr), proc.c_str());
-		return p;
+        return p;
     }
-	return nullptr;
+    return nullptr;
 }
 static inline void UnloadDynamicLibrary(void* module)
 {
-	FreeLibrary(reinterpret_cast<HMODULE>(module));
+    FreeLibrary(reinterpret_cast<HMODULE>(module));
 }
 static inline bool UnloadDynamicLibrary(const std::string& str)
 {
-	bool r = false;
+    bool r = false;
     auto&& it = g_Lib2Addresses.find(str);
     if (it != g_Lib2Addresses.end()) {
         FreeLibrary(reinterpret_cast<HMODULE>(it->second));
         g_Lib2Addresses.erase(it);
-		r = true;
+        r = true;
     }
-	return r;
+    return r;
 }
 static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, const std::string& attr, bool incFirst, std::string& match, std::vector<std::string>& fields) {
     std::ostringstream path;
@@ -484,7 +557,7 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
     std::string proc_file = path.str();
     std::ifstream maps_file(proc_file);
     if (!maps_file.is_open()) {
-        printf("[seg]:can't open '%s'\n", proc_file.c_str());
+        mylog_printf("[seg]:can't open '%s'\n", proc_file.c_str());
         //return 0;
         return test_find_loaded_segments(pid, so, attr, incFirst, match, fields);
     }
@@ -507,7 +580,7 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
                 }
             }
             else {
-                printf("[seg]:unexpected format: '%s'\n", line.c_str());
+                mylog_printf("[seg]:unexpected format: '%s'\n", line.c_str());
             }
         }
     }
@@ -515,11 +588,11 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
 }
 static inline size_t GetPagetSize()
 {
-#if PLATFORM_WIN
+#if defined(PLATFORM_WIN)
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
     return static_cast<size_t>(sysInfo.dwPageSize);
-#elif UNITY_POSIX
+#elif defined(__APPLE__) || defined(__ANDROID__) || defined(UNITY_POSIX)
     return static_cast<size_t>(getpagesize());
 #else
     return 4096;
@@ -559,7 +632,7 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
 #define PROT_GROWSDOWN 0x01000000
 #define PROT_GROWSUP 0x02000000
     */
-#if PLATFORM_WIN || _MSC_VER
+#if defined(PLATFORM_WIN) || defined(_MSC_VER)
     DWORD flag = rawflag;
     if (quickflag >= 0) {
         switch (quickflag) {
@@ -712,7 +785,7 @@ struct ExternApi
         std::vector<std::string> fields;
         int64_t rval = find_loaded_segments(pid, so, attr, incFirst, match, fields);
         if (rval) {
-            printf("find segment: '%s'\n", match.c_str());
+            mylog_printf("find segment: '%s'\n", match.c_str());
             if (argNum > 4) {
                 for (int ix = 0; ix < static_cast<int>(fields.size()); ++ix) {
                     DebugScript::SetVarString(args[4].IsGlobal, args[4].Index + ix, fields[ix], stackBase, strLocals, strGlobals);
@@ -1211,13 +1284,13 @@ extern "C" {
         auto&& placeHolder = CreateHookWrap(s_hook_id, h_ret_val, a, b, c);
         if (placeHolder.IsBreak())
             return h_ret_val;
-        printf("Test1 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("Test1 a:%d b:%f c:%s\n", a, b, c);
         return 0;
     }
     __declspec(dllexport) int Test2Export(int a, double b, const char* c)
     {
         auto f = [&]() {
-            printf("Test2 a:%d b:%f c:%s\n", a, b, c);
+            mylog_printf("Test2 a:%d b:%f c:%s\n", a, b, c);
             return 0;
             };
         thread_local static int32_t s_hook_id = -1;
@@ -1235,7 +1308,8 @@ extern "C" {
             {
                 h_ret_val = f();
             }
-        } while (false);
+        }
+        while (false);
         if (retry) {
             h_ret_val = f();
         }
@@ -1249,12 +1323,12 @@ extern "C" {
         auto&& placeHolder = CreateHookWrap(s_hook_id, a, b, c);
         if (placeHolder.IsBreak())
             return;
-        printf("Test3 a:%d b:%f c:%s\n", a, b, c);
+        mylog_printf("Test3 a:%d b:%f c:%s\n", a, b, c);
     }
     __declspec(dllexport) void Test4Export(int a, double b, const char* c)
     {
         auto f = [&]() {
-            printf("Test4 a:%d b:%f c:%s\n", a, b, c);
+            mylog_printf("Test4 a:%d b:%f c:%s\n", a, b, c);
             };
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
@@ -1270,7 +1344,8 @@ extern "C" {
             {
                 f();
             }
-        } while (false);
+        }
+        while (false);
         if (retry) {
             f();
         }

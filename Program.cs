@@ -241,27 +241,49 @@ namespace BatchCommand
         private static void DeleteLeftChar(StringBuilder sb)
         {
             (int left, int top) = Console.GetCursorPosition();
-            if (left >= 1) {
-                sb.Remove(left - 1, 1);
-                RefreshLine(sb);
-                Console.SetCursorPosition(left, top);
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if (left >= 1 && left - 1 < sb.Length) {
+                    sb.Remove(left - 1, 1);
+                    RefreshLine(sb);
+                    Console.SetCursorPosition(left, top);
+                }
+                else {
+                    Console.SetCursorPosition(1, top);
+                }
             }
             else {
-                Console.SetCursorPosition(1, top);
+                if (left >= 2 && left - 2 < sb.Length) {
+                    sb.Remove(left - 2, 1);
+                    RefreshLine(sb);
+                    Console.SetCursorPosition(left - 1, top);
+                }
+                else {
+                    Console.SetCursorPosition(1, top);
+                }
             }
         }
         private static void DeleteRightChar(StringBuilder sb)
         {
             (int left, int top) = Console.GetCursorPosition();
-            if (left < sb.Length) {
-                sb.Remove(left - 1, 1);
-                RefreshLine(sb);
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if (left >= 1 && left < sb.Length) {
+                    sb.Remove(left - 1, 1);
+                    RefreshLine(sb);
+                }
+            }
+            else {
+                if (left >= 1 && left < sb.Length) {
+                    sb.Remove(left - 1, 1);
+                    RefreshLine(sb);
+                }
             }
         }
         private static void InsertChar(StringBuilder sb, char c, Dictionary<string,string> autoCompletions)
         {
             (int left, int top) = Console.GetCursorPosition();
-            sb.Insert(left - 2, c);
+            if (left >= 2) {
+                sb.Insert(left - 2, c);
+            }
             if (RefreshLine(sb, autoCompletions)) {
                 Console.SetCursorPosition(left, top);
             }

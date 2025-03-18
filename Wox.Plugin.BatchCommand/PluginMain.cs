@@ -265,6 +265,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
 
     internal static void ReloadDsl()
     {
+        s_AutoCompletions = LoadAutoComplete(s_Context.CurrentPluginMetadata.PluginDirectory);
+
         string dslPath = Path.Combine(s_Context.CurrentPluginMetadata.PluginDirectory, "main.dsl");
         var vargs = BatchScript.NewCalculatorValueList();
         vargs.Add(s_Context.CurrentPluginMetadata.ID);
@@ -365,6 +367,23 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                 }
             }
         }
+    }
+    internal static ConcurrentDictionary<string, string> LoadAutoComplete(string fileDir)
+    {
+        var autoCompletions = new ConcurrentDictionary<string, string>();
+        string autoCompleteFile = Path.Combine(fileDir, "AutoComplete.txt");
+        if (File.Exists(autoCompleteFile)) {
+            var lines = File.ReadAllLines(autoCompleteFile);
+            foreach (var line in lines) {
+                int si = line.IndexOf("=>");
+                if (si > 0) {
+                    string key = line.Substring(0, si);
+                    string val = line.Substring(si + 2);
+                    autoCompletions.TryAdd(key, val);
+                }
+            }
+        }
+        return autoCompletions;
     }
 
     private void CompositionTarget_Rendering(object sender, EventArgs e)
@@ -516,6 +535,8 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         BatchScript.Register("clearkeywords", "clearkeywords api", new ExpressionFactoryHelper<ClearActionKeywordsExp>());
         BatchScript.Register("addkeyword", "addkeyword api", new ExpressionFactoryHelper<AddActionKeywordExp>());
         BatchScript.Register("showcontextmenu", "showcontextmenu api", new ExpressionFactoryHelper<ShowContextMenuExp>());
+        BatchScript.Register("reloadautocomplete", "reloadautocomplete api", new ExpressionFactoryHelper<ReloadAutoCompleteExp>());
+        BatchScript.Register("getautocomplete", "getautocomplete api", new ExpressionFactoryHelper<GetAutoCompleteExp>());
         BatchScript.Register("tryfindeverything", "tryfindeverything api", new ExpressionFactoryHelper<TryFindEverythingExp>());
         BatchScript.Register("everythingexists", "everythingexists api", new ExpressionFactoryHelper<EverythingExistsExp>());
         BatchScript.Register("everythingreset", "everythingreset api", new ExpressionFactoryHelper<EverythingResetExp>());
@@ -638,6 +659,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     internal static string s_EverythingFullPath = string.Empty;
     internal static bool s_NeedReload = false;
     internal static ConcurrentQueue<Func<bool>> s_CurFuncs = null;
+    internal static ConcurrentDictionary<string, string> s_AutoCompletions = null;
     internal const string c_IcoPath = "Images\\dsl.png";
     internal const int c_MaxArtificialScore = 100000000;
     internal const int c_MaxSearchScore = 10000;
@@ -1290,6 +1312,30 @@ internal sealed class ShowContextMenuExp : SimpleExpressionBase
             return true;
         }
         return false;
+    }
+}
+internal sealed class ReloadAutoCompleteExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        Main.s_AutoCompletions = Main.LoadAutoComplete(Main.s_Context.CurrentPluginMetadata.PluginDirectory);
+        return false;
+    }
+}
+internal sealed class GetAutoCompleteExp : SimpleExpressionBase
+{
+    protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+    {
+        if (operands.Count >= 1) {
+            string key = operands[0].AsString;
+            if(Main.s_AutoCompletions.TryGetValue(key, out var val)) {
+                return BoxedValue.From(val);
+            }
+            else {
+                return BoxedValue.From(key);
+            }
+        }
+        return BoxedValue.From(string.Empty);
     }
 }
 internal sealed class TryFindEverythingExp : SimpleExpressionBase

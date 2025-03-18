@@ -1,0 +1,9 @@
+aw=>looplist(awk(readalllines("e:/l.txt"),"format('{0}',$1)",true)){echo("{0}",$$);}
+cl=>clear
+sh=>show
+hi=>hide
+ec=>echo("{0:x}<=>{0:d}",128*40)
+form=>format("{0:x}<=>{0:d}",128*40)
+gr=>looplist(grep(readalllines("e:/l.txt"),"key")){echo("{0}",$$);}
+re=>reloadautocomplete()
+showm=>showmsg("title","sub title","icon")

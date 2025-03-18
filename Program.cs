@@ -120,29 +120,200 @@ namespace BatchCommand
         }
         private static void InteractiveComputing()
         {
+            string exeFullName = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string exeDir = Path.GetDirectoryName(exeFullName);
+            var autoCompletions = LoadAutoComplete(exeDir);
+
+            var lineBuilder = new StringBuilder();
             Console.WriteLine("Enter exit or quit to exit...");
+            RefreshLine(lineBuilder);
             for (; ; ) {
-                Console.Write(">");
-                var line = Console.ReadLine();
-                if (null != line) {
-                    if (line == "exit" || line == "quit")
-                        break;
-                    if (line == "help" || line.StartsWith("help ")) {
-                        string filter = line.Substring(4).Trim();
-                        foreach (var pair in BatchScript.ApiDocs) {
-                            if (pair.Key.Contains(filter) || pair.Value.Contains(filter)) {
-                                Console.WriteLine("[{0}]:{1}", pair.Key, pair.Value);
-                            }
+                if (Console.KeyAvailable) {
+                    var keyInfo = Console.ReadKey();
+                    if (keyInfo.Key == ConsoleKey.UpArrow) {
+                        if (s_HistoryIndex < s_Histories.Count) {
+                            var str = s_Histories[s_HistoryIndex];
+                            s_HistoryIndex = (s_HistoryIndex - 1 + s_Histories.Count) % s_Histories.Count;
+                            lineBuilder.Clear();
+                            lineBuilder.Append(str);
+                            int pos = str.Length + 1;
+                            MoveCursor(pos);
+                            RefreshLine(lineBuilder);
                         }
                     }
-                    else {
-                        var r = BatchScript.EvalAndRun(line);
-                        Console.Write("result:");
-                        Console.WriteLine(r.ToString());
+                    else if (keyInfo.Key == ConsoleKey.DownArrow) {
+                        if (s_HistoryIndex < s_Histories.Count) {
+                            var str = s_Histories[s_HistoryIndex];
+                            s_HistoryIndex = (s_HistoryIndex + 1) % s_Histories.Count;
+                            lineBuilder.Clear();
+                            lineBuilder.Append(str);
+                            int pos = str.Length + 1;
+                            MoveCursor(pos);
+                            RefreshLine(lineBuilder);
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.LeftArrow) {
+                        MoveCursorLeft();
+                    }
+                    else if (keyInfo.Key == ConsoleKey.RightArrow) {
+                        MoveCursorRight(lineBuilder.Length + 1);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Home) {
+                        MoveCursor(1);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.End) {
+                        MoveCursor(lineBuilder.Length + 1);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace) {
+                        DeleteLeftChar(lineBuilder);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Delete) {
+                        DeleteRightChar(lineBuilder);
+                    }
+                    else if (!char.IsControl(keyInfo.KeyChar)) {
+                        InsertChar(lineBuilder, keyInfo.KeyChar, autoCompletions);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Enter) {
+                        string line = lineBuilder.ToString();
+                        lineBuilder.Clear();
+                        s_Histories.Add(line);
+                        s_HistoryIndex = s_Histories.Count - 1;
+                        while (s_Histories.Count > c_MaxHistoryCount) {
+                            s_Histories.RemoveAt(0);
+                        }
+
+                        if (line == "exit" || line == "quit")
+                            break;
+                        if (line == "help" || line.StartsWith("help ")) {
+                            Console.WriteLine();
+                            string filter = line.Substring(4).Trim();
+                            foreach (var pair in BatchScript.ApiDocs) {
+                                if (pair.Key.Contains(filter) || pair.Value.Contains(filter)) {
+                                    Console.WriteLine("[{0}]:{1}", pair.Key, pair.Value);
+                                }
+                            }
+                        }
+                        else {
+                            Console.WriteLine();
+                            var r = BatchScript.EvalAndRun(line);
+                            Console.Write("result:");
+                            Console.WriteLine(r.ToString());
+                        }
+                        RefreshLine(lineBuilder);
                     }
                 }
             }
         }
+        private static Dictionary<string, string> LoadAutoComplete(string fileDir)
+        {
+            var autoCompletions = new Dictionary<string, string>();
+            string autoCompleteFile = Path.Combine(fileDir, "AutoComplete.txt");
+            if (File.Exists(autoCompleteFile)) {
+                var lines = File.ReadAllLines(autoCompleteFile);
+                foreach (var line in lines) {
+                    int si = line.IndexOf("=>");
+                    if (si > 0) {
+                        string key = line.Substring(0, si);
+                        string val = line.Substring(si + 2);
+                        autoCompletions.TryAdd(key, val);
+                    }
+                }
+            }
+            return autoCompletions;
+        }
+        private static void MoveCursor(int pos)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            Console.SetCursorPosition(pos, top);
+        }
+        private static void MoveCursorLeft()
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            if (left > 1)
+                Console.SetCursorPosition(left - 1, top);
+        }
+        private static void MoveCursorRight(int maxPos)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            if (left < maxPos)
+                Console.SetCursorPosition(left + 1, top);
+        }
+        private static void DeleteLeftChar(StringBuilder sb)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            if (left >= 1) {
+                sb.Remove(left - 1, 1);
+                RefreshLine(sb);
+                Console.SetCursorPosition(left, top);
+            }
+            else {
+                Console.SetCursorPosition(1, top);
+            }
+        }
+        private static void DeleteRightChar(StringBuilder sb)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            if (left < sb.Length) {
+                sb.Remove(left - 1, 1);
+                RefreshLine(sb);
+            }
+        }
+        private static void InsertChar(StringBuilder sb, char c, Dictionary<string,string> autoCompletions)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            sb.Insert(left - 2, c);
+            if (RefreshLine(sb, autoCompletions)) {
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static void RefreshLine(StringBuilder sb)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            Console.SetCursorPosition(0, top);
+            Console.Write(s_EmptyLine);
+            Console.SetCursorPosition(0, top);
+            Console.Write(">");
+            if (sb.Length > 0) {
+                var str = sb.ToString();
+                Console.Write(str);
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static bool RefreshLine(StringBuilder sb, Dictionary<string, string> autoCompletions)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            Console.SetCursorPosition(0, top);
+            Console.Write(s_EmptyLine);
+            Console.SetCursorPosition(0, top);
+            Console.Write(">");
+            if (sb.Length > 0) {
+                var str = sb.ToString();
+                if (autoCompletions.TryGetValue(str, out var val)) {
+                    sb.Clear();
+                    sb.Append(val);
+                    Console.Write(val);
+                    Console.SetCursorPosition(val.Length + 1, top);
+                    return false;
+                }
+                else {
+                    Console.Write(str);
+                    Console.SetCursorPosition(left, top);
+                }
+            }
+            return true;
+        }
+        private static void ClearLine()
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            Console.SetCursorPosition(0, top);
+            Console.Write(s_EmptyLine);
+            Console.SetCursorPosition(0, top);
+        }
+
+        private static List<string> s_Histories = new List<string>();
+        private static int s_HistoryIndex = 0;
+        private static string s_EmptyLine = new string(' ', 1024);
+        private const int c_MaxHistoryCount = 1024;
     }
 
     internal sealed class CompileDbgScpExp : SimpleExpressionBase

@@ -1319,7 +1319,7 @@ internal sealed class ReloadAutoCompleteExp : SimpleExpressionBase
     protected override BoxedValue OnCalc(IList<BoxedValue> operands)
     {
         Main.s_AutoCompletions = Main.LoadAutoComplete(Main.s_Context.CurrentPluginMetadata.PluginDirectory);
-        return false;
+        return Main.s_AutoCompletions.Count > 0;
     }
 }
 internal sealed class GetAutoCompleteExp : SimpleExpressionBase

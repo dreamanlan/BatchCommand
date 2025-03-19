@@ -7,6 +7,7 @@ using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace BatchCommand
 {
@@ -241,7 +242,7 @@ namespace BatchCommand
         private static void DeleteLeftChar(StringBuilder sb)
         {
             (int left, int top) = Console.GetCursorPosition();
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 if (left >= 1 && left - 1 < sb.Length) {
                     sb.Remove(left - 1, 1);
                     RefreshLine(sb);
@@ -265,7 +266,7 @@ namespace BatchCommand
         private static void DeleteRightChar(StringBuilder sb)
         {
             (int left, int top) = Console.GetCursorPosition();
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 if (left >= 1 && left < sb.Length) {
                     sb.Remove(left - 1, 1);
                     RefreshLine(sb);

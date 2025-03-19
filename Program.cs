@@ -171,6 +171,10 @@ namespace BatchCommand
                     else if (keyInfo.Key == ConsoleKey.Delete) {
                         DeleteRightChar(lineBuilder);
                     }
+                    else if((keyInfo.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.V) {
+                        string str = TextCopy.ClipboardService.GetText();
+                        InsertStr(lineBuilder, str);
+                    }
                     else if (!char.IsControl(keyInfo.KeyChar)) {
                         InsertChar(lineBuilder, keyInfo.KeyChar, autoCompletions);
                     }
@@ -288,6 +292,14 @@ namespace BatchCommand
             if (RefreshLine(sb, autoCompletions)) {
                 Console.SetCursorPosition(left, top);
             }
+        }
+        private static void InsertStr(StringBuilder sb, string str)
+        {
+            (int left, int top) = Console.GetCursorPosition();
+            if (left >= 2) {
+                sb.Insert(left - 2, str);
+            }
+            Console.SetCursorPosition(left, top);
         }
         private static void RefreshLine(StringBuilder sb)
         {

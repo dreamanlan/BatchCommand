@@ -348,8 +348,8 @@ namespace BatchCommand
         private static string EmptyLine
         {
             get {
-                if (s_MaxCharCount < Console.BufferWidth) {
-                    s_MaxCharCount = Console.BufferWidth;
+                if (s_MaxCharCount < Console.BufferWidth - 1) {
+                    s_MaxCharCount = Console.BufferWidth - 1;
                     s_EmptyLine = new string(' ', s_MaxCharCount);
                 }
                 return s_EmptyLine;

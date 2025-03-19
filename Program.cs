@@ -299,13 +299,14 @@ namespace BatchCommand
             if (left >= 2) {
                 sb.Insert(left - 2, str);
             }
+            RefreshLine(sb);
             Console.SetCursorPosition(left, top);
         }
         private static void RefreshLine(StringBuilder sb)
         {
             (int left, int top) = Console.GetCursorPosition();
             Console.SetCursorPosition(0, top);
-            Console.Write(s_EmptyLine);
+            Console.Write(EmptyLine);
             Console.SetCursorPosition(0, top);
             Console.Write(">");
             if (sb.Length > 0) {
@@ -318,7 +319,7 @@ namespace BatchCommand
         {
             (int left, int top) = Console.GetCursorPosition();
             Console.SetCursorPosition(0, top);
-            Console.Write(s_EmptyLine);
+            Console.Write(EmptyLine);
             Console.SetCursorPosition(0, top);
             Console.Write(">");
             if (sb.Length > 0) {
@@ -341,13 +342,24 @@ namespace BatchCommand
         {
             (int left, int top) = Console.GetCursorPosition();
             Console.SetCursorPosition(0, top);
-            Console.Write(s_EmptyLine);
+            Console.Write(EmptyLine);
             Console.SetCursorPosition(0, top);
+        }
+        private static string EmptyLine
+        {
+            get {
+                if (s_MaxCharCount < Console.BufferWidth) {
+                    s_MaxCharCount = Console.BufferWidth;
+                    s_EmptyLine = new string(' ', s_MaxCharCount);
+                }
+                return s_EmptyLine;
+            }
         }
 
         private static List<string> s_Histories = new List<string>();
         private static int s_HistoryIndex = 0;
-        private static string s_EmptyLine = new string(' ', 1024);
+        private static string s_EmptyLine = string.Empty;
+        private static int s_MaxCharCount = 0;
         private const int c_MaxHistoryCount = 1024;
     }
 

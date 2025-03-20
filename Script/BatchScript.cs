@@ -850,7 +850,8 @@ namespace BatchCommand
             (int left, int top) = GetCursorPosition();
             int pos = Cursor2Pos(left, top);
             if (pos >= 2 && pos - 2 < sb.Length) {
-                sb.Remove(pos - 2, 1);
+				ClearLine();
+				sb.Remove(pos - 2, 1);
                 RefreshLine();
                 (left, top) = Pos2Cursor(pos - 1);
                 Console.SetCursorPosition(left, top);
@@ -865,7 +866,8 @@ namespace BatchCommand
             (int left, int top) = GetCursorPosition();
             int pos = Cursor2Pos(left, top);
             if (pos >= 1 && pos - 1 < sb.Length) {
-                sb.Remove(pos - 1, 1);
+				ClearLine();
+				sb.Remove(pos - 1, 1);
                 RefreshLine();
             }
         }
@@ -876,8 +878,9 @@ namespace BatchCommand
             int pos = Cursor2Pos(left, top);
             if (pos >= 1) {
                 sb.Insert(pos - 1, c);
-            }
-            if (RefreshLine(s_AutoCompletions)) {
+			}
+			ClearLine();
+			if (RefreshLine(s_AutoCompletions)) {
                 (left, top) = Pos2Cursor(pos + 1);
                 Console.SetCursorPosition(left, top);
             }
@@ -890,6 +893,7 @@ namespace BatchCommand
             if (pos >= 1) {
                 sb.Insert(pos - 1, str);
             }
+            ClearLine();
             RefreshLine();
             (left, top) = Pos2Cursor(pos + str.Length);
             Console.SetCursorPosition(left, top);
@@ -898,16 +902,9 @@ namespace BatchCommand
         {
             var sb = s_LineBuilder;
             (int left, int top) = GetCursorPosition();
-            (_, int ttop) = Pos2Cursor(sb.Length + 1);
-            for (int t = s_StartTop; t <= ttop; ++t) {
-                Console.SetCursorPosition(0, t);
-                Console.Write(EmptyLine);
-            }
-            Console.SetCursorPosition(0, s_StartTop);
             Console.Write(">");
             if (sb.Length > 0) {
-                var str = sb.ToString();
-                Console.Write(str);
+                WriteContent();
                 Console.SetCursorPosition(left, top);
             }
         }
@@ -915,26 +912,20 @@ namespace BatchCommand
         {
             var sb = s_LineBuilder;
             (int left, int top) = GetCursorPosition();
-            (_, int ttop) = Pos2Cursor(sb.Length + 1);
-            for (int t = s_StartTop; t <= ttop; ++t) {
-                Console.SetCursorPosition(0, t);
-                Console.Write(EmptyLine);
-            }
-            Console.SetCursorPosition(0, s_StartTop);
-            Console.Write(">");
+			Console.Write(">");
             if (sb.Length > 0) {
                 var str = sb.ToString();
                 if (autoCompletions.TryGetValue(str, out var val)) {
                     sb.Clear();
                     sb.Append(val);
-                    Console.Write(val);
-                    (left, top) = Pos2Cursor(val.Length + 1);
+					WriteContent();
+					(left, top) = Pos2Cursor(val.Length + 1);
                     Console.SetCursorPosition(left, top);
                     return false;
                 }
                 else {
-                    Console.Write(str);
-                    Console.SetCursorPosition(left, top);
+					WriteContent();
+					Console.SetCursorPosition(left, top);
                 }
             }
             return true;
@@ -946,8 +937,40 @@ namespace BatchCommand
             for (int t = s_StartTop; t <= ttop; ++t) {
                 Console.SetCursorPosition(0, t);
                 Console.Write(EmptyLine);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                    if (t < ttop || (sb.Length + 1) % MaxLineCharNum == 0) {
+                        Console.Write(' ');
+                    }
+                }
             }
             Console.SetCursorPosition(0, s_StartTop);
+        }
+        private static void WriteContent()
+        {
+            var sb = s_LineBuilder;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                (_, int ttop) = Pos2Cursor(sb.Length + 1);
+                int pos = 0;
+                for (int t = s_StartTop; t <= ttop; ++t) {
+                    int num;
+                    if (t == s_StartTop) {
+                        num = Math.Min(MaxLineCharNum - 1, sb.Length - pos);
+                        Console.SetCursorPosition(1, t);
+                    }
+                    else {
+                        num = Math.Min(MaxLineCharNum, sb.Length - pos);
+						Console.SetCursorPosition(0, t);
+                    }
+                    Console.Write(sb.ToString(pos, num));
+                    if (t < ttop) {
+                        Console.WriteLine();
+                    }
+                    pos += num;
+                }
+            }
+            else {
+                Console.Write(sb.ToString());
+            }
         }
         private static (int left, int top) GetCursorPosition()
         {
@@ -979,8 +1002,9 @@ namespace BatchCommand
         private static string EmptyLine
         {
             get {
-                if (MaxLineCharNum != s_EmptyLine.Length) {
-                    s_EmptyLine = new string(' ', MaxLineCharNum);
+                int reserved = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? 1 : 0;
+					if (MaxLineCharNum - reserved != s_EmptyLine.Length) {
+                    s_EmptyLine = new string(' ', MaxLineCharNum - reserved);
                 }
                 return s_EmptyLine;
             }

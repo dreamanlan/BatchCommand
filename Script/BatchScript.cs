@@ -979,9 +979,8 @@ namespace BatchCommand
         private static string EmptyLine
         {
             get {
-                int reserved = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : 1;
-                if (MaxLineCharNum - reserved != s_EmptyLine.Length) {
-                    s_EmptyLine = new string(' ', s_MaxLineCharNum - reserved);
+                if (MaxLineCharNum != s_EmptyLine.Length) {
+                    s_EmptyLine = new string(' ', MaxLineCharNum);
                 }
                 return s_EmptyLine;
             }

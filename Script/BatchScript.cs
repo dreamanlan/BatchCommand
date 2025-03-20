@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 using System.IO;
-using Dsl;
-using Microsoft.Win32;
 using System.Globalization;
+using Microsoft.Win32;
+using Dsl;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -169,7 +171,21 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            return Console.ReadLine();
+            if (operands.Count >= 1) {
+                string dir = operands[0].AsString;
+                if (string.IsNullOrEmpty(dir)) {
+                    dir = BatchScript.ScriptDirectory;
+                }
+                bool force = false;
+                if (operands.Count >= 2) {
+                    force = operands[1].GetBool();
+                }
+                LineEditor.LoadOrRefresh(dir, force);
+                return LineEditor.ReadLine();
+            }
+            else {
+                return Console.ReadLine();
+            }
         }
     }
 
@@ -697,6 +713,289 @@ namespace BatchCommand
             {"HKEY_CURRENT_CONFIG", Registry.CurrentConfig},
             //{"HKEY_DYN_DATA", Registry.DynData},
         };
+    }
+
+    internal static class LineEditor
+    {
+        internal static void LoadOrRefresh(string cfgDir)
+        {
+            LoadOrRefresh(cfgDir, false);
+        }
+        internal static void LoadOrRefresh(string cfgDir, bool force)
+        {
+            if (s_CfgDir != cfgDir || force) {
+                s_CfgDir = cfgDir;
+                LoadAutoComplete(cfgDir);
+            }
+        }
+        internal static string ReadLine()
+        {
+            s_StartTop = Console.CursorTop;
+            s_LineBuilder.Clear();
+            RefreshLine();
+            for (; ; ) {
+                if (Console.KeyAvailable) {
+                    var keyInfo = Console.ReadKey(true);
+                    if (keyInfo.Key == ConsoleKey.UpArrow) {
+                        if (s_HistoryIndex < s_Histories.Count) {
+                            var str = s_Histories[s_HistoryIndex];
+                            s_HistoryIndex = (s_HistoryIndex - 1 + s_Histories.Count) % s_Histories.Count;
+                            ClearLine();
+                            s_LineBuilder.Clear();
+                            s_LineBuilder.Append(str);
+                            int pos = str.Length + 1;
+                            MoveCursor(pos);
+                            RefreshLine();
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.DownArrow) {
+                        if (s_HistoryIndex < s_Histories.Count) {
+                            var str = s_Histories[s_HistoryIndex];
+                            s_HistoryIndex = (s_HistoryIndex + 1) % s_Histories.Count;
+                            ClearLine();
+                            s_LineBuilder.Clear();
+                            s_LineBuilder.Append(str);
+                            int pos = str.Length + 1;
+                            MoveCursor(pos);
+                            RefreshLine();
+                        }
+                    }
+                    else if (keyInfo.Key == ConsoleKey.LeftArrow) {
+                        MoveCursorLeft();
+                    }
+                    else if (keyInfo.Key == ConsoleKey.RightArrow) {
+                        MoveCursorRight();
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Home) {
+                        MoveCursor(1);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.End) {
+                        MoveCursor(s_LineBuilder.Length + 1);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Backspace) {
+                        DeleteLeftChar();
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Delete) {
+                        DeleteRightChar();
+                    }
+                    else if ((keyInfo.Modifiers & ConsoleModifiers.Control) == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.V) {
+                        string str = TextCopy.ClipboardService.GetText();
+                        InsertStr(str);
+                    }
+                    else if (keyInfo.KeyChar == '\t' || !char.IsControl(keyInfo.KeyChar)) {
+                        InsertChar(keyInfo.KeyChar);
+                    }
+                    else if (keyInfo.Key == ConsoleKey.Enter) {
+                        string line = s_LineBuilder.ToString();
+                        if (s_Histories.Count == 0 || line != s_Histories[s_Histories.Count - 1]) {
+                            s_Histories.Add(line);
+                            s_HistoryIndex = s_Histories.Count - 1;
+                        }
+                        while (s_Histories.Count > c_MaxHistoryCount) {
+                            s_Histories.RemoveAt(0);
+                        }
+
+                        MoveCursor(line.Length + 1);
+                        Console.WriteLine();
+                        break;
+                    }
+                }
+            }
+            return s_LineBuilder.ToString();
+        }
+
+        private static void LoadAutoComplete(string fileDir)
+        {
+            s_AutoCompletions.Clear();
+            string autoCompleteFile = Path.Combine(fileDir, "AutoComplete.txt");
+            if (File.Exists(autoCompleteFile)) {
+                var lines = File.ReadAllLines(autoCompleteFile);
+                foreach (var line in lines) {
+                    int si = line.IndexOf("=>");
+                    if (si > 0) {
+                        string key = line.Substring(0, si);
+                        string val = line.Substring(si + 2);
+                        s_AutoCompletions.TryAdd(key, val);
+                    }
+                }
+            }
+        }
+        private static void MoveCursor(int pos)
+        {
+            (int left, int top) = Pos2Cursor(pos);
+            Console.SetCursorPosition(left, top);
+        }
+        private static void MoveCursorLeft()
+        {
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos > 1) {
+                (left, top) = Pos2Cursor(pos - 1);
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static void MoveCursorRight()
+        {
+            int maxPos = s_LineBuilder.Length + 1;
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos < maxPos) {
+                (left, top) = Pos2Cursor(pos + 1);
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static void DeleteLeftChar()
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos >= 2 && pos - 2 < sb.Length) {
+                sb.Remove(pos - 2, 1);
+                RefreshLine();
+                (left, top) = Pos2Cursor(pos - 1);
+                Console.SetCursorPosition(left, top);
+            }
+            else {
+                Console.SetCursorPosition(1, top);
+            }
+        }
+        private static void DeleteRightChar()
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos >= 1 && pos - 1 < sb.Length) {
+                sb.Remove(pos - 1, 1);
+                RefreshLine();
+            }
+        }
+        private static void InsertChar(char c)
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos >= 1) {
+                sb.Insert(pos - 1, c);
+            }
+            if (RefreshLine(s_AutoCompletions)) {
+                (left, top) = Pos2Cursor(pos + 1);
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static void InsertStr(string str)
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            int pos = Cursor2Pos(left, top);
+            if (pos >= 1) {
+                sb.Insert(pos - 1, str);
+            }
+            RefreshLine();
+            (left, top) = Pos2Cursor(pos + str.Length);
+            Console.SetCursorPosition(left, top);
+        }
+        private static void RefreshLine()
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            (_, int ttop) = Pos2Cursor(sb.Length + 1);
+            for (int t = s_StartTop; t <= ttop; ++t) {
+                Console.SetCursorPosition(0, t);
+                Console.Write(EmptyLine);
+            }
+            Console.SetCursorPosition(0, s_StartTop);
+            Console.Write(">");
+            if (sb.Length > 0) {
+                var str = sb.ToString();
+                Console.Write(str);
+                Console.SetCursorPosition(left, top);
+            }
+        }
+        private static bool RefreshLine(ConcurrentDictionary<string, string> autoCompletions)
+        {
+            var sb = s_LineBuilder;
+            (int left, int top) = GetCursorPosition();
+            (_, int ttop) = Pos2Cursor(sb.Length + 1);
+            for (int t = s_StartTop; t <= ttop; ++t) {
+                Console.SetCursorPosition(0, t);
+                Console.Write(EmptyLine);
+            }
+            Console.SetCursorPosition(0, s_StartTop);
+            Console.Write(">");
+            if (sb.Length > 0) {
+                var str = sb.ToString();
+                if (autoCompletions.TryGetValue(str, out var val)) {
+                    sb.Clear();
+                    sb.Append(val);
+                    Console.Write(val);
+                    (left, top) = Pos2Cursor(val.Length + 1);
+                    Console.SetCursorPosition(left, top);
+                    return false;
+                }
+                else {
+                    Console.Write(str);
+                    Console.SetCursorPosition(left, top);
+                }
+            }
+            return true;
+        }
+        private static void ClearLine()
+        {
+            var sb = s_LineBuilder;
+            (_, int ttop) = Pos2Cursor(sb.Length + 1);
+            for (int t = s_StartTop; t <= ttop; ++t) {
+                Console.SetCursorPosition(0, t);
+                Console.Write(EmptyLine);
+            }
+            Console.SetCursorPosition(0, s_StartTop);
+        }
+        private static (int left, int top) GetCursorPosition()
+        {
+            int left = Console.CursorLeft;
+            int top = Console.CursorTop;
+            return (left, top);
+        }
+        private static int Cursor2Pos(int left, int top)
+        {
+            int pos = (top - s_StartTop) * MaxLineCharNum + left;
+            return pos;
+        }
+        private static (int left, int top) Pos2Cursor(int pos)
+        {
+            int dt = pos / MaxLineCharNum;
+            int left = pos % MaxLineCharNum;
+            int top = s_StartTop + dt;
+            return (left, top);
+        }
+        private static int MaxLineCharNum
+        {
+            get {
+                int reserved = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : 1;
+                if (s_MaxLineCharNum != Console.BufferWidth - reserved) {
+                    s_MaxLineCharNum = Console.BufferWidth - reserved;
+                }
+                return s_MaxLineCharNum;
+            }
+        }
+        private static string EmptyLine
+        {
+            get {
+                if (MaxLineCharNum != s_EmptyLine.Length) {
+                    s_EmptyLine = new string(' ', s_MaxLineCharNum);
+                }
+                return s_EmptyLine;
+            }
+        }
+
+        private static string s_CfgDir = string.Empty;
+        private static StringBuilder s_LineBuilder = new StringBuilder();
+        private static ConcurrentDictionary<string, string> s_AutoCompletions = new ConcurrentDictionary<string, string>();
+        private static List<string> s_Histories = new List<string>();
+        private static int s_HistoryIndex = 0;
+        private static string s_EmptyLine = string.Empty;
+        private static int s_MaxLineCharNum = 0;
+        private static int s_StartTop = 0;
+        private const int c_MaxHistoryCount = 1024;
     }
 
     internal sealed class BatchScript

@@ -970,9 +970,8 @@ namespace BatchCommand
         private static int MaxLineCharNum
         {
             get {
-                int reserved = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : 1;
-                if (s_MaxLineCharNum != Console.BufferWidth - reserved) {
-                    s_MaxLineCharNum = Console.BufferWidth - reserved;
+                if (s_MaxLineCharNum != Console.BufferWidth) {
+                    s_MaxLineCharNum = Console.BufferWidth;
                 }
                 return s_MaxLineCharNum;
             }
@@ -980,8 +979,9 @@ namespace BatchCommand
         private static string EmptyLine
         {
             get {
-                if (MaxLineCharNum != s_EmptyLine.Length) {
-                    s_EmptyLine = new string(' ', s_MaxLineCharNum);
+                int reserved = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 0 : 1;
+                if (MaxLineCharNum - reserved != s_EmptyLine.Length) {
+                    s_EmptyLine = new string(' ', s_MaxLineCharNum - reserved);
                 }
                 return s_EmptyLine;
             }

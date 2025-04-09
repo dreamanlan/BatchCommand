@@ -2976,13 +2976,13 @@ namespace CppDebugScript
                 if (field.ArrayOrPtrs.Count > 0 && field.ArrayOrPtrs[0] <= 0) {
                     field.Size = sizeof(long);
                 }
-                else if (type == "int8" || type == "uint8" || type == "char" || type == "byte") {
+                else if (type == "int8" || type == "uint8_t" || type == "char" || type == "byte") {
                     field.Size = sizeof(byte);
                 }
-                else if (type == "int16" || type == "uint16" || type == "short" || type == "ushort") {
+                else if (type == "int16" || type == "uint16_t" || type == "short" || type == "ushort") {
                     field.Size = sizeof(short);
                 }
-                else if (type == "int32" || type == "uint32" || type == "int" || type == "uint") {
+                else if (type == "int32" || type == "uint32_t" || type == "int" || type == "uint") {
                     field.Size = sizeof(int);
                 }
                 else if (type == "int64" || type == "uint64" || type == "long" || type == "ulong") {
@@ -7234,15 +7234,15 @@ namespace CppDebugScript
         private static string[] s_TypeNames = new[] { string.Empty, "int", "float", "string" };
         private static HashSet<string> s_FieldTypeNames = new HashSet<string> {
             "int8",
-            "uint8",
+            "uint8_t",
             "char",
             "byte",
             "int16",
-            "uint16",
+            "uint16_t",
             "short",
             "ushort",
             "int32",
-            "uint32",
+            "uint32_t",
             "int",
             "uint",
             "int64",

@@ -994,3 +994,50 @@ hook("DynamicHeapAllocator::Deallocate")
 		//};
 	};
 };
+hook("RenderTexture::AdjustDescForGraphicsCaps::color")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),1);
+		//$needFix:int = ptrget(argv(1),1);
+		$desc:int = ptrget(argv(2),8);
+		$device:int = ptrget(argv(3),8);
+		$caps:int = ptrget(argv(4),8);
+		$tex:int = ptrget(argv(5),8);
+		
+		printf("RenderTexture::AdjustDescForGraphicsCaps %8.8x", $desc);
+		//dumpstack("RenderTexture::AdjustDescForGraphicsCaps");
+		//assert(0);
+		ptrset(argv(1),1,1);
+	};
+};
+hook("RenderTexture::AdjustDescForGraphicsCaps::depth")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),1);
+		//$needFix:int = ptrget(argv(1),1);
+		$desc:int = ptrget(argv(2),8);
+		$device:int = ptrget(argv(3),8);
+		$caps:int = ptrget(argv(4),8);
+		$tex:int = ptrget(argv(5),8);
+		
+		printf("RenderTexture::AdjustDescForGraphicsCaps %8.8x", $desc);
+		//dumpstack("RenderTexture::AdjustDescForGraphicsCaps");
+		//assert(0);
+		ptrset(argv(1),1,1);
+	};
+};
+hook("ShouldCheckNumSamplesRequirement")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),1);
+		$surface:int = ptrget(argv(1),8);
+		$autoResolve:int = ptrget(argv(2),1);
+		$backBuffer:int = ptrget(argv(3),1);
+		
+		printf("ShouldCheckNumSamplesRequirement surface:%8.8x auto resolve:%d back buffer:%d", $surface, $autoResolve, $backBuffer);
+		//dumpstack("RenderTexture::AdjustDescForGraphicsCaps");
+		//assert(0);
+		ptrset(argv(0),1,0);
+		return(1);
+	};
+};

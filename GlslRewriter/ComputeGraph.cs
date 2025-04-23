@@ -1454,13 +1454,13 @@ namespace GlslRewriter
                     else {
                         sb.Append(id);
                         switch (funcData.GetParamClassUnmasked()) {
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PERIOD:
                                 sb.Append(".");
                                 break;
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("[");
                                 break;
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
                                 sb.Append("(");
                                 break;
                             default:
@@ -1475,12 +1475,12 @@ namespace GlslRewriter
                                 prestr = ", ";
                         }
                         switch (funcData.GetParamClassUnmasked()) {
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PERIOD:
                                 break;
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("]");
                                 break;
-                            case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
                                 sb.Append(")");
                                 break;
                         }

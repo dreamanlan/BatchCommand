@@ -1488,7 +1488,7 @@ namespace GlslRewriter
             int paramClass = call.GetParamClassUnmasked();
             if (!call.HaveId()) {
                 switch (paramClass) {
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
                             if (paramNum == 1) {
                                 var pp = call.GetParam(0);
                                 var innerCall = pp as Dsl.FunctionData;
@@ -1510,7 +1510,7 @@ namespace GlslRewriter
                             }
                         }
                         break;
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET: {
 
                         }
                         break;
@@ -1524,7 +1524,7 @@ namespace GlslRewriter
                     return;
                 }
             }
-            if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
+            if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
                 string id = call.GetId();
                 List<string> argTypes = new List<string>();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
@@ -1545,7 +1545,7 @@ namespace GlslRewriter
                 cgcn.Type = FunctionTypeInference(id, argTypes, call, out var finfo);
                 semanticInfo.GraphNode = cgcn;
             }
-            else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR) {
+            else if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_OPERATOR) {
                 string id = call.GetId();
                 List<string> argTypes = new List<string>();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
@@ -1567,7 +1567,7 @@ namespace GlslRewriter
                     cgcn.Type = OperatorTypeInference(id, argTypes[1]);
                 semanticInfo.GraphNode = cgcn;
             }
-            else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD) {
+            else if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_PERIOD) {
                 var tsemanticInfo = new SemanticInfo();
                 if (call.IsHighOrder) {
                     TransformFunctionExpression(call.LowerOrderFunction, ref tsemanticInfo);
@@ -1592,7 +1592,7 @@ namespace GlslRewriter
                 cgcn.Type = MemberTypeInference(".", agn1.Type, string.Empty, m);
                 semanticInfo.GraphNode = cgcn;
             }
-            else if (paramClass == (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET) {
+            else if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET) {
                 var tsemanticInfo = new SemanticInfo();
                 if (call.IsHighOrder) {
                     TransformFunctionExpression(call.LowerOrderFunction, ref tsemanticInfo);
@@ -3001,10 +3001,10 @@ namespace GlslRewriter
                         sb.Append(funcData.GetId());
                     }
                     switch (funcData.GetParamClassUnmasked()) {
-                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD:
+                        case (int)Dsl.ParamClassEnum.PARAM_CLASS_PERIOD:
                             sb.Append(".");
                             break;
-                        case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET:
+                        case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                             sb.Append("_x");
                             break;
                         default:
@@ -3081,7 +3081,7 @@ namespace GlslRewriter
                     return "vec4";
                 }
                 switch (funcData.GetParamClassUnmasked()) {
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_OPERATOR: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_OPERATOR: {
                             int pnum = funcData.GetParamNum();
                             if (pnum == 1) {
                                 string op = funcData.GetId();
@@ -3095,7 +3095,7 @@ namespace GlslRewriter
                                 return OperatorTypeInference(op, p1, p2);
                             }
                         }
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PERIOD: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PERIOD: {
                             if (funcData.IsHighOrder) {
                                 string objType = TypeInference(funcData.LowerOrderFunction);
                                 string mname = funcData.GetParamId(0);
@@ -3115,7 +3115,7 @@ namespace GlslRewriter
                                 }
                             }
                         }
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_BRACKET: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET: {
                             if (funcData.IsHighOrder) {
                                 string objType = TypeInference(funcData.LowerOrderFunction);
                                 string mname = funcData.GetParamId(0);
@@ -3135,7 +3135,7 @@ namespace GlslRewriter
                                 }
                             }
                         }
-                    case (int)Dsl.FunctionData.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
                             List<string> argTypes = new List<string>();
                             foreach (var p in funcData.Params) {
                                 string type = TypeInference(p);

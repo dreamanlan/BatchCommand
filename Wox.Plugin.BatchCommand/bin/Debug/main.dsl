@@ -118,8 +118,6 @@ keywordregistered(keyword) determines whether the specified keyword has been reg
 clearkeywords(id) clears all keywords of the current plug-in, id is the plug-in id
 addkeyword(id, keyword) adds a keyword, id is the plug-in id, keyword is a string
 showcontextmenu(path, ctrl, shift) displays the context menu associated with the specified path path. ctrl and shift indicate whether it is the same as pressing the ctrl and shift keys.
-reloadautocomplete() reload autocomplete info from the file autocomplete.txt in plugin dir
-getautocomplete(key) get autocomplete string, return key if no autocomplete info
 
 tryfindeverything() If the full path of everything has not been recorded, try to find it and return the full path of everything.exe.
 everythingexists() determines whether everything is running
@@ -206,7 +204,6 @@ script(main)args($id, $metadata, $context)
     addkeyword($id, "vscode");
     addkeyword($id, "renderdoc");
 
-    @lastEvalSecondSearch = "";
     @curkey = "";
     @phase = 0;
     @exe = "";
@@ -237,11 +234,6 @@ script(on_query)args($query)
     if($key=="dsl"){
         $param = $query.FirstSearch;
         if($param=="eval"){
-            $autoComplete = getautocomplete($query.SecondSearch);
-            if(@lastEvalSecondSearch.Length < $query.SecondSearch.Length && $autoComplete.Length > 0 && $autoComplete != $query.SecondSearch){
-                changequery("dsl eval " + $autoComplete, false);
-            };
-            @lastEvalSecondSearch = $query.SecondSearch;
             addresult("eval", "evaluate dsl code.", "", "on_action_eval_dsl", $query, "");
         }elseif($param=="info"){
             addresult("info", "show query state", "", "on_action_info", $query, "");

@@ -1449,7 +1449,7 @@ namespace GlslRewriter
                 semanticInfo.GraphNode = vgn;
 
                 if (!string.IsNullOrEmpty(tempVarSi.ResultType) && !string.IsNullOrEmpty(tempValSi.ResultType) && tempVarSi.ResultType != tempValSi.ResultType) {
-                    Console.WriteLine("type '{0}' assigned to type '{1}', line {2} dsl:{3}", tempValSi.ResultType, tempVarSi.ResultType, funcData.GetLine(), funcData.ToScriptString(false));
+                    Console.WriteLine("type '{0}' assigned to type '{1}', line {2} dsl:{3}", tempValSi.ResultType, tempVarSi.ResultType, funcData.GetLine(), funcData.ToScriptString(false, Dsl.DelimiterInfo.Default));
                 }
             }
             else {
@@ -3253,7 +3253,7 @@ namespace GlslRewriter
                     if (func.StartsWith("texture")) {
                         foreach (var arg in args) {
                             if (arg == "vec3" || arg == "vec4") {
-                                Console.WriteLine("func '{0}' use {1} argument, line {2} dsl {3}", func, arg, syntax.GetLine(), syntax.ToScriptString(false));
+                                Console.WriteLine("func '{0}' use {1} argument, line {2} dsl {3}", func, arg, syntax.GetLine(), syntax.ToScriptString(false, Dsl.DelimiterInfo.Default));
                                 break;
                             }
                         }

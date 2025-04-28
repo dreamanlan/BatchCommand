@@ -199,7 +199,7 @@ namespace CppDebugScript
                             }
                         }
                         if (!handled) {
-                            err.AppendFormat("expect defapi/defexternapi(name,ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendFormat("expect defapi/defexternapi(name,ret_type,params_type,[param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false, Dsl.DelimiterInfo.Default), dslInfo.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -286,7 +286,7 @@ namespace CppDebugScript
                             }
                         }
                         if (!handled) {
-                            err.AppendFormat("expect defproto(name,ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false), dslInfo.GetLine());
+                            err.AppendFormat("expect defproto(name,ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", dslInfo.ToScriptString(false, Dsl.DelimiterInfo.Default), dslInfo.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -1505,7 +1505,7 @@ namespace CppDebugScript
                             CurBlock().ResetTempVars();
 
                             if (null == info.ResultValues) {
-                                err.AppendFormat("Illegal operator=, global variable can only be initialized with constant, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                err.AppendFormat("Illegal operator=, global variable can only be initialized with constant, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                             else {
@@ -1513,12 +1513,12 @@ namespace CppDebugScript
                             }
                         }
                         else {
-                            err.AppendFormat("Illegal operator=, global variable must start with '@', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal operator=, global variable must start with '@', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
                     else {
-                        err.AppendFormat("Illegal operator=, left operand must be 'name : type', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                        err.AppendFormat("Illegal operator=, left operand must be 'name : type', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -1532,7 +1532,7 @@ namespace CppDebugScript
                         AddVar(vinfo);
                     }
                     else {
-                        err.AppendFormat("Illegal operator=, global variable must start with '@', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                        err.AppendFormat("Illegal operator=, global variable must start with '@', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -1570,18 +1570,18 @@ namespace CppDebugScript
                                         }
                                     }
                                     else {
-                                        err.AppendFormat("Hook syntax error, hook definition can only include onenter block or/and onexit block, code:{0}, line:{1}", p.ToScriptString(false), p.GetLine());
+                                        err.AppendFormat("Hook syntax error, hook definition can only include onenter block or/and onexit block, code:{0}, line:{1}", p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                                         err.AppendLine();
                                     }
                                 }
                                 else {
-                                    err.AppendFormat("Hook syntax error, hook definition can only include onenter block or/and onexit block, code:{0}, line:{1}", p.ToScriptString(false), p.GetLine());
+                                    err.AppendFormat("Hook syntax error, hook definition can only include onenter block or/and onexit block, code:{0}, line:{1}", p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                                     err.AppendLine();
                                 }
                             }
                         }
                         else {
-                            err.AppendFormat("Hook syntax error, hook definition must include onenter block or onexit block, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Hook syntax error, hook definition must include onenter block or onexit block, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         PopBlock();
@@ -1590,12 +1590,12 @@ namespace CppDebugScript
                     }
                 }
                 else {
-                    err.AppendFormat("Unknown toplevel syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Unknown toplevel syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
             else {
-                err.AppendFormat("Unknown toplevel syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("Unknown toplevel syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
         }
@@ -1639,7 +1639,7 @@ namespace CppDebugScript
                                         CompileSyntaxInHook(p, codes, err);
                                     }
                                     else {
-                                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false), f.GetLine());
+                                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                         err.AppendLine();
                                     }
                                 }
@@ -1678,7 +1678,7 @@ namespace CppDebugScript
                                             CompileSyntaxInHook(p, codes, err);
                                         }
                                         else {
-                                            err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false), f.GetLine());
+                                            err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                             err.AppendLine();
                                         }
                                     }
@@ -1691,12 +1691,12 @@ namespace CppDebugScript
                                     PopBlock();
                                 }
                                 else {
-                                    err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false), f.GetLine());
+                                    err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false), f.GetLine());
+                                err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -1716,7 +1716,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -1757,12 +1757,12 @@ namespace CppDebugScript
                             }
                         }
                         else {
-                            err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                     }
                     else {
-                        err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -1798,7 +1798,7 @@ namespace CppDebugScript
                                     codes.Add(EncodeOpcode(InsEnum.MOVFLT, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 }
                                 else {
-                                    err.AppendFormat("Illegal loop, first argument must be int/float type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendFormat("Illegal loop, first argument must be int/float type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                     err.AppendLine();
                                 }
                                 codes.Add(EncodeOperand1(info2.IsGlobal, info2.ResultType, info2.ResultIndex));
@@ -1900,22 +1900,22 @@ namespace CppDebugScript
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                         }
                         else {
-                            err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                     }
                     else {
-                        err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
                 else {
-                    err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -1931,7 +1931,7 @@ namespace CppDebugScript
                             string name = v1.GetId();
                             var vinfo = GetVarInfo(name);
                             if (null == vinfo) {
-                                err.AppendFormat("Illegal operator=, use undefined variable, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                err.AppendFormat("Illegal operator=, use of undefined variable, if you want to define it, write 'var:type', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                             else {
@@ -1950,7 +1950,7 @@ namespace CppDebugScript
                                 var ixExp = param1.GetParam(0);
                                 var vinfo = GetVarInfo(name);
                                 if (null == vinfo) {
-                                    err.AppendFormat("Illegal operator=, use undefined variable, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendFormat("Illegal operator=, use of undefined array variable, you must define it first using 'var : type[num]', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                     err.AppendLine();
                                 }
                                 else {
@@ -1978,12 +1978,12 @@ namespace CppDebugScript
                                     CurBlock().ResetTempVars();
                                 }
                                 else {
-                                    err.AppendFormat("Illegal operator=, local variable must start with '$', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendFormat("Illegal operator=, local variable must start with '$', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal operator=, left operand must be 'name : type', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                err.AppendFormat("Illegal operator=, left operand must be 'name : type', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -1998,7 +1998,7 @@ namespace CppDebugScript
                             AddVar(vinfo);
                         }
                         else {
-                            err.AppendFormat("Illegal operator=, local variable must start with '$', code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal operator=, local variable must start with '$', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2028,7 +2028,7 @@ namespace CppDebugScript
                             codes[jmpIfNot] = opcode | EncodeOffset(offset);
                         }
                         else {
-                            err.AppendFormat("Illegal if, if must has statements, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal if, if must has statements, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2069,7 +2069,7 @@ namespace CppDebugScript
                             }
                         }
                         else {
-                            err.AppendFormat("Illegal while, while must has statements, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal while, while must has statements, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2103,7 +2103,7 @@ namespace CppDebugScript
                                     codes.Add(EncodeOpcode(InsEnum.MOVFLT, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
                                 }
                                 else {
-                                    err.AppendFormat("Illegal loop, first argument must be int/float type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendFormat("Illegal loop, first argument must be int/float type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                     err.AppendLine();
                                 }
                                 codes.Add(EncodeOperand1(info2.IsGlobal, info2.ResultType, info2.ResultIndex));
@@ -2207,12 +2207,12 @@ namespace CppDebugScript
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]){...}, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]){...}, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                         }
                         else {
-                            err.AppendFormat("Illegal loop, loop must has statements, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal loop, loop must has statements, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2228,7 +2228,7 @@ namespace CppDebugScript
                             codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.ResultType, info.ResultIndex));
                         }
                         else {
-                            err.AppendFormat("Illegal return, expect return(exp), code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal return, expect return(exp), code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2244,7 +2244,7 @@ namespace CppDebugScript
                             codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.ResultType, info.ResultIndex));
                         }
                         else {
-                            err.AppendFormat("Illegal return, expect return exp, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                            err.AppendFormat("Illegal return, expect return exp, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2254,7 +2254,7 @@ namespace CppDebugScript
                         CurBlock().ResetTempVars();
                     }
                     else {
-                        err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -2269,7 +2269,7 @@ namespace CppDebugScript
                                 codes.Add(EncodeOpcode(InsEnum.JMP, loopContinue - curpos));
                             }
                             else {
-                                err.AppendFormat("Illegal continue, must be in a loop, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("Illegal continue, must be in a loop, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -2281,21 +2281,21 @@ namespace CppDebugScript
                                 lexicalInfo.LoopBreakFixes.Add(curpos);
                             }
                             else {
-                                err.AppendFormat("Illegal break, must be in a loop, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("Illegal break, must be in a loop, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                         }
                         else if (id == "return") {
-                            err.AppendFormat("Illegal return, must return integer in hook, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Illegal return, must return integer in hook, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else {
-                            err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                     }
                     else {
-                        err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Unknown syntax in hook, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -2329,12 +2329,12 @@ namespace CppDebugScript
                         }
                     }
                     if (!handled) {
-                        err.AppendFormat("Illegal condition expression, expect 'cond ? exp1 : exp2', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Illegal condition expression, expect 'cond ? exp1 : exp2', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
                 else {
-                    err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -2356,7 +2356,7 @@ namespace CppDebugScript
                                         var sinfo = new SemanticInfo { TargetType = semanticInfo.TargetType };
                                         CompileExpression(p, codes, err, ref sinfo);
                                         if (null == sinfo.ResultValues) {
-                                            err.AppendFormat("Illegal global init syntax, [%d] must be const value, code:{0}, line:{1}", i, comp.ToScriptString(false), comp.GetLine());
+                                            err.AppendFormat("Illegal global init syntax, [%d] must be const value, code:{0}, line:{1}", i, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                             err.AppendLine();
                                         }
                                         else {
@@ -2407,7 +2407,7 @@ namespace CppDebugScript
                             }
                         }
                         else {
-                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2427,7 +2427,7 @@ namespace CppDebugScript
                                 CompileExpression(param, codes, err, ref semanticInfo);
                             }
                             else {
-                                err.AppendFormat("expect 'expect(type, exp)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("expect 'expect(type, exp)', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2438,14 +2438,14 @@ namespace CppDebugScript
                                 var info = new SemanticInfo { TargetType = TypeEnum.Int };
                                 CompileExpression(param, codes, err, ref info);
                                 if (info.ResultType != TypeEnum.Int) {
-                                    err.AppendFormat("struct(addr, exp), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendFormat("struct(addr, exp), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                     err.AppendLine();
                                 }
                                 var exp = callData.GetParam(1);
                                 TryGenStruct(exp, codes, info, err, ref semanticInfo);
                             }
                             else {
-                                err.AppendFormat("expect 'struct(addr, exp)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("expect 'struct(addr, exp)', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2462,7 +2462,7 @@ namespace CppDebugScript
                                         TryGenConstResult(codes, err, callData, ref semanticInfo);
                                     }
                                     else {
-                                        err.AppendFormat("unable to calculate the offset of 'offset(struct_exp)', we can only calculate the first-level offset, i mean that you cannot calculate the member offset of a data or structure pointed to by a pointer, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                        err.AppendFormat("unable to calculate the offset of 'offset(struct_exp)', we can only calculate the first-level offset, i mean that you cannot calculate the member offset of a data or structure pointed to by a pointer, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                         err.AppendLine();
                                     }
                                 }
@@ -2471,7 +2471,7 @@ namespace CppDebugScript
                                 }
                             }
                             else {
-                                err.AppendFormat("expect 'offset(struct_exp)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("expect 'offset(struct_exp)', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2486,12 +2486,12 @@ namespace CppDebugScript
                                     TryGenConstResult(codes, err, callData, ref semanticInfo);
                                 }
                                 else {
-                                    err.AppendFormat("unknown struct '{0}', code:{1}, line:{2}", struName, comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendFormat("unknown struct '{0}', code:{1}, line:{2}", struName, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("expect 'size(struct_name)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("expect 'size(struct_name)', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2508,7 +2508,7 @@ namespace CppDebugScript
                                     CompileExpression(param, codes, err, ref sinfo);
                                     if (i == 1) {
                                         if (sinfo.ResultType != TypeEnum.Int) {
-                                            err.AppendFormat("ffi(proto, addr, ...), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                            err.AppendFormat("ffi(proto, addr, ...), addr must be integer type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                             err.AppendLine();
                                         }
                                     }
@@ -2517,7 +2517,7 @@ namespace CppDebugScript
                                 TryGenFFI(protoInfo, codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else {
-                                err.AppendFormat("expect 'ffi(proto, addr, ...)', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("expect 'ffi(proto, addr, ...)', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2539,7 +2539,7 @@ namespace CppDebugScript
                                 handled = true;
                             }
                             if (!handled) {
-                                err.AppendFormat("Illegal condition expression, expect 'exp1 ?? exp2', code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("Illegal condition expression, expect 'exp1 ?? exp2', code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                             return;
@@ -2614,7 +2614,7 @@ namespace CppDebugScript
                                 }
                             }
                             else {
-                                err.AppendFormat("operator '&&' or '||' must have two arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("operator '&&' or '||' must have two arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -2704,12 +2704,12 @@ namespace CppDebugScript
                                     TryGenExpression(InsEnum.BITNOT, codes, sinfos, err, callData, ref semanticInfo);
                                 }
                                 else {
-                                    err.AppendFormat("operator '{0}' illegal, code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendFormat("operator '{0}' illegal, code:{1}, line:{2}", op, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("operator '{0}' arg num {1} illegal, code:{2}, line:{3}", op, num, callData.ToScriptString(false), callData.GetLine());
+                                err.AppendFormat("operator '{0}' arg num {1} illegal, code:{2}, line:{3}", op, num, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -2786,7 +2786,7 @@ namespace CppDebugScript
                             else {
                                 ApiInfo info;
                                 if (!m_Apis.TryGetValue(op, out info)) {
-                                    err.AppendFormat("Undefined api '{0}', code:{1}, line:{2}", op, callData.ToScriptString(false), callData.GetLine());
+                                    err.AppendFormat("Undefined api '{0}', code:{1}, line:{2}", op, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                     err.AppendLine();
                                 }
                                 else {
@@ -2798,7 +2798,7 @@ namespace CppDebugScript
                             }
                         }
                         else {
-                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                     }
@@ -2829,7 +2829,7 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Unknown expression syntax, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -2926,7 +2926,7 @@ namespace CppDebugScript
                     }
                 }
                 if (!handled) {
-                    err.AppendFormat("expect proto(ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                    err.AppendFormat("expect proto(ret_type,params_type,[int_param_type,...],[float_param_type,...],[stack_param_type,...]); code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -2947,20 +2947,20 @@ namespace CppDebugScript
                             var arrOrPtrs = new List<int>();
                             var ftype = ParseFieldType(fieldData.GetParam(1), err, arrOrPtrs);
                             if (!s_FieldTypeNames.Contains(ftype) && !TryGetStruct(ftype, out var stru)) {
-                                err.AppendFormat("Unknown field type '{0}' must be defined first than '{1}', code:{2}, line:{3}", ftype, name, p.ToScriptString(false), p.GetLine());
+                                err.AppendFormat("Unknown field type '{0}' must be defined first than '{1}', code:{2}, line:{3}", ftype, name, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                                 err.AppendLine();
                             }
                             var finfo = new FieldInfo { Name = fname, Type = ftype, ArrayOrPtrs = arrOrPtrs };
                             struInfo.Fields.Add(finfo);
                         }
                         else {
-                            err.AppendFormat("Struct syntax error, field must be 'name : type', code:{0}, line:{1}", p.ToScriptString(false), p.GetLine());
+                            err.AppendFormat("Struct syntax error, field must be 'name : type', code:{0}, line:{1}", p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                             err.AppendLine();
                         }
                     }
                 }
                 else {
-                    err.AppendFormat("Struct syntax error, struct definition must include fields, code:{0}, line:{1}", callData.ToScriptString(false), callData.GetLine());
+                    err.AppendFormat("Struct syntax error, struct definition must include fields, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                     err.AppendLine();
                 }
                 return struInfo;
@@ -3025,7 +3025,7 @@ namespace CppDebugScript
                 if (null != funcData && funcData.IsParenthesisParamClass() && funcData.GetParamNum() == 1 && !funcData.IsHighOrder && funcData.GetId() == "ptr") {
                     string type = ParseFieldType(funcData.GetParam(0), err, arrOrPtrs);
                     if (arrOrPtrs.Count > 0) {
-                        err.AppendFormat("Pointer in struct can only pointer to struct or base type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Pointer in struct can only pointer to struct or base type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     arrOrPtrs.Add(0);
@@ -3042,7 +3042,7 @@ namespace CppDebugScript
                     return type;
                 }
                 else {
-                    err.AppendFormat("Unknown syntax in type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Unknown syntax in type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -3062,7 +3062,7 @@ namespace CppDebugScript
                     return funcData.GetId();
                 }
                 else {
-                    err.AppendFormat("Unknown syntax in type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Unknown syntax in type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -3118,13 +3118,13 @@ namespace CppDebugScript
                                 lastSize = field.TotalSize;
                             }
                             else {
-                                err.AppendFormat("Can't find the member '{0}' from the struct '{1}', code:{2}, line:{3}", member, struInfo.Name, exp.ToScriptString(false), exp.GetLine());
+                                err.AppendFormat("Can't find the member '{0}' from the struct '{1}', code:{2}, line:{3}", member, struInfo.Name, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                                 err.AppendLine();
                                 success = false;
                             }
                         }
                         else {
-                            err.AppendFormat("Can't resolve the struct for the member '{0}', code:{1}, line:{2}", member, exp.ToScriptString(false), exp.GetLine());
+                            err.AppendFormat("Can't resolve the struct for the member '{0}', code:{1}, line:{2}", member, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                             err.AppendLine();
                             success = false;
                         }
@@ -3165,13 +3165,13 @@ namespace CppDebugScript
                         }
                     }
                     else {
-                        err.AppendFormat("Struct exp must be 'ptr(exp)' or 'exp[ix]' or 'exp.field', and exp is a recursive struct exp, code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                        err.AppendFormat("Struct exp must be 'ptr(exp)' or 'exp[ix]' or 'exp.field', and exp is a recursive struct exp, code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                         err.AppendLine();
                         success = false;
                     }
                 }
                 else {
-                    err.AppendFormat("Unknown syntax in struct exp, code:{0}, line:{1}", exp.ToScriptString(false), exp.GetLine());
+                    err.AppendFormat("Unknown syntax in struct exp, code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                     err.AppendLine();
                     success = false;
                 }
@@ -3476,12 +3476,12 @@ namespace CppDebugScript
         private void TryGenInc(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count < 1 || opds.Count > 2 || opds[0].ResultType != TypeEnum.Int && opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("inc must has one or two int/float arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("inc must has one or two int/float arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
             if (null != opds[0].ResultValues || opds[0].ResultCount > 0 || opds[0].ResultIndex >= c_max_variable_table_size / 2) {
-                err.AppendFormat("inc's first argument must be a int/float variable, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("inc's first argument must be a int/float variable, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -3605,12 +3605,12 @@ namespace CppDebugScript
         private void TryGenDec(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count < 1 || opds.Count > 2 || opds[0].ResultType != TypeEnum.Int && opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("dec must has one or two int/float arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("dec must has one or two int/float arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
             if (null != opds[0].ResultValues || opds[0].ResultCount > 0 || opds[0].ResultIndex >= c_max_variable_table_size / 2) {
-                err.AppendFormat("dec's first argument must be a int/float variable, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("dec's first argument must be a int/float variable, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -3739,13 +3739,13 @@ namespace CppDebugScript
                 else {
                     var vinfo2 = GetVarInfo(id);
                     if (null == vinfo2) {
-                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                         return;
                     }
                     if (semanticInfo.TargetCount > 0 || vinfo2.Count > 0) {
                         if (semanticInfo.TargetCount != vinfo2.Count) {
-                            err.AppendFormat("Can't assign array with different size, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign array with different size, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         for (int i = 0; i < semanticInfo.TargetCount && i < vinfo2.Count; ++i) {
@@ -3828,7 +3828,7 @@ namespace CppDebugScript
             else {
                 var vinfo = GetVarInfo(id);
                 if (null == vinfo) {
-                    err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                     return;
                 }
@@ -3843,7 +3843,7 @@ namespace CppDebugScript
         private void TryGenArrGet(string id, List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1) {
-                err.AppendFormat("arrget must has and only has one argument, code:{0}, line:{1}", id, comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("arrget must has and only has one argument, code:{0}, line:{1}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -3853,7 +3853,7 @@ namespace CppDebugScript
                 else {
                     var vinfo2 = GetVarInfo(id);
                     if (null == vinfo2) {
-                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                         return;
                     }
@@ -3915,7 +3915,7 @@ namespace CppDebugScript
             else {
                 var vinfo = GetVarInfo(id);
                 if (null == vinfo) {
-                    err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Undefined var '{0}', code:{1}, line:{2}", id, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                     return;
                 }
@@ -4325,7 +4325,7 @@ namespace CppDebugScript
         private void TryGenInt2Str(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("int2str must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("int2str must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.String;
@@ -4336,11 +4336,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.String) {
-                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4382,7 +4382,7 @@ namespace CppDebugScript
         private void TryGenFlt2Str(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("flt2str must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("flt2str must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.String;
@@ -4393,11 +4393,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.String) {
-                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4439,7 +4439,7 @@ namespace CppDebugScript
         private void TryGenStr2Int(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.String) {
-                err.AppendFormat("str2int must and only has one string argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("str2int must and only has one string argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Int;
@@ -4450,11 +4450,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Int) {
-                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4496,7 +4496,7 @@ namespace CppDebugScript
         private void TryGenStr2Flt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.String) {
-                err.AppendFormat("str2flt must and only has one string argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("str2flt must and only has one string argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Float;
@@ -4507,11 +4507,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4554,7 +4554,7 @@ namespace CppDebugScript
         {
             InsEnum op = (opds[0].ResultType == TypeEnum.Float ? InsEnum.CASTFLTINT : InsEnum.CASTSTRINT);
             if (opds.Count != 1 || (opds[0].ResultType != TypeEnum.Float && opds[0].ResultType != TypeEnum.String)) {
-                err.AppendFormat("castint must and only has one float/string argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("castint must and only has one float/string argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Int;
@@ -4565,11 +4565,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Int) {
-                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4611,7 +4611,7 @@ namespace CppDebugScript
         private void TryGenCastFlt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("castflt must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("castflt must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Float;
@@ -4622,11 +4622,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4668,7 +4668,7 @@ namespace CppDebugScript
         private void TryGenCastStr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("caststr must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("caststr must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.String;
@@ -4679,11 +4679,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.String) {
-                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign string to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4725,7 +4725,7 @@ namespace CppDebugScript
         private void TryGenAsInt(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("asint must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("asint must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Int;
@@ -4736,11 +4736,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Int) {
-                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4782,7 +4782,7 @@ namespace CppDebugScript
         private void TryGenAsFloat(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("asfloat must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("asfloat must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Float;
@@ -4793,11 +4793,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4839,7 +4839,7 @@ namespace CppDebugScript
         private void TryGenAsLong(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Float) {
-                err.AppendFormat("aslong must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("aslong must and only has one float argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Int;
@@ -4850,11 +4850,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Int) {
-                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign int to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4896,7 +4896,7 @@ namespace CppDebugScript
         private void TryGenAsDouble(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("asdouble must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("asdouble must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             semanticInfo.ResultType = TypeEnum.Float;
@@ -4907,11 +4907,11 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         else if (semanticInfo.TargetType != TypeEnum.Float) {
-                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign float to {0} var, code:{1}, line:{2}", s_TypeNames[(int)semanticInfo.TargetType], comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -4953,7 +4953,7 @@ namespace CppDebugScript
         private void TryGenArgc(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 0) {
-                err.AppendFormat("argc must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("argc must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -4961,7 +4961,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5004,7 +5004,7 @@ namespace CppDebugScript
         private void TryGenArgv(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1 || opds[0].ResultType != TypeEnum.Int) {
-                err.AppendFormat("arg must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("arg must and only has one integer argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -5012,7 +5012,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5070,7 +5070,7 @@ namespace CppDebugScript
         private void TryGenAddr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 1) {
-                err.AppendFormat("addr must and only has one argument, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("addr must and only has one argument, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -5079,7 +5079,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5103,7 +5103,7 @@ namespace CppDebugScript
                                     codes.Add(EncodeOpcode(InsEnum.ADDRSTR, rinfo.IsGlobal, rinfo.ResultType, rinfo.ResultIndex));
                                     break;
                                 default:
-                                    err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                    err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                     err.AppendLine();
                                     break;
                             }
@@ -5121,7 +5121,7 @@ namespace CppDebugScript
                                 codes.Add(EncodeOpcode(InsEnum.ADDRSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                                 break;
                             default:
-                                err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                                err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                                 err.AppendLine();
                                 break;
                         }
@@ -5162,7 +5162,7 @@ namespace CppDebugScript
                             codes.Add(EncodeOpcode(InsEnum.ADDRSTR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                             break;
                         default:
-                            err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("addr's argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                             break;
                     }
@@ -5179,7 +5179,7 @@ namespace CppDebugScript
         private void TryGenPtrGet(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 2 || opds[0].ResultType != TypeEnum.Int || opds[1].ResultType != TypeEnum.Int) {
-                err.AppendFormat("ptrget must and only has two integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("ptrget must and only has two integer arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -5188,7 +5188,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5203,7 +5203,7 @@ namespace CppDebugScript
                             codes.Add(EncodeOpcode(InsEnum.PTRGETSTR, semanticInfo.TargetIsGlobal, semanticInfo.TargetType, semanticInfo.TargetIndex));
                             break;
                         default:
-                            err.AppendFormat("ptrget must be assigned to an int/float/string variable, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("ptrget must be assigned to an int/float/string variable, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                             break;
                     }
@@ -5262,7 +5262,7 @@ namespace CppDebugScript
                             codes.Add(EncodeOpcode(InsEnum.PTRGETSTR, semanticInfo.IsGlobal, semanticInfo.ResultType, semanticInfo.ResultIndex));
                             break;
                         default:
-                            err.AppendFormat("ptrget must be return int/float/string value, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("ptrget must be return int/float/string value, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                             break;
                     }
@@ -5284,7 +5284,7 @@ namespace CppDebugScript
         private void TryGenPtrSet(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 3 || opds[0].ResultType != TypeEnum.Int || opds[1].ResultType != TypeEnum.Int) {
-                err.AppendFormat("ptrset must and only has three arguments and the first two parameters need to be integers, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("ptrset must and only has three arguments and the first two parameters need to be integers, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
                 return;
             }
@@ -5304,7 +5304,7 @@ namespace CppDebugScript
                         opcode = EncodeOpcode(InsEnum.PTRSETSTR, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         break;
                     default:
-                        err.AppendFormat("ptrset's third argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("ptrset's third argument must be int/float/string type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                         break;
                 }
@@ -5325,12 +5325,12 @@ namespace CppDebugScript
         private void TryGenCascadePtr(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count < 3) {
-                err.AppendFormat("cascadeptr requires at least 3 integer parameters, cascadeptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("cascadeptr requires at least 3 integer parameters, cascadeptr(addr, last_size, offset, ...), code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             foreach (var opd in opds) {
                 if (opd.ResultType != TypeEnum.Int) {
-                    err.AppendFormat("cascadeptr must only has integer arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("cascadeptr must only has integer arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                     break;
                 }
@@ -5340,7 +5340,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign api result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign api result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5412,7 +5412,7 @@ namespace CppDebugScript
         private void TryGenStackIndex(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 0) {
-                err.AppendFormat("stkix must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("stkix must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -5420,7 +5420,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5463,7 +5463,7 @@ namespace CppDebugScript
         private void TryGenHookId(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 0) {
-                err.AppendFormat("hookid must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("hookid must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -5471,7 +5471,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5514,7 +5514,7 @@ namespace CppDebugScript
         private void TryGenHookVer(List<int> codes, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp, ref SemanticInfo semanticInfo)
         {
             if (opds.Count != 0) {
-                err.AppendFormat("hookver must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("hookver must has zero arguments, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             if (semanticInfo.TargetOperation == TargetOperationEnum.VarAssign) {
@@ -5522,7 +5522,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (semanticInfo.TargetCount > 0) {
-                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("Can't assign calc result to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     //gen write result
@@ -5714,7 +5714,7 @@ namespace CppDebugScript
                     }
                     else {
                         if (semanticInfo.TargetCount > 0) {
-                            err.AppendFormat("Can't assign a value to a array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't assign a value to a array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                         }
                         //gen write result
@@ -6452,7 +6452,7 @@ namespace CppDebugScript
         {
             foreach (var opd in opds) {
                 if (opd.ResultCount > 0) {
-                    err.AppendFormat("Can't calc on array, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Can't calc on array, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                     return;
                 }
@@ -6460,7 +6460,7 @@ namespace CppDebugScript
             if (opds.Count == 1) {
                 TypeEnum type = opds[0].ResultType;
                 if (type == TypeEnum.String && op != InsEnum.NOT) {
-                    err.AppendFormat("Can't calc on string, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Can't calc on string, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -6470,7 +6470,7 @@ namespace CppDebugScript
                 if ((op == InsEnum.ADD || op == InsEnum.AND || op == InsEnum.OR || (op >= InsEnum.GE && op <= InsEnum.LT)) && type1 == TypeEnum.String && type2 == TypeEnum.String) {
                 }
                 else if (type1 == TypeEnum.String || type2 == TypeEnum.String) {
-                    err.AppendFormat("Can't calc on string, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("Can't calc on string, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
                 if (type1 == TypeEnum.Float || type2 == TypeEnum.Float) {
@@ -6482,7 +6482,7 @@ namespace CppDebugScript
                         case InsEnum.BITOR:
                         case InsEnum.BITXOR:
                         case InsEnum.BITNOT:
-                            err.AppendFormat("Can't calc on float, code:{0}, line:{1}", comp.ToScriptString(false), comp.GetLine());
+                            err.AppendFormat("Can't calc on float, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                             err.AppendLine();
                             break;
                     }
@@ -6492,7 +6492,7 @@ namespace CppDebugScript
         private void CheckType(ApiInfo api, List<SemanticInfo> opds, StringBuilder err, Dsl.ISyntaxComponent comp)
         {
             if (opds.Count < api.MinParamNum) {
-                err.AppendFormat("'{0}' must have at least {1} arguments, code:{2}, line:{3}", api.Name, api.MinParamNum, comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("'{0}' must have at least {1} arguments, code:{2}, line:{3}", api.Name, api.MinParamNum, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             for (int i = 0; i < opds.Count; ++i) {
@@ -6500,11 +6500,11 @@ namespace CppDebugScript
                 int rct = opds[i].ResultCount;
                 TypeEnum type = api.GetParamType(i, rtype, out var ct);
                 if (type != rtype) {
-                    err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rtype, type, comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rtype, type, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
                 else if (ct != rct) {
-                    err.AppendFormat("'{0}' argument {1}'s count '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rct, ct, comp.ToScriptString(false), comp.GetLine());
+                    err.AppendFormat("'{0}' argument {1}'s count '{2}' dismatch '{3}', code:{4}, line:{5}", api.Name, i, rct, ct, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                     err.AppendLine();
                 }
             }
@@ -6513,7 +6513,7 @@ namespace CppDebugScript
         {
             int minParamNum = 1 + proto.IntParams.Count + proto.FloatParams.Count + proto.MinStackParamNum;
             if (opds.Count < minParamNum) {
-                err.AppendFormat("ffi '{0}' must have at least {1} arguments, code:{2}, line:{3}", proto.Name, minParamNum, comp.ToScriptString(false), comp.GetLine());
+                err.AppendFormat("ffi '{0}' must have at least {1} arguments, code:{2}, line:{3}", proto.Name, minParamNum, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                 err.AppendLine();
             }
             for (int i = 0; i < opds.Count; ++i) {
@@ -6521,14 +6521,14 @@ namespace CppDebugScript
                 if (i == 0) {
                     //addr
                     if (TypeEnum.Int != rtype) {
-                        err.AppendFormat("argument {0} addr's type '{1}' dismatch '{2}', code:{3}, line:{4}", i, rtype, TypeEnum.Int, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("argument {0} addr's type '{1}' dismatch '{2}', code:{3}, line:{4}", i, rtype, TypeEnum.Int, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
                 else {
                     TypeEnum type = proto.GetParamType(i - 1, rtype);
                     if (type != rtype) {
-                        err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", proto.Name, i, rtype, type, comp.ToScriptString(false), comp.GetLine());
+                        err.AppendFormat("'{0}' argument {1}'s type '{2}' dismatch '{3}', code:{4}, line:{5}", proto.Name, i, rtype, type, comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }

@@ -440,7 +440,7 @@ namespace UnrealCodeTransform
                     sb.Append(vd.GetId());
                 }
                 else {
-                    sb.Append(p.ToScriptString(false));
+                    sb.Append(p.ToScriptString(false, Dsl.DelimiterInfo.Default));
                 }
             }
         }
@@ -500,7 +500,7 @@ namespace UnrealCodeTransform
                             code = psb.ToString();
                         }
                         else {
-                            code = p.ToScriptString(false);
+                            code = p.ToScriptString(false, Dsl.DelimiterInfo.Default);
                             s_ErrorWriter?.WriteLine("file:{0} #define {1}", file, code);
                         }
                     }

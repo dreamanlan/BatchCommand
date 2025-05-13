@@ -1007,6 +1007,24 @@ hook("ScriptableRenderContext::HandleBeginRenderPass")
 		//printf("ScriptableRenderContext::HandleBeginRenderPass %8.8x att count:%d depth att:%d", $this, $attCount, $depthStencilAttachment);
 		//dumpstack("ScriptableRenderContext::HandleBeginRenderPass");
 		//assert(0);
-		ptrset(argv(0),1,1);
+		//ptrset(argv(0),1,1);
+	};
+};
+hook("CheckVulkanSupportImpl")
+{
+	onenter{
+		printf("begin CheckVulkanSupportImpl");
+	};
+	onexit{
+		$result:int = ptrget(argv(0),4);
+		$gpu:string = ptrget(argv(1),8);
+		$gpuStr:int = ptrget(argv(2),8);
+		$api:int = ptrget(argv(3),4);
+		$driver:int = ptrget(argv(3)+4,4);
+		$vendor:int = ptrget(argv(3)+8,4);
+		$devId:int = ptrget(argv(3)+12,4);
+		$devType:int = ptrget(argv(3)+16,4);
+		$sdkInt:int = ptrget(argv(4),4);
+		printf("end CheckVulkanSupportImpl result:%d gpu:%s(%x) api:0x%x driver:0x%x vendor:0x%x device:0x%x type:%u sdk:%u", $result, $gpu, $gpuStr, $api, $driver, $vendor, $devId, $devType, $sdkInt);
 	};
 };

@@ -1460,11 +1460,11 @@ namespace GlslRewriter
                             case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("[");
                                 break;
-                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES:
                                 sb.Append("(");
                                 break;
                             default:
-                                Console.WriteLine("function_replacement: {0}, invalid parenthesis !", repTag);
+                                Console.WriteLine("function_replacement: {0}, invalid parentheses !", repTag);
                                 break;
                         }
                         string prestr = string.Empty;
@@ -1480,7 +1480,7 @@ namespace GlslRewriter
                             case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("]");
                                 break;
-                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES:
                                 sb.Append(")");
                                 break;
                         }

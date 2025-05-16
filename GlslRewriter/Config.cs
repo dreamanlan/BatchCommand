@@ -1251,7 +1251,7 @@ namespace GlslRewriter
                 if (dslCfg.IsHighOrder)
                     callCfg = dslCfg.LowerOrderFunction;
 
-                string key = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? "glsl_global" : callCfg.GetParamId(0).Trim();
+                string key = !callCfg.IsParenthesesParamClass() || callCfg.GetParamNum() <= 0 ? "glsl_global" : callCfg.GetParamId(0).Trim();
 
                 if (dslCfg.HaveExternScript()) {
                     string code = dslCfg.GetParamId(0);
@@ -1442,7 +1442,7 @@ namespace GlslRewriter
                     string key = vd.GetId();
                     settingInfo.AddSplitOnVariable(key, string.Empty);
                 }
-                else if (null != fd && fd.IsParenthesisParamClass()) {
+                else if (null != fd && fd.IsParenthesesParamClass()) {
                     string key = fd.GetParamId(0);
 
                     string sid = fd.GetId();
@@ -1467,7 +1467,7 @@ namespace GlslRewriter
                 var v3val = SplitInfoForVariable.s_DefMultiline;
                 var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsParenthesisParamClass()) {
+                if (null != cd && cd.IsParenthesesParamClass()) {
                     var fd = cd;
                     cd = fd.GetParam(0) as Dsl.FunctionData;
 
@@ -1509,7 +1509,7 @@ namespace GlslRewriter
                 var v3val = SplitInfoForVariable.s_DefMultiline;
                 var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsParenthesisParamClass()) {
+                if (null != cd && cd.IsParenthesesParamClass()) {
                     var fd = cd;
                     cd = fd.GetParam(0) as Dsl.FunctionData;
 
@@ -1553,7 +1553,7 @@ namespace GlslRewriter
                 var v3val = SplitInfoForVariable.s_DefMultiline;
                 var v4val = SplitInfoForVariable.s_DefExpandOnce;
                 var cd = fp as Dsl.FunctionData;
-                if (null != cd && cd.IsParenthesisParamClass()) {
+                if (null != cd && cd.IsParenthesesParamClass()) {
                     var fd = cd;
                     cd = fd.GetParam(0) as Dsl.FunctionData;
 
@@ -1600,7 +1600,7 @@ namespace GlslRewriter
             if (dslCfg.IsHighOrder)
                 callCfg = dslCfg.LowerOrderFunction;
 
-            var levelVal = !callCfg.IsParenthesisParamClass() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0));
+            var levelVal = !callCfg.IsParenthesesParamClass() || callCfg.GetParamNum() <= 0 ? SettingInfo.s_DefSplitLevel : DoCalc(callCfg.GetParam(0));
             if (Calculator.TryGetInt(levelVal, out var splitLevel)) {
                 settingInfo.AutoSplitLevel = splitLevel;
             }
@@ -1618,7 +1618,7 @@ namespace GlslRewriter
                             }
                         }
                     }
-                    else if (fd.IsParenthesisParamClass()) {
+                    else if (fd.IsParenthesesParamClass()) {
                         if (sid == "split_on") {
                             var v1val = fd.GetParamNum() <= 0 ? BoxedValue.EmptyString : DoCalc(fd.GetParam(0));
                             var v2val = fd.GetParamNum() <= 1 ? SettingInfo.s_DefSplitOnLevel : DoCalc(fd.GetParam(1));
@@ -2458,7 +2458,7 @@ namespace GlslRewriter
             else {
                 var func = funcMatch as Dsl.FunctionData;
                 if (null != func) {
-                    if (!func.HaveId() && func.IsParenthesisParamClass()) {
+                    if (!func.HaveId() && func.IsParenthesesParamClass()) {
                         if (func.GetParamNum() == 1) {
                             ParseFunctionMatchInfo(info, func.GetParam(0), tag, iter);
                         }
@@ -2522,7 +2522,7 @@ namespace GlslRewriter
                                 Console.WriteLine("{0}: operator {1} left hand, invalid argument number !", tag, op);
                             }
                         }
-                        else if (func.IsParenthesisParamClass()) {
+                        else if (func.IsParenthesesParamClass()) {
                             info.FuncOrOper = func.GetId();
                             info.ArgGetter = ComputeGraphCalcNode.GetArgForFuncOrOper;
                             foreach (var p in func.Params) {
@@ -2530,7 +2530,7 @@ namespace GlslRewriter
                             }
                         }
                         else {
-                            Console.WriteLine("{0}: {1} left hand, invalid parenthesis !", tag, func.GetId());
+                            Console.WriteLine("{0}: {1} left hand, invalid parentheses !", tag, func.GetId());
                         }
                     }
                 }
@@ -2632,11 +2632,11 @@ namespace GlslRewriter
                             case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("[");
                                 break;
-                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES:
                                 sb.Append("(");
                                 break;
                             default:
-                                Console.WriteLine("function_replacement: {0}, invalid parenthesis !", repTag);
+                                Console.WriteLine("function_replacement: {0}, invalid parentheses !", repTag);
                                 break;
                         }
                         string prestr = string.Empty;
@@ -2652,7 +2652,7 @@ namespace GlslRewriter
                             case (int)Dsl.ParamClassEnum.PARAM_CLASS_BRACKET:
                                 sb.Append("]");
                                 break;
-                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS:
+                            case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES:
                                 sb.Append(")");
                                 break;
                         }
@@ -2726,7 +2726,7 @@ namespace GlslRewriter
                         }
                     }
                 }
-                else if (fd.IsParenthesisParamClass()) {
+                else if (fd.IsParenthesesParamClass()) {
                     string func = fd.GetId();
                     var args = new List<BoxedValue>();
                     foreach (var p in fd.Params) {
@@ -3295,7 +3295,7 @@ namespace GlslRewriter
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
-            if (funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
+            if (funcData.IsParenthesesParamClass() && !funcData.IsHighOrder) {
                 m_Name = funcData.GetParamId(0);
                 m_Type = funcData.GetParamId(1);
                 if (funcData.GetParamNum() > 2)
@@ -3338,7 +3338,7 @@ namespace GlslRewriter
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
-            if (funcData.IsParenthesisParamClass() && !funcData.IsHighOrder) {
+            if (funcData.IsParenthesesParamClass() && !funcData.IsHighOrder) {
                 var varDsl = funcData.GetParam(0);
 
                 var vd = varDsl as Dsl.ValueData;

@@ -265,7 +265,7 @@ namespace GlslRewriter
                 var func = statement.Last.AsFunction;
                 if (null != func) {
                     if (func.HaveStatement()) {
-                        if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch" || (func.IsHighOrder && func.LowerOrderFunction.IsParenthesisParamClass())) {
+                        if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch" || (func.IsHighOrder && func.LowerOrderFunction.IsParenthesesParamClass())) {
                             //End the current statement and start a new empty statement.
                             dslAction.endStatement();
                             dslAction.beginStatement();
@@ -685,7 +685,7 @@ namespace GlslRewriter
                             sb.Append(line[i]);
                         }
                         else if (s_CondExpStack.Count > 0 && (c == '(' || c == '[' || c == '{')) {
-                            s_CondExpStack.Peek().IncParenthesisCount();
+                            s_CondExpStack.Peek().IncParenthesesCount();
                             sb.Append(c);
                         }
                         else if (s_CondExpStack.Count > 0 && (c == ')' || c == ']' || c == '}')) {
@@ -694,7 +694,7 @@ namespace GlslRewriter
                                 sb.Append(')');
                             }
                             if (s_CondExpStack.Count > 0) {
-                                s_CondExpStack.Peek().DecParenthesisCount();
+                                s_CondExpStack.Peek().DecParenthesesCount();
                             }
                             sb.Append(c);
                         }
@@ -1336,7 +1336,7 @@ namespace GlslRewriter
                     else {
                         funcData.Name.SetId("return");
                     }
-                    funcData.SetParenthesisParamClass();
+                    funcData.SetParenthesesParamClass();
                     funcData.Params.Clear();
                     funcData.AddParam(v);
 
@@ -1488,12 +1488,12 @@ namespace GlslRewriter
             int paramClass = call.GetParamClassUnmasked();
             if (!call.HaveId()) {
                 switch (paramClass) {
-                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES: {
                             if (paramNum == 1) {
                                 var pp = call.GetParam(0);
                                 var innerCall = pp as Dsl.FunctionData;
                                 if (null != innerCall) {
-                                    if (!innerCall.HaveId() && innerCall.IsParenthesisParamClass()) {
+                                    if (!innerCall.HaveId() && innerCall.IsParenthesesParamClass()) {
                                         call.ClearParams();
                                         call.Params.AddRange(innerCall.Params);
                                         TransformGeneralCall(call, ref semanticInfo);
@@ -1519,12 +1519,12 @@ namespace GlslRewriter
             }
             if (call.IsHighOrder) {
                 var lowerFunc = call.LowerOrderFunction;
-                if (lowerFunc.IsBracketParamClass() && call.IsParenthesisParamClass()) {
+                if (lowerFunc.IsBracketParamClass() && call.IsParenthesesParamClass()) {
                     //todo: array init
                     return;
                 }
             }
-            if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS) {
+            if (paramClass == (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES) {
                 string id = call.GetId();
                 List<string> argTypes = new List<string>();
                 var cgcn = new ComputeGraphCalcNode(CurFuncInfo(), string.Empty, id);
@@ -3135,7 +3135,7 @@ namespace GlslRewriter
                                 }
                             }
                         }
-                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESIS: {
+                    case (int)Dsl.ParamClassEnum.PARAM_CLASS_PARENTHESES: {
                             List<string> argTypes = new List<string>();
                             foreach (var p in funcData.Params) {
                                 string type = TypeInference(p);
@@ -4133,23 +4133,23 @@ namespace GlslRewriter
             public CondExpInfo(CondExpEnum part)
             {
                 m_CondExpPart = part;
-                m_ParenthesisCount = 0;
+                m_ParenthesesCount = 0;
             }
-            public void IncParenthesisCount()
+            public void IncParenthesesCount()
             {
-                ++m_ParenthesisCount;
+                ++m_ParenthesesCount;
             }
-            public void DecParenthesisCount()
+            public void DecParenthesesCount()
             {
-                --m_ParenthesisCount;
+                --m_ParenthesesCount;
             }
             public bool MaybeCompletePart(CondExpEnum part)
             {
-                return m_CondExpPart == part && m_ParenthesisCount == 0;
+                return m_CondExpPart == part && m_ParenthesesCount == 0;
             }
 
             private CondExpEnum m_CondExpPart;
-            private int m_ParenthesisCount;
+            private int m_ParenthesesCount;
         }
 
         public sealed class VarSyntaxInfo

@@ -143,11 +143,11 @@ namespace CppDebugScript
                         var fd = dslInfo as Dsl.FunctionData;
                         var call = fd;
                         bool existsOptions = false;
-                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
                             call = fd.LowerOrderFunction;
                             existsOptions = true;
                         }
-                        if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                        if (null != call && !call.IsHighOrder && call.IsParenthesesParamClass()) {
                             int pnum = call.GetParamNum();
                             if (pnum == 4) {
                                 var name = call.GetParamId(0);
@@ -208,11 +208,11 @@ namespace CppDebugScript
                         var fd = dslInfo as Dsl.FunctionData;
                         var call = fd;
                         bool existsOptions = false;
-                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                        if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
                             call = fd.LowerOrderFunction;
                             existsOptions = true;
                         }
-                        if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                        if (null != call && !call.IsHighOrder && call.IsParenthesesParamClass()) {
                             int pnum = call.GetParamNum();
                             if (pnum >= 4 && pnum <= 6) {
                                 var name = call.GetParamId(0);
@@ -2248,7 +2248,7 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                     }
-                    else if (callData.IsParenthesisParamClass()) {
+                    else if (callData.IsParenthesesParamClass()) {
                         var info = new SemanticInfo { };
                         CompileExpression(callData, codes, err, ref info);
                         CurBlock().ResetTempVars();
@@ -2343,7 +2343,7 @@ namespace CppDebugScript
                 if (null != callData) {
                     if (!callData.HaveId()) {
                         int paramNum = callData.GetParamNum();
-                        if (paramNum == 1 && callData.IsParenthesisParamClass()) {
+                        if (paramNum == 1 && callData.IsParenthesesParamClass()) {
                             var param = callData.GetParam(0);
                             CompileExpression(param, codes, err, ref semanticInfo);
                         }
@@ -2716,7 +2716,7 @@ namespace CppDebugScript
                         else if (callData.IsBracketParamClass() && num == 1) {
                             TryGenArrGet(op, codes, sinfos, err, callData, ref semanticInfo);
                         }
-                        else if (callData.IsParenthesisParamClass()) {
+                        else if (callData.IsParenthesesParamClass()) {
                             if (op == "inc") {
                                 TryGenInc(codes, sinfos, err, callData, ref semanticInfo);
                             }
@@ -2849,11 +2849,11 @@ namespace CppDebugScript
                     var fd = exp as Dsl.FunctionData;
                     var call = fd;
                     bool existsOptions = false;
-                    if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesisParamClass() && fd.HaveStatement()) {
+                    if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
                         call = fd.LowerOrderFunction;
                         existsOptions = true;
                     }
-                    if (null != call && !call.IsHighOrder && call.IsParenthesisParamClass()) {
+                    if (null != call && !call.IsHighOrder && call.IsParenthesesParamClass()) {
                         int pnum = call.GetParamNum();
                         if (pnum >= 3 && pnum <= 5) {
                             var type = call.GetParamId(0);
@@ -3022,7 +3022,7 @@ namespace CppDebugScript
             }
             else {
                 var funcData = comp as Dsl.FunctionData;
-                if (null != funcData && funcData.IsParenthesisParamClass() && funcData.GetParamNum() == 1 && !funcData.IsHighOrder && funcData.GetId() == "ptr") {
+                if (null != funcData && funcData.IsParenthesesParamClass() && funcData.GetParamNum() == 1 && !funcData.IsHighOrder && funcData.GetId() == "ptr") {
                     string type = ParseFieldType(funcData.GetParam(0), err, arrOrPtrs);
                     if (arrOrPtrs.Count > 0) {
                         err.AppendFormat("Pointer in struct can only pointer to struct or base type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
@@ -3129,7 +3129,7 @@ namespace CppDebugScript
                             success = false;
                         }
                     }
-                    else if (funcData.IsParenthesisParamClass() && num == 1 && funcData.GetId() == "ptr") {
+                    else if (funcData.IsParenthesesParamClass() && num == 1 && funcData.GetId() == "ptr") {
                         success = success && CalcStructExpressionOffsets(funcData.GetParam(0), err, offsets, out lastSize, out struInfo, out fieldIndexes);
 
                         var field = struInfo.Fields[fieldIndexes[0]];

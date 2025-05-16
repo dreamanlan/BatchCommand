@@ -124,6 +124,7 @@ namespace BatchCommand
             string exeFullName = System.Reflection.Assembly.GetExecutingAssembly().Location;
             string exeDir = Path.GetDirectoryName(exeFullName);
 
+            var emptyArgs = new List<string>();
             Console.WriteLine("Enter exit or quit to exit...");
             LineEditor.LoadOrRefresh(exeDir);
             for (; ; ) {
@@ -139,7 +140,9 @@ namespace BatchCommand
                     }
                 }
                 else {
-                    var r = BatchScript.EvalAndRun(line);
+                    var id = BatchScript.EvalAsFunc(line, emptyArgs);
+                    var r = BatchScript.Call(id);
+                    //var r = BatchScript.EvalAndRun(line);
                     Console.Write("result:");
                     Console.WriteLine(r.ToString());
                 }

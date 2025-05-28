@@ -52,3 +52,10 @@ obj
 *.suo
 *.user
 *.opensdf
+*.obj
+*.log
+*.tlog
+*.idb
+
+HostCLR/x64
+DebugScriptVM/x64

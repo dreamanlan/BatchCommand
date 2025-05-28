@@ -1,169 +1,124 @@
 @@delimiter(script, "={:=", "=:}=");
-@@pragma("once");
+@@include(={:=\"UnityPrefix.h\"=:}=);
+@@include(={:=\"Configuration/UnityConfigure.h\"=:}=);
 @@code
 ={:=
 
 =:}=;
-@@include("\"Runtime/Allocator/STLAllocator.h\"");
-@@include("\"Runtime/SceneManager/UnityScene.h\"");
-@@include("\"Runtime/Utilities/vector_set.h\"");
-@@include("\"Runtime/Serialize/SerializeUtility.h\"");
-@@include("\"Runtime/Serialize/TransferFunctions/SerializeTransfer.h\"");
-@@include("\"Runtime/Serialize/TransferFunctions/StreamedBinaryRead.h\"");
-@@include("\"Runtime/Serialize/TransferFunctions/StreamedBinaryWrite.h\"");
-@@include("\"Runtime/Serialize/TransferFunctions/YAMLRead.h\"");
-@@include("\"Runtime/Serialize/TransferFunctions/YAMLWrite.h\"");
-@@include("<memory>");
+@@if(ENABLE_MONO && LOAD_MONO_DYNAMICALLY)
+{
 @@code
 ={:=
 
-class Object;
-struct UndoContext;
+=:}=;
+@@include(={:=\"MonoLoader.h\"=:}=);
+@@include(={:=\"Runtime/Utilities/PathNameUtility.h\"=:}=);
+@@include(={:=\"Runtime/Utilities/FileUtilities.h\"=:}=);
+@@include(={:=\"Runtime/Modules/LoadDylib.h\"=:}=);
+@@include(={:=\"Runtime/Mono/MonoManager.h\"=:}=);
+@@code
+={:=
 
-typedef vector_set<UnitySceneHandle> UnitySceneHandleSet;
 
-class UndoBase
+// define a ProcPtr type for each API
+=:}=;
+@@define(={:=DO_API(r, n, p)   typedef r (*fp##n##Type) p;=:}=);
+@@if(!defined(_MSC_VER))
 {
-public:
+@@code
+={:=
+    =:}=;
+@@define(={:=DO_API_NO_RETURN(r, n, p)   typedef DOES_NOT_RETURN r (*fp##n##Type) p;=:}=);
+}
+@@endif();
+@@include(={:=\"Runtime/Mono/MonoFunctions.h\"=:}=);
+@@code
+={:=
 
-    DECLARE_SERIALIZE(UndoBase)
+// declare storage for each API's function pointers
+=:}=;
+@@define(={:=DO_API(r, n, p)   fp##n##Type n = NULL;=:}=);
+@@include(={:=\"Runtime/Mono/MonoFunctions.h\"=:}=);
+@@code
+={:=
 
-    /* When adding a new UndoTypeIdentifier, ensure that the new type is also included in UndoManager::CreateEmptyUndoOfType to allow them to be correctly serialized and deserialized */
-    enum UndoTypeIdentifier
-    {
-        kNullUndo,
-        kAssetRenameUndo,
-        kAssetMoveUndo,
-        kSetDefaultParentObjectUndo,
-        kImporterChangeUndo,
-        kPropertyDiffUndo,
-        kSelectionUndo,
-        kObjectUndo,
-        kFileChangeUndo,
-        kUndoSetName,
-        kFakeUndo
-    };
+static core::string g_MonoModulePath;
+static void * g_MonoModule = NULL;
 
-    enum UndoType
-    {
-        kEditModeSceneUndo,    // Undo for scene objects in edit mode.
-        kPlayModeSceneUndo,    // Undo for scene objects in play mode.
-        kAssetUndo,            // Undo for assets.
-        kEditorObjectUndo      // Undo for objects with kDontSaveInEditor flag (e.g. Editor UI objects).
-    };
-
-    static UndoType DetermineUndoType(const Object* undoObject);
-    static UndoType DetermineUndoType(const dynamic_array<const Object*>& undoObjects);
-
-protected:
-    UndoBase();
-    virtual ~UndoBase();
-
-public:
-    const core::string& GetName() const { return m_Name; }
-    void SetName(const core::string_ref& name) { m_Name = name; }
-
-    virtual bool HasIdentifier(int identifier) { return false; }
-
-    void SetGroup(int group) { m_UndoGroup = group; }
-    int GetGroup() const { return m_UndoGroup; }
-
-    UndoType GetUndoType() const { return m_UndoType; }
-    void SetUndoType(UndoType undoType) { m_UndoType = undoType; }
-
-    virtual bool IsPropertyDiffUndo() { return false; }
-    virtual bool IsUndoSetName() { return false; }
-    virtual bool IsObjectUndo() { return false; } // To separate ObjectUndo from CreatedObjectUndo types
-
-    /// When collapsing multiple undos into one action, the name of the action with the highest priority is chosen
-    /// (We never want to show selection undo to show up when Creating / Deleting objects)
-    void SetNamePriority(int namePriority) { m_NamePriority = namePriority; }
-    int GetNamePriority() const { return m_NamePriority; }
-
-    bool IsFinalized() const { return m_IsFinalized; }
-    void Finalize();
-
-    // Should this undo be ignored when counting for undo levels.
-    /// (Selection change is so small to store we just ignore them when counting undo levels)
-    virtual bool IgnoreInUndoLevel() const { return false; }
-    virtual void FillRecordDescription(core::string& description) const { description = GetName(); }
-    virtual void PreApply(core::hash_set<GameObject*>& affectedGameObjects, bool isUndoing) {}
-    virtual void ApplyUndo(UndoContext& ctx) = 0;
-    virtual void ApplyRedo(UndoContext& ctx) = 0;
-    virtual UndoTypeIdentifier GetUndoTypeIdentifier() = 0; // To ensure every undo type is given its own identifier for deserialisation purposes. Add new types to the enum UndoTypeIdentifier
-    virtual void FinalizeUndo() {}
-
-    virtual bool IsChangeRelevant() const { return true; }
-    virtual bool CanPerformOperation() const { return true; }
-    virtual void SetAllocatedSize() = 0; // TODO_UNDO This should be called automatically from Finalize once everything is tracked
-    unsigned GetAllocatedSize() const { return m_UndoSize; }
-
-    void SetMakesSceneDirty(bool registerUndoMakesSceneDirty) { m_RegisterUndoMakesSceneDirty = registerUndoMakesSceneDirty; }
-    bool MakesSceneDirty() const { return m_RegisterUndoMakesSceneDirty; }
-
-    void IncreaseScenesDirtiness();
-    void DecreaseScenesDirtiness();
-
-    void AddAffectedSceneHandle(UnitySceneHandle sceneHandle);
-    void SetAffectedSceneHandles(const UnitySceneHandleSet& sceneHandles);
-    const UnitySceneHandleSet& GetAffectedSceneHandles() const { return m_AffectedSceneHandles; }
-
-    int GetUndoIndex() { return m_UndoIndex; }
-    void SetUndoIndex(int index) { m_UndoIndex = index; }
-
-    InstanceID GetUndoStackID() { return m_UndoStackId; }
-    void SetUndoStackID(InstanceID stackId) { m_UndoStackId = stackId; }
-
-    virtual void VirtualRedirectTransfer(StreamedBinaryWrite& transfer) = 0;
-    virtual void VirtualRedirectTransfer(StreamedBinaryRead& transfer) = 0;
-    virtual void VirtualRedirectTransfer(YAMLRead& transfer) = 0;
-    virtual void VirtualRedirectTransfer(YAMLWrite& transfer) = 0;
-
-protected:
-
-    core::string        m_Name;
-    int                 m_UndoGroup;                    // The group that this undo operation belongs to (only used by UndoManager)
-    int                 m_NamePriority;                 // So we know the name to use if a bunch of undo operations are collapsed into a single operation
-    UndoType            m_UndoType;
-    UnitySceneHandleSet m_AffectedSceneHandles;         // List of the scene handles affected by this undo operation.
-    unsigned            m_UndoSize;                     // Size of the undo
-    bool                m_IsFinalized;
-    bool                m_RegisterUndoMakesSceneDirty;  // Nearly all undo operations will dirty the scene when registered - the only exception at present is a createObjectUndo for a scriptable object
-    int                 m_UndoIndex;                    // The index for this undo operation for serialization reference
-    InstanceID          m_UndoStackId;                  // Identifier for this undo operation for deserialization
-
-    template<typename T>
-    friend void delete_internal(T* ptr, MemLabelRef label, const char* file, int line);
-};
-
-template<typename UndoType, typename ... Args>
-std::shared_ptr<UndoType> CreateUndo(Args&& ... args)
+bool LoadMono(const core::string& libraryPath)
 {
-    auto undo = UNITY_NEW(UndoType, kMemUndo)(std::forward<Args>(args)...);
-    undo->SetUndoStackID(AllocateNextLowestInstanceID());
+    g_MonoModule = LoadDynamicLibrary(libraryPath, true);
 
-    // This is used to delete the undo object allocated above
-    static const auto kDeleter = [](void* undoRawPtr)
-        {
-            UndoBase* undo = static_cast<UndoBase*>(undoRawPtr);
-            UNITY_DELETE(undo, kMemUndo);
-        };
+    if (!g_MonoModule)
+    {
+        printf_console("Unable to load mono library from %s\n", libraryPath.c_str());
+        return false;
+    }
 
-    // This is used to allocated and deallocate std::shared_ptr internals. It is needed to make sure shared_ptr internals are allocated using kMemUndo memory label
-    // TODO: When std::allocated_shared will be available on all platforms both kDeleter & kAllocator should be replaced by one allocator and do only one allocation
-    static const auto kAllocator = STL_ALLOCATOR(kMemUndo, UndoType)();
+    g_MonoModulePath = libraryPath;
 
-    return std::shared_ptr<UndoType>(undo, kDeleter, kAllocator);
+    // Search for the functions we want by name.
+    bool funcsOK = true;
+=:}=;
+@@define(={:=DO_API(r, n, p)   n = (fp##n##Type) LookupSymbol(g_MonoModule, #n); if( !n ) { funcsOK = false; printf_console(\"mono: function \" #n \" not found\\n\"); }=:}=);
+@@define(={:=DO_API_OPTIONAL(r, n, p) n = (fp##n##Type) LookupSymbol(g_MonoModule, #n, kSymbolOptional);=:}=);
+@@include(={:=\"Runtime/Mono/MonoFunctions.h\"=:}=);
+@@code
+={:=
+
+    if (!funcsOK)
+    {
+        printf_console("mono: function lookup failed\n");
+        UnloadDynamicLibrary(g_MonoModule);
+        g_MonoModule = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+bool LoadAndInitializeMono(const dynamic_array<core::string>& monoPaths, const core::string& monoConfigPath, const core::string& dataPath, const core::string& monoDll, int argc, const char** argv, LoadMonoPreInitializationCallback preInitializationCallback)
+{
+    if (!LoadMono(monoDll))
+        return false;
+
+    if (preInitializationCallback != NULL && !preInitializationCallback())
+        return false;
+
+    if (!InitializeMonoFromMain(monoPaths, monoConfigPath, dataPath, argc, argv, false, monoDll.c_str()))
+    {
+        printf_console("mono: initialization failed\n");
+        return false;
+    }
+
+    return true;
+}
+
+void UnloadMono()
+{
+    // dissociate function pointers
+    =:}=;
+@@define(={:=DO_API(r, n, p)   n = NULL;=:}=);
+@@code
+={:=
+    =:}=;
+@@include(={:=\"Runtime/Mono/MonoFunctions.h\"=:}=);
+@@code
+={:=
+
+    if (g_MonoModule)
+    {
+        UnloadDynamicLibrary(g_MonoModule);
+        g_MonoModule = NULL;
+        g_MonoModulePath.clear();
+    }
+}
+
+const char* GetMonoModulePath()
+{
+    return g_MonoModulePath.c_str();
 }
 
 =:}=;
-@@define("DECLARE_UNDO_SERIALIZE(x) 
-public: 
-    static const char* GetTypeString () { return #x; } 
-    static bool MightContainPPtr () { return true; } 
-    static bool AllowTransferOptimization () { return false; } 
-    template<class TransferFunction> void Transfer (TransferFunction& transfer); 
-    void VirtualRedirectTransfer (StreamedBinaryWrite& transfer) override { Transfer(transfer); }; 
-    void VirtualRedirectTransfer (StreamedBinaryRead& transfer) override { Transfer(transfer); }; 
-    void VirtualRedirectTransfer (YAMLRead& transfer) override { Transfer(transfer); }; 
-    void VirtualRedirectTransfer (YAMLWrite& transfer) override { Transfer(transfer); };");
+}
+@@endif();

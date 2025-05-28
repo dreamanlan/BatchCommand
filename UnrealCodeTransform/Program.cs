@@ -16,9 +16,9 @@ namespace UnrealCodeTransform
             using (s_ErrorWriter = new StreamWriter("error.log", false)) {
                 bool isTest = false;
                 if (isTest) {
-                    string file = @"D:\UGit\UndoBase.h";
-                    string targetFile = @"D:\test.h";
-                    string filter = "*.h";
+                    string file = @"E:\UGit\unity_engine_master\Runtime\Scripting\MonoLoader.cpp";
+                    string targetFile = @"D:\test.cpp";
+                    string filter = "*.cpp";
                     CopyFile(file, targetFile, filter, "pp.txt");
                 }
                 else {

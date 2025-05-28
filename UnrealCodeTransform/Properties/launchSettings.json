@@ -2,8 +2,8 @@
   "profiles": {
     "UnrealCodeTransform": {
       "commandName": "Project",
-      "commandLineArgs": "c:/UE_4.27 d:/SourceInsightCodes/UE_4_27",
-      "workingDirectory": "D:\\GitHub\\BatchCommand\\UnrealCodeTransform\\bin\\Debug"
+      "commandLineArgs": "E:\\UGit\\unity_engine_master F:\\SourceInsightCodes\\UnityEngine",
+      "workingDirectory": "F:\\GitHub\\BatchCommand\\UnrealCodeTransform\\bin\\Debug"
     }
   }
 }

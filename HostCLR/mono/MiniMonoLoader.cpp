@@ -8,6 +8,7 @@
 void* load_library(const char* path);
 void* get_export(void* h, const char* name);
 void free_library(void* h);
+void CleanupMono();
 
 static std::unordered_map<std::string, void*> g_Lib2Addresses{};
 
@@ -110,6 +111,8 @@ bool LoadMono(const std::string& libraryPath)
 
 void UnloadMono()
 {
+    CleanupMono();
+
     // dissociate function pointers
     #define DO_API(r, n, p)   n = NULL;
     #include "MonoFunctions.h"

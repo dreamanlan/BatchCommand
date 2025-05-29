@@ -23,6 +23,326 @@
 #endif
 #endif
 
+#if PLATFORM_OSX || PLATFORM_LINUX
+#include <dlfcn.h>
+#include <signal.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#endif
+#if PLATFORM_WIN || _MSC_VER
+#include <signal.h>
+#include <fileapi.h>
+#include <io.h>
+#endif
+#if PLATFORM_OSX
+#include <mach/task.h>
+#elif PLATFORM_LINUX
+#endif
+
+#if PLATFORM_OSX
+static void HandleSignal(int i, __siginfo* info, void* p);
+#define UNITY_SA_DISABLE    0x0004  // disable taking signals on alternate stack
+#elif PLATFORM_LINUX
+static void HandleSignal(int i, siginfo_t* info, void* p);
+#elif PLATFORM_WIN && !defined(UNITY_WIN_API_SUBSET)
+static int HandleSignal(EXCEPTION_POINTERS* ep);
+static void HandleSignal(int signal);
+#endif
+
+#if (PLATFORM_OSX || PLATFORM_LINUX) && !PLATFORM_APPLE_NONDESKTOP
+void SetupSignalHandler(int signal)
+{
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_sigaction = HandleSignal;
+    action.sa_flags = SA_SIGINFO;
+    if (sigaction(signal, &action, nullptr) < 0)
+        printf("Error setting signal handler for signal %d\n", signal);
+}
+
+#endif
+
+void SetupSignalHandlers()
+{
+#if PLATFORM_OSX || PLATFORM_LINUX
+    SetupSignalHandler(SIGSEGV);
+    SetupSignalHandler(SIGBUS);
+    SetupSignalHandler(SIGFPE);
+    SetupSignalHandler(SIGILL);
+    SetupSignalHandler(SIGABRT);
+    SetupSignalHandler(SIGTRAP);
+#endif
+
+#if PLATFORM_WIN && !defined(UNITY_WIN_API_SUBSET)
+    _set_abort_behavior(0, _WRITE_ABORT_MSG);
+#if !UNITY_EDITOR
+    signal(SIGABRT, HandleSignal);
+    signal(SIGSEGV, HandleSignal);
+#endif
+#endif
+
+#if PLATFORM_WIN || PLATFORM_OSX || PLATFORM_ANDROID || PLATFORM_LINUX
+    mono_set_signal_chaining(1);
+
+#if ENABLE_MONO && LOAD_MONO_DYNAMICALLY
+    if (mono_set_crash_chaining != nullptr)
+    {
+        mono_set_crash_chaining(1);
+    }
+#endif
+#endif
+}
+
+void MonoPrintfRedirect(const char* msg, va_list list)
+{
+    va_list args;
+    va_copy(args, list);
+    int len = vprintf(msg, args);
+    va_end(args);
+}
+
+void MonoLoggingCallback(const char* log_domain, const char* log_level, const char* message, bool fatal, void* user_data)
+{
+    printf("%s : %s : %s\n", log_domain, log_level, message);
+
+    if (fatal)
+    {
+        printf("Fatal log received from mono! Aborting!\n");
+        abort();
+    }
+}
+
+#if PLATFORM_LINUX
+#include "PlatformDependent/Linux/Stacktrace.h"
+#define SKIP_FRAMES 4 // HandleSignal, mono_breakpoint_clean_code, mono_print_method_from_ip, funlockfile
+#define MAX_FRAMES 256
+static void HandleSignal(int i, siginfo_t* info, void* p)
+{
+    printf("Caught fatal signal - signo:%d code:%d errno:%d addr:%p\n",
+        info->si_signo,
+        info->si_code,
+        info->si_errno,
+        info->si_addr);
+
+    PrintStackTraceLinux(SKIP_FRAMES, MAX_FRAMES);
+#if UNITY_EDITOR
+    UnityEditor::CoreBusinessMetrics::OnEditorCrash();
+
+    if (IsHumanControllingUs())
+    {
+        printf("Launching bug reporter\n");
+
+        // Create a snapshot of the Unity process's memory and module profile.
+        char pidBuffer[16];
+        sprintf(pidBuffer, "%d", GetUnityProcessID());
+
+        const core::string virtualProcPath = AppendPathName("/proc", pidBuffer);
+        const core::string tmpDir = "/tmp";
+
+        const core::string statusFile = "status";
+        const core::string mapsFile = "maps";
+        const core::string smapsFile = "smaps";
+
+        const core::string procStatus = AppendPathName(virtualProcPath, statusFile);
+        const core::string procMaps = AppendPathName(virtualProcPath, mapsFile);
+        const core::string procSmaps = AppendPathName(virtualProcPath, smapsFile);
+
+        const core::string procStatusSnapshot = AppendPathName(tmpDir, statusFile) + "_" + pidBuffer;
+        const core::string procMapsSnapshot = AppendPathName(tmpDir, mapsFile) + "_" + pidBuffer;
+        const core::string procSmapsSnapshot = AppendPathName(tmpDir, smapsFile) + "_" + pidBuffer;
+
+        DeleteFileOrDirectoryIfExists(procStatusSnapshot);
+        DeleteFileOrDirectoryIfExists(procMapsSnapshot);
+        DeleteFileOrDirectoryIfExists(procSmapsSnapshot);
+
+        CopyFileOrDirectoryFollowSymlinks(procStatus, procStatusSnapshot);
+        CopyFileOrDirectoryFollowSymlinks(procMaps, procMapsSnapshot);
+        CopyFileOrDirectoryFollowSymlinks(procSmaps, procSmapsSnapshot);
+
+        const core::string app = GetBugReporterPath();
+        dynamic_array<core::string> args = Unity::GetBugReporterArgs();
+        args.push_back("--bugtype");
+        args.push_back("crash");
+        args.push_back("--attach");
+        args.push_back(procStatusSnapshot);
+        args.push_back("--attach");
+        args.push_back(procMapsSnapshot);
+        args.push_back("--attach");
+        args.push_back(procSmapsSnapshot);
+
+        // Launch bug reporter in a seperate process instead of forking a child process
+        // from the parent process (i.e. Editor proc). Otherwise, this could affect automated 
+        // tests by waiting for user input to close the bug reporter and then the parent editor proc
+        LaunchBugReporter(kManualSimple, args);
+    }
+#endif
+
+    // Continue with the default handler for the signal in question
+    signal(info->si_signo, SIG_DFL);
+    kill(getpid(), info->si_signo);
+}
+
+#undef SKIP_FRAMES
+#undef MAX_FRAMES
+//endif PLATFORM_LINUX
+
+#elif PLATFORM_OSX
+#include "PlatformDependent/OSX/Stacktrace.h"
+static void HandleSignal(int i, __siginfo* info, void* p)
+{
+    PrintStackTraceOSX(p);
+#if UNITY_EDITOR
+    UnityEditor::CoreBusinessMetrics::OnEditorCrash();
+    if (IsHumanControllingUs())
+    {
+        printf("Launching bug reporter\n");
+#if ENABLE_NEW_BUGREPORTER
+        const core::string app = GetBugReporterPath();
+        dynamic_array<core::string> args = Unity::GetBugReporterArgs();
+        args.push_back("--bugtype");
+        args.push_back("crash");
+        ExternalProcess bugReporter(app, args, "com.unity3d.bug_reporter");
+        bugReporter.Launch();
+#else
+        LaunchBugReporter(kCrashbug);
+#endif
+    }
+#else
+    OnSignalReceived();
+#endif
+
+    // Continue with the default handler for the signal in question
+    signal(info->si_signo, SIG_DFL);
+    kill(getpid(), info->si_signo);
+}
+
+//endif PLATFORM_OSX
+
+#elif PLATFORM_WIN
+static int __cdecl HandleSignal(EXCEPTION_POINTERS* ep)
+{
+#if UNITY_EDITOR || USE_WIN_CRASH_HANDLER
+    return winutils::ProcessInternalCrash(ep, true);
+#else
+    return EXCEPTION_EXECUTE_HANDLER;
+#endif
+}
+
+static void __cdecl HandleSignal(int signal)
+{
+    core::string signame;
+
+    const int kAbortSignalSkipFrames = 6;
+    const int kSegfaultSkipFrames = 11;
+
+    int skipFrames = 0;
+
+    switch (signal)
+    {
+    case SIGABRT:
+        signame = "SIGABRT";
+        skipFrames = kAbortSignalSkipFrames;
+        break;
+    case SIGSEGV:
+        signame = "SIGSEGV";
+        skipFrames = kSegfaultSkipFrames;
+        break;
+    default:
+        signame = core::Format("{0}", signal);
+    }
+
+    printf("Received signal %s\n", signame.c_str());
+    core::string trace = GetStacktrace(skipFrames);
+
+    printf("Obtained %d stack frames\n%s\n",
+        std::count(trace.begin(), trace.end(), '\n'), trace.c_str());
+#if USE_WIN_CRASH_HANDLER
+    winutils::CrashHandler::DefaultSignalHandler(0);
+#endif
+}
+
+#endif //PLATFORM_WIN
+
+void CleanupMono()
+{
+#if DEBUGMODE
+    printf("Cleanup mono\n");
+#endif
+
+    mono_unity_jit_cleanup(mono_get_root_domain());
+
+#if PLATFORM_OSX
+    struct sigaction sa;
+    sa.sa_sigaction = nullptr;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = UNITY_SA_DISABLE;
+    sigaction(SIGSEGV, &sa, nullptr);
+
+    sa.sa_sigaction = nullptr;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = UNITY_SA_DISABLE;
+    sigaction(SIGABRT, &sa, nullptr);
+#elif PLATFORM_LINUX
+    struct sigaction sa;
+    sa.sa_sigaction = nullptr;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGSEGV, &sa, nullptr);
+
+    sa.sa_sigaction = nullptr;
+    sigemptyset(&sa.sa_mask);
+    sigaction(SIGABRT, &sa, nullptr);
+#endif
+}
+
+MonoMethod* FindMonoMethod(MonoClass* klass, const char* name, int argsCount, MonoType** argTypes)
+{
+    if (!name)
+        return nullptr;
+
+    void* iterator = nullptr;
+    while (MonoMethod* monoMethod = mono_class_get_methods(klass, &iterator))
+    {
+        if (!monoMethod)
+            return nullptr;
+
+        const char* methodName = mono_method_get_name(monoMethod);
+        if ((methodName[0] != name[0]) || strcmp(methodName, name) != 0)
+            continue;
+
+        if (argsCount < 0)
+            return monoMethod;
+
+        MonoMethodSignature* sig = mono_method_signature(monoMethod);
+        if (!sig) {
+            printf("Error looking up signature for %s.%s\n", mono_class_get_name(klass), methodName);
+        }
+        if (argsCount != mono_signature_get_param_count(sig))
+            continue;
+
+        if (argsCount > 0 && argTypes != nullptr)
+        {
+            MonoType* argType;
+            void* iter = nullptr;
+            bool didAllArgumentsMatch = true;
+            for (int i = 0; i < argsCount && didAllArgumentsMatch; ++i)
+            {
+                argType = mono_signature_get_params(sig, &iter);
+                didAllArgumentsMatch = didAllArgumentsMatch && (argType != nullptr) && mono_metadata_type_equal(argTypes[i], argType);
+            }
+            if (!didAllArgumentsMatch)
+                continue;
+        }
+
+        if (!unity_mono_method_is_inflated(monoMethod) && unity_mono_method_is_generic(monoMethod))
+            continue;
+    }
+
+    MonoClass* parent = mono_class_get_parent(klass);
+    if (!parent)
+        return nullptr;
+    return FindMonoMethod(parent, name, argsCount, argTypes);
+}
+
 void* load_library(const char* path)
 {
 #if defined(_MSC_VER)
@@ -180,14 +500,64 @@ static MonoString* GetInfo(void)
     return mono_string_new(mono_domain_get(), "Hello from mono !");
 }
 
+void ConvertSeparatorsToPlatform(std::string& pathName)
+{
+#if _MSC_VER
+    std::string::iterator it = pathName.begin(), itEnd = pathName.end();
+    while (it != itEnd)
+    {
+        if (*it == '/')
+            *it = '\\';
+        ++it;
+    }
+#endif
+}
+static std::string BuildMonoPath(const std::vector<std::string>& monoPaths)
+{
+    const char separator = '\0';
+
+    std::string monoPath;
+    for (size_t i = 0; i != monoPaths.size(); i++)
+    {
+        if (i != 0)
+            monoPath.push_back(separator);
+        monoPath.append(monoPaths[i]);
+    }
+
+    //Append two null terminators when there are no more paths
+    monoPath.push_back(separator);
+    monoPath.push_back(separator);
+
+    // Mono uses platform separators
+    ConvertSeparatorsToPlatform(monoPath);
+
+    return monoPath;
+}
+
 bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std::string& monoConfigPath, const std::string& dataPath, const std::string& monoDll, int argc, const char** argv)
 {
     if (!LoadMono(monoDll))
         return false;
 
     const char* emptyarg = "";
-    if (argv == NULL)
+    if (argv == nullptr)
         argv = &emptyarg;
+
+    mono_unity_set_vprintf_func(MonoPrintfRedirect);
+    mono_trace_set_log_handler(MonoLoggingCallback, nullptr);
+
+    // Mono works with paths that uses platform separators
+    std::string assemblyDir = monoPaths[0];
+    std::string configDir = monoConfigPath;
+    ConvertSeparatorsToPlatform(assemblyDir);
+    ConvertSeparatorsToPlatform(configDir);
+    mono_set_dirs(assemblyDir.c_str(), configDir.c_str());
+    mono_set_assemblies_path_null_separated(BuildMonoPath(monoPaths).c_str());
+
+    SetupSignalHandlers();
+
+    int opt = mono_parse_default_optimizations(nullptr);
+    mono_set_defaults(0, opt);
 
     mono_unity_runtime_set_main_args(argc, argv);
     mono_unity_set_data_dir(dataPath.c_str());
@@ -195,7 +565,7 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
     MonoDomain* domain;
     domain = mono_jit_init_version("mymono", "v4.0.30319");
 
-    mono_config_parse(NULL);
+    mono_config_parse(nullptr);
 
     mono_unity_set_embeddinghostname("mymono");
 
@@ -214,7 +584,35 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
     const char* argv2[] = { "./publish/MyApp.dll" };
     mono_jit_exec(domain, assembly, 1, argv2);
 
-    mono_unity_jit_cleanup(domain);
+    MonoImage* image;
+    image = mono_assembly_get_image(assembly);
+    if (!image) {
+        printf("mono: failed to get image for MyApp.dll\n");
+        return false;
+    }
+    MonoClass* pClass = mono_class_from_name(image, "DotNetLib", "Lib");
+    if (!pClass) {
+        printf("mono: failed to get class for DotNetLib.Lib\n");
+        return false;
+    }
+    MonoMethod* pMethod = FindMonoMethod(pClass, "HelloMono", -1, nullptr);
+    if (!pMethod) {
+        printf("mono: failed to get method for HelloMono\n");
+        return false;
+    }
+    const char* arg = "HostMono";
+    MonoObject* pObject = mono_runtime_invoke(pMethod, nullptr, (void**)&arg, nullptr);
+    if (!pObject) {
+        printf("mono: failed to invoke method for HelloMono\n");
+        return false;
+    }
+    MonoString* pString = mono_object_to_string(pObject, nullptr);
+    if (!pString) {
+        printf("mono: failed to convert object to string\n");
+        return false;
+    }
+    const char* result = mono_string_to_utf8(pString);
+    printf("mono: result = %s\n", result);
     return true;
 }
 

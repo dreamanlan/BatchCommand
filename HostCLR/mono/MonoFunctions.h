@@ -37,6 +37,7 @@ DO_API(int, mono_jit_exec, (MonoDomain* domain, MonoAssembly* assembly, int argc
 DO_API(int, mono_environment_exitcode_get, ())
 DO_API(void, mono_environment_exitcode_set, (int value))
 DO_API(void, mono_jit_cleanup, (MonoDomain* domain))
+DO_API(MonoString*, mono_object_to_string, (MonoObject* obj, MonoObject** exc))
 
 DO_API(gboolean, mono_unity_class_is_open_constructed_type, (MonoClass * klass))
 DO_API(MonoException*, mono_unity_error_convert_to_exception, (MonoError * error))

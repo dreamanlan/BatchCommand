@@ -12,6 +12,10 @@ namespace DotNetLib
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern static string GetInfo();
+        public static string HelloMono(string arg)
+        {
+            return "Hello, world! " + arg;
+        }
 
         private static int s_CallCount = 1;
 

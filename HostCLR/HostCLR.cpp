@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #endif
-#if PLATFORM_WIN || _MSC_VER
+#if PLATFORM_WIN
 #include <signal.h>
 #include <fileapi.h>
 #include <io.h>
@@ -41,10 +41,10 @@
 
 #if PLATFORM_OSX
 static void HandleSignal(int i, __siginfo* info, void* p);
-#define UNITY_SA_DISABLE    0x0004  // disable taking signals on alternate stack
+#define SA_DISABLE    0x0004  // disable taking signals on alternate stack
 #elif PLATFORM_LINUX
 static void HandleSignal(int i, siginfo_t* info, void* p);
-#elif PLATFORM_WIN && !defined(UNITY_WIN_API_SUBSET)
+#elif PLATFORM_WIN && !defined(WIN_API_SUBSET)
 static int HandleSignal(EXCEPTION_POINTERS* ep);
 static void HandleSignal(int signal);
 #endif
@@ -73,12 +73,10 @@ void SetupSignalHandlers()
     SetupSignalHandler(SIGTRAP);
 #endif
 
-#if PLATFORM_WIN && !defined(UNITY_WIN_API_SUBSET)
+#if PLATFORM_WIN && !defined(WIN_API_SUBSET)
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
-#if !UNITY_EDITOR
     signal(SIGABRT, HandleSignal);
     signal(SIGSEGV, HandleSignal);
-#endif
 #endif
 
 #if PLATFORM_WIN || PLATFORM_OSX || PLATFORM_ANDROID || PLATFORM_LINUX
@@ -113,7 +111,6 @@ void MonoLoggingCallback(const char* log_domain, const char* log_level, const ch
 }
 
 #if PLATFORM_LINUX
-#include "PlatformDependent/Linux/Stacktrace.h"
 #define SKIP_FRAMES 4 // HandleSignal, mono_breakpoint_clean_code, mono_print_method_from_ip, funlockfile
 #define MAX_FRAMES 256
 static void HandleSignal(int i, siginfo_t* info, void* p)
@@ -125,57 +122,6 @@ static void HandleSignal(int i, siginfo_t* info, void* p)
         info->si_addr);
 
     PrintStackTraceLinux(SKIP_FRAMES, MAX_FRAMES);
-#if UNITY_EDITOR
-    UnityEditor::CoreBusinessMetrics::OnEditorCrash();
-
-    if (IsHumanControllingUs())
-    {
-        printf("Launching bug reporter\n");
-
-        // Create a snapshot of the Unity process's memory and module profile.
-        char pidBuffer[16];
-        sprintf(pidBuffer, "%d", GetUnityProcessID());
-
-        const core::string virtualProcPath = AppendPathName("/proc", pidBuffer);
-        const core::string tmpDir = "/tmp";
-
-        const core::string statusFile = "status";
-        const core::string mapsFile = "maps";
-        const core::string smapsFile = "smaps";
-
-        const core::string procStatus = AppendPathName(virtualProcPath, statusFile);
-        const core::string procMaps = AppendPathName(virtualProcPath, mapsFile);
-        const core::string procSmaps = AppendPathName(virtualProcPath, smapsFile);
-
-        const core::string procStatusSnapshot = AppendPathName(tmpDir, statusFile) + "_" + pidBuffer;
-        const core::string procMapsSnapshot = AppendPathName(tmpDir, mapsFile) + "_" + pidBuffer;
-        const core::string procSmapsSnapshot = AppendPathName(tmpDir, smapsFile) + "_" + pidBuffer;
-
-        DeleteFileOrDirectoryIfExists(procStatusSnapshot);
-        DeleteFileOrDirectoryIfExists(procMapsSnapshot);
-        DeleteFileOrDirectoryIfExists(procSmapsSnapshot);
-
-        CopyFileOrDirectoryFollowSymlinks(procStatus, procStatusSnapshot);
-        CopyFileOrDirectoryFollowSymlinks(procMaps, procMapsSnapshot);
-        CopyFileOrDirectoryFollowSymlinks(procSmaps, procSmapsSnapshot);
-
-        const core::string app = GetBugReporterPath();
-        dynamic_array<core::string> args = Unity::GetBugReporterArgs();
-        args.push_back("--bugtype");
-        args.push_back("crash");
-        args.push_back("--attach");
-        args.push_back(procStatusSnapshot);
-        args.push_back("--attach");
-        args.push_back(procMapsSnapshot);
-        args.push_back("--attach");
-        args.push_back(procSmapsSnapshot);
-
-        // Launch bug reporter in a seperate process instead of forking a child process
-        // from the parent process (i.e. Editor proc). Otherwise, this could affect automated 
-        // tests by waiting for user input to close the bug reporter and then the parent editor proc
-        LaunchBugReporter(kManualSimple, args);
-    }
-#endif
 
     // Continue with the default handler for the signal in question
     signal(info->si_signo, SIG_DFL);
@@ -187,29 +133,10 @@ static void HandleSignal(int i, siginfo_t* info, void* p)
 //endif PLATFORM_LINUX
 
 #elif PLATFORM_OSX
-#include "PlatformDependent/OSX/Stacktrace.h"
 static void HandleSignal(int i, __siginfo* info, void* p)
 {
     PrintStackTraceOSX(p);
-#if UNITY_EDITOR
-    UnityEditor::CoreBusinessMetrics::OnEditorCrash();
-    if (IsHumanControllingUs())
-    {
-        printf("Launching bug reporter\n");
-#if ENABLE_NEW_BUGREPORTER
-        const core::string app = GetBugReporterPath();
-        dynamic_array<core::string> args = Unity::GetBugReporterArgs();
-        args.push_back("--bugtype");
-        args.push_back("crash");
-        ExternalProcess bugReporter(app, args, "com.unity3d.bug_reporter");
-        bugReporter.Launch();
-#else
-        LaunchBugReporter(kCrashbug);
-#endif
-    }
-#else
     OnSignalReceived();
-#endif
 
     // Continue with the default handler for the signal in question
     signal(info->si_signo, SIG_DFL);
@@ -221,16 +148,12 @@ static void HandleSignal(int i, __siginfo* info, void* p)
 #elif PLATFORM_WIN
 static int __cdecl HandleSignal(EXCEPTION_POINTERS* ep)
 {
-#if UNITY_EDITOR || USE_WIN_CRASH_HANDLER
-    return winutils::ProcessInternalCrash(ep, true);
-#else
     return EXCEPTION_EXECUTE_HANDLER;
-#endif
 }
 
 static void __cdecl HandleSignal(int signal)
 {
-    core::string signame;
+    std::string signame;
 
     const int kAbortSignalSkipFrames = 6;
     const int kSegfaultSkipFrames = 11;
@@ -248,17 +171,13 @@ static void __cdecl HandleSignal(int signal)
         skipFrames = kSegfaultSkipFrames;
         break;
     default:
-        signame = core::Format("{0}", signal);
+        signame = std::to_string(signal);
     }
 
     printf("Received signal %s\n", signame.c_str());
-    core::string trace = GetStacktrace(skipFrames);
+    std::string trace;// = GetStacktrace(skipFrames);
 
-    printf("Obtained %d stack frames\n%s\n",
-        std::count(trace.begin(), trace.end(), '\n'), trace.c_str());
-#if USE_WIN_CRASH_HANDLER
-    winutils::CrashHandler::DefaultSignalHandler(0);
-#endif
+    printf("Obtained %d stack frames\n%s\n", std::count(trace.begin(), trace.end(), '\n'), trace.c_str());
 }
 
 #endif //PLATFORM_WIN
@@ -275,12 +194,12 @@ void CleanupMono()
     struct sigaction sa;
     sa.sa_sigaction = nullptr;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = UNITY_SA_DISABLE;
+    sa.sa_flags = SA_DISABLE;
     sigaction(SIGSEGV, &sa, nullptr);
 
     sa.sa_sigaction = nullptr;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = UNITY_SA_DISABLE;
+    sa.sa_flags = SA_DISABLE;
     sigaction(SIGABRT, &sa, nullptr);
 #elif PLATFORM_LINUX
     struct sigaction sa;

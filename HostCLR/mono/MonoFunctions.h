@@ -1,3 +1,10 @@
+
+#if _MSC_VER
+#ifndef PLATFORM_WIN
+#define PLATFORM_WIN 1
+#endif
+#endif
+
 #ifndef DO_API_NO_RETURN
 #define DO_API_NO_RETURN(a, b, c) DO_API(a,b,c)
 #endif

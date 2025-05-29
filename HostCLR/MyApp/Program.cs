@@ -2,13 +2,17 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
-Console.WriteLine("Hello, World!");
+Console.WriteLine("Hello, World! reply:{0}", DotNetLib.Lib.GetInfo());
 
 namespace DotNetLib
 {
     public static class Lib
     {
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern static string GetInfo();
+
         private static int s_CallCount = 1;
 
         [StructLayout(LayoutKind.Sequential)]

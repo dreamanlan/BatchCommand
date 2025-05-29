@@ -2,6 +2,11 @@
 //
 
 #include <iostream>
+#include <string>
+#include <vector>
+#include "mono/MiniMonoLoader.h"
+#include "mono/MonoIncludes.h"
+
 #if defined(_MSC_VER)
 #include "windows.h"
 #include "coreclr/nethost.h"
@@ -34,6 +39,15 @@ void* get_export(void* h, const char* name)
     return reinterpret_cast<void*>(::GetProcAddress(reinterpret_cast<HMODULE>(h), name));
 #else
     return dlsym(h, name);
+#endif
+}
+
+void free_library(void* h)
+{
+#if defined(_MSC_VER)
+    ::FreeLibrary(reinterpret_cast<HMODULE>(h));
+#else
+    dlclose(h);
 #endif
 }
 
@@ -161,9 +175,60 @@ int call_dotnet_method()
     return 0;
 }
 
+static MonoString* GetInfo(void)
+{
+    return mono_string_new(mono_domain_get(), "Hello from mono !");
+}
+
+bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std::string& monoConfigPath, const std::string& dataPath, const std::string& monoDll, int argc, const char** argv)
+{
+    if (!LoadMono(monoDll))
+        return false;
+
+    const char* emptyarg = "";
+    if (argv == NULL)
+        argv = &emptyarg;
+
+    mono_unity_runtime_set_main_args(argc, argv);
+    mono_unity_set_data_dir(dataPath.c_str());
+
+    MonoDomain* domain;
+    domain = mono_jit_init_version("mymono", "v4.0.30319");
+
+    mono_config_parse(NULL);
+
+    mono_unity_set_embeddinghostname("mymono");
+
+    mono_runtime_unhandled_exception_policy_set(MONO_UNHANDLED_POLICY_LEGACY);
+
+    MonoAssembly* assembly;
+
+    assembly = mono_domain_assembly_open(domain, "./publish/MyApp.dll");
+    if (!assembly) {
+        printf("mono: failed to open assembly MyApp.dll\n");
+        return false;
+    }
+
+    mono_add_internal_call("DotNetLib.Lib::GetInfo", reinterpret_cast<void*>(GetInfo));
+
+    const char* argv2[] = { "./publish/MyApp.dll" };
+    mono_jit_exec(domain, assembly, 1, argv2);
+
+    mono_unity_jit_cleanup(domain);
+    return true;
+}
+
 int main()
 {
     std::cout << "Hello World!\n";
-    load_hostfxr();
-    call_dotnet_method();
+    bool use_coreclr = false;
+    if (use_coreclr) {
+        load_hostfxr();
+        call_dotnet_method();
+    }
+    else {
+        std::vector<std::string> paths{"./MonoBleedingEdge/bin", "./MonoBleedingEdge/lib"};
+        LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", "data", "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
+        UnloadMono();
+    }
 }

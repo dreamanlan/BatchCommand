@@ -18,5 +18,37 @@
     <ClCompile Include="HostCLR.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="mono\MiniMonoLoader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mono\MiniMonoLoader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mono\MonoFunctions.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mono\MonoIncludes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mono\MonoNativeTypes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mono\MonoTypes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mono\MonoTypeSignatures.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="coreclr\coreclr_delegates.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="coreclr\hostfxr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="coreclr\nethost.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -128,6 +128,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="HostCLR.cpp" />
+    <ClCompile Include="mono\MiniMonoLoader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="coreclr\coreclr_delegates.h" />
+    <ClInclude Include="coreclr\hostfxr.h" />
+    <ClInclude Include="coreclr\nethost.h" />
+    <ClInclude Include="mono\MiniMonoLoader.h" />
+    <ClInclude Include="mono\MonoFunctions.h" />
+    <ClInclude Include="mono\MonoIncludes.h" />
+    <ClInclude Include="mono\MonoNativeTypes.h" />
+    <ClInclude Include="mono\MonoTypes.h" />
+    <ClInclude Include="mono\MonoTypeSignatures.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

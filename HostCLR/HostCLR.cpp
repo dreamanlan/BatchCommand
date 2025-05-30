@@ -594,6 +594,8 @@ bool TestDotnetFramework(const std::string& dataPath)
     }
     auto* title = mono_string_new(domain, "HostMono");
     auto* info = mono_string_new(domain, "test test test");
+    // Primitive values ​​and pointers must be passed by reference, if the mono type pointer has the ref modifier
+    // then the address of the pointer is passed, otherwise the pointer is passed as an argument.
     void* args[2];
     args[0] = title;
     args[1] = info;
@@ -624,25 +626,19 @@ int main(int argc, const char* argv[])
         call_dotnet_method();
     }
     else {
+        const char* dataPath = "./Managed";
+        std::vector<std::string> paths{ dataPath,
+            "./MonoBleedingEdge/bin",
+            std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
+            "./MonoBleedingEdge/lib"
+        };
+        LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
+
         bool testDotnetCore = false;
         if (testDotnetCore) {
-            const char* dataPath = "./publish";
-            std::vector<std::string> paths{ dataPath,
-                "./MonoBleedingEdge/bin",
-                std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
-                "./MonoBleedingEdge/lib"
-            };
-            LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
             TestDotnetCore(dataPath);
         }
         else {
-            const char* dataPath = "./CSharpShaderCompiler";
-            std::vector<std::string> paths{ dataPath,
-                "./MonoBleedingEdge/bin",
-                std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
-                "./MonoBleedingEdge/lib"
-            };
-            LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
             TestDotnetFramework(dataPath);
         }
         UnloadMono();

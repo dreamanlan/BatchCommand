@@ -4,17 +4,23 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-Console.WriteLine("Hello, World! reply:{0}", DotNetLib.Lib.GetInfo());
+Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
+
+public static class Api
+{
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    public extern static string GetInfo();
+}
 
 namespace DotNetLib
 {
     public static class Lib
     {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public extern static string GetInfo();
-        public static string HelloMono(string arg)
+        public static int HelloMono(int cmd, string arg, ref string refArg, IntPtr addr)
         {
-            return "Hello, world! " + arg;
+            long v = addr.ToInt64();
+            refArg = string.Format("Hello, cmd:{0}, arg:{1}, ref arg:{2}, addr:0x{3:x}", cmd, arg, refArg, v);
+            return 0;
         }
 
         private static int s_CallCount = 1;
@@ -33,7 +39,7 @@ namespace DotNetLib
             }
 
             LibArgs libArgs = Marshal.PtrToStructure<LibArgs>(arg);
-            Console.WriteLine($"Hello, world! from {nameof(Lib)} [count: {s_CallCount++}]");
+            Console.WriteLine($"Hello, from {nameof(Lib)} [count: {s_CallCount++}]");
             PrintLibArgs(libArgs);
             return 0;
         }
@@ -41,21 +47,21 @@ namespace DotNetLib
         public delegate void CustomEntryPointDelegate(LibArgs libArgs);
         public static void CustomEntryPoint(LibArgs libArgs)
         {
-            Console.WriteLine($"Hello, world! from {nameof(CustomEntryPoint)} in {nameof(Lib)}");
+            Console.WriteLine($"CustomEntryPoint, from {nameof(CustomEntryPoint)} in {nameof(Lib)}");
             PrintLibArgs(libArgs);
         }
 
         [UnmanagedCallersOnly]
         public static void CustomEntryPointUnmanagedCallersOnly(LibArgs libArgs)
         {
-            Console.WriteLine($"Hello, world! from {nameof(CustomEntryPointUnmanagedCallersOnly)} in {nameof(Lib)}");
+            Console.WriteLine($"CustomEntryPointUnmanagedCallersOnly, from {nameof(CustomEntryPointUnmanagedCallersOnly)} in {nameof(Lib)}");
             PrintLibArgs(libArgs);
         }
 
         [UnmanagedCallersOnly]
         public static void Hello2(IntPtr message)
         {
-            Console.WriteLine($"Hello, world! from {nameof(Lib)} [count: {++s_CallCount}]");
+            Console.WriteLine($"Hello2, from {nameof(Lib)} [count: {++s_CallCount}]");
             Console.WriteLine($"-- message: {Marshal.PtrToStringUni(message)}");
         }
 

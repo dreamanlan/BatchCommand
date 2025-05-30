@@ -25,6 +25,8 @@ struct MonoMethod;
 struct MonoTableInfo;
 struct MonoGenericContext;
 
+struct MonoDlFallbackHandler;
+struct MonoMethodDesc;
 typedef const void* gconstpointer;
 typedef void* gpointer;
 typedef int gboolean;

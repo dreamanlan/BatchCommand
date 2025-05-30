@@ -21,7 +21,6 @@
 
 extern "C"
 {
-// on windows and linux, we always load mono functions dynamically
 
 #define mono_string_chars(s) ((gunichar2*)&((s)->firstCharacter))
 #define mono_string_length(s) ((s)->length)

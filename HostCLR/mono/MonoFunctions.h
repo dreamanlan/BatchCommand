@@ -40,11 +40,15 @@ DO_API(MonoDomain *, mono_domain_create_appdomain, (const char *domainname, cons
 DO_API(void, mono_domain_unload, (MonoDomain * domain))
 #endif
 
+DO_API(void, mono_unity_domain_unload, (MonoDomain * domain, MonoUnityExceptionFunc callback))
+
 DO_API(int, mono_jit_exec, (MonoDomain* domain, MonoAssembly* assembly, int argc, const char* argv[]))
 DO_API(int, mono_environment_exitcode_get, ())
 DO_API(void, mono_environment_exitcode_set, (int value))
 DO_API(void, mono_jit_cleanup, (MonoDomain* domain))
+DO_API(MonoString*, mono_string_new, (MonoDomain* domain, const char* text))
 DO_API(MonoString*, mono_object_to_string, (MonoObject* obj, MonoObject** exc))
+DO_API(void, mono_free, (const void*))
 
 DO_API(gboolean, mono_unity_class_is_open_constructed_type, (MonoClass * klass))
 DO_API(MonoException*, mono_unity_error_convert_to_exception, (MonoError * error))
@@ -85,6 +89,10 @@ DO_API(MonoObject*, mono_runtime_invoke_array, (MonoMethod * method, void *obj, 
 DO_API(char*, mono_array_addr_with_size, (MonoArray * array, int size, uintptr_t idx))
 #define mono_array_addr(array, type, index) ((type*)(void*) mono_array_addr_with_size (array, sizeof (type), index))
 
+DO_API(MonoMethodDesc*, mono_method_desc_new, (const char *name, gboolean include_namespace))
+DO_API(MonoMethod*, mono_method_desc_search_in_class, (MonoMethodDesc * desc, MonoClass * klass))
+DO_API(void, mono_method_desc_free, (MonoMethodDesc * desc))
+DO_API(gboolean, mono_type_generic_inst_is_valuetype, (MonoType*))
 DO_API(char*, mono_type_get_name_full, (MonoType * type, MonoTypeNameFormat format))
 
 #if PLATFORM_WIN
@@ -191,7 +199,7 @@ DO_API(guint32, mono_field_get_flags, (MonoClassField * field))
 DO_API(MonoImage*, mono_image_open_from_data_full, (const void *data, guint32 data_len, gboolean need_copy, int *status, gboolean ref_only))
 DO_API(const char*, mono_image_strerror, (int status))
 DO_API(MonoImage*, mono_image_open_from_data_with_name, (char *data, guint32 data_len, gboolean need_copy, int *status, gboolean refonly, const char *name))
-
+DO_API(void, mono_assembly_get_assemblyref, (MonoImage * image, int index, MonoAssemblyName * aname))
 DO_API(MonoAssembly *, mono_assembly_load_from, (MonoImage * image, const char*fname, int *status))
 DO_API(gboolean, mono_assembly_fill_assembly_name, (MonoImage * image, MonoAssemblyName * aname))
 DO_API(char*, mono_stringify_assembly_name, (MonoAssemblyName * aname))
@@ -247,6 +255,13 @@ DO_API(MonoDebugSourceLocation*, mono_debug_lookup_source_location, (MonoMethod 
 DO_API(void, mono_debug_free_source_location, (MonoDebugSourceLocation * location))
 DO_API_OPTIONAL(MonoDebugMethodJitInfo*, mono_debug_find_method, (MonoMethod * method, MonoDomain * domain))
 DO_API_OPTIONAL(void, mono_debug_free_method_jit_info, (MonoDebugMethodJitInfo * jit))
+DO_API_OPTIONAL(void, GC_dirty_inner, (void **ptr))
+DO_API_OPTIONAL(void*, GC_malloc, (size_t size))
+DO_API_OPTIONAL(void*, GC_malloc_uncollectable, (size_t size))
+DO_API_OPTIONAL(void*, GC_malloc_kind, (size_t size, int k))
+DO_API_OPTIONAL(void*, GC_malloc_atomic, (size_t size))
+DO_API_OPTIONAL(void*, GC_gcj_malloc, (size_t size, void *))
+DO_API_OPTIONAL(void*, GC_free, (void*))
 
 DO_API(MonoProperty*, mono_class_get_properties, (MonoClass * klass, gpointer * iter))
 DO_API(MonoMethod*, mono_property_get_get_method, (MonoProperty * prop))
@@ -306,7 +321,11 @@ DO_API(void, mono_set_defaults, (int verbose_level, guint32 opts))
 DO_API(void, mono_config_parse, (const char *filename))
 DO_API(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 
-DO_API(MonoString*, mono_string_new, (MonoDomain* domain, const char* text))
+DO_API(void, mono_set_break_policy, (MonoBreakPolicyFunc policy_callback))
+
+DO_API(void, burst_mono_simulate_burst_debug_domain_reload, ())
+DO_API(void, burst_mono_install_hooks, (void* callbacks, void* domainInitCallback))
+DO_API(void, burst_mono_update_tracking_pointers, (MonoDomain * debugDomain, MonoClass * klass))
 
 DO_API(void, mono_verifier_set_mode, (MiniVerifierMode mode))
 DO_API(void, mono_jit_parse_options, (int argc, char * argv[]))
@@ -330,6 +349,13 @@ DO_API(void, mono_unity_set_data_dir, (const char * dir))
 DO_API(MonoClass*, mono_custom_attrs_get_attrs, (MonoCustomAttrInfo * ainfo, void** iterator))
 
 DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
+
+typedef void* (*MonoDlFallbackLoad) (const char *name, int flags, char **err, void *user_data);
+typedef void* (*MonoDlFallbackSymbol) (void *handle, const char *name, char **err, void *user_data);
+typedef void* (*MonoDlFallbackClose) (void *handle, void *user_data);
+
+DO_API(MonoDlFallbackHandler*, mono_dl_fallback_register, (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data))
+DO_API(void, mono_dl_fallback_unregister, (MonoDlFallbackHandler * handler))
 
 typedef void(*vprintf_func)(const char* msg, va_list args);
 DO_API(void, mono_unity_set_vprintf_func, (vprintf_func func))
@@ -448,11 +474,14 @@ DO_API(void, mono_trace_set_mask_string, (const char *value))
 DO_API(int, mono_unity_backtrace_from_context, (void* context, void* array[], int count))
 #endif
 
-
 #if ENABLE_MONO_MEMORY_CALLBACKS
 DO_API(void, mono_unity_install_memory_callbacks, (MonoMemoryCallbacks * callbacks))
 #endif
 
+
+typedef size_t(*RemapPathFunction)(const char* path, char* buffer, size_t buffer_len);
+DO_API(void, mono_unity_register_path_remapper, (RemapPathFunction func))
+DO_API_OPTIONAL(void, mono_unity_set_enable_handler_block_guards, (gboolean allow))
 
 DO_API_OPTIONAL(void, mono_unity_install_unitytls_interface, (void* callbacks))
 
@@ -466,6 +495,14 @@ DO_API_OPTIONAL(void, mono_error_cleanup, (MonoError * error))
 DO_API_OPTIONAL(gint32, mono_error_ok, (MonoError * error))
 DO_API_OPTIONAL(unsigned short, mono_error_get_error_code, (MonoError * error))
 DO_API_OPTIONAL(const char*, mono_error_get_message, (MonoError * error))
+
+DO_API_OPTIONAL(void, mono_debugger_set_generate_debug_info, (gboolean enable))
+DO_API_OPTIONAL(gboolean, mono_debugger_get_generate_debug_info, ())
+DO_API_OPTIONAL(void, mono_debugger_disconnect, ())
+typedef void (*MonoDebuggerAttachFunc)(gboolean attached);
+DO_API_OPTIONAL(void, mono_debugger_install_attach_detach_callback, (MonoDebuggerAttachFunc func))
+typedef void (*UnityLogErrorCallback) (const char* message);
+DO_API(void, mono_unity_set_editor_logging_callback, (UnityLogErrorCallback callback))
 
 #undef DO_API
 #undef DO_API_NO_RETURN

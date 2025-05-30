@@ -414,7 +414,13 @@ int call_dotnet_method()
     return 0;
 }
 
-static MonoString* GetInfo(void)
+static void LogStringApi(MonoString* info)
+{
+    const char* str = mono_string_to_utf8(info);
+    std::cout << str << std::endl;
+    mono_free(str);
+}
+static MonoString* GetInfoApi(void)
 {
     return mono_string_new(mono_domain_get(), "Hello from mono !");
 }
@@ -490,28 +496,42 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
 
     mono_runtime_unhandled_exception_policy_set(MONO_UNHANDLED_POLICY_LEGACY);
 
+    mono_add_internal_call("Api::GetInfo", reinterpret_cast<void*>(GetInfoApi));
+    mono_add_internal_call("Api::LogString", reinterpret_cast<void*>(LogStringApi));
+
+}
+
+bool TestDotnetCore(const std::string& dataPath)
+{
     MonoAssembly* assembly;
 
-    assembly = mono_domain_assembly_open(domain, "./publish/MyApp.dll");
+    const char* dllName = "MyApp.dll";
+    const char* ns = "DotNetLib";
+    const char* className = "Lib";
+
+    MonoDomain* domain = mono_get_root_domain();
+    assembly = mono_domain_assembly_open(domain, (dataPath + "/" + dllName).c_str());
     if (!assembly) {
-        printf("mono: failed to open assembly MyApp.dll\n");
+        printf("mono: failed to open assembly %s\n", dllName);
         return false;
     }
 
-    mono_add_internal_call("DotNetLib.Lib::GetInfo", reinterpret_cast<void*>(GetInfo));
+    //If the dll uses dotnet core SDK, we can call Program.Main in the dll in embedded mode without terminating the process
+    const char* args_main[] = { dllName };
+    mono_jit_exec(domain, assembly, 1, args_main);
 
-    const char* argv2[] = { "./publish/MyApp.dll" };
-    mono_jit_exec(domain, assembly, 1, argv2);
+    int exitCode = mono_environment_exitcode_get();
+    printf("mono: Program.Main return %d\n", exitCode);
 
     MonoImage* image;
     image = mono_assembly_get_image(assembly);
     if (!image) {
-        printf("mono: failed to get image for MyApp.dll\n");
+        printf("mono: failed to get image for %s\n", dllName);
         return false;
     }
-    MonoClass* pClass = mono_class_from_name(image, "DotNetLib", "Lib");
+    MonoClass* pClass = mono_class_from_name(image, ns, className);
     if (!pClass) {
-        printf("mono: failed to get class for DotNetLib.Lib\n");
+        printf("mono: failed to get class for %s.%s\n", ns, className);
         return false;
     }
     MonoMethod* pMethod = FindMonoMethod(pClass, "HelloMono", -1, nullptr);
@@ -519,33 +539,112 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
         printf("mono: failed to get method for HelloMono\n");
         return false;
     }
-    const char* arg = "HostMono";
-    MonoObject* pObject = mono_runtime_invoke(pMethod, nullptr, (void**)&arg, nullptr);
+    int cmd = 0;
+    MonoString* pString = mono_string_new(domain, "HostMono");
+    MonoString* pRefString = mono_string_new(domain, "test test test");
+    void* addr = nullptr;
+    void* args[4];
+    args[0] = &cmd;
+    args[1] = pString;
+    args[2] = &pRefString;
+    args[3] = &addr;
+    MonoObject* pObject = mono_runtime_invoke(pMethod, nullptr, (void**)args, nullptr);
     if (!pObject) {
         printf("mono: failed to invoke method for HelloMono\n");
         return false;
     }
-    MonoString* pString = mono_object_to_string(pObject, nullptr);
-    if (!pString) {
-        printf("mono: failed to convert object to string\n");
-        return false;
-    }
-    const char* result = mono_string_to_utf8(pString);
-    printf("mono: result = %s\n", result);
+    const char* pStr = mono_string_to_utf8(pRefString);
+    std::string newArgVal = pStr;
+    mono_free(pStr);
+    int val = *reinterpret_cast<int*>(mono_object_unbox(pObject));
+    printf("mono: result = %d, %s\n", val, newArgVal.c_str());
     return true;
 }
 
-int main()
+bool TestDotnetFramework(const std::string& dataPath)
 {
-    std::cout << "Hello World!\n";
-    bool use_coreclr = false;
+    MonoAssembly* assembly;
+
+    const char* dllName = "CSharpShaderCompiler.dll";
+    const char* ns = "CSharpShaderCompiler";
+    const char* className = "Entry";
+
+    MonoDomain* domain = mono_get_root_domain();
+    assembly = mono_domain_assembly_open(domain, (dataPath + "/" + dllName).c_str());
+    if (!assembly) {
+        printf("mono: failed to open assembly %s\n", dllName);
+        return false;
+    }
+
+    MonoImage* image;
+    image = mono_assembly_get_image(assembly);
+    if (!image) {
+        printf("mono: failed to get image for %s\n", dllName);
+        return false;
+    }
+    MonoClass* pClass = mono_class_from_name(image, ns, className);
+    if (!pClass) {
+        printf("mono: failed to get class for %s.%s\n", ns, className);
+        return false;
+    }
+    MonoMethod* pMethod = FindMonoMethod(pClass, "Log", -1, nullptr);
+    if (!pMethod) {
+        printf("mono: failed to get method for Log\n");
+        return false;
+    }
+    auto* title = mono_string_new(domain, "HostMono");
+    auto* info = mono_string_new(domain, "test test test");
+    void* args[2];
+    args[0] = title;
+    args[1] = info;
+    mono_runtime_invoke(pMethod, nullptr, (void**)args, nullptr);
+    return true;
+}
+
+static const char* GetMonoClasslibsProfile()
+{
+#if PLATFORM_WIN
+    return "unityjit-win32";
+#elif PLATFORM_OSX
+    return "unityjit-macos";
+#elif PLATFORM_LINUX
+    return "unityjit-linux";
+#else
+    return "unityjit";
+#endif
+}
+
+int main(int argc, const char* argv[])
+{
+    std::cout << "HostCLR started.\n";
+
+    bool use_coreclr = argc > 1 ? _stricmp(argv[1], "coreclr") == 0 : false;
     if (use_coreclr) {
         load_hostfxr();
         call_dotnet_method();
     }
     else {
-        std::vector<std::string> paths{"./MonoBleedingEdge/bin", "./MonoBleedingEdge/lib"};
-        LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", "data", "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
+        bool testDotnetCore = false;
+        if (testDotnetCore) {
+            const char* dataPath = "./publish";
+            std::vector<std::string> paths{ dataPath,
+                "./MonoBleedingEdge/bin",
+                std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
+                "./MonoBleedingEdge/lib"
+            };
+            LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
+            TestDotnetCore(dataPath);
+        }
+        else {
+            const char* dataPath = "./CSharpShaderCompiler";
+            std::vector<std::string> paths{ dataPath,
+                "./MonoBleedingEdge/bin",
+                std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
+                "./MonoBleedingEdge/lib"
+            };
+            LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
+            TestDotnetFramework(dataPath);
+        }
         UnloadMono();
     }
 }

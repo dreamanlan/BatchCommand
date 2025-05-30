@@ -628,9 +628,9 @@ int main(int argc, const char* argv[])
     else {
         const char* dataPath = "./Managed";
         std::vector<std::string> paths{ dataPath,
-            "./MonoBleedingEdge/bin",
             std::string("./MonoBleedingEdge/lib/mono/") + GetMonoClasslibsProfile(),
-            "./MonoBleedingEdge/lib"
+            "./MonoBleedingEdge/lib",
+            "./MonoBleedingEdge/bin"
         };
         LoadAndInitializeMono(paths, "./MonoBleedingEdge/etc", dataPath, "./MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll", 0, nullptr);
 

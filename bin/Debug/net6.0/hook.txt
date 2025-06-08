@@ -164,17 +164,14 @@ hook(DbgScp_Set)
 		printf("DbgScp_Set enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
 		
 		@g_in_test = 1;
-		$i:int;
-		loop($i,1,20){
-			$mem:int = UnityAlloc(4096*1024,8,2,0);
-			WriteLog(format("prealloc:%llx\n", $mem));
-		};
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
 		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		printf("%s",$seg_str);
 		WriteLog($seg_str);
 		FlushLog();
+		
+		SetTimeScale(0.01);
 		@g_in_test = 0;
 		return 1;
 	};
@@ -192,13 +189,6 @@ hook(DbgScp_Get)
 		printf("DbgScp_Get enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
 		
 		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
-		$i:int;
-		loop($i,0,100){
-			$mem:int = UnityAlloc(64,16,153,0);
-			WriteLog(format("alloc addr:%llx size:64\n",$mem));
-			UnityDealloc($mem,153);
-			WriteLog(format("dealloc addr:%llx size:64\n",$mem));
-		};
 		/*
 		loop($i,1,165){
 			CheckMemory($i);

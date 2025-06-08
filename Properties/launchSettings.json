@@ -2,7 +2,7 @@
   "profiles": {
     "adb_cfg": {
       "commandName": "Executable",
-      "executablePath": "F:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
+      "executablePath": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
       "commandLineArgs": "-i",
       "nativeDebugging": true
     }

@@ -841,6 +841,8 @@ enum class ExternApiEnum
     ThreadYield,
     SetWatchPoint,
     GetWatchPoint,
+    SetTimeScale,
+    GetTimeScale,
     Num
 };
 
@@ -1231,6 +1233,16 @@ struct ExternApi
             DebugScript::SetVarInt(args[4].IsGlobal, args[4].Index, tid, stackBase, intLocals, intGlobals);
         }
     }
+    static inline void SetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        float timeScale = DebugScript::GetVarFloat(args[0].IsGlobal, args[0].Index, stackBase, fltLocals, fltGlobals);
+        //GetTimeManager().SetTimeScale(timeScale);
+    }
+    static inline void GetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        float timeScale = 0;//GetTimeManager().GetTimeScale();
+        DebugScript::SetVarFloat(retVal.IsGlobal, retVal.Index, timeScale, stackBase, fltLocals, fltGlobals);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -1331,6 +1343,12 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetWatchPoint:
         ExternApi::GetWatchPoint(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::SetTimeScale:
+        ExternApi::SetTimeScale(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetTimeScale:
+        ExternApi::GetTimeScale(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

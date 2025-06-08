@@ -4,7 +4,13 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
+public static class Program
+{
+    public static void Main()
+    {
+        Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
+    }
+}
 
 public static class Api
 {

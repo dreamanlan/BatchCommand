@@ -278,8 +278,33 @@ hook("ExecuteCommandBufferRenderCommand")
 {
 	onenter{
 		$cmd:int = ptrget(argv(0),4);
-		//printf("ExecuteCommandBufferRenderCommand:%d\n", $cmd);
+		$cmdName:string = ptrget(argv(1),8);
+		printf("ExecuteCommandBufferRenderCommand:%d %s\n", $cmd, $cmdName);
 		//dumpstack("#ExecuteCommandBufferRenderCommand");
+	};
+};
+hook("GfxDeviceWorker::RunCommand")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),4);
+		$status:int = ptrget(argv(1),4);
+		$cmd:int = ptrget(argv(2),4);
+		$cmdName:string = ptrget(argv(3),8);
+		
+		printf("GfxDeviceWorker::RunCommand:%d %s\n", $cmd, $cmdName);
+		//dumpstack("#GfxDeviceWorker::RunCommand");
+	};
+};
+hook("TaskExecutor::HandleCommandStream")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$cmdBuf:int = ptrget(argv(1),8);
+		$cmdType:int = ptrget(argv(2),4);
+		$cmdName:string = ptrget(argv(3),8);
+		
+		printf("TaskExecutor::HandleCommandStream cmd:%d %s\n", $cmdType, $cmdName);
+		//dumpstack("#TaskExecutor::HandleCommandStream");
 	};
 };
 hook("HookGfxDeviceClient")
@@ -368,7 +393,7 @@ hook("VKGpuProgram::Create")
 				
 		//assert(0);
 		//SetTimeScale(0.0001);
-		printf("TimeScale:%x time:%x float:%x", asint(GetTimeScale()), asint(floattime()), asint(0.12345));
+		printf("TimeScale:%f time:%f float:%f", GetTimeScale(), floattime(), 0.12345);
 		
 		return 0;
 	};
@@ -1128,23 +1153,12 @@ hook("CommandBuffer::ClearColor")
 		$rangeCount:int = ptrget(argv(4),4);
 		$ranges:int = ptrget(argv(5),8);
 				
-		printf("CommandBuffer::ClearColor this:%llx img:%llx layout:%u colors:%llx color:0x%x 0x%x 0x%x 0x%x rangeCount:%u ranges:%llx\n", $this, $image, $imageLayout, $colors, $color1, $color2, $color3, $color4, $rangeCount, $ranges);
+		printf("CommandBuffer::ClearColor this:%llx img:%llx layout:%u colors:%llx color:%f %f %f %f rangeCount:%u ranges:%llx\n", $this, $image, $imageLayout, $colors, $color1, $color2, $color3, $color4, $rangeCount, $ranges);
 		
 		//dumpstack("#CommandBuffer::ClearColor");
-		assert(0);
+		//assert(0);
 		
-		ptrset(argv(3),8,0);
-		ptrset(argv(3)+8,8,0);
-	};
-};
-hook("TaskExecutor::HandleCommandStream")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		$cmdBuf:string = ptrget(argv(1),8);
-		$cmdType:int = ptrget(argv(2),4);
-		
-		printf("TaskExecutor::HandleCommandStream cmd:%d\n", $cmdType);
-		//dumpstack("#TaskExecutor::HandleCommandStream");
+		//ptrset(argv(3),8,0);
+		//ptrset(argv(3)+8,8,0);
 	};
 };

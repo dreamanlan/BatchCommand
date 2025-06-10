@@ -4,6 +4,7 @@
 @g_in_test : int = 0;
 @g_enable_watch_point : int = 0;
 @g_enable_mem_log : int = 0;
+@g_run_startup : int = 0;
 
 //======test code begin======
 struct(TestStru3)
@@ -65,6 +66,9 @@ hook(TestMacro1)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
+		
+		SetTimeScale(0.0001);
+		printf("TimeScale:%f time:%f",GetTimeScale(), floattime());
 		
 		ptrset(argv(0),4,1);
 		return 1;
@@ -164,6 +168,7 @@ hook(DbgScp_Set)
 		printf("DbgScp_Set enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
 		
 		@g_in_test = 1;
+
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
 		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
@@ -171,7 +176,6 @@ hook(DbgScp_Set)
 		WriteLog($seg_str);
 		FlushLog();
 		
-		SetTimeScale(0.01);
 		@g_in_test = 0;
 		return 1;
 	};
@@ -202,6 +206,154 @@ hook(DbgScp_Get)
 	};
 };
 
+hook("MonoBehaviour::CallAwake")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$className:string = ptrget(argv(1),8);
+		$fullClassName:string = ptrget(argv(2),8);
+		$name:string = ptrget(argv(3),8);
+		
+		$str:string = format("MonoBehaviour::CallAwake enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
+		printf("%s",$str);
+		if($className=="MainCameraTag"){
+			WriteLog($str);
+			dumpstack("#MonoBehaviour::CallAwake");
+			LogStack("#MonoBehaviour::CallAwake");
+			
+			if (@g_run_startup == 0) {
+				@g_run_startup = 1;
+				CallCSharp("Assembly-CSharp", "", "MoreFunTechStartup", "RunStartup", 0);
+			};
+		};
+	};
+	onexit{
+		$this:int = ptrget(argv(0),8);
+		$className:string = ptrget(argv(1),8);
+		$fullClassName:string = ptrget(argv(2),8);
+		$name:string = ptrget(argv(3),8);
+		
+		$str:string = format("MonoBehaviour::CallAwake exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
+		printf("%s",$str);
+		if($className=="MainCameraTag"){
+			WriteLog($str);
+		};
+	};
+};
+hook("MonoBehaviour::Start")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$className:string = ptrget(argv(1),8);
+		$fullClassName:string = ptrget(argv(2),8);
+		$name:string = ptrget(argv(3),8);
+		
+		$str:string = format("MonoBehaviour::Start enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
+		printf("%s",$str);
+		if($className=="MainCameraTag"){
+			WriteLog($str);
+			dumpstack("#MonoBehaviour::Start");
+			LogStack("#MonoBehaviour::Start");
+			
+			if (@g_run_startup == 0) {
+				@g_run_startup = 1;
+				CallCSharp("Assembly-CSharp", "", "MoreFunTechStartup", "RunStartup", 0);
+			};
+		};
+	};
+	onexit{
+		$this:int = ptrget(argv(0),8);
+		$className:string = ptrget(argv(1),8);
+		$fullClassName:string = ptrget(argv(2),8);
+		$name:string = ptrget(argv(3),8);
+		
+		$str:string = format("MonoBehaviour::Start exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
+		printf("%s",$str);		
+		if($className=="MainCameraTag"){
+			WriteLog($str);
+		};
+	};
+};
+hook("ExecuteCommandBufferRenderCommand")
+{
+	onenter{
+		$cmd:int = ptrget(argv(0),4);
+		//printf("ExecuteCommandBufferRenderCommand:%d\n", $cmd);
+		//dumpstack("#ExecuteCommandBufferRenderCommand");
+	};
+};
+hook("HookGfxDeviceClient")
+{
+	onenter{
+		$tag:string = ptrget(argv(0),8);
+		printf("HookGfxDeviceClient:%s\n", $tag);
+		//dumpstack("#"+$tag);
+	};
+};
+hook("HookGfxDeviceVK")
+{
+	onenter{
+		$tag:string = ptrget(argv(0),8);
+		$shader:string = ptrget(argv(1),8);
+		printf("HookGfxDeviceVK:%s shader:%s\n", $tag, $shader);
+		//dumpstack("#"+$tag);
+	};
+};
+hook("HookVkCommandBuffer")
+{
+	onenter{
+		$tag:string = ptrget(argv(0),8);
+		printf("HookVkCommandBuffer:%s\n", $tag);
+		//dumpstack("#"+$tag);
+	};
+};
+
+hook("GfxDeviceClient::CreateGpuProgram")
+{
+	onenter{
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
+		$d:int = ptrget(argv(3),8);
+		$e:string = ptrget(argv(4),8);
+		
+		$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
+		printf("%s",$str);
+		WriteLog($str);
+		dumpstack("#GfxDeviceClient::CreateGpuProgram");
+		LogStack("#GfxDeviceClient::CreateGpuProgram");
+		
+		return 0;
+	};
+	onexit{
+		$str:string = format("GfxDeviceClient::CreateGpuProgram exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("GfxDeviceClient::CreateComputeProgram")
+{
+	onenter{
+		$a:int = ptrget(argv(0),8);
+		$b:int = ptrget(argv(1),8);
+		$c:int = ptrget(argv(2),8);
+		$d:string = ptrget(argv(3),8);
+		
+		$str:string = format("GfxDeviceClient::CreateComputeProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
+		printf("%s",$str);
+		WriteLog($str);
+		dumpstack("#GfxDeviceClient::CreateComputeProgram");
+		LogStack("#GfxDeviceClient::CreateComputeProgram");
+		
+		return 0;
+	};
+	onexit{
+		$str:string = format("GfxDeviceClient::CreateComputeProgram exit time:%lld thread:%d\n",time(),GetTID());
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+
 hook("VKGpuProgram::Create")
 {
 	onenter{
@@ -213,6 +365,10 @@ hook("VKGpuProgram::Create")
 		$str:string = format("VKGpuProgram::Create enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
 		printf("%s",$str);
 		WriteLog($str);
+				
+		//assert(0);
+		//SetTimeScale(0.0001);
+		printf("TimeScale:%x time:%x float:%x", asint(GetTimeScale()), asint(floattime()), asint(0.12345));
 		
 		return 0;
 	};
@@ -375,141 +531,6 @@ hook("PipelineStateCollection::PrecachePSOsProgressively")
 		$str:string = format("PipelineStateCollection::PrecachePSOsProgressively exit time:%lld thread:%d ret:%d\n",time(),GetTID(),$r);
 		printf("%s",$str);
 		WriteLog($str);
-	};
-};
-hook("VKAsyncPipelineCompiler")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		$pso:int = ptrget(argv(1),8);
-		
-		$str:string = format("VKAsyncPipelineCompiler time:%lld thread:%d this:%llx pso:%llx\n",time(),GetTID(),$this,$pso);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCompiler::Create")
-{
-	onenter{
-		$this:int = ptrget(argv(1),8);
-		
-		$str:string = format("VKAsyncPipelineCompiler::Create enter time:%lld thread:%d this:%llx main thread:%d\n",time(),GetTID(),$this,IsMainThread());
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-		$ret:int = ptrget(argv(0),1);
-		$this:int = ptrget(argv(1),8);
-		
-		$str:string = format("VKAsyncPipelineCompiler::Create exit time:%lld thread:%d this:%llx ret:%d main thread:%d\n",time(),GetTID(),$this,$ret,IsMainThread());
-		printf("%s",$str);
-		WriteLog($str);
-	};
-};
-hook("CreatePipelineJob")
-{
-	onenter{
-		$jobData:int = ptrget(argv(0),8);
-		
-		$str:string = format("CreatePipelineJob time:%lld thread:%d jobData:%llx\n",time(),GetTID(),$jobData);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCompiler::OnPipelineCreated")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		$scheduler:int = ptrget(argv(4),8);
-		
-		$str:string = format("VKAsyncPipelineCompiler::OnPipelineCreated time:%lld thread:%d this:%llx scheduler:%llx\n",time(),GetTID(),$this,$scheduler);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCreationScheduler")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		
-		$str:string = format("VKAsyncPipelineCreationScheduler time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("~VKAsyncPipelineCreationScheduler")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		
-		$str:string = format("~VKAsyncPipelineCreationScheduler time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCreationScheduler::EnqueueJob")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		$jobData:int = ptrget(argv(1),8);
-		
-		$str:string = format("VKAsyncPipelineCreationScheduler::EnqueueJob time:%lld thread:%d this:%llx jobData:%llx\n",time(),GetTID(),$this,$jobData);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCreationScheduler::ProcessNextJob")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		
-		$str:string = format("VKAsyncPipelineCreationScheduler::ProcessNextJob time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
-	};
-};
-hook("VKAsyncPipelineCreationScheduler::OnJobCompleted")
-{
-	onenter{
-		$this:int = ptrget(argv(0),8);
-		
-		$str:string = format("VKAsyncPipelineCreationScheduler::OnJobCompleted time:%lld thread:%d this:%llx\n",time(),GetTID(),$this);
-		printf("%s",$str);
-		WriteLog($str);
-		
-		return 0;
-	};
-	onexit{
 	};
 };
 hook("vk::MemoryAllocator::Allocate")
@@ -1016,5 +1037,114 @@ hook("CheckVulkanSupportImpl")
 		$devType:int = ptrget(argv(3)+16,4);
 		$sdkInt:int = ptrget(argv(4),4);
 		printf("end CheckVulkanSupportImpl result:%d gpu:%s(%x) api:0x%x driver:0x%x vendor:0x%x device:0x%x type:%u sdk:%u", $result, $gpu, $gpuStr, $api, $driver, $vendor, $devId, $devType, $sdkInt);
+	};
+};
+hook("CommandBuffer::BeginRenderPass")
+{
+	onenter{
+		printf("CommandBuffer::BeginRenderPass\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::EndRenderPass")
+{
+	onenter{
+		printf("CommandBuffer::EndRenderPass\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::DrawIndexed")
+{
+	onenter{
+		printf("CommandBuffer::DrawIndexed\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::Draw")
+{
+	onenter{
+		printf("CommandBuffer::Draw\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::DrawIndexedIndirect")
+{
+	onenter{
+		printf("CommandBuffer::DrawIndexedIndirect\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::DrawIndirect")
+{
+	onenter{
+		printf("CommandBuffer::DrawIndirect\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::Dispatch")
+{
+	onenter{
+		printf("CommandBuffer::Dispatch\n");
+		//assert(0);
+	};
+};
+hook("CommandBuffer::DispatchIndirect")
+{
+	onenter{
+		printf("CommandBuffer::DispatchIndirect\n");
+		//assert(0);
+	};
+};
+hook("GfxDeviceClient::Clear")
+{
+	onenter{
+		//assert(0);
+	};
+};
+hook("GfxDeviceClient::ClearMRT")
+{
+	onenter{
+		//assert(0);
+	};
+};
+hook("CommandBuffer::ClearDepthStencil")
+{
+	onenter{
+		//assert(0);
+	};
+};
+hook("CommandBuffer::ClearColor")
+{
+	onenter{
+		//pThis, image, imageLayout, color, rangeCount, ranges
+		$this:int = ptrget(argv(0),8);
+		$image:int = ptrget(argv(1),8);
+		$imageLayout:int = ptrget(argv(2),4);
+		$colors:int = argv(3);
+		$color1:int = ptrget(argv(3),4);
+		$color2:int = ptrget(argv(3)+4,4);
+		$color3:int = ptrget(argv(3)+8,4);
+		$color4:int = ptrget(argv(3)+12,4);
+		$rangeCount:int = ptrget(argv(4),4);
+		$ranges:int = ptrget(argv(5),8);
+				
+		printf("CommandBuffer::ClearColor this:%llx img:%llx layout:%u colors:%llx color:0x%x 0x%x 0x%x 0x%x rangeCount:%u ranges:%llx\n", $this, $image, $imageLayout, $colors, $color1, $color2, $color3, $color4, $rangeCount, $ranges);
+		
+		//dumpstack("#CommandBuffer::ClearColor");
+		assert(0);
+		
+		ptrset(argv(3),8,0);
+		ptrset(argv(3)+8,8,0);
+	};
+};
+hook("TaskExecutor::HandleCommandStream")
+{
+	onenter{
+		$this:int = ptrget(argv(0),8);
+		$cmdBuf:string = ptrget(argv(1),8);
+		$cmdType:int = ptrget(argv(2),4);
+		
+		printf("TaskExecutor::HandleCommandStream cmd:%d\n", $cmdType);
+		//dumpstack("#TaskExecutor::HandleCommandStream");
 	};
 };

@@ -82,3 +82,6 @@ defexternapi(GetWatchPoint,int,noparams,[int,int,int,int]){
 };
 defexternapi(SetTimeScale,void,noparams,[float]);
 defexternapi(GetTimeScale,float,noparams,[]);
+defexternapi(CallCSharp,int,printf,[string,string,string,string]){
+	minparamnum(4);
+};

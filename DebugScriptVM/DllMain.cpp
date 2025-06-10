@@ -843,6 +843,7 @@ enum class ExternApiEnum
     GetWatchPoint,
     SetTimeScale,
     GetTimeScale,
+    CallCSharp,
     Num
 };
 
@@ -1240,8 +1241,39 @@ struct ExternApi
     }
     static inline void GetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        float timeScale = 0;//GetTimeManager().GetTimeScale();
+        float timeScale = 0.12345;//GetTimeManager().GetTimeScale();
         DebugScript::SetVarFloat(retVal.IsGlobal, retVal.Index, timeScale, stackBase, fltLocals, fltGlobals);
+    }
+    static inline void CallCSharp(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        if (argNum >= 4) {
+            const std::string& assembly = DebugScript::GetVarString(args[0].IsGlobal, args[0].Index, stackBase, strLocals, strGlobals);
+            const std::string& _namespace = DebugScript::GetVarString(args[1].IsGlobal, args[1].Index, stackBase, strLocals, strGlobals);
+            const std::string& _class = DebugScript::GetVarString(args[2].IsGlobal, args[2].Index, stackBase, strLocals, strGlobals);
+            const std::string& name = DebugScript::GetVarString(args[3].IsGlobal, args[3].Index, stackBase, strLocals, strGlobals);
+            //ScriptingInvocation invocation(assembly.c_str(), _namespace.c_str(), _class.c_str(), name.c_str());
+            for (int ix = 4; ix < argNum; ++ix) {
+                auto&& arg = args[ix];
+                switch (arg.Type) {
+                case DebugScript::TypeEnum::Int: {
+                    int64_t val = DebugScript::GetVarInt(arg.IsGlobal, arg.Index, stackBase, intLocals, intGlobals);
+                    //invocation.AddInt64(val);
+                }break;
+                case DebugScript::TypeEnum::Float: {
+                    double val = DebugScript::GetVarFloat(arg.IsGlobal, arg.Index, stackBase, fltLocals, fltGlobals);
+                    //invocation.AddDouble(val);
+                }break;
+                case DebugScript::TypeEnum::String: {
+                    const std::string& val = DebugScript::GetVarString(arg.IsGlobal, arg.Index, stackBase, strLocals, strGlobals);
+                    //invocation.AddString(val.c_str());
+                }break;
+                default:
+                    break;
+                }
+            }
+            //ScriptingObjectPtr ret = invocation.Invoke();
+            //DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, ret ? 1 : 0, stackBase, intLocals, intGlobals);
+        }
     }
 };
 
@@ -1349,6 +1381,9 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetTimeScale:
         ExternApi::GetTimeScale(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::CallCSharp:
+        ExternApi::CallCSharp(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

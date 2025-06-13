@@ -459,6 +459,8 @@ static std::string BuildMonoPath(const std::vector<std::string>& monoPaths)
     return monoPath;
 }
 
+static MonoDomain* g_MonoDomain = nullptr;
+
 bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std::string& monoConfigPath, const std::string& dataPath, const std::string& monoDll, int argc, const char** argv)
 {
     if (!LoadMono(monoDll))
@@ -487,8 +489,7 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
     mono_unity_runtime_set_main_args(argc, argv);
     mono_unity_set_data_dir(dataPath.c_str());
 
-    MonoDomain* domain;
-    domain = mono_jit_init_version("mymono", "v4.0.30319");
+    g_MonoDomain = mono_jit_init_version("mymono", "v4.0.30319");
 
     mono_config_parse(nullptr);
 
@@ -501,6 +502,26 @@ bool LoadAndInitializeMono(const std::vector<std::string>& monoPaths, const std:
 
 }
 
+struct MonoAutoAttachDetach
+{
+    MonoAutoAttachDetach() : m_Thread(nullptr)
+    {
+        m_NeedAttached = mono_domain_get() == nullptr;
+        if (m_NeedAttached) {
+            m_Thread = mono_thread_attach(g_MonoDomain);
+        }
+    }
+    ~MonoAutoAttachDetach()
+    {
+        if (m_NeedAttached && m_Thread) {
+            mono_thread_detach(m_Thread);
+        }
+    }
+private:
+    bool m_NeedAttached;
+    MonoThread* m_Thread;
+};
+
 bool TestDotnetCore(const std::string& dataPath)
 {
     MonoAssembly* assembly;
@@ -509,7 +530,7 @@ bool TestDotnetCore(const std::string& dataPath)
     const char* ns = "DotNetLib";
     const char* className = "Lib";
 
-    MonoDomain* domain = mono_get_root_domain();
+    MonoDomain* domain = g_MonoDomain;
     assembly = mono_domain_assembly_open(domain, (dataPath + "/" + dllName).c_str());
     if (!assembly) {
         printf("mono: failed to open assembly %s\n", dllName);
@@ -569,7 +590,7 @@ bool TestDotnetFramework(const std::string& dataPath)
     const char* ns = "CSharpShaderCompiler";
     const char* className = "Entry";
 
-    MonoDomain* domain = mono_get_root_domain();
+    MonoDomain* domain = g_MonoDomain;
     assembly = mono_domain_assembly_open(domain, (dataPath + "/" + dllName).c_str());
     if (!assembly) {
         printf("mono: failed to open assembly %s\n", dllName);

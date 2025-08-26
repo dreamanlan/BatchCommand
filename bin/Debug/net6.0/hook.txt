@@ -1,10 +1,10 @@
 
 @g_dir_chged : int = 0;
-@g_last_time : int = 0;
-@g_in_test : int = 0;
 @g_enable_watch_point : int = 0;
 @g_enable_mem_log : int = 0;
 @g_run_startup : int = 0;
+@g_enable_unity_obj_mem_stack_log : int = 0;
+@g_enable_gcalloc_log : int = 0;
 
 //======test code begin======
 struct(TestStru3)
@@ -69,6 +69,8 @@ hook(TestMacro1)
 		
 		SetTimeScale(0.0001);
 		printf("TimeScale:%f time:%f",GetTimeScale(), floattime());
+		WriteLog("test test test");
+		FlushLog();
 		
 		ptrset(argv(0),4,1);
 		return 1;
@@ -167,8 +169,6 @@ hook(DbgScp_Set)
 		$c:int = ptrget(argv(3),8);
 		printf("DbgScp_Set enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
 		
-		@g_in_test = 1;
-
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
 		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
@@ -176,7 +176,13 @@ hook(DbgScp_Set)
 		WriteLog($seg_str);
 		FlushLog();
 		
-		@g_in_test = 0;
+		if($cmd==1){
+			@g_enable_unity_obj_mem_stack_log = 1;
+		}
+		elif($cmd==2){
+			@g_enable_gcalloc_log = 1;
+		};
+		
 		return 1;
 	};
 	onexit{
@@ -279,7 +285,7 @@ hook("ExecuteCommandBufferRenderCommand")
 	onenter{
 		$cmd:int = ptrget(argv(0),4);
 		$cmdName:string = ptrget(argv(1),8);
-		printf("ExecuteCommandBufferRenderCommand:%d %s\n", $cmd, $cmdName);
+		//printf("ExecuteCommandBufferRenderCommand:%d %s\n", $cmd, $cmdName);
 		//dumpstack("#ExecuteCommandBufferRenderCommand");
 	};
 };
@@ -291,7 +297,7 @@ hook("GfxDeviceWorker::RunCommand")
 		$cmd:int = ptrget(argv(2),4);
 		$cmdName:string = ptrget(argv(3),8);
 		
-		printf("GfxDeviceWorker::RunCommand:%d %s\n", $cmd, $cmdName);
+		//printf("GfxDeviceWorker::RunCommand:%d %s\n", $cmd, $cmdName);
 		//dumpstack("#GfxDeviceWorker::RunCommand");
 	};
 };
@@ -303,7 +309,7 @@ hook("TaskExecutor::HandleCommandStream")
 		$cmdType:int = ptrget(argv(2),4);
 		$cmdName:string = ptrget(argv(3),8);
 		
-		printf("TaskExecutor::HandleCommandStream cmd:%d %s\n", $cmdType, $cmdName);
+		//printf("TaskExecutor::HandleCommandStream cmd:%d %s\n", $cmdType, $cmdName);
 		//dumpstack("#TaskExecutor::HandleCommandStream");
 	};
 };
@@ -311,7 +317,7 @@ hook("HookGfxDeviceClient")
 {
 	onenter{
 		$tag:string = ptrget(argv(0),8);
-		printf("HookGfxDeviceClient:%s\n", $tag);
+		//printf("HookGfxDeviceClient:%s\n", $tag);
 		//dumpstack("#"+$tag);
 	};
 };
@@ -320,7 +326,7 @@ hook("HookGfxDeviceVK")
 	onenter{
 		$tag:string = ptrget(argv(0),8);
 		$shader:string = ptrget(argv(1),8);
-		printf("HookGfxDeviceVK:%s shader:%s\n", $tag, $shader);
+		//printf("HookGfxDeviceVK:%s shader:%s\n", $tag, $shader);
 		//dumpstack("#"+$tag);
 	};
 };
@@ -328,7 +334,7 @@ hook("HookVkCommandBuffer")
 {
 	onenter{
 		$tag:string = ptrget(argv(0),8);
-		printf("HookVkCommandBuffer:%s\n", $tag);
+		//printf("HookVkCommandBuffer:%s\n", $tag);
 		//dumpstack("#"+$tag);
 	};
 };
@@ -345,8 +351,8 @@ hook("GfxDeviceClient::CreateGpuProgram")
 		$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
 		printf("%s",$str);
 		WriteLog($str);
-		dumpstack("#GfxDeviceClient::CreateGpuProgram");
-		LogStack("#GfxDeviceClient::CreateGpuProgram");
+		//dumpstack("#GfxDeviceClient::CreateGpuProgram");
+		//LogStack("#GfxDeviceClient::CreateGpuProgram");
 		
 		return 0;
 	};
@@ -367,8 +373,8 @@ hook("GfxDeviceClient::CreateComputeProgram")
 		$str:string = format("GfxDeviceClient::CreateComputeProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
 		printf("%s",$str);
 		WriteLog($str);
-		dumpstack("#GfxDeviceClient::CreateComputeProgram");
-		LogStack("#GfxDeviceClient::CreateComputeProgram");
+		//dumpstack("#GfxDeviceClient::CreateComputeProgram");
+		//LogStack("#GfxDeviceClient::CreateComputeProgram");
 		
 		return 0;
 	};
@@ -578,52 +584,6 @@ hook("vk::MemoryAllocator::Free")
 	onenter{
 		$addr:int = ptrget(argv(2),8);
 		//printf("vk::FreeMemory: %llx\n", $addr);
-	};
-	onexit{
-	};
-};
-hook("vk::DataBuffer::CreateResource")
-{
-	onenter{
-		
-	};
-	onexit{
-		$r:int = ptrget(argv(0),8);
-		if($r==0){
-			FlushLog();
-			assert(0);
-		};
-	};
-};
-hook("vk::DataBuffer::AccessBuffer")
-{
-	onenter{
-		
-	};
-	onexit{
-		$r:int = ptrget(argv(0),8);
-		if($r==0){
-			FlushLog();
-			assert(0);
-		};
-	};
-};
-hook("UpdateMemoryBudget")
-{
-	onenter{
-		$curTime:int = time();
-		if($curTime - @g_last_time > 10000000){
-			@g_last_time = $curTime;
-			
-			$heapIndex:int = ptrget(argv(1),4);
-			$heapBudget:int = ptrget(argv(2),8);
-			$heapUsage:int = ptrget(argv(3),8);
-			$minHeadroomBytesEnable:int = ptrget(argv(4),8);
-			$minHeadroomBytesDisable:int = ptrget(argv(5),8);
-			$ix:int = ptrget(argv(6),4);
-			$ct:int = ptrget(argv(7),4);
-			printf("UpdateMemoryBudget: %d %d %lld %lld\n", $ix, $heapIndex, $heapBudget, $heapUsage);
-		};
 	};
 	onexit{
 	};
@@ -1030,22 +990,6 @@ hook("DynamicHeapAllocator::Deallocate")
 		//};
 	};
 };
-hook("ScriptableRenderContext::HandleBeginRenderPass")
-{
-	onenter{
-		//$needFix:int = ptrget(argv(0),1);
-		$this:int = ptrget(argv(1),8);
-		$currCmdIdx:int = ptrget(argv(2),4);
-		$rpd:int = ptrget(argv(3),8);
-		$attCount:int = ptrget(argv(4),4);
-		$depthStencilAttachment:int = ptrget(argv(5),4);
-		
-		//printf("ScriptableRenderContext::HandleBeginRenderPass %8.8x att count:%d depth att:%d", $this, $attCount, $depthStencilAttachment);
-		//dumpstack("ScriptableRenderContext::HandleBeginRenderPass");
-		//assert(0);
-		//ptrset(argv(0),1,1);
-	};
-};
 hook("CheckVulkanSupportImpl")
 {
 	onenter{
@@ -1067,56 +1011,56 @@ hook("CheckVulkanSupportImpl")
 hook("CommandBuffer::BeginRenderPass")
 {
 	onenter{
-		printf("CommandBuffer::BeginRenderPass\n");
+		//printf("CommandBuffer::BeginRenderPass\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::EndRenderPass")
 {
 	onenter{
-		printf("CommandBuffer::EndRenderPass\n");
+		//printf("CommandBuffer::EndRenderPass\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::DrawIndexed")
 {
 	onenter{
-		printf("CommandBuffer::DrawIndexed\n");
+		//printf("CommandBuffer::DrawIndexed\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::Draw")
 {
 	onenter{
-		printf("CommandBuffer::Draw\n");
+		//printf("CommandBuffer::Draw\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::DrawIndexedIndirect")
 {
 	onenter{
-		printf("CommandBuffer::DrawIndexedIndirect\n");
+		//printf("CommandBuffer::DrawIndexedIndirect\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::DrawIndirect")
 {
 	onenter{
-		printf("CommandBuffer::DrawIndirect\n");
+		//printf("CommandBuffer::DrawIndirect\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::Dispatch")
 {
 	onenter{
-		printf("CommandBuffer::Dispatch\n");
+		//printf("CommandBuffer::Dispatch\n");
 		//assert(0);
 	};
 };
 hook("CommandBuffer::DispatchIndirect")
 {
 	onenter{
-		printf("CommandBuffer::DispatchIndirect\n");
+		//printf("CommandBuffer::DispatchIndirect\n");
 		//assert(0);
 	};
 };
@@ -1160,5 +1104,157 @@ hook("CommandBuffer::ClearColor")
 		
 		//ptrset(argv(3),8,0);
 		//ptrset(argv(3)+8,8,0);
+	};
+};
+hook("Object::GetRuntimeMemorySize")
+{
+	onexit{
+		$result:int = ptrget(argv(0),8);
+		$objId:int = ptrget(argv(1),4);
+		$labelId:int = ptrget(argv(2),4);
+		$rootIndex:int = ptrget(argv(3),4);
+		$salt:int = ptrget(argv(4),4);
+		
+		//$str:string = format("GetRuntimeMemorySize result:%lld objid:%d label:%d root_index:%d salt:%d\n", $result, $objId, $labelId, $rootIndex, $salt);
+		//printf("%s",$str);
+		//WriteLog($str);
+	};
+};
+hook("AllocationRootReference::AddReference")
+{
+	onenter{
+		$areaName:string = ptrget(argv(0),8);
+		$objName:string = ptrget(argv(1),8);
+		$rootIndex:int = ptrget(argv(2),4);
+		$salt:int = ptrget(argv(3),4);
+		$accumulatedSize:int = ptrget(argv(4),8);
+		$size:int = ptrget(argv(5),8);
+		$labelId:int = ptrget(argv(6),4);
+		$line:int = ptrget(argv(7),4);
+		$file:string = ptrget(argv(8),8);
+		
+		//$str:string = format("AllocationRootReference::AddReference area:%s name:%s root_index:%d salt:%d accumulatedSize:%lld size:%lld label:%d line:%d file:%s\n", $areaName, $objName, $rootIndex, $salt, $accumulatedSize, $size, $labelId, $line, $file);
+		//printf("%s",$str);
+		//WriteLog($str);
+		
+		if(@g_enable_unity_obj_mem_stack_log){
+			LogStack("#AllocationRootReference::AddReference");
+		};
+	};
+};
+hook("AllocationRootReference::RemoveReference")
+{
+	onenter{
+		$areaName:string = ptrget(argv(0),8);
+		$objName:string = ptrget(argv(1),8);
+		$rootIndex:int = ptrget(argv(2),4);
+		$salt:int = ptrget(argv(3),4);
+		$accumulatedSize:int = ptrget(argv(4),8);
+		$size:int = ptrget(argv(5),8);
+		$labelId:int = ptrget(argv(6),4);
+		
+		//$str:string = format("AllocationRootReference::RemoveReference area:%s name:%s root_index:%d salt:%d accumulatedSize:%lld size:%lld label:%d\n", $areaName, $objName, $rootIndex, $salt, $accumulatedSize, $size, $labelId);
+		//printf("%s",$str);
+		//WriteLog($str);
+	};
+};
+hook("sample_allocation")
+{
+	onenter{
+		$objSize:int = ptrget(argv(0),4);
+		$usedHeap:int = ptrget(argv(1),8);
+		$heapSize:int = ptrget(argv(2),8);
+		$className:string = ptrget(argv(3),8);
+		$objStr:string = ptrget(argv(4),8);
+		$objStrLen:int = ptrget(argv(5),8);
+		
+		if(@g_enable_gcalloc_log){
+			$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			printf("%s",$str);
+			WriteLog($str);
+		}
+		else{
+			//$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			//printf("%s",$str);
+			//WriteLog($str);
+		};
+	};
+};
+hook("gc_resize_event")
+{
+	onenter{
+		$newSize:int = ptrget(argv(0),8);
+		$usedHeap:int = ptrget(argv(1),8);
+		$heapSize:int = ptrget(argv(2),8);
+		
+		if(@g_enable_gcalloc_log){
+			$str:string = format("gc_resize_event new_size:%lld used_heap:%lld heap_size:%lld\n", $newSize, $usedHeap, $heapSize);
+			printf("%s",$str);
+			WriteLog($str);
+		}
+		else{
+			$str:string = format("gc_resize_event new_size:%d used_heap:%lld heap_size:%lld\n", $newSize, $usedHeap, $heapSize);
+			printf("%s",$str);
+			$r:int = WriteLog($str);
+			printf("WriteLog:%d\n",$r);
+		};
+	};
+};
+hook("Mesh::UploadMeshData")
+{
+	onenter{
+		//$forceUnload:int = ptrget(argv(0),1);
+		$markNoLongerReadable:int = ptrget(argv(1),1);
+		$isReadable:int = ptrget(argv(2),1);
+		$name:string = ptrget(argv(3),8);
+		
+		ptrset(argv(0), 1, 1);
+				
+		$str:string = format("Mesh::UploadMeshData markNoLongerReadable:%d isReadable:%d name:%s\n", $markNoLongerReadable, $isReadable, $name);
+		printf("%s",$str);
+		$r:int = WriteLog($str);
+		printf("WriteLog:%d\n",$r);
+		
+		if(!$isReadable){
+			dumpstack("#Mesh::UploadMeshData");
+			LogStack("#Mesh::UploadMeshData");
+		};
+		
+		if($name=="fengBaoBao_9008_low_skin"){
+			assert(0);
+		};
+	};
+};
+hook("VertexData::HookHasOrGetData")
+{
+	onenter{
+		$isGet:int = ptrget(argv(0),1);
+		$cached:int = ptrget(argv(1),1);
+		$dataPtr:int = ptrget(argv(2),8);
+		$dataSize:int = ptrget(argv(3),8);
+		
+		if($cached && !$dataPtr){
+			$str:string = format("VertexData::HookHasOrGetData isGet:%d cached:%d dataPtr:%8.8x dataSize:%lld\n", $isGet, $cached, $dataPtr, $dataSize);
+			printf("%s",$str);
+			$r:int = WriteLog($str);
+			printf("WriteLog:%d\n",$r);
+			dumpstack("#VertexData::HookHasOrGetData");
+			LogStack("#VertexData::HookHasOrGetData");
+		};
+	};
+};
+hook("HookGetBoneWeightsNull")
+{
+	onenter{
+		$retPos:int = ptrget(argv(0),4);
+		$bonesPerVertex:int = ptrget(argv(1),4);
+		
+		$str:string = format("HookGetBoneWeightsNull retPos:%d bonesPerVertex:%d\n", $retPos, $bonesPerVertex);
+		printf("%s",$str);
+		WriteLog($str);
+		$r:int = WriteLog($str);
+		printf("WriteLog:%d\n",$r);
+		
+		assert(0);
 	};
 };

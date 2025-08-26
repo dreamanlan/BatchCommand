@@ -1,2 +1,4 @@
-﻿    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
+﻿  DllMain.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(1300,25): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+D:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp(1305,25): warning C4305: “初始化”: 从“double”到“float”截断
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

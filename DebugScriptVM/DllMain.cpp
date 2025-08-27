@@ -304,8 +304,8 @@ struct WatchPointCommandInfo
 static std::recursive_mutex g_WatchPointMutex{};
 WatchPointCommandInfo g_WatchPointCommandInfo{ 0, 0, 0, 0, 0 };
 
-static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr,
-    int64_t tid) {
+static void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, int64_t tid)
+{
     std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
 
     g_WatchPointCommandInfo.cmd = cmd;
@@ -314,7 +314,8 @@ static inline void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t
     g_WatchPointCommandInfo.addr = addr;
     g_WatchPointCommandInfo.tid = tid;
 }
-static inline short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid) {
+static short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid)
+{
     std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
 
     flag = g_WatchPointCommandInfo.flag;
@@ -392,13 +393,13 @@ static int DbgScp_FlushLog_NoLock(const char* pstr, size_t len) {
     }
     return err;
 }
-static inline int DbgScp_FlushLog()
+static int DbgScp_FlushLog()
 {
     std::lock_guard<std::recursive_mutex> lock(g_LogBufferMutex);
 
     return DbgScp_FlushLog_NoLock(nullptr, 0);
 }
-static inline int DbgScp_WriteLog(const std::string& str)
+static int DbgScp_WriteLog(const std::string& str)
 {
     std::lock_guard<std::recursive_mutex> lock(g_LogBufferMutex);
 
@@ -414,7 +415,7 @@ static inline int DbgScp_WriteLog(const std::string& str)
     }
     return r;
 }
-static inline void DbgScp_LogCallstack(const char* prefix, const char* file, int line)
+static void DbgScp_LogCallstack(const char* prefix, const char* file, int line)
 {
     const int c_buf_size = 1024 * 4 + 1;
     char buf[c_buf_size];

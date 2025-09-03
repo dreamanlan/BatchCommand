@@ -29,7 +29,7 @@ namespace BatchCommand
 
             BatchScript.Init();
             BatchScript.Register("compiledbgscp", "compiledbgscp(scpFile,struFile,apiFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
-            BatchScript.Register("uploaddbgscp", "dumpdbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
+            BatchScript.Register("uploaddbgscp", "uploaddbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
             BatchScript.Register("savedbgscp", "savedbgscp(dataFile) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
             BatchScript.Register("loaddbgscp", "loaddbgscp(dataFile) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
@@ -55,6 +55,20 @@ namespace BatchCommand
                             string arg = args[i + 1];
                             if (!arg.StartsWith("-")) {
                                 scpTxt = arg;
+                                ++i;
+                            }
+                        }
+                    }
+                    else if (0 == string.Compare(args[i], "-s", true)) {
+                        if (i < args.Length - 1) {
+                            string arg = args[i + 1];
+                            if (!arg.StartsWith("-")) {
+                                scpFile = arg;
+                                isScpPart = true;
+                                if (!File.Exists(scpFile)) {
+                                    Console.WriteLine("file path not found ! {0}", scpFile);
+                                }
+                                vargs.Add(arg);
                                 ++i;
                             }
                         }
@@ -112,11 +126,11 @@ namespace BatchCommand
         }
         private static void PrintHelp()
         {
-            Console.WriteLine("[usage]BatchCommand [-h] [-i] [-e script_string] [dsl_file arg1 arg2 ...]");
+            Console.WriteLine("[usage]BatchCommand [-h] [-i] [-e script_string] [[-s] dsl_file arg1 arg2 ...]");
             Console.WriteLine(" [-h] show this help");
             Console.WriteLine(" [-i] interactive computing mode");
             Console.WriteLine(" [-e script_string] run script_string");
-            Console.WriteLine(" dsl_file source dsl file");
+            Console.WriteLine(" [-s] dsl_file source dsl file");
             Console.WriteLine(" arg1 arg2 ... arguments to dsl file");
         }
         private static void InteractiveComputing()

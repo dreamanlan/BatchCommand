@@ -1300,12 +1300,12 @@ struct ExternApi
     }
     static inline void SetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        float timeScale = DebugScript::GetVarFloat(args[0].IsGlobal, args[0].Index, stackBase, fltLocals, fltGlobals);
+        double timeScale = DebugScript::GetVarFloat(args[0].IsGlobal, args[0].Index, stackBase, fltLocals, fltGlobals);
         //GetTimeManager().SetTimeScale(timeScale);
     }
     static inline void GetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        float timeScale = 0.12345;//GetTimeManager().GetTimeScale();
+        double timeScale = 0.12345;//GetTimeManager().GetTimeScale();
         DebugScript::SetVarFloat(retVal.IsGlobal, retVal.Index, timeScale, stackBase, fltLocals, fltGlobals);
     }
     static inline void CallCSharp(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)

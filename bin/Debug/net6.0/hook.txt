@@ -1174,9 +1174,9 @@ hook("sample_allocation")
 			WriteLog($str);
 		}
 		else{
-			//$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
-			//printf("%s",$str);
-			//WriteLog($str);
+			$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			printf("%s",$str);
+			WriteLog($str);
 		};
 	};
 };
@@ -1197,6 +1197,7 @@ hook("gc_resize_event")
 			printf("%s",$str);
 			$r:int = WriteLog($str);
 			printf("WriteLog:%d\n",$r);
+			FlushLog();
 		};
 	};
 };
@@ -1208,7 +1209,7 @@ hook("Mesh::UploadMeshData")
 		$isReadable:int = ptrget(argv(2),1);
 		$name:string = ptrget(argv(3),8);
 		
-		ptrset(argv(0), 1, 1);
+		//ptrset(argv(0), 1, 0);
 				
 		$str:string = format("Mesh::UploadMeshData markNoLongerReadable:%d isReadable:%d name:%s\n", $markNoLongerReadable, $isReadable, $name);
 		printf("%s",$str);
@@ -1218,6 +1219,7 @@ hook("Mesh::UploadMeshData")
 		if(!$isReadable){
 			dumpstack("#Mesh::UploadMeshData");
 			LogStack("#Mesh::UploadMeshData");
+			FlushLog();
 		};
 		
 		if($name=="fengBaoBao_9008_low_skin"){
@@ -1240,6 +1242,7 @@ hook("VertexData::HookHasOrGetData")
 			printf("WriteLog:%d\n",$r);
 			dumpstack("#VertexData::HookHasOrGetData");
 			LogStack("#VertexData::HookHasOrGetData");
+			FlushLog();
 		};
 	};
 };

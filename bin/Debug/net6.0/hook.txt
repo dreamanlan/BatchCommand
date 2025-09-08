@@ -15,14 +15,14 @@ struct(TestStru3)
 
 @ga : int = 123;
 @gb : int[3] = [3,5,1];
-@gc : int = 456;
+@gc = 456;
 @gd : string = "this is a test";
 
 hook(CompileTest)
 {
 	onenter{
-		$a : int = 12;
-		$b : int = 13 * 17;
+		$a = 12;
+		$b = 13 * 17;
 		$d : int = ptrget(addr($a), 4);
 		$e : int[4] = [1,$a,3,$b];
 		$c : int;
@@ -1174,9 +1174,9 @@ hook("sample_allocation")
 			WriteLog($str);
 		}
 		else{
-			$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
-			printf("%s",$str);
-			WriteLog($str);
+			//$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			//printf("%s",$str);
+			//WriteLog($str);
 		};
 	};
 };

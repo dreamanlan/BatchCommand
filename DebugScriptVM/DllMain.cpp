@@ -1525,6 +1525,15 @@ extern "C" {
         DebugScriptGlobal::Start();
     }
 
+    __declspec(dllexport) void DbgScp_SetExport(int cmd, int a, double b, const char* c)
+    {
+        DbgScp_Set(cmd, a, b, c);
+    }
+    __declspec(dllexport) int DbgScp_GetExport(int cmd, int a, double b, const char* c)
+    {
+        return DbgScp_Get(cmd, a, b, c);
+    }
+
     __declspec(dllexport) int Test1Export(int a, double b, const char* c)
     {
         thread_local static int32_t s_hook_id = -1;

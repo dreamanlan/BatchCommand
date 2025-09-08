@@ -32,6 +32,8 @@ namespace BatchCommand
             BatchScript.Register("uploaddbgscp", "uploaddbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
             BatchScript.Register("savedbgscp", "savedbgscp(dataFile) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
             BatchScript.Register("loaddbgscp", "loaddbgscp(dataFile) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
+            BatchScript.Register("dbgscpset", "dbgscpset(cmd,int_a,dbl_b,str_c) api", new ExpressionFactoryHelper<DbgScpSetExp>());
+            BatchScript.Register("dbgscpget", "dbgscpget(cmd,int_a,dbl_b,str_c) api,return int", new ExpressionFactoryHelper<DbgScpGetExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());
             BatchScript.Register("addrs2lines", "addrs2lines(textBase,textSeg,dbg,file,outfile) api", new ExpressionFactoryHelper<Addrs2LinesExp>());
 
@@ -251,6 +253,53 @@ namespace BatchCommand
             }
             CppDebugScript.DebugScriptCompiler.Instance.LoadByteCode(file);
             return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class DbgScpSetExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            int cmd = 0;
+            int a = 123;
+            double b = 123.456;
+            string c = "test_dbgscp_set";
+            if(operands.Count > 0) {
+                cmd = operands[0].GetInt();
+            }
+            if (operands.Count > 1) {
+                a = operands[1].GetInt();
+            }
+            if (operands.Count > 2) {
+                b = operands[2].GetDouble();
+            }
+            if (operands.Count > 3) {
+                c = operands[3].GetString();
+            }
+            CppDebugScript.CppDbgScpInterface.DbgScp_SetExport(cmd, a, b, c);
+            return BoxedValue.NullObject;
+        }
+    }
+    internal sealed class DbgScpGetExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            int cmd = 0;
+            int a = 123;
+            double b = 123.456;
+            string c = "test_dbgscp_get";
+            if (operands.Count > 0) {
+                cmd = operands[0].GetInt();
+            }
+            if (operands.Count > 1) {
+                a = operands[1].GetInt();
+            }
+            if (operands.Count > 2) {
+                b = operands[2].GetDouble();
+            }
+            if (operands.Count > 3) {
+                c = operands[3].GetString();
+            }
+            return CppDebugScript.CppDbgScpInterface.DbgScp_GetExport(cmd, a, b, c);
         }
     }
     internal sealed class TestDbgScpExp : SimpleExpressionBase

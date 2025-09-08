@@ -1489,14 +1489,19 @@ namespace CppDebugScript
             if (null != callData) {
                 string id = callData.GetId();
                 if (id == "=") {//init global
-                    var param1 = callData.GetParam(0) as Dsl.FunctionData;
-                    if (null != param1 && param1.GetId() == ":") {
+                    var param1 = callData.GetParam(0);
+                    var param2 = callData.GetParam(1);
+                    if (param1 is Dsl.FunctionData fparam1 && fparam1.GetId() == ":") {
                         //var : type = init_val
-                        var param2 = callData.GetParam(1);
-                        string name = param1.GetParamId(0);
-                        string type = ParseType(param1.GetParam(1), err, out var count);
+                        string name = fparam1.GetParamId(0);
+                        string type = ParseType(fparam1.GetParam(1), err, out var count);
                         s_Type2Ids.TryGetValue(type, out var ty);
-                        if (IsGlobalVar(name)) {
+                        var existsVar = GetVarInfo(name);
+                        if (null != existsVar) {
+                            err.AppendFormat("Illegal operator=, redefine global variable, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (IsGlobalVar(name)) {
                             var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                             AddVar(vinfo);
 
@@ -1517,6 +1522,22 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                     }
+                    else if (param1 is Dsl.ValueData vparam1) {
+                        var info = new SemanticInfo();
+                        CompileExpression(param2, m_TempCodes, err, ref info);
+                        CurBlock().ResetTempVars();
+
+                        if (null == info.ResultValues) {
+                            err.AppendFormat("Illegal operator=, global variable can only be initialized with constant, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                            err.AppendLine();
+                        }
+                        else {
+                            string name = vparam1.GetId();
+                            var vinfo = new VarInfo { Name = name, Type = info.ResultType, Count = info.ResultCount };
+                            AddVar(vinfo);
+                            vinfo.InitValues = info.ResultValues.ToArray();
+                        }
+                    }
                     else {
                         err.AppendFormat("Illegal operator=, left operand must be 'name : type', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                         err.AppendLine();
@@ -1527,7 +1548,12 @@ namespace CppDebugScript
                     string name = callData.GetParamId(0);
                     string type = callData.GetParamId(1);
                     s_Type2Ids.TryGetValue(type, out var ty);
-                    if (IsGlobalVar(name)) {
+                    var existsVar = GetVarInfo(name);
+                    if (null != existsVar) {
+                        err.AppendFormat("Illegal operator=, redefine global variable, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                        err.AppendLine();
+                    }
+                    else if (IsGlobalVar(name)) {
                         var vinfo = new VarInfo { Name = name, Type = ty, InitValues = null };
                         AddVar(vinfo);
                     }
@@ -1924,30 +1950,33 @@ namespace CppDebugScript
                 if (null != callData) {
                     string id = callData.GetId();
                     if (id == "=") {//assignment
-                        var p1 = callData.GetParam(0);
-                        var v1 = p1 as Dsl.ValueData;
-                        if (null != v1) {
+                        var param1 = callData.GetParam(0);
+                        var param2 = callData.GetParam(1);
+                        var vparam1 = param1 as Dsl.ValueData;
+                        if (null != vparam1) {
                             //var = val
-                            string name = v1.GetId();
+                            string name = vparam1.GetId();
                             var vinfo = GetVarInfo(name);
                             if (null == vinfo) {
-                                err.AppendFormat("Illegal operator=, use of undefined variable, if you want to define it, write 'var:type', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
-                                err.AppendLine();
+                                var info = new SemanticInfo();
+                                CompileExpression(param2, codes, err, ref info);
+                                vinfo = new VarInfo { Name = name, Type = info.ResultType, Count = info.ResultCount };
+                                AddVar(vinfo);
+                                TryGenMov(vinfo.IsGlobal, vinfo.Type, vinfo.Index, codes, info, err, callData);
+                                CurBlock().ResetTempVars();
                             }
                             else {
-                                var v2 = callData.GetParam(1);
                                 SemanticInfo info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetIsGlobal = vinfo.IsGlobal, TargetType = vinfo.Type, TargetCount = vinfo.Count, TargetIndex = vinfo.Index };
-                                CompileExpression(v2, codes, err, ref info);
+                                CompileExpression(param2, codes, err, ref info);
                                 CurBlock().ResetTempVars();
                             }
                         }
                         else {
-                            var param1 = p1 as Dsl.FunctionData;
-                            if (null != param1 && param1.IsBracketParamClass()) {
+                            var fparam1 = param1 as Dsl.FunctionData;
+                            if (null != fparam1 && fparam1.IsBracketParamClass()) {
                                 //arr[ix] = val
-                                var param2 = callData.GetParam(1);
-                                string name = param1.GetId();
-                                var ixExp = param1.GetParam(0);
+                                string name = fparam1.GetId();
+                                var ixExp = fparam1.GetParam(0);
                                 var vinfo = GetVarInfo(name);
                                 if (null == vinfo) {
                                     err.AppendFormat("Illegal operator=, use of undefined array variable, you must define it first using 'var : type[num]', code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
@@ -1963,13 +1992,25 @@ namespace CppDebugScript
                                     TryGenArrSet(vinfo, codes, info1, info2, err, callData);
                                 }
                             }
-                            else if (null != param1 && param1.GetId() == ":") {
+                            else if (null != fparam1 && fparam1.GetId() == ":") {
                                 //var : type = val
-                                var param2 = callData.GetParam(1);
-                                string name = param1.GetParamId(0);
-                                string type = ParseType(param1.GetParam(1), err, out var count);
+                                string name = fparam1.GetParamId(0);
+                                string type = ParseType(fparam1.GetParam(1), err, out var count);
                                 s_Type2Ids.TryGetValue(type, out var ty);
-                                if (IsLocalVar(name)) {
+                                var existsVar = GetVarInfo(name);
+                                if (null != existsVar) {
+                                    if (existsVar.Type != ty) {
+                                        err.AppendFormat("Illegal operator=, local variable is different type (redefine?), code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                                        err.AppendLine();
+                                    }
+                                    else {
+                                        var vinfo = existsVar;
+                                        var info = new SemanticInfo { TargetOperation = TargetOperationEnum.VarAssign, TargetIsGlobal = vinfo.IsGlobal, TargetType = ty, TargetCount = count, TargetIndex = vinfo.Index };
+                                        CompileExpression(param2, codes, err, ref info);
+                                        CurBlock().ResetTempVars();
+                                    }
+                                }
+                                else if (IsLocalVar(name)) {
                                     var vinfo = new VarInfo { Name = name, Type = ty, Count = count };
                                     AddVar(vinfo);
 
@@ -1993,7 +2034,12 @@ namespace CppDebugScript
                         string name = callData.GetParamId(0);
                         string type = ParseType(callData.GetParam(1), err, out var count);
                         s_Type2Ids.TryGetValue(type, out var ty);
-                        if (IsLocalVar(name)) {
+                        var existsVar = GetVarInfo(name);
+                        if (null != existsVar) {
+                            err.AppendFormat("Illegal operator=, redefine local variable, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                            err.AppendLine();
+                        }
+                        else if (IsLocalVar(name)) {
                             var vinfo = new VarInfo { Name = name, Type = ty, Count = count, InitValues = null };
                             AddVar(vinfo);
                         }
@@ -7378,6 +7424,11 @@ namespace CppDebugScript
 #pragma warning disable CA2101
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
         internal extern static void CppDbgScp_Load([MarshalAs(UnmanagedType.LPStr)] string file);
+
+        [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
+        internal extern static void DbgScp_SetExport(int cmd, int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
+        [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
+        internal extern static int DbgScp_GetExport(int cmd, int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);
 
         [DllImport("DebugScriptVM", CallingConvention = CallingConvention.Cdecl)]
         internal extern static int Test1Export(int a, double b, [MarshalAs(UnmanagedType.LPStr)] string c);

@@ -130,6 +130,7 @@
     <ClInclude Include="DebugScriptVM.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DebugScriptExternApiAndEntry.cpp" />
     <ClCompile Include="DebugScriptVM.cpp" />
     <ClCompile Include="DllMain.cpp" />
   </ItemGroup>

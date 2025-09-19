@@ -290,6 +290,17 @@ void free_library(void* h)
 #endif
 }
 
+typedef int (*host_test_fn)(int a, float b, const char* c);
+
+typedef struct {
+    host_test_fn test;
+} HostApi;
+
+int host_test_impl(int a, float b, const char* c) {
+    printf("native host_test_impl called: %d, %f, %s\n", a, b, c);
+    return static_cast<int>(a * b);
+}
+
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 // Function to initialize .NET Core runtime
 int load_hostfxr()
@@ -351,8 +362,30 @@ int load_hostfxr()
 // Function to call .NET Core method
 int call_dotnet_method()
 {
-    const char_t* dotnet_assembly_path = L"./publish/MyApp.dll";
+    const char_t* dotnet_assembly_path = L"./Managed/MyApp.dll";
     const char_t* dotnet_class_name = L"DotNetLib.Lib, MyApp";
+
+    // native api
+    HostApi api;
+    api.test = &host_test_impl;
+
+    typedef int (CORECLR_DELEGATE_CALLTYPE* register_api_fn)(void* arg);
+    register_api_fn entry = nullptr;
+    int rc = load_assembly_and_get_function_pointer(
+        dotnet_assembly_path,
+        dotnet_class_name,
+        L"RegisterApi",
+        UNMANAGEDCALLERSONLY_METHOD,
+        nullptr,
+        (void**)&entry);
+    _ASSERT(rc == 0 && entry != nullptr && "Failure: load_assembly_and_get_function_pointer()");
+
+    if (entry) {
+        int result = entry(&api);
+        printf("managed returned: %d\n", result);
+    }
+
+    // Call the .NET Core method
     struct lib_args
     {
         const char_t* message;
@@ -363,7 +396,7 @@ int call_dotnet_method()
     typedef void (CORECLR_DELEGATE_CALLTYPE* hello2_fn)(const char_t* arg);
 
     component_entry_point_fn hello = nullptr;
-    int rc = load_assembly_and_get_function_pointer(
+    rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path,
         dotnet_class_name,
         L"Hello",
@@ -372,9 +405,10 @@ int call_dotnet_method()
         (void**)&hello);
     _ASSERT(rc == 0 && hello != nullptr && "Failure: load_assembly_and_get_function_pointer()");
 
-    // Call the .NET Core method
     lib_args args{ L"Hello from C++", -1 };
-    hello(&args, sizeof(args));
+    if (hello) {
+        hello(&args, sizeof(args));
+    }
 
     custom_entry_fn custom_entry = nullptr;
     rc = load_assembly_and_get_function_pointer(
@@ -386,7 +420,10 @@ int call_dotnet_method()
         reinterpret_cast<void**>(&custom_entry) // Output function pointer
     );
     _ASSERT(rc == 0 && custom_entry != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-    custom_entry(args);
+
+    if (custom_entry) {
+        custom_entry(args);
+    }
 
     // UnmanagedCallersOnly
     rc = load_assembly_and_get_function_pointer(
@@ -397,7 +434,10 @@ int call_dotnet_method()
         nullptr,
         (void**)&custom_entry);
     _ASSERT(rc == 0 && custom_entry != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-    custom_entry(args);
+
+    if (custom_entry) {
+        custom_entry(args);
+    }
 
     // UnmanagedCallersOnly
     hello2_fn hello2 = nullptr;
@@ -409,8 +449,10 @@ int call_dotnet_method()
         nullptr,
         (void**)&hello2);
     _ASSERT(rc == 0 && hello2 != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-    hello2(L"test test test");
 
+    if (hello2) {
+        hello2(L"test test test");
+    }
     return 0;
 }
 

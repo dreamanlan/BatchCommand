@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.Marshalling;
 
 public static class Program
 {
@@ -11,6 +12,16 @@ public static class Program
         Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
     }
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct HostApi
+{
+    public IntPtr test; // host_test_fn
+}
+
+// delegate for native host_test_fn
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostTestDelegate(int a, float b, string c);
 
 public static class Api
 {
@@ -22,6 +33,14 @@ namespace DotNetLib
 {
     public static class Lib
     {
+        [UnmanagedCallersOnly]
+        public static int RegisterApi(IntPtr apis)
+        {
+            HostApi hostApi = Marshal.PtrToStructure<HostApi>(apis);
+            HostTestApi = Marshal.GetDelegateForFunctionPointer<HostTestDelegate>(hostApi.test);
+
+            return 1;
+        }
         public static int HelloMono(int cmd, string arg, ref string refArg, IntPtr addr)
         {
             long v = addr.ToInt64();
@@ -69,6 +88,9 @@ namespace DotNetLib
         {
             Console.WriteLine($"Hello2, from {nameof(Lib)} [count: {++s_CallCount}]");
             Console.WriteLine($"-- message: {Marshal.PtrToStringUni(message)}");
+
+            int r = HostTestApi(1, 2.0f, "hello2");
+            Console.WriteLine($"-- HostTestApi result: {r}");
         }
 
 #nullable enable
@@ -85,5 +107,7 @@ namespace DotNetLib
             }
         }
 #nullable disable
+
+        private static HostTestDelegate HostTestApi;
     }
 }

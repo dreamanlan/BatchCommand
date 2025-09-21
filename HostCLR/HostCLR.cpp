@@ -291,14 +291,65 @@ void free_library(void* h)
 }
 
 typedef int (*host_test_fn)(int a, float b, const char* c);
+typedef void (*host_output_log_fn)(const char* msg);
+typedef bool (*host_run_command_fn)(const char* cmd, const char* args, void* result);
+typedef bool (*host_run_command_timeout_fn)(const char* cmd, const char* args, int timeout, void* result);
+typedef bool (*host_find_in_path_fn)(const char* filename, char* path, int& path_size);
+typedef bool (*host_get_adb_exe_fn)(char* path, int& path_size);
+typedef bool (*host_get_apktool_jar_fn)(char* path, int& path_size);
+typedef bool (*host_get_jadx_exe_fn)(char* path, int& path_size);
+typedef bool (*host_get_java_exe_fn)(char* path, int& path_size);
+typedef bool (*host_get_uberapksigner_jar_fn)(char* path, int& path_size);
+typedef bool (*host_get_zipalign_exe_fn)(char* path, int& path_size);
+typedef int (*host_get_java_heap_fn)();
+typedef void (*host_emit_decompile_failed_fn)(void* worker);
+typedef void (*host_emit_recompile_failed_fn)(void* worker);
+typedef void (*host_emit_sign_failed_fn)(void* worker);
+typedef void (*host_emit_install_failed_fn)(void* worker);
 
 typedef struct {
     host_test_fn test;
+    host_output_log_fn OutputLog;
+    host_run_command_fn RunCommand;
+    host_run_command_timeout_fn RunCommandTimeout;
+    host_find_in_path_fn FindInPath;
+    host_get_adb_exe_fn GetAdbExe;
 } HostApi;
 
-int host_test_impl(int a, float b, const char* c) {
-    printf("native host_test_impl called: %d, %f, %s\n", a, b, c);
+int host_test(int a, float b, const char* c) {
+    printf("native host_test called: %d, %f, %s\n", a, b, c);
     return static_cast<int>(a * b);
+}
+void host_output_log(const char* msg)
+{
+}
+bool host_run_command(const char* cmd, const char* args, void* result)
+{
+    if (!cmd || !args || !result) {
+        return false;
+    }
+    return true;
+}
+bool host_run_command_timeout(const char* cmd, const char* args, int timeout, void* result)
+{
+    if (!cmd || !args || !result) {
+        return false;
+    }
+    return true;
+}
+bool host_find_in_path(const char* filename, char* path, int& path_size)
+{
+    if (!filename || !path) {
+        return false;
+    }
+    return true;
+}
+bool host_get_adb_exe(char* path, int& path_size)
+{
+    if (!path) {
+        return false;
+    }
+    return true;
 }
 
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
@@ -367,8 +418,14 @@ int call_dotnet_method()
 
     // native api
     HostApi api;
-    api.test = &host_test_impl;
+    api.test = &host_test;
+    api.OutputLog = &host_output_log;
+    api.RunCommand = &host_run_command;
+    api.RunCommandTimeout = &host_run_command_timeout;
+    api.FindInPath = &host_find_in_path;
+    api.GetAdbExe = &host_get_adb_exe;
 
+    // For UNMANAGEDCALLERSONLY_METHOD, this must be int (or other directly copyable type), not bool.
     typedef int (CORECLR_DELEGATE_CALLTYPE* register_api_fn)(void* arg);
     register_api_fn entry = nullptr;
     int rc = load_assembly_and_get_function_pointer(
@@ -383,6 +440,27 @@ int call_dotnet_method()
     if (entry) {
         int result = entry(&api);
         printf("managed returned: %d\n", result);
+    }
+
+    // Call the .NET Core method, test StringBuilder
+    typedef int (CORECLR_DELEGATE_CALLTYPE* get_zipalign_args_fn)(const char* folder, char* args, int& args_size);
+    get_zipalign_args_fn get_zipalign_args = nullptr;
+
+    rc = load_assembly_and_get_function_pointer(
+        dotnet_assembly_path,
+        dotnet_class_name,
+        L"GetZipAlignArgs",
+        L"DotNetLib.Lib+GetZipAlignArgsDelegation, MyApp", // Delegate type
+        nullptr,
+        (void**)&get_zipalign_args);
+    _ASSERT(rc == 0 && get_zipalign_args != nullptr && "Failure: load get_zipalign_args");
+
+    if (get_zipalign_args) {
+        char buffer[1025];
+        int args_size = 1024;
+        int r = get_zipalign_args("test", buffer, args_size);
+        buffer[args_size] = 0;
+        printf("args: %s ret: %d\n", buffer, r);
     }
 
     // Call the .NET Core method

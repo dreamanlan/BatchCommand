@@ -2,13 +2,24 @@ script(main)
 {
 	curdir = getscriptdir();
 	cd(curdir);
-	copyfile("BatchCommand.exe", "c:/Code/Client/Tools/BatchCommand.exe");
-	copyfile("BatchCommand.exe", "c:/Code/Product/Tools/BatchCommand.exe");
-	copyfile("BatchCommand.exe", "c:/Code/Publish/BatchCommand.exe");
+	fileecho(true);
 	
-	copyfile("BatchCommand.exe", "d:/Code/Client/Tools/BatchCommand.exe");
-	copyfile("BatchCommand.exe", "d:/Code/Product/Tools/BatchCommand.exe");
-	copyfile("BatchCommand.exe", "d:/Code/Publish/BatchCommand.exe");
+	foreach("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/bin/Debug/net8.0", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
+		setenv("CopyTargetDir", $$);
+		copyfiles(".", "../../../../%CopyTargetDir%", "BatchCommand.*");
+		copyfiles(".", "../../../../%CopyTargetDir%", "Common.*");
+		copyfiles(".", "../../../../%CopyTargetDir%", "DotnetStoryScript.*");
+		copyfiles(".", "../../../../%CopyTargetDir%", "dsl.*");
+		
+		copyfile("TextCopy.dll", "../../../../%CopyTargetDir%/TextCopy.dll");
+		copyfile("LitJson.dll", "../../../../%CopyTargetDir%/LitJson.dll");
+		copyfile("ScriptFrameworkLibrary.dll", "../../../../%CopyTargetDir%/ScriptFrameworkLibrary.dll");
+		copyfile("Microsoft.Extensions.DependencyInjection.Abstractions.dll", "../../../../%CopyTargetDir%/Microsoft.Extensions.DependencyInjection.Abstractions.dll");
+	};
 	
+	if (argnum() <= 1) {
+		echo("press any key ...");
+		read();
+	};
 	return(0);
 };

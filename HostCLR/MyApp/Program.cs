@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 public static class Program
 {
@@ -17,11 +18,26 @@ public static class Program
 public struct HostApi
 {
     public IntPtr test; // host_test_fn
+    public IntPtr OutputLog;
+    public IntPtr RunCommand;
+    public IntPtr RunCommandTimeout;
+    public IntPtr FindInPath;
+    public IntPtr GetAdbExe;
 }
 
 // delegate for native host_test_fn
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostTestDelegate(int a, float b, string c);
+public delegate int HostTestDelegation(int a, float b, string c);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+public delegate void HostOutputLogDelegation(string c);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+public delegate bool HostRunCommandDelegation(string cmd, string args, IntPtr result);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+public delegate bool HostRunCommandTimeoutDelegation(string cmd, string args, int timeout, IntPtr result);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+public delegate bool HostFindInPathDelegation(string filename, StringBuilder path, ref int path_size);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+public delegate bool HostGetAdbExeDelegation(StringBuilder path, ref int path_size);
 
 public static class Api
 {
@@ -37,10 +53,24 @@ namespace DotNetLib
         public static int RegisterApi(IntPtr apis)
         {
             HostApi hostApi = Marshal.PtrToStructure<HostApi>(apis);
-            HostTestApi = Marshal.GetDelegateForFunctionPointer<HostTestDelegate>(hostApi.test);
-
-            return 1;
+            HostTestApi = Marshal.GetDelegateForFunctionPointer<HostTestDelegation>(hostApi.test);
+            HostOutputLogApi = Marshal.GetDelegateForFunctionPointer<HostOutputLogDelegation>(hostApi.OutputLog);
+            HostRunCommandApi = Marshal.GetDelegateForFunctionPointer<HostRunCommandDelegation>(hostApi.RunCommand);
+            HostRunCommandTimeoutApi = Marshal.GetDelegateForFunctionPointer<HostRunCommandTimeoutDelegation>(hostApi.RunCommandTimeout);
+            HostFindInPathApi = Marshal.GetDelegateForFunctionPointer<HostFindInPathDelegation>(hostApi.FindInPath);
+            HostGetAdbExeApi = Marshal.GetDelegateForFunctionPointer<HostGetAdbExeDelegation>(hostApi.GetAdbExe);
+            return 0;
         }
+
+        public delegate int GetZipAlignArgsDelegation(string folder, StringBuilder args, ref int argsLength);
+        public static int GetZipAlignArgs(string folder, StringBuilder args, ref int argsLength)
+        {
+            args.Clear();
+            args.Append(" -a -b -c");
+            argsLength = args.Length;
+            return 0;
+        }
+
         public static int HelloMono(int cmd, string arg, ref string refArg, IntPtr addr)
         {
             long v = addr.ToInt64();
@@ -108,6 +138,11 @@ namespace DotNetLib
         }
 #nullable disable
 
-        private static HostTestDelegate HostTestApi;
+        private static HostTestDelegation HostTestApi;
+        private static HostOutputLogDelegation HostOutputLogApi;
+        private static HostRunCommandDelegation HostRunCommandApi;
+        private static HostRunCommandTimeoutDelegation HostRunCommandTimeoutApi;
+        private static HostFindInPathDelegation HostFindInPathApi;
+        private static HostGetAdbExeDelegation HostGetAdbExeApi;
     }
 }

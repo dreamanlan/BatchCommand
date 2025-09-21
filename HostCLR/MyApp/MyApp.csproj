@@ -8,4 +8,8 @@
     <BaseOutputPath></BaseOutputPath>
   </PropertyGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="$(SolutionDir)bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
+  </Target>
+
 </Project>

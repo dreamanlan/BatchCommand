@@ -384,7 +384,7 @@ int load_hostfxr()
     };
 
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(L"myapp.runtimeconfig.json", &parameters, &cxt);
+    int rc = init_config_fptr(L"./managed/myapp.runtimeconfig.json", &parameters, &cxt);
     //int argc = 1;
     //const char_t* argv[] = { L"./publish/myapp.dll" };
     //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);

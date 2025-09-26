@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "*.dsl": "java",
+        "xstring": "cpp",
+        "atomic": "cpp",
+        "xlocinfo": "cpp",
+        "xlocale": "cpp",
+        "xiosbase": "cpp",
+        "system_error": "cpp",
+        "ios": "cpp",
+        "list": "cpp",
+        "vector": "cpp",
+        "xhash": "cpp",
+        "xlocmes": "cpp"
+    },
+    "github.copilot.nextEditSuggestions.enabled": false,
+    "github.copilot.enable": {
+        "*": false
+    }
+}

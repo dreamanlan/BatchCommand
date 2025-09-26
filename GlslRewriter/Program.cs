@@ -251,7 +251,8 @@ namespace GlslRewriter
                     var oldLastTok = dslToken.getLastToken();
                     if (dslToken.PeekNextValidChar(0) == ';')
                         return false;
-                    dslToken.setCurToken("<-");
+                    //return a+b; => return`a+b;
+                    dslToken.setCurToken("`");
                     dslToken.setLastToken(oldCurTok);
                     dslToken.enqueueToken(dslToken.getCurToken(), dslToken.getOperatorTokenValue(), line);
                     dslToken.setCurToken(oldCurTok);
@@ -265,15 +266,8 @@ namespace GlslRewriter
                 var func = statement.Last.AsFunction;
                 if (null != func) {
                     if (func.HaveStatement()) {
+                        //End a single block statement
                         if (string.IsNullOrEmpty(sid) || sid == "for" || sid == "while" || sid == "else" || sid == "switch" || (func.IsHighOrder && func.LowerOrderFunction.IsParenthesesParamClass())) {
-                            //End the current statement and start a new empty statement.
-                            dslAction.endStatement();
-                            dslAction.beginStatement();
-                            return true;
-                        }
-                    }
-                    else {
-                        if (sid == "do") {
                             //End the current statement and start a new empty statement.
                             dslAction.endStatement();
                             dslAction.beginStatement();
@@ -303,6 +297,7 @@ namespace GlslRewriter
                 var func = statement.Last.AsFunction;
                 if (null != func) {
                     if (sid == "if") {
+                        //if(cond)a=b+c; => if(cond)=(a,b+c)
                         statement.Functions.Remove(func);
                         dslAction.endStatement();
                         dslAction.beginStatement();
@@ -321,8 +316,8 @@ namespace GlslRewriter
                 //The statement can be split here.
                 string sid = statement.GetId();
                 var func = statement.Last.AsFunction;
-                if (null != func) {
-                    if (sid == "if" && name != "else") {
+                if (null != func && statement.GetFunctionNum() > 1) {
+                    if (sid == "if" && name != "else") {//End if statement without else
                         statement.Functions.Remove(func);
                         dslAction.endStatement();
                         dslAction.beginStatement();
@@ -330,7 +325,7 @@ namespace GlslRewriter
                         stm.AddFunction(func);
                         return true;
                     }
-                    else if (name == "struct" || name == "if" || name == "switch" || name == "for" || name == "do" || name == "while") {
+                    else if (name == "struct" || name == "if" || name == "switch" || name == "for" || name == "do" || name == "while") {//End a single block statement
                         statement.Functions.Remove(func);
                         dslAction.endStatement();
                         dslAction.beginStatement();
@@ -1325,7 +1320,7 @@ namespace GlslRewriter
 
                     return TransformStatement(funcData, out insertBeforeOuter, out insertAfterOuter);
                 }
-                else if (funcId == "<-") {
+                else if (funcId == "`") {
                     var p = funcData.GetParam(0);
                     var v = funcData.GetParam(1);
                     var fd = p as Dsl.FunctionData;

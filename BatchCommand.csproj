@@ -21,24 +21,30 @@
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="BatchStudio\**" />
     <Compile Remove="CppLua2Dsl\**" />
     <Compile Remove="DebugScriptVM\**" />
     <Compile Remove="GlslRewriter\**" />
     <Compile Remove="HostCLR\**" />
     <Compile Remove="UnrealCodeTransform\**" />
     <Compile Remove="Wox.Plugin.BatchCommand\**" />
+    <EmbeddedResource Remove="BatchStudio\**" />
     <EmbeddedResource Remove="CppLua2Dsl\**" />
     <EmbeddedResource Remove="DebugScriptVM\**" />
     <EmbeddedResource Remove="GlslRewriter\**" />
     <EmbeddedResource Remove="HostCLR\**" />
     <EmbeddedResource Remove="UnrealCodeTransform\**" />
     <EmbeddedResource Remove="Wox.Plugin.BatchCommand\**" />
+    <None Remove="BatchStudio\**" />
     <None Remove="CppLua2Dsl\**" />
     <None Remove="DebugScriptVM\**" />
     <None Remove="GlslRewriter\**" />
     <None Remove="HostCLR\**" />
     <None Remove="UnrealCodeTransform\**" />
     <None Remove="Wox.Plugin.BatchCommand\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="DbgScpCmds.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />

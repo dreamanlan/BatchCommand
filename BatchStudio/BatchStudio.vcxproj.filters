@@ -1,0 +1,683 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;moc;h;def;odl;idl;res;</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{D9D6E242-F8AF-46E4-B9FD-80ECBC20BA3E}</UniqueIdentifier>
+      <Extensions>qrc;*</Extensions>
+      <ParseFiles>false</ParseFiles>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DarkStyle\DarkStyle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\FlowLayout.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\HistoryLineEdit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\HostCLR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\appearancesettingswidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\binarysettingswidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\buildworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\commandworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\findreplacedialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\flickcharm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\commands\hexcommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\hexedit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\dialogs\hexfinddialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\imageviewerwidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\commands\insertcommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\installworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\mainwindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\processutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\buffer\qdevicebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\buffer\qhexbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\qhexcursor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\qhexdelegate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\qhexdocument.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\qhexmetadata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\qhexutils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\qhexview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\buffer\qmappedfilebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\buffer\qmemorybuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\buffer\qmemoryrefbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\commands\removecommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QHexView\src\model\commands\replacecommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\settingsdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\sourcecodeedit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\splashwindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\themedsyntaxhighlighter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\versionresolveworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="DarkStyle\DarkStyle.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="sources\FlowLayout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\HistoryLineEdit.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="sources\HostCLR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\appearancesettingswidget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\binarysettingswidget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\buildworker.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\commandworker.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\findreplacedialog.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\flickcharm.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="QHexView\include\QHexView\model\commands\hexcommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\hexedit.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\dialogs\hexfinddialog.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\imageviewerwidget.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="QHexView\include\QHexView\model\commands\insertcommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\installworker.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\mainwindow.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\processutils.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\buffer\qdevicebuffer.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\buffer\qhexbuffer.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\qhexcursor.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\qhexdelegate.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\qhexdocument.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\qhexmetadata.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="QHexView\include\QHexView\model\qhexoptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QHexView\include\QHexView\model\qhexutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="QHexView\include\QHexView\qhexview.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="QHexView\include\QHexView\model\buffer\qmappedfilebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="QHexView\include\QHexView\model\buffer\qmemorybuffer.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QHexView\include\QHexView\model\buffer\qmemoryrefbuffer.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="QHexView\include\QHexView\model\commands\removecommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QHexView\include\QHexView\model\commands\replacecommand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\settingsdialog.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\sourcecodeedit.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="sources\splashwindow.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <ClInclude Include="sources\themedsyntaxhighlighter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <CustomBuild Include="sources\versionresolveworker.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="debug\moc_DarkStyle.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_DarkStyle.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_HistoryLineEdit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_HistoryLineEdit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_appearancesettingswidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_appearancesettingswidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_binarysettingswidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_binarysettingswidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_buildworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_buildworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_commandworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_commandworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_findreplacedialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_findreplacedialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_flickcharm.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_flickcharm.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_hexedit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_hexedit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_hexfinddialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_hexfinddialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_imageviewerwidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_imageviewerwidget.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_installworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_installworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_mainwindow.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_mainwindow.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <CustomBuild Include="debug\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="release\moc_predefs.h.cbt">
+      <Filter>Generated Files</Filter>
+    </CustomBuild>
+    <ClCompile Include="debug\moc_processutils.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_processutils.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qdevicebuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qdevicebuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexbuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexbuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexcursor.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexcursor.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexdelegate.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexdelegate.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexdocument.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexdocument.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexmetadata.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexmetadata.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qhexview.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qhexview.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qmemorybuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qmemorybuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_qmemoryrefbuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_qmemoryrefbuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_settingsdialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_settingsdialog.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_sourcecodeedit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_sourcecodeedit.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_splashwindow.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_splashwindow.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_versionresolveworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_versionresolveworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\qrc_all.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\qrc_all.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\qrc_darkstyle.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\qrc_darkstyle.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\about.html">
+      <Filter>Resource Files</Filter>
+    </None>
+    <CustomBuild Include="resources\all.qrc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <None Include="resources\fugue\android.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\application-terminal.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\binocular.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\c.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\checkerboard.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\color.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\cpp.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\cs.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\cxx.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\dark.qss">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\dark.theme">
+      <Filter>Resource Files</Filter>
+    </None>
+    <CustomBuild Include="DarkStyle\darkstyle.qrc">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <None Include="DarkStyle\darkstyle\darkstyle.qss">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\dsl.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\edit-replace.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\edit-signiture.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\fugue\gear.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\h.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\hpp.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\html.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\hxx.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icon.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icon.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_branch_closed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_branch_end.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_branch_more.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_branch_open.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_checked.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_checked_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_checked_pressed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_indeterminate.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_indeterminate_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_indeterminate_pressed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_unchecked.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_unchecked_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_checkbox_unchecked_pressed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_close.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_checked.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_checked_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_checked_pressed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_unchecked.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_unchecked_disabled.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_radiobutton_unchecked_pressed.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_restore.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_undock.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="DarkStyle\darkstyle\icon_vline.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\icons8-android-os-48.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\icons8-folder-48.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\icons8-gear-48.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\icons8-hammer-48.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\icons8-software-installer-48.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\jam.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\java.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\js.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\light.qss">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\light.theme">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\load_scheme.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\lua.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\m.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\mm.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\new_file.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\numbers.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\open_file.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\pl.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\properties.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\py.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\refresh.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\scp.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\smali.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\splash.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\strings.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\txt.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\xml.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\yaml.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\yml.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="D:\GitHub\BatchCommand\BatchStudio\BatchStudio_resource.rc" />
+  </ItemGroup>
+</Project>

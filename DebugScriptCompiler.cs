@@ -11,6 +11,8 @@ using System.ComponentModel.DataAnnotations;
 using ScriptableFramework;
 using DotnetStoryScript.CommonFunctions;
 
+#nullable enable
+
 namespace CppDebugScript
 {
     /// <summary>
@@ -141,6 +143,7 @@ namespace CppDebugScript
                     if (id == "defapi" || id == "defexternapi") {
                         bool handled = false;
                         var fd = dslInfo as Dsl.FunctionData;
+                        Debug.Assert(fd != null);
                         var call = fd;
                         bool existsOptions = false;
                         if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
@@ -174,6 +177,7 @@ namespace CppDebugScript
                                     ++apiId;
 
                                 var pts = call.GetParam(3) as Dsl.FunctionData;
+                                Debug.Assert(pts != null);
                                 foreach (var p in pts.Params) {
                                     string pt = ParseType(p, err, out var ct);
                                     s_Type2Ids.TryGetValue(pt, out var ty);
@@ -208,6 +212,7 @@ namespace CppDebugScript
                         var fd = dslInfo as Dsl.FunctionData;
                         var call = fd;
                         bool existsOptions = false;
+                        Debug.Assert(fd != null);
                         if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
                             call = fd.LowerOrderFunction;
                             existsOptions = true;
@@ -234,6 +239,7 @@ namespace CppDebugScript
 
                                 if (pnum >= 4) {
                                     var ptsInt = call.GetParam(3) as Dsl.FunctionData;
+                                    Debug.Assert(ptsInt != null);
                                     foreach (var p in ptsInt.Params) {
                                         s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                         proto.IntParams.Add(ty);
@@ -241,6 +247,7 @@ namespace CppDebugScript
                                 }
                                 if (pnum >= 5) {
                                     var ptsFloat = call.GetParam(4) as Dsl.FunctionData;
+                                    Debug.Assert(ptsFloat != null);
                                     foreach (var p in ptsFloat.Params) {
                                         s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                         proto.FloatParams.Add(ty);
@@ -248,6 +255,7 @@ namespace CppDebugScript
                                 }
                                 if (pnum >= 6) {
                                     var ptsStack = call.GetParam(5) as Dsl.FunctionData;
+                                    Debug.Assert(ptsStack != null);
                                     foreach (var p in ptsStack.Params) {
                                         s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                         proto.StackParams.Add(ty);
@@ -305,6 +313,7 @@ namespace CppDebugScript
                     var id = dslInfo.GetId();
                     if (id == "struct") {
                         var callData = dslInfo as Dsl.FunctionData;
+                        Debug.Assert(callData != null);
                         if (!callData.IsValid())
                             continue;
                         var struInfo = ParseStruct(callData, err);
@@ -324,25 +333,119 @@ namespace CppDebugScript
 
             var err = new StringBuilder();
             var file = new Dsl.DslFile();
+
+            file.SetNameTags(s_NameTags);
             file.onGetToken = (ref Dsl.Common.DslAction dslAction, ref Dsl.Common.DslToken dslToken, ref string tok, ref short val, ref int line) => {
                 if (tok == "return") {
                     var oldCurTok = dslToken.getCurToken();
                     var oldLastTok = dslToken.getLastToken();
                     if (dslToken.PeekNextValidChar(0) == ';')
                         return false;
-                    dslToken.setCurToken("<-");
+                    //insert backtick char
+                    dslToken.setCurToken("`");
                     dslToken.setLastToken(oldCurTok);
                     dslToken.enqueueToken(dslToken.getCurToken(), dslToken.getOperatorTokenValue(), line);
                     dslToken.setCurToken(oldCurTok);
                     dslToken.setLastToken(oldLastTok);
                     return true;
                 }
+                else if (tok == ")") {
+                    if (dslAction.PeekPairTypeStack(out var tag) == Dsl.Common.PairTypeEnum.PAIR_TYPE_PARENTHESES) {
+                        if (tag > 0) {
+                            var oldCurTok = dslToken.getCurToken();
+                            var oldLastTok = dslToken.getLastToken();
+                            char nextChar = dslToken.PeekNextValidChar(0);
+                            if (nextChar == '{' || nextChar == ',' || nextChar == ';')
+                                return false;
+                            //insert backtick char
+                            dslToken.setCurToken("`");
+                            dslToken.setLastToken(oldCurTok);
+                            dslToken.enqueueToken(dslToken.getCurToken(), dslToken.getOperatorTokenValue(), line);
+                            dslToken.setCurToken(oldCurTok);
+                            dslToken.setLastToken(oldLastTok);
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+            file.onBeforeAddFunction = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement) => {
+                //You can end the current statement here and start a new empty statement.
+                string fid = statement.GetId();
+                var func = statement.Last.AsFunction;
+                if (null != func) {
+                    string lid = func.GetId();
+                    if (func.HaveStatement()) {
+                        if (string.IsNullOrEmpty(fid) || s_FirstLastKeyOfCompoundStatements.TryGetValue(fid, out var lastKey) && lastKey == lid) {
+                            //End the current statement and start a new empty statement.
+                            dslAction.endStatement();
+                            dslAction.beginStatement();
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            };
+            file.onAddFunction = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
+                //Do not change the program structure here. At this point, the "function" is still an empty function, and the real function information has not been filled in.
+                //The difference between this and "onBeforeAddFunction" is that the "function" is constructed and added to the function table of the current statement.
+                return false;
+            };
+            file.onBeforeEndStatement = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement) => {
+                //The statement can be split here.
+                return false;
+            };
+            file.onEndStatement = (ref Dsl.Common.DslAction dslAction, ref Dsl.StatementData statement) => {
+                //The entire statement can be replaced here, but do not modify other parts of the program structure. The difference between this and "onBeforeEndStatement" is that
+                //the statement has been popped from the stack at this point, and the simplified statement will be added to the upper-level syntax unit in the future.
+                return false;
+            };
+            file.onBeforeBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, Dsl.StatementData statement) => {
+                //The statement can be split here.
+                return false;
+            };
+            file.onBuildOperator = (ref Dsl.Common.DslAction dslAction, Dsl.Common.OperatorCategoryEnum category, string op, ref Dsl.StatementData statement) => {
+                //The statement can be replaced here, but do not modify other syntax structures.
+                return false;
+            };
+            file.onSetFunctionId = (ref Dsl.Common.DslAction dslAction, string name, Dsl.StatementData statement, Dsl.FunctionData function) => {
+                //The statement can be split here.
+                string sid = statement.GetId();
+                var func = statement.Last.AsFunction;
+                if (null != func && statement.GetFunctionNum() > 1) {
+                    if (s_SuccessorsOfCompoundStatements.TryGetValue(sid, out var successors) && !successors.Contains(name)) {
+                        statement.Functions.Remove(func);
+                        dslAction.endStatement();
+                        dslAction.beginStatement();
+                        var stm = dslAction.getCurStatement();
+                        stm.AddFunction(func);
+                        return true;
+                    }
+                    else if (s_CompoundStatements.Contains(name)) {
+                        statement.Functions.Remove(func);
+                        dslAction.endStatement();
+                        dslAction.beginStatement();
+                        var stm = dslAction.getCurStatement();
+                        stm.AddFunction(func);
+                        return true;
+                    }
+                }
+                return false;
+            };
+            file.onBeforeBuildHighOrder = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
+                //The statement can be split here.
+                return false;
+            };
+            file.onBuildHighOrder = (ref Dsl.Common.DslAction dslAction, Dsl.StatementData statement, Dsl.FunctionData function) => {
+                //The statement can be split here.
                 return false;
             };
             if (file.LoadFromString(txt, (msg) => { err.AppendLine(msg); })) {
                 int count = file.DslInfos.Count;
                 for (int i = 0; i < count; ++i) {
                     var call = file.DslInfos[i] as Dsl.FunctionData;
+                    Debug.Assert(call != null);
                     CompileToplevelSyntax(call, err);
                 }
             }
@@ -1631,8 +1734,6 @@ namespace CppDebugScript
             if (null != stmData) {
                 string id = stmData.GetId();
                 if (id == "if") {
-                    //if(exp) func_call;
-                    //if(exp) func_call elif(exp) func_call else func_call;
                     //if(exp){...}elif(exp){...}else{...};
                     if (stmData.GetFunctionNum() >= 2) {
                         int jmpIfNot = 0;
@@ -1659,15 +1760,8 @@ namespace CppDebugScript
                                     }
                                 }
                                 else {
-                                    ++i;
-                                    if (i < stmData.GetFunctionNum()) {
-                                        var p = stmData.GetFunction(i);
-                                        CompileSyntaxInHook(p, codes, err);
-                                    }
-                                    else {
-                                        err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
-                                        err.AppendLine();
-                                    }
+                                    err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                    err.AppendLine();
                                 }
                                 PopBlock();
                                 break;
@@ -1698,15 +1792,8 @@ namespace CppDebugScript
                                         }
                                     }
                                     else {
-                                        ++i;
-                                        if (i < stmData.GetFunctionNum()) {
-                                            var p = stmData.GetFunction(i);
-                                            CompileSyntaxInHook(p, codes, err);
-                                        }
-                                        else {
-                                            err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
-                                            err.AppendLine();
-                                        }
+                                        err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                        err.AppendLine();
                                     }
                                     if (i < stmData.GetFunctionNum() - 1) {
                                         //gen jmp
@@ -1717,12 +1804,12 @@ namespace CppDebugScript
                                     PopBlock();
                                 }
                                 else {
-                                    err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                    err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                     err.AppendLine();
                                 }
                             }
                             else {
-                                err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
+                                err.AppendFormat("Illegal if, expect if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", f.ToScriptString(false, Dsl.DelimiterInfo.Default), f.GetLine());
                                 err.AppendLine();
                             }
                         }
@@ -1743,200 +1830,6 @@ namespace CppDebugScript
                     }
                     else {
                         err.AppendFormat("Illegal if, expect if(exp) func_call/if(exp) func_call elif(exp) func_call else func_call/if(exp){...}elif(exp){...}else{...}, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                        err.AppendLine();
-                    }
-                }
-                else if (id == "while") {
-                    //while(exp) func_call;
-                    if (stmData.GetFunctionNum() == 2) {
-                        var head = stmData.First.AsFunction;
-                        var funcCall = stmData.Second;
-                        if (null != head) {
-                            var exp = head.GetParam(0);
-                            var info = new SemanticInfo { TargetType = TypeEnum.Int };
-                            int loopContinue = codes.Count;
-                            CompileExpression(exp, codes, err, ref info);
-                            ConvertArgument(codes, TypeEnum.Int, ref info);
-                            //gen jmpifnot
-                            int jmpIfNot = codes.Count;
-                            codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                            codes.Add(EncodeOperand1(info.IsGlobal, info.ResultType, info.ResultIndex));
-                            CurBlock().ResetTempVars();
-                            //block
-                            PushBlock(false, true);
-                            var breakFixes = new List<int>();
-                            breakFixes.Add(jmpIfNot);
-                            var lexicalInfo = CurBlock();
-                            lexicalInfo.LoopContinue = loopContinue;
-                            lexicalInfo.LoopBreakFixes = breakFixes;
-                            CompileSyntaxInHook(funcCall, codes, err);
-                            PopBlock();
-                            //gen jmp
-                            int jmp = codes.Count;
-                            codes.Add(EncodeOpcode(InsEnum.JMP, loopContinue - jmp));
-                            //fix jmp offset
-                            int jmpTarget = codes.Count;
-                            foreach (int fix in breakFixes) {
-                                int offset = jmpTarget - fix;
-                                int opcode = codes[fix];
-                                codes[fix] = opcode | EncodeOffset(offset);
-                            }
-                        }
-                        else {
-                            err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                            err.AppendLine();
-                        }
-                    }
-                    else {
-                        err.AppendFormat("Illegal while, expect while(exp) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                        err.AppendLine();
-                    }
-                }
-                else if (id == "loop" || id == "loopi" || id == "loopd") {
-                    //loop(var,begin,end[,inc]) func_call;
-                    if (stmData.GetFunctionNum() == 2) {
-                        var head = stmData.First.AsFunction;
-                        var funcCall = stmData.Second;
-                        if (null != head) {
-                            int paramNum = head.GetParamNum();
-                            if (paramNum == 3 || paramNum == 4) {
-                                //block
-                                PushBlock(false, true);
-                                var lexicalInfo = CurBlock();
-                                var v = head.GetParam(0);
-                                var beginExp = head.GetParam(1);
-                                var endExp = head.GetParam(2);
-                                Dsl.ISyntaxComponent incExp = null;
-                                bool incOne = paramNum == 3;
-                                if (paramNum == 4) {
-                                    incExp = head.GetParam(3);
-                                }
-                                var info1 = new SemanticInfo();
-                                CompileExpression(v, codes, err, ref info1);
-                                var info2 = new SemanticInfo();
-                                CompileExpression(beginExp, codes, err, ref info2);
-                                ConvertArgument(codes, info1.ResultType, ref info2);
-                                //gen assignment
-                                if (info1.ResultType == TypeEnum.Int) {
-                                    codes.Add(EncodeOpcode(InsEnum.MOV, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
-                                }
-                                else if (info1.ResultType == TypeEnum.Float) {
-                                    codes.Add(EncodeOpcode(InsEnum.MOVFLT, info1.IsGlobal, info1.ResultType, info1.ResultIndex));
-                                }
-                                else {
-                                    err.AppendFormat("Illegal loop, first argument must be int/float type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                                    err.AppendLine();
-                                }
-                                codes.Add(EncodeOperand1(info2.IsGlobal, info2.ResultType, info2.ResultIndex));
-                                int loopContinue = codes.Count;
-                                var info3 = new SemanticInfo();
-                                CompileExpression(endExp, codes, err, ref info3);
-                                ConvertArgument(codes, info1.ResultType, ref info3);
-                                //gen less equal than/great equal than
-                                int tempIx = lexicalInfo.AllocTempInt();
-                                if (info1.ResultType == TypeEnum.Int) {
-                                    if (id == "loopd")
-                                        codes.Add(EncodeOpcode(InsEnum.GE, false, TypeEnum.Int, tempIx));
-                                    else
-                                        codes.Add(EncodeOpcode(InsEnum.LE, false, TypeEnum.Int, tempIx));
-                                }
-                                else if (info1.ResultType == TypeEnum.Float) {
-                                    if (id == "loopd")
-                                        codes.Add(EncodeOpcode(InsEnum.GEFLT, false, TypeEnum.Int, tempIx));
-                                    else
-                                        codes.Add(EncodeOpcode(InsEnum.LEFLT, false, TypeEnum.Int, tempIx));
-                                }
-                                int opd1 = EncodeOperand1(info1.IsGlobal, info1.ResultType, info1.ResultIndex);
-                                int opd2 = EncodeOperand2(info3.IsGlobal, info3.ResultType, info3.ResultIndex);
-                                codes.Add(opd1 | opd2);
-                                //gen jmpifnot
-                                int jmpIfNot = codes.Count;
-                                codes.Add(EncodeOpcode(InsEnum.JMPIFNOT));
-                                codes.Add(EncodeOperand1(false, TypeEnum.Int, tempIx));
-
-                                lexicalInfo.ResetTempVars();
-
-                                var breakFixes = new List<int>();
-                                breakFixes.Add(jmpIfNot);
-                                lexicalInfo.LoopContinue = loopContinue;
-                                lexicalInfo.LoopBreakFixes = breakFixes;
-                                CompileSyntaxInHook(funcCall, codes, err);
-
-                                //gen inc/incv
-                                if (id == "loopd") {
-                                    if (incOne) {
-                                        var rinfo = new SemanticInfo();
-                                        TryGenDec(codes, new List<SemanticInfo> { info1 }, err, head, ref rinfo);
-                                    }
-                                    else {
-                                        var info4 = new SemanticInfo();
-                                        CompileExpression(incExp, codes, err, ref info4);
-                                        if (null == info4.ResultValues) {
-                                            var rinfo = new SemanticInfo();
-                                            TryGenDec(codes, new List<SemanticInfo> { info1, info4 }, err, head, ref rinfo);
-                                        }
-                                        else {
-                                            if (info4.ResultValues[0] == "1") {
-                                                var rinfo = new SemanticInfo();
-                                                TryGenDec(codes, new List<SemanticInfo> { info1 }, err, head, ref rinfo);
-                                            }
-                                            else {
-                                                var rinfo = new SemanticInfo();
-                                                TryGenDec(codes, new List<SemanticInfo> { info1, info4 }, err, head, ref rinfo);
-                                            }
-                                        }
-                                    }
-                                }
-                                else {
-                                    if (incOne) {
-                                        var rinfo = new SemanticInfo();
-                                        TryGenInc(codes, new List<SemanticInfo> { info1 }, err, head, ref rinfo);
-                                    }
-                                    else {
-                                        var info4 = new SemanticInfo();
-                                        CompileExpression(incExp, codes, err, ref info4);
-                                        if (null == info4.ResultValues) {
-                                            var rinfo = new SemanticInfo();
-                                            TryGenInc(codes, new List<SemanticInfo> { info1, info4 }, err, head, ref rinfo);
-                                        }
-                                        else {
-                                            if (info4.ResultValues[0] == "1") {
-                                                var rinfo = new SemanticInfo();
-                                                TryGenInc(codes, new List<SemanticInfo> { info1 }, err, head, ref rinfo);
-                                            }
-                                            else {
-                                                var rinfo = new SemanticInfo();
-                                                TryGenInc(codes, new List<SemanticInfo> { info1, info4 }, err, head, ref rinfo);
-                                            }
-                                        }
-                                    }
-                                }
-                                lexicalInfo.ResetTempVars();
-
-                                PopBlock();
-                                //gen jmp
-                                int jmp = codes.Count;
-                                codes.Add(EncodeOpcode(InsEnum.JMP, loopContinue - jmp));
-                                //fix jmp offset
-                                int jmpTarget = codes.Count;
-                                foreach (int fix in breakFixes) {
-                                    int offset = jmpTarget - fix;
-                                    int opcode = codes[fix];
-                                    codes[fix] = opcode | EncodeOffset(offset);
-                                }
-                            }
-                            else {
-                                err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                                err.AppendLine();
-                            }
-                        }
-                        else {
-                            err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
-                            err.AppendLine();
-                        }
-                    }
-                    else {
-                        err.AppendFormat("Illegal loop, expect loop(var,begin,end[,inc]) func_call, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                 }
@@ -2131,7 +2024,7 @@ namespace CppDebugScript
                                 var v = head.GetParam(0);
                                 var beginExp = head.GetParam(1);
                                 var endExp = head.GetParam(2);
-                                Dsl.ISyntaxComponent incExp = null;
+                                Dsl.ISyntaxComponent? incExp = null;
                                 bool incOne = paramNum == 3;
                                 if (paramNum == 4) {
                                     incExp = head.GetParam(3);
@@ -2197,6 +2090,7 @@ namespace CppDebugScript
                                     }
                                     else {
                                         var info4 = new SemanticInfo();
+                                        Debug.Assert(incExp != null);
                                         CompileExpression(incExp, codes, err, ref info4);
                                         if (null == info4.ResultValues) {
                                             var rinfo = new SemanticInfo();
@@ -2221,6 +2115,7 @@ namespace CppDebugScript
                                     }
                                     else {
                                         var info4 = new SemanticInfo();
+                                        Debug.Assert(incExp != null);
                                         CompileExpression(incExp, codes, err, ref info4);
                                         if (null == info4.ResultValues) {
                                             var rinfo = new SemanticInfo();
@@ -2278,20 +2173,31 @@ namespace CppDebugScript
                             err.AppendLine();
                         }
                     }
-                    else if (id == "<-") {
-                        //return exp;
-                        if (callData.GetParamNum() == 2) {
-                            var exp = callData.GetParam(1);
-                            var info = new SemanticInfo { TargetType = TypeEnum.Int };
-                            CompileExpression(exp, codes, err, ref info);
-                            ConvertArgument(codes, TypeEnum.Int, ref info);
-                            CurBlock().ResetTempVars();
-                            //gen ret
-                            codes.Add(EncodeOpcode(InsEnum.RET, info.IsGlobal, info.ResultType, info.ResultIndex));
-                        }
-                        else {
-                            err.AppendFormat("Illegal return, expect return exp, code:{0}, line:{1}", callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
-                            err.AppendLine();
+                    else if (id == "`") {
+                        int paramNum = callData.GetParamNum();
+                        if (paramNum == 2) {
+                            Dsl.ISyntaxComponent param0 = callData.GetParam(0);
+                            Dsl.ISyntaxComponent param1 = callData.GetParam(1);
+                            if (param0 is Dsl.ValueData vd) {
+                                if (vd.GetId() == "return") {
+                                    //return`exp; => return(exp);
+                                    Dsl.FunctionData newCall = new Dsl.FunctionData();
+                                    newCall.Name = new Dsl.ValueData("return", Dsl.ValueData.ID_TOKEN);
+                                    newCall.SetParenthesesParamClass();
+                                    newCall.Params.Add(param1);
+                                    CompileSyntaxInHook(newCall, codes, err);
+                                }
+                            }
+                            else if (param0 is Dsl.FunctionData fd) {
+                                //if(cond)`exp; => if(cond){exp;}
+                                //while(cond)`exp; => while(cond){exp;}
+                                //loop(var,begin,end[,inc])`exp; => loop(var,begin,end[,inc]){exp;}
+                                Dsl.FunctionData newCall = new Dsl.FunctionData();
+                                newCall.LowerOrderFunction = fd;
+                                newCall.SetStatementParamClass();
+                                newCall.Params.Add(param1);
+                                CompileSyntaxInHook(newCall, codes, err);
+                            }
                         }
                     }
                     else if (callData.IsParenthesesParamClass()) {
@@ -2324,6 +2230,7 @@ namespace CppDebugScript
                             if (null != lexicalInfo) {
                                 int curpos = codes.Count;
                                 codes.Add(EncodeOpcode(InsEnum.JMP));
+                                Debug.Assert(null != lexicalInfo.LoopBreakFixes);
                                 lexicalInfo.LoopBreakFixes.Add(curpos);
                             }
                             else {
@@ -2459,8 +2366,7 @@ namespace CppDebugScript
                     }
                     else {
                         string op = callData.GetId();
-                        ApiInfo apiInfo;
-                        bool apiExists = m_Apis.TryGetValue(op, out apiInfo);
+                        bool apiExists = m_Apis.TryGetValue(op, out var apiInfo);
                         int num = callData.GetParamNum();
                         var sinfos = new List<SemanticInfo>();
                         if (op == "expect") {
@@ -2525,7 +2431,7 @@ namespace CppDebugScript
                         else if (op == "size") {
                             if (!callData.IsHighOrder && callData.GetParamNum() == 1) {
                                 var struName = callData.GetParamId(0);
-                                if(TryGetStruct(struName, out var struInfo)) {
+                                if (TryGetStruct(struName, out var struInfo) && null != struInfo) {
                                     int size = struInfo.Size;
                                     semanticInfo.ResultType = TypeEnum.Int;
                                     semanticInfo.ResultValues = new List<string> { size.ToString() };
@@ -2546,10 +2452,10 @@ namespace CppDebugScript
                             if (!callData.IsHighOrder && callData.GetParamNum() >= 2) {
                                 var proto = callData.GetParam(0);
                                 var protoInfo = ParseProto(proto, err);
+                                Debug.Assert(protoInfo != null);
                                 for (int i = 1; i < num; ++i) {
                                     var param = callData.GetParam(i);
                                     var sinfo = new SemanticInfo { TargetType = TypeEnum.Int };
-                                    Debug.Assert(null != protoInfo);
                                     sinfo.TargetType = protoInfo.GetParamType(i - 1, sinfo.TargetType);
                                     CompileExpression(param, codes, err, ref sinfo);
                                     if (i == 1) {
@@ -2830,8 +2736,7 @@ namespace CppDebugScript
                                 TryGenHookVer(codes, sinfos, err, callData, ref semanticInfo);
                             }
                             else {
-                                ApiInfo info;
-                                if (!m_Apis.TryGetValue(op, out info)) {
+                                if (!m_Apis.TryGetValue(op, out var info)) {
                                     err.AppendFormat("Undefined api '{0}', code:{1}, line:{2}", op, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
                                     err.AppendLine();
                                 }
@@ -2850,7 +2755,7 @@ namespace CppDebugScript
                     }
                 }
                 else {
-                    Dsl.ValueData valueData = comp as Dsl.ValueData;
+                    Dsl.ValueData? valueData = comp as Dsl.ValueData;
                     if (null != valueData) {
                         string val = valueData.GetId();
                         switch (valueData.GetIdType()) {
@@ -2882,9 +2787,9 @@ namespace CppDebugScript
             }
         }
 
-        private ProtoInfo ParseProto(Dsl.ISyntaxComponent exp, StringBuilder err)
+        private ProtoInfo? ParseProto(Dsl.ISyntaxComponent exp, StringBuilder err)
         {
-            ProtoInfo proto = null;
+            ProtoInfo? proto = null;
             string id = exp.GetId();
             if (exp is Dsl.ValueData) {
                 m_Protos.TryGetValue(id, out proto);
@@ -2895,6 +2800,7 @@ namespace CppDebugScript
                     var fd = exp as Dsl.FunctionData;
                     var call = fd;
                     bool existsOptions = false;
+                    Debug.Assert(null != fd);
                     if (fd.IsHighOrder && fd.LowerOrderFunction.IsParenthesesParamClass() && fd.HaveStatement()) {
                         call = fd.LowerOrderFunction;
                         existsOptions = true;
@@ -2920,6 +2826,7 @@ namespace CppDebugScript
 
                             if (pnum >= 3) {
                                 var ptsInt = call.GetParam(2) as Dsl.FunctionData;
+                                Debug.Assert(ptsInt != null);
                                 foreach (var p in ptsInt.Params) {
                                     s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                     proto.IntParams.Add(ty);
@@ -2927,6 +2834,7 @@ namespace CppDebugScript
                             }
                             if (pnum >= 4) {
                                 var ptsFloat = call.GetParam(3) as Dsl.FunctionData;
+                                Debug.Assert(ptsFloat != null);
                                 foreach (var p in ptsFloat.Params) {
                                     s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                     proto.FloatParams.Add(ty);
@@ -2934,6 +2842,7 @@ namespace CppDebugScript
                             }
                             if (pnum >= 5) {
                                 var ptsStack = call.GetParam(4) as Dsl.FunctionData;
+                                Debug.Assert(ptsStack != null);
                                 foreach (var p in ptsStack.Params) {
                                     s_Type2Ids.TryGetValue(p.GetId(), out var ty);
                                     proto.StackParams.Add(ty);
@@ -2978,7 +2887,7 @@ namespace CppDebugScript
             }
             return proto;
         }
-        private StructInfo ParseStruct(Dsl.FunctionData callData, StringBuilder err)
+        private StructInfo? ParseStruct(Dsl.FunctionData callData, StringBuilder err)
         {
             if (callData.IsHighOrder) {
                 var head = callData.LowerOrderFunction;
@@ -3042,6 +2951,7 @@ namespace CppDebugScript
                 }
                 else {
                     if (TryGetStruct(field.Type, out var refStruInfo)) {
+                        Debug.Assert(null != refStruInfo);
                         field.Size = refStruInfo.Size;
                     }
                     else {
@@ -3114,7 +3024,7 @@ namespace CppDebugScript
             }
             return string.Empty;
         }
-        private bool TryGetStruct(string name, out StructInfo struInfo)
+        private bool TryGetStruct(string name, out StructInfo? struInfo)
         {
             if (m_StructInfos.TryGetValue(name, out struInfo)) {
                 return true;
@@ -3124,7 +3034,7 @@ namespace CppDebugScript
             }
             return false;
         }
-        private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<int> offsets, out int lastSize, out StructInfo struInfo, out List<int> fieldIndexes)
+        private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<int> offsets, out int lastSize, out StructInfo? struInfo, out List<int>? fieldIndexes)
         {
             bool success = true;
             lastSize = 0;
@@ -3177,7 +3087,8 @@ namespace CppDebugScript
                     }
                     else if (funcData.IsParenthesesParamClass() && num == 1 && funcData.GetId() == "ptr") {
                         success = success && CalcStructExpressionOffsets(funcData.GetParam(0), err, offsets, out lastSize, out struInfo, out fieldIndexes);
-
+                        Debug.Assert(null != struInfo);
+                        Debug.Assert(null != fieldIndexes);
                         var field = struInfo.Fields[fieldIndexes[0]];
                         TryGetStruct(field.Type, out struInfo);
                         fieldIndexes = null;
@@ -3187,6 +3098,8 @@ namespace CppDebugScript
                     }
                     else if (funcData.IsBracketParamClass() && num == 1) {
                         int.TryParse(funcData.GetParamId(0), out var index);
+                        Debug.Assert(null != struInfo);
+                        Debug.Assert(null != fieldIndexes);
                         fieldIndexes.Add(index);
 
                         var field = struInfo.Fields[fieldIndexes[0]];
@@ -6090,17 +6003,18 @@ namespace CppDebugScript
             }
             return TypeEnum.NotUse;
         }
-        private List<string> TryCalcConst(InsEnum op, List<SemanticInfo> opds)
+        private List<string>? TryCalcConst(InsEnum op, List<SemanticInfo> opds)
         {
             foreach (var opd in opds) {
                 if (null == opd.ResultValues)
                     return null;
             }
-            List<string> ret = new List<string>();
+            List<string>? ret = new List<string>();
             switch (op) {
                 case InsEnum.NEG:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         if (opd.ResultType == TypeEnum.String) {
                             TryParseDouble(opd.ResultValues[0], out var val);
                             ret.Add((-val).ToString());
@@ -6114,11 +6028,14 @@ namespace CppDebugScript
                 case InsEnum.ADD:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         ret.AddRange(opd.ResultValues);
                     }
                     else if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6135,6 +6052,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6151,6 +6070,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6167,6 +6088,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6183,6 +6106,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6199,6 +6124,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6215,6 +6142,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6230,6 +6159,7 @@ namespace CppDebugScript
                 case InsEnum.NOT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         if (opd.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd.ResultValues[0], out var val);
                             ret.Add((val == 0).ToString());
@@ -6244,6 +6174,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6260,6 +6192,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6276,6 +6210,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6292,6 +6228,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6308,6 +6246,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6324,6 +6264,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         if (opd1.ResultType == TypeEnum.Float || opd2.ResultType == TypeEnum.Float) {
                             TryParseDouble(opd1.ResultValues[0], out var val1);
                             TryParseDouble(opd2.ResultValues[1], out var val2);
@@ -6340,6 +6282,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         TryParseLong(opd1.ResultValues[0], out var val1);
                         int.TryParse(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 << val2).ToString());
@@ -6349,6 +6293,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         TryParseLong(opd1.ResultValues[0], out var val1);
                         int.TryParse(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 >> val2).ToString());
@@ -6358,6 +6304,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         ulong.TryParse(opd1.ResultValues[0], out var val1);
                         int.TryParse(opd2.ResultValues[0], out var val2);
                         ret.Add(unchecked((long)(val1 >> val2)).ToString());
@@ -6367,6 +6315,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         TryParseLong(opd1.ResultValues[0], out var val1);
                         TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 & val2).ToString());
@@ -6376,6 +6326,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         TryParseLong(opd1.ResultValues[0], out var val1);
                         TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 | val2).ToString());
@@ -6385,6 +6337,8 @@ namespace CppDebugScript
                     if (opds.Count == 2) {
                         var opd1 = opds[0];
                         var opd2 = opds[1];
+                        Debug.Assert(opd1.ResultValues != null);
+                        Debug.Assert(opd2.ResultValues != null);
                         TryParseLong(opd1.ResultValues[0], out var val1);
                         TryParseLong(opd2.ResultValues[0], out var val2);
                         ret.Add((val1 ^ val2).ToString());
@@ -6393,6 +6347,7 @@ namespace CppDebugScript
                 case InsEnum.BITNOT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add((~val).ToString());
                     }
@@ -6400,6 +6355,7 @@ namespace CppDebugScript
                 case InsEnum.INT2STR:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
@@ -6407,6 +6363,7 @@ namespace CppDebugScript
                 case InsEnum.FLT2STR:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
@@ -6414,6 +6371,7 @@ namespace CppDebugScript
                 case InsEnum.STR2INT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
@@ -6421,6 +6379,7 @@ namespace CppDebugScript
                 case InsEnum.STR2FLT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(val.ToString());
                     }
@@ -6428,6 +6387,7 @@ namespace CppDebugScript
                 case InsEnum.CASTFLTINT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseDouble(opd.ResultValues[0], out var val);
                         ret.Add(((long)val).ToString());
                     }
@@ -6438,6 +6398,7 @@ namespace CppDebugScript
                 case InsEnum.CASTINTFLT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         ret.Add(((double)val).ToString());
                     }
@@ -6448,6 +6409,7 @@ namespace CppDebugScript
                 case InsEnum.ASINT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseDouble(opd.ResultValues[0], out var val);
                         int v;
                         float fv = (float)val;
@@ -6460,6 +6422,7 @@ namespace CppDebugScript
                 case InsEnum.ASFLOAT:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         float v;
                         int iv = (int)val;
@@ -6472,6 +6435,7 @@ namespace CppDebugScript
                 case InsEnum.ASLONG:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseDouble(opd.ResultValues[0], out var val);
                         long v;
                         unsafe {
@@ -6483,6 +6447,7 @@ namespace CppDebugScript
                 case InsEnum.ASDOUBLE:
                     if (opds.Count == 1) {
                         var opd = opds[0];
+                        Debug.Assert(opd.ResultValues != null);
                         TryParseLong(opd.ResultValues[0], out var val);
                         double v;
                         unsafe {
@@ -6738,9 +6703,9 @@ namespace CppDebugScript
             }
             return varInfo.Index;
         }
-        private HookInfo CurHookInfo()
+        private HookInfo? CurHookInfo()
         {
-            HookInfo curHookInfo = null;
+            HookInfo? curHookInfo = null;
             if (m_HookParseStack.Count > 0) {
                 curHookInfo = m_HookParseStack.Peek();
             }
@@ -6785,7 +6750,7 @@ namespace CppDebugScript
         {
             return CurBlock().BlockId;
         }
-        private LexicalScopeInfo CurBranchBlock()
+        private LexicalScopeInfo? CurBranchBlock()
         {
             foreach (var info in m_LexicalScopeStack) {
                 if (info.IsBranch)
@@ -6793,7 +6758,7 @@ namespace CppDebugScript
             }
             return null;
         }
-        private LexicalScopeInfo CurLoopBlock()
+        private LexicalScopeInfo? CurLoopBlock()
         {
             foreach (var info in m_LexicalScopeStack) {
                 if (info.IsLoop)
@@ -6809,9 +6774,9 @@ namespace CppDebugScript
             }
             return -1;
         }
-        private VarInfo GetVarInfo(string name)
+        private VarInfo? GetVarInfo(string name)
         {
-            VarInfo varInfo = null;
+            VarInfo? varInfo = null;
             if (m_VarInfos.TryGetValue(name, out var varInfos)) {
                 bool find = false;
                 foreach (var scopeInfo in m_LexicalScopeStack) {
@@ -6975,8 +6940,8 @@ namespace CppDebugScript
             public TypeEnum Type = TypeEnum.NotUse;
             public int Count = 0;
             public int Index = 0;
-            public string[] InitValues = null;
-            public HookInfo OwnHook = null;
+            public string[]? InitValues = null;
+            public HookInfo? OwnHook = null;
 
             public void CopyFrom(VarInfo other)
             {
@@ -7023,7 +6988,7 @@ namespace CppDebugScript
             public int NextTempStringVarIndex = c_max_variable_table_size - 1;
 
             public int LoopContinue = 0;
-            public List<int> LoopBreakFixes = null;
+            public List<int>? LoopBreakFixes = null;
 
             public void ResetTempVars()
             {
@@ -7077,7 +7042,7 @@ namespace CppDebugScript
             public TypeEnum ResultType;
             public int ResultCount;
             public int ResultIndex;
-            public List<string> ResultValues;
+            public List<string>? ResultValues;
 
             public void Reset()
             {
@@ -7122,6 +7087,17 @@ namespace CppDebugScript
         private Dictionary<string, StructInfo> m_PredefinedStructInfos = new Dictionary<string, StructInfo>();
         private Dictionary<string, StructInfo> m_StructInfos = new Dictionary<string, StructInfo>();
 
+        public enum PairTagEnum
+        {
+            PAIR_TAG_IF = 1,
+            PAIR_TAG_ELSEIF,
+            PAIR_TAG_ELIF,
+            PAIR_TAG_WHILE,
+            PAIR_TAG_LOOP,
+            PAIR_TAG_LOOPI,
+            PAIR_TAG_LOOPD,
+            PAIR_TAG_LAST = PAIR_TAG_LOOPD
+        }
         public enum LocalGlobalEnum
         {
             Local = 0,
@@ -7298,6 +7274,51 @@ namespace CppDebugScript
             "float",
             "double"
         };
+        private Dictionary<string, uint> s_NameTags = new Dictionary<string, uint> {
+                { "if", (int)PairTagEnum.PAIR_TAG_IF },
+                { "elseif", (int)PairTagEnum.PAIR_TAG_ELSEIF },
+                { "elif", (int)PairTagEnum.PAIR_TAG_ELIF },
+                { "while", (int)PairTagEnum.PAIR_TAG_WHILE },
+                { "loop", (int)PairTagEnum.PAIR_TAG_LOOP },
+                { "loopi", (int)PairTagEnum.PAIR_TAG_LOOPI },
+                { "loopd", (int)PairTagEnum.PAIR_TAG_LOOPD }
+            };
+        private Dictionary<string, string> s_FirstLastKeyOfCompoundStatements = new Dictionary<string, string> {
+                { "if", "else" },
+                { "while", "while" },
+                { "loop", "loop" },
+                { "loopi", "loopi" },
+                { "loopd", "loopd" },
+                { "struct", "struct" },
+                { "hook", "hook" },
+                { "onenter", "onenter" },
+                { "onexit", "onexit" }
+            };
+        private Dictionary<string, HashSet<string>> s_SuccessorsOfCompoundStatements = new Dictionary<string, HashSet<string>> {
+                { "if", new HashSet<string> { "elseif", "elif", "else" } },
+                { "elseif", new HashSet<string> { "elseif", "elif", "else" } },
+                { "elif", new HashSet<string> { "elseif", "elif", "else" } },
+                { "else", new HashSet<string> { } },
+                { "while", new HashSet<string> { } },
+                { "loop", new HashSet<string> { } },
+                { "loopi", new HashSet<string> { } },
+                { "loopd", new HashSet<string> { } },
+                { "struct", new HashSet<string> { } },
+                { "hook", new HashSet<string> { } },
+                { "onenter", new HashSet<string> { } },
+                { "onexit", new HashSet<string> { } }
+            };
+        private HashSet<string> s_CompoundStatements = new HashSet<string> {
+                "if",
+                "while",
+                "loop",
+                "loopi",
+                "loopd",
+                "struct",
+                "hook",
+                "onenter",
+                "onexit"
+            };
 
         private const int c_abs_offset_mask = 0x7fffffff;
         private const int c_offset_backward_flag = unchecked((int)0x80000000);
@@ -7321,7 +7342,7 @@ namespace CppDebugScript
             _baseComparer = baseComparer ?? Comparer<TKey>.Default;
         }
 
-        public int Compare(TKey x, TKey y)
+        public int Compare(TKey? x, TKey? y)
         {
             return _baseComparer.Compare(y, x);
         }

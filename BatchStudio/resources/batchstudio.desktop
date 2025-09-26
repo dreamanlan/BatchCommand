@@ -1,0 +1,8 @@
+[Desktop Entry]
+Categories=Development;
+Comment=Open-source, cross-platform Qt based IDE for batch command.
+Exec=BatchStudio
+Name=BatchStudio
+Icon=icon
+Terminal=false
+Type=Application

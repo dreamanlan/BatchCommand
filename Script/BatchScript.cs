@@ -1121,6 +1121,40 @@ namespace BatchCommand
         {
             s_Calculator.OnLoadFailback = callback;
         }
+        internal static void Clear()
+        {
+            s_Calculator.Clear();
+        }
+        internal static void ClearGlobalVariables()
+        {
+            s_Calculator.ClearGlobalVariables();
+        }
+        internal static bool TryGetGlobalVariable(string v, out BoxedValue result)
+        {
+            return s_Calculator.TryGetGlobalVariable(v, out result);
+        }
+        internal static BoxedValue GetGlobalVariable(string v)
+        {
+            TryGetGlobalVariable(v, out var result);
+            return result;
+        }
+        internal static void SetGlobalVariable(string v, BoxedValue val)
+        {
+            s_Calculator.SetGlobalVariable(v, val);
+        }
+        internal static void Load(string scpFile)
+        {
+            var sdir = Path.GetDirectoryName(scpFile);
+            sdir = Path.Combine(Environment.CurrentDirectory, sdir);
+            s_ScriptDirectory = sdir;
+            s_Calculator.Clear();
+            s_Calculator.LoadDsl(scpFile);
+            Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
+        }
+        internal static BoxedValue Run(string scpFile)
+        {
+            return Run(scpFile, new List<BoxedValue>());
+        }
         internal static BoxedValue Run(string scpFile, List<BoxedValue> args)
         {
             var r = BoxedValue.NullObject;
@@ -1128,12 +1162,7 @@ namespace BatchCommand
             var vargs = s_Calculator.NewCalculatorValueList();
             vargs.AddRange(args);
             while (redirect) {
-                var sdir = Path.GetDirectoryName(scpFile);
-                sdir = Path.Combine(Environment.CurrentDirectory, sdir);
-                s_ScriptDirectory = sdir;
-                s_Calculator.Clear();
-                s_Calculator.LoadDsl(scpFile);
-                Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
+                Load(scpFile);
                 r = s_Calculator.Calc("main", vargs);
                 if (s_Calculator.RunState == RunStateEnum.Redirect) {
                     s_Calculator.RunState = RunStateEnum.Normal;
@@ -1161,6 +1190,7 @@ namespace BatchCommand
         {
             BoxedValue r = BoxedValue.EmptyString;
             var file = new Dsl.DslFile();
+            ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
             if (file.LoadFromString(code, msg => { Log(msg); })) {
                 r = EvalAndRun(file.DslInfos);
             }
@@ -1184,6 +1214,7 @@ namespace BatchCommand
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
+            ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
             if (file.LoadFromString(procCode, msg => { Log(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
                 Debug.Assert(null != func);

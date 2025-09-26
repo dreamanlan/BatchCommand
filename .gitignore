@@ -62,3 +62,5 @@ DebugScriptVM/x64
 x64/Debug/MonoBleedingEdge
 /x64/Debug/dotnet_on_mac
 *.zip
+/BatchStudio/debug
+/BatchStudio/release

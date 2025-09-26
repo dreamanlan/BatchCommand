@@ -81,11 +81,13 @@ namespace BatchCommand
                         if (null != istream) {
                             istream.Seek(0, SeekOrigin.Begin);
                             using (var sr = new StreamReader(istream, encoding, true, 1024, true)) {
+#nullable enable
                                 string? line;
                                 while ((line = sr.ReadLine()) != null) {
                                     p.StandardInput.WriteLine(line);
                                     p.StandardInput.Flush();
                                 }
+#nullable disable
                             }
                             p.StandardInput.Close();
                         }

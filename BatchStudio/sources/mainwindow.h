@@ -15,6 +15,7 @@
 #include "findreplacedialog.h"
 #include "processutils.h"
 
+class QToolBar;
 class QToolButton;
 class QMenu;
 class FlowLayout;
@@ -60,8 +61,10 @@ private:
     QAction *m_ActionViewFiles;
     QAction *m_ActionViewButtons;
     QAction *m_ActionViewConsole;
+    QAction *m_ActionViewToolBar;
     QAction *m_ActionViewWindowsConsole;
     QStackedWidget *m_CentralStack;
+    QToolBar *m_MainToolBar;
     QDockWidget *m_DockFolder;
     QDockWidget *m_DockFiles;
     QDockWidget *m_DockButtons;

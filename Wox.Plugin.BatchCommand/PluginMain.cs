@@ -466,6 +466,10 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             s_StandardOutput.AutoFlush = true;
             s_StandardOutput.Flush();
             Console.Clear();
+
+            handle = GetConsoleWindow();
+            IntPtr hMenu = GetSystemMenu(handle, false);
+            EnableMenuItem(hMenu, SC_CLOSE, MF_BYCOMMAND | MF_GRAYED);
         }
         else if(!IsWindowVisible(handle)) {
             ShowWindow(handle, SW_SHOW);
@@ -723,6 +727,15 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         Pipe = 0x0003
     }
 
+    const uint SC_CLOSE = 0xF060;
+    const uint MF_BYCOMMAND = 0x00000000;
+    const uint MF_GRAYED = 0x00000001;
+    const uint MF_ENABLED = 0x00000000;
+
+    [DllImport("user32.dll")]
+    static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+    [DllImport("user32.dll")]
+    static extern int EnableMenuItem(IntPtr hMenu, uint uIDEnableItem, uint uEnable);
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool IsWindowVisible(IntPtr hWnd);
     [DllImport("user32.dll", SetLastError = true)]

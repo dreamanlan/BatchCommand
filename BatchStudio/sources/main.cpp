@@ -32,6 +32,26 @@ static bool attachOrCreateConsole()
 
     return true;
 }
+
+void DisableCloseButton(HWND hWnd)
+{
+    HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+    if (hMenu)
+    {
+        EnableMenuItem(hMenu, SC_CLOSE, MF_BYCOMMAND | MF_GRAYED);
+        DrawMenuBar(hWnd);
+    }
+}
+
+void EnableCloseButton(HWND hWnd)
+{
+    HMENU hMenu = GetSystemMenu(hWnd, FALSE);
+    if (hMenu)
+    {
+        EnableMenuItem(hMenu, SC_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+        DrawMenuBar(hWnd);
+    }
+}
 #endif
 
 #define CODE_RESTART 60600
@@ -42,6 +62,7 @@ int main(int argc, char *argv[])
     attachOrCreateConsole();
     qInstallMessageHandler(qtMessageToStdout);
     ShowWindow(GetConsoleWindow(), SW_HIDE);
+    DisableCloseButton(GetConsoleWindow());
 #endif
 
     QApplication::setApplicationName("Batch Studio");

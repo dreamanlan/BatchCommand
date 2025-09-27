@@ -1,11 +1,11 @@
 ﻿script(main)
 {
-  fileecho(true);
+	fileecho(true);
 	clear();
 	echo("{0} {1} {2} {3} {4}", gettitle(), getbufferwidth(), getbufferheight(), getbgcolor(), getfgcolor());
 	settitle("测试c#批处理工具");
-  $encoding = getinputencoding();
-  setencoding("gb2312");
+	$encoding = getinputencoding();
+	setencoding("gb2312");
 
 	echo("os:{0}",os());
 	echo("osplatform:{0}",osplatform());
@@ -16,7 +16,7 @@
 	$a = (2-1).ToString();
 	$b = (2-1).m_value;
 	echo("2-1={0},{1}",$a,$b);
-	
+
 	@g1=123;
 	@g2=456;
 	echo("global:{0}", call("calc1"));
@@ -30,14 +30,14 @@
 		output("$txt");
 	};
 	echo("dir result:{0}", $txt);
-	
+
 	looplist(plist("")){
 		echo("{0} {1}", $$.Id, $$.ProcessName);
 	};
-	
+
 	echo("pid:{0}", pid());
 	echo("kill:{0}", kill("BatchCommand"));
-	
+
 	setfgcolor("DarkBlue");
 	echo("readline:");
 	$var1 = readline();
@@ -49,8 +49,8 @@
 	echo("press any key ...");
 	process("cmd", "/c dir"){
 		nowait(true);
-		newwindow(true);
-		windowstyle("Normal");		
+		createwindow(true);
+		windowstyle("Normal");
 	};
 	waitall();
 	echo("press any key ...");

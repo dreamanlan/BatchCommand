@@ -325,6 +325,8 @@ namespace DotNetLib
 
         public IntPtr Worker { get => m_Worker; set => m_Worker = value; }
         public IntPtr Result { get => m_Result; set => m_Result = value; }
+        public string CurrentScheme { get => m_CurrentScheme; }
+        public List<string> Includes { get => m_Includes; }
 
         public void OutputLog(string msg)
         {
@@ -410,6 +412,10 @@ namespace DotNetLib
                 return sb.ToString();
             }
             return string.Empty;
+        }
+        public void SetDslScript(string filePath)
+        {
+            SetSettingString("dsl_script", filePath);
         }
         public string GetDslScript()
         {
@@ -634,6 +640,8 @@ namespace DotNetLib
         public void LoadScheme(string path)
         {
             if (m_Schemes.TryGetValue(path, out var fd)) {
+                m_CurrentScheme = path;
+                m_Includes.Clear();
                 foreach (var p in fd.Params) {
                     if(p is Dsl.FunctionData func) {
                         string fid = func.GetId();
@@ -649,6 +657,12 @@ namespace DotNetLib
                         else if (fid == "setting_string") {
                             SetSettingString(func.GetParamId(0), func.GetParamId(1));
                         }
+                        else if (fid == "dsl_script") {
+                            SetDslScript(func.GetParamId(0));
+                        }
+                        else if (fid == "include") {
+                            m_Includes.Add(func.GetParamId(0));
+                        }
                         else if (fid == "add_button") {
                             AddButton(func.GetParamId(0), func.GetParamId(1), func.GetParamId(2), func.GetParamId(3));
                         }
@@ -661,6 +675,8 @@ namespace DotNetLib
         }
 
         private SortedDictionary<string, Dsl.FunctionData> m_Schemes = new SortedDictionary<string, Dsl.FunctionData>();
+        private string m_CurrentScheme = string.Empty;
+        private List<string> m_Includes = new List<string>();
 
         private HostOutputLogDelegation? m_OutputLogApi;
         private HostShowProgressDelegation? m_ShowProgressApi;
@@ -983,6 +999,10 @@ namespace DotNetLib
                     s_DslScriptTime = fi.LastWriteTime;
                     s_DslScriptPath = path;
                     BatchCommand.BatchScript.Load(fi.FullName);
+                    var includes = s_NativeApi?.Includes;
+                    if (null != includes) {
+                        BatchCommand.BatchScript.LoadIncludes(includes);
+                    }
 
                     LogNoLock("[csharp] Load dsl script: " + fi.FullName);
                 }

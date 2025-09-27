@@ -321,11 +321,11 @@ typedef struct {
 
 void host_output_log(const char* msg)
 {
-    ProcessOutput::instance()->emitOutputLog(msg);
+    ProcessOutput::instance()->emitOutputLog(QString::fromUtf8(msg));
 }
 void host_show_progress(int percent, const char* msg)
 {
-    ProcessOutput::instance()->emitProgress(percent, msg);
+    ProcessOutput::instance()->emitProgress(percent, QString::fromUtf8(msg));
 }
 bool host_run_command(const char* cmd, const char* args, void* result)
 {
@@ -333,7 +333,7 @@ bool host_run_command(const char* cmd, const char* args, void* result)
         return false;
     }
     ProcessResult* res = reinterpret_cast<ProcessResult*>(result);
-    *res = ProcessUtils::runCommand(cmd, QString(args).split(' '));
+    *res = ProcessUtils::runCommand(QString::fromUtf8(cmd), QString::fromUtf8(args).split(' '));
     return res->code == 0;
 }
 bool host_run_command_timeout(const char* cmd, const char* args, int timeout, void* result)
@@ -342,7 +342,7 @@ bool host_run_command_timeout(const char* cmd, const char* args, int timeout, vo
         return false;
     }
     ProcessResult* res = reinterpret_cast<ProcessResult*>(result);
-    *res = ProcessUtils::runCommand(cmd, QString(args).split(' '), timeout);
+    *res = ProcessUtils::runCommand(QString::fromUtf8(cmd), QString::fromUtf8(args).split(' '), timeout);
     return res->code == 0;
 }
 int host_get_result_code(void* result)
@@ -416,7 +416,7 @@ bool host_find_in_path(const char* filename, char* path, int& path_size)
     if (!filename || !path) {
         return false;
     }
-    QString res = ProcessUtils::findInPath(filename);
+    QString res = ProcessUtils::findInPath(QString::fromUtf8(filename));
     if (res.isEmpty()) {
         path[0] = '\0';
         path_size = 0;
@@ -553,7 +553,7 @@ bool host_get_setting_path(const char* name, char* path, int& path_size)
         return false;
     }
     QSettings settings;
-    QString res = settings.value(name, QVariant(static_cast<const char*>(path))).toString();
+    QString res = settings.value(QString::fromUtf8(name), QVariant(QString::fromUtf8(path))).toString();
     if (res.isEmpty()) {
         path[0] = '\0';
         path_size = 0;
@@ -576,7 +576,7 @@ int host_get_setting_int(const char* name, int def_val)
         return 0;
     }
     QSettings settings;
-    return settings.value(name, def_val).toInt();
+    return settings.value(QString::fromUtf8(name), def_val).toInt();
 }
 float host_get_setting_float(const char* name, float def_val)
 {
@@ -584,7 +584,7 @@ float host_get_setting_float(const char* name, float def_val)
         return 0;
     }
     QSettings settings;
-    return settings.value(name, def_val).toFloat();
+    return settings.value(QString::fromUtf8(name), def_val).toFloat();
 }
 double host_get_setting_double(const char* name, double def_val)
 {
@@ -592,7 +592,7 @@ double host_get_setting_double(const char* name, double def_val)
         return 0;
     }
     QSettings settings;
-    return settings.value(name, def_val).toDouble();
+    return settings.value(QString::fromUtf8(name), def_val).toDouble();
 }
 bool host_get_setting_string(const char* name, char* str, int& str_size)
 {
@@ -600,7 +600,7 @@ bool host_get_setting_string(const char* name, char* str, int& str_size)
         return false;
     }
     QSettings settings;
-    QString res = settings.value(name, QVariant(static_cast<const char*>(str))).toString();
+    QString res = settings.value(QString::fromUtf8(name), QVariant(QString::fromUtf8(str))).toString();
     if (res.isEmpty()) {
         str[0] = '\0';
         str_size = 0;
@@ -622,7 +622,7 @@ bool host_set_setting_int(const char* name, int value)
         return false;
     }
     QSettings settings;
-    settings.setValue(name, value);
+    settings.setValue(QString::fromUtf8(name), value);
     settings.sync();
     return true;
 }
@@ -632,7 +632,7 @@ bool host_set_setting_float(const char* name, float value)
         return false;
     }
     QSettings settings;
-    settings.setValue(name, value);
+    settings.setValue(QString::fromUtf8(name), value);
     settings.sync();
     return true;
 }
@@ -642,7 +642,7 @@ bool host_set_setting_double(const char* name, double value)
         return false;
     }
     QSettings settings;
-    settings.setValue(name, value);
+    settings.setValue(QString::fromUtf8(name), value);
     settings.sync();
     return true;
 }
@@ -652,7 +652,7 @@ bool host_set_setting_string(const char* name, const char* value)
         return false;
     }
     QSettings settings;
-    settings.setValue(name, value);
+    settings.setValue(QString::fromUtf8(name), QString::fromUtf8(value));
     settings.sync();
     return true;
 }

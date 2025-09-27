@@ -227,6 +227,9 @@ QMenuBar *MainWindow::buildMenuBar()
     connect(m_ActionViewConsole, &QAction::toggled, m_DockConsole, &QDockWidget::setVisible);
     connect(m_DockConsole, &QDockWidget::visibilityChanged, m_ActionViewConsole, &QAction::setChecked);
     view->addSeparator();
+    m_ActionViewToolBar = view->addAction(tr("Toolbar"));
+    m_ActionViewToolBar->setCheckable(true);
+    view->addSeparator();
     m_ActionViewWindowsConsole = view->addAction(tr("Windows Console"));
     m_ActionViewWindowsConsole->setCheckable(true);
     connect(m_ActionViewWindowsConsole, &QAction::toggled, this, &MainWindow::handleActionWindowsConsole);
@@ -255,6 +258,12 @@ QMenuBar *MainWindow::buildMenuBar()
 QToolBar *MainWindow::buildMainToolBar()
 {
     auto toolbar = new QToolBar(this);
+    toolbar->setWindowTitle(tr("Toolbar"));
+    m_MainToolBar = toolbar;
+
+    connect(m_ActionViewToolBar, &QAction::toggled, m_MainToolBar, &QToolBar::setVisible);
+    connect(m_MainToolBar, &QToolBar::visibilityChanged, m_ActionViewToolBar, &QAction::setChecked);
+
     QAction* refresh = toolbar->addAction(QIcon(":/icons/icons8/refresh.png"), tr("Refresh Schemes"), this, &MainWindow::handleActionRefresh);
     toolbar->addSeparator();
 

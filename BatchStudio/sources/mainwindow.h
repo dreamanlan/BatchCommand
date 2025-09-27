@@ -145,7 +145,7 @@ private:
     void openFile(const QString& file, bool forceTxt, bool forceHex, const bool fromFolder);
     void openFindReplaceDialog(QPlainTextEdit* edit, const bool replace);
     void openFolder(const QString& folder) { openFolder(folder, false); }
-    void openFolder(const QString& folder, const bool last);
+    void openFolder(const QString& folder, const bool fromFile);
     void reloadChildren(QTreeWidgetItem* item, int maxLevel) { reloadChildren(item, maxLevel, 0); }
     void reloadChildren(QTreeWidgetItem* item, int maxLevel, int curLevel);
     QString selectionInDirectoryTree()const;

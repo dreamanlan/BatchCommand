@@ -49,8 +49,8 @@
 #define IMAGE_EXTENSIONS "gif|jpeg|jpg|png"
 #define TEXT_EXTENSIONS "java|html|properties|smali|txt|log|json|xml|yaml|yml|c|cpp|cxx|h|hpp|hxx|m|mm|cs|py|lua|js|pl|jam|dsl|scp"
 
-#define URL_CONTRIBUTE "https://github.com/dreamanlan/BatchCommand/BatchStudio"
-#define URL_DOCUMENTATION "https://github.com/dreamanlan/BatchCommand/BatchStudio"
+#define URL_CONTRIBUTE "https://github.com/dreamanlan/BatchCommand/tree/master/BatchStudio"
+#define URL_DOCUMENTATION "https://github.com/dreamanlan/BatchCommand/tree/master/BatchStudio"
 #define URL_ISSUES "https://github.com/dreamanlan/BatchCommand/issues"
 #define URL_THANKS "https://forum.xda-developers.com/showthread.php?t=2493107"
 
@@ -60,7 +60,7 @@
 MainWindow* MainWindow::s_pInstance = nullptr;
 
 MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
-    : QMainWindow(parent), m_FindReplaceDialog(nullptr)
+    : QMainWindow(parent), m_ProgressDialog(nullptr), m_FindReplaceDialog(nullptr)
 {
     s_pInstance = this;
 
@@ -79,7 +79,7 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     setCentralWidget(buildCentralWidget());
     setMinimumSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     setStatusBar(buildStatusBar(versions));
-    setWindowTitle(tr("Batch Studio").append(" - https://github.com/dreamanlan/BatchCommand/BatchStudio"));
+    setWindowTitle(tr("Batch Studio").append(" - https://github.com/dreamanlan/BatchCommand/tree/master/BatchStudio"));
     connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::handleClipboardDataChanged);
     QSettings settings;
     const bool dark = settings.value("dark_theme", false).toBool();
@@ -103,6 +103,12 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     m_ActionViewConsole->setChecked(m_DockConsole->isVisible());
     QTimer::singleShot(100, [=] {
         QSettings settings;
+        const QStringList folders = settings.value("open_folders").toStringList();
+        foreach(const QString & folder, folders) {
+            if (QFile::exists(folder)) {
+                openFolder(folder);
+            }
+        }
         const QStringList files = settings.value("open_files").toStringList();
         foreach (const QString& file, files) {
             if (QFile::exists(file)) {
@@ -497,6 +503,7 @@ void MainWindow::addSchemeMenu(const QString& path, const QString& tooltip)
                 QObject::connect(act, &QAction::triggered, [this, path]() {
                     qDebug() << "Action triggered for path:" << path;
                     if (load_scheme_fptr) {
+                        m_FlowLayout->clear();
                         ProcessResult result;
                         load_scheme_fptr(path.toStdString().c_str(), &result);
                     }
@@ -527,14 +534,12 @@ void MainWindow::addInput(const QString& label, const QString& tooltip, const QS
     inputLayout->setContentsMargins(0, 0, 0, 0);
     inputLayout->setSpacing(6);
 
-    QLabel* labelWidget = new QLabel(label);
     HistoryLineEdit* lineEdit = new HistoryLineEdit;
     lineEdit->setMaxHistory(100);
     lineEdit->setToolTip(tooltip);
     lineEdit->setText(def_val);
-    QPushButton* addBtn = new QPushButton(tr("Execute"));
-
-    inputLayout->addWidget(labelWidget);
+    QPushButton* addBtn = new QPushButton(label);
+    addBtn->setToolTip(tooltip);
     inputLayout->addWidget(lineEdit);
     inputLayout->addWidget(addBtn);
 
@@ -646,9 +651,15 @@ void MainWindow::closeEvent(QCloseEvent *event)
         settings.setValue("app_size", size());
     }
     settings.setValue("dock_state", saveState());
+    QStringList folders;
+    const int total1 = m_DirectoryTree->topLevelItemCount();
+    for (int i = 0; i < total1; ++i) {
+        folders << m_DirectoryTree->topLevelItem(i)->data(0, Qt::UserRole + 2).toString();
+    }
+    settings.setValue("open_folders", QVariant::fromValue(folders));
     QStringList files;
-    const int total = m_ModelOpenFiles->rowCount();
-    for (int i = 0; i < total; ++i) {
+    const int total2 = m_ModelOpenFiles->rowCount();
+    for (int i = 0; i < total2; ++i) {
         files << m_ModelOpenFiles->index(i, 0).data(Qt::UserRole + 1).toString();
     }
     settings.setValue("open_files", QVariant::fromValue(files));
@@ -703,14 +714,18 @@ void MainWindow::executeCommand(const QString& cmdType, const QString& cmdArgs)
     connect(worker, &CommandWorker::finished, worker, &QObject::deleteLater);
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
     thread->start();
-    m_ProgressDialog = new QProgressDialog(this);
-    m_ProgressDialog->setCancelButton(nullptr);
-    m_ProgressDialog->setLabelText(tr("Executing command..."));
-    m_ProgressDialog->setRange(0, 100);
-    m_ProgressDialog->setValue(50);
-    m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
-    m_ProgressDialog->setWindowTitle(tr("Executing..."));
-    //m_ProgressDialog->exec();
+    /*
+    if (nullptr == m_ProgressDialog) {
+        m_ProgressDialog = new QProgressDialog(this);
+        m_ProgressDialog->setCancelButton(nullptr);
+        m_ProgressDialog->setLabelText(tr("Executing command..."));
+        m_ProgressDialog->setRange(0, 100);
+        m_ProgressDialog->setValue(50);
+        m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
+        m_ProgressDialog->setWindowTitle(tr("Executing..."));
+        m_ProgressDialog->exec();
+    }
+    */
 }
 
 void MainWindow::handleActionAbout()
@@ -755,14 +770,16 @@ void MainWindow::handleActionBuild()
     connect(worker, &BuildWorker::finished, worker, &QObject::deleteLater);
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
     thread->start();
-    m_ProgressDialog = new QProgressDialog(this);
-    m_ProgressDialog->setCancelButton(nullptr);
-    m_ProgressDialog->setLabelText(tr("Running build..."));
-    m_ProgressDialog->setRange(0, 100);
-    m_ProgressDialog->setValue(50);
-    m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
-    m_ProgressDialog->setWindowTitle(tr("Building..."));
-    m_ProgressDialog->exec();
+    if (nullptr == m_ProgressDialog) {
+        m_ProgressDialog = new QProgressDialog(this);
+        m_ProgressDialog->setCancelButton(nullptr);
+        m_ProgressDialog->setLabelText(tr("Running build..."));
+        m_ProgressDialog->setRange(0, 100);
+        m_ProgressDialog->setValue(50);
+        m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
+        m_ProgressDialog->setWindowTitle(tr("Building..."));
+        m_ProgressDialog->exec();
+    }
 }
 
 void MainWindow::handleActionInstall()
@@ -782,14 +799,16 @@ void MainWindow::handleActionInstall()
     connect(worker, &InstallWorker::finished, worker, &QObject::deleteLater);
     connect(thread, &QThread::finished, thread, &QObject::deleteLater);
     thread->start();
-    m_ProgressDialog = new QProgressDialog(this);
-    m_ProgressDialog->setCancelButton(nullptr);
-    m_ProgressDialog->setLabelText(tr("Running install..."));
-    m_ProgressDialog->setRange(0, 100);
-    m_ProgressDialog->setValue(50);
-    m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
-    m_ProgressDialog->setWindowTitle(tr("Installing..."));
-    m_ProgressDialog->exec();
+    if (nullptr == m_ProgressDialog) {
+        m_ProgressDialog = new QProgressDialog(this);
+        m_ProgressDialog->setCancelButton(nullptr);
+        m_ProgressDialog->setLabelText(tr("Running install..."));
+        m_ProgressDialog->setRange(0, 100);
+        m_ProgressDialog->setValue(50);
+        m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
+        m_ProgressDialog->setWindowTitle(tr("Installing..."));
+        m_ProgressDialog->exec();
+    }
 }
 
 void MainWindow::handleActionClose()
@@ -1042,7 +1061,7 @@ void MainWindow::handleFilesSelectionChanged(const QItemSelection &selected, con
     if (!selected.isEmpty()) {
         auto index = selected.indexes().first();
         const QString path = index.data(Qt::UserRole + 1).toString();
-        openFolder(QFileInfo(path).dir().absolutePath());
+        openFolder(QFileInfo(path).dir().absolutePath(), true);
         m_TabEditors->setCurrentIndex(findTabIndex(path));
     }
 }
@@ -1053,8 +1072,11 @@ void MainWindow::handleExecuteFailed(const QString& cmdType, const QString& cmdA
     Q_UNUSED(cmdArgs)
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Command execute failed."));
 }
 
@@ -1064,8 +1086,11 @@ void MainWindow::handleExecuteFinished(const QString& cmdType, const QString& cm
     Q_UNUSED(cmdArgs)
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Command execute finished."));
 }
 
@@ -1073,8 +1098,11 @@ void MainWindow::handleBuildFailed(const QString& selInTree, const QString& selI
 {
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Build failed."));
 }
 
@@ -1082,8 +1110,11 @@ void MainWindow::handleBuildFinished(const QString& selInTree, const QString& se
 {
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Build finished."));
 }
 
@@ -1091,8 +1122,11 @@ void MainWindow::handleInstallFailed(const QString& selInTree, const QString& se
 {
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Installation failed."));
 }
 
@@ -1100,8 +1134,11 @@ void MainWindow::handleInstallFinished(const QString& selInTree, const QString& 
 {
     Q_UNUSED(selInTree)
     Q_UNUSED(selInList)
-    m_ProgressDialog->close();
-    m_ProgressDialog->deleteLater();
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
     m_StatusMessage->setText(tr("Installation finished."));
 }
 
@@ -1407,7 +1444,7 @@ void MainWindow::openFindReplaceDialog(QPlainTextEdit *edit, const bool replace)
     m_FindReplaceDialog->setTextEdit(edit);
 }
 
-void MainWindow::openFolder(const QString& folder, const bool last)
+void MainWindow::openFolder(const QString& folder, const bool fromFile)
 {
     QSettings settings;
     settings.setValue("open_folder", folder);
@@ -1434,7 +1471,7 @@ void MainWindow::openFolder(const QString& folder, const bool last)
     m_DirectoryTree->addTopLevelItem(item);
     m_DirectoryTree->expandItem(item);
     QDir dir(folder);
-    if (!last) {
+    if (!fromFile) {
         const QString hookScp = dir.filePath("hook.txt");
         if (QFile::exists(hookScp)) {
             openFile(hookScp, false, false, true);

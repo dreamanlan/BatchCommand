@@ -43,6 +43,10 @@ public struct HostApi
     public IntPtr GetSettingFloat;
     public IntPtr GetSettingDouble;
     public IntPtr GetSettingString;
+    public IntPtr SetSettingInt;
+    public IntPtr SetSettingFloat;
+    public IntPtr SetSettingDouble;
+    public IntPtr SetSettingString;
     public IntPtr AddSettingItem;
     public IntPtr AddSchemeMenu;
     public IntPtr AddButton;
@@ -95,6 +99,14 @@ public delegate float HostGetSettingFloatDelegation([MarshalAs(UnmanagedType.LPU
 public delegate double HostGetSettingDoubleDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, double def_val);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate bool HostGetSettingStringDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, StringBuilder str, ref int str_size);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostSetSettingIntDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, int val);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostSetSettingFloatDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, float val);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostSetSettingDoubleDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, double val);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostSetSettingStringDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string val);
 //0--file 1--int 2--float 3--double 4--string
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate bool HostAddSettingItemDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string label, [MarshalAs(UnmanagedType.LPUTF8Str)] string tooltip, int type, [MarshalAs(UnmanagedType.LPUTF8Str)] string default_value, [MarshalAs(UnmanagedType.LPUTF8Str)] string ext, [MarshalAs(UnmanagedType.LPUTF8Str)] string link);
@@ -298,6 +310,10 @@ namespace DotNetLib
             m_GetSettingFloatApi = Marshal.GetDelegateForFunctionPointer<HostGetSettingFloatDelegation>(hostApi.GetSettingFloat);
             m_GetSettingDoubleApi = Marshal.GetDelegateForFunctionPointer<HostGetSettingDoubleDelegation>(hostApi.GetSettingDouble);
             m_GetSettingStringApi = Marshal.GetDelegateForFunctionPointer<HostGetSettingStringDelegation>(hostApi.GetSettingString);
+            m_SetSettingIntApi = Marshal.GetDelegateForFunctionPointer<HostSetSettingIntDelegation>(hostApi.SetSettingInt);
+            m_SetSettingFloatApi = Marshal.GetDelegateForFunctionPointer<HostSetSettingFloatDelegation>(hostApi.SetSettingFloat);
+            m_SetSettingDoubleApi = Marshal.GetDelegateForFunctionPointer<HostSetSettingDoubleDelegation>(hostApi.SetSettingDouble);
+            m_SetSettingStringApi = Marshal.GetDelegateForFunctionPointer<HostSetSettingStringDelegation>(hostApi.SetSettingString);
             m_AddSettingItemApi = Marshal.GetDelegateForFunctionPointer<HostAddSettingItemDelegation>(hostApi.AddSettingItem);
             m_AddSchemeMenuApi = Marshal.GetDelegateForFunctionPointer<HostAddSchemeMenuDelegation>(hostApi.AddSchemeMenu);
             m_AddButtonApi = Marshal.GetDelegateForFunctionPointer<HostAddButtonDelegation>(hostApi.AddButton);
@@ -513,6 +529,34 @@ namespace DotNetLib
             }
             return string.Empty;
         }
+        public bool SetSettingInt(string name, int value)
+        {            
+            if (m_SetSettingIntApi == null) {
+                return false;
+            }
+            return m_SetSettingIntApi.Invoke(name, value);
+        }
+        public bool SetSettingFloat(string name, float value)
+        {
+            if (m_SetSettingFloatApi == null) {
+                return false;
+            }
+            return m_SetSettingFloatApi.Invoke(name, value);
+        }
+        public bool SetSettingDouble(string name, double value)
+        {
+            if (m_SetSettingDoubleApi == null) {
+                return false;
+            }
+            return m_SetSettingDoubleApi.Invoke(name, value);
+        }
+        public bool SetSettingString(string name, string value)
+        {
+            if (m_SetSettingStringApi == null) {
+                return false;
+            }
+            return m_SetSettingStringApi.Invoke(name, value);
+        }
         public bool AddSettingItem(string name, string label, string tooltip, int type, string default_value, string ext, string link)
         {
             if (m_AddSettingItemApi == null) {
@@ -593,7 +637,19 @@ namespace DotNetLib
                 foreach (var p in fd.Params) {
                     if(p is Dsl.FunctionData func) {
                         string fid = func.GetId();
-                        if (fid == "add_button") {
+                        if (fid == "setting_int") {
+                            SetSettingInt(func.GetParamId(0), int.Parse(func.GetParamId(1)));
+                        }
+                        else if(fid == "setting_float") {
+                            SetSettingFloat(func.GetParamId(0), float.Parse(func.GetParamId(1)));
+                        }
+                        else if (fid == "setting_double") {
+                            SetSettingDouble(func.GetParamId(0), double.Parse(func.GetParamId(1)));
+                        }
+                        else if (fid == "setting_string") {
+                            SetSettingString(func.GetParamId(0), func.GetParamId(1));
+                        }
+                        else if (fid == "add_button") {
                             AddButton(func.GetParamId(0), func.GetParamId(1), func.GetParamId(2), func.GetParamId(3));
                         }
                         else if (fid == "add_input") {
@@ -627,6 +683,10 @@ namespace DotNetLib
         private HostGetSettingFloatDelegation? m_GetSettingFloatApi;
         private HostGetSettingDoubleDelegation? m_GetSettingDoubleApi;
         private HostGetSettingStringDelegation? m_GetSettingStringApi;
+        private HostSetSettingIntDelegation? m_SetSettingIntApi;
+        private HostSetSettingFloatDelegation? m_SetSettingFloatApi;
+        private HostSetSettingDoubleDelegation? m_SetSettingDoubleApi;
+        private HostSetSettingStringDelegation? m_SetSettingStringApi;
         private HostAddSettingItemDelegation? m_AddSettingItemApi;
         private HostAddSchemeMenuDelegation? m_AddSchemeMenuApi;
         private HostAddButtonDelegation? m_AddButtonApi;

@@ -1151,11 +1151,29 @@ namespace BatchCommand
             s_Calculator.LoadDsl(scpFile);
             Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
         }
+        internal static void LoadIncludes(params string[] scpFiles)
+        {
+            LoadIncludes((IList<string>)scpFiles);
+        }
+        internal static void LoadIncludes(IList<string> scpFiles)
+        {
+            foreach (var scpFile in scpFiles) {
+                s_Calculator.LoadDsl(scpFile);
+            }
+        }
         internal static BoxedValue Run(string scpFile)
         {
-            return Run(scpFile, new List<BoxedValue>());
+            return Run(scpFile, s_EmptyStringList, s_EmptyBoxedValueList);
+        }
+        internal static BoxedValue Run(string scpFile, List<string> includes)
+        {
+            return Run(scpFile, includes, s_EmptyBoxedValueList);
         }
         internal static BoxedValue Run(string scpFile, List<BoxedValue> args)
+        {
+            return Run(scpFile, s_EmptyStringList, args);
+        }
+        internal static BoxedValue Run(string scpFile, List<string> includes, List<BoxedValue> args)
         {
             var r = BoxedValue.NullObject;
             bool redirect = true;
@@ -1163,6 +1181,7 @@ namespace BatchCommand
             vargs.AddRange(args);
             while (redirect) {
                 Load(scpFile);
+                LoadIncludes(includes);
                 r = s_Calculator.Calc("main", vargs);
                 if (s_Calculator.RunState == RunStateEnum.Redirect) {
                     s_Calculator.RunState = RunStateEnum.Normal;
@@ -1323,6 +1342,9 @@ namespace BatchCommand
         private static bool s_TimeStatisticOn = false;
         private static string s_ScriptDirectory = string.Empty;
         private static DslCalculator s_Calculator = new DslCalculator();
+
+        private static List<string> s_EmptyStringList = new List<string>();
+        private static List<BoxedValue> s_EmptyBoxedValueList = new List<BoxedValue>();
     }
 }
 #pragma warning restore 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416

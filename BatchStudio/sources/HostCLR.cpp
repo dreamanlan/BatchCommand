@@ -271,6 +271,10 @@ typedef int (*host_get_setting_int_fn)(const char* name, int def_val);
 typedef float (*host_get_setting_float_fn)(const char* name, float def_val);
 typedef double (*host_get_setting_double_fn)(const char* name, double def_val);
 typedef bool (*host_get_setting_string_fn)(const char* name, char* str, int& str_size);
+typedef bool (*host_set_setting_int_fn)(const char* name, int val);
+typedef bool (*host_set_setting_float_fn)(const char* name, float val);
+typedef bool (*host_set_setting_double_fn)(const char* name, double val);
+typedef bool (*host_set_setting_string_fn)(const char* name, const char* val);
 //0--file 1--int 2--float 3--double 4--string
 typedef bool (*host_add_setting_item_fn)(const char* name, const char* label, const char* tooltip, int type, const char* default_value, const char* ext, const char* link);
 typedef bool (*host_add_scheme_menu_fn)(const char* path, const char* tooltip);
@@ -302,6 +306,10 @@ typedef struct {
     host_get_setting_float_fn GetSettingFloat;
     host_get_setting_double_fn GetSettingDouble;
     host_get_setting_string_fn GetSettingString;
+    host_set_setting_int_fn SetSettingInt;
+    host_set_setting_float_fn SetSettingFloat;
+    host_set_setting_double_fn SetSettingDouble;
+    host_set_setting_string_fn SetSettingString;
     host_add_setting_item_fn AddSettingItem;
     host_add_scheme_menu_fn AddSchemeMenu;
     host_add_button_fn AddButton;
@@ -608,6 +616,46 @@ bool host_get_setting_string(const char* name, char* str, int& str_size)
     str_size = static_cast<int>(res_str.size());
     return true;
 }
+bool host_set_setting_int(const char* name, int value)
+{
+    if (!name) {
+        return false;
+    }
+    QSettings settings;
+    settings.setValue(name, value);
+    settings.sync();
+    return true;
+}
+bool host_set_setting_float(const char* name, float value)
+{
+    if (!name) {
+        return false;
+    }
+    QSettings settings;
+    settings.setValue(name, value);
+    settings.sync();
+    return true;
+}
+bool host_set_setting_double(const char* name, double value)
+{
+    if (!name) {
+        return false;
+    }
+    QSettings settings;
+    settings.setValue(name, value);
+    settings.sync();
+    return true;
+}
+bool host_set_setting_string(const char* name, const char* value)
+{
+    if (!name || !value) {
+        return false;
+    }
+    QSettings settings;
+    settings.setValue(name, value);
+    settings.sync();
+    return true;
+}
 bool host_add_setting_item(const char* name, const char* label, const char* tooltip, int type, const char* default_value, const char* ext, const char* link)
 {
     if (!name || !label || !tooltip || !default_value || !ext || !link) {
@@ -720,6 +768,10 @@ int load_dotnet_method()
     api.GetSettingFloat = &host_get_setting_float;
     api.GetSettingDouble = &host_get_setting_double;
     api.GetSettingString = &host_get_setting_string;
+    api.SetSettingInt = &host_set_setting_int;
+    api.SetSettingFloat = &host_set_setting_float;
+    api.SetSettingDouble = &host_set_setting_double;
+    api.SetSettingString = &host_set_setting_string;
     api.AddSettingItem = &host_add_setting_item;
     api.AddSchemeMenu = &host_add_scheme_menu;
     api.AddButton = &host_add_button;

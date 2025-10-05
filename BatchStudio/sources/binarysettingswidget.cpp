@@ -22,6 +22,9 @@ BinarySettingsWidget::BinarySettingsWidget(QWidget *parent)
 
 void BinarySettingsWidget::buildForm()
 {
+    QSettings settings;
+    m_UseJavaAndAdb = settings.value("use_java_and_adb", false).toBool();
+
     QScrollArea* scroll = new QScrollArea();
     scroll->setWidgetResizable(true);
 
@@ -48,52 +51,53 @@ void BinarySettingsWidget::buildForm()
     connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseDsl);
     layout->addRow("Dsl Script", child);
 
-    layout->addRow(tr("Java"), m_EditJavaExe = new QLineEdit(this));
-    child = new QHBoxLayout();
-    child->addWidget(button = new QPushButton(tr("Browse"), this));
-    connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseJava);
-    child->addWidget(label = new QLabel(QString("<a href=\"https://www.oracle.com/technetwork/java/javase/downloads/index.html\">%1</a>").arg(tr("Get it here!")), this), 1);
-    label->setOpenExternalLinks(true);
-    label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    label->setTextFormat(Qt::RichText);
-    layout->addRow("", child);
+    if (m_UseJavaAndAdb) {
+        layout->addRow(tr("Java"), m_EditJavaExe = new QLineEdit(this));
+        child = new QHBoxLayout();
+        child->addWidget(button = new QPushButton(tr("Browse"), this));
+        connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseJava);
+        child->addWidget(label = new QLabel(QString("<a href=\"https://www.oracle.com/technetwork/java/javase/downloads/index.html\">%1</a>").arg(tr("Get it here!")), this), 1);
+        label->setOpenExternalLinks(true);
+        label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        label->setTextFormat(Qt::RichText);
+        layout->addRow("", child);
 
-    layout->addRow(tr("Java Heap (MBs)"), m_SpinJavaHeap = new QSpinBox(this));
-    m_SpinJavaHeap->setMinimum(10);
-    m_SpinJavaHeap->setMaximum(65535);
-    m_SpinJavaHeap->setSingleStep(1);
+        layout->addRow(tr("Java Heap (MBs)"), m_SpinJavaHeap = new QSpinBox(this));
+        m_SpinJavaHeap->setMinimum(10);
+        m_SpinJavaHeap->setMaximum(65535);
+        m_SpinJavaHeap->setSingleStep(1);
 
-    layout->addRow(tr("Jadx"), m_EditJadxExe = new QLineEdit(this));
-    child = new QHBoxLayout();
-    child->addWidget(button = new QPushButton(tr("Browse"), this));
-    connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseJadx);
-    child->addWidget(label = new QLabel(QString("<a href=\"https://github.com/skylot/jadx/releases\">%1</a>").arg(tr("Get it here!")), this), 1);
-    label->setOpenExternalLinks(true);
-    label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    label->setTextFormat(Qt::RichText);
-    layout->addRow("", child);
+        layout->addRow(tr("Jadx"), m_EditJadxExe = new QLineEdit(this));
+        child = new QHBoxLayout();
+        child->addWidget(button = new QPushButton(tr("Browse"), this));
+        connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseJadx);
+        child->addWidget(label = new QLabel(QString("<a href=\"https://github.com/skylot/jadx/releases\">%1</a>").arg(tr("Get it here!")), this), 1);
+        label->setOpenExternalLinks(true);
+        label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        label->setTextFormat(Qt::RichText);
+        layout->addRow("", child);
 
-    layout->addRow(tr("ADB"), m_EditAdbExe = new QLineEdit(this));
-    child = new QHBoxLayout();
-    child->addWidget(button = new QPushButton(tr("Browse"), this));
-    connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseAdb);
-    child->addWidget(label = new QLabel(QString("<a href=\"https://developer.android.com/studio/releases/platform-tools\">%1</a>").arg(tr("Get it here!")), this), 1);
-    label->setOpenExternalLinks(true);
-    label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    label->setTextFormat(Qt::RichText);
-    layout->addRow("", child);
+        layout->addRow(tr("ADB"), m_EditAdbExe = new QLineEdit(this));
+        child = new QHBoxLayout();
+        child->addWidget(button = new QPushButton(tr("Browse"), this));
+        connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseAdb);
+        child->addWidget(label = new QLabel(QString("<a href=\"https://developer.android.com/studio/releases/platform-tools\">%1</a>").arg(tr("Get it here!")), this), 1);
+        label->setOpenExternalLinks(true);
+        label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        label->setTextFormat(Qt::RichText);
+        layout->addRow("", child);
 
-    layout->addRow(tr("Zip Align"), m_EditZipAlignExe = new QLineEdit(this));
-    child = new QHBoxLayout();
-    child->addWidget(button = new QPushButton(tr("Browse"), this));
-    connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseZipAlign);
-    child->addWidget(label = new QLabel(QString("<a href=\"https://developer.android.com/studio/releases/build-tools\">%1</a>").arg(tr("Get it here!")), this), 1);
-    label->setOpenExternalLinks(true);
-    label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-    label->setTextFormat(Qt::RichText);
-    layout->addRow("", child);
+        layout->addRow(tr("Zip Align"), m_EditZipAlignExe = new QLineEdit(this));
+        child = new QHBoxLayout();
+        child->addWidget(button = new QPushButton(tr("Browse"), this));
+        connect(button, &QPushButton::pressed, this, &BinarySettingsWidget::handleBrowseZipAlign);
+        child->addWidget(label = new QLabel(QString("<a href=\"https://developer.android.com/studio/releases/build-tools\">%1</a>").arg(tr("Get it here!")), this), 1);
+        label->setOpenExternalLinks(true);
+        label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+        label->setTextFormat(Qt::RichText);
+        layout->addRow("", child);
+    }
 
-    QSettings settings;
     auto dsl = settings.value("dsl_script", "../Managed/Script.dsl").toString();
     if (dsl.isEmpty()) {
         m_EditDslScript->setText(ProcessUtils::dslScript());
@@ -101,21 +105,26 @@ void BinarySettingsWidget::buildForm()
     else {
         m_EditDslScript->setText(dsl);
     }
-    auto adb = settings.value("adb_exe").toString();
-    if (adb.isEmpty()) {
-        m_EditAdbExe->setText(ProcessUtils::adbExe());
-    } else {
-        m_EditAdbExe->setText(adb);
+
+    if (m_UseJavaAndAdb) {
+        auto adb = settings.value("adb_exe").toString();
+        if (adb.isEmpty()) {
+            m_EditAdbExe->setText(ProcessUtils::adbExe());
+        }
+        else {
+            m_EditAdbExe->setText(adb);
+        }
+        m_EditJadxExe->setText(settings.value("jadx_exe").toString());
+        auto java = settings.value("java_exe").toString();
+        if (adb.isEmpty()) {
+            m_EditJavaExe->setText(ProcessUtils::javaExe());
+        }
+        else {
+            m_EditJavaExe->setText(java);
+        }
+        m_EditZipAlignExe->setText(settings.value("zipalign_exe").toString());
+        m_SpinJavaHeap->setValue(ProcessUtils::javaHeapSize());
     }
-    m_EditJadxExe->setText(settings.value("jadx_exe").toString());
-    auto java = settings.value("java_exe").toString();
-    if (adb.isEmpty()) {
-        m_EditJavaExe->setText(ProcessUtils::javaExe());
-    } else {
-        m_EditJavaExe->setText(java);
-    }
-    m_EditZipAlignExe->setText(settings.value("zipalign_exe").toString());
-    m_SpinJavaHeap->setValue(ProcessUtils::javaHeapSize());
 
     if (load_setting_fptr) {
         ProcessResult result;
@@ -347,11 +356,13 @@ void BinarySettingsWidget::save()
 {
     QSettings settings;
     settings.setValue("dsl_script", m_EditDslScript->text());
-    settings.setValue("adb_exe", m_EditAdbExe->text());
-    settings.setValue("jadx_exe", m_EditJadxExe->text());
-    settings.setValue("java_exe", m_EditJavaExe->text());
-    settings.setValue("java_heap", m_SpinJavaHeap->value());
-    settings.setValue("zipalign_exe", m_EditZipAlignExe->text());
+    if (m_UseJavaAndAdb) {
+        settings.setValue("adb_exe", m_EditAdbExe->text());
+        settings.setValue("jadx_exe", m_EditJadxExe->text());
+        settings.setValue("java_exe", m_EditJavaExe->text());
+        settings.setValue("java_heap", m_SpinJavaHeap->value());
+        settings.setValue("zipalign_exe", m_EditZipAlignExe->text());
+    }
     settings.sync();
 }
 

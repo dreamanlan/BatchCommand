@@ -133,6 +133,9 @@
     <ClCompile Include="QHexView\src\model\commands\replacecommand.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sources\runworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="sources\settingsdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -246,6 +249,9 @@
     <ClInclude Include="QHexView\include\QHexView\model\commands\replacecommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <CustomBuild Include="sources\runworker.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
     <CustomBuild Include="sources\settingsdialog.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
@@ -405,6 +411,12 @@
       <Filter>Generated Files</Filter>
     </ClCompile>
     <ClCompile Include="release\moc_qmemoryrefbuffer.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="debug\moc_runworker.cpp">
+      <Filter>Generated Files</Filter>
+    </ClCompile>
+    <ClCompile Include="release\moc_runworker.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
     <ClCompile Include="debug\moc_settingsdialog.cpp">
@@ -650,6 +662,9 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="resources\icons8\refresh.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\icons8\run_prog.png">
       <Filter>Resource Files</Filter>
     </None>
     <None Include="resources\scp.def">

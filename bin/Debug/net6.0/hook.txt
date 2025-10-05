@@ -1261,3 +1261,23 @@ hook("HookGetBoneWeightsNull")
 		assert(0);
 	};
 };
+hook("InitializeIl2CppFromMain")
+{
+	onenter{
+		$monoPath:string = ptrget(argv(1),8);
+		$dataPath:string = ptrget(argv(2),8);
+		
+		printf("InitializeIl2CppFromMain mono:%s data:%s\n",$monoPath,$dataPath);
+		assert(0);
+	};
+};
+hook("Il2CppMonoMemory_mmap")
+{
+	onenter{
+		$capacity:int = ptrget(argv(0),4);
+		$mlock:int = ptrget(argv(1),1);
+		
+		printf("Il2CppMonoMemory_mmap capacity:%d mlock:%d\n",$capacity,$mlock);
+		assert(0);
+	};
+};

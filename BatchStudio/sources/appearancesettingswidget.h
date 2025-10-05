@@ -14,6 +14,7 @@ class AppearanceSettingsWidget : public QWidget
 public:
     explicit AppearanceSettingsWidget(QWidget *parent = nullptr);
 private:
+    QCheckBox* m_CheckJavaAndAdb;
     QCheckBox *m_CheckShowWhitespaces;
     QComboBox *m_ComboEditorFont;
     QRadioButton *m_RadioThemeDark;

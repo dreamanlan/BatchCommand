@@ -17,6 +17,7 @@ public:
     void addSettingItem(const QString& name, const QString& label, const QString& tooltip, int type, const QString& default_value, const QString& ext, const QString& link);
 private:
     QFormLayout* m_ContainerLayout = nullptr; // 容器中每行的垂直布局
+    bool m_UseJavaAndAdb = false;
 
     QLineEdit *m_EditDslScript;
     QLineEdit *m_EditAdbExe;

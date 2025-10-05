@@ -246,6 +246,7 @@ load_setting_fn load_setting_fptr = nullptr;
 load_scheme_menu_fn load_scheme_menu_fptr = nullptr;
 load_scheme_fn load_scheme_fptr = nullptr;
 execute_command_fn execute_command_fptr = nullptr;
+run_prog_fn run_prog_fptr = nullptr;
 build_fn build_fptr = nullptr;
 install_fn install_fptr = nullptr;
 
@@ -864,6 +865,17 @@ int load_dotnet_method()
     (void**)&execute_command_fptr);
     if (rc || !execute_command_fptr) {
         printf_log("Failure: load execute_command");
+    }
+
+    rc = load_assembly_and_get_function_pointer(
+    dotnet_assembly_path,
+    dotnet_class_name,
+    L"RunProg",
+    L"DotNetLib.Lib+RunProgDelegation, DotnetApp", // Delegate type
+    nullptr,
+    (void**)&run_prog_fptr);
+    if (rc || !run_prog_fptr) {
+        printf_log("Failure: load run_prog");
     }
 
     rc = load_assembly_and_get_function_pointer(

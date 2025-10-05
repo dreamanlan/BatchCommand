@@ -9,6 +9,7 @@ CONFIG += c++11
 
 HEADERS += \
     DarkStyle/DarkStyle.h \
+    sources/runworker.h \
     sources/buildworker.h \
     sources/installworker.h \
     sources/commandworker.h \
@@ -35,6 +36,7 @@ SOURCES += \
     sources/hexedit.cpp \
     sources/imageviewerwidget.cpp \
     sources/main.cpp \
+    sources/runworker.cpp \
     sources/buildworker.cpp \
     sources/installworker.cpp \
     sources/commandworker.cpp \

@@ -41,6 +41,8 @@ public:
 protected:
     void closeEvent(QCloseEvent *event);
 private:
+    QAction *m_ActionRun1;
+    QAction *m_ActionRun2;
     QAction *m_ActionBuild1;
     QAction *m_ActionBuild2;
     QAction *m_ActionClose;
@@ -97,6 +99,7 @@ private:
 private slots:
     void handleActionAbout();
     void handleActionRefresh();
+    void handleActionRun();
     void handleActionBuild();
     void handleActionInstall();
     void handleActionClose();
@@ -132,6 +135,8 @@ private slots:
     void handleFilesSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
     void handleExecuteFailed(const QString& cmdType, const QString& cmdArgs, const QString& selInTree, const QString& selInList);
     void handleExecuteFinished(const QString& cmdType, const QString& cmdArgs, const QString& selInTree, const QString& selInListnList);
+    void handleRunFailed(const QString& selInTree, const QString& selInList);
+    void handleRunFinished(const QString& selInTree, const QString& selInList);
     void handleBuildFailed(const QString& selInTree, const QString& selInList);
     void handleBuildFinished(const QString& selInTree, const QString& selInList);
     void handleInstallFailed(const QString& selInTree, const QString& selInList);

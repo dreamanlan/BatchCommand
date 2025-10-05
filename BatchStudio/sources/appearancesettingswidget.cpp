@@ -27,6 +27,7 @@ QLayout *AppearanceSettingsWidget::buildForm()
     m_SpinEditorFontSize->setMinimum(10);
     m_SpinEditorFontSize->setSingleStep(1);
     layout->addRow(tr("Show Whitespaces?"), m_CheckShowWhitespaces = new QCheckBox(this));
+    layout->addRow(tr("Use java and adb?"), m_CheckJavaAndAdb = new QCheckBox(this));
     QSettings settings;
     const bool dark = settings.value("dark_theme", false).toBool();
     if (dark) {
@@ -44,6 +45,7 @@ QLayout *AppearanceSettingsWidget::buildForm()
     m_ComboEditorFont->setCurrentText(font);
     m_SpinEditorFontSize->setValue(settings.value("editor_font_size", 10).toInt());
     m_CheckShowWhitespaces->setChecked(settings.value("editor_whitespaces", false).toBool());
+    m_CheckJavaAndAdb->setChecked(settings.value("use_java_and_adb", false).toBool());
     return layout;
 }
 
@@ -55,6 +57,7 @@ void AppearanceSettingsWidget::save()
     settings.setValue("editor_font", m_ComboEditorFont->currentText());
     settings.setValue("editor_font_size", m_SpinEditorFontSize->value());
     settings.setValue("editor_whitespaces", m_CheckShowWhitespaces->isChecked());
+    settings.setValue("use_java_and_adb", m_CheckJavaAndAdb->isChecked());
     settings.sync();
     if (dark != m_RadioThemeDark->isChecked()) {
         int btn = QMessageBox::information(this,

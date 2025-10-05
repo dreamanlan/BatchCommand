@@ -22,6 +22,7 @@ typedef int (CORECLR_DELEGATE_CALLTYPE* load_setting_fn)(void* result);
 typedef int (CORECLR_DELEGATE_CALLTYPE* load_scheme_menu_fn)(void* result);
 typedef int (CORECLR_DELEGATE_CALLTYPE* load_scheme_fn)(const char* path, void* result);
 typedef int (CORECLR_DELEGATE_CALLTYPE* execute_command_fn)(const char* cmd_type, const char* cmd_args, const char* selInTree, const char* selInList, void* worker, void* result);
+typedef int (CORECLR_DELEGATE_CALLTYPE* run_prog_fn)(const char* selInTree, const char* selInList, void* worker, void* result);
 typedef int (CORECLR_DELEGATE_CALLTYPE* build_fn)(const char* selInTree, const char* selInList, void* worker, void* result);
 typedef int (CORECLR_DELEGATE_CALLTYPE* install_fn)(const char* selInTree, const char* selInList, void* worker, void* result);
 
@@ -31,5 +32,6 @@ extern load_setting_fn load_setting_fptr;
 extern load_scheme_menu_fn load_scheme_menu_fptr;
 extern load_scheme_fn load_scheme_fptr;
 extern execute_command_fn execute_command_fptr;
+extern run_prog_fn run_prog_fptr;
 extern build_fn build_fptr;
 extern install_fn install_fptr;

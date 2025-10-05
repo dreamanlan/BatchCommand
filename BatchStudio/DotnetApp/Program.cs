@@ -733,6 +733,7 @@ namespace DotNetLib
         public delegate int LoadSchemeMenuDelegation(IntPtr result);
         public delegate int LoadSchemeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string path, IntPtr result);
         public delegate int ExecuteCommandDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string cmdType, [MarshalAs(UnmanagedType.LPUTF8Str)] string cmdArgs, [MarshalAs(UnmanagedType.LPUTF8Str)] string selInTree, [MarshalAs(UnmanagedType.LPUTF8Str)] string selInList, IntPtr worker, IntPtr result);
+        public delegate int RunProgDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string selInTree, [MarshalAs(UnmanagedType.LPUTF8Str)] string selInList, IntPtr worker, IntPtr result);
         public delegate int BuildDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string selInTree, [MarshalAs(UnmanagedType.LPUTF8Str)] string selInList, IntPtr worker, IntPtr result);
         public delegate int InstallDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string selInTree, [MarshalAs(UnmanagedType.LPUTF8Str)] string selInList, IntPtr worker, IntPtr result);
 
@@ -891,6 +892,33 @@ namespace DotNetLib
                         args.Add(BoxedValue.FromString(cmdArgs));
                         BoxedValue r = BatchCommand.BatchScript.Call("executecommand", args);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(args);
+                        if (r.IsInteger) {
+                            return r.GetInt();
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                }
+                return 0;
+            }
+        }
+        public static int RunProg(string selInTree, string selInList, IntPtr worker, IntPtr result)
+        {
+            lock (s_Lock) {
+                try {
+                    LogNoLock(string.Format("[csharp] Call dsl runprog, selInTree:{0} selInList:{1}", selInTree, selInList));
+
+                    if (null != s_NativeApi) {
+                        s_NativeApi.Worker = worker;
+                        s_NativeApi.Result = result;
+
+                        TryLoadDSL();
+                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
+                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                        BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
+                        BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
+                        BoxedValue r = BatchCommand.BatchScript.Call("runprog");
                         if (r.IsInteger) {
                             return r.GetInt();
                         }

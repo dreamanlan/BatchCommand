@@ -1,16 +1,7 @@
-﻿  DebugScriptExternApiAndEntry.cpp
-  DebugScriptVM.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(492,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(514,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(536,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2724,5): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4606,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(4620,13): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5047,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5055,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5063,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(5071,5): warning C5051: 属性 [[unlikely]] 至少需要“/std:c++20”；已忽略
-  DllMain.cpp
-  正在生成代码...
+﻿  DebugScriptVM.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(492,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(514,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(536,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2724,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
     正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

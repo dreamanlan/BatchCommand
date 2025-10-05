@@ -71,6 +71,7 @@ SOURCES       = QHexView\src\model\commands\hexcommand.cpp \
 		sources\hexedit.cpp \
 		sources\imageviewerwidget.cpp \
 		sources\main.cpp \
+		sources\runworker.cpp \
 		sources\buildworker.cpp \
 		sources\installworker.cpp \
 		sources\commandworker.cpp \
@@ -99,6 +100,7 @@ SOURCES       = QHexView\src\model\commands\hexcommand.cpp \
 		release\moc_hexfinddialog.cpp \
 		release\moc_qhexview.cpp \
 		release\moc_DarkStyle.cpp \
+		release\moc_runworker.cpp \
 		release\moc_buildworker.cpp \
 		release\moc_installworker.cpp \
 		release\moc_commandworker.cpp \
@@ -136,6 +138,7 @@ OBJECTS       = release\hexcommand.obj \
 		release\hexedit.obj \
 		release\imageviewerwidget.obj \
 		release\main.obj \
+		release\runworker.obj \
 		release\buildworker.obj \
 		release\installworker.obj \
 		release\commandworker.obj \
@@ -165,6 +168,7 @@ OBJECTS       = release\hexcommand.obj \
 		release\moc_hexfinddialog.obj \
 		release\moc_qhexview.obj \
 		release\moc_DarkStyle.obj \
+		release\moc_runworker.obj \
 		release\moc_buildworker.obj \
 		release\moc_installworker.obj \
 		release\moc_commandworker.obj \
@@ -200,6 +204,7 @@ DIST          =  QHexView\include\QHexView\model\commands\hexcommand.h \
 		QHexView\include\QHexView\dialogs\hexfinddialog.h \
 		QHexView\include\QHexView\qhexview.h \
 		DarkStyle\DarkStyle.h \
+		sources\runworker.h \
 		sources\buildworker.h \
 		sources\installworker.h \
 		sources\commandworker.h \
@@ -239,6 +244,7 @@ DIST          =  QHexView\include\QHexView\model\commands\hexcommand.h \
 		sources\hexedit.cpp \
 		sources\imageviewerwidget.cpp \
 		sources\main.cpp \
+		sources\runworker.cpp \
 		sources\buildworker.cpp \
 		sources\installworker.cpp \
 		sources\commandworker.cpp \
@@ -451,8 +457,8 @@ all: Makefile.Release  release\BatchStudio.exe
 
 release\BatchStudio.exe: D:\Qt\6.9.2\msvc2022_64\lib\Qt6Widgets.lib D:\Qt\6.9.2\msvc2022_64\lib\Qt6Gui.lib D:\Qt\6.9.2\msvc2022_64\lib\Qt6Core.lib D:\Qt\6.9.2\msvc2022_64\lib\Qt6EntryPoint.lib $(OBJECTS) release\BatchStudio_resource.res
 	$(LINKER) $(LFLAGS) /MANIFEST:embed /OUT:$(DESTDIR_TARGET) @<<
-release\hexcommand.obj release\insertcommand.obj release\removecommand.obj release\replacecommand.obj release\qdevicebuffer.obj release\qhexbuffer.obj release\qmemorybuffer.obj release\qmemoryrefbuffer.obj release\qmappedfilebuffer.obj release\qhexdelegate.obj release\qhexutils.obj release\qhexcursor.obj release\qhexmetadata.obj release\qhexdocument.obj release\hexfinddialog.obj release\qhexview.obj release\DarkStyle.obj release\flickcharm.obj release\hexedit.obj release\imageviewerwidget.obj release\main.obj release\buildworker.obj release\installworker.obj release\commandworker.obj release\appearancesettingswidget.obj release\binarysettingswidget.obj release\findreplacedialog.obj release\mainwindow.obj release\processutils.obj release\settingsdialog.obj release\sourcecodeedit.obj release\splashwindow.obj release\themedsyntaxhighlighter.obj release\versionresolveworker.obj release\HostCLR.obj release\FlowLayout.obj release\HistoryLineEdit.obj release\qrc_darkstyle.obj
-release\qrc_all.obj release\moc_qdevicebuffer.obj release\moc_qhexbuffer.obj release\moc_qmemorybuffer.obj release\moc_qmemoryrefbuffer.obj release\moc_qhexdelegate.obj release\moc_qhexcursor.obj release\moc_qhexmetadata.obj release\moc_qhexdocument.obj release\moc_hexfinddialog.obj release\moc_qhexview.obj release\moc_DarkStyle.obj release\moc_buildworker.obj release\moc_installworker.obj release\moc_commandworker.obj release\moc_appearancesettingswidget.obj release\moc_binarysettingswidget.obj release\moc_findreplacedialog.obj release\moc_flickcharm.obj release\moc_hexedit.obj release\moc_imageviewerwidget.obj release\moc_mainwindow.obj release\moc_processutils.obj release\moc_settingsdialog.obj release\moc_sourcecodeedit.obj release\moc_splashwindow.obj release\moc_versionresolveworker.obj release\moc_HistoryLineEdit.obj
+release\hexcommand.obj release\insertcommand.obj release\removecommand.obj release\replacecommand.obj release\qdevicebuffer.obj release\qhexbuffer.obj release\qmemorybuffer.obj release\qmemoryrefbuffer.obj release\qmappedfilebuffer.obj release\qhexdelegate.obj release\qhexutils.obj release\qhexcursor.obj release\qhexmetadata.obj release\qhexdocument.obj release\hexfinddialog.obj release\qhexview.obj release\DarkStyle.obj release\flickcharm.obj release\hexedit.obj release\imageviewerwidget.obj release\main.obj release\runworker.obj release\buildworker.obj release\installworker.obj release\commandworker.obj release\appearancesettingswidget.obj release\binarysettingswidget.obj release\findreplacedialog.obj release\mainwindow.obj release\processutils.obj release\settingsdialog.obj release\sourcecodeedit.obj release\splashwindow.obj release\themedsyntaxhighlighter.obj release\versionresolveworker.obj release\HostCLR.obj release\FlowLayout.obj release\HistoryLineEdit.obj
+release\qrc_darkstyle.obj release\qrc_all.obj release\moc_qdevicebuffer.obj release\moc_qhexbuffer.obj release\moc_qmemorybuffer.obj release\moc_qmemoryrefbuffer.obj release\moc_qhexdelegate.obj release\moc_qhexcursor.obj release\moc_qhexmetadata.obj release\moc_qhexdocument.obj release\moc_hexfinddialog.obj release\moc_qhexview.obj release\moc_DarkStyle.obj release\moc_runworker.obj release\moc_buildworker.obj release\moc_installworker.obj release\moc_commandworker.obj release\moc_appearancesettingswidget.obj release\moc_binarysettingswidget.obj release\moc_findreplacedialog.obj release\moc_flickcharm.obj release\moc_hexedit.obj release\moc_imageviewerwidget.obj release\moc_mainwindow.obj release\moc_processutils.obj release\moc_settingsdialog.obj release\moc_sourcecodeedit.obj release\moc_splashwindow.obj release\moc_versionresolveworker.obj release\moc_HistoryLineEdit.obj
 $(LIBS)
 <<
 
@@ -465,10 +471,10 @@ qmake: FORCE
 qmake_all: FORCE
 
 dist:
-	$(ZIP) BatchStudio.zip $(SOURCES) $(DIST) BatchStudio.pro ..\BatchStudio\BatchStudio.pro ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\spec_pre.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\windows-desktop.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\windows_vulkan_sdk.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\windows-vulkan.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\msvc-desktop.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\qconfig.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_freetype.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_libjpeg.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_libpng.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_openxr_loader.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_charts.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_charts_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_chartsqml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_chartsqml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_concurrent.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_concurrent_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_core.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_core_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_dbus.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_dbus_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designer.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designer_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designercomponents_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_devicediscovery_support_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_entrypoint_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_example_icons_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_examples_asset_downloader_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_fb_support_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_ffmpegmediapluginimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_freetype_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_gui.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_gui_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_harfbuzz_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_help.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_help_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_jpeg_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsanimation.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsanimation_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsfolderlistmodel.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsfolderlistmodel_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsplatform.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsplatform_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsqmlmodels.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsqmlmodels_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssettings.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssettings_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssharedimage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssharedimage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labswavefrontmesh.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labswavefrontmesh_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_linguist.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimedia.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimedia_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediaquick_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediatestlibprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediawidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediawidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_network.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_network_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_opengl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_opengl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_openglwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_openglwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_packetprotocol_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_png_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_printsupport.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_printsupport_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatch_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatchconversions_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatchgenerators_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlassetdownloader.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlassetdownloader_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcompiler.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcompiler_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcore.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcore_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmldebug_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmldom_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlformat_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlintegration.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlintegration_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmllocalstorage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmllocalstorage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlls_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmeta.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmeta_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmodels.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmodels_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlnetwork.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlnetwork_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltest.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltest_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltoolingsettings_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltyperegistrar_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlworkerscript.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlworkerscript_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlxmllistmodel.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlxmllistmodel_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3d.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3d_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetimport.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetimport_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetutils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetutils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3deffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3deffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dglslparser_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpers.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpers_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpersimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpersimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3diblbaker.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3diblbaker_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticleeffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticleeffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticles.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticles_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3druntimerender.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3druntimerender_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dspatialaudio_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dutils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dutils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dxr.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dxr_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basic.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basic_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basicstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basicstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fluentwinui3styleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fluentwinui3styleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusion.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusion_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusionstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusionstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imagine.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imagine_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imaginestyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imaginestyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2impl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2impl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2material.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2material_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2materialstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2materialstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universal.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universal_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universalstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universalstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2windowsstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2windowsstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrolstestutilsprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2quickimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2quickimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2utils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2utils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickeffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickeffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicklayouts.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicklayouts_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickparticles_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickshapes_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktemplates2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktemplates2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktestutilsprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimeline.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimeline_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimelineblendtrees.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimelineblendtrees_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimagegenerator_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_shadertools.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_shadertools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_spatialaudio.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_spatialaudio_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_sql.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_sql_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svg.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svg_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svgwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svgwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testinternals_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testlib.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testlib_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_tools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uiplugin.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uitools.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uitools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_widgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_widgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_xml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_xml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_zlib_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt_functions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt_config.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\win32-msvc\qmake.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\spec_post.prf .qmake.stash ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exclusive_builds.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\msvc-version.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\toolchain.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\default_pre.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\default_pre.prf QHexView\QHexView.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resolve_config.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exclusive_builds_post.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\default_post.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\build_pass.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\precompile_header.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\warn_on.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\permissions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resources_functions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resources.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\moc.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\opengl.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\uic.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qmake_use.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\file_copies.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\windows.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\testcase_targets.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exceptions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\yacc.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\lex.prf BatchStudio.pro DarkStyle\darkstyle.qrc resources\all.qrc ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Widgets.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Gui.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Core.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6EntryPoint.prl   DarkStyle\darkstyle.qrc resources\all.qrc ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\data\dummy.cpp QHexView\include\QHexView\model\commands\hexcommand.h QHexView\include\QHexView\model\commands\insertcommand.h QHexView\include\QHexView\model\commands\removecommand.h QHexView\include\QHexView\model\commands\replacecommand.h QHexView\include\QHexView\model\buffer\qdevicebuffer.h QHexView\include\QHexView\model\buffer\qhexbuffer.h QHexView\include\QHexView\model\buffer\qmemorybuffer.h QHexView\include\QHexView\model\buffer\qmemoryrefbuffer.h QHexView\include\QHexView\model\buffer\qmappedfilebuffer.h QHexView\include\QHexView\model\qhexdelegate.h QHexView\include\QHexView\model\qhexutils.h QHexView\include\QHexView\model\qhexcursor.h QHexView\include\QHexView\model\qhexmetadata.h QHexView\include\QHexView\model\qhexoptions.h QHexView\include\QHexView\model\qhexdocument.h QHexView\include\QHexView\dialogs\hexfinddialog.h QHexView\include\QHexView\qhexview.h DarkStyle\DarkStyle.h sources\buildworker.h sources\installworker.h sources\commandworker.h sources\appearancesettingswidget.h sources\binarysettingswidget.h sources\findreplacedialog.h sources\flickcharm.h sources\hexedit.h sources\imageviewerwidget.h sources\mainwindow.h sources\processutils.h sources\settingsdialog.h sources\sourcecodeedit.h sources\splashwindow.h sources\themedsyntaxhighlighter.h sources\versionresolveworker.h sources\HostCLR.h sources\FlowLayout.h sources\HistoryLineEdit.h  QHexView\src\model\commands\hexcommand.cpp QHexView\src\model\commands\insertcommand.cpp QHexView\src\model\commands\removecommand.cpp QHexView\src\model\commands\replacecommand.cpp QHexView\src\model\buffer\qdevicebuffer.cpp QHexView\src\model\buffer\qhexbuffer.cpp QHexView\src\model\buffer\qmemorybuffer.cpp QHexView\src\model\buffer\qmemoryrefbuffer.cpp QHexView\src\model\buffer\qmappedfilebuffer.cpp QHexView\src\model\qhexdelegate.cpp QHexView\src\model\qhexutils.cpp QHexView\src\model\qhexcursor.cpp QHexView\src\model\qhexmetadata.cpp QHexView\src\model\qhexdocument.cpp QHexView\src\dialogs\hexfinddialog.cpp QHexView\src\qhexview.cpp DarkStyle\DarkStyle.cpp sources\flickcharm.cpp sources\hexedit.cpp sources\imageviewerwidget.cpp sources\main.cpp sources\buildworker.cpp sources\installworker.cpp sources\commandworker.cpp sources\appearancesettingswidget.cpp sources\binarysettingswidget.cpp sources\findreplacedialog.cpp sources\mainwindow.cpp sources\processutils.cpp sources\settingsdialog.cpp sources\sourcecodeedit.cpp sources\splashwindow.cpp sources\themedsyntaxhighlighter.cpp sources\versionresolveworker.cpp sources\HostCLR.cpp sources\FlowLayout.cpp sources\HistoryLineEdit.cpp     
+	$(ZIP) BatchStudio.zip $(SOURCES) $(DIST) BatchStudio.pro ..\BatchStudio\BatchStudio.pro ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\spec_pre.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\windows-desktop.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\windows_vulkan_sdk.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\windows-vulkan.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\msvc-desktop.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\qconfig.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_freetype.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_libjpeg.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_libpng.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_ext_openxr_loader.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_charts.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_charts_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_chartsqml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_chartsqml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_concurrent.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_concurrent_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_core.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_core_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_dbus.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_dbus_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designer.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designer_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_designercomponents_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_devicediscovery_support_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_entrypoint_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_example_icons_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_examples_asset_downloader_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_fb_support_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_ffmpegmediapluginimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_freetype_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_gui.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_gui_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_harfbuzz_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_help.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_help_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_jpeg_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsanimation.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsanimation_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsfolderlistmodel.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsfolderlistmodel_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsplatform.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsplatform_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsqmlmodels.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labsqmlmodels_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssettings.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssettings_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssharedimage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labssharedimage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labswavefrontmesh.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_labswavefrontmesh_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_linguist.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimedia.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimedia_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediaquick_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediatestlibprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediawidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_multimediawidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_network.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_network_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_opengl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_opengl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_openglwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_openglwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_packetprotocol_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_png_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_printsupport.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_printsupport_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatch_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatchconversions_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qdoccatchgenerators_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlassetdownloader.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlassetdownloader_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcompiler.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcompiler_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcore.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlcore_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmldebug_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmldom_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlformat_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlintegration.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlintegration_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmllocalstorage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmllocalstorage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlls_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmeta.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmeta_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmodels.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlmodels_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlnetwork.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlnetwork_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltest.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltest_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltoolingsettings_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmltyperegistrar_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlworkerscript.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlworkerscript_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlxmllistmodel.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_qmlxmllistmodel_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3d.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3d_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetimport.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetimport_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetutils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dassetutils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3deffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3deffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dglslparser_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpers.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpers_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpersimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dhelpersimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3diblbaker.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3diblbaker_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticleeffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticleeffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticles.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dparticles_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3druntimerender.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3druntimerender_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dspatialaudio_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dutils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dutils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dxr.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick3dxr_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quick_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basic.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basic_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basicstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2basicstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fluentwinui3styleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fluentwinui3styleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusion.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusion_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusionstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2fusionstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imagine.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imagine_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imaginestyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2imaginestyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2impl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2impl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2material.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2material_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2materialstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2materialstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universal.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universal_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universalstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2universalstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2windowsstyleimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrols2windowsstyleimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickcontrolstestutilsprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2quickimpl.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2quickimpl_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2utils.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickdialogs2utils_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickeffects.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickeffects_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicklayouts.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicklayouts_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickparticles_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickshapes_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktemplates2.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktemplates2_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktestutilsprivate_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimeline.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimeline_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimelineblendtrees.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quicktimelineblendtrees_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimage.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimage_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickvectorimagegenerator_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_quickwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_shadertools.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_shadertools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_spatialaudio.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_spatialaudio_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_sql.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_sql_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svg.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svg_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svgwidgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_svgwidgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testinternals_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testlib.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_testlib_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_tools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uiplugin.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uitools.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_uitools_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_widgets.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_widgets_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_xml.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_xml_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\modules\qt_lib_zlib_private.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt_functions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt_config.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\win32-msvc\qmake.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\spec_post.prf .qmake.stash ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exclusive_builds.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\common\msvc-version.conf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\toolchain.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\default_pre.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\default_pre.prf QHexView\QHexView.pri ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resolve_config.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exclusive_builds_post.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\default_post.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\build_pass.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\precompile_header.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\warn_on.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\permissions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qt.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resources_functions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\resources.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\moc.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\opengl.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\uic.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\qmake_use.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\file_copies.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\win32\windows.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\testcase_targets.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\exceptions.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\yacc.prf ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\lex.prf BatchStudio.pro DarkStyle\darkstyle.qrc resources\all.qrc ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Widgets.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Gui.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6Core.prl ..\..\..\Qt\6.9.2\msvc2022_64\lib\Qt6EntryPoint.prl   DarkStyle\darkstyle.qrc resources\all.qrc ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\data\dummy.cpp QHexView\include\QHexView\model\commands\hexcommand.h QHexView\include\QHexView\model\commands\insertcommand.h QHexView\include\QHexView\model\commands\removecommand.h QHexView\include\QHexView\model\commands\replacecommand.h QHexView\include\QHexView\model\buffer\qdevicebuffer.h QHexView\include\QHexView\model\buffer\qhexbuffer.h QHexView\include\QHexView\model\buffer\qmemorybuffer.h QHexView\include\QHexView\model\buffer\qmemoryrefbuffer.h QHexView\include\QHexView\model\buffer\qmappedfilebuffer.h QHexView\include\QHexView\model\qhexdelegate.h QHexView\include\QHexView\model\qhexutils.h QHexView\include\QHexView\model\qhexcursor.h QHexView\include\QHexView\model\qhexmetadata.h QHexView\include\QHexView\model\qhexoptions.h QHexView\include\QHexView\model\qhexdocument.h QHexView\include\QHexView\dialogs\hexfinddialog.h QHexView\include\QHexView\qhexview.h DarkStyle\DarkStyle.h sources\runworker.h sources\buildworker.h sources\installworker.h sources\commandworker.h sources\appearancesettingswidget.h sources\binarysettingswidget.h sources\findreplacedialog.h sources\flickcharm.h sources\hexedit.h sources\imageviewerwidget.h sources\mainwindow.h sources\processutils.h sources\settingsdialog.h sources\sourcecodeedit.h sources\splashwindow.h sources\themedsyntaxhighlighter.h sources\versionresolveworker.h sources\HostCLR.h sources\FlowLayout.h sources\HistoryLineEdit.h  QHexView\src\model\commands\hexcommand.cpp QHexView\src\model\commands\insertcommand.cpp QHexView\src\model\commands\removecommand.cpp QHexView\src\model\commands\replacecommand.cpp QHexView\src\model\buffer\qdevicebuffer.cpp QHexView\src\model\buffer\qhexbuffer.cpp QHexView\src\model\buffer\qmemorybuffer.cpp QHexView\src\model\buffer\qmemoryrefbuffer.cpp QHexView\src\model\buffer\qmappedfilebuffer.cpp QHexView\src\model\qhexdelegate.cpp QHexView\src\model\qhexutils.cpp QHexView\src\model\qhexcursor.cpp QHexView\src\model\qhexmetadata.cpp QHexView\src\model\qhexdocument.cpp QHexView\src\dialogs\hexfinddialog.cpp QHexView\src\qhexview.cpp DarkStyle\DarkStyle.cpp sources\flickcharm.cpp sources\hexedit.cpp sources\imageviewerwidget.cpp sources\main.cpp sources\runworker.cpp sources\buildworker.cpp sources\installworker.cpp sources\commandworker.cpp sources\appearancesettingswidget.cpp sources\binarysettingswidget.cpp sources\findreplacedialog.cpp sources\mainwindow.cpp sources\processutils.cpp sources\settingsdialog.cpp sources\sourcecodeedit.cpp sources\splashwindow.cpp sources\themedsyntaxhighlighter.cpp sources\versionresolveworker.cpp sources\HostCLR.cpp sources\FlowLayout.cpp sources\HistoryLineEdit.cpp     
 
 clean: compiler_clean 
-	-$(DEL_FILE) release\hexcommand.obj release\insertcommand.obj release\removecommand.obj release\replacecommand.obj release\qdevicebuffer.obj release\qhexbuffer.obj release\qmemorybuffer.obj release\qmemoryrefbuffer.obj release\qmappedfilebuffer.obj release\qhexdelegate.obj release\qhexutils.obj release\qhexcursor.obj release\qhexmetadata.obj release\qhexdocument.obj release\hexfinddialog.obj release\qhexview.obj release\DarkStyle.obj release\flickcharm.obj release\hexedit.obj release\imageviewerwidget.obj release\main.obj release\buildworker.obj release\installworker.obj release\commandworker.obj release\appearancesettingswidget.obj release\binarysettingswidget.obj release\findreplacedialog.obj release\mainwindow.obj release\processutils.obj release\settingsdialog.obj release\sourcecodeedit.obj release\splashwindow.obj release\themedsyntaxhighlighter.obj release\versionresolveworker.obj release\HostCLR.obj release\FlowLayout.obj release\HistoryLineEdit.obj release\qrc_darkstyle.obj release\qrc_all.obj release\moc_qdevicebuffer.obj release\moc_qhexbuffer.obj release\moc_qmemorybuffer.obj release\moc_qmemoryrefbuffer.obj release\moc_qhexdelegate.obj release\moc_qhexcursor.obj release\moc_qhexmetadata.obj release\moc_qhexdocument.obj release\moc_hexfinddialog.obj release\moc_qhexview.obj release\moc_DarkStyle.obj release\moc_buildworker.obj release\moc_installworker.obj release\moc_commandworker.obj release\moc_appearancesettingswidget.obj release\moc_binarysettingswidget.obj release\moc_findreplacedialog.obj release\moc_flickcharm.obj release\moc_hexedit.obj release\moc_imageviewerwidget.obj release\moc_mainwindow.obj release\moc_processutils.obj release\moc_settingsdialog.obj release\moc_sourcecodeedit.obj release\moc_splashwindow.obj release\moc_versionresolveworker.obj release\moc_HistoryLineEdit.obj
+	-$(DEL_FILE) release\hexcommand.obj release\insertcommand.obj release\removecommand.obj release\replacecommand.obj release\qdevicebuffer.obj release\qhexbuffer.obj release\qmemorybuffer.obj release\qmemoryrefbuffer.obj release\qmappedfilebuffer.obj release\qhexdelegate.obj release\qhexutils.obj release\qhexcursor.obj release\qhexmetadata.obj release\qhexdocument.obj release\hexfinddialog.obj release\qhexview.obj release\DarkStyle.obj release\flickcharm.obj release\hexedit.obj release\imageviewerwidget.obj release\main.obj release\runworker.obj release\buildworker.obj release\installworker.obj release\commandworker.obj release\appearancesettingswidget.obj release\binarysettingswidget.obj release\findreplacedialog.obj release\mainwindow.obj release\processutils.obj release\settingsdialog.obj release\sourcecodeedit.obj release\splashwindow.obj release\themedsyntaxhighlighter.obj release\versionresolveworker.obj release\HostCLR.obj release\FlowLayout.obj release\HistoryLineEdit.obj release\qrc_darkstyle.obj release\qrc_all.obj release\moc_qdevicebuffer.obj release\moc_qhexbuffer.obj release\moc_qmemorybuffer.obj release\moc_qmemoryrefbuffer.obj release\moc_qhexdelegate.obj release\moc_qhexcursor.obj release\moc_qhexmetadata.obj release\moc_qhexdocument.obj release\moc_hexfinddialog.obj release\moc_qhexview.obj release\moc_DarkStyle.obj release\moc_runworker.obj release\moc_buildworker.obj release\moc_installworker.obj release\moc_commandworker.obj release\moc_appearancesettingswidget.obj release\moc_binarysettingswidget.obj release\moc_findreplacedialog.obj release\moc_flickcharm.obj release\moc_hexedit.obj release\moc_imageviewerwidget.obj release\moc_mainwindow.obj release\moc_processutils.obj release\moc_settingsdialog.obj release\moc_sourcecodeedit.obj release\moc_splashwindow.obj release\moc_versionresolveworker.obj release\moc_HistoryLineEdit.obj
 	-$(DEL_FILE) release\BatchStudio_resource.res
 
 distclean: clean 
@@ -562,6 +568,7 @@ release\qrc_all.cpp: resources\all.qrc \
 		resources\icons8\icons8-android-os-48.png \
 		resources\icons8\icons8-folder-48.png \
 		resources\icons8\icons8-software-installer-48.png \
+		resources\icons8\run_prog.png \
 		resources\icons8\open_file.png \
 		resources\fugue\binocular.png \
 		resources\fugue\android.png \
@@ -578,9 +585,9 @@ compiler_moc_predefs_clean:
 release\moc_predefs.h: ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\data\dummy.cpp
 	cl -BxD:\Qt\6.9.2\msvc2022_64\bin\qmake.exe -nologo -Zc:wchar_t -FS -Zc:rvalueCast -Zc:inline -Zc:strictStrings -Zc:throwingNew -permissive- -Zc:__cplusplus -Zc:externConstexpr -O2 -MD -std:c++17 -utf-8 -W3 -w34100 -w34189 -w44456 -w44457 -w44458 -wd4577 -wd4467 -E ..\..\..\Qt\6.9.2\msvc2022_64\mkspecs\features\data\dummy.cpp 2>NUL >release\moc_predefs.h
 
-compiler_moc_header_make_all: release\moc_qdevicebuffer.cpp release\moc_qhexbuffer.cpp release\moc_qmemorybuffer.cpp release\moc_qmemoryrefbuffer.cpp release\moc_qhexdelegate.cpp release\moc_qhexcursor.cpp release\moc_qhexmetadata.cpp release\moc_qhexdocument.cpp release\moc_hexfinddialog.cpp release\moc_qhexview.cpp release\moc_DarkStyle.cpp release\moc_buildworker.cpp release\moc_installworker.cpp release\moc_commandworker.cpp release\moc_appearancesettingswidget.cpp release\moc_binarysettingswidget.cpp release\moc_findreplacedialog.cpp release\moc_flickcharm.cpp release\moc_hexedit.cpp release\moc_imageviewerwidget.cpp release\moc_mainwindow.cpp release\moc_processutils.cpp release\moc_settingsdialog.cpp release\moc_sourcecodeedit.cpp release\moc_splashwindow.cpp release\moc_versionresolveworker.cpp release\moc_HistoryLineEdit.cpp
+compiler_moc_header_make_all: release\moc_qdevicebuffer.cpp release\moc_qhexbuffer.cpp release\moc_qmemorybuffer.cpp release\moc_qmemoryrefbuffer.cpp release\moc_qhexdelegate.cpp release\moc_qhexcursor.cpp release\moc_qhexmetadata.cpp release\moc_qhexdocument.cpp release\moc_hexfinddialog.cpp release\moc_qhexview.cpp release\moc_DarkStyle.cpp release\moc_runworker.cpp release\moc_buildworker.cpp release\moc_installworker.cpp release\moc_commandworker.cpp release\moc_appearancesettingswidget.cpp release\moc_binarysettingswidget.cpp release\moc_findreplacedialog.cpp release\moc_flickcharm.cpp release\moc_hexedit.cpp release\moc_imageviewerwidget.cpp release\moc_mainwindow.cpp release\moc_processutils.cpp release\moc_settingsdialog.cpp release\moc_sourcecodeedit.cpp release\moc_splashwindow.cpp release\moc_versionresolveworker.cpp release\moc_HistoryLineEdit.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) release\moc_qdevicebuffer.cpp release\moc_qhexbuffer.cpp release\moc_qmemorybuffer.cpp release\moc_qmemoryrefbuffer.cpp release\moc_qhexdelegate.cpp release\moc_qhexcursor.cpp release\moc_qhexmetadata.cpp release\moc_qhexdocument.cpp release\moc_hexfinddialog.cpp release\moc_qhexview.cpp release\moc_DarkStyle.cpp release\moc_buildworker.cpp release\moc_installworker.cpp release\moc_commandworker.cpp release\moc_appearancesettingswidget.cpp release\moc_binarysettingswidget.cpp release\moc_findreplacedialog.cpp release\moc_flickcharm.cpp release\moc_hexedit.cpp release\moc_imageviewerwidget.cpp release\moc_mainwindow.cpp release\moc_processutils.cpp release\moc_settingsdialog.cpp release\moc_sourcecodeedit.cpp release\moc_splashwindow.cpp release\moc_versionresolveworker.cpp release\moc_HistoryLineEdit.cpp
+	-$(DEL_FILE) release\moc_qdevicebuffer.cpp release\moc_qhexbuffer.cpp release\moc_qmemorybuffer.cpp release\moc_qmemoryrefbuffer.cpp release\moc_qhexdelegate.cpp release\moc_qhexcursor.cpp release\moc_qhexmetadata.cpp release\moc_qhexdocument.cpp release\moc_hexfinddialog.cpp release\moc_qhexview.cpp release\moc_DarkStyle.cpp release\moc_runworker.cpp release\moc_buildworker.cpp release\moc_installworker.cpp release\moc_commandworker.cpp release\moc_appearancesettingswidget.cpp release\moc_binarysettingswidget.cpp release\moc_findreplacedialog.cpp release\moc_flickcharm.cpp release\moc_hexedit.cpp release\moc_imageviewerwidget.cpp release\moc_mainwindow.cpp release\moc_processutils.cpp release\moc_settingsdialog.cpp release\moc_sourcecodeedit.cpp release\moc_splashwindow.cpp release\moc_versionresolveworker.cpp release\moc_HistoryLineEdit.cpp
 release\moc_qdevicebuffer.cpp: QHexView\include\QHexView\model\buffer\qdevicebuffer.h \
 		QHexView\include\QHexView\model\buffer\qhexbuffer.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QIODevice \
@@ -2257,6 +2264,121 @@ release\moc_DarkStyle.cpp: DarkStyle\DarkStyle.h \
 		release\moc_predefs.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\bin\moc.exe
 	D:\Qt\6.9.2\msvc2022_64\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include D:/GitHub/BatchCommand/BatchStudio/release/moc_predefs.h -ID:/Qt/6.9.2/msvc2022_64/mkspecs/win32-msvc -ID:/GitHub/BatchCommand/BatchStudio -ID:/GitHub/BatchCommand/BatchStudio/QHexView/include -ID:/Qt/6.9.2/msvc2022_64/include -ID:/Qt/6.9.2/msvc2022_64/include/QtWidgets -ID:/Qt/6.9.2/msvc2022_64/include/QtGui -ID:/Qt/6.9.2/msvc2022_64/include/QtCore -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include" -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\ATLMFC\include" -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\um" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\shared" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\winrt" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\cppwinrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um" DarkStyle\DarkStyle.h -o release\moc_DarkStyle.cpp
+
+release\moc_runworker.cpp: sources\runworker.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QObject \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobject.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobjectdefs.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qnamespace.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qglobal.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcoreglobal.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtversionchecks.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtconfiginclude.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qconfig.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcore-config.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtconfigmacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtdeprecationdefinitions.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompilerdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qprocessordetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsystemdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcoreexports.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtdeprecationmarkers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtclasshelpermacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtpreprocessorsupport.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qassert.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtnoop.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtypes.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtversion.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtypeinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainerfwd.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsysinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlogging.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qflags.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompare_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbasicatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qatomic_cxx11.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qgenericatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qyieldcpu.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qconstructormacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdarwinhelpers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qexceptionhandling.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qforeach.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qttypetraits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfunctionpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qglobalstatic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmalloc.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qminmax.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qnumeric.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qoverload.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qswap.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtenvironmentvariables.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtresource.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qttranslation.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qversiontagging.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompare.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstdlibdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcomparehelpers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20type_traits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtmetamacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobjectdefs_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfunctionaltools_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstring.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qchar.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearray.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qrefcount.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydata.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qpair.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydatapointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydataops.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainertools_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qxptype_traits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20functional.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20memory.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q17memory.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearrayalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearrayview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringfwd.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringliteral.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlatin1stringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qanystringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qutf8stringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringtokenizer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringbuilder.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringconverter.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringconverter_base.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qhashfunctions.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiterator.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearraylist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringlist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringmatcher.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcoreevent.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbasictimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qabstracteventdispatcher.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qeventloop.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdeadlinetimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qelapsedtimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmetatype.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdatastream.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qscopedpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiodevicebase.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfloat16.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmath.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtformat_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiterable.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmetacontainer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainerinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtaggedpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qscopeguard.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobject_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbindingstorage.h \
+		release\moc_predefs.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\bin\moc.exe
+	D:\Qt\6.9.2\msvc2022_64\bin\moc.exe $(DEFINES) --compiler-flavor=msvc --include D:/GitHub/BatchCommand/BatchStudio/release/moc_predefs.h -ID:/Qt/6.9.2/msvc2022_64/mkspecs/win32-msvc -ID:/GitHub/BatchCommand/BatchStudio -ID:/GitHub/BatchCommand/BatchStudio/QHexView/include -ID:/Qt/6.9.2/msvc2022_64/include -ID:/Qt/6.9.2/msvc2022_64/include/QtWidgets -ID:/Qt/6.9.2/msvc2022_64/include/QtGui -ID:/Qt/6.9.2/msvc2022_64/include/QtCore -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include" -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\ATLMFC\include" -I"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" -I"C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\um" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\shared" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\winrt" -I"C:\Program Files (x86)\Windows Kits\10\\include\10.0.26100.0\\cppwinrt" -I"C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um" sources\runworker.h -o release\moc_runworker.cpp
 
 release\moc_buildworker.cpp: sources\buildworker.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QObject \
@@ -8937,6 +9059,134 @@ release\main.obj: sources\main.cpp ..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidge
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidgets\QStyleFactory \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidgets\qstylefactory.h
 
+release\runworker.obj: sources\runworker.cpp ..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QDebug \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdebug.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompare.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qglobal.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcoreglobal.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtversionchecks.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtconfiginclude.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qconfig.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcore-config.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtconfigmacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtdeprecationdefinitions.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompilerdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qprocessordetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsystemdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtcoreexports.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtdeprecationmarkers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtclasshelpermacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtpreprocessorsupport.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qassert.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtnoop.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtypes.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtversion.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtypeinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainerfwd.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsysinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlogging.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qflags.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompare_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbasicatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qatomic_cxx11.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qgenericatomic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qyieldcpu.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qconstructormacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdarwinhelpers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qexceptionhandling.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qforeach.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qttypetraits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfunctionpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qglobalstatic.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmalloc.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qminmax.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qnumeric.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qoverload.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qswap.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtenvironmentvariables.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtresource.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qttranslation.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qversiontagging.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstdlibdetection.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcomparehelpers.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20type_traits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfloat16.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qhashfunctions.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstring.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qchar.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearray.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qrefcount.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qnamespace.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtmetamacros.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydata.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qpair.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydatapointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qarraydataops.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainertools_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qxptype_traits.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20functional.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q20memory.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\q17memory.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearrayalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearrayview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringfwd.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringliteral.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlatin1stringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qanystringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qutf8stringview.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringtokenizer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringbuilder.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringconverter.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringconverter_base.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmath.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qalgorithms.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtformat_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtextstream.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiodevicebase.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontiguouscache.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsharedpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qshareddata.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsharedpointer_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmetatype.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdatastream.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qscopedpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiterable.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmetacontainer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcontainerinfo.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qtaggedpointer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobjectdefs.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobjectdefs_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qfunctionaltools_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qscopeguard.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qlist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qiterator.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbytearraylist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringlist.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qstringmatcher.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qmap.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qshareddata_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qset.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qhash.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qvarlengtharray.h \
+		sources\runworker.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QObject \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobject.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcoreevent.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbasictimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qabstracteventdispatcher.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qeventloop.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdeadlinetimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qelapsedtimer.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobject_impl.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbindingstorage.h \
+		sources\processutils.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QStringList \
+		sources\HostCLR.h \
+		sources\coreclr\coreclr_delegates.h
+
 release\buildworker.obj: sources\buildworker.cpp ..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QDebug \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qdebug.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qcompare.h \
@@ -10347,6 +10597,7 @@ release\mainwindow.obj: sources\mainwindow.cpp ..\..\..\Qt\6.9.2\msvc2022_64\inc
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidgets\qabstractbutton.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidgets\QToolButton \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtWidgets\qtoolbutton.h \
+		sources\runworker.h \
 		sources\buildworker.h \
 		sources\installworker.h \
 		sources\commandworker.h \
@@ -11688,6 +11939,8 @@ release\versionresolveworker.obj: sources\versionresolveworker.cpp ..\..\..\Qt\6
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qelapsedtimer.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qobject_impl.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qbindingstorage.h \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QSettings \
+		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\qsettings.h \
 		sources\versionresolveworker.h \
 		..\..\..\Qt\6.9.2\msvc2022_64\include\QtCore\QObject \
 		sources\processutils.h \
@@ -12418,6 +12671,8 @@ release\moc_hexfinddialog.obj: release\moc_hexfinddialog.cpp
 release\moc_qhexview.obj: release\moc_qhexview.cpp 
 
 release\moc_DarkStyle.obj: release\moc_DarkStyle.cpp 
+
+release\moc_runworker.obj: release\moc_runworker.cpp 
 
 release\moc_buildworker.obj: release\moc_buildworker.cpp 
 

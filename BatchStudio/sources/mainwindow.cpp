@@ -28,6 +28,7 @@
 #if defined(Q_OS_WIN)
 #include <windows.h>
 #endif
+#include "runworker.h"
 #include "buildworker.h"
 #include "installworker.h"
 #include "commandworker.h"
@@ -115,34 +116,36 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
                 openFile(file);
             }
         }
-        bool missing = false;
-        QString missingBinary;
-        add_log(tr("3rd-party binaries:"));
-        foreach (const QString& binary, versions.keys()) {
-            const QString& ver = versions.value(binary);
-            if (ver.isEmpty()) {
+        if (versions.size() > 0) {
+            bool missing = false;
+            QString missingBinary;
+            add_log(tr("3rd-party binaries:"));
+            foreach(const QString & binary, versions.keys()) {
+                const QString& ver = versions.value(binary);
+                if (ver.isEmpty()) {
 #ifdef QT_DEBUG
-                qDebug() << binary << "is missing";
+                    qDebug() << binary << "is missing";
 #endif
-                if (!missing) {
-                    missing = true;
-                    missingBinary = binary;
+                    if (!missing) {
+                        missing = true;
+                        missingBinary = binary;
+                    }
+                    add_log(tr("\tbinary %1 is missing").arg(binary));
                 }
-                add_log(tr("\tbinary %1 is missing").arg(binary));
+                else {
+                    add_log(tr("\t%1: %2").arg(binary, ver));
+                }
             }
-            else {
-                add_log(tr("\t%1: %2").arg(binary, ver));
-            }
-        }
-        if (missing) {
-            int btn = QMessageBox::information(
-                        this,
-                        tr("Requirements"),
-                        tr("One or more required 3rd-party binaries are missing. Please review settings first. (%1)").arg(missingBinary),
-                        QMessageBox::Ok,
-                        QMessageBox::Cancel);
-            if (btn == 0) {
-                (new SettingsDialog(1, this))->exec();
+            if (missing) {
+                int btn = QMessageBox::information(
+                    this,
+                    tr("Requirements"),
+                    tr("One or more required 3rd-party binaries are missing. Please review settings first. (%1)").arg(missingBinary),
+                    QMessageBox::Ok,
+                    QMessageBox::Cancel);
+                if (btn == 0) {
+                    (new SettingsDialog(1, this))->exec();
+                }
             }
         }
     });
@@ -240,6 +243,8 @@ QMenuBar *MainWindow::buildMenuBar()
     commands->addSeparator();
     m_SchemesMenu = commands->addMenu(tr("Load Scheme"));
     commands->addSeparator();
+    m_ActionRun1 = commands->addAction(tr("Run"), this, &MainWindow::handleActionRun);
+    m_ActionRun1->setEnabled(false);
     m_ActionBuild1 = commands->addAction(tr("Build"), this, &MainWindow::handleActionBuild);
     m_ActionBuild1->setEnabled(false);
     m_ActionInstall1 = commands->addAction(tr("Install"), this, &MainWindow::handleActionInstall);
@@ -288,6 +293,8 @@ QToolBar *MainWindow::buildMainToolBar()
     auto empty = new QWidget(this);
     empty->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     toolbar->addWidget(empty);
+    m_ActionRun2 = toolbar->addAction(QIcon(":/icons/icons8/run_prog.png"), tr("Run"), this, &MainWindow::handleActionRun);
+    m_ActionRun2->setEnabled(false);
     m_ActionBuild2 = toolbar->addAction(QIcon(":/icons/icons8/icons8-hammer-48.png"), tr("Build"), this, &MainWindow::handleActionBuild);
     m_ActionBuild2->setEnabled(false);
     m_ActionInstall2 = toolbar->addAction(QIcon(":/icons/icons8/icons8-software-installer-48.png"), tr("Install"), this, &MainWindow::handleActionInstall);
@@ -635,12 +642,16 @@ QStatusBar *MainWindow::buildStatusBar(const QMap<QString, QString> &versions)
         return frame;
     };
     auto statusbar = new QStatusBar(this);
-    statusbar->addPermanentWidget(new QLabel(tr("Java").append(": ").append(versions["java"]), this));
-    statusbar->addPermanentWidget(buildSeparator());
-    statusbar->addPermanentWidget(new QLabel(tr("Jadx").append(": ").append(versions["jadx"]), this));
-    statusbar->addPermanentWidget(buildSeparator());
-    statusbar->addPermanentWidget(new QLabel(tr("ADB").append(": ").append(versions["adb"]), this));
-    statusbar->addPermanentWidget(buildSeparator());
+    QSettings settings;
+    bool useJavaAndAdb = settings.value("use_java_and_adb", false).toBool();
+    if (useJavaAndAdb) {
+        statusbar->addPermanentWidget(new QLabel(tr("Java").append(": ").append(versions["java"]), this));
+        statusbar->addPermanentWidget(buildSeparator());
+        statusbar->addPermanentWidget(new QLabel(tr("Jadx").append(": ").append(versions["jadx"]), this));
+        statusbar->addPermanentWidget(buildSeparator());
+        statusbar->addPermanentWidget(new QLabel(tr("ADB").append(": ").append(versions["adb"]), this));
+        statusbar->addPermanentWidget(buildSeparator());
+    }
     statusbar->addPermanentWidget(new QWidget(this), 1);
     statusbar->addPermanentWidget(m_StatusCursor = new QLabel("0:0", this));
     statusbar->addPermanentWidget(buildSeparator());
@@ -759,6 +770,35 @@ void MainWindow::handleActionRefresh()
     if (load_scheme_menu_fptr) {
         ProcessResult result;
         load_scheme_menu_fptr(&result);
+    }
+}
+
+void MainWindow::handleActionRun()
+{
+    QString selInTree = selectionInDirectoryTree();
+    QString selInList = selectionInFileList();
+#ifdef QT_DEBUG
+    qDebug() << "User wishes to run" << selInTree << selInList;
+#endif
+    auto thread = new QThread();
+    auto worker = new RunWorker(selInTree, selInList);
+    worker->moveToThread(thread);
+    connect(worker, &RunWorker::runFailed, this, &MainWindow::handleRunFailed);
+    connect(worker, &RunWorker::runFinished, this, &MainWindow::handleRunFinished);
+    connect(thread, &QThread::started, worker, &RunWorker::execute);
+    connect(worker, &RunWorker::finished, thread, &QThread::quit);
+    connect(worker, &RunWorker::finished, worker, &QObject::deleteLater);
+    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+    thread->start();
+    if (nullptr == m_ProgressDialog) {
+        m_ProgressDialog = new QProgressDialog(this);
+        m_ProgressDialog->setCancelButton(nullptr);
+        m_ProgressDialog->setLabelText(tr("Running program..."));
+        m_ProgressDialog->setRange(0, 100);
+        m_ProgressDialog->setValue(50);
+        m_ProgressDialog->setWindowFlags(m_ProgressDialog->windowFlags() & ~Qt::WindowCloseButtonHint);
+        m_ProgressDialog->setWindowTitle(tr("Running..."));
+        m_ProgressDialog->exec();
     }
 }
 
@@ -1103,6 +1143,30 @@ void MainWindow::handleExecuteFinished(const QString& cmdType, const QString& cm
     m_StatusMessage->setText(tr("Command execute finished."));
 }
 
+void MainWindow::handleRunFailed(const QString& selInTree, const QString& selInList)
+{
+    Q_UNUSED(selInTree)
+    Q_UNUSED(selInList)
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
+    m_StatusMessage->setText(tr("Running program failed."));
+}
+
+void MainWindow::handleRunFinished(const QString& selInTree, const QString& selInList)
+{
+    Q_UNUSED(selInTree)
+    Q_UNUSED(selInList)
+    if (m_ProgressDialog) {
+        m_ProgressDialog->close();
+        m_ProgressDialog->deleteLater();
+        m_ProgressDialog = nullptr;
+    }
+    m_StatusMessage->setText(tr("Running program finished."));
+}
+
 void MainWindow::handleBuildFailed(const QString& selInTree, const QString& selInList)
 {
     Q_UNUSED(selInTree)
@@ -1298,9 +1362,10 @@ void MainWindow::handleTreeContextMenu(const QPoint &point)
         });
 #endif
         menu.addSeparator();
+        auto run = menu.addAction(tr("Run"));
+        connect(run, &QAction::triggered, this, &MainWindow::handleActionRun);
         auto build = menu.addAction(tr("Build"));
         connect(build, &QAction::triggered, this, &MainWindow::handleActionBuild);
-        menu.addSeparator();
         auto install = menu.addAction(tr("Install"));
         connect(install, &QAction::triggered, this, &MainWindow::handleActionInstall);
         menu.addSeparator();
@@ -1379,6 +1444,8 @@ void MainWindow::handleTreeSelectionChanged(const QItemSelection &selected, cons
         const QString path = index.data(Qt::UserRole + 2).toString();
     }
     bool checked = !selected.isEmpty();
+    m_ActionRun1->setEnabled(checked);
+    m_ActionRun2->setEnabled(checked);
     m_ActionBuild1->setEnabled(checked);
     m_ActionBuild2->setEnabled(checked);
     m_ActionInstall1->setEnabled(checked);

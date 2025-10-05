@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QRegularExpression>
+#include <QSettings>
 #include "versionresolveworker.h"
 #include "processutils.h"
 
@@ -15,6 +16,13 @@ VersionResolveWorker::VersionResolveWorker(QObject *parent)
 void VersionResolveWorker::resolve()
 {
     emit started();
+    QSettings settings;
+    bool useJavaAndAdb = settings.value("use_java_and_adb", false).toBool();
+    if (!useJavaAndAdb) {
+        emit finished();
+        return;
+    }
+
 #ifdef QT_DEBUG
     qDebug() << "Using 'java' from" << ProcessUtils::javaExe();
 #endif

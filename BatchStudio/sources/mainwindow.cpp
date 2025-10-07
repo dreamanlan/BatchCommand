@@ -64,11 +64,13 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     : QMainWindow(parent), m_ProgressDialog(nullptr), m_FindReplaceDialog(nullptr)
 {
     s_pInstance = this;
+    QSettings settings;
+    bool useJavaAndAdb = settings.value("use_java_and_adb", false).toBool();
 
     setDockNestingEnabled(true);
     addDockWidget(Qt::LeftDockWidgetArea, m_DockFolder = buildFolderDock());
     addDockWidget(Qt::LeftDockWidgetArea, m_DockFiles = buildFilesDock());
-    addDockWidget(Qt::BottomDockWidgetArea, m_DockButtons = buildButtonsDock(), Qt::Vertical);
+    addDockWidget(Qt::BottomDockWidgetArea, m_DockButtons = buildButtonsDock(useJavaAndAdb), Qt::Vertical);
     addDockWidget(Qt::BottomDockWidgetArea, m_DockConsole = buildConsoleDock(), Qt::Vertical);
     m_DockFolder->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     m_DockFiles->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -79,10 +81,10 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     addToolBar(Qt::LeftToolBarArea, buildMainToolBar());
     setCentralWidget(buildCentralWidget());
     setMinimumSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-    setStatusBar(buildStatusBar(versions));
+    setStatusBar(buildStatusBar(versions, useJavaAndAdb));
     setWindowTitle(tr("Batch Studio").append(" - https://github.com/dreamanlan/BatchCommand/tree/master/BatchStudio"));
     connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &MainWindow::handleClipboardDataChanged);
-    QSettings settings;
+
     const bool dark = settings.value("dark_theme", false).toBool();
     QFile qss(QString(":/styles/%1.qss").arg(dark ? "dark" : "light"));
     qss.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -360,7 +362,7 @@ QWidget* MainWindow::buildCentralWidget()
     return m_CentralStack;
 }
 
-QDockWidget* MainWindow::buildButtonsDock()
+QDockWidget* MainWindow::buildButtonsDock(bool useJavaAndAdb)
 {
     auto dock = new QDockWidget(tr("Buttons"), this);
     dock->setObjectName("ButtonsDock");
@@ -397,44 +399,6 @@ QDockWidget* MainWindow::buildButtonsDock()
 
     dockLayout->addWidget(scroll);
 
-    QWidget* bottomRow1 = new QWidget;
-    QHBoxLayout* bottomLayout1 = new QHBoxLayout(bottomRow1);
-    bottomLayout1->setContentsMargins(0, 0, 0, 0);
-    bottomLayout1->setSpacing(6);
-
-    QLabel* lbl1 = new QLabel(tr("GM Script:"));
-    lbl1->setMinimumWidth(64);
-    HistoryLineEdit* lineEdit1 = new HistoryLineEdit;
-    lineEdit1->setMaxHistory(100);
-    QPushButton* addBtn1 = new QPushButton(tr("Execute"));
-
-    bottomLayout1->addWidget(lbl1);
-    bottomLayout1->addWidget(lineEdit1);
-    bottomLayout1->addWidget(addBtn1);
-
-    dockLayout->addWidget(bottomRow1);
-
-    QWidget* bottomRow2 = new QWidget;
-    QHBoxLayout* bottomLayout2 = new QHBoxLayout(bottomRow2);
-    bottomLayout2->setContentsMargins(0, 0, 0, 0);
-    bottomLayout2->setSpacing(6);
-
-    QLabel* lbl2 = new QLabel(tr("ADB Cmd:"));
-    lbl2->setMinimumWidth(64);
-    HistoryLineEdit* lineEdit2 = new HistoryLineEdit;
-    lineEdit2->setMaxHistory(100);
-    QPushButton* addBtn2 = new QPushButton(tr("Execute"));
-
-    bottomLayout2->addWidget(lbl2);
-    bottomLayout2->addWidget(lineEdit2);
-    bottomLayout2->addWidget(addBtn2);
-
-    dockLayout->addWidget(bottomRow2);
-
-    dockContainer->setLayout(dockLayout);
-    dock->setWidget(dockContainer);
-    //addDockWidget(Qt::LeftDockWidgetArea, dock);
-
     m_FlowLayout = flow;
 
     QObject::connect(lineEdit0, &HistoryLineEdit::submitted, [this, addBtn0, lineEdit0](const QString& text) {
@@ -442,20 +406,6 @@ QDockWidget* MainWindow::buildButtonsDock()
         if (!lineEdit0->text().trimmed().isEmpty()) {
             addBtn0->click();
             //QMetaObject::invokeMethod(addBtn0, "click", Qt::QueuedConnection);
-        }
-        });
-    QObject::connect(lineEdit1, &HistoryLineEdit::submitted, [this, addBtn1, lineEdit1](const QString& text) {
-        Q_UNUSED(text);
-        if (!lineEdit1->text().trimmed().isEmpty()) {
-            addBtn1->click();
-            //QMetaObject::invokeMethod(addBtn1, "click", Qt::QueuedConnection);
-        }
-        });
-    QObject::connect(lineEdit2, &HistoryLineEdit::submitted, [this, addBtn2, lineEdit2](const QString& text) {
-        Q_UNUSED(text);
-        if (!lineEdit2->text().trimmed().isEmpty()) {
-            addBtn2->click();
-            //QMetaObject::invokeMethod(addBtn2, "click", Qt::QueuedConnection);
         }
         });
 
@@ -467,19 +417,74 @@ QDockWidget* MainWindow::buildButtonsDock()
         }
         });
 
-    connect(addBtn1, &QPushButton::clicked, this, [this, lineEdit1]() {
-        QString text = lineEdit1->text().trimmed();
-        if (!text.isEmpty()) {
-            executeCommand("gmscript", text);
-        }
-        });
+    if (useJavaAndAdb) {
+        QWidget* bottomRow1 = new QWidget;
+        QHBoxLayout* bottomLayout1 = new QHBoxLayout(bottomRow1);
+        bottomLayout1->setContentsMargins(0, 0, 0, 0);
+        bottomLayout1->setSpacing(6);
 
-    connect(addBtn2, &QPushButton::clicked, this, [this, lineEdit2]() {
-        QString text = lineEdit2->text().trimmed();
-        if (!text.isEmpty()) {
-            executeCommand("adb", text);
-        }
-        });
+        QLabel* lbl1 = new QLabel(tr("GM Script:"));
+        lbl1->setMinimumWidth(64);
+        HistoryLineEdit* lineEdit1 = new HistoryLineEdit;
+        lineEdit1->setMaxHistory(100);
+        QPushButton* addBtn1 = new QPushButton(tr("Execute"));
+
+        bottomLayout1->addWidget(lbl1);
+        bottomLayout1->addWidget(lineEdit1);
+        bottomLayout1->addWidget(addBtn1);
+
+        dockLayout->addWidget(bottomRow1);
+
+        QWidget* bottomRow2 = new QWidget;
+        QHBoxLayout* bottomLayout2 = new QHBoxLayout(bottomRow2);
+        bottomLayout2->setContentsMargins(0, 0, 0, 0);
+        bottomLayout2->setSpacing(6);
+
+        QLabel* lbl2 = new QLabel(tr("ADB Cmd:"));
+        lbl2->setMinimumWidth(64);
+        HistoryLineEdit* lineEdit2 = new HistoryLineEdit;
+        lineEdit2->setMaxHistory(100);
+        QPushButton* addBtn2 = new QPushButton(tr("Execute"));
+
+        bottomLayout2->addWidget(lbl2);
+        bottomLayout2->addWidget(lineEdit2);
+        bottomLayout2->addWidget(addBtn2);
+
+        dockLayout->addWidget(bottomRow2);
+
+        QObject::connect(lineEdit1, &HistoryLineEdit::submitted, [this, addBtn1, lineEdit1](const QString& text) {
+            Q_UNUSED(text);
+            if (!lineEdit1->text().trimmed().isEmpty()) {
+                addBtn1->click();
+                //QMetaObject::invokeMethod(addBtn1, "click", Qt::QueuedConnection);
+            }
+            });
+        QObject::connect(lineEdit2, &HistoryLineEdit::submitted, [this, addBtn2, lineEdit2](const QString& text) {
+            Q_UNUSED(text);
+            if (!lineEdit2->text().trimmed().isEmpty()) {
+                addBtn2->click();
+                //QMetaObject::invokeMethod(addBtn2, "click", Qt::QueuedConnection);
+            }
+            });
+
+        connect(addBtn1, &QPushButton::clicked, this, [this, lineEdit1]() {
+            QString text = lineEdit1->text().trimmed();
+            if (!text.isEmpty()) {
+                executeCommand("gmscript", text);
+            }
+            });
+
+        connect(addBtn2, &QPushButton::clicked, this, [this, lineEdit2]() {
+            QString text = lineEdit2->text().trimmed();
+            if (!text.isEmpty()) {
+                executeCommand("adb", text);
+            }
+            });
+    }
+
+    dockContainer->setLayout(dockLayout);
+    dock->setWidget(dockContainer);
+    //addDockWidget(Qt::LeftDockWidgetArea, dock);
 
     return dock;
 }
@@ -633,7 +638,7 @@ QDockWidget* MainWindow::buildConsoleDock()
     return dock;
 }
 
-QStatusBar *MainWindow::buildStatusBar(const QMap<QString, QString> &versions)
+QStatusBar *MainWindow::buildStatusBar(const QMap<QString, QString> &versions, bool useJavaAndAdb)
 {
     auto buildSeparator = [=] {
         auto frame = new QFrame(this);
@@ -642,8 +647,6 @@ QStatusBar *MainWindow::buildStatusBar(const QMap<QString, QString> &versions)
         return frame;
     };
     auto statusbar = new QStatusBar(this);
-    QSettings settings;
-    bool useJavaAndAdb = settings.value("use_java_and_adb", false).toBool();
     if (useJavaAndAdb) {
         statusbar->addPermanentWidget(new QLabel(tr("Java").append(": ").append(versions["java"]), this));
         statusbar->addPermanentWidget(buildSeparator());

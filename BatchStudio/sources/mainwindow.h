@@ -90,9 +90,9 @@ private:
     QDockWidget *buildFolderDock();
     QDockWidget *buildFilesDock();
     QWidget *buildCentralWidget();
-    QDockWidget *buildButtonsDock();
+    QDockWidget *buildButtonsDock(bool useJavaAndAdb);
     QDockWidget *buildConsoleDock();
-    QStatusBar *buildStatusBar(const QMap<QString, QString> &versions);
+    QStatusBar *buildStatusBar(const QMap<QString, QString> &versions, bool useJavaAndAdb);
     int findTabIndex(const QString& path);
     void executeDsl(const QString& dsl);
     void executeCommand(const QString& cmdType, const QString& cmdArgs);

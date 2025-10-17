@@ -1364,6 +1364,13 @@ void MainWindow::handleTreeContextMenu(const QPoint &point)
             QProcess::startDetached("xdg-open", QStringList() << path);
         });
 #endif
+        int toplevelIndex = m_DirectoryTree->indexOfTopLevelItem(item);
+        if (toplevelIndex >= 0) {
+            auto close = menu.addAction(tr("Close"));
+            connect(close, &QAction::triggered, [=] {
+                m_DirectoryTree->takeTopLevelItem(toplevelIndex);
+                });
+        }
         menu.addSeparator();
         auto run = menu.addAction(tr("Run"));
         connect(run, &QAction::triggered, this, &MainWindow::handleActionRun);
@@ -1445,6 +1452,8 @@ void MainWindow::handleTreeSelectionChanged(const QItemSelection &selected, cons
         auto index = selected.indexes().first();
         const int type = index.data(Qt::UserRole + 1).toInt();
         const QString path = index.data(Qt::UserRole + 2).toString();
+        Q_UNUSED(type);
+        Q_UNUSED(path);
     }
     bool checked = !selected.isEmpty();
     m_ActionRun1->setEnabled(checked);

@@ -1222,7 +1222,7 @@ hook("Mesh::UploadMeshData")
 			FlushLog();
 		};
 		
-		if($name=="fengBaoBao_9008_low_skin"){
+		if($name=="xxx_9008_low_skin"){
 			assert(0);
 		};
 	};

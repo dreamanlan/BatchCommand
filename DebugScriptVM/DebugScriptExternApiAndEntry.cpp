@@ -1511,12 +1511,12 @@ void LoadDbgScp()
     DebugScriptGlobal::Start();
     printf_console("LoadDbgScp: %s %d\n", c_data_file, r ? 1 : 0);
 }
-void Pause()
+void PauseDbgScp()
 {
     DebugScriptGlobal::Pause();
     printf_console("DebugScriptGlobal::Pause\n");
 }
-void Resume()
+void ResumeDbgScp()
 {
     DebugScriptGlobal::Resume();
     printf_console("DebugScriptGlobal::Resume\n");

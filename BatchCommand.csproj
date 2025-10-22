@@ -23,6 +23,7 @@
   <ItemGroup>
     <Compile Remove="BatchStudio\**" />
     <Compile Remove="CppLua2Dsl\**" />
+    <Compile Remove="DebugScriptInUE5\**" />
     <Compile Remove="DebugScriptVM\**" />
     <Compile Remove="GlslRewriter\**" />
     <Compile Remove="HostCLR\**" />
@@ -30,6 +31,7 @@
     <Compile Remove="Wox.Plugin.BatchCommand\**" />
     <EmbeddedResource Remove="BatchStudio\**" />
     <EmbeddedResource Remove="CppLua2Dsl\**" />
+    <EmbeddedResource Remove="DebugScriptInUE5\**" />
     <EmbeddedResource Remove="DebugScriptVM\**" />
     <EmbeddedResource Remove="GlslRewriter\**" />
     <EmbeddedResource Remove="HostCLR\**" />
@@ -37,6 +39,7 @@
     <EmbeddedResource Remove="Wox.Plugin.BatchCommand\**" />
     <None Remove="BatchStudio\**" />
     <None Remove="CppLua2Dsl\**" />
+    <None Remove="DebugScriptInUE5\**" />
     <None Remove="DebugScriptVM\**" />
     <None Remove="GlslRewriter\**" />
     <None Remove="HostCLR\**" />

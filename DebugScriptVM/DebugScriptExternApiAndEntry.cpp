@@ -7,31 +7,51 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <string.h>
 #include "DbgScpHook.h"
+#include "DebugScriptEntry.h"
+#include "DebugScriptVM.h"
 
-#if defined(PLATFORM_WIN) || defined(_MSC_VER)
+#if (defined(UE_BUILD_DEBUG) || defined(UE_BUILD_DEVELOPMENT) || defined(UE_BUILD_TEST) || defined(UE_BUILD_SHIPPING)) && defined(UE_SERVER) && !UE_SERVER
+
+#include "CoreMinimal.h"
+#include "HAL/PlatformFilemanager.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+
+#endif
+
+#if defined(_MSC_VER)
 #include "windows.h"
-#elif defined(PLATFORM_ANDROID) || defined(__ANDROID__)
+#elif defined(__ANDROID__)
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
-#elif defined(UNITY_POSIX) || defined(__APPLE__)
+#include <dlfcn.h>
+#elif defined(__APPLE__)
 #include <pthread.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dlfcn.h>
+#else
+#include <pthread.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <dlfcn.h>
 #endif
 
-#if defined(UNITY_APPLE) || defined(__APPLE__)
+#if defined(__APPLE__)
 #include <execinfo.h>
-#elif defined(PLATFORM_ANDROID)
+#elif defined(UNITY_ANDROID) && UNITY_ANDROID
 #include "PlatformDependent/AndroidPlayer/Source/AndroidBacktrace.h"
-#elif defined(PLATFORM_SWITCH)
+#elif defined(UNITY_SWITCH) && UNITY_SWITCH
 #include "PlatformDependent/Switch/Source/Diagnostics/SwitchBacktrace.h"
-#elif defined(PLATFORM_LUMIN)
+#elif defined(UNITY_LUMIN) && UNITY_LUMIN
 #include "PlatformDependent/Lumin/Source/LuminBacktrace.h"
-#elif defined(PLATFORM_PLAYSTATION)
+#elif defined(UNITY_PLAYSTATION) && UNITY_PLAYSTATION
 #include "PlatformDependent/SonyCommon/Player/Native/PlayStationStackTrace.h"
 #elif defined(__ANDROID__)
 #if __ANDROID_API__ >= 33
@@ -41,7 +61,6 @@
 
 #include <iomanip>
 #include <iostream>
-#include <dlfcn.h>
 #include <unwind.h>
 
 namespace {
@@ -71,7 +90,7 @@ namespace {
 #endif
 #else
 #define BACKTRACE_UNIMPLEMENTED 1
-#if _MSC_VER
+#if defined(_MSC_VER)
 #include <dbghelp.h>
 #pragma comment(lib, "dbghelp.lib")
 // for old windows before vista
@@ -87,7 +106,7 @@ void captureStack(DWORD64 stackAddr[], int maxDepth) {
     STACKFRAME64 stackFrame;
     ZeroMemory(&stackFrame, sizeof(STACKFRAME64));
 
-#ifdef _M_IX86
+#if defined(_M_IX86)
     DWORD machineType = IMAGE_FILE_MACHINE_I386;
     stackFrame.AddrPC.Offset = context.Eip;
     stackFrame.AddrPC.Mode = AddrModeFlat;
@@ -95,7 +114,7 @@ void captureStack(DWORD64 stackAddr[], int maxDepth) {
     stackFrame.AddrFrame.Mode = AddrModeFlat;
     stackFrame.AddrStack.Offset = context.Esp;
     stackFrame.AddrStack.Mode = AddrModeFlat;
-#elif _M_X64
+#elif defined(_M_X64)
     DWORD machineType = IMAGE_FILE_MACHINE_AMD64;
     stackFrame.AddrPC.Offset = context.Rip;
     stackFrame.AddrPC.Mode = AddrModeFlat;
@@ -103,7 +122,7 @@ void captureStack(DWORD64 stackAddr[], int maxDepth) {
     stackFrame.AddrFrame.Mode = AddrModeFlat;
     stackFrame.AddrStack.Offset = context.Rsp;
     stackFrame.AddrStack.Mode = AddrModeFlat;
-#elif _M_IA64
+#elif defined(_M_IA64)
     DWORD machineType = IMAGE_FILE_MACHINE_IA64;
     stackFrame.AddrPC.Offset = context.StIIP;
     stackFrame.AddrPC.Mode = AddrModeFlat;
@@ -126,10 +145,7 @@ void captureStack(DWORD64 stackAddr[], int maxDepth) {
 #endif
 #endif
 
-#if defined(PLATFORM_WIN)
-|| defined(UNITY_APPLE) || defined(PLATFORM_ANDROID) || defined(PLATFORM_SWITCH) ||
-defined(PLATFORM_LUMIN) ||
-defined(PLATFORM_PLAYSTATION) // for unity
+#if defined(UNITY_WIN) || defined(UNITY_APPLE) || defined(UNITY_ANDROID) || defined(UNITY_SWITCH) || defined(UNITY_LUMIN) || defined(UNITY_PLAYSTATION) // for unity
 #include "Runtime/Logging/LogAssert.h"
 int mylog_printf(const char* fmt, ...) {
     va_list vl;
@@ -171,7 +187,7 @@ void mylog_dump_callstack(const char* prefix, const char* file, int line) {
 
         mylog_printf(" #%02d %p %s\n", idx, addr, symbol);
     }
-#elif _MSC_VER
+#elif defined(_MSC_VER)
     const size_t kMaxDepth = 100;
 
     HANDLE process = GetCurrentProcess();
@@ -203,15 +219,15 @@ void mylog_dump_callstack(const char* prefix, const char* file, int line) {
 #endif
 }
 void mylog_assert(bool v) {
-#if defined(PLATFORM_WIN) // for unity
+#if defined(UNITY_WIN) && UNITY_WIN // for unity
     DebugAssert(v);
 #elif defined(_MSC_VER)
     _ASSERT(v);
 #elif defined(UNITY_APPLE)
-    || defined(PLATFORM_ANDROID)
-        || defined(PLATFORM_SWITCH)
-        || defined(PLATFORM_LUMIN)
-        || defined(PLATFORM_PLAYSTATION) // for unity
+    || defined(UNITY_ANDROID)
+        || defined(UNITY_SWITCH)
+        || defined(UNITY_LUMIN)
+        || defined(UNITY_PLAYSTATION) // for unity
         DebugAssert(v);
 #else
     assert(v);
@@ -220,23 +236,25 @@ void mylog_assert(bool v) {
 
 static inline int64_t GetProcessId()
 {
-#if defined(PLATFORM_WIN) || defined(_MSC_VER)
+#if defined(_MSC_VER)
     return static_cast<int64_t>(GetCurrentProcessId());
-#elif defined(__APPLE__) || defined(__ANDROID__) || defined(UNITY_POSIX)
+#elif defined(__APPLE__) || defined(__ANDROID__)
     return static_cast<int64_t>(getpid());
-#endif
+#else
     return 0;
+#endif
 }
 static inline int64_t GetThreadId()
 {
-#if defined(PLATFORM_WIN) || defined(_MSC_VER)
+#if defined(_MSC_VER)
     return static_cast<int64_t>(GetCurrentThreadId());
-#elif defined(PLATFORM_ANDROID) || defined(__ANDROID__)
+#elif defined(__ANDROID__)
     return static_cast<int64_t>(gettid());
-#elif defined(UNITY_POSIX) || defined(__APPLE__)
+#elif defined(__APPLE__)
     return reinterpret_cast<int64_t>(pthread_self());
-#endif
+#else
     return 0;
+#endif
 }
 
 static void get_errno_message(int err, char* buf, size_t buflen)
@@ -511,7 +529,7 @@ static inline bool DbgScp_AddMemoryInfo(int64_t addr, size_t size, size_t align,
 {
     std::lock_guard<std::recursive_mutex> lock(GetMemoryInfoMutexRef());
 
-    MemoryInfo mi{ addr, size, align, locking, tlsf, inst, pool, GetThreadId(), true };
+    MemoryInfo mi{ addr, size, align, locking, tlsf, inst, pool, GetThreadId(), true/*CurrentThread::IsMainThread()*/ };
     auto&& r = GetMemoryInfosRef().insert(std::make_pair(addr, std::move(mi)));
     return r.second;
 }
@@ -543,7 +561,7 @@ static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& alig
         cur_tid = GetThreadId();
         cur_is_main_thread = true;/*CurrentThread::IsMainThread()*/;
 
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
             auto&& lla = ptr->GetLowLevelAllocator();
@@ -621,6 +639,7 @@ extern "C" void FlushDbgScpLog()
     DbgScp_FlushLog();
 }
 
+[[maybe_unused]]
 static inline void DbgScp_Set(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK_VOID()
@@ -629,6 +648,7 @@ static inline void DbgScp_Set(int cmd, int a, double b, const char* c)
 
     END_DBGSCP_HOOK_VOID("DbgScp_Set", cmd, a, b, c)
 }
+[[maybe_unused]]
 static inline int DbgScp_Get(int cmd, int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
@@ -639,12 +659,14 @@ static inline int DbgScp_Get(int cmd, int a, double b, const char* c)
     END_DBGSCP_HOOK("DbgScp_Get", int, cmd, a, b, c)
 }
 
+[[maybe_unused]]
 static inline int TestMacro1(int a, double b, const char* c)
 {
     DBGSCP_HOOK("TestMacro1", int, a, b, c)
         mylog_printf("TestMacro1 a:%d b:%f c:%s\n", a, b, c);
     return 0;
 }
+[[maybe_unused]]
 static inline int TestMacro2(int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK()
@@ -652,11 +674,13 @@ static inline int TestMacro2(int a, double b, const char* c)
     return 0;
     END_DBGSCP_HOOK("TestMacro2", int, a, b, c)
 }
+[[maybe_unused]]
 static inline void TestMacro3(int a, double b, const char* c)
 {
     DBGSCP_HOOK_VOID("TestMacro3", a, b, c)
         mylog_printf("TestMacro3 a:%d b:%f c:%s\n", a, b, c);
 }
+[[maybe_unused]]
 static inline void TestMacro4(int a, double b, const char* c)
 {
     BEGIN_DBGSCP_HOOK_VOID()
@@ -675,6 +699,7 @@ int64_t TestFFI1(int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int
     return 1;
 }
 
+[[maybe_unused]]
 static inline std::vector<std::string> string_split(const std::string& input, char delimiter, int max_fields) {
     std::istringstream input_stream(input);
     std::vector<std::string> tokens;
@@ -684,7 +709,7 @@ static inline std::vector<std::string> string_split(const std::string& input, ch
         if (token.length() > 0) {
             tokens.push_back(token);
         }
-        if (tokens.size() >= max_fields) {
+        if (static_cast<int>(tokens.size()) >= max_fields) {
             break;
         }
     }
@@ -733,7 +758,11 @@ static inline void* LoadDynamicLibrary(const std::string& str)
     void* ptr = 0;
     auto&& it = g_Lib2Addresses.find(str);
     if (it == g_Lib2Addresses.end()) {
+#if defined(_MSC_VER)
         ptr = LoadLibraryA(str.c_str());
+#else
+        ptr = dlopen(str.c_str(), RTLD_LAZY);
+#endif
         if (ptr) {
             g_Lib2Addresses.insert(std::make_pair(str, ptr));
         }
@@ -745,14 +774,22 @@ static inline void* LoadDynamicLibrary(const std::string& str)
 }
 static inline void* LookupSymbol(void* module, const std::string& str)
 {
+#if defined(_MSC_VER)
     return GetProcAddress(reinterpret_cast<HMODULE>(module), str.c_str());
+#else
+    return dlsym(module, str.c_str());
+#endif
 }
 static inline void* LoadAndLookupSymbol(const std::string& lib, const std::string& proc)
 {
     void* ptr = 0;
     auto&& it = g_Lib2Addresses.find(lib);
     if (it == g_Lib2Addresses.end()) {
+#if defined(_MSC_VER)
         ptr = LoadLibraryA(lib.c_str());
+#else
+        ptr = dlopen(lib.c_str(), RTLD_LAZY);
+#endif
         if (ptr) {
             g_Lib2Addresses.insert(std::make_pair(lib, ptr));
         }
@@ -761,21 +798,33 @@ static inline void* LoadAndLookupSymbol(const std::string& lib, const std::strin
         ptr = it->second;
     }
     if (ptr) {
+#if defined(_MSC_VER)
         auto&& p = GetProcAddress(reinterpret_cast<HMODULE>(ptr), proc.c_str());
+#else
+        auto&& p = dlsym(ptr, proc.c_str());
+#endif
         return p;
     }
     return nullptr;
 }
 static inline void UnloadDynamicLibrary(void* module)
 {
+#if defined(_MSC_VER)
     FreeLibrary(reinterpret_cast<HMODULE>(module));
+#else
+    dlclose(module);
+#endif
 }
 static inline bool UnloadDynamicLibrary(const std::string& str)
 {
     bool r = false;
     auto&& it = g_Lib2Addresses.find(str);
     if (it != g_Lib2Addresses.end()) {
+#if defined(_MSC_VER)
         FreeLibrary(reinterpret_cast<HMODULE>(it->second));
+#else
+        dlclose(it->second);
+#endif
         g_Lib2Addresses.erase(it);
         r = true;
     }
@@ -819,11 +868,11 @@ static inline int64_t find_loaded_segments(int64_t pid, const std::string& so, c
 }
 static inline size_t GetPagetSize()
 {
-#if defined(PLATFORM_WIN)
+#if defined(_MSC_VER)
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
     return static_cast<size_t>(sysInfo.dwPageSize);
-#elif defined(__APPLE__) || defined(__ANDROID__) || defined(UNITY_POSIX)
+#elif defined(__APPLE__) || defined(__ANDROID__)
     return static_cast<size_t>(getpagesize());
 #else
     return 4096;
@@ -863,7 +912,7 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
 #define PROT_GROWSDOWN 0x01000000
 #define PROT_GROWSUP 0x02000000
     */
-#if defined(PLATFORM_WIN) || defined(_MSC_VER)
+#if defined(_MSC_VER)
     DWORD flag = rawflag;
     if (quickflag >= 0) {
         switch (quickflag) {
@@ -883,7 +932,7 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
     }
     DWORD oldProtect;
     VirtualProtect(reinterpret_cast<void*>(addr), size, flag, &oldProtect);
-#elif UNITY_POSIX
+#elif defined(__ANDROID__) || defined(__APPLE__)
     int flag = rawflag;
     if (quickflag >= 0) {
         switch (quickflag) {
@@ -1014,7 +1063,7 @@ struct ExternApi
         int64_t pid = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
         auto&& so = DebugScript::GetVarString(args[1].IsGlobal, args[1].Index, stackBase, strLocals, strGlobals);
         auto&& attr = DebugScript::GetVarString(args[2].IsGlobal, args[2].Index, stackBase, strLocals, strGlobals);
-        bool incFirst = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        bool incFirst = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals) != 0;
         std::string match;
         std::vector<std::string> fields;
         int64_t rval = find_loaded_segments(pid, so, attr, incFirst, match, fields);
@@ -1042,24 +1091,24 @@ struct ExternApi
     }
     static inline void GetDeviceModel(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        const char* name = "[device_model]";
+        const char* name = "[device_model]";//systeminfo::GetDeviceModel();
         DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
     }
     static inline void GetGpu(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        const char* name = "[gpu]";
+        const char* name = "[gpu]";//GetGraphicsCaps().rendererString.c_str();
         DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
     }
     static inline void GetGpuVer(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
-        const char* name = "[gpu_ver]";
+        const char* name = "[gpu_ver]";//GetGraphicsCaps().fixedVersionString.c_str();
         DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, name, stackBase, strLocals, strGlobals);
     }
     static inline void CheckMemory(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         //unity memory check
         int64_t memId = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& id = static_cast<MemLabelIdentifier>(memId);
         //We must also define the USE_MEMORY_DEBUGGING in the unity version. We cannot simply define the ENABLE_MEM_PROFILER because the compile error.
         GetMemoryManager().GetAllocator(MemLabelId{ id })->CheckIntegrity();
@@ -1072,7 +1121,7 @@ struct ExternApi
         int64_t label = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
         int64_t option = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
         int64_t addr = 0;
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
             auto&& id = static_cast<MemLabelIdentifier>(label);
@@ -1089,7 +1138,7 @@ struct ExternApi
         int64_t label = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
         int64_t option = DebugScript::GetVarInt(args[4].IsGlobal, args[4].Index, stackBase, intLocals, intGlobals);
         int64_t addr = 0;
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
             auto&& id = static_cast<MemLabelIdentifier>(label);
@@ -1105,7 +1154,7 @@ struct ExternApi
         if (argNum > 1) {
             label = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
         }
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
             if (label > 0) {
@@ -1142,7 +1191,7 @@ struct ExternApi
         const char* alloc_name = "";
         const char* second_alloc_name = "";
         bool r = false;
-#if ENABLE_MEMORY_MANAGER
+#if defined(ENABLE_MEMORY_MANAGER) && ENABLE_MEMORY_MANAGER
         auto&& ptr = GetMemoryManagerPtr();
         if (ptr) {
             r = true;
@@ -1202,7 +1251,7 @@ struct ExternApi
         int64_t tlsf = DebugScript::GetVarInt(args[4].IsGlobal, args[4].Index, stackBase, intLocals, intGlobals);
         int64_t inst = DebugScript::GetVarInt(args[5].IsGlobal, args[5].Index, stackBase, intLocals, intGlobals);
         int64_t pool = DebugScript::GetVarInt(args[6].IsGlobal, args[6].Index, stackBase, intLocals, intGlobals);
-        bool r = DbgScp_AddMemoryInfo(addr, size, align, locking, tlsf, inst, pool);
+        bool r = DbgScp_AddMemoryInfo(addr, size, align, locking != 0, tlsf != 0, inst, pool);
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
     }
     static inline void RemoveMemoryInfo(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -1488,14 +1537,13 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
     }
 }
 
-#if defined(DBGSCP_ON_UNITY)
+#if defined(UNITY_WIN) || defined(UNITY_ANDROID) || defined(UNITY_IOS) || defined(UNITY_IPHONE) || defined(UNITY_MAC)
 
-void LoadDbgScp()
+void LoadDbgScp(const core::string& log_path, const core::string& load_path)
 {
-    core::string docPath = systeminfo::GetPersistentDataPath();
     for (int i = 0; i < c_max_log_file_num; ++i) {
         if (GetLogFilesRef()[i].empty()) {
-            auto&& path = Format("%s/dbgscp_log_%d.txt", docPath.c_str(), i);
+            auto&& path = Format("%s/dbgscp_log_%d.txt", log_path.c_str(), i);
             GetLogFilesRef()[i] = path.c_str();
             printf_console("LoadDbgScp, LogFile: %d %s\n", i, path.c_str());
         }
@@ -1503,7 +1551,7 @@ void LoadDbgScp()
 #if PLATFORM_ANDROID
     const char* c_data_file = "/data/local/tmp/bytecode.dat";
 #else
-    auto&& dataPath = Format("%s/bytecode.dat", docPath.c_str());
+    auto&& dataPath = Format("%s/bytecode.dat", load_path.c_str());
     const char* c_data_file = dataPath.c_str();
 #endif
     DebugScriptGlobal::Reset();
@@ -1520,6 +1568,56 @@ void ResumeDbgScp()
 {
     DebugScriptGlobal::Resume();
     printf_console("DebugScriptGlobal::Resume\n");
+}
+void DbgScp_Set_Extern(int cmd, int a, double b, const char* c)
+{
+    DbgScp_Set(cmd, a, b, c);
+}
+int DbgScp_Get_Extern(int cmd, int a, double b, const char* c)
+{
+    return DbgScp_Get(cmd, a, b, c);
+}
+
+#elif (defined(UE_BUILD_DEBUG) || defined(UE_BUILD_DEVELOPMENT) || defined(UE_BUILD_TEST) || defined(UE_BUILD_SHIPPING)) && defined(UE_SERVER) && !UE_SERVER
+
+void LoadDbgScp(const FString& log_path, const FString& load_path)
+{
+    for (int i = 0; i < c_max_log_file_num; ++i) {
+        if (GetLogFilesRef()[i].empty()) {
+            auto&& path = FString::Printf(TEXT("%s/dbgscp_log_%d.txt"), *log_path, i);
+            GetLogFilesRef()[i] = TCHAR_TO_UTF8(*path);
+            UE_LOG(LogTemp, Log, TEXT("LoadDbgScp, LogFile: %d %s\n"), i, TCHAR_TO_UTF8(*path));
+        }
+    }
+#if PLATFORM_ANDROID
+    const char* c_data_file = "/data/local/tmp/bytecode.dat";
+#else
+    auto&& dataPath = FString::Printf(TEXT("%s/bytecode.dat"), *load_path);
+    FTCHARToUTF8 Converter(*dataPath);
+    const char* c_data_file = Converter.Get();
+#endif
+    DebugScriptGlobal::Reset();
+    bool r = DebugScriptGlobal::Load(c_data_file);
+    DebugScriptGlobal::Start();
+    UE_LOG(LogTemp, Log, TEXT("LoadDbgScp: %s %d\n"), c_data_file, r ? 1 : 0);
+}
+void PauseDbgScp()
+{
+    DebugScriptGlobal::Pause();
+    UE_LOG(LogTemp, Log, TEXT("DebugScriptGlobal::Pause\n"));
+}
+void ResumeDbgScp()
+{
+    DebugScriptGlobal::Resume();
+    UE_LOG(LogTemp, Log, TEXT("DebugScriptGlobal::Resume\n"));
+}
+void DbgScp_Set_Extern(int cmd, int a, double b, const char* c)
+{
+    DbgScp_Set(cmd, a, b, c);
+}
+int DbgScp_Get_Extern(int cmd, int a, double b, const char* c)
+{
+    return DbgScp_Get(cmd, a, b, c);
 }
 
 #elif defined(DBGSCP_ON_MYUZU)
@@ -1544,6 +1642,14 @@ void PauseDbgScp() {
 void ResumeDbgScp() {
     DebugScriptGlobal::Resume();
     mylog_printf("DebugScriptGlobal::Resume\n");
+}
+void DbgScp_Set_Extern(int cmd, int a, double b, const char* c)
+{
+    DbgScp_Set(cmd, a, b, c);
+}
+int DbgScp_Get_Extern(int cmd, int a, double b, const char* c)
+{
+    return DbgScp_Get(cmd, a, b, c);
 }
 
 #else
@@ -1605,16 +1711,16 @@ extern "C" {
         DebugScriptGlobal::Start();
     }
 
-    __declspec(dllexport) void DbgScp_SetExport(int cmd, int a, double b, const char* c)
+    __declspec(dllexport) void DbgScp_Set_Export(int cmd, int a, double b, const char* c)
     {
         DbgScp_Set(cmd, a, b, c);
     }
-    __declspec(dllexport) int DbgScp_GetExport(int cmd, int a, double b, const char* c)
+    __declspec(dllexport) int DbgScp_Get_Export(int cmd, int a, double b, const char* c)
     {
         return DbgScp_Get(cmd, a, b, c);
     }
 
-    __declspec(dllexport) int Test1Export(int a, double b, const char* c)
+    __declspec(dllexport) int Test1_Export(int a, double b, const char* c)
     {
         thread_local static int32_t s_hook_id = -1;
         thread_local static uint32_t s_serial_num = 0;
@@ -1626,7 +1732,7 @@ extern "C" {
         mylog_printf("Test1 a:%d b:%f c:%s\n", a, b, c);
         return 0;
     }
-    __declspec(dllexport) int Test2Export(int a, double b, const char* c)
+    __declspec(dllexport) int Test2_Export(int a, double b, const char* c)
     {
         auto f = [&]() {
             mylog_printf("Test2 a:%d b:%f c:%s\n", a, b, c);
@@ -1654,7 +1760,7 @@ extern "C" {
         }
         return h_ret_val;
     }
-    __declspec(dllexport) void Test3Export(int a, double b, const char* c)
+    __declspec(dllexport) void Test3_Export(int a, double b, const char* c)
     {
         static int32_t s_hook_id = -1;
         static uint32_t s_serial_num = 0;
@@ -1664,7 +1770,7 @@ extern "C" {
             return;
         mylog_printf("Test3 a:%d b:%f c:%s\n", a, b, c);
     }
-    __declspec(dllexport) void Test4Export(int a, double b, const char* c)
+    __declspec(dllexport) void Test4_Export(int a, double b, const char* c)
     {
         auto f = [&]() {
             mylog_printf("Test4 a:%d b:%f c:%s\n", a, b, c);
@@ -1690,19 +1796,19 @@ extern "C" {
         }
     }
 
-    __declspec(dllexport) int TestMacro1Export(int a, double b, const char* c)
+    __declspec(dllexport) int TestMacro1_Export(int a, double b, const char* c)
     {
         return TestMacro1(a, b, c);
     }
-    __declspec(dllexport) int TestMacro2Export(int a, double b, const char* c)
+    __declspec(dllexport) int TestMacro2_Export(int a, double b, const char* c)
     {
         return TestMacro2(a, b, c);
     }
-    __declspec(dllexport) void TestMacro3Export(int a, double b, const char* c)
+    __declspec(dllexport) void TestMacro3_Export(int a, double b, const char* c)
     {
         TestMacro3(a, b, c);
     }
-    __declspec(dllexport) void TestMacro4Export(int a, double b, const char* c)
+    __declspec(dllexport) void TestMacro4_Export(int a, double b, const char* c)
     {
         TestMacro4(a, b, c);
     }

@@ -263,21 +263,21 @@ namespace DotNetLib
                 CppDebugScript.CppDbgScpInterface.CppDbgScp_Load(datFile);
 
                 Lib.LogNoLock("--------test--------");
-                int a = CppDebugScript.CppDbgScpInterface.Test1Export(123, 123.456, "test1");
+                int a = CppDebugScript.CppDbgScpInterface.Test1_Export(123, 123.456, "test1");
                 Lib.LogNoLock(string.Format("retval a:{0}", a));
-                int b = CppDebugScript.CppDbgScpInterface.Test2Export(1234, 1234.456, "test2");
+                int b = CppDebugScript.CppDbgScpInterface.Test2_Export(1234, 1234.456, "test2");
                 Lib.LogNoLock(string.Format("retval b:{0}", b));
-                CppDebugScript.CppDbgScpInterface.Test3Export(12345, 12345.456, "test3");
-                CppDebugScript.CppDbgScpInterface.Test4Export(123456, 123456.456, "test4");
+                CppDebugScript.CppDbgScpInterface.Test3_Export(12345, 12345.456, "test3");
+                CppDebugScript.CppDbgScpInterface.Test4_Export(123456, 123456.456, "test4");
 
                 Lib.LogNoLock("--------------------");
 
-                int ma = CppDebugScript.CppDbgScpInterface.TestMacro1Export(123, 123.456, "testmacro1");
+                int ma = CppDebugScript.CppDbgScpInterface.TestMacro1_Export(123, 123.456, "testmacro1");
                 Lib.LogNoLock(string.Format("retval ma:{0}", ma));
-                int mb = CppDebugScript.CppDbgScpInterface.TestMacro2Export(1234, 1234.456, "testmacro2");
+                int mb = CppDebugScript.CppDbgScpInterface.TestMacro2_Export(1234, 1234.456, "testmacro2");
                 Lib.LogNoLock(string.Format("retval mb:{0}", mb));
-                CppDebugScript.CppDbgScpInterface.TestMacro3Export(12345, 12345.456, "testmacro3");
-                CppDebugScript.CppDbgScpInterface.TestMacro4Export(123456, 123456.456, "testmacro4");
+                CppDebugScript.CppDbgScpInterface.TestMacro3_Export(12345, 12345.456, "testmacro3");
+                CppDebugScript.CppDbgScpInterface.TestMacro4_Export(123456, 123456.456, "testmacro4");
 
                 Lib.LogNoLock("--------------------");
             }

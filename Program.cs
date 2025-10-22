@@ -275,7 +275,7 @@ namespace BatchCommand
             if (operands.Count > 3) {
                 c = operands[3].GetString();
             }
-            CppDebugScript.CppDbgScpInterface.DbgScp_SetExport(cmd, a, b, c);
+            CppDebugScript.CppDbgScpInterface.DbgScp_Set_Export(cmd, a, b, c);
             return BoxedValue.NullObject;
         }
     }
@@ -299,28 +299,28 @@ namespace BatchCommand
             if (operands.Count > 3) {
                 c = operands[3].GetString();
             }
-            return CppDebugScript.CppDbgScpInterface.DbgScp_GetExport(cmd, a, b, c);
+            return CppDebugScript.CppDbgScpInterface.DbgScp_Get_Export(cmd, a, b, c);
         }
     }
     internal sealed class TestDbgScpExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            int a = CppDebugScript.CppDbgScpInterface.Test1Export(123, 123.456, "test1");
+            int a = CppDebugScript.CppDbgScpInterface.Test1_Export(123, 123.456, "test1");
             LogSystem.Warn("retval a:{0}", a);
-            int b = CppDebugScript.CppDbgScpInterface.Test2Export(1234, 1234.456, "test2");
+            int b = CppDebugScript.CppDbgScpInterface.Test2_Export(1234, 1234.456, "test2");
             LogSystem.Warn("retval b:{0}", b);
-            CppDebugScript.CppDbgScpInterface.Test3Export(12345, 12345.456, "test3");
-            CppDebugScript.CppDbgScpInterface.Test4Export(123456, 123456.456, "test4");
+            CppDebugScript.CppDbgScpInterface.Test3_Export(12345, 12345.456, "test3");
+            CppDebugScript.CppDbgScpInterface.Test4_Export(123456, 123456.456, "test4");
 
             Console.WriteLine("--------");
 
-            int ma = CppDebugScript.CppDbgScpInterface.TestMacro1Export(123, 123.456, "testmacro1");
+            int ma = CppDebugScript.CppDbgScpInterface.TestMacro1_Export(123, 123.456, "testmacro1");
             LogSystem.Warn("retval ma:{0}", ma);
-            int mb = CppDebugScript.CppDbgScpInterface.TestMacro2Export(1234, 1234.456, "testmacro2");
+            int mb = CppDebugScript.CppDbgScpInterface.TestMacro2_Export(1234, 1234.456, "testmacro2");
             LogSystem.Warn("retval mb:{0}", mb);
-            CppDebugScript.CppDbgScpInterface.TestMacro3Export(12345, 12345.456, "testmacro3");
-            CppDebugScript.CppDbgScpInterface.TestMacro4Export(123456, 123456.456, "testmacro4");
+            CppDebugScript.CppDbgScpInterface.TestMacro3_Export(12345, 12345.456, "testmacro3");
+            CppDebugScript.CppDbgScpInterface.TestMacro4_Export(123456, 123456.456, "testmacro4");
             return BoxedValue.NullObject;
         }
     }

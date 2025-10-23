@@ -4,6 +4,7 @@
 #include "HAL/IConsoleManager.h"
 #include "Misc/CoreDelegates.h"
 #include "DebugScriptEntry.h"
+#include <fstream>
 
 #define LOCTEXT_NAMESPACE "FDebugScriptModule"
 
@@ -112,8 +113,17 @@ void FDebugScriptModule::StartupModule()
 	{
 		SavedDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Saved"));
 	}
+#if PLATFORM_ANDROID
+	std::ifstream CheckFile("/data/local/tmp/bytecode.dat", std::ios::in | std::ios::binary);
+#else
+    auto&& dataPath = FString::Printf(TEXT("%s/bytecode.dat"), *SavedDir);
+    std::ifstream CheckFile(TCHAR_TO_UTF8(*dataPath), std::ios::in | std::ios::binary);
+#endif
+	if (CheckFile.good()) {
+		CheckFile.close();
 
-    LoadDbgScp(SavedDir, SavedDir);
+		LoadDbgScp(SavedDir, SavedDir);
+	}
 
     // Register for engine initialization complete
     FCoreDelegates::OnFEngineLoopInitComplete.AddLambda([]()

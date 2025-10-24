@@ -1605,7 +1605,7 @@ void LoadDbgScp(const FString& log_path, const FString& load_path)
 {
     for (int i = 0; i < c_max_log_file_num; ++i) {
         if (GetLogFilesRef()[i].empty()) {
-            auto&& path = FString::Printf(TEXT("%s/dbgscp_log_%d.txt"), *log_path, i);
+            auto&& path = FPaths::Combine(log_path, FString::Printf(TEXT("dbgscp_log_%d.txt"), i));
             GetLogFilesRef()[i] = TCHAR_TO_UTF8(*path);
             UE_LOG(LogTemp, Log, TEXT("LoadDbgScp, LogFile: %d %s\n"), i, TCHAR_TO_UTF8(*path));
         }
@@ -1613,7 +1613,7 @@ void LoadDbgScp(const FString& log_path, const FString& load_path)
 #if PLATFORM_ANDROID
     const char* c_data_file = "/data/local/tmp/bytecode.dat";
 #else
-    auto&& dataPath = FString::Printf(TEXT("%s/bytecode.dat"), *load_path);
+    auto&& dataPath = FPaths::Combine(load_path, TEXT("bytecode.dat"));
     FTCHARToUTF8 Converter(*dataPath);
     const char* c_data_file = Converter.Get();
 #endif

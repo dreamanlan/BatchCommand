@@ -174,13 +174,19 @@ namespace BatchCommand
             string struFile = "struct.txt";
             string apiFile = "api.txt";
             if (operands.Count > 0) {
-                scpFile = operands[0].AsString;
+                string path = operands[0].AsString;
+                scpFile = Path.Combine(path, scpFile);
+                struFile = Path.Combine(path, struFile);
+                apiFile = Path.Combine(path, apiFile);
             }
             if (operands.Count > 1) {
-                struFile = operands[1].AsString;
+                scpFile = operands[1].AsString;
             }
             if (operands.Count > 2) {
-                apiFile = operands[2].AsString;
+                struFile = operands[2].AsString;
+            }
+            if (operands.Count > 3) {
+                apiFile = operands[3].AsString;
             }
             if (!string.IsNullOrEmpty(apiFile) && !string.IsNullOrEmpty(struFile) && !string.IsNullOrEmpty(scpFile)) {
                 string txt = File.ReadAllText(apiFile);
@@ -235,11 +241,15 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            string file = "bytecode.dat";
+            string datFile = "bytecode.dat";
             if (operands.Count > 0) {
-                file = operands[0].AsString;
+                string path = operands[0].AsString;
+                datFile = Path.Combine(path, datFile);
             }
-            CppDebugScript.DebugScriptCompiler.Instance.SaveByteCode(file);
+            if (operands.Count > 1) {
+                datFile = operands[1].AsString;
+            }
+            CppDebugScript.DebugScriptCompiler.Instance.SaveByteCode(datFile);
             return BoxedValue.NullObject;
         }
     }
@@ -247,11 +257,15 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            string file = "bytecode.dat";
+            string datFile = "bytecode.dat";
             if (operands.Count > 0) {
-                file = operands[0].AsString;
+                string path = operands[0].AsString;
+                datFile = Path.Combine(path, datFile);
             }
-            CppDebugScript.DebugScriptCompiler.Instance.LoadByteCode(file);
+            if (operands.Count > 1) {
+                datFile = operands[1].AsString;
+            }
+            CppDebugScript.DebugScriptCompiler.Instance.LoadByteCode(datFile);
             return BoxedValue.NullObject;
         }
     }

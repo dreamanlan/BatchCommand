@@ -2,6 +2,7 @@
 
 #include "DebugScript.h"
 #include "HAL/IConsoleManager.h"
+#include "HAL/PlatformFilemanager.h"
 #include "Misc/CoreDelegates.h"
 #include "DebugScriptEntry.h"
 #include <fstream>
@@ -65,7 +66,7 @@ static FAutoConsoleCommandWithArgsAndOutputDevice GDebugScriptSetCommand(
                 c = Args[3];
             }
             
-			DbgScp_Set_Extern(cmd, a, b, TCHAR_TO_UTF8(*c));
+            DbgScp_Set_Extern(cmd, a, b, TCHAR_TO_UTF8(*c));
             UE_LOG(LogTemp, Log, TEXT("DebugScript.Set called with cmd=%d, a=%d, b=%f, c=%s"), cmd, a, b, *c);
         })
 );
@@ -107,28 +108,42 @@ static FAutoConsoleCommandWithArgsAndOutputDevice GDebugScriptGetCommand(
 void FDebugScriptModule::StartupModule()
 {
     UE_LOG(LogTemp, Log, TEXT("DebugScript module starting up"));
-	
-	SavedDir = FPaths::ProjectSavedDir();
-	if (SavedDir.IsEmpty())
-	{
-		SavedDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Saved"));
-	}
+    
+    SavedDir = FPaths::ProjectSavedDir();
+    if (SavedDir.IsEmpty())
+    {
+        SavedDir = FPaths::Combine(FPaths::LaunchDir(), TEXT("Saved"));
+        UE_LOG(LogTemp, Log, TEXT("DebugScript SavedDir %s, based LaunchDir"), *SavedDir);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("DebugScript SavedDir %s, based ProjectSavedDir"), *SavedDir);
+    }
+    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+    if (FPaths::IsRelative(SavedDir))
+    {
+        SavedDir = PlatformFile.ConvertToAbsolutePathForExternalAppForWrite(*SavedDir);
+    }
+    UE_LOG(LogTemp, Log, TEXT("DebugScript SavedDir %s, ConvertToAbsolutePathForExternalAppForWrite"), *SavedDir);
+
 #if PLATFORM_ANDROID
-	std::ifstream CheckFile("/data/local/tmp/bytecode.dat", std::ios::in | std::ios::binary);
+    std::ifstream CheckFile("/data/local/tmp/bytecode.dat", std::ios::in | std::ios::binary);
 #else
-    auto&& dataPath = FString::Printf(TEXT("%s/bytecode.dat"), *SavedDir);
+    auto&& dataPath = FPaths::Combine(SavedDir, TEXT("bytecode.dat"));
     std::ifstream CheckFile(TCHAR_TO_UTF8(*dataPath), std::ios::in | std::ios::binary);
 #endif
-	if (CheckFile.good()) {
-		CheckFile.close();
+    if (CheckFile.good()) {
+        CheckFile.close();
 
-		LoadDbgScp(SavedDir, SavedDir);
-	}
+        LoadDbgScp(SavedDir, SavedDir);
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("DebugScript module initialized"));
 
     // Register for engine initialization complete
     FCoreDelegates::OnFEngineLoopInitComplete.AddLambda([]()
         {
-            UE_LOG(LogTemp, Log, TEXT("DebugScript module initialized"));
+            UE_LOG(LogTemp, Log, TEXT("DebugScript module OnFEngineLoopInitComplete, SavedDir=%s"), *SavedDir);
         });
 }
 

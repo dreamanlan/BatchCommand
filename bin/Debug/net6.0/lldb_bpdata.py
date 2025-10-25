@@ -1,5 +1,5 @@
 # command script import e:\lldb_bpdata.py
-# script lldb_bpdata.print_thread_stacks("")
+# script lldb_bpdata.print_threads_stacks("")
 # target stop-hook add -P lldb_bpdata.MyStopHook
 
 # watchpoint set expression -w write -s 8 -- (0xb400007262a9a0b0+0xc8)

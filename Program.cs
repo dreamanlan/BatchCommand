@@ -28,10 +28,10 @@ namespace BatchCommand
             };
 
             BatchScript.Init();
-            BatchScript.Register("compiledbgscp", "compiledbgscp(scpFile,struFile,apiFile) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
+            BatchScript.Register("compiledbgscp", "compiledbgscp([basePath[,scpFile,struFile,apiFile]]) api", new ExpressionFactoryHelper<CompileDbgScpExp>());
             BatchScript.Register("uploaddbgscp", "uploaddbgscp() api", new ExpressionFactoryHelper<UploadDbgScpExp>());
-            BatchScript.Register("savedbgscp", "savedbgscp(dataFile) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
-            BatchScript.Register("loaddbgscp", "loaddbgscp(dataFile) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
+            BatchScript.Register("savedbgscp", "savedbgscp([basePath[,dataFile]]) api", new ExpressionFactoryHelper<SaveDbgScpExp>());
+            BatchScript.Register("loaddbgscp", "loaddbgscp([basePath[,dataFile]]) api", new ExpressionFactoryHelper<LoadDbgScpExp>());
             BatchScript.Register("dbgscpset", "dbgscpset(cmd,int_a,dbl_b,str_c) api", new ExpressionFactoryHelper<DbgScpSetExp>());
             BatchScript.Register("dbgscpget", "dbgscpget(cmd,int_a,dbl_b,str_c) api,return int", new ExpressionFactoryHelper<DbgScpGetExp>());
             BatchScript.Register("testdbgscp", "testdbgscp() api", new ExpressionFactoryHelper<TestDbgScpExp>());

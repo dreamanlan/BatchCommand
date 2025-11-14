@@ -105,7 +105,8 @@ namespace BatchCommand
                     InteractiveComputing();
                 }
                 else if (!string.IsNullOrEmpty(scpTxt)) {
-                    r = BatchScript.EvalAndRun(scpTxt);
+                    var id = BatchCommand.BatchScript.EvalAsFunc(scpTxt, new List<string>());
+                    r = BatchCommand.BatchScript.Call(id);
                 }
                 else if (!string.IsNullOrEmpty(scpFile)) {
                     Stopwatch sw = Stopwatch.StartNew();
@@ -158,7 +159,6 @@ namespace BatchCommand
                 else {
                     var id = BatchScript.EvalAsFunc(line, emptyArgs);
                     var r = BatchScript.Call(id);
-                    //var r = BatchScript.EvalAndRun(line);
                     Console.Write("result:");
                     Console.WriteLine(r.ToString());
                 }

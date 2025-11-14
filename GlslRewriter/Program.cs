@@ -807,6 +807,7 @@ namespace GlslRewriter
         private static void InteractiveComputing()
         {
             Console.WriteLine("Enter exit or quit to exit...");
+            var emptyArgs = new List<string>();
             for (; ; ) {
                 Console.Write(">");
                 var line = Console.ReadLine();
@@ -822,7 +823,8 @@ namespace GlslRewriter
                         }
                     }
                     else {
-                        var r = BatchCommand.BatchScript.EvalAndRun(line);
+                        var id = BatchCommand.BatchScript.EvalAsFunc(line, emptyArgs);
+                        var r = BatchCommand.BatchScript.Call(id);
                         Console.Write("result:");
                         if (r.IsNumber) {
                             if (r.Type == BoxedValue.c_DoubleType) {

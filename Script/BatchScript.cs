@@ -1207,6 +1207,7 @@ namespace BatchCommand
         }
         internal static BoxedValue EvalAndRun(string code)
         {
+            //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
             var file = new Dsl.DslFile();
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
@@ -1217,15 +1218,23 @@ namespace BatchCommand
         }
         internal static BoxedValue EvalAndRun(params ISyntaxComponent[] expressions)
         {
+            //If local variables are used, the code must run within the function context.
             IList<ISyntaxComponent> exps = expressions;
             return EvalAndRun(exps);
         }
         internal static BoxedValue EvalAndRun(IList<ISyntaxComponent> expressions)
         {
+            //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
             List<IExpression> exps = new List<IExpression>();
             s_Calculator.LoadDsl(expressions, exps);
-            r = s_Calculator.CalcInCurrentContext(exps);
+            try {
+                r = s_Calculator.CalcInCurrentContext(exps);
+            }
+            catch {
+                //For annotation purposes only
+                Log("If local variables are used, the code must run within the function context.");
+            }
             return r;
         }
         internal static string EvalAsFunc(string code, IList<string> argNames)

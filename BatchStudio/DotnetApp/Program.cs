@@ -782,7 +782,8 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
-                        var r = BatchCommand.BatchScript.EvalAndRun(dsl);
+                        var id = BatchCommand.BatchScript.EvalAsFunc(dsl, s_EmptyArgs);
+                        var r = BatchCommand.BatchScript.Call(id);
                         if (!r.IsNullObject) {
                             LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
@@ -1063,6 +1064,7 @@ namespace DotNetLib
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
 
+        private static List<string> s_EmptyArgs = new List<string>();
         private static StringBuilder s_StringBuilder = new StringBuilder();
         private static StringWriter s_StringWriter = new StringWriter(s_StringBuilder);
         private static NativeApi? s_NativeApi;

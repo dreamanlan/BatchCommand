@@ -384,6 +384,7 @@ hook("FScene::Update")
 		return 0;
 	};
 };
+@g_dynamic_shadow_count = 0;
 @g_log_each_enabled = 0;
 hook("CreateDynamicShadows::SetupInteractionShadows")
 {
@@ -394,14 +395,16 @@ hook("CreateDynamicShadows::SetupInteractionShadows")
 		$bIsMobileCapsuleShadowsEnabled:int = ptrget(argv(3),1);
 		$bLightCondition:int = ptrget(argv(4),1);
 
+		inc(@g_dynamic_shadow_count);
+		
 		if (@g_log_each_enabled){
 			ptrset(argv(0),1,0);
 		}
-		else{
+		elif (@g_dynamic_shadow_count>500 && @g_dynamic_shadow_count<600){
 			ptrset(argv(0),1,1);
 			@g_log_each_enabled = 1;
 		};
-		printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition)
+		printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d count:%d logEnabled:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition, @g_dynamic_shadow_count, @g_log_each_enabled);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives")

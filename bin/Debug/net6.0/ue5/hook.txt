@@ -412,11 +412,12 @@ hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives
 		$PersistentIndex:int = ptrget(argv(3),4);
 		$cstrOwnerName:string = ptrget(argv(4),8);
 		$cstrResName:string = ptrget(argv(5),8);
-		$cstrShaderName:string = ptrget(argv(6),8);
-		$StaticMeshNum:int = ptrget(argv(7),4);
-		$bHasShadow:int = ptrget(argv(8),1);
+		$cstrMatName:string = ptrget(argv(6),8);
+		$cstrBaseMatName:string = ptrget(argv(7),8);
+		$StaticMeshNum:int = ptrget(argv(8),4);
+		$bHasShadow:int = ptrget(argv(9),1);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach Idx:%d NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Shader:%s MeshNum:%d HasShadow:%d\n", $Idx, $NumPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrShaderName, $StaticMeshNum, $bHasShadow);
+		printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach Idx:%d NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $Idx, $NumPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList")
@@ -435,11 +436,12 @@ hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreac
 		$PersistentIndex:int = ptrget(argv(2),4);
 		$cstrOwnerName:string = ptrget(argv(3),8);
 		$cstrResName:string = ptrget(argv(4),8);
-		$cstrShaderName:string = ptrget(argv(5),8);
-		$StaticMeshNum:int = ptrget(argv(6),4);
-		$bHasShadow:int = ptrget(argv(7),1);
+		$cstrMatName:string = ptrget(argv(5),8);
+		$cstrBaseMatName:string = ptrget(argv(6),8);
+		$StaticMeshNum:int = ptrget(argv(7),4);
+		$bHasShadow:int = ptrget(argv(8),1);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Shader:%s MeshNum:%d HasShadow:%d\n", $NumMovingPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrShaderName, $StaticMeshNum, $bHasShadow);
+		printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumMovingPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList")
@@ -458,10 +460,11 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$PersistentIndex:int = ptrget(argv(2),4);
 		$cstrOwnerName:string = ptrget(argv(3),8);
 		$cstrResName:string = ptrget(argv(4),8);
-		$cstrShaderName:string = ptrget(argv(5),8);
-		$StaticMeshNum:int = ptrget(argv(6),4);
-		$bHasShadow:int = ptrget(argv(7),1);
+		$cstrMatName:string = ptrget(argv(5),8);
+		$cstrBaseMatName:string = ptrget(argv(6),8);
+		$StaticMeshNum:int = ptrget(argv(7),4);
+		$bHasShadow:int = ptrget(argv(8),1);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Shader:%s MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrShaderName, $StaticMeshNum, $bHasShadow);
+		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
 	};
 };

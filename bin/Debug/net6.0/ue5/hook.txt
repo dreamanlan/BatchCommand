@@ -465,7 +465,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$StaticMeshNum:int = ptrget(argv(7),4);
 		$bHasShadow:int = ptrget(argv(8),1);
 
-		//printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
+		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
 	};
 };
 @g_compute_relevance_count = 0;
@@ -480,7 +480,7 @@ hook("FRelevancePacket::ComputeRelevance")
 			inc(@g_compute_relevance_count);
 
 			if (@g_log_each_mesh_enabled){
-				ptrset(argv(0),1,0);
+				ptrset(argv(0),1,1);
 			}
 			elif (@g_compute_relevance_count>500 && @g_compute_relevance_count<600){
 				ptrset(argv(0),1,1);

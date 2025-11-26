@@ -474,7 +474,7 @@ hook("FRelevancePacket::ComputeRelevance")
 {
 	onenter{
 		$bLogEach:int = ptrget(argv(0),1);
-		$NumPrims:int = ptrget(argv(4),1);
+		$NumPrims:int = ptrget(argv(1),4);
 
 		if ($NumPrims > 0) {
 			inc(@g_compute_relevance_count);

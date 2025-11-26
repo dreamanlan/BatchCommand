@@ -373,7 +373,7 @@ hook("FScene::Update")
 	};
 };
 @g_dynamic_shadow_count = 0;
-@g_log_each_enabled = 0;
+@g_log_each_dyna_shadow_enabled = 0;
 hook("CreateDynamicShadows::SetupInteractionShadows")
 {
 	onenter{
@@ -385,14 +385,14 @@ hook("CreateDynamicShadows::SetupInteractionShadows")
 
 		inc(@g_dynamic_shadow_count);
 
-		if (@g_log_each_enabled){
+		if (@g_log_each_dyna_shadow_enabled){
 			ptrset(argv(0),1,0);
 		}
 		elif (@g_dynamic_shadow_count>500 && @g_dynamic_shadow_count<600){
 			ptrset(argv(0),1,1);
-			@g_log_each_enabled = 1;
+			@g_log_each_dyna_shadow_enabled = 1;
 		};
-		printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d count:%d logEnabled:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition, @g_dynamic_shadow_count, @g_log_each_enabled);
+		printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d count:%d logEnabled:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition, @g_dynamic_shadow_count, @g_log_each_dyna_shadow_enabled);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives")
@@ -466,5 +466,42 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$bHasShadow:int = ptrget(argv(8),1);
 
 		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
+	};
+};
+@g_compute_relevance_count = 0;
+@g_log_each_mesh_enabled = 0;
+hook("FRelevancePacket::ComputeRelevance")
+{
+	onenter{
+		$bLogEach:int = ptrget(argv(0),1);
+		$NumPrims:int = ptrget(argv(4),1);
+
+		if ($NumPrims > 0) {
+			inc(@g_compute_relevance_count);
+
+			if (@g_log_each_mesh_enabled){
+				ptrset(argv(0),1,0);
+			}
+			elif (@g_compute_relevance_count>500 && @g_compute_relevance_count<600){
+				ptrset(argv(0),1,1);
+				@g_log_each_mesh_enabled = 1;
+			};
+		};
+		printf("FRelevancePacket::ComputeRelevance NumPrims:%d frame_count:%d log_enabled:%d\n", $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
+	};
+};
+hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")
+{
+	onenter{
+		$InputPrimsIndex:int = ptrget(argv(0),4);
+		$MeshIndex:int = ptrget(argv(1),4);
+		$NumStaticMeshes:int = ptrget(argv(2),4);
+		$TotalMeshes:int = ptrget(argv(3),4);
+		$cstrOwnerName:string = ptrget(argv(4),8);
+		$cstrResName:string = ptrget(argv(5),8);
+		$cstrMatName:string = ptrget(argv(6),8);
+		$cstrBaseMatName:string = ptrget(argv(7),8);
+
+		printf("FRelevancePacket::ComputeRelevance::foreach::Mesh PrimIndex:%d MeshIndex:%d NumStaticMeshes:%d TotalMeshes:%d OwnerName:%s ResName:%s Mat:%s(%s)\n", $InputPrimsIndex, $MeshIndex, $NumStaticMeshes, $TotalMeshes, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName);
 	};
 };

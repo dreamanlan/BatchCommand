@@ -480,14 +480,14 @@ hook("FRelevancePacket::ComputeRelevance")
 			inc(@g_compute_relevance_count);
 
 			if (@g_log_each_mesh_enabled){
-				ptrset(argv(0),1,1);
+				//ptrset(argv(0),1,1);
 			}
 			elif (@g_compute_relevance_count>500 && @g_compute_relevance_count<600){
-				ptrset(argv(0),1,1);
+				//ptrset(argv(0),1,1);
 				@g_log_each_mesh_enabled = 1;
 			};
 		};
-		printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
+		//printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
 	};
 };
 hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")

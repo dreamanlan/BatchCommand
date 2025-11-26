@@ -465,7 +465,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$StaticMeshNum:int = ptrget(argv(7),4);
 		$bHasShadow:int = ptrget(argv(8),1);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
+		//printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow);
 	};
 };
 @g_compute_relevance_count = 0;
@@ -487,7 +487,7 @@ hook("FRelevancePacket::ComputeRelevance")
 				@g_log_each_mesh_enabled = 1;
 			};
 		};
-		printf("FRelevancePacket::ComputeRelevance NumPrims:%d frame_count:%d log_enabled:%d\n", $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
+		printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
 	};
 };
 hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")

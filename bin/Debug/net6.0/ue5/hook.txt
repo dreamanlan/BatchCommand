@@ -480,14 +480,14 @@ hook("FRelevancePacket::ComputeRelevance")
 			inc(@g_compute_relevance_count);
 
 			if (@g_log_each_mesh_enabled){
-				//ptrset(argv(0),1,1);
+				ptrset(argv(0),1,1);
 			}
 			elif (@g_compute_relevance_count>500 && @g_compute_relevance_count<600){
-				//ptrset(argv(0),1,1);
+				ptrset(argv(0),1,1);
 				@g_log_each_mesh_enabled = 1;
 			};
 		};
-		//printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
+		printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
 	};
 };
 hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")
@@ -501,7 +501,36 @@ hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")
 		$cstrResName:string = ptrget(argv(5),8);
 		$cstrMatName:string = ptrget(argv(6),8);
 		$cstrBaseMatName:string = ptrget(argv(7),8);
+		$DrawCount:int = ptrget(argv(8),1);
+		$DrawCommandsAddr:int = argv(9);
+		$AlwaysDrawCount:int = ptrget(argv(10),1);
+		$AlwaysDrawCommandsAddr:int = argv(11);
+		$MarkMask:int = ptrget(argv(12),1);
 
-		printf("FRelevancePacket::ComputeRelevance::foreach::Mesh PrimIndex:%d MeshIndex:%d NumStaticMeshes:%d TotalMeshes:%d OwnerName:%s ResName:%s Mat:%s(%s)\n", $InputPrimsIndex, $MeshIndex, $NumStaticMeshes, $TotalMeshes, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName);
+		$DrawCommands:int[8] = [-1,-1,-1,-1,-1,-1,-1,-1];
+		if ($DrawCount > 0) {
+			$ix:int;
+			loop($ix,0,$DrawCount-1){
+				if ($ix>=8) {
+					break;
+				};
+				$DrawCommands[$ix] = ptrget($DrawCommandsAddr+$ix,1);
+			};
+		};
+		$AlwaysDrawCommands:int[8] = [-1,-1,-1,-1,-1,-1,-1,-1];
+		if ($AlwaysDrawCount > 0) {
+			$ix:int;
+			loop($ix,0,$AlwaysDrawCount-1){
+				if ($ix>=8) {
+					break;
+				};
+				$AlwaysDrawCommands[$ix] = ptrget($AlwaysDrawCommandsAddr+$ix,1);
+			};
+		};
+
+		printf("FRelevancePacket::ComputeRelevance::foreach::Mesh PrimIndex:%d MeshIndex:%d NumStaticMeshes:%d TotalMeshes:%d OwnerName:%s ResName:%s Mat:%s(%s) DrawCount:%d [%d,%d,%d,%d,%d,%d,%d,%d] AlwaysDrawCount:%d [%d,%d,%d,%d,%d,%d,%d,%d] MarkMask:%d\n", $InputPrimsIndex, $MeshIndex, $NumStaticMeshes, $TotalMeshes, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName
+			, $DrawCount, $DrawCommands[0], $DrawCommands[1], $DrawCommands[2], $DrawCommands[3], $DrawCommands[4], $DrawCommands[5], $DrawCommands[6], $DrawCommands[7]
+			, $AlwaysDrawCount, $AlwaysDrawCommands[0], $AlwaysDrawCommands[1], $AlwaysDrawCommands[2], $AlwaysDrawCommands[3], $AlwaysDrawCommands[4], $AlwaysDrawCommands[5], $AlwaysDrawCommands[6], $AlwaysDrawCommands[7]
+			, $MarkMask);
 	};
 };

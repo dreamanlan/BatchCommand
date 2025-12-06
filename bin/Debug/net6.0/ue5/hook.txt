@@ -420,7 +420,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives
 		$Y:float = ptrget(argv(11),8);
 		$Z:float = ptrget(argv(12),8);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach Idx:%d NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $Idx, $NumPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
@@ -449,7 +449,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreac
 		$Y:float = ptrget(argv(10),8);
 		$Z:float = ptrget(argv(11),8);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumMovingPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
@@ -478,7 +478,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$Y:float = ptrget(argv(10),8);
 		$Z:float = ptrget(argv(11),8);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
@@ -495,7 +495,7 @@ hook("FSceneRenderer::SetupInteractionShadows::check")
 		$bCreateInsetObjectShadow:int = ptrget(argv(6),1);
 		$bCreateObjectShadowForStationaryLight:int = ptrget(argv(7),1);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("FSceneRenderer::SetupInteractionShadows::check OwnerName:%s ResName:%s Pos:(%f,%f,%f) flags:(%d %d %d)\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bCreateTranslucentObjectShadow, $bCreateInsetObjectShadow, $bCreateObjectShadowForStationaryLight);
 			//force continue
 			ptrset(argv(5), 1, 1);
@@ -514,7 +514,7 @@ hook("FSceneRenderer::CreatePerObjectProjectedShadow::skip")
 		$bOpaque:int = ptrget(argv(6),1);
 		$bTranslucentRelevance:int = ptrget(argv(7),1);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("FSceneRenderer::CreatePerObjectProjectedShadow::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f) bOpaque:%d bTranslucentRelevance:%d\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bOpaque, $bTranslucentRelevance);
 		};
 	};
@@ -626,8 +626,73 @@ hook("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow
 		$PX:float = ptrget(argv(12),8);
 		$PY:float = ptrget(argv(13),8);
 
-		if (stringcontains($cstrOwnerName,"WhiteWolf")) {
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
 			printf("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
+		};
+	};
+};
+@g_init_views_count = 0;
+@g_init_views_log_detail_enabled = 0;
+hook("FMobileSceneRenderer::InitViews")
+{
+	onenter{
+		$bLogDetail:int = ptrget(argv(0),1);
+
+		inc(@g_init_views_count);
+
+		if (@g_init_views_log_detail_enabled){
+			ptrset(argv(0),1,1);
+		}
+		elif (@g_init_views_count>100 && @g_init_views_count<600){
+			ptrset(argv(0),1,1);
+			@g_init_views_log_detail_enabled = 1;
+		};
+
+		printf("FMobileSceneRenderer::InitViews tid:%lld frame_count:%d log_enabled:%d\n", GetTID(), @g_init_views_count, @g_init_views_log_detail_enabled);
+	};
+};
+hook("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow")
+{
+	onenter{
+		$SizeX:float = ptrget(argv(0),8);
+		$SizeY:float = ptrget(argv(1),8);
+		$CountX:int = ptrget(argv(2),4);
+		$CountY:int = ptrget(argv(3),4);
+		$OriginX:float = ptrget(argv(4),8);
+		$OriginY:float = ptrget(argv(5),8);
+		$NumBits:int = ptrget(argv(6),4);
+		$MaxBits:int = ptrget(argv(7),4);
+		$BitData:int = ptrget(argv(8),8);
+		$cstrOwnerName:string = ptrget(argv(9),8);
+		$cstrResName:string = ptrget(argv(10),8);
+		$bCastShadow:int = ptrget(argv(11),1);
+		$PX:float = ptrget(argv(12),8);
+		$PY:float = ptrget(argv(13),8);
+
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
+			printf("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
+		};
+	};
+};
+hook("FilterPrimitiveForShadows::skip_switch")
+{
+	onenter{
+		//$bLogDbgScp:int = ptrget(argv(0),1);
+		ptrset(argv(0),1,1);
+	};
+};
+hook("FilterPrimitiveForShadows::skip")
+{
+	onenter{
+		//$forceContinue:int = ptrget(argv(0),1);
+		$cstrOwnerName:string = ptrget(argv(1),8);
+		$cstrResName:string = ptrget(argv(2),8);
+		$X:float = ptrget(argv(3),8);
+		$Y:float = ptrget(argv(4),8);
+		$Z:float = ptrget(argv(5),8);
+
+		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
+			printf("FilterPrimitiveForShadows::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f)\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z);
 		};
 	};
 };

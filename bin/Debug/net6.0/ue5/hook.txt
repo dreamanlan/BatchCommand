@@ -692,7 +692,8 @@ hook("FilterPrimitiveForShadows::skip")
 		$Z:float = ptrget(argv(5),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FilterPrimitiveForShadows::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f)\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z);
+			printf("FilterPrimitiveForShadows::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f), but force continue\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z);
+			ptrset(argv(0),1,1);
 		};
 	};
 };

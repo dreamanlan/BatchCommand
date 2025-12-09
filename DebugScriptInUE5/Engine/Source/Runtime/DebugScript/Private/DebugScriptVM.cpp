@@ -326,7 +326,7 @@ namespace
         int i = 0;
         int ct = 0;
 
-        while (*p && ct < buf_size) {
+        while (*p && ct < static_cast<int>(buf_size)) {
             if (*p == '%') {
                 char tmpFmt[64] = { *p };
                 int nextTmpIx = 1;

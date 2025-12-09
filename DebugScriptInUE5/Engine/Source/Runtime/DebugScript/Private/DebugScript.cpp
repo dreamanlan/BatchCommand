@@ -4,6 +4,7 @@
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/CoreDelegates.h"
+#include "Misc/Paths.h"
 #include "DebugScriptEntry.h"
 #include <fstream>
 

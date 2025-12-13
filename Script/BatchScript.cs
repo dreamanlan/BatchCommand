@@ -124,7 +124,6 @@ namespace BatchCommand
                             args.Add(field);
                         }
                         var o = BatchScript.Call(scpId, args);
-                        BatchScript.RecycleCalculatorValueList(args);
                         var rlist = o.As<IList>();
                         if (null != rlist) {
                             foreach (var item in rlist) {
@@ -141,6 +140,7 @@ namespace BatchCommand
                             }
                         }
                     }
+                    BatchScript.RecycleCalculatorValueList(args);
                     r = BoxedValue.FromObject(outLines);
                 }
             }
@@ -1148,7 +1148,7 @@ namespace BatchCommand
             sdir = Path.Combine(Environment.CurrentDirectory, sdir);
             s_ScriptDirectory = sdir;
             s_Calculator.Clear();
-            s_Calculator.LoadDsl(scpFile);
+            LoadDslHelper(scpFile);
             Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
         }
         internal static void LoadIncludes(params string[] scpFiles)
@@ -1158,7 +1158,7 @@ namespace BatchCommand
         internal static void LoadIncludes(IList<string> scpFiles)
         {
             foreach (var scpFile in scpFiles) {
-                s_Calculator.LoadDsl(scpFile);
+                LoadDslHelper(scpFile);
             }
         }
         internal static BoxedValue Run(string scpFile)
@@ -1210,6 +1210,7 @@ namespace BatchCommand
             //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
             var file = new Dsl.DslFile();
+            file.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
             if (file.LoadFromString(code, msg => { Log(msg); })) {
                 r = EvalAndRun(file.DslInfos);
@@ -1242,6 +1243,7 @@ namespace BatchCommand
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
             var file = new Dsl.DslFile();
+            file.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
             if (file.LoadFromString(procCode, msg => { Log(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
@@ -1345,6 +1347,20 @@ namespace BatchCommand
             }
             catch {
                 return Encoding.UTF8;
+            }
+        }
+
+        private static void LoadDslHelper(string file)
+        {
+            DslFile dslFile = new DslFile();
+            dslFile.SetStringDelimiter("[[", "]]");
+            ScriptableDslHelper.ForDslCalculator.SetCallbacks(dslFile);
+            if (!dslFile.Load(file, Log)) {
+                return;
+            }
+
+            foreach (ISyntaxComponent dslInfo in dslFile.DslInfos) {
+                s_Calculator.LoadDsl(dslInfo);
             }
         }
 

@@ -105,6 +105,9 @@ namespace BatchCommand
                     InteractiveComputing();
                 }
                 else if (!string.IsNullOrEmpty(scpTxt)) {
+                    if (scpTxt.Length >= 2 && scpTxt[0] == scpTxt[scpTxt.Length - 1] && (scpTxt[0] == '"' || scpTxt[0] == '\'')) {
+                        scpTxt = scpTxt.Substring(1, scpTxt.Length - 2);
+                    }
                     var id = BatchCommand.BatchScript.EvalAsFunc(scpTxt, new List<string>());
                     r = BatchCommand.BatchScript.Call(id);
                 }

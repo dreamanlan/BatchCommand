@@ -3,7 +3,7 @@
     "adb_cfg": {
       "commandName": "Executable",
       "executablePath": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0\\BatchCommand.exe",
-      "commandLineArgs": "-i",
+      "commandLineArgs": "-e \"awk(readalllines([[e:/l.txt]]),[[$a=getextension($0);if($a.Length>30){echo($a);}else{echo('test');};]],false,',');\"",
       "workingDirectory": "D:\\GitHub\\BatchCommand\\bin\\Debug\\net6.0",
       "nativeDebugging": true
     }

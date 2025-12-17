@@ -79,6 +79,61 @@ class FileCopier:
                 normalized.append(pattern)
         return normalized
 
+    def _convert_to_relative_path(self, path_str: str) -> Optional[str]:
+        """
+        Convert path to relative path
+
+        Try to convert absolute or source/target-based paths to relative paths.
+
+        Args:
+            path_str: Path string from file list
+
+        Returns:
+            Relative path string, or None if path cannot be resolved
+        """
+        path_str = path_str.strip()
+
+        # If empty, return None
+        if not path_str:
+            return None
+
+        try:
+            # Try to resolve as Path
+            path = Path(path_str)
+
+            # If it's already a relative path and exists in source, use it directly
+            if not path.is_absolute():
+                source_path = self.source_dir / path
+                if source_path.exists():
+                    return str(path)
+                # If not exists in source, still return it (will be handled later)
+                return str(path)
+
+            # If it's an absolute path, try to get relative path from source or target
+            abs_path = path.resolve()
+
+            # Try to get relative path from source directory
+            try:
+                rel_from_source = abs_path.relative_to(self.source_dir)
+                return str(rel_from_source)
+            except ValueError:
+                pass
+
+            # Try to get relative path from target directory
+            try:
+                rel_from_target = abs_path.relative_to(self.target_dir)
+                return str(rel_from_target)
+            except ValueError:
+                pass
+
+            # If path is not under source or target, return None
+            logger.warning(f"Path is not under source or target directory: {path_str}")
+            return None
+
+        except Exception as e:
+            logger.warning(f"Failed to process path '{path_str}': {e}")
+            return None
+
     def match_patterns(self, filename: str) -> bool:
         """Check if filename matches any filter pattern"""
         # If no patterns specified, match all files
@@ -142,13 +197,19 @@ class FileCopier:
 
                     total_count += 1
 
+                    # Convert to relative path
+                    rel_path_str = self._convert_to_relative_path(line)
+
+                    if rel_path_str is None:
+                        continue
+
                     # Apply pattern filter
-                    filename = Path(line).name
+                    filename = Path(rel_path_str).name
                     if not self.match_patterns(filename):
                         continue
 
                     filtered_count += 1
-                    yield line
+                    yield rel_path_str
 
             pattern_info = "all files" if self.patterns is None else f"patterns: {self.patterns}"
             logger.info(f"File list loaded: {total_count} files total, "
@@ -181,21 +242,21 @@ class FileCopier:
 
             # Check if source file exists
             if not source_file.exists():
-                return ('failed', rel_path_str, 'not found in source', 0)
+                return ('failed', rel_path, 'not found in source', 0)
 
             # Check if source is actually a file
             if not source_file.is_file():
-                return ('failed', rel_path_str, 'not a file in source', 0)
+                return ('failed', rel_path, 'not a file in source', 0)
 
             # Check if target file already exists
             if target_file.exists() and not self.overwrite:
-                return ('skipped', rel_path_str, 'already exists in target', 0)
+                return ('skipped', rel_path, 'already exists in target', 0)
 
             # Get file size
             file_size = source_file.stat().st_size
 
             if self.dry_run:
-                return ('copied', rel_path_str, 'would be copied', file_size)
+                return ('copied', rel_path, 'would be copied', file_size)
 
             # Create target directory if needed
             target_file.parent.mkdir(parents=True, exist_ok=True)
@@ -203,7 +264,7 @@ class FileCopier:
             # Copy file with metadata
             shutil.copy2(source_file, target_file)
 
-            return ('copied', rel_path_str, 'copied successfully', file_size)
+            return ('copied', rel_path, 'copied successfully', file_size)
 
         except PermissionError as e:
             return ('failed', rel_path_str, f'permission denied: {e}', 0)

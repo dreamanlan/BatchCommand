@@ -1,5 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 import sys
+import argparse
 from pathlib import Path
 from typing import Optional, List
 import fnmatch
@@ -247,12 +251,42 @@ def get_files(directory: str, *extensions: str) -> List[Path]:
 
     return result
 
-if __name__ == "__main__":
-    # Check if the path is provided via command line arguments
-    if len(sys.argv) > 1:
-        target_dir = sys.argv[1]
-    else:
-        # Otherwise, prompt the user to input the path
-        target_dir = input("Please enter the root directory path: ")
+def main():
+    parser = argparse.ArgumentParser(
+        description='List all empty subdirectories in the specified directory',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  # List all empty directories
+  %(prog)s /path/to/directory
+
+  # Save to file
+  %(prog)s /path/to/directory > empty_dirs.txt
+
+  # Count empty directories
+  %(prog)s /path/to/directory | wc -l
+        '''
+    )
+
+    parser.add_argument('directory',
+                       help='Directory to search for empty subdirectories')
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Validate directory
+    target_dir = Path(args.directory)
+
+    if not target_dir.exists():
+        print(f"Error: Directory does not exist: {args.directory}", file=sys.stderr)
+        return 1
+
+    if not target_dir.is_dir():
+        print(f"Error: Not a directory: {args.directory}", file=sys.stderr)
+        return 1
 
     print_files(target_dir)
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

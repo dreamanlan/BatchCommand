@@ -319,7 +319,10 @@ namespace CppDebugScript
                         var struInfo = ParseStruct(callData, err);
                         if (null != struInfo) {
                             m_PredefinedStructInfos.Add(struInfo.Name, struInfo);
-                            CalcStructOffsetAndSize(struInfo);
+                            if(!CalcStructOffsetAndSize(struInfo, out var errStr)) {
+                                err.AppendFormat("{0}, code:{1}, line:{2}", errStr, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                                err.AppendLine(errStr);
+                            }
                         }
                     }
                 }
@@ -1669,7 +1672,10 @@ namespace CppDebugScript
                     var struInfo = ParseStruct(callData, err);
                     if (null != struInfo) {
                         m_StructInfos.Add(struInfo.Name, struInfo);
-                        CalcStructOffsetAndSize(struInfo);
+                        if (!CalcStructOffsetAndSize(struInfo, out var errStr)) {
+                            err.AppendFormat("{0}, code:{1}, line:{2}", errStr, callData.ToScriptString(false, Dsl.DelimiterInfo.Default), callData.GetLine());
+                            err.AppendLine(errStr);
+                        }
                     }
                 }
                 else if (id == "hook") {
@@ -2901,6 +2907,13 @@ namespace CppDebugScript
                             var fname = fieldData.GetParamId(0);
                             var arrOrPtrs = new List<int>();
                             var ftype = ParseFieldType(fieldData.GetParam(1), err, arrOrPtrs);
+                            for (int i = 1; i < arrOrPtrs.Count; ++i) {
+                                if (arrOrPtrs[i] <= 0) {
+                                    err.AppendFormat("Pointers to arrays are not currently supported, field '{0}', code:{1}, line:{2}", fname, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
+                                    err.AppendLine();
+                                    break;
+                                }
+                            }
                             if (!s_FieldTypeNames.Contains(ftype) && !TryGetStruct(ftype, out var stru)) {
                                 err.AppendFormat("Unknown field type '{0}' must be defined first than '{1}', code:{2}, line:{3}", ftype, name, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                                 err.AppendLine();
@@ -2922,8 +2935,10 @@ namespace CppDebugScript
             }
             return null;
         }
-        private void CalcStructOffsetAndSize(StructInfo struInfo)
+        private bool CalcStructOffsetAndSize(StructInfo struInfo, out string? err)
         {
+            err = null;
+            bool ret = true;
             int size = 0;
             foreach (var field in struInfo.Fields) {
                 string type = field.Type;
@@ -2955,6 +2970,8 @@ namespace CppDebugScript
                         field.Size = refStruInfo.Size;
                     }
                     else {
+                        ret = false;
+                        err = string.Format("Can't find struct {0}", field.Type);
                         field.Size = 0;
                     }
                 }
@@ -2969,6 +2986,7 @@ namespace CppDebugScript
                 size += field.TotalSize;
             }
             struInfo.Size = size;
+            return ret;
         }
         private string ParseFieldType(Dsl.ISyntaxComponent comp, StringBuilder err, List<int> arrOrPtrs)
         {
@@ -3043,7 +3061,11 @@ namespace CppDebugScript
             var valData = exp as Dsl.ValueData;
             if (null != valData) {
                 string name = valData.GetId();
-                TryGetStruct(name, out struInfo);
+                if (!TryGetStruct(name, out struInfo) && !s_FieldTypeNames.Contains(name)) {
+                    err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", name, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                    err.AppendLine();
+                    success = false;
+                }
 
                 offsets.Add(0);
                 lastSize = sizeof(long);
@@ -3057,7 +3079,11 @@ namespace CppDebugScript
                     }
                     else if (funcData.IsMemberParamClass()) {
                         string name = funcData.GetId();
-                        TryGetStruct(name, out struInfo);
+                        if (!TryGetStruct(name, out struInfo) && !s_FieldTypeNames.Contains(name)) {
+                            err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", name, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                            err.AppendLine();
+                            success = false;
+                        }
 
                         offsets.Add(0);
                     }
@@ -3090,37 +3116,71 @@ namespace CppDebugScript
                         Debug.Assert(null != struInfo);
                         Debug.Assert(null != fieldIndexes);
                         var field = struInfo.Fields[fieldIndexes[0]];
-                        TryGetStruct(field.Type, out struInfo);
+                        if (!TryGetStruct(field.Type, out struInfo) && !s_FieldTypeNames.Contains(field.Type)) {
+                            err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", field.Type, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                            err.AppendLine();
+                            success = false;
+                        }
                         fieldIndexes = null;
 
                         offsets.Add(0);
                         lastSize = field.TotalSize;
                     }
                     else if (funcData.IsBracketParamClass() && num == 1) {
-                        int.TryParse(funcData.GetParamId(0), out var index);
+                        if (!int.TryParse(funcData.GetParamId(0), out var index)) {
+                            err.AppendFormat("Invalid const index '{0}' in struct exp, code:{1}, line:{2}", funcData.GetParamId(0), exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                            err.AppendLine();
+                            success = false;
+                        }
                         Debug.Assert(null != struInfo);
                         Debug.Assert(null != fieldIndexes);
                         fieldIndexes.Add(index);
 
                         var field = struInfo.Fields[fieldIndexes[0]];
-                        int arrNum = 1;
-                        int addNum = 0;
-                        for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
-                            if (i + 1 < fieldIndexes.Count) {
-                                int fix = fieldIndexes[i + 1];
-                                addNum += fix * arrNum;
-                                break;
-                            }
-                            else {
-                                int arrSize = field.ArrayOrPtrs[i];
-                                arrNum *= arrSize;
-                            }
+                        if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
+                            //Pointer as array, only support one dimension now
+                            offsets[offsets.Count - 1] = field.Offset + index * sizeof(long);
+                            offsets.Add(0);
+                            lastSize = field.TotalSize;
                         }
-                        offsets[offsets.Count - 1] += field.Size * addNum;
-                        lastSize = field.Size * addNum;
+                        else {
+                            for(int i = 1; i < field.ArrayOrPtrs.Count; ++i) {
+                                if (field.ArrayOrPtrs[i] < 0) {
+                                    err.AppendFormat("Pointers to arrays are not currently supported, field '{0}', code:{1}, line:{2}", field.Name, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                                    err.AppendLine();
+                                    success = false;
+                                    break;
+                                }
+                            }
+                            bool isPtr = false;
+                            int arrNum = 1;
+                            int addNum = 0;
+                            for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
+                                if (i + 1 < fieldIndexes.Count) {
+                                    int fix = fieldIndexes[i + 1];
+                                    addNum += fix * arrNum;
+                                    break;
+                                }
+                                else {
+                                    int arrSize = field.ArrayOrPtrs[i];
+                                    if (arrSize <= 0) {
+                                        isPtr = true;
+                                        break;
+                                    }
+                                    arrNum *= arrSize;
+                                }
+                            }
+                            offsets[offsets.Count - 1] += (isPtr ? sizeof(long) : field.Size) * addNum;
+                            lastSize = field.Size * addNum;
+                        }
 
                         if(TryGetStruct(field.Type, out var newStruInfo)) {
                             struInfo = newStruInfo;
+                        }
+                        else if (!s_FieldTypeNames.Contains(field.Type)) {
+                            err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", field.Type, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                            err.AppendLine();
+                            success = false;
                         }
                     }
                     else {

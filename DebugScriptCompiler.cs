@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.ComponentModel.DataAnnotations;
 using ScriptableFramework;
 using DotnetStoryScript.CommonFunctions;
+using System.Net.WebSockets;
 
 #nullable enable
 
@@ -2411,13 +2412,18 @@ namespace CppDebugScript
                         else if (op == "offset") {
                             if (!callData.IsHighOrder && callData.GetParamNum() == 1) {
                                 var exp = callData.GetParam(0);
-                                List<int> offsets = new List<int>();
+                                List<IntegerOrExpression> offsets = new List<IntegerOrExpression>();
                                 if (CalcStructExpressionOffsets(exp, err, offsets, out var lastSize, out var struInfo, out var fieldIndexes)) {
                                     if (offsets.Count == 1) {
-                                        int offset = offsets[0];
-                                        semanticInfo.ResultType = TypeEnum.Int;
-                                        semanticInfo.ResultValues = new List<string> { offset.ToString() };
-                                        TryGenConstResult(codes, err, callData, ref semanticInfo);
+                                        var offset = offsets[0];
+                                        if (null == offset.Expression) {
+                                            semanticInfo.ResultType = TypeEnum.Int;
+                                            semanticInfo.ResultValues = new List<string> { offset.IntegerValue.ToString() };
+                                            TryGenConstResult(codes, err, callData, ref semanticInfo);
+                                        }
+                                        else {
+                                            CompileExpression(offset.Expression, codes, err, ref semanticInfo);
+                                        }
                                     }
                                     else {
                                         err.AppendFormat("unable to calculate the offset of 'offset(struct_exp)', we can only calculate the first-level offset, i mean that you cannot calculate the member offset of a data or structure pointed to by a pointer, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
@@ -2907,13 +2913,6 @@ namespace CppDebugScript
                             var fname = fieldData.GetParamId(0);
                             var arrOrPtrs = new List<int>();
                             var ftype = ParseFieldType(fieldData.GetParam(1), err, arrOrPtrs);
-                            for (int i = 1; i < arrOrPtrs.Count; ++i) {
-                                if (arrOrPtrs[i] <= 0) {
-                                    err.AppendFormat("Pointers to arrays are not currently supported, field '{0}', code:{1}, line:{2}", fname, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
-                                    err.AppendLine();
-                                    break;
-                                }
-                            }
                             if (!s_FieldTypeNames.Contains(ftype) && !TryGetStruct(ftype, out var stru)) {
                                 err.AppendFormat("Unknown field type '{0}' must be defined first than '{1}', code:{2}, line:{3}", ftype, name, p.ToScriptString(false, Dsl.DelimiterInfo.Default), p.GetLine());
                                 err.AppendLine();
@@ -2943,10 +2942,7 @@ namespace CppDebugScript
             foreach (var field in struInfo.Fields) {
                 string type = field.Type;
                 field.Offset = size;
-                if (field.ArrayOrPtrs.Count > 0 && field.ArrayOrPtrs[0] <= 0) {
-                    field.Size = sizeof(long);
-                }
-                else if (type == "int8" || type == "uint8" || type == "char" || type == "byte") {
+                if (type == "int8" || type == "uint8" || type == "char" || type == "byte") {
                     field.Size = sizeof(byte);
                 }
                 else if (type == "int16" || type == "uint16" || type == "short" || type == "ushort") {
@@ -2975,6 +2971,10 @@ namespace CppDebugScript
                         field.Size = 0;
                     }
                 }
+                if (field.ArrayOrPtrs.Count > 0 && field.ArrayOrPtrs[0] <= 0) {
+                    field.BaseTypeSize = field.Size;
+                    field.Size = sizeof(long);
+                }
                 int count = 1;
                 if (field.ArrayOrPtrs.Count > 0) {
                     foreach (var v in field.ArrayOrPtrs) {
@@ -2999,7 +2999,7 @@ namespace CppDebugScript
                 if (null != funcData && funcData.IsParenthesesParamClass() && funcData.GetParamNum() == 1 && !funcData.IsHighOrder && funcData.GetId() == "ptr") {
                     string type = ParseFieldType(funcData.GetParam(0), err, arrOrPtrs);
                     if (arrOrPtrs.Count > 0) {
-                        err.AppendFormat("Pointer in struct can only pointer to struct or base type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
+                        err.AppendFormat("Pointer in struct can only pointer to struct or basic type, code:{0}, line:{1}", comp.ToScriptString(false, Dsl.DelimiterInfo.Default), comp.GetLine());
                         err.AppendLine();
                     }
                     arrOrPtrs.Add(0);
@@ -3052,7 +3052,7 @@ namespace CppDebugScript
             }
             return false;
         }
-        private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<int> offsets, out int lastSize, out StructInfo? struInfo, out List<int>? fieldIndexes)
+        private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<IntegerOrExpression> offsets, out int lastSize, out StructInfo? struInfo, out List<IntegerOrExpression>? fieldIndexes)
         {
             bool success = true;
             lastSize = 0;
@@ -3067,7 +3067,7 @@ namespace CppDebugScript
                     success = false;
                 }
 
-                offsets.Add(0);
+                offsets.Add(new IntegerOrExpression());
                 lastSize = sizeof(long);
             }
             else {
@@ -3085,18 +3085,29 @@ namespace CppDebugScript
                             success = false;
                         }
 
-                        offsets.Add(0);
+                        offsets.Add(new IntegerOrExpression());
                     }
                     if (funcData.IsMemberParamClass()) {
                         string member = funcData.GetParamId(0);
                         if (null != struInfo) {
                             int fieldIndex = struInfo.Fields.FindIndex(fi => fi.Name == member);
                             if (fieldIndex >= 0) {
-                                fieldIndexes = new List<int>();
-                                fieldIndexes.Add(fieldIndex);
+                                fieldIndexes = new List<IntegerOrExpression>();
+                                fieldIndexes.Add(new IntegerOrExpression(fieldIndex));
 
                                 var field = struInfo.Fields[fieldIndex];
-                                offsets[offsets.Count - 1] += field.Offset;
+                                var offset = offsets[offsets.Count - 1];
+                                if (null != offset.Expression) {
+                                    var f = new Dsl.FunctionData();
+                                    f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                    f.SetOperatorParamClass();
+                                    f.AddParam(offset.Expression);
+                                    f.AddParam(field.Offset.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    offset.Expression = f;
+                                }
+                                else {
+                                    offset.IntegerValue += field.Offset;
+                                }
                                 lastSize = field.TotalSize;
                             }
                             else {
@@ -3115,7 +3126,7 @@ namespace CppDebugScript
                         success = success && CalcStructExpressionOffsets(funcData.GetParam(0), err, offsets, out lastSize, out struInfo, out fieldIndexes);
                         Debug.Assert(null != struInfo);
                         Debug.Assert(null != fieldIndexes);
-                        var field = struInfo.Fields[fieldIndexes[0]];
+                        var field = struInfo.Fields[fieldIndexes[0].IntegerValue];
                         if (!TryGetStruct(field.Type, out struInfo) && !s_FieldTypeNames.Contains(field.Type)) {
                             err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", field.Type, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
                             err.AppendLine();
@@ -3123,58 +3134,170 @@ namespace CppDebugScript
                         }
                         fieldIndexes = null;
 
-                        offsets.Add(0);
+                        offsets.Add(new IntegerOrExpression());
                         lastSize = field.TotalSize;
                     }
                     else if (funcData.IsBracketParamClass() && num == 1) {
-                        if (!int.TryParse(funcData.GetParamId(0), out var index)) {
-                            err.AppendFormat("Invalid const index '{0}' in struct exp, code:{1}, line:{2}", funcData.GetParamId(0), exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
-                            err.AppendLine();
-                            success = false;
-                        }
                         Debug.Assert(null != struInfo);
                         Debug.Assert(null != fieldIndexes);
-                        fieldIndexes.Add(index);
-
-                        var field = struInfo.Fields[fieldIndexes[0]];
-                        if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
-                            //Pointer as array, only support one dimension now
-                            offsets[offsets.Count - 1] = field.Offset + index * sizeof(long);
-                            offsets.Add(0);
-                            lastSize = field.TotalSize;
-                        }
-                        else {
-                            for(int i = 1; i < field.ArrayOrPtrs.Count; ++i) {
-                                if (field.ArrayOrPtrs[i] < 0) {
-                                    err.AppendFormat("Pointers to arrays are not currently supported, field '{0}', code:{1}, line:{2}", field.Name, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
-                                    err.AppendLine();
-                                    success = false;
+                        var field = struInfo.Fields[fieldIndexes[0].IntegerValue];
+                        bool isConst = true;
+                        if (int.TryParse(funcData.GetParamId(0), out var index)) {
+                            fieldIndexes.Add(new IntegerOrExpression(index));
+                            foreach(var ix in fieldIndexes) {
+                                if (null != ix.Expression) {
+                                    isConst = false;
                                     break;
                                 }
                             }
-                            bool isPtr = false;
-                            int arrNum = 1;
-                            int addNum = 0;
-                            for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
-                                if (i + 1 < fieldIndexes.Count) {
-                                    int fix = fieldIndexes[i + 1];
-                                    addNum += fix * arrNum;
-                                    break;
-                                }
-                                else {
-                                    int arrSize = field.ArrayOrPtrs[i];
-                                    if (arrSize <= 0) {
-                                        isPtr = true;
+                            if (isConst) {
+                                foreach (var offset in offsets) {
+                                    if (null != offset.Expression) {
+                                        isConst = false;
                                         break;
                                     }
-                                    arrNum *= arrSize;
                                 }
                             }
-                            offsets[offsets.Count - 1] += (isPtr ? sizeof(long) : field.Size) * addNum;
-                            lastSize = field.Size * addNum;
                         }
-
-                        if(TryGetStruct(field.Type, out var newStruInfo)) {
+                        else {
+                            isConst = false;
+                        }
+                        if (isConst) {
+                            if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
+                                //Pointer as array, only support one dimension now
+                                offsets.Add(new IntegerOrExpression(field.Offset));
+                                offsets[offsets.Count - 1].IntegerValue = index * field.BaseTypeSize;
+                                lastSize = field.BaseTypeSize;
+                            }
+                            else {
+                                bool isPtr = false;
+                                int arrNum = 1;
+                                int addNum = 0;
+                                for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
+                                    if (i + 1 < fieldIndexes.Count) {
+                                        int fix = fieldIndexes[i + 1].IntegerValue;
+                                        addNum += fix * arrNum;
+                                        break;
+                                    }
+                                    else {
+                                        int arrSize = field.ArrayOrPtrs[i];
+                                        if (arrSize <= 0) {
+                                            isPtr = true;
+                                            break;
+                                        }
+                                        arrNum *= arrSize;
+                                    }
+                                }
+                                offsets[offsets.Count - 1].IntegerValue += (isPtr ? sizeof(long) : field.Size) * addNum;
+                                //Only the element size of the last dimension is valid.
+                                lastSize = field.Size * addNum;
+                            }
+                        }
+                        else {
+                            var p = funcData.GetParam(0);
+                            fieldIndexes.Add(new IntegerOrExpression(p));
+                            if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
+                                //Pointer as array, only support one dimension now
+                                offsets.Add(new IntegerOrExpression(field.Offset));
+                                var f = new Dsl.FunctionData();
+                                f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                f.SetOperatorParamClass();
+                                f.AddParam(p);
+                                f.AddParam(field.BaseTypeSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                offsets[offsets.Count - 1] = new IntegerOrExpression(f);
+                                lastSize = field.BaseTypeSize;
+                            }
+                            else {
+                                bool isPtr = false;
+                                Dsl.ISyntaxComponent? arrNum = null;
+                                Dsl.ISyntaxComponent? addNum = null;
+                                for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
+                                    if (i + 1 < fieldIndexes.Count) {
+                                        var fix = fieldIndexes[i + 1].Expression;
+                                        if (null == arrNum) {
+                                            if (null == addNum) {
+                                                addNum = fix;
+                                            }
+                                            else {
+                                                var f = new Dsl.FunctionData();
+                                                f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                                f.SetOperatorParamClass();
+                                                f.AddParam(addNum);
+                                                f.AddParam(fix);
+                                                addNum = f;
+                                            }
+                                        }
+                                        else if (null == addNum) {
+                                            var f = new Dsl.FunctionData();
+                                            f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                            f.SetOperatorParamClass();
+                                            f.AddParam(fix);
+                                            f.AddParam(arrNum);
+                                            addNum = f;
+                                        }
+                                        else {
+                                            var p2 = new Dsl.FunctionData();
+                                            p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                            p2.SetOperatorParamClass();
+                                            p2.AddParam(fix);
+                                            p2.AddParam(arrNum);
+                                            var f = new Dsl.FunctionData();
+                                            f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                            f.SetOperatorParamClass();
+                                            f.AddParam(addNum);
+                                            f.AddParam(p2);
+                                            addNum = f;
+                                        }
+                                        break;
+                                    }
+                                    else {
+                                        int arrSize = field.ArrayOrPtrs[i];
+                                        if (arrSize <= 0) {
+                                            isPtr = true;
+                                            break;
+                                        }
+                                        if (null == arrNum) {
+                                            arrNum = new Dsl.ValueData(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                        }
+                                        else {
+                                            var f = new Dsl.FunctionData();
+                                            f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                            f.SetOperatorParamClass();
+                                            f.AddParam(arrNum);
+                                            f.AddParam(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                            arrNum = f;
+                                        }
+                                    }
+                                }
+                                if (null == addNum) {
+                                    var p1 = offsets[offsets.Count - 1].Expression;
+                                    if (null == p1) {
+                                        p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    }
+                                    offsets[offsets.Count - 1].Expression = p1;
+                                }
+                                else {
+                                    var p1 = offsets[offsets.Count - 1].Expression;
+                                    if (null == p1) {
+                                        p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    }
+                                    var p2 = new Dsl.FunctionData();
+                                    p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                    p2.SetOperatorParamClass();
+                                    p2.AddParam((isPtr ? sizeof(long) : field.Size).ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    p2.AddParam(addNum);
+                                    var f = new Dsl.FunctionData();
+                                    f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                    f.SetOperatorParamClass();
+                                    f.AddParam(p1);
+                                    f.AddParam(p2);
+                                    offsets[offsets.Count - 1].Expression = f;
+                                }
+                                //Only the element size of the last dimension is valid.
+                                lastSize = field.Size;
+                            }
+                        }
+                        if (TryGetStruct(field.Type, out var newStruInfo)) {
                             struInfo = newStruInfo;
                         }
                         else if (!s_FieldTypeNames.Contains(field.Type)) {
@@ -3200,17 +3323,28 @@ namespace CppDebugScript
 
         private void TryGenStruct(Dsl.ISyntaxComponent exp, List<int> codes, SemanticInfo info, StringBuilder err, ref SemanticInfo semanticInfo)
         {
-            List<int> offsets = new List<int>();
+            List<IntegerOrExpression> offsets = new List<IntegerOrExpression>();
             if (CalcStructExpressionOffsets(exp, err, offsets, out var lastSize, out var struInfo, out var fieldIndexes)) {
                 var opds = new List<SemanticInfo>();
                 opds.Add(info);
                 var cinfo0 = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { lastSize.ToString() } };
                 opds.Add(cinfo0);
                 foreach (var offset in offsets) {
-                    var cinfo = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { offset.ToString() } };
-                    opds.Add(cinfo);
+                    if (null == offset.Expression) {
+                        var cinfo = new SemanticInfo { ResultType = TypeEnum.Int, ResultCount = 0, ResultValues = new List<string> { offset.IntegerValue.ToString() } };
+                        opds.Add(cinfo);
+                    }
+                    else {
+                        var pinfo = new SemanticInfo { ResultType = TypeEnum.Int, TargetOperation = TargetOperationEnum.TypeInfo };
+                        CompileExpression(offset.Expression, codes, err, ref pinfo);
+                        opds.Add(pinfo);
+                    }
                 }
                 TryGenCascadePtr(codes, opds, err, exp, ref semanticInfo);
+                if (lastSize <= 0 || lastSize > sizeof(long)) {
+                    err.AppendFormat("'struct' cannot return fields with a size greater than 8, code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                    err.AppendLine();
+                }
             }
         }
 
@@ -6980,6 +7114,7 @@ namespace CppDebugScript
             public int Offset = 0;
             public int Size = 0;
             public int TotalSize = 0;
+            public int BaseTypeSize = 0;
             public List<int> ArrayOrPtrs = new List<int>(); // <=0 -- pointer, >0 -- array size
         }
         public sealed class StructInfo
@@ -7125,6 +7260,27 @@ namespace CppDebugScript
                 ResultCount = other.ResultCount;
                 ResultIndex = other.ResultIndex;
                 ResultValues = other.ResultValues;
+            }
+        }
+        public sealed class IntegerOrExpression
+        {
+            public int IntegerValue;
+            public Dsl.ISyntaxComponent? Expression;
+
+            public IntegerOrExpression()
+            {
+                IntegerValue = 0;
+                Expression = null;
+            }
+            public IntegerOrExpression(int value)
+            {
+                IntegerValue = value;
+                Expression = null;
+            }
+            public IntegerOrExpression(Dsl.ISyntaxComponent expression)
+            {
+                IntegerValue = -1;
+                Expression = expression;
             }
         }
 

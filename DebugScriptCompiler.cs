@@ -3054,6 +3054,8 @@ namespace CppDebugScript
         }
         private bool CalcStructExpressionOffsets(Dsl.ISyntaxComponent exp, StringBuilder err, List<IntegerOrExpression> offsets, out int lastSize, out StructInfo? struInfo, out List<IntegerOrExpression>? fieldIndexes)
         {
+            //We only support using expressions as array indices because "struct" and "offset" are primarily used to
+            //access structured memory data, not as a complete script.
             bool success = true;
             lastSize = 0;
             struInfo = null;
@@ -3141,9 +3143,13 @@ namespace CppDebugScript
                         Debug.Assert(null != struInfo);
                         Debug.Assert(null != fieldIndexes);
                         var field = struInfo.Fields[fieldIndexes[0].IntegerValue];
+                        //The first dimension of the current array is always index 1 (index 0 is the current field)
+                        //because we only support arrays and arrays of pointer as structure fields.
+                        int curArrayFirstDim = 1;
+                        bool isPtr = field.ArrayOrPtrs[0] <= 0;
+                        int bias = isPtr ? 1 : 0;
                         bool isConst = true;
                         if (int.TryParse(funcData.GetParamId(0), out var index)) {
-                            fieldIndexes.Add(new IntegerOrExpression(index));
                             foreach(var ix in fieldIndexes) {
                                 if (null != ix.Expression) {
                                     isConst = false;
@@ -3163,42 +3169,56 @@ namespace CppDebugScript
                             isConst = false;
                         }
                         if (isConst) {
+                            fieldIndexes.Add(new IntegerOrExpression(index));
                             if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
-                                //Pointer as array, only support one dimension now
-                                offsets.Add(new IntegerOrExpression(field.Offset));
+                                //Pointer as array, only support one dimension
+                                offsets.Add(new IntegerOrExpression());
                                 offsets[offsets.Count - 1].IntegerValue = index * field.BaseTypeSize;
                                 lastSize = field.BaseTypeSize;
                             }
                             else {
-                                bool isPtr = false;
-                                int arrNum = 1;
-                                int addNum = 0;
-                                for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
-                                    if (i + 1 < fieldIndexes.Count) {
-                                        int fix = fieldIndexes[i + 1].IntegerValue;
-                                        addNum += fix * arrNum;
-                                        break;
+                                if (fieldIndexes.Count > curArrayFirstDim + field.ArrayOrPtrs.Count - bias) {
+                                    if (isPtr && fieldIndexes.Count == curArrayFirstDim + field.ArrayOrPtrs.Count) {
+                                        //Pointers in a pointer array are accessed as an array.
+                                        offsets.Add(new IntegerOrExpression());
+                                        offsets[offsets.Count - 1].IntegerValue = index * field.BaseTypeSize;
+                                        lastSize = field.BaseTypeSize;
                                     }
                                     else {
-                                        int arrSize = field.ArrayOrPtrs[i];
-                                        if (arrSize <= 0) {
-                                            isPtr = true;
-                                            break;
-                                        }
-                                        arrNum *= arrSize;
+                                        err.AppendFormat("Array index out of bounds, code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                                        err.AppendLine();
+                                        success = false;
                                     }
                                 }
-                                offsets[offsets.Count - 1].IntegerValue += (isPtr ? sizeof(long) : field.Size) * addNum;
-                                //Only the element size of the last dimension is valid.
-                                lastSize = field.Size * addNum;
+                                else {
+                                    int arrNum = 1;
+                                    int addNum = 0;
+                                    for (int i = field.ArrayOrPtrs.Count - 1; i >= bias; --i) {
+                                        if (curArrayFirstDim + i - bias < fieldIndexes.Count) {
+                                            int fix = fieldIndexes[curArrayFirstDim + i - bias].IntegerValue;
+                                            addNum += fix * arrNum;
+                                            break;
+                                        }
+                                        else {
+                                            int arrSize = field.ArrayOrPtrs[i];
+                                            if (arrSize <= 0) {
+                                                break;
+                                            }
+                                            arrNum *= arrSize;
+                                        }
+                                    }
+                                    offsets[offsets.Count - 1].IntegerValue += (isPtr ? sizeof(long) : field.Size) * addNum;
+                                    //Only the element size of the last dimension is valid.
+                                    lastSize = field.Size;
+                                }
                             }
                         }
                         else {
                             var p = funcData.GetParam(0);
                             fieldIndexes.Add(new IntegerOrExpression(p));
                             if (field.ArrayOrPtrs.Count == 1 && field.ArrayOrPtrs[0] <= 0) {
-                                //Pointer as array, only support one dimension now
-                                offsets.Add(new IntegerOrExpression(field.Offset));
+                                //Pointer as array, only support one dimension
+                                offsets.Add(new IntegerOrExpression());
                                 var f = new Dsl.FunctionData();
                                 f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
                                 f.SetOperatorParamClass();
@@ -3208,102 +3228,122 @@ namespace CppDebugScript
                                 lastSize = field.BaseTypeSize;
                             }
                             else {
-                                bool isPtr = false;
-                                Dsl.ISyntaxComponent? arrNum = null;
-                                Dsl.ISyntaxComponent? addNum = null;
-                                for (int i = field.ArrayOrPtrs.Count - 1; i >= 0; --i) {
-                                    if (i + 1 < fieldIndexes.Count) {
-                                        var fix = fieldIndexes[i + 1].Expression;
-                                        if (null == arrNum) {
-                                            if (null == addNum) {
-                                                addNum = fix;
+                                if (fieldIndexes.Count > curArrayFirstDim + field.ArrayOrPtrs.Count - bias) {
+                                    if (isPtr && fieldIndexes.Count == curArrayFirstDim + field.ArrayOrPtrs.Count) {
+                                        //Pointers in a pointer array are accessed as an array.
+                                        offsets.Add(new IntegerOrExpression());
+                                        var f = new Dsl.FunctionData();
+                                        f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                        f.SetOperatorParamClass();
+                                        f.AddParam(p);
+                                        f.AddParam(field.BaseTypeSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                        offsets[offsets.Count - 1] = new IntegerOrExpression(f);
+                                        lastSize = field.BaseTypeSize;
+                                    }
+                                    else {
+                                        err.AppendFormat("Array index out of bounds, code:{0}, line:{1}", exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                                        err.AppendLine();
+                                        success = false;
+                                    }
+                                }
+                                else {
+                                    Dsl.ISyntaxComponent? arrNum = null;
+                                    Dsl.ISyntaxComponent? addNum = null;
+                                    for (int i = field.ArrayOrPtrs.Count - 1; i >= bias; --i) {
+                                        if (curArrayFirstDim + i - bias < fieldIndexes.Count) {
+                                            var fix = fieldIndexes[curArrayFirstDim + i - bias].Expression;
+                                            if (null == arrNum) {
+                                                if (null == addNum) {
+                                                    addNum = fix;
+                                                }
+                                                else {
+                                                    var f = new Dsl.FunctionData();
+                                                    f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                                    f.SetOperatorParamClass();
+                                                    f.AddParam(addNum);
+                                                    f.AddParam(fix);
+                                                    addNum = f;
+                                                }
+                                            }
+                                            else if (null == addNum) {
+                                                var f = new Dsl.FunctionData();
+                                                f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                                f.SetOperatorParamClass();
+                                                f.AddParam(fix);
+                                                f.AddParam(arrNum);
+                                                addNum = f;
                                             }
                                             else {
+                                                var p2 = new Dsl.FunctionData();
+                                                p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                                p2.SetOperatorParamClass();
+                                                p2.AddParam(fix);
+                                                p2.AddParam(arrNum);
                                                 var f = new Dsl.FunctionData();
                                                 f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
                                                 f.SetOperatorParamClass();
                                                 f.AddParam(addNum);
-                                                f.AddParam(fix);
+                                                f.AddParam(p2);
                                                 addNum = f;
                                             }
-                                        }
-                                        else if (null == addNum) {
-                                            var f = new Dsl.FunctionData();
-                                            f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
-                                            f.SetOperatorParamClass();
-                                            f.AddParam(fix);
-                                            f.AddParam(arrNum);
-                                            addNum = f;
-                                        }
-                                        else {
-                                            var p2 = new Dsl.FunctionData();
-                                            p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
-                                            p2.SetOperatorParamClass();
-                                            p2.AddParam(fix);
-                                            p2.AddParam(arrNum);
-                                            var f = new Dsl.FunctionData();
-                                            f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
-                                            f.SetOperatorParamClass();
-                                            f.AddParam(addNum);
-                                            f.AddParam(p2);
-                                            addNum = f;
-                                        }
-                                        break;
-                                    }
-                                    else {
-                                        int arrSize = field.ArrayOrPtrs[i];
-                                        if (arrSize <= 0) {
-                                            isPtr = true;
                                             break;
                                         }
-                                        if (null == arrNum) {
-                                            arrNum = new Dsl.ValueData(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
-                                        }
                                         else {
-                                            var f = new Dsl.FunctionData();
-                                            f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
-                                            f.SetOperatorParamClass();
-                                            f.AddParam(arrNum);
-                                            f.AddParam(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
-                                            arrNum = f;
+                                            int arrSize = field.ArrayOrPtrs[i];
+                                            if (arrSize <= 0) {
+                                                break;
+                                            }
+                                            if (null == arrNum) {
+                                                arrNum = new Dsl.ValueData(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                            }
+                                            else {
+                                                var f = new Dsl.FunctionData();
+                                                f.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                                f.SetOperatorParamClass();
+                                                f.AddParam(arrNum);
+                                                f.AddParam(arrSize.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                                arrNum = f;
+                                            }
                                         }
                                     }
-                                }
-                                if (null == addNum) {
-                                    var p1 = offsets[offsets.Count - 1].Expression;
-                                    if (null == p1) {
-                                        p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    if (null == addNum) {
+                                        var p1 = offsets[offsets.Count - 1].Expression;
+                                        if (null == p1) {
+                                            p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                        }
+                                        offsets[offsets.Count - 1].Expression = p1;
                                     }
-                                    offsets[offsets.Count - 1].Expression = p1;
-                                }
-                                else {
-                                    var p1 = offsets[offsets.Count - 1].Expression;
-                                    if (null == p1) {
-                                        p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                    else {
+                                        var p1 = offsets[offsets.Count - 1].Expression;
+                                        if (null == p1) {
+                                            p1 = new Dsl.ValueData(offsets[offsets.Count - 1].IntegerValue.ToString(), Dsl.ValueData.NUM_TOKEN);
+                                        }
+                                        var p2 = new Dsl.FunctionData();
+                                        p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
+                                        p2.SetOperatorParamClass();
+                                        p2.AddParam((isPtr ? sizeof(long) : field.Size).ToString(), Dsl.ValueData.NUM_TOKEN);
+                                        p2.AddParam(addNum);
+                                        var f = new Dsl.FunctionData();
+                                        f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
+                                        f.SetOperatorParamClass();
+                                        f.AddParam(p1);
+                                        f.AddParam(p2);
+                                        offsets[offsets.Count - 1].Expression = f;
                                     }
-                                    var p2 = new Dsl.FunctionData();
-                                    p2.Name = new Dsl.ValueData("*", Dsl.ValueData.ID_TOKEN);
-                                    p2.SetOperatorParamClass();
-                                    p2.AddParam((isPtr ? sizeof(long) : field.Size).ToString(), Dsl.ValueData.NUM_TOKEN);
-                                    p2.AddParam(addNum);
-                                    var f = new Dsl.FunctionData();
-                                    f.Name = new Dsl.ValueData("+", Dsl.ValueData.ID_TOKEN);
-                                    f.SetOperatorParamClass();
-                                    f.AddParam(p1);
-                                    f.AddParam(p2);
-                                    offsets[offsets.Count - 1].Expression = f;
+                                    //Only the element size of the last dimension is valid.
+                                    lastSize = field.Size;
                                 }
-                                //Only the element size of the last dimension is valid.
-                                lastSize = field.Size;
                             }
                         }
-                        if (TryGetStruct(field.Type, out var newStruInfo)) {
-                            struInfo = newStruInfo;
-                        }
-                        else if (!s_FieldTypeNames.Contains(field.Type)) {
-                            err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", field.Type, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
-                            err.AppendLine();
-                            success = false;
+                        if (curArrayFirstDim + field.ArrayOrPtrs.Count <= fieldIndexes.Count) {
+                            if (TryGetStruct(field.Type, out var newStruInfo)) {
+                                struInfo = newStruInfo;
+                            }
+                            else if (!s_FieldTypeNames.Contains(field.Type)) {
+                                err.AppendFormat("Unknown field type '{0}', code:{1}, line:{2}", field.Type, exp.ToScriptString(false, Dsl.DelimiterInfo.Default), exp.GetLine());
+                                err.AppendLine();
+                                success = false;
+                            }
                         }
                     }
                     else {

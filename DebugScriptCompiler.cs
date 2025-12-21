@@ -5486,7 +5486,7 @@ namespace CppDebugScript
                 int opcode = 0;
                 var opdInfo = opds[0];
                 ConvertArgument(ref opdInfo);
-                switch (opds[2].TargetType) {
+                switch (opds[2].ResultType) {
                     case TypeEnum.Int:
                         opcode = EncodeOpcode(InsEnum.PTRSET, opdInfo.IsGlobal, opdInfo.ResultType, opdInfo.ResultIndex);
                         break;

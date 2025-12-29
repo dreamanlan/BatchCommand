@@ -12,6 +12,7 @@
 
 #include "DbgScpHook.h"
 #include "DebugScriptVM.h"
+#include "GpuCaptureManager.h"
 
 #if defined(DBGSCP_ON_UNREAL)
 
@@ -1004,6 +1005,30 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
 #endif
 }
 
+static bool g_bFrameCapturing = false;
+
+void InitGpuCaptureManager()
+{
+#if defined(__APPLE__) && __APPLE__
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::MetalXcode);
+#else
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::RenderDoc);
+#endif
+    g_bFrameCapturing = false;
+}
+void ShutdownGpuCaptureManager()
+{
+    GpuCaptureManager::Instance().Shutdown();
+    g_bFrameCapturing = false;
+}
+void EndFrameCaptureIfCapturing()
+{
+    if (g_bFrameCapturing) {
+        if (GpuCaptureManager::Instance().EndFrameCapture())
+            g_bFrameCapturing = false;
+    }
+}
+
 enum class ExternApiEnum
 {
     TestFFI = c_extern_api_start_id,
@@ -1038,6 +1063,9 @@ enum class ExternApiEnum
     ThreadYield,
     SetWatchPoint,
     GetWatchPoint,
+    TriggerFrameCapture,
+    StartFrameCapture,
+    EndFrameCapture,
     SetTimeScale,
     GetTimeScale,
     CallCSharp,
@@ -1431,6 +1459,38 @@ struct ExternApi
             DebugScript::SetVarInt(args[4].IsGlobal, args[4].Index, tid, stackBase, intLocals, intGlobals);
         }
     }
+    static inline void TriggerFrameCapture(
+        int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals,
+        DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals,
+        DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals,
+        const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int r = 1;
+        GpuCaptureManager::Instance().TriggerCapture();
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r, stackBase, intLocals, intGlobals);
+    }
+    static inline void StartFrameCapture(
+        int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals,
+        DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals,
+        DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals,
+        const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        bool r = GpuCaptureManager::Instance().StartFrameCapture();
+        if (r) {
+            g_bFrameCapturing = true;
+        }
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
+    static inline void EndFrameCapture(
+        int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals,
+        DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals,
+        DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals,
+        const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        bool r = GpuCaptureManager::Instance().EndFrameCapture();
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals,
+            intGlobals);
+    }
     static inline void SetTimeScale(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
     {
         double timeScale = DebugScript::GetVarFloat(args[0].IsGlobal, args[0].Index, stackBase, fltLocals, fltGlobals);
@@ -1572,6 +1632,18 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetWatchPoint:
         ExternApi::GetWatchPoint(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::TriggerFrameCapture:
+        ExternApi::TriggerFrameCapture(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals,
+            strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::StartFrameCapture:
+        ExternApi::StartFrameCapture(stackBase, intLocals, fltLocals, strLocals, intGlobals,
+            fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::EndFrameCapture:
+        ExternApi::EndFrameCapture(stackBase, intLocals, fltLocals, strLocals, intGlobals,
+            fltGlobals, strGlobals, args, argNum, retVal);
         break;
     case ExternApiEnum::SetTimeScale:
         ExternApi::SetTimeScale(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);

@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyApp", "HostCLR\MyApp\MyAp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetApp", "BatchStudio\DotnetApp\DotnetApp.csproj", "{EEA26C95-665C-F861-7761-F9FF0135F88A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CefDotnetApp", "CefDotnetApp\CefDotnetApp.csproj", "{0476A431-1696-1DA0-094F-C8488E7A84C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -214,6 +216,26 @@ Global
 		{EEA26C95-665C-F861-7761-F9FF0135F88A}.Release|x64.Build.0 = Release|Any CPU
 		{EEA26C95-665C-F861-7761-F9FF0135F88A}.Release|x86.ActiveCfg = Release|Any CPU
 		{EEA26C95-665C-F861-7761-F9FF0135F88A}.Release|x86.Build.0 = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|ARM.Build.0 = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|x64.Build.0 = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Debug|x86.Build.0 = Debug|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|ARM.ActiveCfg = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|ARM.Build.0 = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|ARM64.Build.0 = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|x64.ActiveCfg = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|x64.Build.0 = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|x86.ActiveCfg = Release|Any CPU
+		{0476A431-1696-1DA0-094F-C8488E7A84C6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

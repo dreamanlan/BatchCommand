@@ -11,6 +11,8 @@
 #define LOCTEXT_NAMESPACE "FDebugScriptModule"
 
 static FString SavedDir;
+extern void InitGpuCaptureManager();
+extern void ShutdownGpuCaptureManager();
 
 static FAutoConsoleCommand GDebugScriptToggleCommand(
     TEXT("DebugScript.Load"),
@@ -144,12 +146,14 @@ void FDebugScriptModule::StartupModule()
     // Register for engine initialization complete
     FCoreDelegates::OnFEngineLoopInitComplete.AddLambda([]()
         {
+    		InitGpuCaptureManager();
             UE_LOG(LogTemp, Log, TEXT("DebugScript module OnFEngineLoopInitComplete, SavedDir=%s"), *SavedDir);
         });
 }
 
 void FDebugScriptModule::ShutdownModule()
 {
+	ShutdownGpuCaptureManager();
     UE_LOG(LogTemp, Log, TEXT("DebugScript module shutting down"));
 }
 

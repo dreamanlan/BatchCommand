@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class DebugScript : ModuleRules
 {
@@ -12,11 +13,11 @@ public class DebugScript : ModuleRules
             }
         );
 
-        PublicDefinitions.AddRange(
-            new string[]
-            {
-                "DEBUGSCRIPT_ENABLED=1",
-                "DEBUGSCRIPT_VERBOSE=0"
-            });
-    }
+		PublicDefinitions.AddRange(
+			new string[]
+			{
+				"DEBUGSCRIPT_ENABLED=1",
+				"DEBUGSCRIPT_VERBOSE=0"
+			});
+	}
 }

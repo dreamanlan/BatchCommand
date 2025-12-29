@@ -18,6 +18,30 @@
     <ClInclude Include="DebugScriptVM.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DbgScpHook.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="debug_break.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugScriptEntry.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugScriptExport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="GpuCaptureManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pragma_diag.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="rwlock.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="sema.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugScriptVM.cpp">
@@ -27,6 +51,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="DebugScriptExternApiAndEntry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuCaptureManager_RenderDoc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

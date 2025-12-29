@@ -127,12 +127,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DbgScpHook.h" />
+    <ClInclude Include="DebugScriptEntry.h" />
+    <ClInclude Include="DebugScriptExport.h" />
     <ClInclude Include="DebugScriptVM.h" />
+    <ClInclude Include="debug_break.h" />
+    <ClInclude Include="GpuCaptureManager.h" />
+    <ClInclude Include="pragma_diag.h" />
+    <ClInclude Include="rwlock.h" />
+    <ClInclude Include="sema.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugScriptExternApiAndEntry.cpp" />
     <ClCompile Include="DebugScriptVM.cpp" />
     <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="GpuCaptureManager_RenderDoc.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

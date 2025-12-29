@@ -25,7 +25,7 @@ public static class Program
 [StructLayout(LayoutKind.Sequential)]
 public struct HostApi
 {
-    public IntPtr OutputLog;
+    public IntPtr NativeLog;
     public IntPtr SendCefMessage0;
     public IntPtr SendCefMessage1;
     public IntPtr SendCefMessage2;
@@ -51,7 +51,7 @@ public struct HostApi
 
 // delegate for native api
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void HostOutputLogDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr browser, IntPtr frame);
+public delegate void HostNativeLogDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSendCefMessage0Delegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr browser, IntPtr frame, int cef_process_id);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -97,7 +97,7 @@ public delegate bool HostCallJavascript9Delegation([MarshalAs(UnmanagedType.LPUT
 
 namespace DotNetLib
 {
-    sealed class OutpuLogExp : SimpleExpressionBase
+    sealed class NativeLogExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
@@ -113,7 +113,27 @@ namespace DotNetLib
                 }
             }
             string str = string.Format(fmt, al.ToArray());
-            Lib.LogNoLock(str);
+            Lib.NativeLogNoLock(str);
+            return str;
+        }
+    }
+    sealed class JavascriptLogExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            string fmt = string.Empty;
+            var al = new System.Collections.ArrayList();
+            for (int ix = 0; ix < operands.Count; ix++) {
+                BoxedValue v = operands[ix];
+                if (ix == 0) {
+                    fmt = v.AsString;
+                }
+                else {
+                    al.Add(v.GetObject());
+                }
+            }
+            string str = string.Format(fmt, al.ToArray());
+            Lib.JsLogNoLock(str);
             return str;
         }
     }
@@ -152,7 +172,7 @@ namespace DotNetLib
         public NativeApi(IntPtr apis)
         {
             HostApi hostApi = Marshal.PtrToStructure<HostApi>(apis);
-            m_OutputLogApi = Marshal.GetDelegateForFunctionPointer<HostOutputLogDelegation>(hostApi.OutputLog);
+            m_NativeLogApi = Marshal.GetDelegateForFunctionPointer<HostNativeLogDelegation>(hostApi.NativeLog);
             m_SendCefMessage0Api = Marshal.GetDelegateForFunctionPointer<HostSendCefMessage0Delegation>(hostApi.SendCefMessage0);
             m_SendCefMessage1Api = Marshal.GetDelegateForFunctionPointer<HostSendCefMessage1Delegation>(hostApi.SendCefMessage1);
             m_SendCefMessage2Api = Marshal.GetDelegateForFunctionPointer<HostSendCefMessage2Delegation>(hostApi.SendCefMessage2);
@@ -176,12 +196,16 @@ namespace DotNetLib
             m_CallJavascript9Api = Marshal.GetDelegateForFunctionPointer<HostCallJavascript9Delegation>(hostApi.CallJavascript9);
         }
 
-        public void OutputLog(string msg)
+        public void NativeLog(string msg)
         {
-            if (m_OutputLogApi == null) {
+            if (m_NativeLogApi == null) {
                 return;
             }
-            m_OutputLogApi.Invoke(msg, Browser, Frame);
+            m_NativeLogApi.Invoke(msg, Browser, Frame);
+        }
+        public void JavascriptLog(string msg)
+        {
+            CallJavascript1("console.log", msg);
         }
         public void SendCefMessage0(string msg, int cef_process_id)
         {
@@ -335,11 +359,10 @@ namespace DotNetLib
             m_Browser = browser;
             m_Frame = frame;
         }
-        public void SetLastContext(IntPtr browser, IntPtr frame, int source_process_id)
+        public void SetLastContext(IntPtr browser, IntPtr frame)
         {
             m_LastBrowser = browser;
             m_LastFrame = frame;
-            m_LastSourceProcessId = source_process_id;
         }
 
         public nint Browser
@@ -354,7 +377,7 @@ namespace DotNetLib
         }
         public int LastSourceProcessId { get => m_LastSourceProcessId; set => m_LastSourceProcessId = value; }
 
-        private HostOutputLogDelegation? m_OutputLogApi;
+        private HostNativeLogDelegation? m_NativeLogApi;
         private HostSendCefMessage0Delegation? m_SendCefMessage0Api;
         private HostSendCefMessage1Delegation? m_SendCefMessage1Api;
         private HostSendCefMessage2Delegation? m_SendCefMessage2Api;
@@ -426,8 +449,8 @@ namespace DotNetLib
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            LogNoLock("[csharp] Init CommandLine: " + cmd_line);
-            LogNoLock("[csharp] Init BasePath: " + path);
+            NativeLogNoLock("[csharp] Init CommandLine: " + cmd_line);
+            NativeLogNoLock("[csharp] Init BasePath: " + path);
             s_CmdLine = cmd_line;
             s_BasePath = path;
             s_ProcessType = process_type;
@@ -435,7 +458,7 @@ namespace DotNetLib
             Console.SetError(s_StringWriter);
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_init"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_init"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -445,24 +468,25 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
         public static void OnFinalize()
         {
-            LogNoLock("[csharp] Finalize");
+            NativeLogNoLock("[csharp] Finalize");
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_finalize"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_finalize"));
 
                 if (null != s_NativeApi) {
                     s_NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero, -1);
+                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
+                    s_NativeApi.LastSourceProcessId = -1;
                     TryLoadDSL();
                     BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                     BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
@@ -470,22 +494,22 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_finalize");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
         public static void OnBrowserInit(IntPtr browser)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            LogNoLock("[csharp] Browser Init");
+            NativeLogNoLock("[csharp] Browser Init");
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_browser_init"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_init"));
 
                 if (null != s_NativeApi) {
                     s_NativeApi.SetContext(browser, IntPtr.Zero);
@@ -496,24 +520,25 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_init");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
         public static void OnBrowserFinalize(IntPtr browser)
         {
-            LogNoLock("[csharp] Browser Finalize");
+            NativeLogNoLock("[csharp] Browser Finalize");
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_browser_finalize"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_finalize"));
 
                 if (null != s_NativeApi) {
                     s_NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero, -1);
+                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
+                    s_NativeApi.LastSourceProcessId = -1;
                     TryLoadDSL();
                     BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                     BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
@@ -521,22 +546,22 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
         public static void OnRendererInit(IntPtr browser, IntPtr frame)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
 
-            LogNoLock("[csharp] Renderer Init");
+            NativeLogNoLock("[csharp] Renderer Init");
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_renderer_init"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_renderer_init"));
 
                 if (null != s_NativeApi) {
                     s_NativeApi.SetContext(browser, frame);
@@ -547,24 +572,25 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_renderer_init");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
         public static void OnRendererFinalize(IntPtr browser, IntPtr frame)
         {
-            LogNoLock("[csharp] Renderer Finalize");
+            NativeLogNoLock("[csharp] Renderer Finalize");
 
             try {
-                LogNoLock(string.Format("[csharp] Call dsl on_renderer_finalize"));
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_renderer_finalize"));
 
                 if (null != s_NativeApi) {
                     s_NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero, -1);
+                    s_NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
+                    s_NativeApi.LastSourceProcessId = -1;
                     TryLoadDSL();
                     BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                     BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
@@ -572,12 +598,12 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_renderer_finalize");
                     if (!r.IsNullObject) {
-                        LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -666,10 +692,11 @@ namespace DotNetLib
         {
             lock (s_Lock) {
                 try {
-                    LogNoLock(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1}", msg, string.Join(",", args)));
+                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, string.Join(",", args), source_process_id, s_ProcessType));
 
                     if (null != s_NativeApi) {
-                        s_NativeApi.SetLastContext(browser, frame, source_process_id);
+                        s_NativeApi.SetLastContext(browser, frame);
+                        s_NativeApi.LastSourceProcessId = source_process_id;
                         TryLoadDSL();
                         BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                         BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
@@ -684,12 +711,12 @@ namespace DotNetLib
                         var r = BatchCommand.BatchScript.Call("on_receive_cef_message", vargs);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                         if (!r.IsNullObject) {
-                            LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                            NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
                     }
                 }
                 catch (Exception e) {
-                    LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                    NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
                 }
             }
         }
@@ -697,16 +724,16 @@ namespace DotNetLib
         {
             lock (s_Lock) {
                 try {
-                    LogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1}", msg, string.Join(",", args)));
+                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1} process type:{2}", msg, string.Join(",", args), s_ProcessType));
 
                     if (null != s_NativeApi) {
-                        s_NativeApi.SetLastContext(browser, frame, (int)CefProcessId.PID_RENDERER);
+                        s_NativeApi.SetLastContext(browser, frame);
                         TryLoadDSL();
                         BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                         BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
                         BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                         BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-                        BatchCommand.BatchScript.SetGlobalVariable("sourceprocessid", BoxedValue.From((int)CefProcessId.PID_RENDERER));
+                        BatchCommand.BatchScript.SetGlobalVariable("sourceprocessid", BoxedValue.From(s_NativeApi.LastSourceProcessId));
                         var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                         vargs.Add(BoxedValue.FromString(msg));
                         foreach (var arg in args) {
@@ -715,12 +742,12 @@ namespace DotNetLib
                         var r = BatchCommand.BatchScript.Call("on_receive_js_message", vargs);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                         if (!r.IsNullObject) {
-                            LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                            NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
                     }
                 }
                 catch (Exception e) {
-                    LogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                    NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
                 }
             }
         }
@@ -731,7 +758,7 @@ namespace DotNetLib
                 return s_BasePath;
             }
         }
-        public static void LogNoLock(string msg)
+        public static void NativeLogNoLock(string msg)
         {
             if (null != s_NativeApi) {
                 bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
@@ -739,7 +766,19 @@ namespace DotNetLib
                 //Console.WriteLine(txt);
                 var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in lines) {
-                    s_NativeApi.OutputLog(line);
+                    s_NativeApi.NativeLog(line);
+                }
+            }
+        }
+        public static void JsLogNoLock(string msg)
+        {
+            if (null != s_NativeApi) {
+                bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
+                string txt = string.Format("thread:{0} {1}{2}: {3}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty, msg);
+                //Console.WriteLine(txt);
+                var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines) {
+                    s_NativeApi.JavascriptLog(line);
                 }
             }
         }
@@ -754,16 +793,17 @@ namespace DotNetLib
                     s_DslScriptPath = path;
                     BatchCommand.BatchScript.Load(fi.FullName);
 
-                    LogNoLock("[csharp] Load dsl script: " + fi.FullName);
+                    NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
                 }
             }
             else {
-                LogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
+                NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
             }
         }
         private static void RegisterBatchScriptApi()
         {
-            BatchCommand.BatchScript.Register("outputlog", "outputlog(fmt, ...)", new ExpressionFactoryHelper<OutpuLogExp>());
+            BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
+            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("writefile", "writefile(path, txt)", new ExpressionFactoryHelper<WriteFileExp>());
         }
         private static void PrepareBatchScript()

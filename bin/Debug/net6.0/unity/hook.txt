@@ -1290,7 +1290,7 @@ hook("GameObject::GetSupportedMessagesRecalculate::component")
 		$componentInstId:int = ptrget(argv(4),4);
 		$componentName:string = ptrget(argv(5),8);
 
-		printf("GameObject::GetSupportedMessagesRecalculate::component instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentName:%s\n",$instId,$objName,$i,$component,$componentInstId,$componentName);
+		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentName:%s\n",GetTID(),$instId,$objName,$i,$component,$componentInstId,$componentName);
 
 		$vtbl:int = ptrget($component,8);
 		if ($vtbl==0) {
@@ -1308,7 +1308,7 @@ hook("delete_object_internal_step1")
 		$line:int = ptrget(argv(4),4);
 		$func:string = ptrget(argv(5),8);
 
-		printf("delete_object_internal_step1 object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",$object,$instId,$name,$file,$line,$func);
+		printf("delete_object_internal_step1 thread:%lld object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$file,$line,$func);
 	};
 };
 hook("delete_object_internal_step2")
@@ -1321,7 +1321,7 @@ hook("delete_object_internal_step2")
 		$line:int = ptrget(argv(4),4);
 		$func:string = ptrget(argv(5),8);
 
-		printf("delete_object_internal_step2 object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",$object,$instId,$name,$file,$line,$func);
+		printf("delete_object_internal_step2 thread:%lld object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$file,$line,$func);
 	};
 };
 hook("delete_object_internal_incomplete_integration")
@@ -1331,6 +1331,6 @@ hook("delete_object_internal_incomplete_integration")
 		$instId:int = ptrget(argv(1),4);
 		$name:string = ptrget(argv(2),8);
 
-		printf("delete_object_internal_incomplete_integration object:%8.8x instId:%d name:%s\n",$object,$instId,$name);
+		printf("delete_object_internal_incomplete_integration thread:%lld object:%8.8x instId:%d name:%s\n",GetTID(),$object,$instId,$name);
 	};
 };

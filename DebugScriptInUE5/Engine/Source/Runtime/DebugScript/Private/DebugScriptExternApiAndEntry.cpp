@@ -9,6 +9,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <cstdint>
+#include <cstddef>
+#include <iomanip>
+#include <cctype>
 
 #include "DbgScpHook.h"
 #include "DebugScriptVM.h"
@@ -1005,6 +1009,103 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
 #endif
 }
 
+// addr        : start address of memory
+// totalBytes  : total number of bytes to format
+// elementSize : number of bytes per element (1, 2, 4, or 8)
+// perLine     : number of elements per line
+//
+// Return: formatted memory dump as a single string, lines separated by '\n'.
+std::string DumpMemoryFormattedToString(const void* addr,
+    size_t      totalBytes,
+    size_t      elementSize,
+    size_t      perLine)
+{
+    std::ostringstream oss;
+    oss.setf(std::ios::hex, std::ios::basefield);
+    oss.setf(std::ios::right, std::ios::adjustfield);
+    oss.fill('0');
+
+    if (!addr || totalBytes == 0 || perLine == 0) {
+        return oss.str();
+    }
+    if (!(elementSize == 1 || elementSize == 2 || elementSize == 4 || elementSize == 8)) {
+        return oss.str(); // unsupported element size
+    }
+
+    const uint8_t* base = static_cast<const uint8_t*>(addr);
+    const size_t   bytesPerLine = elementSize * perLine;
+
+    size_t offset = 0;
+    bool firstLine = true;
+
+    while (offset < totalBytes) {
+        size_t lineBytes = totalBytes - offset;
+        if (lineBytes > bytesPerLine) {
+            lineBytes = bytesPerLine;
+        }
+
+        const uint8_t* linePtr = base + offset;
+
+        // Add newline between lines (do not start with '\n')
+        if (!firstLine) {
+            oss << '\n';
+        }
+        firstLine = false;
+
+        // 1. Print line start address (64-bit, hex, width 16)
+        {
+            std::uintptr_t addrValue = reinterpret_cast<std::uintptr_t>(linePtr);
+            oss << std::setw(16) << addrValue << ' ';
+        }
+
+        // 2. Print elements in hex, each element width = elementSize * 2
+        //    If remaining bytes are not enough for a full element, pad with spaces.
+        size_t printedBytes = 0;
+        for (size_t i = 0; i < perLine; ++i) {
+            if (printedBytes + elementSize <= lineBytes) {
+                const uint8_t* elemPtr = linePtr + printedBytes;
+
+                // Print element as elementSize bytes, high byte first
+                // i.e. elemPtr[elementSize - 1] ... elemPtr[0]
+                for (size_t b = 0; b < elementSize; ++b) {
+                    size_t idx = elementSize - 1 - b;
+                    oss << std::setw(2)
+                        << static_cast<unsigned>(elemPtr[idx]);
+                }
+                oss << ' ';
+
+                printedBytes += elementSize;
+            }
+            else {
+                // Not enough data for a full element: output spaces for this element
+                size_t hexChars = elementSize * 2;
+                for (size_t c = 0; c < hexChars; ++c) {
+                    oss << ' ';
+                }
+                oss << ' ';
+            }
+        }
+
+        // 3. ASCII section: one character per byte actually present on this line
+        oss << ' ';
+
+        // Switch to normal character output (no width, no hex formatting needed)
+        for (size_t i = 0; i < lineBytes; ++i) {
+            unsigned char c = linePtr[i];
+            if (c >= 32 && c <= 126) {
+                oss << static_cast<char>(c);
+            }
+            else {
+                oss << '.';
+            }
+        }
+
+        offset += lineBytes;
+    }
+
+    return oss.str();
+}
+
 static bool g_bFrameCapturing = false;
 
 void InitGpuCaptureManager()
@@ -1063,6 +1164,7 @@ enum class ExternApiEnum
     ThreadYield,
     SetWatchPoint,
     GetWatchPoint,
+    FormatMemory,
     TriggerFrameCapture,
     StartFrameCapture,
     EndFrameCapture,
@@ -1459,6 +1561,22 @@ struct ExternApi
             DebugScript::SetVarInt(args[4].IsGlobal, args[4].Index, tid, stackBase, intLocals, intGlobals);
         }
     }
+    static inline void FormatMemory(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t total_bytes = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int64_t element_size = 1;
+        int64_t element_per_line = 32;
+        if (argNum > 2) {
+            element_size = DebugScript::GetVarInt(args[2].IsGlobal, args[2].Index, stackBase, intLocals, intGlobals);
+            element_per_line /= element_size;
+        }
+        if (argNum > 3) {
+            element_per_line = DebugScript::GetVarInt(args[3].IsGlobal, args[3].Index, stackBase, intLocals, intGlobals);
+        }
+        std::string str = DumpMemoryFormattedToString(reinterpret_cast<void*>(addr), total_bytes, element_size, element_per_line);
+        DebugScript::SetVarString(retVal.IsGlobal, retVal.Index, str, stackBase, strLocals, strGlobals);
+    }
     static inline void TriggerFrameCapture(
         int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals,
         DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals,
@@ -1632,6 +1750,10 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::GetWatchPoint:
         ExternApi::GetWatchPoint(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::FormatMemory:
+        ExternApi::FormatMemory(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals,
+            strGlobals, args, argNum, retVal);
         break;
     case ExternApiEnum::TriggerFrameCapture:
         ExternApi::TriggerFrameCapture(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals,

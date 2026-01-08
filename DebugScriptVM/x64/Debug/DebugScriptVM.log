@@ -1,10 +1,9 @@
 ﻿  DebugScriptExternApiAndEntry.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(693,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(702,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(713,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(720,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(728,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(734,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(753,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(697,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(706,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(717,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(724,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(732,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(738,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(757,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

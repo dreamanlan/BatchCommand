@@ -68,9 +68,13 @@ hook(TestMacro1)
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
 		
 		SetTimeScale(0.0001);
-		printf("TimeScale:%f time:%f",GetTimeScale(), floattime());
+		printf("TimeScale:%f time:%f\n",GetTimeScale(), floattime());
 		WriteLog("test test test");
 		FlushLog();
+
+		$addr = malloc(1024);
+		printf("memory:%s\n",FormatMemory($addr,32));
+		free($addr);
 		
 		ptrset(argv(0),4,1);
 		return 1;

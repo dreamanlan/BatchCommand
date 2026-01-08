@@ -1304,11 +1304,12 @@ hook("delete_object_internal_step1")
 		$object:int = ptrget(argv(0),8);
 		$instId:int = ptrget(argv(1),4);
 		$name:string = ptrget(argv(2),8);
-		$file:string = ptrget(argv(3),8);
-		$line:int = ptrget(argv(4),4);
-		$func:string = ptrget(argv(5),8);
+		$typeName:string = ptrget(argv(3),8);
+		$file:string = ptrget(argv(4),8);
+		$line:int = ptrget(argv(5),4);
+		$func:string = ptrget(argv(6),8);
 
-		printf("delete_object_internal_step1 thread:%lld object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$file,$line,$func);
+		printf("delete_object_internal_step1 thread:%lld object:%8.8x instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$typeName,$file,$line,$func);
 	};
 };
 hook("delete_object_internal_step2")
@@ -1317,11 +1318,12 @@ hook("delete_object_internal_step2")
 		$object:int = ptrget(argv(0),8);
 		$instId:int = ptrget(argv(1),4);
 		$name:string = ptrget(argv(2),8);
-		$file:string = ptrget(argv(3),8);
-		$line:int = ptrget(argv(4),4);
-		$func:string = ptrget(argv(5),8);
+		$typeName:string = ptrget(argv(3),8);
+		$file:string = ptrget(argv(4),8);
+		$line:int = ptrget(argv(5),4);
+		$func:string = ptrget(argv(6),8);
 
-		printf("delete_object_internal_step2 thread:%lld object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$file,$line,$func);
+		printf("delete_object_internal_step2 thread:%lld object:%8.8x instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$typeName,$file,$line,$func);
 	};
 };
 hook("delete_object_internal_incomplete_integration")
@@ -1330,7 +1332,8 @@ hook("delete_object_internal_incomplete_integration")
 		$object:int = ptrget(argv(0),8);
 		$instId:int = ptrget(argv(1),4);
 		$name:string = ptrget(argv(2),8);
+		$typeName:string = ptrget(argv(3),8);
 
-		printf("delete_object_internal_incomplete_integration thread:%lld object:%8.8x instId:%d name:%s\n",GetTID(),$object,$instId,$name);
+		printf("delete_object_internal_incomplete_integration thread:%lld object:%8.8x instId:%d name:%s type:%s\n",GetTID(),$object,$instId,$name,$typeName);
 	};
 };

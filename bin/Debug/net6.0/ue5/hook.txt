@@ -259,7 +259,7 @@ hook("DbgScpBreakpointWithInfo")
 		$file:string = ptrget(argv(3),8);
 		$line:int = ptrget(argv(4),4);
 		$func:string = ptrget(argv(5),8);
-		printf("DbgScpBreakpointWithInfo enter time:%lld tag:%s info:%s file:%s:%d func:%s\n",time(),$tag,$info,$file,$line,$func);
+		//printf("DbgScpBreakpointWithInfo enter time:%lld tag:%s info:%s file:%s:%d func:%s\n",time(),$tag,$info,$file,$line,$func);
 		return 0;
 	};
 };
@@ -275,29 +275,29 @@ hook("DbgScpBreakpointWithIntKeyInfo")
 		$func:string = ptrget(argv(6),8);
 		if($tag=="IsForceLighting" && $key==1){
 			if (stringcontains($func, "BuildLightmapResources")) {
-				printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
-				dumpstack("IsForceLighting");
+				//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+				//dumpstack("IsForceLighting");
 				//assert(0);
 			};
 		}
 		elif($tag=="FRenderResourceList::Allocate" && ($key==2566 || $key==2567)){
-			printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
 			//assert(0);
 		}
 		elif($tag=="FRenderResourceList::Deallocate" && ($key==2566 || $key==2567)){
-			printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
 			//assert(0);
 		}
 		elif($tag=="FRenderResource::~FRenderResource" && ($key==2566 || $key==2567)){
-			printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
 			//assert(0);
 		}
 		elif($tag=="FScene::Update"){
-			printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
 			//assert(0);
 		}
 		elif($tag=="TraceSceneUpdate" || $tag=="TraceUpdateSceneInfos"){
-			printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//printf("DbgScpBreakpointWithIntKeyInfo enter time:%lld tag:%s key:%lld info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
 		};
 		return 0;
 	};
@@ -312,9 +312,14 @@ hook("DbgScpBreakpointWithStrKeyInfo")
 		$file:string = ptrget(argv(4),8);
 		$line:int = ptrget(argv(5),4);
 		$func:string = ptrget(argv(6),8);
-		//printf("DbgScpBreakpointWithStrKeyInfo enter time:%lld tag:%s key:%s info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
-		//dumpstack("InteractionShadowPrimitives");
-		//assert(0);
+		if($tag=="FMaterialShaderMap::IsComplete::false"){
+			printf("DbgScpBreakpointWithStrKeyInfo enter time:%lld tag:%s key:%s info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+			//dumpstack("InteractionShadowPrimitives");
+			//assert(0);
+		}
+		elif($tag=="FMaterialShaderMap::IsComplete::true"){
+			printf("DbgScpBreakpointWithStrKeyInfo enter time:%lld tag:%s key:%s info:%s file:%s:%d func:%s\n",time(),$tag,$key,$info,$file,$line,$func);
+		};
 		return 0;
 	};
 };
@@ -326,10 +331,10 @@ hook("DbgScpAssert")
 		$file:string = ptrget(argv(2),8);
 		$line:int = ptrget(argv(3),4);
 		$func:string = ptrget(argv(4),8);
-		printf("DbgScpAssert enter time:%lld tag:%s file:%s:%d func:%s\n",time(),$tag,$file,$line,$func);
+		//printf("DbgScpAssert enter time:%lld tag:%s file:%s:%d func:%s\n",time(),$tag,$file,$line,$func);
 		if($tag=="UpdateBuildData"){
-			dumpstack("UpdateBuildData");
-			assert(0);
+			//dumpstack("UpdateBuildData");
+			//assert(0);
 		};
 		//assert(0);
 		ptrset(argv(0),1,0);
@@ -392,7 +397,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows")
 			ptrset(argv(0),1,1);
 			@g_log_each_dyna_shadow_enabled = 1;
 		};
-		printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d count:%d logEnabled:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition, @g_dynamic_shadow_count, @g_log_each_dyna_shadow_enabled);
+		//printf("CreateDynamicShadows::SetupInteractionShadows bMobile:%d bGMobileInsetShadows:%d bIsMobileCapsuleShadowsEnabled:%d bLightCondition:%d count:%d logEnabled:%d\n", $bMobile, $bGMobileInsetShadows, $bIsMobileCapsuleShadowsEnabled, $bLightCondition, @g_dynamic_shadow_count, @g_log_each_dyna_shadow_enabled);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives")
@@ -400,7 +405,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives
 	onenter{
 		$NumPrims:int = ptrget(argv(0),4);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives NumPrims:%d\n",$NumPrims);
+		//printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives NumPrims:%d\n",$NumPrims);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach")
@@ -421,7 +426,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives
 		$Z:float = ptrget(argv(12),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach Idx:%d NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $Idx, $NumPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
+			//printf("CreateDynamicShadows::SetupInteractionShadows::InteractionShadowPrimitives::foreach Idx:%d NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $Idx, $NumPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
 };
@@ -430,7 +435,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList")
 	onenter{
 		$NumMovingPrims:int = ptrget(argv(0),4);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList NumPrims:%d\n",$NumMovingPrims);
+		//printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList NumPrims:%d\n",$NumMovingPrims);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach")
@@ -450,7 +455,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreac
 		$Z:float = ptrget(argv(11),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumMovingPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
+			//printf("CreateDynamicShadows::SetupInteractionShadows::MovingPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumMovingPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
 };
@@ -459,7 +464,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList")
 	onenter{
 		$NumStaticPrims:int = ptrget(argv(0),4);
 
-		printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList NumPrims:%d\n",$NumStaticPrims);
+		//printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList NumPrims:%d\n",$NumStaticPrims);
 	};
 };
 hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach")
@@ -479,7 +484,7 @@ hook("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreac
 		$Z:float = ptrget(argv(11),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
+			//printf("CreateDynamicShadows::SetupInteractionShadows::StaticPrimitiveList::foreach NumPrims:%d LightId:%d PersistentIndex:%d OwnerName:%s ResName:%s Mat:%s(%s) MeshNum:%d HasShadow:%d Pos:(%f,%f,%f)\n", $NumStaticPrims, $LightId, $PersistentIndex, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName, $StaticMeshNum, $bHasShadow, $X, $Y, $Z);
 		};
 	};
 };
@@ -496,9 +501,9 @@ hook("FSceneRenderer::SetupInteractionShadows::check")
 		$bCreateObjectShadowForStationaryLight:int = ptrget(argv(7),1);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FSceneRenderer::SetupInteractionShadows::check OwnerName:%s ResName:%s Pos:(%f,%f,%f) flags:(%d %d %d)\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bCreateTranslucentObjectShadow, $bCreateInsetObjectShadow, $bCreateObjectShadowForStationaryLight);
+			//printf("FSceneRenderer::SetupInteractionShadows::check OwnerName:%s ResName:%s Pos:(%f,%f,%f) flags:(%d %d %d)\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bCreateTranslucentObjectShadow, $bCreateInsetObjectShadow, $bCreateObjectShadowForStationaryLight);
 			//force continue
-			ptrset(argv(5), 1, 1);
+			//ptrset(argv(5), 1, 1);
 		};
 	};
 };
@@ -515,7 +520,7 @@ hook("FSceneRenderer::CreatePerObjectProjectedShadow::skip")
 		$bTranslucentRelevance:int = ptrget(argv(7),1);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FSceneRenderer::CreatePerObjectProjectedShadow::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f) bOpaque:%d bTranslucentRelevance:%d\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bOpaque, $bTranslucentRelevance);
+			//printf("FSceneRenderer::CreatePerObjectProjectedShadow::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f) bOpaque:%d bTranslucentRelevance:%d\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z, $bOpaque, $bTranslucentRelevance);
 		};
 	};
 };
@@ -538,7 +543,7 @@ hook("FRelevancePacket::ComputeRelevance")
 				@g_log_each_mesh_enabled = 1;
 			};
 		};
-		printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
+		//printf("FRelevancePacket::ComputeRelevance tid:%lld NumPrims:%d frame_count:%d log_enabled:%d\n", GetTID(), $NumPrims, @g_compute_relevance_count, @g_log_each_mesh_enabled);
 	};
 };
 hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")
@@ -582,10 +587,12 @@ hook("FRelevancePacket::ComputeRelevance::foreach::Mesh")
 			};
 		};
 
+		/*
 		printf("FRelevancePacket::ComputeRelevance::foreach::Mesh PrimIndex:%d MeshIndex:%d NumStaticMeshes:%d TotalMeshes:%d OwnerName:%s ResName:%s Mat:%s(%s) DrawCount:%d [%d,%d,%d,%d,%d,%d,%d,%d] AlwaysDrawCount:%d [%d,%d,%d,%d,%d,%d,%d,%d] MarkMask:%d Pos:(%f,%f,%f)\n", $InputPrimsIndex, $MeshIndex, $NumStaticMeshes, $TotalMeshes, $cstrOwnerName, $cstrResName, $cstrMatName, $cstrBaseMatName
 			, $DrawCount, $DrawCommands[0], $DrawCommands[1], $DrawCommands[2], $DrawCommands[3], $DrawCommands[4], $DrawCommands[5], $DrawCommands[6], $DrawCommands[7]
 			, $AlwaysDrawCount, $AlwaysDrawCommands[0], $AlwaysDrawCommands[1], $AlwaysDrawCommands[2], $AlwaysDrawCommands[3], $AlwaysDrawCommands[4], $AlwaysDrawCommands[5], $AlwaysDrawCommands[6], $AlwaysDrawCommands[7]
 			, $MarkMask, $X, $Y, $Z);
+		*/
 	};
 };
 @g_begin_init_views_count = 0;
@@ -605,7 +612,7 @@ hook("FDeferredShadingSceneRenderer::BeginInitViews")
 			@g_begin_init_views_log_detail_enabled = 1;
 		};
 
-		printf("FDeferredShadingSceneRenderer::BeginInitViews tid:%lld frame_count:%d log_enabled:%d\n", GetTID(), @g_begin_init_views_count, @g_begin_init_views_log_detail_enabled);
+		//printf("FDeferredShadingSceneRenderer::BeginInitViews tid:%lld frame_count:%d log_enabled:%d\n", GetTID(), @g_begin_init_views_count, @g_begin_init_views_log_detail_enabled);
 	};
 };
 hook("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow")
@@ -627,7 +634,7 @@ hook("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow
 		$PY:float = ptrget(argv(13),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
+			//printf("FDeferredShadingSceneRenderer::BeginInitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
 		};
 	};
 };
@@ -648,7 +655,7 @@ hook("FMobileSceneRenderer::InitViews")
 			@g_init_views_log_detail_enabled = 1;
 		};
 
-		printf("FMobileSceneRenderer::InitViews tid:%lld frame_count:%d log_enabled:%d\n", GetTID(), @g_init_views_count, @g_init_views_log_detail_enabled);
+		//printf("FMobileSceneRenderer::InitViews tid:%lld frame_count:%d log_enabled:%d\n", GetTID(), @g_init_views_count, @g_init_views_log_detail_enabled);
 	};
 };
 hook("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow")
@@ -670,7 +677,7 @@ hook("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow")
 		$PY:float = ptrget(argv(13),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
+			//printf("FMobileSceneRenderer::InitViews::ShadowGrid_ShouldCastShadow tid:%lld size:(%f,%f) count:(%d,%d) origin:(%f,%f) num:(%d %d) data:0x%llx OwnerName:%s ResName:%s cast_shadow:%d pos:(%f,%f)\n", GetTID(), $SizeX, $SizeY, $CountX, $CountY, $OriginX, $OriginY, $NumBits, $MaxBits, $BitData, $cstrOwnerName, $cstrResName, $bCastShadow, $PX, $PY);
 		};
 	};
 };
@@ -692,8 +699,27 @@ hook("FilterPrimitiveForShadows::skip")
 		$Z:float = ptrget(argv(5),8);
 
 		if (stringcontainsany($cstrOwnerName,"WhiteWolf","GoldBlack")) {
-			printf("FilterPrimitiveForShadows::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f), but force continue\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z);
-			ptrset(argv(0),1,1);
+			//printf("FilterPrimitiveForShadows::skip OwnerName:%s ResName:%s Pos:(%f,%f,%f), but force continue\n", $cstrOwnerName, $cstrResName, $X, $Y, $Z);
+			//ptrset(argv(0),1,1);
 		};
+	};
+};
+hook("FMaterialShaderMap::IsComplete")
+{
+	onenter{
+		//$ret:int = ptrget(argv(0),1);
+		//$bLogFalse:int = ptrget(argv(1),1);
+		//$bLogTrue:int = ptrget(argv(2),1);
+		$bSilent:int = ptrget(argv(3),1);
+		$bComplete:int = ptrget(argv(4),1);
+		$cstrAssetName:string = ptrget(argv(5),8);
+
+		printf("FMaterialShaderMap::IsComplete bSilent:%d bComplete:%d AssetName:%s\n", $bSilent, $bComplete, $cstrAssetName);
+		//bLogFalse
+		ptrset(argv(1),1,1);
+		//bLogTrue
+		ptrset(argv(2),1,1);
+		//bSilent
+		ptrset(argv(3),1,0);
 	};
 };

@@ -221,7 +221,7 @@ hook("MonoBehaviour::CallAwake")
 		$name:string = ptrget(argv(3),8);
 		
 		$str:string = format("MonoBehaviour::CallAwake enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
-		printf("%s",$str);
+		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 			dumpstack("#MonoBehaviour::CallAwake");
@@ -240,7 +240,7 @@ hook("MonoBehaviour::CallAwake")
 		$name:string = ptrget(argv(3),8);
 		
 		$str:string = format("MonoBehaviour::CallAwake exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
-		printf("%s",$str);
+		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 		};
@@ -255,7 +255,7 @@ hook("MonoBehaviour::Start")
 		$name:string = ptrget(argv(3),8);
 		
 		$str:string = format("MonoBehaviour::Start enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
-		printf("%s",$str);
+		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 			dumpstack("#MonoBehaviour::Start");
@@ -274,7 +274,7 @@ hook("MonoBehaviour::Start")
 		$name:string = ptrget(argv(3),8);
 		
 		$str:string = format("MonoBehaviour::Start exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
-		printf("%s",$str);		
+		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 		};
@@ -348,18 +348,18 @@ hook("GfxDeviceClient::CreateGpuProgram")
 		$d:int = ptrget(argv(3),8);
 		$e:string = ptrget(argv(4),8);
 		
-		$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
+		//printf("%s",$str);
+		//WriteLog($str);
 		//dumpstack("#GfxDeviceClient::CreateGpuProgram");
 		//LogStack("#GfxDeviceClient::CreateGpuProgram");
 		
 		return 0;
 	};
 	onexit{
-		$str:string = format("GfxDeviceClient::CreateGpuProgram exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GfxDeviceClient::CreateGpuProgram exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("GfxDeviceClient::CreateComputeProgram")
@@ -370,18 +370,18 @@ hook("GfxDeviceClient::CreateComputeProgram")
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
 		
-		$str:string = format("GfxDeviceClient::CreateComputeProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GfxDeviceClient::CreateComputeProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
+		//printf("%s",$str);
+		//WriteLog($str);
 		//dumpstack("#GfxDeviceClient::CreateComputeProgram");
 		//LogStack("#GfxDeviceClient::CreateComputeProgram");
 		
 		return 0;
 	};
 	onexit{
-		$str:string = format("GfxDeviceClient::CreateComputeProgram exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GfxDeviceClient::CreateComputeProgram exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 
@@ -393,20 +393,20 @@ hook("VKGpuProgram::Create")
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
 		
-		$str:string = format("VKGpuProgram::Create enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("VKGpuProgram::Create enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
+		//printf("%s",$str);
+		//WriteLog($str);
 				
 		//assert(0);
 		//SetTimeScale(0.0001);
-		printf("TimeScale:%f time:%f float:%f", GetTimeScale(), floattime(), 0.12345);
+		//printf("TimeScale:%f time:%f float:%f", GetTimeScale(), floattime(), 0.12345);
 		
 		return 0;
 	};
 	onexit{
-		$str:string = format("VKGpuProgram::Create exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("VKGpuProgram::Create exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::GetShaderModule")
@@ -414,66 +414,66 @@ hook("GraphicsPipelineProvider::GetShaderModule")
 	onenter{
 		$a:int = ptrget(argv(7),8);
 		$b:int = ptrget(argv(7)+8,8);
-		$str:string = format("GraphicsPipelineProvider::GetShaderModule enter time:%lld thread:%d key:%8.8x %8.8x\n",time(),GetTID(),$a,$b);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::GetShaderModule enter time:%lld thread:%d key:%8.8x %8.8x\n",time(),GetTID(),$a,$b);
+		//printf("%s",$str);
+		//WriteLog($str);
 		return 0;
 	};
 	onexit{
 		$a:int = ptrget(argv(0),8);
-		$str:string = format("GraphicsPipelineProvider::GetShaderModule exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::GetShaderModule exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::DeleteShaderModule")
 {
 	onenter{
 		$a:int = ptrget(argv(1),8);
-		$str:string = format("GraphicsPipelineProvider::DeleteShaderModule enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
-		printf("%s",$str);
-		WriteLog($str);
-		dumpstack("#GraphicsPipelineProvider::DeleteShaderModule");
-		LogStack("#GraphicsPipelineProvider::DeleteShaderModule");
+		//$str:string = format("GraphicsPipelineProvider::DeleteShaderModule enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//dumpstack("#GraphicsPipelineProvider::DeleteShaderModule");
+		//LogStack("#GraphicsPipelineProvider::DeleteShaderModule");
 		return 0;
 	};
 	onexit{
-		$str:string = format("GraphicsPipelineProvider::DeleteShaderModule exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::DeleteShaderModule exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::GetPipelineCacheAndLayout")
 {
 	onenter{
-		$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout enter time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout enter time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 		//dumpstack("GraphicsPipelineProvider::GetPipelineCacheAndLayout");
 		return 0;
 	};
 	onexit{
 		$a:int = ptrget(argv(0),8);
-		$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::GetPipelineCacheAndLayout exit time:%lld thread:%d ret:%x\n",time(),GetTID(),$a);
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("GraphicsPipelineProvider::DeletePipelineCacheAndLayout")
 {
 	onenter{
 		$a:int = ptrget(argv(1),8);
-		$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
-		printf("%s",$str);
-		WriteLog($str);
-		dumpstack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
-		LogStack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
+		//$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout enter time:%lld thread:%d obj:%x\n",time(),GetTID(),$a);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//dumpstack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
+		//LogStack("#GraphicsPipelineProvider::DeletePipelineCacheAndLayout");
 		return 0;
 	};
 	onexit{
-		$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("GraphicsPipelineProvider::DeletePipelineCacheAndLayout exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("CreateGraphicsPipeline")
@@ -483,9 +483,9 @@ hook("CreateGraphicsPipeline")
 		$b:int = ptrget(argv(1),8);
 		$c:string = ptrget(argv(2),8);
 		$dev:int = ptrget($a, 8);
-		$str:string = format("CreateGraphicsPipeline enter time:%lld thread:%d this:%llx device:%llx\n",time(),GetTID(),$a,$dev);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("CreateGraphicsPipeline enter time:%lld thread:%d this:%llx device:%llx\n",time(),GetTID(),$a,$dev);
+		//printf("%s",$str);
+		//WriteLog($str);
 		
 		/*
 		//MI 12 pro
@@ -539,9 +539,9 @@ hook("CreateGraphicsPipeline")
 		return 0;
 	};
 	onexit{
-		$str:string = format("CreateGraphicsPipeline exit time:%lld thread:%d\n",time(),GetTID());
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("CreateGraphicsPipeline exit time:%lld thread:%d\n",time(),GetTID());
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("PipelineStateCollection::PrecachePSOsProgressively")
@@ -550,18 +550,18 @@ hook("PipelineStateCollection::PrecachePSOsProgressively")
 		$a:int = ptrget(argv(1),8);
 		$b:int = ptrget(argv(2),4);
 		
-		$str:string = format("PipelineStateCollection::PrecachePSOsProgressively enter time:%lld thread:%d batch:%d->256\n",time(),GetTID(),$b);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("PipelineStateCollection::PrecachePSOsProgressively enter time:%lld thread:%d batch:%d->256\n",time(),GetTID(),$b);
+		//printf("%s",$str);
+		//WriteLog($str);
 		
-		ptrset(argv(2),4,256);
+		//ptrset(argv(2),4,256);
 		return 0;
 	};
 	onexit{
 		$r:int = ptrget(argv(0),4);
-		$str:string = format("PipelineStateCollection::PrecachePSOsProgressively exit time:%lld thread:%d ret:%d\n",time(),GetTID(),$r);
-		printf("%s",$str);
-		WriteLog($str);
+		//$str:string = format("PipelineStateCollection::PrecachePSOsProgressively exit time:%lld thread:%d ret:%d\n",time(),GetTID(),$r);
+		//printf("%s",$str);
+		//WriteLog($str);
 	};
 };
 hook("vk::MemoryAllocator::Allocate")
@@ -1165,11 +1165,10 @@ hook("sample_allocation")
 		$usedHeap:int = ptrget(argv(1),8);
 		$heapSize:int = ptrget(argv(2),8);
 		$className:string = ptrget(argv(3),8);
-		$objStr:string = ptrget(argv(4),8);
-		$objStrLen:int = ptrget(argv(5),8);
+		$objAddr:int = ptrget(argv(4),8);
 		
 		if(@g_enable_gcalloc_log){
-			$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			$str:string = format("sample_allocation class:%s obj:%llx obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objAddr, $objSize, $usedHeap, $heapSize);
 			printf("%s",$str);
 			WriteLog($str);
 		}
@@ -1193,11 +1192,11 @@ hook("gc_resize_event")
 			WriteLog($str);
 		}
 		else{
-			$str:string = format("gc_resize_event new_size:%d used_heap:%lld heap_size:%lld\n", $newSize, $usedHeap, $heapSize);
-			printf("%s",$str);
-			$r:int = WriteLog($str);
-			printf("WriteLog:%d\n",$r);
-			FlushLog();
+			//$str:string = format("gc_resize_event new_size:%d used_heap:%lld heap_size:%lld\n", $newSize, $usedHeap, $heapSize);
+			//printf("%s",$str);
+			//$r:int = WriteLog($str);
+			//printf("WriteLog:%d\n",$r);
+			//FlushLog();
 		};
 	};
 };
@@ -1211,19 +1210,19 @@ hook("Mesh::UploadMeshData")
 		
 		//ptrset(argv(0), 1, 0);
 				
-		$str:string = format("Mesh::UploadMeshData markNoLongerReadable:%d isReadable:%d name:%s\n", $markNoLongerReadable, $isReadable, $name);
-		printf("%s",$str);
-		$r:int = WriteLog($str);
-		printf("WriteLog:%d\n",$r);
+		//$str:string = format("Mesh::UploadMeshData markNoLongerReadable:%d isReadable:%d name:%s\n", $markNoLongerReadable, $isReadable, $name);
+		//printf("%s",$str);
+		//$r:int = WriteLog($str);
+		//printf("WriteLog:%d\n",$r);
 		
 		if(!$isReadable){
-			dumpstack("#Mesh::UploadMeshData");
-			LogStack("#Mesh::UploadMeshData");
-			FlushLog();
+			//dumpstack("#Mesh::UploadMeshData");
+			//LogStack("#Mesh::UploadMeshData");
+			//FlushLog();
 		};
 		
 		if($name=="xxx_9008_low_skin"){
-			assert(0);
+			//assert(0);
 		};
 	};
 };
@@ -1236,13 +1235,13 @@ hook("VertexData::HookHasOrGetData")
 		$dataSize:int = ptrget(argv(3),8);
 		
 		if($cached && !$dataPtr){
-			$str:string = format("VertexData::HookHasOrGetData isGet:%d cached:%d dataPtr:%8.8x dataSize:%lld\n", $isGet, $cached, $dataPtr, $dataSize);
-			printf("%s",$str);
-			$r:int = WriteLog($str);
-			printf("WriteLog:%d\n",$r);
-			dumpstack("#VertexData::HookHasOrGetData");
-			LogStack("#VertexData::HookHasOrGetData");
-			FlushLog();
+			//$str:string = format("VertexData::HookHasOrGetData isGet:%d cached:%d dataPtr:%8.8x dataSize:%lld\n", $isGet, $cached, $dataPtr, $dataSize);
+			//printf("%s",$str);
+			//$r:int = WriteLog($str);
+			//printf("WriteLog:%d\n",$r);
+			//dumpstack("#VertexData::HookHasOrGetData");
+			//LogStack("#VertexData::HookHasOrGetData");
+			//FlushLog();
 		};
 	};
 };
@@ -1252,13 +1251,13 @@ hook("HookGetBoneWeightsNull")
 		$retPos:int = ptrget(argv(0),4);
 		$bonesPerVertex:int = ptrget(argv(1),4);
 		
-		$str:string = format("HookGetBoneWeightsNull retPos:%d bonesPerVertex:%d\n", $retPos, $bonesPerVertex);
-		printf("%s",$str);
-		WriteLog($str);
-		$r:int = WriteLog($str);
-		printf("WriteLog:%d\n",$r);
+		//$str:string = format("HookGetBoneWeightsNull retPos:%d bonesPerVertex:%d\n", $retPos, $bonesPerVertex);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//$r:int = WriteLog($str);
+		//printf("WriteLog:%d\n",$r);
 		
-		assert(0);
+		//assert(0);
 	};
 };
 hook("InitializeIl2CppFromMain")
@@ -1279,5 +1278,59 @@ hook("Il2CppMonoMemory_mmap")
 		
 		printf("Il2CppMonoMemory_mmap capacity:%d mlock:%d\n",$capacity,$mlock);
 		assert(0);
+	};
+};
+hook("GameObject::GetSupportedMessagesRecalculate::component")
+{
+	onenter{
+		$instId:int = ptrget(argv(0),4);
+		$objName:string = ptrget(argv(1),8);
+		$i:int = ptrget(argv(2),4);
+		$component:int = ptrget(argv(3),8);
+		$componentInstId:int = ptrget(argv(4),4);
+		$componentName:string = ptrget(argv(5),8);
+
+		printf("GameObject::GetSupportedMessagesRecalculate::component instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentName:%s\n",$instId,$objName,$i,$component,$componentInstId,$componentName);
+
+		$vtbl:int = ptrget($component,8);
+		if ($vtbl==0) {
+			assert(0);
+		};
+	};
+};
+hook("delete_object_internal_step1")
+{
+	onenter{
+		$object:int = ptrget(argv(0),8);
+		$instId:int = ptrget(argv(1),4);
+		$name:string = ptrget(argv(2),8);
+		$file:string = ptrget(argv(3),8);
+		$line:int = ptrget(argv(4),4);
+		$func:string = ptrget(argv(5),8);
+
+		printf("delete_object_internal_step1 object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",$object,$instId,$name,$file,$line,$func);
+	};
+};
+hook("delete_object_internal_step2")
+{
+	onenter{
+		$object:int = ptrget(argv(0),8);
+		$instId:int = ptrget(argv(1),4);
+		$name:string = ptrget(argv(2),8);
+		$file:string = ptrget(argv(3),8);
+		$line:int = ptrget(argv(4),4);
+		$func:string = ptrget(argv(5),8);
+
+		printf("delete_object_internal_step2 object:%8.8x instId:%d name:%s file:%s line:%d func:%s\n",$object,$instId,$name,$file,$line,$func);
+	};
+};
+hook("delete_object_internal_incomplete_integration")
+{
+	onenter{
+		$object:int = ptrget(argv(0),8);
+		$instId:int = ptrget(argv(1),4);
+		$name:string = ptrget(argv(2),8);
+
+		printf("delete_object_internal_incomplete_integration object:%8.8x instId:%d name:%s\n",$object,$instId,$name);
 	};
 };

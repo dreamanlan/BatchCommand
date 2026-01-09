@@ -1292,9 +1292,9 @@ hook("GameObject::GetSupportedMessagesRecalculate::component")
 		$i:int = ptrget(argv(2),4);
 		$component:int = ptrget(argv(3),8);
 		$componentInstId:int = ptrget(argv(4),4);
-		$componentName:string = ptrget(argv(5),8);
+		$componentTypeName:string = ptrget(argv(5),8);
 
-		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentName:%s\n",GetTID(),$instId,$objName,$i,$component,$componentInstId,$componentName);
+		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentType:%s\n",GetTID(),$instId,$objName,$i,$component,$componentInstId,$componentTypeName);
 
 		$vtbl:int = ptrget($component,8);
 		if ($vtbl==0) {

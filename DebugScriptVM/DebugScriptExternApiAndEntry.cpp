@@ -401,7 +401,7 @@ static short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t
 }
 
 static const int c_max_log_file_num = 16;
-static const int c_max_log_file_size = 1024 * 1024 * 1024;
+static const int c_max_log_file_size = 1920 * 1024 * 1024;
 static const std::streamsize c_log_buffer_size = 8 * 1024 * 1024;
 static int g_LogIndex = 0;
 static bool g_FirstLog = true;
@@ -474,7 +474,7 @@ static int DbgScp_FlushLog_NoLock(const char* pstr, size_t len) {
 
             if (g_LogSize >= c_max_log_file_size) {
                 g_FirstLog = true;
-                ++g_LogIndex;
+                g_LogIndex = (g_LogIndex + 1) % c_max_log_file_num;
                 g_LogSize = 0;
             }
         }

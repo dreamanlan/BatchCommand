@@ -1,7 +1,7 @@
 
 @g_dir_chged : int = 0;
 @g_enable_watch_point : int = 0;
-@g_enable_mem_log : int = 0;
+@g_enable_mem_log : int = 1;
 @g_run_startup : int = 0;
 @g_enable_unity_obj_mem_stack_log : int = 0;
 @g_enable_gcalloc_log : int = 0;
@@ -185,6 +185,9 @@ hook(DbgScp_Set)
 		}
 		elif($cmd==2){
 			@g_enable_gcalloc_log = 1;
+		}
+		elif($cmd==3){
+			@g_enable_mem_log = 1;
 		};
 		
 		return 1;
@@ -655,15 +658,8 @@ hook("MemoryManager::Allocate_Temp")
 {
 	onenter{
 		//$ret:int = ptrget(argv(0),8);
-		//$this:int = ptrget(argv(2),8);
 		$size:int = ptrget(argv(3),8);
 		$align:int = ptrget(argv(4),8);
-		//$label:int = ptrget(argv(5),4);
-		//$option:int = ptrget(argv(6),4);
-		//$file:string = ptrget(argv(7),8);
-		//$line:int = ptrget(argv(8),4);
-		//$retry:int = ptrget(argv(9),4);
-		//$enableTemp:int = ptrget(argv(10),4);
 		
 		if($size>=32){
 			ptrset(argv(10),4,0);
@@ -704,44 +700,17 @@ hook("MemoryManager::Allocate_NonTemp")
 		$tid:int = GetTID();
 		
 		if(@g_enable_mem_log>0){
-			$str:string = format("MemoryManager::Allocate_NonTemp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,$tid,$file,$line);
-			printf("%s",$str);
-			WriteLog($str);
+			if ($size >= 64) {
+				$str:string = format("MemoryManager::Allocate_NonTemp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,$tid,$file,$line);
+				printf("%s",$str);
+				WriteLog($str);
+			};
 		};
 		
 		if($addr==0){
 		}
 		else{
-			if(stringcontains($file,"VKAsyncPipelineCompiler.cpp") && $line==272 && @g_enable_watch_point){
-				$info_size:int;
-				$info_align:int;
-				$info_locking:int;
-				$info_tlsf:int;
-				$info_tlsf_inst:int;
-				$info_tlsf_pool:int;
-				$info_tid:int;
-				$info_main_thread:int;
-				$cur_tid:int;
-				$cur_main_thread:int;
-				$alloc_name:string;
-				$second_alloc_name:string;
-				
-				if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name) && $info_tlsf){
-					$str2:string = format("MemoryManager::Allocate_NonTemp_NotNull add watch point time:%lld addr:%llx size:%lld tid:%d\n",time(),$addr,$size,$tid);
-					printf("%s",$str2);
-					WriteLog($str2);
-					AddMemoryFlag($addr, 2);
-					FlushLog();
-					
-					//SetWatchPoint(cmd,flag,size,addr,tid); cmd:1--add 2--remove flag:1--read 2--write 3--readwrite
-					SetWatchPoint(1,2,8,$addr-0x28,$tid);
-					//bp to notify lldb
-					assert(0);
-				};			
-			}
-			else{
-				AddMemoryFlag($addr, 1);
-			};
+			AddMemoryFlag($addr, 1);
 		};
 	};
 };
@@ -779,12 +748,14 @@ hook("MemoryManager::Deallocate_NonTemp")
 			$second_alloc_name:string;
 			
 			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
-				$str:string = format("MemoryManager::Deallocate_NonTemp ptr:%llx label:%d tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$label,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
-				printf("%s",$str);
-				WriteLog($str);
+				if ($info_size>=64) {
+					$str:string = format("MemoryManager::Deallocate_NonTemp time:%lld ptr:%llx size:%lld label:%d tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",time(),$addr,$info_size,$label,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
+					printf("%s",$str);
+					WriteLog($str);
+				};
 			}
 			else{			
-				$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx addr:%llx label:%lld file:%s line:%lld\n", $this, $addr, $label, $file, $line);
+				$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx time:%lld addr:%llx label:%lld file:%s line:%lld\n", $this, time(), $addr, $label, $file, $line);
 				printf("%s",$str);
 				WriteLog($str);
 			};
@@ -818,14 +789,13 @@ hook("MemoryManager::Deallocate")
 			$second_alloc_name:string;
 			
 			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
-				$str:string = format("MemoryManager::Deallocate ptr:%llx tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",$addr,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
-				printf("%s",$str);
-				WriteLog($str);
+				if ($info_size>=64) {
+					$str:string = format("MemoryManager::Deallocate time:%lld ptr:%llx size:%lld tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",time(),$addr,$info_size,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
+					printf("%s",$str);
+					WriteLog($str);
+				};
 			};
 		};
-	};
-	onexit{
-		
 	};
 };
 hook("LogOnTlsfAssert")
@@ -833,8 +803,6 @@ hook("LogOnTlsfAssert")
 	onenter{
 		LogStack("LogOnTlsfAssert");
 		assert(0);
-	};
-	onexit{
 	};
 };
 hook("LogOnTlsfMemory")
@@ -847,15 +815,11 @@ hook("LogOnTlsfMemory")
 		LogStack("LogOnTlsfMemory");
 		assert(0);
 	};
-	onexit{
-	};
 };
 hook("DynamicHeapAllocator::AllocateByBucket")
 {
 	onenter{
 		//$ret:int = ptrget(argv(0),8);
-		//$addr:int = ptrget(argv(1),8);
-		//$this:int = ptrget(argv(2),8);
 		$size:int = ptrget(argv(3),8);
 		$align:int = ptrget(argv(4),4);
 		//$enableBucket:int = ptrget(argv(5),4);
@@ -883,13 +847,13 @@ hook("DynamicHeapAllocator::Allocate")
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
 		
-		if(@g_enable_mem_log>0){
-			if($size>=32){
-				$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
-				printf("%s",$str);
-				WriteLog($str);
-			};
-		};
+		//if(@g_enable_mem_log>0){
+		//	if($size>=32){
+		//		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
+		//		printf("%s",$str);
+		//		WriteLog($str);
+		//	};
+		//};
 	};
 	onexit{
 		$addr:int = ptrget(argv(0),8);
@@ -927,6 +891,7 @@ hook("DynamicHeapAllocator::Deallocate")
 		
 		$tid:int = GetTID();
 		
+		/*
 		if(@g_enable_mem_log>0){
 			if($size>=32){
 				$str:string = format("DynamicHeapAllocator::Deallocate enter time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,$tid);
@@ -972,9 +937,7 @@ hook("DynamicHeapAllocator::Deallocate")
 				assert(0);
 			};
 		};
-		
-		RemoveMemoryInfo($addr);
-		RemoveMemoryFlag($addr);
+		*/
 	};
 	onexit{
 		$this:int = ptrget(argv(0),8);
@@ -992,6 +955,9 @@ hook("DynamicHeapAllocator::Deallocate")
 		//		WriteLog($str);
 		//	};
 		//};
+		
+		RemoveMemoryInfo($addr);
+		RemoveMemoryFlag($addr);
 	};
 };
 hook("CheckVulkanSupportImpl")
@@ -1287,57 +1253,139 @@ hook("Il2CppMonoMemory_mmap")
 hook("GameObject::GetSupportedMessagesRecalculate::component")
 {
 	onenter{
-		$instId:int = ptrget(argv(0),4);
-		$objName:string = ptrget(argv(1),8);
-		$i:int = ptrget(argv(2),4);
-		$component:int = ptrget(argv(3),8);
-		$componentInstId:int = ptrget(argv(4),4);
-		$componentTypeName:string = ptrget(argv(5),8);
+		//$bGetTypeName:int = ptrget(argv(0),1);
+		$instId:int = ptrget(argv(1),4);
+		$objName:string = ptrget(argv(2),8);
+		$i:int = ptrget(argv(3),4);
+		$component:int = ptrget(argv(4),8);
+		$componentInstId:int = ptrget(argv(5),4);
+		$componentTypeName:string = ptrget(argv(6),8);
 
-		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld instId:%d objName:%s i:%d component:%8.8x componentInstId:%d componentType:%s\n",GetTID(),$instId,$objName,$i,$component,$componentInstId,$componentTypeName);
+		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld time:%lld instId:%d objName:%s i:%d component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$instId,$objName,$i,$component,$componentInstId,$componentTypeName);
 
 		$vtbl:int = ptrget($component,8);
-		if ($vtbl==0) {
+		if ($vtbl <= 0x100000000) {
 			assert(0);
 		};
+	};
+	onexit{
+		$component:int = ptrget(argv(4),8);
+		$componentInstId:int = ptrget(argv(5),4);
+		$componentTypeName:string = ptrget(argv(6),8);
+
+		printf("GameObject::GetSupportedMessagesRecalculate::component exit thread:%lld time:%lld component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$component,$componentInstId,$componentTypeName);
 	};
 };
 hook("delete_object_internal_step1")
 {
 	onenter{
-		$object:int = ptrget(argv(0),8);
-		$instId:int = ptrget(argv(1),4);
-		$name:string = ptrget(argv(2),8);
-		$typeName:string = ptrget(argv(3),8);
-		$file:string = ptrget(argv(4),8);
-		$line:int = ptrget(argv(5),4);
-		$func:string = ptrget(argv(6),8);
+		//$bGetName:int = ptrget(argv(0),1);
+		//$bGetTypeName:int = ptrget(argv(1),1);
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$name:string = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+		$file:string = ptrget(argv(6),8);
+		$line:int = ptrget(argv(7),4);
+		$func:string = ptrget(argv(8),8);
+		
+		$vtbl:int = ptrget($object,8);
+		if ($vtbl <= 0x100000000) {
+			assert(0);
+		};
 
-		printf("delete_object_internal_step1 thread:%lld object:%8.8x instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$typeName,$file,$line,$func);
+		$str = format("delete_object_internal_step1 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+	};
+	onexit{
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$nameAddr:int = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+
+		if($nameAddr <= 0x100000000 || $nameAddr >= 0x8000000000) {
+			assert(0);
+		};
+		$name:string = ptrget(argv(2),8);
+
+		$str = format("delete_object_internal_step1 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		if ($typeName=="GameObject" || $typeName=="RectTransform" || $typeName=="CanvasRenderer") {
+			$tag = format("#delete_object_internal_step1(%d,%s,%s)",$instId,$name,$typeName);
+			dumpstack($tag);
+			LogStack($tag);
+			FlushLog();
+		};
 	};
 };
 hook("delete_object_internal_step2")
 {
 	onenter{
-		$object:int = ptrget(argv(0),8);
-		$instId:int = ptrget(argv(1),4);
-		$name:string = ptrget(argv(2),8);
-		$typeName:string = ptrget(argv(3),8);
-		$file:string = ptrget(argv(4),8);
-		$line:int = ptrget(argv(5),4);
-		$func:string = ptrget(argv(6),8);
+		//$bGetName:int = ptrget(argv(0),1);
+		//$bGetTypeName:int = ptrget(argv(1),1);
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$name:string = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+		$file:string = ptrget(argv(6),8);
+		$line:int = ptrget(argv(7),4);
+		$func:string = ptrget(argv(8),8);
+		
+		$vtbl:int = ptrget($object,8);
+		if ($vtbl <= 0x100000000) {
+			FlushLog();
+			assert(0);
+		};
 
-		printf("delete_object_internal_step2 thread:%lld object:%8.8x instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),$object,$instId,$name,$typeName,$file,$line,$func);
+		$str = format("delete_object_internal_step2 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		//$bGetName
+		//ptrset(argv(0),1,1);
+	};
+	onexit{
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$nameAddr:int = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+		
+		if($nameAddr != 0 && ($nameAddr <= 0x100000000 || $nameAddr >= 0x8000000000)) {
+			FlushLog();
+			assert(0);
+		};
+		$name:string = ptrget(argv(2),8);
+
+		$str = format("delete_object_internal_step2 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
 	};
 };
 hook("delete_object_internal_incomplete_integration")
 {
 	onenter{
-		$object:int = ptrget(argv(0),8);
-		$instId:int = ptrget(argv(1),4);
-		$name:string = ptrget(argv(2),8);
-		$typeName:string = ptrget(argv(3),8);
+		//$bGetName:int = ptrget(argv(0),1);
+		//$bGetTypeName:int = ptrget(argv(1),1);
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$name:string = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
 
-		printf("delete_object_internal_incomplete_integration thread:%lld object:%8.8x instId:%d name:%s type:%s\n",GetTID(),$object,$instId,$name,$typeName);
+		printf("delete_object_internal_incomplete_integration thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+	};
+	onexit{
+		$object:int = ptrget(argv(2),8);
+		$instId:int = ptrget(argv(3),4);
+		$nameAddr:int = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+
+		printf("delete_object_internal_incomplete_integration exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
 	};
 };

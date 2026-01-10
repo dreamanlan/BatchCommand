@@ -185,6 +185,9 @@ hook(DbgScp_Set)
 		}
 		elif($cmd==2){
 			@g_enable_gcalloc_log = 1;
+		}
+		elif($cmd==3){
+			@g_enable_mem_log = 1;
 		};
 		
 		return 1;
@@ -1169,11 +1172,10 @@ hook("sample_allocation")
 		$usedHeap:int = ptrget(argv(1),8);
 		$heapSize:int = ptrget(argv(2),8);
 		$className:string = ptrget(argv(3),8);
-		$objStr:string = ptrget(argv(4),8);
-		$objStrLen:int = ptrget(argv(5),8);
+		$objAddr:int = ptrget(argv(4),8);
 		
 		if(@g_enable_gcalloc_log){
-			$str:string = format("sample_allocation class:%s str:%s str_len:%lld obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objStr, $objStrLen, $objSize, $usedHeap, $heapSize);
+			$str:string = format("sample_allocation class:%s obj:%llx obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objAddr, $objSize, $usedHeap, $heapSize);
 			printf("%s",$str);
 			WriteLog($str);
 		}

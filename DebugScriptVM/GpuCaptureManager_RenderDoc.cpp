@@ -19,6 +19,8 @@
     #include <dlfcn.h>
 #endif
 
+#if GPUCAP_PLATFORM_WINDOWS || GPUCAP_PLATFORM_ANDROID
+
 struct GpuCaptureManager::RenderDocImpl
 {
     void*               module    = nullptr; // HMODULE on Windows, void* on Android
@@ -270,3 +272,5 @@ void GpuCaptureManager::SetRenderDocLogFilePathTemplate(const char* pathTemplate
 
     m_rd->api->SetLogFilePathTemplate(pathTemplate);
 }
+
+#endif //GPUCAP_PLATFORM_WINDOWS || GPUCAP_PLATFORM_ANDROID

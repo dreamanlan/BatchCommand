@@ -1030,33 +1030,33 @@ namespace BatchCommand
         private const int c_MaxHistoryCount = 1024;
     }
 
-    internal sealed class BatchScript
+    public sealed class BatchScript
     {
-        internal static SortedList<string, string> ApiDocs
+        public static SortedList<string, string> ApiDocs
         {
             get { return s_Calculator.ApiDocs; }
         }
-        internal static bool TimeStatisticOn
+        public static bool TimeStatisticOn
         {
             get { return s_TimeStatisticOn; }
             set { s_TimeStatisticOn = value; }
         }
-        internal static string ScriptDirectory
+        public static string ScriptDirectory
         {
             get { return s_ScriptDirectory; }
         }
-        internal static void Log(string fmt, params object[] args)
+        public static void Log(string fmt, params object[] args)
         {
             if (args.Length == 0)
                 Console.WriteLine(fmt);
             else
                 Console.WriteLine(fmt, args);
         }
-        internal static void Log(object arg)
+        public static void Log(object arg)
         {
             Console.WriteLine("{0}", arg);
         }
-        internal static void Init()
+        public static void Init()
         {
 #if NET || NETSTANDARD
             var provider = CodePagesEncodingProvider.Instance;
@@ -1105,44 +1105,44 @@ namespace BatchCommand
             s_Calculator.Register("regwrite", "regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
             s_Calculator.Register("regdelete", "regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
         }
-        internal static void Register(string name, string doc, IExpressionFactory factory)
+        public static void Register(string name, string doc, IExpressionFactory factory)
         {
             s_Calculator.Register(name, doc, factory);
         }
-        internal static void SetOnTryGetVariable(DslCalculator.TryGetVariableDelegation callback)
+        public static void SetOnTryGetVariable(DslCalculator.TryGetVariableDelegation callback)
         {
             s_Calculator.OnTryGetVariable = callback;
         }
-        internal static void SetOnTrySetVariable(DslCalculator.TrySetVariableDelegation callback)
+        public static void SetOnTrySetVariable(DslCalculator.TrySetVariableDelegation callback)
         {
             s_Calculator.OnTrySetVariable = callback;
         }
-        internal static void SetOnLoadFailback(DslCalculator.LoadFailbackDelegation callback)
+        public static void SetOnLoadFailback(DslCalculator.LoadFailbackDelegation callback)
         {
             s_Calculator.OnLoadFailback = callback;
         }
-        internal static void Clear()
+        public static void Clear()
         {
             s_Calculator.Clear();
         }
-        internal static void ClearGlobalVariables()
+        public static void ClearGlobalVariables()
         {
             s_Calculator.ClearGlobalVariables();
         }
-        internal static bool TryGetGlobalVariable(string v, out BoxedValue result)
+        public static bool TryGetGlobalVariable(string v, out BoxedValue result)
         {
             return s_Calculator.TryGetGlobalVariable(v, out result);
         }
-        internal static BoxedValue GetGlobalVariable(string v)
+        public static BoxedValue GetGlobalVariable(string v)
         {
             TryGetGlobalVariable(v, out var result);
             return result;
         }
-        internal static void SetGlobalVariable(string v, BoxedValue val)
+        public static void SetGlobalVariable(string v, BoxedValue val)
         {
             s_Calculator.SetGlobalVariable(v, val);
         }
-        internal static void Load(string scpFile)
+        public static void Load(string scpFile)
         {
             var sdir = Path.GetDirectoryName(scpFile);
             sdir = Path.Combine(Environment.CurrentDirectory, sdir);
@@ -1151,29 +1151,29 @@ namespace BatchCommand
             LoadDslHelper(scpFile);
             Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
         }
-        internal static void LoadIncludes(params string[] scpFiles)
+        public static void LoadIncludes(params string[] scpFiles)
         {
             LoadIncludes((IList<string>)scpFiles);
         }
-        internal static void LoadIncludes(IList<string> scpFiles)
+        public static void LoadIncludes(IList<string> scpFiles)
         {
             foreach (var scpFile in scpFiles) {
                 LoadDslHelper(scpFile);
             }
         }
-        internal static BoxedValue Run(string scpFile)
+        public static BoxedValue Run(string scpFile)
         {
             return Run(scpFile, s_EmptyStringList, s_EmptyBoxedValueList);
         }
-        internal static BoxedValue Run(string scpFile, List<string> includes)
+        public static BoxedValue Run(string scpFile, List<string> includes)
         {
             return Run(scpFile, includes, s_EmptyBoxedValueList);
         }
-        internal static BoxedValue Run(string scpFile, List<BoxedValue> args)
+        public static BoxedValue Run(string scpFile, List<BoxedValue> args)
         {
             return Run(scpFile, s_EmptyStringList, args);
         }
-        internal static BoxedValue Run(string scpFile, List<string> includes, List<BoxedValue> args)
+        public static BoxedValue Run(string scpFile, List<string> includes, List<BoxedValue> args)
         {
             var r = BoxedValue.NullObject;
             bool redirect = true;
@@ -1205,7 +1205,7 @@ namespace BatchCommand
             s_Calculator.RecycleCalculatorValueList(vargs);
             return r;
         }
-        internal static BoxedValue EvalAndRun(string code)
+        public static BoxedValue EvalAndRun(string code)
         {
             //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
@@ -1217,13 +1217,13 @@ namespace BatchCommand
             }
             return r;
         }
-        internal static BoxedValue EvalAndRun(params ISyntaxComponent[] expressions)
+        public static BoxedValue EvalAndRun(params ISyntaxComponent[] expressions)
         {
             //If local variables are used, the code must run within the function context.
             IList<ISyntaxComponent> exps = expressions;
             return EvalAndRun(exps);
         }
-        internal static BoxedValue EvalAndRun(IList<ISyntaxComponent> expressions)
+        public static BoxedValue EvalAndRun(IList<ISyntaxComponent> expressions)
         {
             //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
@@ -1238,7 +1238,7 @@ namespace BatchCommand
             }
             return r;
         }
-        internal static string EvalAsFunc(string code, IList<string> argNames)
+        public static string EvalAsFunc(string code, IList<string> argNames)
         {
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
@@ -1253,29 +1253,29 @@ namespace BatchCommand
             }
             return string.Empty;
         }
-        internal static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
+        public static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
         {
             string id = System.Guid.NewGuid().ToString();
             Debug.Assert(null != func);
             s_Calculator.LoadDsl(id, argNames, func);
             return id;
         }
-        internal static List<BoxedValue> NewCalculatorValueList()
+        public static List<BoxedValue> NewCalculatorValueList()
         {
             return s_Calculator.NewCalculatorValueList();
         }
-        internal static void RecycleCalculatorValueList(List<BoxedValue> list)
+        public static void RecycleCalculatorValueList(List<BoxedValue> list)
         {
             s_Calculator.RecycleCalculatorValueList(list);
         }
-        internal static BoxedValue Call(string func)
+        public static BoxedValue Call(string func)
         {
             var args = NewCalculatorValueList();
             var r = Call(func, args);
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, BoxedValue arg1)
+        public static BoxedValue Call(string func, BoxedValue arg1)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -1283,7 +1283,7 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2)
+        public static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -1292,7 +1292,7 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3)
+        public static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -1302,7 +1302,7 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3, BoxedValue arg4)
+        public static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3, BoxedValue arg4)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -1313,7 +1313,7 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3, BoxedValue arg4, BoxedValue arg5)
+        public static BoxedValue Call(string func, BoxedValue arg1, BoxedValue arg2, BoxedValue arg3, BoxedValue arg4, BoxedValue arg5)
         {
             var args = NewCalculatorValueList();
             args.Add(arg1);
@@ -1325,12 +1325,12 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        internal static BoxedValue Call(string func, List<BoxedValue> args)
+        public static BoxedValue Call(string func, List<BoxedValue> args)
         {
             var r = s_Calculator.Calc(func, args);
             return r;
         }
-        internal static Encoding GetEncoding(BoxedValue v)
+        public static Encoding GetEncoding(BoxedValue v)
         {
             try {
                 var name = v.AsString;

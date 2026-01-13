@@ -21,6 +21,7 @@
     </DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="AgentCore\**" />
     <Compile Remove="BatchStudio\**" />
     <Compile Remove="CefDotnetApp\**" />
     <Compile Remove="CppLua2Dsl\**" />
@@ -31,6 +32,7 @@
     <Compile Remove="UnrealCodeTransform\**" />
     <Compile Remove="WebToolHost\**" />
     <Compile Remove="Wox.Plugin.BatchCommand\**" />
+    <EmbeddedResource Remove="AgentCore\**" />
     <EmbeddedResource Remove="BatchStudio\**" />
     <EmbeddedResource Remove="CefDotnetApp\**" />
     <EmbeddedResource Remove="CppLua2Dsl\**" />
@@ -41,6 +43,7 @@
     <EmbeddedResource Remove="UnrealCodeTransform\**" />
     <EmbeddedResource Remove="WebToolHost\**" />
     <EmbeddedResource Remove="Wox.Plugin.BatchCommand\**" />
+    <None Remove="AgentCore\**" />
     <None Remove="BatchStudio\**" />
     <None Remove="CefDotnetApp\**" />
     <None Remove="CppLua2Dsl\**" />

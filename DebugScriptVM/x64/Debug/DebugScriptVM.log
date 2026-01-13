@@ -1,9 +1,10 @@
 ﻿  DebugScriptExternApiAndEntry.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(697,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(706,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(717,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(724,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(732,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(711,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(720,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(731,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(738,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(757,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(746,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(752,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(771,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

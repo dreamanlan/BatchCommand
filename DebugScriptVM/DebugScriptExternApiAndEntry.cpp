@@ -313,6 +313,18 @@ static inline int64_t GetThreadId()
 #endif
 }
 
+void* GetCurrentModuleBase() {
+#if defined(_WIN32)
+    return GetModuleHandle(NULL);
+#else
+    Dl_info info;
+    if (dladdr((void*)&GetCurrentModuleBase, &info) != 0) {
+        return info.dli_fbase;
+    }
+    return nullptr;
+#endif
+}
+
 static void get_errno_message(int err, char* buf, size_t buflen)
 {
     if (buflen == 0)
@@ -1173,6 +1185,10 @@ enum class ExternApiEnum
     SetTimeScale,
     GetTimeScale,
     CallCSharp,
+    GetReadableRange,
+    GetReadWritableRange,
+	GetCurrentModuleBase,
+	DumpExtraCrashData,
     Num
 };
 
@@ -1652,6 +1668,45 @@ struct ExternApi
             //DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, ret ? 1 : 0, stackBase, intLocals, intGlobals);
         }
     }
+    static inline void GetReadableRange(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        ReadableRange range;
+        int r = GetReadableRangeAround(reinterpret_cast<void*>(addr), size, &range);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r, stackBase, intLocals, intGlobals);
+        if (argNum > 2) {
+            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, reinterpret_cast<int64_t>(range.start), stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 3) {
+            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, static_cast<int64_t>(range.size), stackBase, intLocals, intGlobals);
+        }
+    }
+    static inline void GetReadWritableRange(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        ReadableRange range;
+        int r = GetReadWritableRangeAround(reinterpret_cast<void*>(addr), size, &range);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r, stackBase, intLocals, intGlobals);
+        if (argNum > 2) {
+            DebugScript::SetVarInt(args[2].IsGlobal, args[2].Index, reinterpret_cast<int64_t>(range.start), stackBase, intLocals, intGlobals);
+        }
+        if (argNum > 3) {
+            DebugScript::SetVarInt(args[3].IsGlobal, args[3].Index, static_cast<int64_t>(range.size), stackBase, intLocals, intGlobals);
+        }
+    }
+    static inline void GetCurrentModuleBase(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        void* ptr = ::GetCurrentModuleBase();
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, reinterpret_cast<int64_t>(ptr), stackBase, intLocals, intGlobals);
+    }
+    static inline void DumpExtraCrashData(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        bool r = CED_OnCrash(reinterpret_cast<void*>(addr));
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -1777,6 +1832,18 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::CallCSharp:
         ExternApi::CallCSharp(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetReadableRange:
+        ExternApi::GetReadableRange(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetReadWritableRange:
+        ExternApi::GetReadWritableRange(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::GetCurrentModuleBase:
+        ExternApi::GetCurrentModuleBase(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::DumpExtraCrashData:
+        ExternApi::DumpExtraCrashData(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

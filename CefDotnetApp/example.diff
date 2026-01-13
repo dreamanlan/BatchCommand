@@ -1,0 +1,52 @@
+--- a/Example.cs
++++ b/Example.cs
+@@ -1,10 +1,15 @@
+ using System;
+ using System.Collections.Generic;
+
+-public class Calculator
++/// <summary>
++/// Simple calculator class with basic arithmetic operations
++/// </summary>
++public class AdvancedCalculator
+ {
+-    public int Add(int a, int b)
++    private int _result;
++
++    public AdvancedCalculator()
+     {
+-        return a + b;
++        _result = 0;
+     }
+
+-    public int Subtract(int a, int b)
++    public int Add(int a, int b)
+     {
+-        return a - b;
++        _result = a + b;
++        return _result;
+     }
+
+     public int Multiply(int a, int b)
+     {
+-        return a * b;
++        _result = a * b;
++        return _result;
++    }
++
++    public int Subtract(int a, int b)
++    {
++        _result = a - b;
++        return _result;
++    }
++
++    public int GetResult()
++    {
++        return _result;
++    }
++
++    public void Reset()
++    {
++        _result = 0;
+     }
+ }

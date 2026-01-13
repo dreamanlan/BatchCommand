@@ -2,3 +2,7 @@ D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp;D:\GitHub\
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\DebugScriptVM.obj
 D:\GitHub\BatchCommand\DebugScriptVM\DllMain.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\DllMain.obj
 D:\GitHub\BatchCommand\DebugScriptVM\GpuCaptureManager_RenderDoc.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\GpuCaptureManager_RenderDoc.obj
+D:\GitHub\BatchCommand\DebugScriptVM\ReadableRange\ReadableRange.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\ReadableRange.obj
+D:\GitHub\BatchCommand\DebugScriptVM\ReadableRange\ReadableRangeAndroid.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\ReadableRangeAndroid.obj
+D:\GitHub\BatchCommand\DebugScriptVM\ReadableRange\ReadableRangeIOS.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\ReadableRangeIOS.obj
+D:\GitHub\BatchCommand\DebugScriptVM\ReadableRange\ReadableRangeWin.cpp;D:\GitHub\BatchCommand\DebugScriptVM\x64\Debug\ReadableRangeWin.obj

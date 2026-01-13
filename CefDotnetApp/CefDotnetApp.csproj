@@ -9,9 +9,17 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Diagnostics.Debugger.IsSupported"
+                                    Value="true" />
+  </ItemGroup>
+
+  <!-- PostBuild event commented out - BatchCommand.exe path needs to be fixed -->
+  <!--
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="$(SolutionDir)bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
   </Target>
+  -->
 
   <ItemGroup>
     <Compile Include="..\Script\BatchScript.cs" Link="BatchScript.cs" />
@@ -42,4 +50,7 @@
     </Reference>
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="$(ProjectDir)..\bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
+  </Target>
 </Project>

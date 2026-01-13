@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"name": "CefDotnetApp",
+			"path": "."
+		},
+		{
+			"name": "AgentCore",
+			"path": "../AgentCore"
+		},
+		{
+			"name": "cefclient",
+			"path": "../../CEF_Src_Build/cefclient"
+		},
+		{
+			"path": "../../CEF_Src_Build/chromium_git/chromium/src/cef"
+		}
+	],
+	"settings": {}
+}

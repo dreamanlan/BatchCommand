@@ -262,53 +262,112 @@ MonoMethod* FindMonoMethod(MonoClass* klass, const char* name, int argsCount, Mo
     return FindMonoMethod(parent, name, argsCount, argTypes);
 }
 
-#if defined(_MSC_VER)
-static std::string WideStringToUtf8(const wchar_t* wstr)
+// Cross-platform character set conversion functions
+extern std::string WideStringToUtf8(const wchar_t* wstr);
+extern std::wstring Utf8ToWstring(const char* str);
+extern bool WideToUtf8ToBuffer(const wchar_t* wstr, char* buf, int bufSize);
+extern bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, unsigned int codePage = 65001);  // CP_UTF8 = 65001
+
+std::string WideStringToUtf8(const wchar_t* wstr)
 {
     if (!wstr) return std::string();
 
+#if defined(_MSC_VER)
     int size_needed = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
     if (size_needed == 0) {
         return std::string();
     }
 
     std::string result;
-    result.resize(size_needed - 1);
+    result.resize(size_needed - 1, '\0');
     ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &result[0], size_needed, nullptr, nullptr);
     return result;
+#else
+    // On non-Windows platforms, use standard library conversion
+    std::mbstate_t state = std::mbstate_t();
+    std::size_t len = std::wcsrtombs(nullptr, &wstr, 0, &state);
+    if (len == static_cast<std::size_t>(-1)) {
+        return std::string();
+    }
+    std::string result(len, '\0');
+    std::wcsrtombs(&result[0], &wstr, len, &state);
+    return result;
+#endif
 }
-static std::wstring Utf8ToWstring(const char* str)
+
+std::wstring Utf8ToWstring(const char* str)
 {
     if (!str) return std::wstring();
+
+#if defined(_MSC_VER)
     int size_needed = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
     if (size_needed == 0) {
         return std::wstring();
     }
 
     std::wstring wstr;
-    wstr.resize(size_needed);
+    wstr.resize(size_needed, '\0');
     ::MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], size_needed);
 
     if (!wstr.empty()) wstr.pop_back();
     return wstr;
+#else
+    // On non-Windows platforms, use standard library conversion
+    std::mbstate_t state = std::mbstate_t();
+    const char* ptr = str;
+    std::size_t len = std::mbsrtowcs(nullptr, &ptr, 0, &state);
+    if (len == static_cast<std::size_t>(-1)) {
+        return std::wstring();
+    }
+    std::wstring result(len, L'\0');
+    ptr = str;
+    std::mbsrtowcs(&result[0], &ptr, len, &state);
+    return result;
+#endif
 }
+
 bool WideToUtf8ToBuffer(const wchar_t* wstr, char* buf, int bufSize)
 {
     if (!wstr || !buf || bufSize <= 0) return false;
+
+#if defined(_MSC_VER)
     int needed = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
     if (needed == 0 || needed > bufSize) return false;
     ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, buf, needed, nullptr, nullptr);
     return true;
+#else
+    std::mbstate_t state = std::mbstate_t();
+    std::size_t len = std::wcsrtombs(nullptr, &wstr, 0, &state);
+    if (len == static_cast<std::size_t>(-1) || static_cast<int>(len) >= bufSize) {
+        return false;
+    }
+    std::wcsrtombs(buf, &wstr, bufSize, &state);
+    return true;
+#endif
 }
-bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, UINT codePage = CP_UTF8)
+
+bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, unsigned int codePage)
 {
     if (!src || !buf || bufSize <= 0) return false;
+
+#if defined(_MSC_VER)
     int needed = ::MultiByteToWideChar(codePage, 0, src, -1, nullptr, 0);
     if (needed == 0 || needed > bufSize) return false;
     int ret = ::MultiByteToWideChar(codePage, 0, src, -1, buf, bufSize);
     return ret != 0;
-}
+#else
+    // On non-Windows platforms, ignore codePage and use standard conversion
+    std::mbstate_t state = std::mbstate_t();
+    const char* ptr = src;
+    std::size_t len = std::mbsrtowcs(nullptr, &ptr, 0, &state);
+    if (len == static_cast<std::size_t>(-1) || static_cast<int>(len) >= bufSize) {
+        return false;
+    }
+    ptr = src;
+    std::mbsrtowcs(buf, &ptr, bufSize, &state);
+    return true;
 #endif
+}
 
 void* load_library(const char* path)
 {
@@ -339,6 +398,25 @@ void free_library(void* h)
     ::FreeLibrary(reinterpret_cast<HMODULE>(h));
 #else
     dlclose(h);
+#endif
+}
+
+void host_output_log(const char* msg);
+void printf_log(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    char buffer[4097];
+    int len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, vl);
+    buffer[len] = '\0';
+    va_end(vl);
+
+    host_output_log(buffer);
+
+#if defined(_MSC_VER)
+    // Convert UTF-8 to wide char for OutputDebugString
+    std::wstring wbuffer = Utf8ToWstring(buffer);
+    ::OutputDebugStringW(wbuffer.c_str());
 #endif
 }
 
@@ -408,15 +486,16 @@ bool host_get_adb_exe(char* path, int& path_size)
 
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 // Function to initialize .NET Core runtime
-int load_hostfxr()
+int load_hostfxr(int& out_rc)
 {
+    out_rc = 0;
 #ifdef USE_SPEC_DOTNET
     // Load hostfxr.dll and use dotnet framework in specific directory
     const char* hostfxr_path = "hostfxr.dll";
     void* hostfxr_lib = load_library(hostfxr_path);
     if (!hostfxr_lib)
     {
-        std::cerr << "Failed to load hostfxr.dll" << std::endl;
+        printf_log("Failed to load hostfxr.dll");
         return -2;
     }
 #else
@@ -425,16 +504,20 @@ int load_hostfxr()
     size_t sz = sizeof(hostfxr_path_w) / sizeof(wchar_t);
     int rc0 = get_hostfxr_path(hostfxr_path_w, &sz, nullptr);
     if (rc0 != 0) {
-        fprintf(stderr, "get_hostfxr_path failed: %d\n", rc0);
+        printf_log("get_hostfxr_path failed: %d", rc0);
+        out_rc = rc0;
         return -1;
     }
-    wprintf(L"[native] hostfxr path: %s\n", hostfxr_path_w);
+    char path[1025];
+    WideToUtf8ToBuffer(hostfxr_path_w, path, 1024);
+    printf_log("[native] hostfxr path: %s\n", path);
 #else
     char hostfxr_path[PATH_MAX];
     size_t sz = sizeof(hostfxr_path);
     int rc0 = get_hostfxr_path(hostfxr_path, &sz, nullptr);
     if (rc0 != 0) {
-        fprintf(stderr, "get_hostfxr_path failed: %d\n", rc0);
+        printf_log("get_hostfxr_path failed: %d", rc0);
+        out_rc = rc0;
         return -1;
     }
     printf("[native] hostfxr path: %s\n", hostfxr_path);
@@ -443,7 +526,8 @@ int load_hostfxr()
 #ifdef _WIN32
     HMODULE hostfxr_lib = LoadLibraryW(hostfxr_path_w);
     if (!hostfxr_lib) {
-        fprintf(stderr, "LoadLibraryW failed\n");
+        out_rc = static_cast<int>(::GetLastError());
+        printf_log("LoadLibraryW failed\n");
         return -2;
     }
 #else
@@ -463,7 +547,7 @@ int load_hostfxr()
 
     if (!init_cmdline_fptr || !run_app_fptr || !init_config_fptr || !get_delegate_fptr || !close_fptr)
     {
-        std::cerr << "Failed to get hostfxr functions" << std::endl;
+        printf_log("Failed to get hostfxr functions");
         return -3;
     }
 
@@ -487,7 +571,8 @@ int load_hostfxr()
     //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
     if (rc != 0 || cxt == nullptr)
     {
-        std::cerr << "Failed to initialize .NET Core runtime" << std::endl;
+        printf_log("Failed to initialize .NET Core runtime: %d", rc);
+        out_rc = rc;
         return -4;
     }
 
@@ -495,7 +580,8 @@ int load_hostfxr()
     rc = get_delegate_fptr(cxt, hdt_load_assembly_and_get_function_pointer, reinterpret_cast<void**>(&load_assembly_and_get_function_pointer));
     if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
     {
-        std::cerr << "Failed to get load_assembly_and_get_function_pointer" << std::endl;
+        printf_log("Failed to get load_assembly_and_get_function_pointer: %d", rc);
+        out_rc = rc;
         return -5;
     }
 
@@ -860,7 +946,8 @@ int main(int argc, const char* argv[])
 
     bool use_coreclr = argc > 1 ? _stricmp(argv[1], "coreclr") == 0 : false;
     if (use_coreclr) {
-        load_hostfxr();
+        int rc = 0;
+        load_hostfxr(rc);
         call_dotnet_method();
     }
     else {

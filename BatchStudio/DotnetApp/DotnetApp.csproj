@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(SolutionDir)bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
+    <Exec Command="$(ProjectDir)..\..\bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
   </Target>
 
   <ItemGroup>

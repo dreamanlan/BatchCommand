@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.IO;
+using System.Reflection;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -13,6 +14,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Net;
+using CefDotnetApp.Interfaces;
 
 public static class Program
 {
@@ -137,32 +139,14 @@ namespace DotNetLib
             return str;
         }
     }
-    sealed class WriteFileExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            bool r = false;
-            if (operands.Count >= 2) {
-                string path = operands[0].GetString();
-                string txt = operands[1].GetString();
-                path = Path.Combine(Lib.BasePath, path);
-                string? dir = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) {
-                    Directory.CreateDirectory(dir);
-                }
-                File.WriteAllText(path, txt);
-            }
-            return r;
-        }
-    }
-    enum CefProcessType
+    public enum CefProcessType
     {
         BrowserProcess,
         RendererProcess,
         ZygoteProcess,
         OtherProcess,
     };
-    enum CefProcessId
+    public enum CefProcessId
     {
         PID_BROWSER,
         PID_RENDERER,
@@ -414,7 +398,8 @@ namespace DotNetLib
         public static int RegisterApi(IntPtr apis)
         {
             s_NativeApi = new NativeApi(apis);
-
+            //We must load AgentCore's dependencies before loading AgentCore itself.
+            PrepareBatchScript();
             return 0;
         }
 
@@ -422,6 +407,8 @@ namespace DotNetLib
         public delegate void OnFinalizeDelegation();
         public delegate void OnBrowserInitDelegation(IntPtr browser);
         public delegate void OnBrowserFinalizeDelegation(IntPtr browser);
+        public delegate bool OnBrowserHotReloadCopyFilesDelegation();
+        public delegate void OnBrowserHotReloadCompletedDelegation(IntPtr browser);
         public delegate void OnRendererInitDelegation(IntPtr browser, IntPtr frame);
         public delegate void OnRendererFinalizeDelegation(IntPtr browser, IntPtr frame);
         public delegate void OnReceiveCefMessage0Delegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr browser, IntPtr frame, int source_process_id);
@@ -461,6 +448,36 @@ namespace DotNetLib
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_init"));
 
                 if (null != s_NativeApi) {
+                    if ((int)CefProcessType.RendererProcess == process_type) {
+                        // Before loading the DSL script, we must register all APIs.
+
+                        // Register assembly resolve event handler before loading AgentCore
+                        // This ensures that assembly dependencies are loaded from the correct location
+                        AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+
+                        // Only load AgentCore and hot reload manager in renderer process
+                        // Load AgentCore plugin
+                        bool loadSuccess = LoadAgentPlugin();
+                        if (loadSuccess && s_AgentPlugin != null) {
+                            NativeLogNoLock("[csharp] AgentPlugin loaded successfully");
+
+                            // Set native API for the plugin
+                            s_AgentPlugin.SetNativeApi(s_NativeApi);
+                            NativeLogNoLock("[csharp] NativeApi set successfully for AgentPlugin");
+
+                            // Initialize hot reload manager
+                            if (s_HotReloadManager == null) {
+                                s_HotReloadManager = new HotReloadManager(s_BasePath);
+                                s_HotReloadManager.SetCallback(OnFileChanged);
+                                s_HotReloadManager.StartWatching();
+                                NativeLogNoLock("[csharp] Hot reload manager started in renderer process");
+                            }
+                        }
+                        else {
+                            NativeLogNoLock("[csharp] Warning: AgentPlugin loading failed, agent features will not be available");
+                        }
+                    }
+
                     TryLoadDSL();
                     BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                     BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
@@ -545,6 +562,51 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                     BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
+                    if (!r.IsNullObject) {
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+        public static bool OnBrowserHotReloadCopyFiles()
+        {
+            NativeLogNoLock("[csharp] Browser Hot Reload Copy Files");
+
+            try {
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_hot_reload_copyfiles"));
+
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_copyfiles");
+                    if (!r.IsNullObject) {
+                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        return r.GetBool();
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+        public static void OnBrowserHotReloadCompleted(IntPtr browser)
+        {
+            NativeLogNoLock("[csharp] Browser Hot Reload Completed");
+
+            try {
+                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_hot_reload_completed"));
+
+                if (null != s_NativeApi) {
+                    s_NativeApi.SetContext(browser, IntPtr.Zero);
+                    TryLoadDSL();
+                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
+                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
+                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_completed");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -791,21 +853,207 @@ namespace DotNetLib
                 if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
                     s_DslScriptTime = fi.LastWriteTime;
                     s_DslScriptPath = path;
-                    BatchCommand.BatchScript.Load(fi.FullName);
 
-                    NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
+                    string errorMsg = string.Empty;
+                    if (File.Exists(fi.FullName)) {
+                        BatchCommand.BatchScript.Load(fi.FullName);
+                        NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
+                    } else {
+                        errorMsg = "DSL script file does not exist";
+                        NativeLogNoLock("[csharp] " + errorMsg + ": " + fi.FullName);
+                    }
                 }
             }
             else {
                 NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
             }
         }
+
+        private static Assembly? OnAssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            try
+            {
+                string assemblyName = new AssemblyName(args.Name).Name;
+                NativeLogNoLock($"[csharp] AssemblyResolve: Requesting {assemblyName}");
+
+                // If the assembly is already loaded, return it
+                Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+                foreach (Assembly assembly in loadedAssemblies)
+                {
+                    if (assembly.GetName().Name == assemblyName)
+                    {
+                        NativeLogNoLock($"[csharp] AssemblyResolve: {assemblyName} already loaded");
+                        return assembly;
+                    }
+                }
+
+                // Try to load from the managed directory
+                string managedPath = Path.Combine(s_BasePath, "managed");
+                string assemblyPath = Path.Combine(managedPath, assemblyName + ".dll");
+
+                if (File.Exists(assemblyPath))
+                {
+                    NativeLogNoLock($"[csharp] AssemblyResolve: Loading {assemblyName} from {assemblyPath}");
+                    return Assembly.LoadFrom(assemblyPath);
+                }
+
+                NativeLogNoLock($"[csharp] AssemblyResolve: Could not find {assemblyName} in {managedPath}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                NativeLogNoLock($"[csharp] AssemblyResolve exception: {ex.Message}");
+                return null;
+            }
+        }
+
+        private static bool LoadAgentPlugin()
+        {
+            try
+            {
+                string pluginPath = Path.Combine(s_BasePath, "managed", "AgentCore.dll");
+                if (!File.Exists(pluginPath))
+                {
+                    NativeLogNoLock($"[csharp] AgentCore.dll not found at: {pluginPath}");
+                    return false;
+                }
+
+                NativeLogNoLock($"[csharp] Loading AgentCore.dll from: {pluginPath}");
+
+                // Use Assembly.Load instead of LoadFrom to share assembly load context
+                // This ensures interface types are compatible across assemblies
+                AssemblyName assemblyName = AssemblyName.GetAssemblyName(pluginPath);
+                NativeLogNoLock($"[csharp] Assembly name: {assemblyName.FullName}");
+
+                // Load the assembly into the default load context
+                Assembly? pluginAssembly = Assembly.Load(assemblyName);
+                if (pluginAssembly == null)
+                {
+                    NativeLogNoLock("[csharp] Failed to load AgentCore.dll using Assembly.Load");
+                    // Fallback to LoadFrom if Load fails
+                    NativeLogNoLock("[csharp] Trying fallback to Assembly.LoadFrom...");
+                    pluginAssembly = Assembly.LoadFrom(pluginPath);
+                }
+
+                NativeLogNoLock($"[csharp] Loaded assembly: {pluginAssembly.FullName}");
+
+                // Find the AgentPlugin type
+                Type? pluginType = pluginAssembly.GetType("CefDotnetApp.AgentCore.AgentPlugin");
+                if (pluginType == null)
+                {
+                    NativeLogNoLock("[csharp] AgentPlugin type not found in AgentCore.dll");
+                    // List all available types for debugging
+                    NativeLogNoLock("[csharp] Available types in AgentCore.dll:");
+                    foreach (var type in pluginAssembly.GetTypes())
+                    {
+                        NativeLogNoLock($"[csharp]   - {type.FullName}");
+                    }
+                    return false;
+                }
+
+                NativeLogNoLock($"[csharp] Found AgentPlugin type: {pluginType.FullName}");
+
+                // Create instance and use interface casting
+                object? pluginInstance = Activator.CreateInstance(pluginType);
+                if (pluginInstance == null)
+                {
+                    NativeLogNoLock("[csharp] Failed to create AgentPlugin instance (Activator.CreateInstance returned null)");
+                    return false;
+                }
+
+                NativeLogNoLock($"[csharp] Created instance of type: {pluginInstance.GetType().FullName}");
+
+                // Try to cast to IAgentPlugin
+                s_AgentPlugin = pluginInstance as IAgentPlugin;
+                if (s_AgentPlugin == null)
+                {
+                    NativeLogNoLock("[csharp] Failed to cast AgentPlugin instance to IAgentPlugin");
+
+                    // Check if instance implements the interface
+                    Type interfaceType = typeof(IAgentPlugin);
+                    NativeLogNoLock($"[csharp] IAgentPlugin interface: {interfaceType.AssemblyQualifiedName}");
+                    NativeLogNoLock($"[csharp] Instance implements IAgentPlugin: {interfaceType.IsAssignableFrom(pluginType)}");
+
+                    // List all implemented interfaces
+                    NativeLogNoLock("[csharp] Interfaces implemented by AgentPlugin:");
+                    foreach (var iface in pluginType.GetInterfaces())
+                    {
+                        NativeLogNoLock($"[csharp]   - {iface.AssemblyQualifiedName}");
+                    }
+
+                    return false;
+                }
+
+                NativeLogNoLock("[csharp] Successfully cast to IAgentPlugin");
+
+                // Initialize the plugin
+                s_AgentPlugin.Initialize(s_BasePath);
+                NativeLogNoLock("[csharp] AgentPlugin loaded and initialized successfully");
+
+                // Register Script APIs through the plugin
+                s_AgentPlugin.RegisterScriptApis();
+                NativeLogNoLock("[csharp] Script APIs registered successfully");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                NativeLogNoLock($"[csharp] Error loading AgentPlugin: {ex.Message}");
+                NativeLogNoLock($"[csharp] Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    NativeLogNoLock($"[csharp] Inner exception: {ex.InnerException.Message}");
+                    NativeLogNoLock($"[csharp] Inner stack trace: {ex.InnerException.StackTrace}");
+                }
+                return false;
+            }
+        }
+
         private static void RegisterBatchScriptApi()
         {
+            // Basic framework APIs (defined in Program.cs)
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("writefile", "writefile(path, txt)", new ExpressionFactoryHelper<WriteFileExp>());
+
+            // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
         }
+
+        private static void OnFileChanged(string filePath, string fileType)
+        {
+            NativeLogNoLock($"[csharp] File changed detected: {fileType} - {filePath}");
+
+            try
+            {
+                switch (fileType)
+                {
+                    case "DSL Script":
+                        // Script.dsl is reloaded automatically on next message processing
+                        NativeLogNoLock("[csharp] Script.dsl will be reloaded on next message");
+                        break;
+
+                    case "AgentCore DLL":
+                        // Need to reload the plugin - this requires careful handling
+                        NativeLogNoLock("[csharp] AgentCore.dll changed - hot reload scheduled");
+                        // Note: Full plugin reload requires app restart or careful unloading
+                        break;
+
+                    case "Inject Script":
+                        // Directly trigger hot reload in current renderer process
+                        // HotReloadManager only runs in renderer, so we can directly execute JavaScript
+                        if (s_NativeApi != null)
+                        {
+                            NativeLogNoLock("[csharp] Inject script changed, triggering hot reload directly");
+                            s_NativeApi.ExecuteJavascript("window.AgentAPI.bridge.triggerEvent('hot_reload',{component:'inject'})");
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                NativeLogNoLock($"[csharp] Error handling file change: {ex.Message}");
+            }
+        }
+
         private static void PrepareBatchScript()
         {
             if (!s_BatchScriptInited) {
@@ -823,6 +1071,8 @@ namespace DotNetLib
         private static DateTime s_DslScriptTime = DateTime.Now;
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
+        private static IAgentPlugin? s_AgentPlugin = null;
+        private static HotReloadManager? s_HotReloadManager = null;
 
         private static List<string> s_EmptyArgs = new List<string>();
         private static StringBuilder s_StringBuilder = new StringBuilder();

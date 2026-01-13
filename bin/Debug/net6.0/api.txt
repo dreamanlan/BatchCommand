@@ -91,3 +91,11 @@ defexternapi(GetTimeScale,float,noparams,[]);
 defexternapi(CallCSharp,int,printf,[string,string,string,string]){
 	minparamnum(4);
 };
+defexternapi(GetReadableRange,int,noparams,[int,int,int,int]){
+	minparamnum(2);
+};
+defexternapi(GetReadWritableRange,int,noparams,[int,int,int,int]){
+	minparamnum(2);
+};
+defexternapi(GetCurrentModuleBase,int,noparams,[]);
+defexternapi(DumpExtraCrashData,int,noparams,[int]);

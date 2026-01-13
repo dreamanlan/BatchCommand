@@ -27,53 +27,112 @@
 #endif
 #endif
 
-#if defined(_MSC_VER)
-static std::string WideStringToUtf8(const wchar_t* wstr)
+// Cross-platform character set conversion functions
+extern std::string WideStringToUtf8(const wchar_t* wstr);
+extern std::wstring Utf8ToWstring(const char* str);
+extern bool WideToUtf8ToBuffer(const wchar_t* wstr, char* buf, int bufSize);
+extern bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, unsigned int codePage = 65001);  // CP_UTF8 = 65001
+
+std::string WideStringToUtf8(const wchar_t* wstr)
 {
     if (!wstr) return std::string();
 
+#if defined(_MSC_VER)
     int size_needed = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
     if (size_needed == 0) {
         return std::string();
     }
 
     std::string result;
-    result.resize(size_needed - 1);
+    result.resize(size_needed - 1, '\0');
     ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &result[0], size_needed, nullptr, nullptr);
     return result;
+#else
+    // On non-Windows platforms, use standard library conversion
+    std::mbstate_t state = std::mbstate_t();
+    std::size_t len = std::wcsrtombs(nullptr, &wstr, 0, &state);
+    if (len == static_cast<std::size_t>(-1)) {
+        return std::string();
+    }
+    std::string result(len, '\0');
+    std::wcsrtombs(&result[0], &wstr, len, &state);
+    return result;
+#endif
 }
-static std::wstring Utf8ToWstring(const char* str)
+
+std::wstring Utf8ToWstring(const char* str)
 {
     if (!str) return std::wstring();
+
+#if defined(_MSC_VER)
     int size_needed = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
     if (size_needed == 0) {
         return std::wstring();
     }
 
     std::wstring wstr;
-    wstr.resize(size_needed);
+    wstr.resize(size_needed, '\0');
     ::MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0], size_needed);
 
     if (!wstr.empty()) wstr.pop_back();
     return wstr;
+#else
+    // On non-Windows platforms, use standard library conversion
+    std::mbstate_t state = std::mbstate_t();
+    const char* ptr = str;
+    std::size_t len = std::mbsrtowcs(nullptr, &ptr, 0, &state);
+    if (len == static_cast<std::size_t>(-1)) {
+        return std::wstring();
+    }
+    std::wstring result(len, L'\0');
+    ptr = str;
+    std::mbsrtowcs(&result[0], &ptr, len, &state);
+    return result;
+#endif
 }
+
 bool WideToUtf8ToBuffer(const wchar_t* wstr, char* buf, int bufSize)
 {
     if (!wstr || !buf || bufSize <= 0) return false;
+
+#if defined(_MSC_VER)
     int needed = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
     if (needed == 0 || needed > bufSize) return false;
     ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1, buf, needed, nullptr, nullptr);
     return true;
+#else
+    std::mbstate_t state = std::mbstate_t();
+    std::size_t len = std::wcsrtombs(nullptr, &wstr, 0, &state);
+    if (len == static_cast<std::size_t>(-1) || static_cast<int>(len) >= bufSize) {
+        return false;
+    }
+    std::wcsrtombs(buf, &wstr, bufSize, &state);
+    return true;
+#endif
 }
-bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, UINT codePage = CP_UTF8)
+
+bool MultiByteToWideBuffer(const char* src, wchar_t* buf, int bufSize, unsigned int codePage)
 {
     if (!src || !buf || bufSize <= 0) return false;
+
+#if defined(_MSC_VER)
     int needed = ::MultiByteToWideChar(codePage, 0, src, -1, nullptr, 0);
     if (needed == 0 || needed > bufSize) return false;
     int ret = ::MultiByteToWideChar(codePage, 0, src, -1, buf, bufSize);
     return ret != 0;
-}
+#else
+    // On non-Windows platforms, ignore codePage and use standard conversion
+    std::mbstate_t state = std::mbstate_t();
+    const char* ptr = src;
+    std::size_t len = std::mbsrtowcs(nullptr, &ptr, 0, &state);
+    if (len == static_cast<std::size_t>(-1) || static_cast<int>(len) >= bufSize) {
+        return false;
+    }
+    ptr = src;
+    std::mbsrtowcs(buf, &ptr, bufSize, &state);
+    return true;
 #endif
+}
 
 void* load_library(const char* path)
 {
@@ -117,7 +176,7 @@ void printf_log(const char* fmt, ...)
     va_list vl;
     va_start(vl, fmt);
     char buffer[4097];
-    int len = vsnprintf(buffer, sizeof(buffer), fmt, vl);
+    int len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, vl);
     buffer[len] = '\0';
     va_end(vl);
 

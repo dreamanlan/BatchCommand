@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hot Reload & Self-Bootstrapping Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0078d4;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0078d4;
+            margin-top: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #0078d4;
+            border-radius: 4px;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00ffff; }
+        .warning { color: #ffff00; }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #e6ffed;
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        .status.disconnected {
+            background: #ffe6e6;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Hot Reload & Self-Bootstrapping Test</h1>
+
+        <div style="margin-bottom: 20px;">
+            <span id="status" class="status disconnected">⚠ Agent Not Connected</span>
+            <span style="margin-left: 20px; color: #666;">
+                Last update: <span id="lastUpdate">Never</span>
+            </span>
+        </div>
+
+        <h2>📋 Test Scenarios</h2>
+
+        <!-- Test 1: Basic Hot Reload -->
+        <div class="test-section">
+            <h3>Test 1: Basic Hot Reload</h3>
+            <p>Test the hot reload functionality for different components.</p>
+
+            <button onclick="testHotReloadAgentCore()">� Reload AgentCore.dll (Full Reload)</button>
+            <button onclick="testHotReloadScript()">📜 Reload Script.dsl (Auto)</button>
+            <button onclick="testHotReloadInject()">🌐 Reload inject.js (Page Refresh)</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; font-size: 14px;">
+                <strong>Note:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li><strong>AgentCore.dll:</strong> Closes browser, updates DLL, reopens browser (full hot reload)</li>
+                    <li><strong>Script.dsl:</strong> Auto-reloaded on every execution (no action needed)</li>
+                    <li><strong>inject.js:</strong> Refresh page to reload (F5 or Ctrl+R)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 2: MetaDSL File Operations -->
+        <div class="test-section">
+            <h3>Test 2: MetaDSL File Operations</h3>
+            <p>Test basic file operations through MetaDSL.</p>
+
+            <button onclick="testReadFile()">📖 Read File</button>
+            <button onclick="testWriteFile()">✍️ Write File</button>
+            <button onclick="testModifyFile()">✏️ Modify File</button>
+            <button onclick="testDeleteFile()">🗑️ Delete File</button>
+        </div>
+
+        <!-- Test 3: Self-Modification -->
+        <div class="test-section">
+            <h3>Test 3: Self-Modification</h3>
+            <p>Test the agent's ability to modify its own code.</p>
+
+            <button onclick="testSelfModify()">🔧 Self-Modify Script</button>
+            <button onclick="testAddNewFunction()">➕ Add New Function</button>
+            <button onclick="testAddFeatureFlag()">🚩 Add Feature Flag</button>
+        </div>
+
+        <!-- Test 4: Command Execution -->
+        <div class="test-section">
+            <h3>Test 4: Command Execution</h3>
+            <p>Test command execution through MetaDSL.</p>
+
+            <button onclick="testGitStatus()">📊 Git Status</button>
+            <button onclick="testListFiles()">📁 List Files</button>
+        </div>
+
+        <!-- Test 5: Advanced Self-Bootstrapping -->
+        <div class="test-section">
+            <h3>Test 5: Advanced Self-Bootstrapping</h3>
+            <p>Complete self-update and self-improvement scenarios.</p>
+
+            <button onclick="testCompleteSelfUpdate()">🚀 Complete Self-Update</button>
+            <button onclick="testAutoOptimization()">⚡ Auto Optimization</button>
+            <button onclick="testSelfHealing()">🩺 Self-Healing</button>
+        </div>
+
+        <!-- Custom MetaDSL Test -->
+        <div class="test-section">
+            <h3>Test 6: Custom MetaDSL Script</h3>
+            <p>Execute custom MetaDSL script.</p>
+
+            <textarea id="customScript" class="code-block"
+                placeholder="Enter your MetaDSL script here..."
+                rows="6" style="width: 100%;">read_file('managed/Script.dsl');</textarea>
+
+            <button onclick="executeCustomScript()">▶️ Execute Custom Script</button>
+        </div>
+
+        <!-- Output -->
+        <h2>📤 Output</h2>
+        <div id="output">
+            <div class="info">[System] Ready. Click a test button to begin...</div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="test-section" style="background: #e3f2fd; border-left-color: #2196f3;">
+            <h3>📖 Instructions</h3>
+            <ol>
+                <li>Ensure cefclient is running with inject.js loaded</li>
+                <li>The status indicator will show when the agent is connected</li>
+                <li>Click test buttons to execute various scenarios</li>
+                <li>Watch the output for results and errors</li>
+                <li>Check the actual files to verify modifications</li>
+            </ol>
+
+            <p><strong>Expected Behavior:</strong></p>
+            <ul>
+                <li>Hot reload should update components without restarting cefclient</li>
+                <li>MetaDSL operations should execute and modify files</li>
+                <li>Self-modification should add new capabilities to the agent</li>
+                <li>All operations should be logged in the output window</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Check if AgentAPI is available
+        function checkAgentStatus() {
+            if (typeof window.AgentAPI !== 'undefined') {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = '✅ Agent Connected';
+                log('[System] Agent API detected and ready', 'success');
+                return true;
+            } else {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = '⚠ Agent Not Connected';
+                log('[System] Agent API not found. Please run cefclient with inject.js loaded.', 'error');
+                return false;
+            }
+        }
+
+        // Logging function
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Test 1: Hot Reload
+        function testHotReloadAgentCore() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] Testing hot reload for AgentCore.dll...', 'info');
+            log('[Test 1] This will close the browser, update DLL, and reopen', 'warning');
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: 'hot_reload(\'agentcore\');'
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 1] ✓ AgentCore.dll hot reload initiated', 'success');
+                    log('[Test 1] Browser will close and reopen automatically...', 'info');
+                } else {
+                    log(`[Test 1] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testHotReloadScript() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] Script.dsl is auto-reloaded on every execution', 'info');
+            log('[Test 1] No manual reload needed - just modify the file', 'success');
+        }
+
+        function testHotReloadInject() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] inject.js reload requires page refresh', 'info');
+            log('[Test 1] Press F5 or Ctrl+R to reload inject.js', 'warning');
+
+            setTimeout(() => {
+                log('[Test 1] Refreshing page in 3 seconds...', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+            }, 1000);
+        }
+
+        // Test 2: File Operations
+        function testReadFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing read_file...', 'info');
+
+            const script = `read_file('managed/Script.dsl');`;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 2] ✓ File read: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testWriteFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing write_file...', 'info');
+
+            const script = `write_file('test_hotreload.txt', 'This file was created by hot reload test at ${new Date().toISOString()}');`;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 2] ✓ File created successfully: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testModifyFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing modify_file...', 'info');
+
+            const script = `
+                write_file('test_modify.txt', 'Original content');
+                replace_file('test_modify.txt', 'Original', 'Modified', false);
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 2] ✓ File modified successfully: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testDeleteFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing delete_file...', 'info');
+
+            const script = `delete_file('test_modify.txt');`;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 2] ✓ File deleted successfully: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        // Test 3: Self-Modification
+        function testSelfModify() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Testing self-modification...', 'info');
+            log('[Test 3] This will add a log statement to Script.dsl', 'warning');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'script(on_init)params()',
+                    '
+                        // Self-modified by hot reload test
+                        script(on_init)params()
+                    ',
+                    true
+                );
+                hot_reload('script');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 3] ✓ Self-modification completed successfully', 'success');
+                    log('[Test 3] Script.dsl has been updated and reloaded', 'success');
+                } else {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testAddNewFunction() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Adding new function via self-modification...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'return(0);',
+                    '
+                        // Auto-added function
+                        script(hot_reload_test_function)params($param)
+                        {
+                            nativelog("[dsl] Hot reload test function called with: {0}", $param);
+                            return(0);
+                        };
+
+                        return(0);
+                    ',
+                    true
+                );
+                hot_reload('script');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 3] ✓ New function added successfully', 'success');
+                } else {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testAddFeatureFlag() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Adding feature flag support...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'return(0);',
+                    '
+                        // Feature flag for hot reload testing
+                        @hot_reload_test_enabled = true;
+
+                        return(0);
+                    ',
+                    true
+                );
+                hot_reload('script');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 3] ✓ Feature flag added successfully', 'success');
+                } else {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        // Test 4: Command Execution
+        function testGitStatus() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 4] Executing git status...', 'info');
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: "execute_command('git status --short', '', '', 0);"
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 4] ✓ Command executed: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 4] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testListFiles() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 4] Listing files...', 'info');
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: "execute_command('dir managed', '', '', 0);"
+            }, (success, data, error) => {
+                if (success) {
+                    log(`[Test 4] ✓ Files listed: ${data.result}`, 'success');
+                } else {
+                    log(`[Test 4] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        // Test 5: Advanced Self-Bootstrapping
+        function testCompleteSelfUpdate() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5] Running complete self-update...', 'info');
+            log('[Test 5] This will modify Script.dsl and reload all components', 'warning');
+
+            const script = `
+                read_file('managed/Script.dsl');
+                write_file('test_hotreload_timestamp.txt', 'Self-update completed at ${new Date().toISOString()}');
+                hot_reload('all');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 5] ✓ Complete self-update successful', 'success');
+                    log('[Test 5] Check test_hotreload_timestamp.txt for verification', 'success');
+                } else {
+                    log(`[Test 5] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testAutoOptimization() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5] Testing auto-optimization...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    '// Optimization marker',
+                    '
+                        // Auto-optimized by self-bootstrapping
+                        // Cache enabled for better performance
+                        // Optimization marker
+                    ',
+                    true
+                );
+                hot_reload('script');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 5] ✓ Auto-optimization applied', 'success');
+                } else {
+                    log(`[Test 5] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        function testSelfHealing() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5] Testing self-healing capability...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'return(0);',
+                    '
+                        // Self-healing: Added error handling
+                        try {
+                            return(0);
+                        } catch {
+                            nativelog("[dsl] Self-healing activated");
+                            return(-1);
+                        }
+                    ',
+                    true
+                );
+                hot_reload('script');
+            `;
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 5] ✓ Self-healing mechanism added', 'success');
+                } else {
+                    log(`[Test 5] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        // Test 6: Custom Script
+        function executeCustomScript() {
+            if (!checkAgentStatus()) return;
+
+            const script = document.getElementById('customScript').value;
+
+            if (!script.trim()) {
+                log('[Test 6] Please enter a MetaDSL script', 'error');
+                return;
+            }
+
+            log('[Test 6] Executing custom MetaDSL script...', 'info');
+            log(`[Test 6] Script: ${script.substring(0, 100)}...`, 'info');
+
+            window.AgentAPI.sendToAgent('execute_metadsl', {
+                script: script
+            }, (success, data, error) => {
+                if (success) {
+                    log('[Test 6] ✓ Custom script executed successfully', 'success');
+                    log(`[Test 6] Result: ${data.result}`, 'info');
+                } else {
+                    log(`[Test 6] ✗ Failed: ${error}`, 'error');
+                }
+            });
+        }
+
+        // Initialize
+        window.onload = function() {
+            setInterval(checkAgentStatus, 5000);
+            checkAgentStatus();
+        };
+    </script>
+</body>
+</html>

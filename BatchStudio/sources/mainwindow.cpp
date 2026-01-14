@@ -100,10 +100,8 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     if (state.isValid()) {
         restoreState(state.toByteArray());
     }
-    m_ActionViewFolder->setChecked(m_DockFolder->isVisible());
-    m_ActionViewFiles->setChecked(m_DockFiles->isVisible());
-    m_ActionViewButtons->setChecked(m_DockButtons->isVisible());
-    m_ActionViewConsole->setChecked(m_DockConsole->isVisible());
+
+    // Note: Menu actions will be synced after refreshDockWidgets completes
     QTimer::singleShot(100, [=] {
         QSettings settings;
         const QStringList folders = settings.value("open_folders").toStringList();
@@ -219,18 +217,23 @@ QMenuBar *MainWindow::buildMenuBar()
     m_ActionViewFolder->setCheckable(true);
     connect(m_ActionViewFolder, &QAction::toggled, m_DockFolder, &QDockWidget::setVisible);
     connect(m_DockFolder, &QDockWidget::visibilityChanged, m_ActionViewFolder, &QAction::setChecked);
+    connect(m_DockFolder, &QDockWidget::visibilityChanged, this, &MainWindow::handleFolderDockVisibilityChanged);
     m_ActionViewFiles = view->addAction(tr("Files"));
     m_ActionViewFiles->setCheckable(true);
     connect(m_ActionViewFiles, &QAction::toggled, m_DockFiles, &QDockWidget::setVisible);
     connect(m_DockFiles, &QDockWidget::visibilityChanged, m_ActionViewFiles, &QAction::setChecked);
+    connect(m_DockFiles, &QDockWidget::visibilityChanged, this, &MainWindow::handleFilesDockVisibilityChanged);
     m_ActionViewButtons = view->addAction(tr("Buttons"));
     m_ActionViewButtons->setCheckable(true);
     connect(m_ActionViewButtons, &QAction::toggled, m_DockButtons, &QDockWidget::setVisible);
     connect(m_DockButtons, &QDockWidget::visibilityChanged, m_ActionViewButtons, &QAction::setChecked);
+    connect(m_DockButtons, &QDockWidget::visibilityChanged, this, &MainWindow::handleButtonsDockVisibilityChanged);
     m_ActionViewConsole = view->addAction(tr("Console"));
     m_ActionViewConsole->setCheckable(true);
     connect(m_ActionViewConsole, &QAction::toggled, m_DockConsole, &QDockWidget::setVisible);
     connect(m_DockConsole, &QDockWidget::visibilityChanged, m_ActionViewConsole, &QAction::setChecked);
+    connect(m_DockConsole, &QDockWidget::visibilityChanged, this, &MainWindow::handleConsoleDockVisibilityChanged);
+
     view->addSeparator();
     m_ActionViewToolBar = view->addAction(tr("Toolbar"));
     m_ActionViewToolBar->setCheckable(true);
@@ -673,8 +676,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (!maximized) {
         settings.setValue("app_size", size());
     }
+
+    // Save dock layout (includes positions, sizes and visibility)
     settings.setValue("dock_state", saveState());
+    settings.sync();
+
     QStringList folders;
+
     const int total1 = m_DirectoryTree->topLevelItemCount();
     for (int i = 0; i < total1; ++i) {
         folders << m_DirectoryTree->topLevelItem(i)->data(0, Qt::UserRole + 2).toString();
@@ -687,6 +695,57 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
     settings.setValue("open_files", QVariant::fromValue(files));
     settings.sync();
+}
+
+void MainWindow::changeEvent(QEvent *event)
+{
+    QMainWindow::changeEvent(event);
+    if (event->type() == QEvent::WindowStateChange) {
+        QWindowStateChangeEvent *stateEvent = static_cast<QWindowStateChangeEvent*>(event);
+        // Restore dock visibility when restoring from minimized state
+        if (!(windowState() & Qt::WindowMinimized) && (stateEvent->oldState() & Qt::WindowMinimized)) {
+            // Transitioning from minimized to normal, restore saved visibility
+            m_DockFolder->setVisible(m_DockFolderVisible);
+            m_DockFiles->setVisible(m_DockFilesVisible);
+            m_DockButtons->setVisible(m_DockButtonsVisible);
+            m_DockConsole->setVisible(m_DockConsoleVisible);
+
+            // Refresh the layout after visibility is restored
+            refreshDockWidgets(150);
+        }
+    }
+}
+
+void MainWindow::handleFolderDockVisibilityChanged(bool visible)
+{
+    // Update member variable to track Folder dock visibility (only when not minimized)
+    if (!(windowState() & Qt::WindowMinimized)) {
+        m_DockFolderVisible = visible;
+    }
+}
+
+void MainWindow::handleFilesDockVisibilityChanged(bool visible)
+{
+    // Update member variable to track Files dock visibility (only when not minimized)
+    if (!(windowState() & Qt::WindowMinimized)) {
+        m_DockFilesVisible = visible;
+    }
+}
+
+void MainWindow::handleButtonsDockVisibilityChanged(bool visible)
+{
+    // Update member variable to track Buttons dock visibility (only when not minimized)
+    if (!(windowState() & Qt::WindowMinimized)) {
+        m_DockButtonsVisible = visible;
+    }
+}
+
+void MainWindow::handleConsoleDockVisibilityChanged(bool visible)
+{
+    // Update member variable to track Console dock visibility (only when not minimized)
+    if (!(windowState() & Qt::WindowMinimized)) {
+        m_DockConsoleVisible = visible;
+    }
 }
 
 int MainWindow::findTabIndex(const QString& path)
@@ -1312,6 +1371,16 @@ void MainWindow::handleTabCloseRequested(const int index)
     if (m_TabEditors->count() == 0) {
         m_CentralStack->setCurrentIndex(0);
     }
+
+    // Save open files list immediately after closing a tab
+    QSettings settings;
+    QStringList files;
+    const int total2 = m_ModelOpenFiles->rowCount();
+    for (int i = 0; i < total2; ++i) {
+        files << m_ModelOpenFiles->index(i, 0).data(Qt::UserRole + 1).toString();
+    }
+    settings.setValue("open_files", QVariant::fromValue(files));
+    settings.sync();
 }
 
 void MainWindow::handleTreeContextMenu(const QPoint &point)
@@ -1637,12 +1706,16 @@ void MainWindow::refreshDockWidgets(int delay)
 {
     QTimer::singleShot(delay, [=] {
         QCoreApplication::processEvents();
+
+        // Force Buttons and Console docks to be visible (design requirement)
         m_DockButtons->setVisible(true);
         m_DockButtons->setFloating(false);
         m_DockButtons->setDockLocation(Qt::BottomDockWidgetArea);
         m_DockConsole->setVisible(true);
         m_DockConsole->setFloating(false);
         m_DockConsole->setDockLocation(Qt::BottomDockWidgetArea);
+
+        // Split tabified docks in bottom area
         auto&& tabs = tabifiedDockWidgets(m_DockButtons);
         if (tabs.size() > 0) {
             for (auto&& tab : tabs) {
@@ -1651,6 +1724,7 @@ void MainWindow::refreshDockWidgets(int delay)
         }
         splitDockWidget(m_DockButtons, m_DockConsole, Qt::Vertical);
 
+        // Split tabified docks in left area
         if (m_DockFolder->isVisible() || m_DockFiles->isVisible()) {
             m_DockFolder->setFloating(false);
             m_DockFiles->setFloating(false);
@@ -1661,8 +1735,16 @@ void MainWindow::refreshDockWidgets(int delay)
                     splitDockWidget(m_DockFolder, tab, Qt::Vertical);
                 }
             }
-            splitDockWidget(m_DockFolder, m_DockFiles, Qt::Vertical);
+            if (m_DockFolder->isVisible() && m_DockFiles->isVisible()) {
+                splitDockWidget(m_DockFolder, m_DockFiles, Qt::Vertical);
+            }
         }
+
+        // Sync menu actions with actual dock visibility after layout is finalized
+        m_DockFolderVisible = m_DockFolder->isVisible();
+        m_DockFilesVisible = m_DockFiles->isVisible();
+        m_DockButtonsVisible = m_DockButtons->isVisible();
+        m_DockConsoleVisible = m_DockConsole->isVisible();
     });
 }
 

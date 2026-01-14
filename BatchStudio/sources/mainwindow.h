@@ -40,6 +40,8 @@ public:
     void hideWindowsConsole();
 protected:
     void closeEvent(QCloseEvent *event);
+    void changeEvent(QEvent *event);
+
 private:
     QAction *m_ActionRun1;
     QAction *m_ActionRun2;
@@ -85,6 +87,10 @@ private:
     QLabel *m_StatusCursor;
     QLabel *m_StatusMessage;
     QTabWidget *m_TabEditors;
+    bool m_DockFolderVisible = true;
+    bool m_DockFilesVisible = false;
+    bool m_DockButtonsVisible = true;
+    bool m_DockConsoleVisible = true;
     QToolBar *buildMainToolBar();
     QMenuBar *buildMenuBar();
     QDockWidget *buildFolderDock();
@@ -147,6 +153,11 @@ private slots:
     void handleListViewContextMenu(const QPoint &point);
     void handleTreeDoubleClicked(const QModelIndex &index);
     void handleTreeSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+    void handleFolderDockVisibilityChanged(bool visible);
+    void handleFilesDockVisibilityChanged(bool visible);
+    void handleButtonsDockVisibilityChanged(bool visible);
+    void handleConsoleDockVisibilityChanged(bool visible);
+
 private:
     void openFile(const QString& file) { openFile(file, false, false, false); }
     void openFile(const QString& file, bool forceTxt, bool forceHex) { openFile(file, forceTxt, forceHex, false); }

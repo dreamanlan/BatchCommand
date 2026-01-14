@@ -17,6 +17,7 @@
 #include "DbgScpHook.h"
 #include "DebugScriptVM.h"
 #include "GpuCaptureManager.h"
+#include "ReadableRange/ReadableRange.h"
 
 #if defined(DBGSCP_ON_UNREAL)
 
@@ -687,6 +688,7 @@ extern "C" void LogOnTlsfAssert()
 }
 extern "C" void LogOnTlsfMemory(void* ptr)
 {
+    CED_OnCrash(ptr);
     DBGSCP_HOOK_VOID("LogOnTlsfMemory", ptr)
 }
 extern "C" void FlushDbgScpLog()

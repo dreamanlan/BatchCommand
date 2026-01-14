@@ -134,6 +134,7 @@
     <ClInclude Include="debug_break.h" />
     <ClInclude Include="GpuCaptureManager.h" />
     <ClInclude Include="pragma_diag.h" />
+    <ClInclude Include="ReadableRange\ReadableRange.h" />
     <ClInclude Include="rwlock.h" />
     <ClInclude Include="sema.h" />
   </ItemGroup>
@@ -142,6 +143,10 @@
     <ClCompile Include="DebugScriptVM.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="GpuCaptureManager_RenderDoc.cpp" />
+    <ClCompile Include="ReadableRange\ReadableRange.cpp" />
+    <ClCompile Include="ReadableRange\ReadableRangeAndroid.cpp" />
+    <ClCompile Include="ReadableRange\ReadableRangeIOS.cpp" />
+    <ClCompile Include="ReadableRange\ReadableRangeWin.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

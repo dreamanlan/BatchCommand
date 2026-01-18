@@ -6,6 +6,7 @@ using ScriptableFramework;
 using CefDotnetApp.AgentCore.Core;
 using CefDotnetApp.AgentCore.Models;
 using CefDotnetApp.AgentCore.Utils;
+using System.Text;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
@@ -14,14 +15,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            try
-            {
+            try {
                 string text = Core.AgentCore.Instance.ClipboardOps.GetText();
                 return BoxedValue.FromString(text);
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"getclipboard error: {ex.Message}");
+            catch (Exception ex) {
+                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"getclipboard error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -31,20 +30,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string text = operands[0].AsString;
-                bool result = Core.AgentCore.Instance.ClipboardOps.SetText(text);
-                return BoxedValue.From(result);
+            if (operands.Count >= 1) {
+                try {
+                    string text = operands[0].AsString;
+                    bool result = Core.AgentCore.Instance.ClipboardOps.SetText(text);
+                    return BoxedValue.From(result);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"setclipboard error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"setclipboard error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
+            return BoxedValue.From(false);
         }
     }
 
@@ -53,25 +49,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string fmt = operands[0].AsString;
-                var args = new object[operands.Count - 1];
-                for (int i = 1; i < operands.Count; i++)
-                {
-                    args[i - 1] = operands[i].GetObject();
+            if (operands.Count >= 1) {
+                try {
+                    string fmt = operands[0].AsString;
+                    var args = new object[operands.Count - 1];
+                    for (int i = 1; i < operands.Count; i++) {
+                        args[i - 1] = operands[i].GetObject();
+                    }
+                    Core.AgentCore.Instance.Logger.Info(fmt, args);
                 }
-                Core.AgentCore.Instance.Logger.Info(fmt, args);
-                return BoxedValue.NullObject;
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"loginfo error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"loginfo error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -79,25 +70,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string fmt = operands[0].AsString;
-                var args = new object[operands.Count - 1];
-                for (int i = 1; i < operands.Count; i++)
-                {
-                    args[i - 1] = operands[i].GetObject();
+            if (operands.Count >= 1) {
+                try {
+                    string fmt = operands[0].AsString;
+                    var args = new object[operands.Count - 1];
+                    for (int i = 1; i < operands.Count; i++) {
+                        args[i - 1] = operands[i].GetObject();
+                    }
+                    Core.AgentCore.Instance.Logger.Error(fmt, args);
                 }
-                Core.AgentCore.Instance.Logger.Error(fmt, args);
-                return BoxedValue.NullObject;
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"logerror error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"logerror error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -105,25 +91,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string fmt = operands[0].AsString;
-                var args = new object[operands.Count - 1];
-                for (int i = 1; i < operands.Count; i++)
-                {
-                    args[i - 1] = operands[i].GetObject();
+            if (operands.Count >= 1) {
+                try {
+                    string fmt = operands[0].AsString;
+                    var args = new object[operands.Count - 1];
+                    for (int i = 1; i < operands.Count; i++) {
+                        args[i - 1] = operands[i].GetObject();
+                    }
+                    Core.AgentCore.Instance.Logger.Warning(fmt, args);
                 }
-                Core.AgentCore.Instance.Logger.Warning(fmt, args);
-                return BoxedValue.NullObject;
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"logwarning error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"logwarning error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -132,20 +113,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string url = operands[0].AsString;
-                string result = Core.AgentCore.Instance.HttpClient.Get(url);
-                return BoxedValue.FromString(result);
+            if (operands.Count >= 1) {
+                try {
+                    string url = operands[0].AsString;
+                    string result = Core.AgentCore.Instance.HttpClient.Get(url);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"httpget error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"httpget error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -153,22 +131,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string url = operands[0].AsString;
-                string content = operands[1].AsString;
-                string contentType = operands.Count > 2 ? operands[2].AsString : "application/json";
-                string result = Core.AgentCore.Instance.HttpClient.Post(url, content, contentType);
-                return BoxedValue.FromString(result);
+            if (operands.Count >= 2) {
+                try {
+                    string url = operands[0].AsString;
+                    string content = operands[1].AsString;
+                    string contentType = operands.Count > 2 ? operands[2].AsString : "application/json";
+                    string result = Core.AgentCore.Instance.HttpClient.Post(url, content, contentType);
+                    return BoxedValue.FromString(result);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"httppost error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"httppost error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -176,197 +151,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string url = operands[0].AsString;
-                string savePath = operands[1].AsString;
-                bool result = Core.AgentCore.Instance.HttpClient.DownloadFile(url, savePath);
-                return BoxedValue.From(result);
+            if (operands.Count >= 2) {
+                try {
+                    string url = operands[0].AsString;
+                    string savePath = operands[1].AsString;
+                    bool result = Core.AgentCore.Instance.HttpClient.DownloadFile(url, savePath);
+                    return BoxedValue.From(result);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"downloadfile error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"downloadfile error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
-        }
-    }
-
-    // Task Management Operations
-    sealed class CreateTaskExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string title = operands[0].AsString;
-                string description = operands.Count > 1 ? operands[1].AsString : null;
-                var task = Core.AgentCore.Instance.TaskManager.CreateTask(title, description);
-                return BoxedValue.FromString(task.Id);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"createtask error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
-        }
-    }
-
-    sealed class UpdateTaskStatusExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string taskId = operands[0].AsString;
-                int statusValue = operands[1].GetInt();
-                AgentTaskStatus status = (AgentTaskStatus)statusValue;
-                string result = operands.Count > 2 ? operands[2].AsString : null;
-                bool success = Core.AgentCore.Instance.TaskManager.UpdateTaskStatus(taskId, status, result);
-                return BoxedValue.From(success);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"updatetaskstatus error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
-        }
-    }
-
-    sealed class GetTaskStatusExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1)
-                return BoxedValue.From(-1);
-
-            try
-            {
-                string taskId = operands[0].AsString;
-                var task = Core.AgentCore.Instance.TaskManager.GetTask(taskId);
-                if (task == null)
-                    return BoxedValue.From(-1);
-                return BoxedValue.From((int)task.Status);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"gettaskstatus error: {ex.Message}");
-                return BoxedValue.From(-1);
-            }
-        }
-    }
-
-    // LLM Interaction Operations
-    sealed class CreateConversationExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            try
-            {
-                string title = operands.Count > 0 ? operands[0].AsString : null;
-                var conversation = Core.AgentCore.Instance.LLMManager.CreateConversation(title);
-                return BoxedValue.FromString(conversation.Id);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"createconversation error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
-        }
-    }
-
-    sealed class AddMessageExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 3)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string conversationId = operands[0].AsString;
-                int roleValue = operands[1].GetInt();
-                string content = operands[2].AsString;
-                LLMRole role = (LLMRole)roleValue;
-                bool result = Core.AgentCore.Instance.LLMManager.AddMessage(conversationId, role, content);
-                return BoxedValue.From(result);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"addmessage error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
-        }
-    }
-
-    sealed class AddUserMessageExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string content = operands[0].AsString;
-                bool result = Core.AgentCore.Instance.LLMManager.AddMessageToCurrent(LLMRole.User, content);
-                return BoxedValue.From(result);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"addusermessage error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
-        }
-    }
-
-    sealed class AddAssistantMessageExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1)
-                return BoxedValue.From(false);
-
-            try
-            {
-                string content = operands[0].AsString;
-                bool result = Core.AgentCore.Instance.LLMManager.AddMessageToCurrent(LLMRole.Assistant, content);
-                return BoxedValue.From(result);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"addassistantmessage error: {ex.Message}");
-                return BoxedValue.From(false);
-            }
-        }
-    }
-
-    sealed class ExportConversationExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string conversationId = operands[0].AsString;
-                string result = Core.AgentCore.Instance.LLMManager.ExportConversation(conversationId);
-                return BoxedValue.FromString(result ?? string.Empty);
-            }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"exportconversation error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.From(false);
         }
     }
 
@@ -375,21 +171,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.FromString("null");
-
-            try
-            {
-                object obj = operands[0].GetObject();
-                bool prettyPrint = operands.Count > 1 ? operands[1].GetBool() : false;
-                string json = JsonHelper.ToJson(obj, prettyPrint);
-                return BoxedValue.FromString(json);
+            if (operands.Count >= 1) {
+                try {
+                    object obj = operands[0].GetObject();
+                    if (obj is IDictionary<BoxedValue, BoxedValue> dict) {
+                        obj = DslHelper.GetDictionaryFromBoxedValue(dict);
+                    }
+                    bool prettyPrint = operands.Count > 1 ? operands[1].GetBool() : false;
+                    string json = JsonHelper.ToJson(obj, prettyPrint);
+                    return BoxedValue.FromString(json);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"tojson error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"tojson error: {ex.Message}");
-                return BoxedValue.FromString("null");
-            }
+            return BoxedValue.FromString("null");
         }
     }
 
@@ -397,20 +193,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string json = operands[0].AsString;
-                object obj = JsonHelper.FromJson(json);
-                return BoxedValue.FromObject(obj);
+            if (operands.Count >= 1) {
+                try {
+                    string json = operands[0].AsString;
+                    object obj = JsonHelper.FromJson(json);
+                    return BoxedValue.FromObject(obj);
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"fromjson error: {ex.Message}");
-                return BoxedValue.NullObject;
-            }
+            return BoxedValue.NullObject;
         }
     }
 
@@ -418,53 +211,55 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            try
-            {
+            try {
                 // Create a dictionary to hold the key-value pairs
-                var dict = new Dictionary<string, object>();
+                var dict = new Dictionary<string, object?>();
 
                 // Parse key-value pairs from operands
                 // Format: key1, value1, key2, value2, ...
-                for (int i = 0; i + 1 < operands.Count; i += 2)
-                {
+                for (int i = 0; i + 1 < operands.Count; i += 2) {
                     string key = operands[i].AsString;
-                    object value = GetValueFromBoxedValue(operands[i + 1]);
+                    object? value = DslHelper.GetValueFromBoxedValue(operands[i + 1]);
                     dict[key] = value;
                 }
 
                 return BoxedValue.FromObject(dict);
             }
-            catch (Exception ex)
-            {
-                Core.AgentCore.Instance.Logger.Error($"newobject error: {ex.Message}");
+            catch (Exception ex) {
+                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"newobject error: {ex.Message}");
                 return BoxedValue.FromObject(new Dictionary<string, object>());
             }
         }
+    }
 
-        private object GetValueFromBoxedValue(BoxedValue boxed)
+    sealed class ToStringExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (boxed.IsNullObject) {
-                return null;
+            if (operands.Count >= 1) {
+                try {
+                    var v = operands[0];
+                    var sb = new StringBuilder();
+                    DslHelper.ConvertToString(v, sb, 0, true);
+                    return sb.ToString();
+                }
+                catch (Exception ex) {
+                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                }
             }
-            if (boxed.IsBoolean) {
-                return boxed.GetBool();
+            return string.Empty;
+        }
+    }
+
+    sealed class StringLengthExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count >= 1) {
+                string str = operands[0].AsString;
+                return BoxedValue.From(str.Length);
             }
-            if (boxed.IsInteger) {
-                if (boxed.Type == BoxedValue.c_LongType)
-                    return boxed.GetLong();
-                else
-                    return boxed.GetInt();
-            }
-            if (boxed.IsNumber) {
-                if (boxed.Type == BoxedValue.c_DoubleType)
-                    return boxed.GetDouble();
-                else
-                    return boxed.GetFloat();
-            }
-            if (boxed.IsString) {
-                return boxed.AsString;
-            }
-            return boxed.GetObject();
+            return -1;
         }
     }
 }

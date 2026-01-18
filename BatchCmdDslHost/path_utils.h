@@ -8,3 +8,7 @@ std::string GetExePath();
 // Returns directory part of the current executable path, UTF-8 encoded.
 // Returns empty string on failure.
 std::string GetExeDir();
+
+// Returns last directory name of the current executable path, UTF-8 encoded.
+// Returns empty string on failure.
+std::string GetExeLastDirName();

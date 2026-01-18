@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using CefDotnetApp.Interfaces;
 
 namespace CefDotnetApp.AgentCore.Core
@@ -13,6 +15,8 @@ namespace CefDotnetApp.AgentCore.Core
         private static readonly object _lock = new object();
         private static bool _isInitialized = false;
         private static string _basePath = string.Empty;
+        private static string _appDir = string.Empty;
+        private static bool _isMac = false;
 
         // Operation instances
         private FileOperations _fileOps;
@@ -20,14 +24,10 @@ namespace CefDotnetApp.AgentCore.Core
         private ClipboardOperations _clipboardOps;
         private LoggingAndDebugging _logger;
         private HttpClientOperations _httpClient;
-        private TaskManagement _taskManager;
-        private LLMInteraction _llmManager;
         private ProcessOperations _processOps;
         private ContextManagement _contextManager;
-        private CodeAnalysis _codeAnalyzer;
-        private TemplateEngine _templateEngine;
         private BrowserInteraction _browserOps;
-        private AgentMessageHandler _messageHandler;
+        private AgentBridge _agentBridge;
         private DotNetLib.NativeApi _nativeApi;
 
         // Public properties - return concrete types for full access
@@ -36,65 +36,65 @@ namespace CefDotnetApp.AgentCore.Core
         public ClipboardOperations ClipboardOps => _clipboardOps;
         public LoggingAndDebugging Logger => _logger;
         public HttpClientOperations HttpClient => _httpClient;
-        public TaskManagement TaskManager => _taskManager;
-        public LLMInteraction LLMManager => _llmManager;
         public ProcessOperations ProcessOps => _processOps;
         public ContextManagement ContextManager => _contextManager;
-        public CodeAnalysis CodeAnalyzer => _codeAnalyzer;
-        public TemplateEngine TemplateEngine => _templateEngine;
         public BrowserInteraction BrowserOps => _browserOps;
-        public AgentMessageHandler MessageHandler => _messageHandler;
+        public AgentBridge AgentBridge => _agentBridge;
 
         public static bool IsInitialized => _isInitialized;
         public static AgentCore Instance
         {
-            get
-            {
+            get {
                 if (!_isInitialized)
                     throw new InvalidOperationException("AgentCore not initialized. Call Initialize first.");
                 return _instance!;
             }
         }
 
-        private AgentCore(string basePath)
+        private AgentCore(string basePath, string appDir, bool isMac)
         {
             _basePath = basePath ?? Directory.GetCurrentDirectory();
+            _appDir = appDir ?? Directory.GetCurrentDirectory();
+            _isMac = isMac;
 
             // Initialize all operation instances
             _logger = new LoggingAndDebugging();
-            _fileOps = new FileOperations(basePath);
-            _diffOps = new DiffOperations(basePath);
+            _fileOps = new FileOperations(_basePath, _appDir, isMac);
+            _diffOps = new DiffOperations(_basePath, _appDir, isMac);
             _clipboardOps = new ClipboardOperations();
             _httpClient = new HttpClientOperations();
-            _taskManager = new TaskManagement();
-            _llmManager = new LLMInteraction();
             _processOps = new ProcessOperations();
             _contextManager = new ContextManagement();
-            _codeAnalyzer = new CodeAnalysis(basePath);
-            _templateEngine = new TemplateEngine(basePath);
             _browserOps = new BrowserInteraction(null, null);
-            _messageHandler = new AgentMessageHandler(null, msg => _logger.Info(msg));
+            _agentBridge = new AgentBridge(null, msg => _logger.Info(msg));
         }
 
-        public static void Initialize(string basePath)
+        public static void Initialize(string basePath, string appDir, bool isMac)
         {
             if (_isInitialized)
                 return;
 
-            lock (_lock)
-            {
+            lock (_lock) {
                 if (_isInitialized)
                     return;
 
-                _instance = new AgentCore(basePath);
+                // Initialize native library loader for TreeSitter
+                try {
+                    NativeLibraryLoader.Initialize();
+                }
+                catch (Exception ex) {
+                    // At this point, Logger instance is not yet available, use Console as fallback
+                    System.Console.WriteLine($"[AgentCore] Warning: Failed to initialize NativeLibraryLoader: {ex.Message}");
+                }
+
+                _instance = new AgentCore(basePath, appDir, isMac);
                 _isInitialized = true;
             }
         }
 
         public void SetNativeApi(DotNetLib.NativeApi nativeApi)
         {
-            if (nativeApi == null)
-            {
+            if (nativeApi == null) {
                 _logger.Warning("nativeApi is null");
                 return;
             }
@@ -103,40 +103,31 @@ namespace CefDotnetApp.AgentCore.Core
             _nativeApi = nativeApi;
 
             // Set native log action in LoggingAndDebugging
-            Action<string> nativeLogAction = msg =>
-            {
-                try
-                {
+            Action<string> nativeLogAction = msg => {
+                try {
                     nativeApi.NativeLog($"[Native] {msg}");
                 }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     _logger.Error($"[NativeLogError] {ex.Message}");
                 }
             };
             _logger.SetNativeLogAction(nativeLogAction);
 
             // Set JavaScript execution actions in BrowserInteraction
-            Action<string> executeJsAction = script =>
-            {
-                try
-                {
-                    nativeApi.ExecuteJavascript(script);
+            Action<string> executeJsAction = script => {
+                try {
+                    nativeApi.SendJavascriptCode(script);
                 }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     _logger.Error($"Error executing JavaScript: {ex.Message}");
                 }
             };
 
-            Action<string, string> callJsAction = (funcName, arg) =>
-            {
-                try
-                {
-                    nativeApi.CallJavascript1(funcName, arg);
+            Action<string, string[]> callJsAction = (funcName, args) => {
+                try {
+                    nativeApi.SendJavascriptCall(funcName, args);
                 }
-                catch (Exception ex)
-                {
+                catch (Exception ex) {
                     _logger.Error($"Error calling JavaScript function: {ex.Message}");
                 }
             };
@@ -144,20 +135,16 @@ namespace CefDotnetApp.AgentCore.Core
             _browserOps.SetExecuteJsAction(executeJsAction);
             _browserOps.SetCallJsAction(callJsAction);
 
-            // Set the SendToInject callback in AgentMessageHandler to send responses back to inject.js
-            Action<string> sendToInject = json =>
-            {
-                try
-                {
-                    nativeApi.CallJavascript1("window.onAgentResponse", json);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Error sending response to JavaScript: {ex.Message}");
-                }
-            };
-            _messageHandler.SetSendToInjectCallback(sendToInject);
+            // Set the ExecuteJsAction callback in AgentBridge to send commands to inject.js
+            _agentBridge.SetExecuteJsAction(callJsAction);
 
+            // Flush cached logs from NativeLibraryLoader
+            try {
+                NativeLibraryLoader.FlushLogsToLogger();
+            }
+            catch (Exception ex) {
+                _logger.Warning($"[AgentCore] Warning: Failed to flush NativeLibraryLoader logs: {ex.Message}");
+            }
             _logger.Info("NativeApi set successfully");
         }
 
@@ -166,63 +153,21 @@ namespace CefDotnetApp.AgentCore.Core
             return _nativeApi;
         }
 
-        /// <summary>
-        /// Trigger hot reload for a specific component
-        /// This is called from MetaDSL scripts via hot_reload() function
-        /// </summary>
-        public void TriggerHotReload(string component)
-        {
-            _logger.Info($"Triggering hot reload for component: {component}");
-
-            switch (component.ToLower())
-            {
-                case "agentcore":
-                    TriggerAgentCoreHotReload();
-                    break;
-                case "script":
-                    _logger.Info("Script.dsl hot reload scheduled (auto-reloaded on next execution)");
-                    break;
-                case "inject":
-                    _logger.Info("inject.js hot reload scheduled (requires page refresh)");
-                    break;
-                case "all":
-                    TriggerAgentCoreHotReload();
-                    _logger.Info("Script.dsl and inject.js hot reload scheduled");
-                    break;
-                default:
-                    _logger.Warning($"Unknown component for hot reload: {component}");
-                    break;
-            }
-        }
-
-        private void TriggerAgentCoreHotReload()
+        public void TriggerHotReload()
         {
             _logger.Info("Triggering AgentCore.dll hot reload...");
 
-            try
-            {
-                // Send hot_reload command to inject.js
-                // inject.js will use its CONFIG.hotReload configuration to get the paths
-                // and then call cefQuery to trigger the C++ hot reload handler
-                _browserOps.SendCommandToInject("hot_reload", new
+            try {
+                _agentBridge.SendCommandToInject("hot_reload", new Dictionary<string, object>
                 {
-                    component = "agentcore"
+                    { "component", "agentcore" }
                 });
 
                 _logger.Info("Hot reload command sent to inject.js");
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _logger.Error($"Error triggering AgentCore hot reload: {ex.Message}");
             }
-        }
-
-        public void OnReceiveJsMessage(string command, string parameters)
-        {
-            // HandleMessage expects JSON format, so we need to construct it
-            // For now, just pass the parameters directly if it's already JSON
-            // Otherwise, we might need to construct a proper JSON message
-            _messageHandler.HandleMessage(parameters);
         }
 
         public void Shutdown()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -7,7 +7,7 @@ using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
-    // applydiff(targetPath, diffPath) - apply unified diff patch to target file
+    // apply_diff(targetPath, diffPath) - apply unified diff patch to target file
     sealed class ApplyDiffExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -18,9 +18,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try
             {
                 string targetPath = operands[0].AsString;
-                string diffPath = operands[1].AsString;
+                string diffPathOrContent = operands[1].AsString;
+                bool isContent = operands.Count > 2 ? Convert.ToBoolean(operands[2].GetObject()) : false;
 
-                var result = Core.AgentCore.Instance.DiffOps.ApplyDiff(targetPath, diffPath);
+                var result = Core.AgentCore.Instance.DiffOps.ApplyDiff(targetPath, diffPathOrContent, isContent);
 
                 var resultObj = new Dictionary<string, object>
                 {
@@ -52,7 +53,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex)
             {
-                Core.AgentCore.Instance.Logger.Error($"applydiff error: {ex.Message}");
+                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydiff error: {ex.Message}");
                 var errorObj = new Dictionary<string, object>
                 {
                     { "success", false },
@@ -65,7 +66,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // applydifffull(targetPath, diffPath) - apply diff with full features (using LibGit2Sharp)
+    // apply_diff_full(targetPath, diffPath) - apply diff with full features (using LibGit2Sharp)
     sealed class ApplyDiffFullExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -113,7 +114,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex)
             {
-                Core.AgentCore.Instance.Logger.Error($"applydifffull error: {ex.Message}");
+                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydifffull error: {ex.Message}");
                 var errorObj = new Dictionary<string, object>
                 {
                     { "success", false },
@@ -127,7 +128,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // applydifflibgit2(targetPath, diffContent, createBackup) - apply diff using LibGit2Sharp native capabilities
+    // apply_diff_libgit2(targetPath, diffContent, createBackup) - apply diff using LibGit2Sharp native capabilities
     sealed class ApplyDiffLibGit2Exp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -175,7 +176,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex)
             {
-                Core.AgentCore.Instance.Logger.Error($"applydifflibgit2 error: {ex.Message}");
+                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydifflibgit2 error: {ex.Message}");
                 var errorObj = new Dictionary<string, object>
                 {
                     { "success", false },

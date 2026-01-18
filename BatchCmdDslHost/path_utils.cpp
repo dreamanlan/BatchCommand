@@ -23,6 +23,16 @@ static std::string GetDirFromPath(const std::string& path) {
 
     return path.substr(0, pos);
 }
+static std::string GetLastNameFromPath(const std::string& path) {
+    if (path.empty())
+        return std::string();
+
+    size_t pos = path.find_last_of("/\\");
+    if (pos == std::string::npos)
+        return path;
+
+    return path.substr(pos + 1);
+}
 
 std::string GetExePath() {
 #if defined(_WIN32)
@@ -81,4 +91,8 @@ std::string GetExePath() {
 
 std::string GetExeDir() {
     return GetDirFromPath(GetExePath());
+}
+
+std::string GetExeLastDirName() {
+    return GetLastNameFromPath(GetExeDir());
 }

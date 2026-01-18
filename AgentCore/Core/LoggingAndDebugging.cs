@@ -15,7 +15,7 @@ namespace CefDotnetApp.AgentCore.Core
         Fatal
     }
 
-    public class LoggingAndDebugging : ILoggingAndDebugging
+    public class LoggingAndDebugging
     {
         private readonly LogLevel _minLogLevel;
         private Action<string> _nativeLogAction;
@@ -34,16 +34,52 @@ namespace CefDotnetApp.AgentCore.Core
             if (level < _minLogLevel)
                 return;
 
-            try
-            {
+            try {
                 string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
                 string logEntry = FormatLogEntry(level, formattedMessage);
 
-                _nativeLogAction?.Invoke(logEntry);
+                if (_nativeLogAction != null)
+                {
+                    _nativeLogAction.Invoke(logEntry);
+                }
+                else
+                {
+                    // Fallback to file logging when NativeApi is not yet set
+                    // This allows logging during early initialization (e.g., NativeLibraryLoader)
+                    WriteToFallbackLog(logEntry);
+                }
             }
-            catch (Exception ex)
-            {
-                _nativeLogAction?.Invoke($"[LogError] Failed to log message: {ex.Message}");
+            catch (Exception ex) {
+                string errorMsg = $"[LogError] Failed to log message: {ex.Message}";
+                try {
+                    if (_nativeLogAction != null)
+                    {
+                        _nativeLogAction.Invoke(errorMsg);
+                    }
+                    else
+                    {
+                        WriteToFallbackLog(errorMsg);
+                    }
+                }
+                catch {
+                    // Silently fail - we're in early initialization
+                }
+            }
+        }
+
+        private static readonly object _fallbackLogLock = new object();
+        private void WriteToFallbackLog(string message)
+        {
+            try {
+                // Write to a fallback log file in the current directory
+                string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agentcore_early.log");
+                lock (_fallbackLogLock)
+                {
+                    System.IO.File.AppendAllText(logPath, message + Environment.NewLine);
+                }
+            }
+            catch {
+                // Silently fail - we're in early initialization
             }
         }
 
@@ -88,26 +124,22 @@ namespace CefDotnetApp.AgentCore.Core
 
         public void NativeLog(string message, params object[] args)
         {
-            try
-            {
+            try {
                 string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
                 _nativeLogAction?.Invoke(formattedMessage);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _nativeLogAction?.Invoke($"[NativeLogError] {ex.Message}");
             }
         }
 
         public void JavascriptLog(string message, params object[] args)
         {
-            try
-            {
+            try {
                 string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
                 _jsLogAction?.Invoke(formattedMessage);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 _nativeLogAction?.Invoke($"[JsLogError] {ex.Message}");
             }
         }

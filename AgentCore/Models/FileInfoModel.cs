@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace CefDotnetApp.AgentCore.Models
 {
@@ -21,8 +22,7 @@ namespace CefDotnetApp.AgentCore.Models
 
         public FileInfoModel(string path)
         {
-            if (System.IO.File.Exists(path))
-            {
+            if (System.IO.File.Exists(path)) {
                 var fileInfo = new System.IO.FileInfo(path);
                 Path = fileInfo.FullName;
                 Name = fileInfo.Name;
@@ -35,8 +35,7 @@ namespace CefDotnetApp.AgentCore.Models
                 IsReadOnly = fileInfo.IsReadOnly;
                 Exists = true;
             }
-            else if (System.IO.Directory.Exists(path))
-            {
+            else if (System.IO.Directory.Exists(path)) {
                 var dirInfo = new System.IO.DirectoryInfo(path);
                 Path = dirInfo.FullName;
                 Name = dirInfo.Name;
@@ -49,8 +48,7 @@ namespace CefDotnetApp.AgentCore.Models
                 IsReadOnly = false;
                 Exists = true;
             }
-            else
-            {
+            else {
                 Path = path;
                 Name = System.IO.Path.GetFileName(path);
                 Extension = System.IO.Path.GetExtension(path);
@@ -62,6 +60,41 @@ namespace CefDotnetApp.AgentCore.Models
                 IsReadOnly = false;
                 Exists = false;
             }
+        }
+
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.Append("Path:");
+            sb.Append(Path);
+            sb.Append(' ');
+            sb.Append("Name:");
+            sb.Append(Name);
+            sb.Append(' ');
+            sb.Append("Extension:");
+            sb.Append(Extension);
+            sb.Append(' ');
+            sb.Append("Size:");
+            sb.Append(Size);
+            sb.Append(' ');
+            sb.Append("Create:");
+            sb.Append(CreationTime);
+            sb.Append(' ');
+            sb.Append("LastWrite:");
+            sb.Append(LastWriteTime);
+            sb.Append(' ');
+            sb.Append("LastAccess:");
+            sb.Append(LastAccessTime);
+            sb.Append(' ');
+            sb.Append("IsDirectory:");
+            sb.Append(IsDirectory);
+            sb.Append(' ');
+            sb.Append("IsReadOnly:");
+            sb.Append(IsReadOnly);
+            sb.Append(' ');
+            sb.Append("Exists:");
+            sb.Append(Exists);
+            return sb.ToString();
         }
     }
 }

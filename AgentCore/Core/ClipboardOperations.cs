@@ -5,58 +5,50 @@ using CefDotnetApp.Interfaces;
 
 namespace CefDotnetApp.AgentCore.Core
 {
-    public class ClipboardOperations : IClipboardOperations
+    public class ClipboardOperations
     {
         public string GetText()
         {
-            try
-            {
+            try {
                 return ClipboardService.GetText() ?? string.Empty;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new InvalidOperationException("Failed to get clipboard text", ex);
             }
         }
 
         public bool SetText(string text)
         {
-            try
-            {
+            try {
                 if (text == null)
                     text = string.Empty;
 
                 ClipboardService.SetText(text);
                 return true;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new InvalidOperationException("Failed to set clipboard text", ex);
             }
         }
 
         public bool Clear()
         {
-            try
-            {
+            try {
                 ClipboardService.SetText(string.Empty);
                 return true;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new InvalidOperationException("Failed to clear clipboard", ex);
             }
         }
 
         public bool HasText()
         {
-            try
-            {
+            try {
                 string text = ClipboardService.GetText();
                 return !string.IsNullOrEmpty(text);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return false;
             }
         }

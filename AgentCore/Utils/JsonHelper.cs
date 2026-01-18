@@ -11,15 +11,13 @@ namespace CefDotnetApp.AgentCore.Utils
             if (obj == null)
                 return "null";
 
-            try
-            {
+            try {
                 JsonWriter writer = new JsonWriter();
                 writer.PrettyPrint = prettyPrint;
                 JsonMapper.ToJson(obj, writer);
                 return writer.ToString();
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 return $"{{\"error\": \"Failed to serialize: {ex.Message}\"}}";
             }
         }
@@ -29,12 +27,10 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(json))
                 return default(T);
 
-            try
-            {
+            try {
                 return JsonMapper.ToObject<T>(json);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return default(T);
             }
         }
@@ -44,12 +40,10 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(json))
                 return null;
 
-            try
-            {
+            try {
                 return JsonMapper.ToObject(json);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return null;
             }
         }
@@ -60,13 +54,11 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(json))
                 return false;
 
-            try
-            {
+            try {
                 result = JsonMapper.ToObject(json);
                 return true;
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return false;
             }
         }
@@ -76,13 +68,11 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(json))
                 return false;
 
-            try
-            {
+            try {
                 JsonMapper.ToObject(json);
                 return true;
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return false;
             }
         }

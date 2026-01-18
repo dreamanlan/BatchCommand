@@ -41,8 +41,7 @@ namespace CefDotnetApp.AgentCore.Utils
                 return path;
 
             if (!path.EndsWith(Path.DirectorySeparatorChar.ToString()) &&
-                !path.EndsWith(Path.AltDirectorySeparatorChar.ToString()))
-            {
+                !path.EndsWith(Path.AltDirectorySeparatorChar.ToString())) {
                 return path + Path.DirectorySeparatorChar;
             }
 

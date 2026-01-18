@@ -34,30 +34,70 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            BoxedValue r = BoxedValue.NullObject;
+            BoxedValue r = BoxedValue.EmptyString;
             if (operands.Count >= 1) {
                 var lines = operands[0].As<IList<string>>();
-                Regex regex = null;
-                if (operands.Count >= 2)
-                    regex = new Regex(operands[1].AsString, RegexOptions.Compiled);
-                var outLines = new List<string>();
+                var regex = operands[1].AsString;
+                int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
+                int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
                 if (null != lines) {
-                    int ct = lines.Count;
-                    for (int i = 0; i < ct; ++i) {
-                        string lineStr = lines[i];
-                        if (null != regex) {
-                            if (regex.IsMatch(lineStr)) {
-                                outLines.Add(lineStr);
-                            }
-                        }
-                        else {
-                            outLines.Add(lineStr);
-                        }
-                    }
-                    r = BoxedValue.FromObject(outLines);
+                    string result = GrepLines(lines, regex, contextLinesAfter, contextLinesBefore);
+                    r = BoxedValue.FromObject(result);
                 }
             }
             return r;
+        }
+
+        public string GrepLines(IList<string> lines, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        {
+            var matchedLineIndices = new HashSet<int>();
+            var result = new StringBuilder();
+
+            try {
+                var regex = new Regex(searchRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                for (int i = 0; i < lines.Count; i++) {
+                    if (regex.IsMatch(lines[i])) {
+                        matchedLineIndices.Add(i);
+                    }
+                }
+            }
+            catch (ArgumentException) {
+                // If regex is invalid, fall back to simple string search
+                for (int i = 0; i < lines.Count; i++) {
+                    if (lines[i].IndexOf(searchRegex, StringComparison.OrdinalIgnoreCase) >= 0) {
+                        matchedLineIndices.Add(i);
+                    }
+                }
+            }
+
+            if (matchedLineIndices.Count == 0) {
+                return $"No matches found for pattern: {searchRegex}";
+            }
+
+            // Build output with context lines
+            var outputLines = new SortedSet<int>();
+            foreach (var matchIndex in matchedLineIndices) {
+                int startLine = Math.Max(0, matchIndex - contextLinesBefore);
+                int endLine = Math.Min(lines.Count - 1, matchIndex + contextLinesAfter);
+                for (int i = startLine; i <= endLine; i++) {
+                    outputLines.Add(i);
+                }
+            }
+
+            var sortedLines = new List<int>(outputLines);
+            int lastLine = -2;
+            foreach (var lineIndex in sortedLines) {
+                if (lineIndex > lastLine + 1) {
+                    if (lastLine >= 0) {
+                        result.AppendLine("--");
+                    }
+                }
+                string prefix = matchedLineIndices.Contains(lineIndex) ? "* " : "  ";
+                result.AppendLine($"{prefix}{lineIndex + 1}: {lines[lineIndex]}");
+                lastLine = lineIndex;
+            }
+
+            return result.ToString();
         }
     }
 
@@ -1032,10 +1072,6 @@ namespace BatchCommand
 
     public sealed class BatchScript
     {
-        public static SortedList<string, string> ApiDocs
-        {
-            get { return s_Calculator.ApiDocs; }
-        }
         public static bool TimeStatisticOn
         {
             get { return s_TimeStatisticOn; }
@@ -1043,7 +1079,74 @@ namespace BatchCommand
         }
         public static string ScriptDirectory
         {
-            get { return s_ScriptDirectory; }
+            get {
+                if (null == s_ScriptDirectory) {
+                    s_ScriptDirectory = string.Empty;
+                }
+                return s_ScriptDirectory;
+            }
+        }
+        public static bool HasDslErrors
+        {
+            get { return DslErrorInfo.Length > 0; }
+        }
+        public static DslCalculator Calculator
+        {
+            get {
+                if (null == s_Calculator) {
+                    s_Calculator = new DslCalculator();
+                }
+                return s_Calculator;
+            }
+        }
+        public static List<string> EmptyStringList
+        {
+            get {
+                if (null == s_EmptyStringList) {
+                    s_EmptyStringList = new List<string>();
+                }
+                return s_EmptyStringList;
+            }
+        }
+        public static List<BoxedValue> EmptyBoxedValueList
+        {
+            get {
+                if (null == s_EmptyBoxedValueList) {
+                    s_EmptyBoxedValueList = new List<BoxedValue>();
+                }
+                return s_EmptyBoxedValueList;
+            }
+        }
+        public static StringBuilder DslErrorInfo
+        {
+            get {
+                if (null == s_DslErrorInfo) {
+                    s_DslErrorInfo = new StringBuilder();
+                }
+                return s_DslErrorInfo;
+            }
+        }
+        public static SortedList<string, string> UserApiDocs
+        {
+            get {
+                if (null == s_UserApiDocs) {
+                    s_UserApiDocs = new SortedList<string, string>();
+                }
+                return s_UserApiDocs;
+            }
+        }
+        public static SortedList<string, string> ApiDocs
+        {
+            get { return Calculator.ApiDocs; }
+        }
+
+        public static void ClearDslErrors()
+        {
+            DslErrorInfo.Clear();
+        }
+        public static string GetDslErrors()
+        {
+            return DslErrorInfo.ToString();
         }
         public static void Log(string fmt, params object[] args)
         {
@@ -1062,76 +1165,97 @@ namespace BatchCommand
             var provider = CodePagesEncodingProvider.Instance;
             Encoding.RegisterProvider(provider);
 #endif
-
-            s_Calculator.OnLog = msg => { Log(msg); };
-            s_Calculator.Init();
+            DslErrorInfo.Clear();
+            Calculator.OnLog = msg => { OnDslError(msg); };
+            Calculator.Init();
 
             //register Gm Command
-            s_Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
-            s_Calculator.Register("grep", "grep(lines[,regex]) api", new ExpressionFactoryHelper<GrepExp>());
-            s_Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
-            s_Calculator.Register("awk", "awk(lines,scp[,removeEmpties,sep1,sep2,...]) api", new ExpressionFactoryHelper<AwkExp>());
-            s_Calculator.Register("getscriptdir", "getscriptdir() api", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
-            s_Calculator.Register("pause", "pause() api", new ExpressionFactoryHelper<PauseExp>());
-            s_Calculator.Register("clear", "clear() api, clear console", new ExpressionFactoryHelper<ClearExp>());
-            s_Calculator.Register("write", "write(fmt,arg1,arg2,....) api, Console.Write", new ExpressionFactoryHelper<WriteExp>());
-            s_Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(two_chars_begin,two_chars_end){:txt:} api, Console.Write with macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<WriteBlockExp>());
-            s_Calculator.Register("block", "block{:txt:} or block(two_chars_begin,two_chars_end){:txt:} api, macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<BlockExp>());
-            s_Calculator.Register("readline", "readline() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
-            s_Calculator.Register("read", "read([nodisplay]) api, Console.Read", new ExpressionFactoryHelper<ReadExp>());
-            s_Calculator.Register("beep", "beep([frequence,duration]) api, Console.Beep, only on win32", new ExpressionFactoryHelper<BeepExp>());
-            s_Calculator.Register("gettitle", "gettitle() api, Console.Title, only on win32", new ExpressionFactoryHelper<GetTitleExp>());
-            s_Calculator.Register("settitle", "settitle(title) api", new ExpressionFactoryHelper<SetTitleExp>());
-            s_Calculator.Register("getbufferwidth", "getbufferwidth() api", new ExpressionFactoryHelper<GetBufferWidthExp>());
-            s_Calculator.Register("getbufferheight", "getbufferheight() api", new ExpressionFactoryHelper<GetBufferHeightExp>());
-            s_Calculator.Register("setbuffersize", "setbuffersize(width,height) api", new ExpressionFactoryHelper<SetBufferSizeExp>());
-            s_Calculator.Register("getcursorleft", "getcursorleft() api", new ExpressionFactoryHelper<GetCursorLeftExp>());
-            s_Calculator.Register("getcursortop", "getcursortop() api", new ExpressionFactoryHelper<GetCursorTopExp>());
-            s_Calculator.Register("setcursorpos", "setcursorpos(left,top) api", new ExpressionFactoryHelper<SetCursorPosExp>());
-            s_Calculator.Register("getbgcolor", "getbgcolor() api, return str", new ExpressionFactoryHelper<GetBgColorExp>());
-            s_Calculator.Register("setbgcolor", "setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetBgColorExp>());
-            s_Calculator.Register("getfgcolor", "getfgcolor() api, return str", new ExpressionFactoryHelper<GetFgColorExp>());
-            s_Calculator.Register("setfgcolor", "setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetFgColorExp>());
-            s_Calculator.Register("resetcolor", "resetcolor() api", new ExpressionFactoryHelper<ResetColorExp>());
-            s_Calculator.Register("setencoding", "setencoding([input[,output]]) api, def is UTF8", new ExpressionFactoryHelper<SetEncodingExp>());
-            s_Calculator.Register("getinputencoding", "getinputencoding() api, return Encoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
-            s_Calculator.Register("getoutputencoding", "getoutputencoding() api, return Encoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
-            s_Calculator.Register("console", "console() api, return typeof(Console)", new ExpressionFactoryHelper<ConsoleExp>());
-            s_Calculator.Register("encoding", "encoding() api, return typeof(Encoding)", new ExpressionFactoryHelper<EncodingExp>());
-            s_Calculator.Register("env", "env() api, return typeof(Environment)", new ExpressionFactoryHelper<EnvironmentExp>());
-            s_Calculator.Register("getclipboard", "getclipboard() api", new ExpressionFactoryHelper<GetClipboardExp>());
-            s_Calculator.Register("setclipboard", "setclipboard(txt) api", new ExpressionFactoryHelper<SetClipboardExp>());
-            s_Calculator.Register("regread", "regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
-            s_Calculator.Register("regwrite", "regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
-            s_Calculator.Register("regdelete", "regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
+            Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
+            Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());
+            Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
+            Calculator.Register("awk", "awk(lines,scp[,removeEmpties,sep1,sep2,...]) api", new ExpressionFactoryHelper<AwkExp>());
+            Calculator.Register("getscriptdir", "getscriptdir() api", new ExpressionFactoryHelper<GetScriptDirectoryExp>());
+            Calculator.Register("pause", "pause() api", new ExpressionFactoryHelper<PauseExp>());
+            Calculator.Register("clear", "clear() api, clear console", new ExpressionFactoryHelper<ClearExp>());
+            Calculator.Register("write", "write(fmt,arg1,arg2,....) api, Console.Write", new ExpressionFactoryHelper<WriteExp>());
+            Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(two_chars_begin,two_chars_end){:txt:} api, Console.Write with macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<WriteBlockExp>());
+            Calculator.Register("block", "block{:txt:} or block(two_chars_begin,two_chars_end){:txt:} api, macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<BlockExp>());
+            Calculator.Register("readline", "readline() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
+            Calculator.Register("read", "read([nodisplay]) api, Console.Read", new ExpressionFactoryHelper<ReadExp>());
+            Calculator.Register("beep", "beep([frequence,duration]) api, Console.Beep, only on win32", new ExpressionFactoryHelper<BeepExp>());
+            Calculator.Register("gettitle", "gettitle() api, Console.Title, only on win32", new ExpressionFactoryHelper<GetTitleExp>());
+            Calculator.Register("settitle", "settitle(title) api", new ExpressionFactoryHelper<SetTitleExp>());
+            Calculator.Register("getbufferwidth", "getbufferwidth() api", new ExpressionFactoryHelper<GetBufferWidthExp>());
+            Calculator.Register("getbufferheight", "getbufferheight() api", new ExpressionFactoryHelper<GetBufferHeightExp>());
+            Calculator.Register("setbuffersize", "setbuffersize(width,height) api", new ExpressionFactoryHelper<SetBufferSizeExp>());
+            Calculator.Register("getcursorleft", "getcursorleft() api", new ExpressionFactoryHelper<GetCursorLeftExp>());
+            Calculator.Register("getcursortop", "getcursortop() api", new ExpressionFactoryHelper<GetCursorTopExp>());
+            Calculator.Register("setcursorpos", "setcursorpos(left,top) api", new ExpressionFactoryHelper<SetCursorPosExp>());
+            Calculator.Register("getbgcolor", "getbgcolor() api, return str", new ExpressionFactoryHelper<GetBgColorExp>());
+            Calculator.Register("setbgcolor", "setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetBgColorExp>());
+            Calculator.Register("getfgcolor", "getfgcolor() api, return str", new ExpressionFactoryHelper<GetFgColorExp>());
+            Calculator.Register("setfgcolor", "setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White", new ExpressionFactoryHelper<SetFgColorExp>());
+            Calculator.Register("resetcolor", "resetcolor() api", new ExpressionFactoryHelper<ResetColorExp>());
+            Calculator.Register("setencoding", "setencoding([input[,output]]) api, def is UTF8", new ExpressionFactoryHelper<SetEncodingExp>());
+            Calculator.Register("getinputencoding", "getinputencoding() api, return Encoding", new ExpressionFactoryHelper<GetInputEncodingExp>());
+            Calculator.Register("getoutputencoding", "getoutputencoding() api, return Encoding", new ExpressionFactoryHelper<GetOutputEncodingExp>());
+            Calculator.Register("console", "console() api, return typeof(Console)", new ExpressionFactoryHelper<ConsoleExp>());
+            Calculator.Register("encoding", "encoding() api, return typeof(Encoding)", new ExpressionFactoryHelper<EncodingExp>());
+            Calculator.Register("env", "env() api, return typeof(Environment)", new ExpressionFactoryHelper<EnvironmentExp>());
+            Calculator.Register("getclipboard", "getclipboard() api", new ExpressionFactoryHelper<GetClipboardExp>());
+            Calculator.Register("setclipboard", "setclipboard(txt) api", new ExpressionFactoryHelper<SetClipboardExp>());
+            Calculator.Register("regread", "regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegReadExp>());
+            Calculator.Register("regwrite", "regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword", new ExpressionFactoryHelper<RegWriteExp>());
+            Calculator.Register("regdelete", "regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG", new ExpressionFactoryHelper<RegDeleteExp>());
         }
         public static void Register(string name, string doc, IExpressionFactory factory)
         {
-            s_Calculator.Register(name, doc, factory);
+            Register(name, doc, true, factory);
+        }
+        public static void Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory)
+        {
+            Calculator.Register(name, doc, factory);
+            if (addToUserApiDoc) {
+                AddUserApiDoc(name, doc);
+            }
+        }
+        public static void ClearUserApiDocs()
+        {
+            UserApiDocs.Clear();
+        }
+        public static void AddUserApiDoc(string name, string doc)
+        {
+            var userApiDocs = UserApiDocs;
+            if (userApiDocs.ContainsKey(name)) {
+                userApiDocs[name] = doc;
+            }
+            else {
+                userApiDocs.Add(name, doc);
+            }
         }
         public static void SetOnTryGetVariable(DslCalculator.TryGetVariableDelegation callback)
         {
-            s_Calculator.OnTryGetVariable = callback;
+            Calculator.OnTryGetVariable = callback;
         }
         public static void SetOnTrySetVariable(DslCalculator.TrySetVariableDelegation callback)
         {
-            s_Calculator.OnTrySetVariable = callback;
+            Calculator.OnTrySetVariable = callback;
         }
         public static void SetOnLoadFailback(DslCalculator.LoadFailbackDelegation callback)
         {
-            s_Calculator.OnLoadFailback = callback;
+            Calculator.OnLoadFailback = callback;
         }
         public static void Clear()
         {
-            s_Calculator.Clear();
+            Calculator.Clear();
         }
         public static void ClearGlobalVariables()
         {
-            s_Calculator.ClearGlobalVariables();
+            Calculator.ClearGlobalVariables();
         }
         public static bool TryGetGlobalVariable(string v, out BoxedValue result)
         {
-            return s_Calculator.TryGetGlobalVariable(v, out result);
+            return Calculator.TryGetGlobalVariable(v, out result);
         }
         public static BoxedValue GetGlobalVariable(string v)
         {
@@ -1140,16 +1264,16 @@ namespace BatchCommand
         }
         public static void SetGlobalVariable(string v, BoxedValue val)
         {
-            s_Calculator.SetGlobalVariable(v, val);
+            Calculator.SetGlobalVariable(v, val);
         }
         public static void Load(string scpFile)
         {
             var sdir = Path.GetDirectoryName(scpFile);
             sdir = Path.Combine(Environment.CurrentDirectory, sdir);
             s_ScriptDirectory = sdir;
-            s_Calculator.Clear();
+            Calculator.Clear();
             LoadDslHelper(scpFile);
-            Environment.SetEnvironmentVariable("scriptdir", s_ScriptDirectory);
+            Environment.SetEnvironmentVariable("scriptdir", ScriptDirectory);
         }
         public static void LoadIncludes(params string[] scpFiles)
         {
@@ -1163,28 +1287,28 @@ namespace BatchCommand
         }
         public static BoxedValue Run(string scpFile)
         {
-            return Run(scpFile, s_EmptyStringList, s_EmptyBoxedValueList);
+            return Run(scpFile, EmptyStringList, EmptyBoxedValueList);
         }
         public static BoxedValue Run(string scpFile, List<string> includes)
         {
-            return Run(scpFile, includes, s_EmptyBoxedValueList);
+            return Run(scpFile, includes, EmptyBoxedValueList);
         }
         public static BoxedValue Run(string scpFile, List<BoxedValue> args)
         {
-            return Run(scpFile, s_EmptyStringList, args);
+            return Run(scpFile, EmptyStringList, args);
         }
         public static BoxedValue Run(string scpFile, List<string> includes, List<BoxedValue> args)
         {
             var r = BoxedValue.NullObject;
             bool redirect = true;
-            var vargs = s_Calculator.NewCalculatorValueList();
+            var vargs = Calculator.NewCalculatorValueList();
             vargs.AddRange(args);
             while (redirect) {
                 Load(scpFile);
                 LoadIncludes(includes);
-                r = s_Calculator.Calc("main", vargs);
-                if (s_Calculator.RunState == RunStateEnum.Redirect) {
-                    s_Calculator.RunState = RunStateEnum.Normal;
+                r = Calculator.Calc("main", vargs);
+                if (Calculator.RunState == RunStateEnum.Redirect) {
+                    Calculator.RunState = RunStateEnum.Normal;
                     var list = r.As<IList>();
                     if (null == list || list.Count == 0) {
                         vargs.Clear();
@@ -1202,7 +1326,7 @@ namespace BatchCommand
                     redirect = false;
                 }
             }
-            s_Calculator.RecycleCalculatorValueList(vargs);
+            Calculator.RecycleCalculatorValueList(vargs);
             return r;
         }
         public static BoxedValue EvalAndRun(string code)
@@ -1212,7 +1336,7 @@ namespace BatchCommand
             var file = new Dsl.DslFile();
             file.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
-            if (file.LoadFromString(code, msg => { Log(msg); })) {
+            if (file.LoadFromString(code, msg => { OnDslError(msg); })) {
                 r = EvalAndRun(file.DslInfos);
             }
             return r;
@@ -1228,9 +1352,9 @@ namespace BatchCommand
             //If local variables are used, the code must run within the function context.
             BoxedValue r = BoxedValue.EmptyString;
             List<IExpression> exps = new List<IExpression>();
-            s_Calculator.LoadDsl(expressions, exps);
+            Calculator.LoadDsl(expressions, exps);
             try {
-                r = s_Calculator.CalcInCurrentContext(exps);
+                r = Calculator.CalcInCurrentContext(exps);
             }
             catch {
                 //For annotation purposes only
@@ -1245,10 +1369,10 @@ namespace BatchCommand
             var file = new Dsl.DslFile();
             file.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
-            if (file.LoadFromString(procCode, msg => { Log(msg); })) {
+            if (file.LoadFromString(procCode, msg => { OnDslError(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
                 Debug.Assert(null != func);
-                s_Calculator.LoadDsl(id, argNames, func);
+                Calculator.LoadDsl(id, argNames, func);
                 return id;
             }
             return string.Empty;
@@ -1257,16 +1381,16 @@ namespace BatchCommand
         {
             string id = System.Guid.NewGuid().ToString();
             Debug.Assert(null != func);
-            s_Calculator.LoadDsl(id, argNames, func);
+            Calculator.LoadDsl(id, argNames, func);
             return id;
         }
         public static List<BoxedValue> NewCalculatorValueList()
         {
-            return s_Calculator.NewCalculatorValueList();
+            return Calculator.NewCalculatorValueList();
         }
         public static void RecycleCalculatorValueList(List<BoxedValue> list)
         {
-            s_Calculator.RecycleCalculatorValueList(list);
+            Calculator.RecycleCalculatorValueList(list);
         }
         public static BoxedValue Call(string func)
         {
@@ -1327,7 +1451,7 @@ namespace BatchCommand
         }
         public static BoxedValue Call(string func, List<BoxedValue> args)
         {
-            var r = s_Calculator.Calc(func, args);
+            var r = Calculator.Calc(func, args);
             return r;
         }
         public static Encoding GetEncoding(BoxedValue v)
@@ -1355,21 +1479,36 @@ namespace BatchCommand
             DslFile dslFile = new DslFile();
             dslFile.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(dslFile);
-            if (!dslFile.Load(file, Log)) {
+            DslErrorInfo.Clear();
+            if (!dslFile.Load(file, OnDslError)) {
                 return;
             }
 
             foreach (ISyntaxComponent dslInfo in dslFile.DslInfos) {
-                s_Calculator.LoadDsl(dslInfo);
+                Calculator.LoadDsl(dslInfo);
             }
         }
+        private static void OnDslError(string err)
+        {
+            DslErrorInfo.AppendLine(err);
+            Log(err);
+        }
 
-        private static bool s_TimeStatisticOn = false;
-        private static string s_ScriptDirectory = string.Empty;
-        private static DslCalculator s_Calculator = new DslCalculator();
+        [ThreadStatic]
+        private static bool s_TimeStatisticOn;
+        [ThreadStatic]
+        private static string s_ScriptDirectory;
+        [ThreadStatic]
+        private static DslCalculator s_Calculator;
 
-        private static List<string> s_EmptyStringList = new List<string>();
-        private static List<BoxedValue> s_EmptyBoxedValueList = new List<BoxedValue>();
+        [ThreadStatic]
+        private static List<string> s_EmptyStringList;
+        [ThreadStatic]
+        private static List<BoxedValue> s_EmptyBoxedValueList;
+        [ThreadStatic]
+        private static StringBuilder s_DslErrorInfo;
+        [ThreadStatic]
+        private static SortedList<string, string> s_UserApiDocs;
     }
 }
 #pragma warning restore 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416

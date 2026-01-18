@@ -11,15 +11,14 @@ using CefDotnetApp.Interfaces;
 
 namespace CefDotnetApp.AgentCore.Core
 {
-    public class HttpClientOperations : IHttpClientOperations
+    public class HttpClientOperations
     {
         private readonly HttpClient _httpClient;
         private readonly Dictionary<string, string> _defaultHeaders;
 
         public HttpClientOperations(int timeoutSeconds = 30)
         {
-            _httpClient = new HttpClient
-            {
+            _httpClient = new HttpClient {
                 Timeout = TimeSpan.FromSeconds(timeoutSeconds)
             };
             _defaultHeaders = new Dictionary<string, string>();
@@ -42,8 +41,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         public string Get(string url, Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 AddHeaders(request, headers);
 
@@ -52,16 +50,14 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"GET request failed: {url}", ex);
             }
         }
 
         public byte[] GetBytes(string url, Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 AddHeaders(request, headers);
 
@@ -70,8 +66,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsByteArrayAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"GET bytes request failed: {url}", ex);
             }
         }
@@ -79,8 +74,7 @@ namespace CefDotnetApp.AgentCore.Core
         public string Post(string url, string content, string contentType = "application/json",
             Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(content, Encoding.UTF8, contentType);
                 AddHeaders(request, headers);
@@ -90,8 +84,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"POST request failed: {url}", ex);
             }
         }
@@ -99,8 +92,7 @@ namespace CefDotnetApp.AgentCore.Core
         public string PostForm(string url, Dictionary<string, string> formData,
             Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new FormUrlEncodedContent(formData);
                 AddHeaders(request, headers);
@@ -110,8 +102,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"POST form request failed: {url}", ex);
             }
         }
@@ -119,8 +110,7 @@ namespace CefDotnetApp.AgentCore.Core
         public string Put(string url, string content, string contentType = "application/json",
             Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Put, url);
                 request.Content = new StringContent(content, Encoding.UTF8, contentType);
                 AddHeaders(request, headers);
@@ -130,16 +120,14 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"PUT request failed: {url}", ex);
             }
         }
 
         public string Delete(string url, Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 var request = new HttpRequestMessage(HttpMethod.Delete, url);
                 AddHeaders(request, headers);
 
@@ -148,16 +136,14 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"DELETE request failed: {url}", ex);
             }
         }
 
         public bool DownloadFile(string url, string savePath, Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 byte[] data = GetBytes(url, headers);
 
                 string directory = Path.GetDirectoryName(savePath);
@@ -167,8 +153,7 @@ namespace CefDotnetApp.AgentCore.Core
                 File.WriteAllBytes(savePath, data);
                 return true;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"Download file failed: {url}", ex);
             }
         }
@@ -176,8 +161,7 @@ namespace CefDotnetApp.AgentCore.Core
         public string UploadFile(string url, string filePath, string fieldName = "file",
             Dictionary<string, string> formData = null, Dictionary<string, string> headers = null)
         {
-            try
-            {
+            try {
                 if (!File.Exists(filePath))
                     throw new FileNotFoundException($"File not found: {filePath}");
 
@@ -187,10 +171,8 @@ namespace CefDotnetApp.AgentCore.Core
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, fieldName, Path.GetFileName(filePath));
 
-                if (formData != null)
-                {
-                    foreach (var kvp in formData)
-                    {
+                if (formData != null) {
+                    foreach (var kvp in formData) {
                         content.Add(new StringContent(kvp.Value), kvp.Key);
                     }
                 }
@@ -204,18 +186,15 @@ namespace CefDotnetApp.AgentCore.Core
 
                 return response.Content.ReadAsStringAsync().Result;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new HttpRequestException($"Upload file failed: {url}", ex);
             }
         }
 
         private void AddHeaders(HttpRequestMessage request, Dictionary<string, string> headers)
         {
-            if (headers != null)
-            {
-                foreach (var kvp in headers)
-                {
+            if (headers != null) {
+                foreach (var kvp in headers) {
                     request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
                 }
             }

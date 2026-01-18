@@ -10,8 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.Diagnostics.Debugger.IsSupported"
-                                    Value="true" />
+    <Compile Remove="bak\**" />
+    <EmbeddedResource Remove="bak\**" />
+    <None Remove="bak\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Diagnostics.Debugger.IsSupported" Value="true" />
   </ItemGroup>
 
   <!-- PostBuild event commented out - BatchCommand.exe path needs to be fixed -->
@@ -49,8 +54,4 @@
       <HintPath>..\deps\TextCopy.dll</HintPath>
     </Reference>
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(ProjectDir)..\bin\Debug\net6.0\BatchCommand.exe $(OutDir)copy.dsl bat" />
-  </Target>
 </Project>

@@ -886,9 +886,11 @@ int CountMonitoredProcess(const char* cmd_line_key) {
     return monitor_count;
 }
 
-const char_t* dotnet_runtime_Config = L"./managed/BatchCmdDsl.runtimeconfig.json";
-const char_t* dotnet_assembly_path = L"./managed/BatchCmdDsl.dll";
-const char_t* dotnet_class_name = L"Program, BatchCmdDsl";
+static const char_t* local_managed_dll_dir = L"./";
+static const char_t* local_dotnet_runtime_dir = L"./dotnet/Microsoft.NETCore.App/9.0.2";
+static const char_t* dotnet_runtime_config = L"./managed/BatchCmdDsl.runtimeconfig.json";
+static const char_t* dotnet_assembly_path = L"./managed/BatchCmdDsl.dll";
+static const char_t* dotnet_class_name = L"Program, BatchCmdDsl";
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 // Function to initialize .NET Core runtime
 int load_hostfxr(int& out_rc)
@@ -962,16 +964,16 @@ int load_hostfxr(int& out_rc)
     // Initialize the .NET Core runtime
     hostfxr_initialize_parameters parameters{
         sizeof(hostfxr_initialize_parameters),
-        L"./",
-        L"./dotnet/Microsoft.NETCore.App/9.0.2"
+        local_managed_dll_dir,
+        local_dotnet_runtime_dir
     };
 
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(dotnet_runtime_Config, &parameters, &cxt);
+    int rc = init_config_fptr(dotnet_runtime_config, &parameters, &cxt);
     //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
 #else
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(dotnet_runtime_Config, nullptr, &cxt);
+    int rc = init_config_fptr(dotnet_runtime_config, nullptr, &cxt);
     //int rc = init_cmdline_fptr(argc, argv, nullptr, &cxt);
 #endif
 

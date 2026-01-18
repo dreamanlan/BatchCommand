@@ -6,12 +6,18 @@ using CefDotnetApp.Interfaces;
 
 namespace CefDotnetApp.AgentCore.Core
 {
-    public class BrowserInteraction : IBrowserInteraction
+    /// <summary>
+    /// BrowserInteraction - Unified entry point for browser interactions
+    /// Provides two main responsibilities:
+    /// 1. Build JavaScript code snippets for DOM operations (Build* methods)
+    /// 2. Execute JavaScript code in the browser (ExecuteJs/CallJsFunction methods)
+    /// </summary>
+    public class BrowserInteraction
     {
         private Action<string> _executeJsAction;
-        private Action<string, string> _callJsAction;
+        private Action<string, string[]> _callJsAction;
 
-        public BrowserInteraction(Action<string> executeJsAction = null, Action<string, string> callJsAction = null)
+        public BrowserInteraction(Action<string> executeJsAction = null, Action<string, string[]> callJsAction = null)
         {
             _executeJsAction = executeJsAction;
             _callJsAction = callJsAction;
@@ -303,8 +309,7 @@ namespace CefDotnetApp.AgentCore.Core
     if (!form) return;
 ");
 
-            foreach (var kvp in data)
-            {
+            foreach (var kvp in data) {
                 sb.AppendLine($"    {{ const el = form.querySelector('[name=\"{EscapeJsString(kvp.Key)}\"]'); if(el) el.value = '{EscapeJsString(kvp.Value)}'; }}");
             }
 
@@ -317,50 +322,19 @@ namespace CefDotnetApp.AgentCore.Core
             _executeJsAction?.Invoke(script);
         }
 
-        public void CallJsFunction(string functionName, string arg)
+        public void CallJsFunction(string functionName, params string[] args)
         {
-            _callJsAction?.Invoke(functionName, arg);
-        }
-
-        public void SendCommandToInject(string command, object parameters)
-        {
-            try
-            {
-                var options = new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-                };
-                string paramsJson = System.Text.Json.JsonSerializer.Serialize(parameters, options);
-                
-                // Build the command object
-                var cmd = new
-                {
-                    command = command,
-                    @params = paramsJson
-                };
-                
-                string cmdJson = System.Text.Json.JsonSerializer.Serialize(cmd, options);
-                
-                // Call inject.js function to handle the command
-                _callJsAction?.Invoke("window.onAgentCommand", cmdJson);
-            }
-            catch (Exception ex)
-            {
-                // Log error if possible
-                System.Diagnostics.Debug.WriteLine($"Error sending command to inject: {ex.Message}");
-            }
+            _callJsAction?.Invoke(functionName, args);
         }
 
         // Set or update the execute JavaScript action
         public void SetExecuteJsAction(Action<string> executeJsAction)
         {
-            var currentExecuteJs = _executeJsAction;
             _executeJsAction = executeJsAction;
         }
 
         // Set or update the call JavaScript function action
-        public void SetCallJsAction(Action<string, string> callJsAction)
+        public void SetCallJsAction(Action<string, string[]> callJsAction)
         {
             _callJsAction = callJsAction;
         }

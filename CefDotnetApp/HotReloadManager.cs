@@ -42,7 +42,7 @@ namespace DotNetLib
             WatchFile("Script.dsl", "managed", "DSL Script");
 
             // Watch inject.js
-            WatchFile("inject.js", "", "Inject Script");
+            WatchFile("inject.js", "managed", "Inject Script");
         }
 
         public void StopWatching()
@@ -52,8 +52,7 @@ namespace DotNetLib
 
             _enabled = false;
 
-            foreach (var watcher in _watchers.Values)
-            {
+            foreach (var watcher in _watchers.Values) {
                 watcher.EnableRaisingEvents = false;
                 watcher.Dispose();
             }
@@ -63,22 +62,19 @@ namespace DotNetLib
 
         private void WatchFile(string fileName, string relativePath, string fileType)
         {
-            try
-            {
+            try {
                 string fullPath = string.IsNullOrEmpty(relativePath)
                     ? Path.Combine(_basePath, fileName)
                     : Path.Combine(_basePath, relativePath, fileName);
 
                 string directory = Path.GetDirectoryName(fullPath) ?? _basePath;
 
-                if (!Directory.Exists(directory))
-                {
+                if (!Directory.Exists(directory)) {
                     Console.WriteLine($"[HotReload] Directory not found: {directory}");
                     return;
                 }
 
-                var watcher = new FileSystemWatcher(directory)
-                {
+                var watcher = new FileSystemWatcher(directory) {
                     Filter = fileName,
                     NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
                 };
@@ -91,16 +87,14 @@ namespace DotNetLib
 
                 Console.WriteLine($"[HotReload] Watching: {fileType} at {fullPath}");
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Console.WriteLine($"[HotReload] Failed to watch {fileType}: {ex.Message}");
             }
         }
 
         private void OnFileChanged(string filePath, string fileType)
         {
-            try
-            {
+            try {
                 // Debounce: wait a moment for file write to complete
                 System.Threading.Thread.Sleep(200);
 
@@ -108,8 +102,7 @@ namespace DotNetLib
 
                 // Check if file actually changed (avoid duplicate events)
                 if (_lastModified.TryGetValue(filePath, out var lastModified) &&
-                    currentModified <= lastModified.AddMilliseconds(100))
-                {
+                    currentModified <= lastModified.AddMilliseconds(100)) {
                     return;
                 }
 
@@ -119,8 +112,7 @@ namespace DotNetLib
 
                 _onFileChanged?.Invoke(filePath, fileType);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 Console.WriteLine($"[HotReload] Error handling file change: {ex.Message}");
             }
         }

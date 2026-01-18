@@ -69,13 +69,11 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
                 return false;
 
-            try
-            {
+            try {
                 RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
                 return Regex.IsMatch(str, pattern, options);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return false;
             }
         }
@@ -85,13 +83,11 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
                 return str;
 
-            try
-            {
+            try {
                 RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
                 return Regex.Replace(str, pattern, replacement, options);
             }
-            catch (Exception)
-            {
+            catch (Exception) {
                 return str;
             }
         }
@@ -104,8 +100,7 @@ namespace CefDotnetApp.AgentCore.Utils
             string indent = new string(' ', spaces);
             string[] lines = SplitLines(str);
 
-            for (int i = 0; i < lines.Length; i++)
-            {
+            for (int i = 0; i < lines.Length; i++) {
                 if (!string.IsNullOrWhiteSpace(lines[i]))
                     lines[i] = indent + lines[i];
             }
@@ -121,14 +116,12 @@ namespace CefDotnetApp.AgentCore.Utils
             string[] lines = SplitLines(str);
             int minIndent = int.MaxValue;
 
-            foreach (string line in lines)
-            {
+            foreach (string line in lines) {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
                 int indent = 0;
-                foreach (char c in line)
-                {
+                foreach (char c in line) {
                     if (c == ' ' || c == '\t')
                         indent++;
                     else
@@ -141,13 +134,33 @@ namespace CefDotnetApp.AgentCore.Utils
             if (minIndent == int.MaxValue || minIndent == 0)
                 return str;
 
-            for (int i = 0; i < lines.Length; i++)
-            {
+            for (int i = 0; i < lines.Length; i++) {
                 if (lines[i].Length >= minIndent)
                     lines[i] = lines[i].Substring(minIndent);
             }
 
             return JoinLines(lines);
         }
+
+        public static System.Collections.Generic.List<string> FindAllMatches(string str, string pattern, bool ignoreCase = false)
+        {
+            var matches = new System.Collections.Generic.List<string>();
+            if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
+                return matches;
+
+            try {
+                RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+                MatchCollection matchCollection = Regex.Matches(str, pattern, options);
+                foreach (Match match in matchCollection) {
+                    matches.Add(match.Value);
+                }
+            }
+            catch (Exception) {
+                // Return empty list on error
+            }
+
+            return matches;
+        }
     }
 }
+

@@ -10,7 +10,7 @@ using CefDotnetApp.Interfaces;
 
 namespace CefDotnetApp.AgentCore.Core
 {
-    public class ProcessOperations : IProcessOperations
+    public class ProcessOperations
     {
         private readonly Dictionary<string, Process> _processes;
         private readonly object _lockObject = new object();
@@ -22,10 +22,8 @@ namespace CefDotnetApp.AgentCore.Core
 
         public ProcessResult ExecuteCommand(string command, string arguments = null, string workingDirectory = null, int timeoutMs = 30000)
         {
-            try
-            {
-                var processInfo = new ProcessStartInfo
-                {
+            try {
+                var processInfo = new ProcessStartInfo {
                     FileName = command,
                     Arguments = arguments ?? string.Empty,
                     WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
@@ -40,16 +38,13 @@ namespace CefDotnetApp.AgentCore.Core
                 var outputBuilder = new StringBuilder();
                 var errorBuilder = new StringBuilder();
 
-                using (var process = new Process { StartInfo = processInfo })
-                {
-                    process.OutputDataReceived += (sender, e) =>
-                    {
+                using (var process = new Process { StartInfo = processInfo }) {
+                    process.OutputDataReceived += (sender, e) => {
                         if (e.Data != null)
                             outputBuilder.AppendLine(e.Data);
                     };
 
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
+                    process.ErrorDataReceived += (sender, e) => {
                         if (e.Data != null)
                             errorBuilder.AppendLine(e.Data);
                     };
@@ -62,11 +57,9 @@ namespace CefDotnetApp.AgentCore.Core
                     bool exited = process.WaitForExit(timeoutMs);
                     var endTime = DateTime.Now;
 
-                    if (!exited)
-                    {
+                    if (!exited) {
                         process.Kill();
-                        return new ProcessResult
-                        {
+                        return new ProcessResult {
                             Success = false,
                             ExitCode = -1,
                             Output = outputBuilder.ToString(),
@@ -75,8 +68,7 @@ namespace CefDotnetApp.AgentCore.Core
                         };
                     }
 
-                    return new ProcessResult
-                    {
+                    return new ProcessResult {
                         Success = process.ExitCode == 0,
                         ExitCode = process.ExitCode,
                         Output = outputBuilder.ToString(),
@@ -85,10 +77,8 @@ namespace CefDotnetApp.AgentCore.Core
                     };
                 }
             }
-            catch (Exception ex)
-            {
-                return new ProcessResult
-                {
+            catch (Exception ex) {
+                return new ProcessResult {
                     Success = false,
                     ExitCode = -1,
                     Output = string.Empty,
@@ -100,10 +90,8 @@ namespace CefDotnetApp.AgentCore.Core
 
         public async Task<ProcessResult> ExecuteCommandAsync(string command, string arguments = null, string workingDirectory = null, int timeoutMs = 30000, CancellationToken cancellationToken = default)
         {
-            try
-            {
-                var processInfo = new ProcessStartInfo
-                {
+            try {
+                var processInfo = new ProcessStartInfo {
                     FileName = command,
                     Arguments = arguments ?? string.Empty,
                     WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
@@ -118,16 +106,13 @@ namespace CefDotnetApp.AgentCore.Core
                 var outputBuilder = new StringBuilder();
                 var errorBuilder = new StringBuilder();
 
-                using (var process = new Process { StartInfo = processInfo })
-                {
-                    process.OutputDataReceived += (sender, e) =>
-                    {
+                using (var process = new Process { StartInfo = processInfo }) {
+                    process.OutputDataReceived += (sender, e) => {
                         if (e.Data != null)
                             outputBuilder.AppendLine(e.Data);
                     };
 
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
+                    process.ErrorDataReceived += (sender, e) => {
                         if (e.Data != null)
                             errorBuilder.AppendLine(e.Data);
                     };
@@ -141,20 +126,16 @@ namespace CefDotnetApp.AgentCore.Core
                     process.EnableRaisingEvents = true;
                     process.Exited += (sender, args) => tcs.TrySetResult(true);
 
-                    using (cancellationToken.Register(() =>
-                    {
+                    using (cancellationToken.Register(() => {
                         tcs.TrySetCanceled();
                         try { process.Kill(); } catch { }
-                    }))
-                    {
+                    })) {
                         var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs, cancellationToken));
                         var endTime = DateTime.Now;
 
-                        if (completedTask != tcs.Task)
-                        {
+                        if (completedTask != tcs.Task) {
                             try { process.Kill(); } catch { }
-                            return new ProcessResult
-                            {
+                            return new ProcessResult {
                                 Success = false,
                                 ExitCode = -1,
                                 Output = outputBuilder.ToString(),
@@ -163,8 +144,7 @@ namespace CefDotnetApp.AgentCore.Core
                             };
                         }
 
-                        return new ProcessResult
-                        {
+                        return new ProcessResult {
                             Success = process.ExitCode == 0,
                             ExitCode = process.ExitCode,
                             Output = outputBuilder.ToString(),
@@ -174,10 +154,8 @@ namespace CefDotnetApp.AgentCore.Core
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                return new ProcessResult
-                {
+            catch (Exception ex) {
+                return new ProcessResult {
                     Success = false,
                     ExitCode = -1,
                     Output = string.Empty,
@@ -189,15 +167,12 @@ namespace CefDotnetApp.AgentCore.Core
 
         public string StartProcess(string processId, string command, string arguments = null, string workingDirectory = null)
         {
-            lock (_lockObject)
-            {
-                if (_processes.ContainsKey(processId))
-                {
+            lock (_lockObject) {
+                if (_processes.ContainsKey(processId)) {
                     throw new InvalidOperationException($"Process with ID '{processId}' already exists");
                 }
 
-                var processInfo = new ProcessStartInfo
-                {
+                var processInfo = new ProcessStartInfo {
                     FileName = command,
                     Arguments = arguments ?? string.Empty,
                     WorkingDirectory = workingDirectory ?? Directory.GetCurrentDirectory(),
@@ -220,16 +195,13 @@ namespace CefDotnetApp.AgentCore.Core
 
         public bool StopProcess(string processId, int timeoutMs = 5000)
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
                     return false;
 
                 var process = _processes[processId];
-                try
-                {
-                    if (!process.HasExited)
-                    {
+                try {
+                    if (!process.HasExited) {
                         process.Kill();
                         bool exited = process.WaitForExit(timeoutMs);
                         if (!exited)
@@ -240,8 +212,7 @@ namespace CefDotnetApp.AgentCore.Core
                     process.Dispose();
                     return true;
                 }
-                catch
-                {
+                catch {
                     return false;
                 }
             }
@@ -249,8 +220,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         public bool IsProcessRunning(string processId)
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
                     return false;
 
@@ -261,18 +231,15 @@ namespace CefDotnetApp.AgentCore.Core
 
         public string ReadProcessOutput(string processId)
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
                     return null;
 
                 var process = _processes[processId];
-                try
-                {
+                try {
                     return process.StandardOutput.ReadToEnd();
                 }
-                catch
-                {
+                catch {
                     return null;
                 }
             }
@@ -280,18 +247,15 @@ namespace CefDotnetApp.AgentCore.Core
 
         public string ReadProcessError(string processId)
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
                     return null;
 
                 var process = _processes[processId];
-                try
-                {
+                try {
                     return process.StandardError.ReadToEnd();
                 }
-                catch
-                {
+                catch {
                     return null;
                 }
             }
@@ -299,20 +263,17 @@ namespace CefDotnetApp.AgentCore.Core
 
         public bool WriteProcessInput(string processId, string input)
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
                     return false;
 
                 var process = _processes[processId];
-                try
-                {
+                try {
                     process.StandardInput.WriteLine(input);
                     process.StandardInput.Flush();
                     return true;
                 }
-                catch
-                {
+                catch {
                     return false;
                 }
             }
@@ -320,21 +281,16 @@ namespace CefDotnetApp.AgentCore.Core
 
         public void StopAllProcesses()
         {
-            lock (_lockObject)
-            {
-                foreach (var kvp in _processes)
-                {
-                    try
-                    {
-                        if (!kvp.Value.HasExited)
-                        {
+            lock (_lockObject) {
+                foreach (var kvp in _processes) {
+                    try {
+                        if (!kvp.Value.HasExited) {
                             kvp.Value.Kill();
                             kvp.Value.WaitForExit(5000);
                         }
                         kvp.Value.Dispose();
                     }
-                    catch
-                    {
+                    catch {
                         // Ignore errors during cleanup
                     }
                 }
@@ -344,13 +300,10 @@ namespace CefDotnetApp.AgentCore.Core
 
         public List<string> GetRunningProcessIds()
         {
-            lock (_lockObject)
-            {
+            lock (_lockObject) {
                 var runningIds = new List<string>();
-                foreach (var kvp in _processes)
-                {
-                    if (!kvp.Value.HasExited)
-                    {
+                foreach (var kvp in _processes) {
+                    if (!kvp.Value.HasExited) {
                         runningIds.Add(kvp.Key);
                     }
                 }

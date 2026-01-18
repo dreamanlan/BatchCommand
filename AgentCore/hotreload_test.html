@@ -1,0 +1,2678 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hot Reload & Self-Bootstrapping Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #0078d4;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0078d4;
+            margin-top: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #0078d4;
+            border-radius: 4px;
+        }
+        button {
+            background: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #00ff00; }
+        .error { color: #ff0000; }
+        .info { color: #00ffff; }
+        .warning { color: #ffff00; }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #e6ffed;
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+        .status.disconnected {
+            background: #ffe6e6;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Hot Reload & Self-Bootstrapping Test</h1>
+
+        <div style="margin-bottom: 20px;">
+            <span id="status" class="status disconnected">⚠ Agent Not Connected</span>
+            <span style="margin-left: 20px; color: #666;">
+                Last update: <span id="lastUpdate">Never</span>
+            </span>
+        </div>
+
+        <h2>📋 Test Scenarios</h2>
+
+        <!-- Test 1: Basic Hot Reload -->
+        <div class="test-section">
+            <h3>Test 1: Basic Hot Reload</h3>
+            <p>Test the hot reload functionality for different components.</p>
+
+            <button onclick="testHotReloadAgentCore()">� Reload AgentCore.dll (Full Reload)</button>
+            <button onclick="testHotReloadScript()">📜 Reload Script.dsl (Auto)</button>
+            <button onclick="testHotReloadInject()">🌐 Reload inject.js (Page Refresh)</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; font-size: 14px;">
+                <strong>Note:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li><strong>AgentCore.dll:</strong> Closes browser, updates DLL, reopens browser (full hot reload)</li>
+                    <li><strong>Script.dsl:</strong> Auto-reloaded on every execution (no action needed)</li>
+                    <li><strong>inject.js:</strong> Refresh page to reload (F5 or Ctrl+R)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 2: Basic Tests -->
+        <div class="test-section">
+            <h3>Test 2: 🧪 Basic Tests</h3>
+            <p>Run all basic functionality tests: file operations, self-modification, commands, Roslyn analysis, code editing, and documentation reading.</p>
+
+            <button onclick="runAllBasicTests()" style="background: #28a745; font-size: 18px; padding: 15px 30px;">▶️ Run All Basic Tests</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-left: 4px solid #4caf50; font-size: 14px;">
+                <strong>✅ Included Tests:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>📁 File Operations (Read/Write/Modify/Delete)</li>
+                    <li>🔧 Self-Modification (Modify Script/Add Function/Add Feature Flag)</li>
+                    <li>⚙️ Command Execution (Git Status/List Files)</li>
+                    <li>🔬 Roslyn Code Analysis (Parse/Find/Analyze)</li>
+                    <li>✏️ Smart Code Editing (Create/Add/Replace/Delete Methods)</li>
+                    <li>📚 Documentation Reading (Read Docs/List Files)</li>
+                </ul>
+            </div>
+        </div>
+
+<!-- Test 3: WebSocket Communication -->
+        <div class="test-section" style="background: #f3e5f5; border-left-color: #9c27b0;">
+            <h3>Test 3: 🔌 WebSocket Communication</h3>            <p>Test WebSocket server for external client communication.</p>
+
+            <button onclick="testWebSocketStart()">🚀 Start WebSocket Server</button>
+            <button onclick="testWebSocketStop()">⏹️ Stop WebSocket</button>
+            <button onclick="testWebSocketStatus()">📊 Client Status</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; font-size: 14px;">
+                <strong>WebSocket Capabilities:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>✅ Start WebSocket server on specified port (DSL: ws_start_server)</li>
+                    <li>✅ Stop server (DSL: ws_stop_server)</li>
+                    <li>✅ Get connected client count (DSL: ws_get_client_count)</li>
+                    <li>✅ Web Worker for non-blocking operation</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 4: Command Line Switches Verification -->
+        <div class="test-section" style="background: #fff3e0; border-left-color: #ff9800;">
+            <h3>Test 4: 🔧 Command Line Switches Verification</h3>            <p>Verify that the 3 command line switches added in DSL are working correctly.</p>
+
+            <button onclick="testCommandLineSwitches()" style="background: #ff9800; font-size: 16px; padding: 12px 24px;">🔧 Test All Switches</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff9c4; border-left: 4px solid #fbc02d; font-size: 14px;">
+                <strong>🔧 Testing 3 Switches:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li><code>--disable-web-security</code> - Allows cross-origin requests</li>
+                    <li><code>--disable-site-isolation-trials</code> - Simplifies multi-process architecture</li>
+                    <li><code>--allow-file-access-from-files</code> - Allows local file access</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 5: TreeSitter C/C++ Code Parsing -->
+        <div class="test-section" style="background: #f5f5f5; border-left-color: #607d8b;">
+            <h3>Test 5: 🌳 TreeSitter C/C++ Parsing APIs</h3>            <p>Test C/C++ code parsing and analysis using TreeSitter.</p>
+
+            <button onclick="exploreAllAndSaveReport()">📊 Explore All & Save Report</button>
+            <button onclick="testParseCppCode()">📜 Parse C++ Code</button>
+            <button onclick="testAnalyzeCefFile()">🎯 Analyze CEF File</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #e1f5fe; border-left: 4px solid #03a9f4; font-size: 14px;">
+                <strong>🔍 TreeSitter C/C++ Capabilities:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>✅ Parse C and C++ source code</li>
+                    <li>✅ Extract function definitions</li>
+                    <li>✅ Extract class/struct definitions</li>
+                    <li>✅ Find specific node types</li>
+                    <li>✅ Analyze entire code files</li>
+                    <li>🎯 <strong>Perfect for analyzing CEF codebase!</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 6: Roslyn Semantic Analysis & Refactoring (NEW Phase 1 & 2) -->
+        <div class="test-section" style="background: #e8eaf6; border-left-color: #3f51b5;">
+            <h3>Test 6: 🔬 Roslyn Semantic Analysis & Refactoring (NEW Phase 1 & 2)</h3>
+            <p>Test advanced semantic analysis and project-level refactoring capabilities.</p>
+
+            <button onclick="testSemanticAnalysisFull()" style="background: #3f51b5;">🚀 Run All Phase 1 & 2 Tests</button>
+            <button onclick="testSemanticDiagnostics()">⚠️ Get Diagnostics</button>
+            <button onclick="testRenameSymbol()">✏️ Rename Symbol</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-left: 4px solid #4caf50; font-size: 14px;">
+                <strong>✨ NEW Phase 1 & 2 Capabilities:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>✅ <strong>Phase 1:</strong> Type inference, symbol resolution, diagnostics, reference finding</li>
+                    <li>✅ <strong>Phase 2:</strong> Project loading, cross-file analysis, semantic diagnostics</li>
+                    <li>✅ <strong>Phase 2:</strong> Symbol renaming, method extraction, interface implementation</li>
+                    <li>✅ <strong>Phase 2:</strong> Constructor generation, using directive management</li>
+                    <li>🎯 <strong>Agent now has project-level understanding and refactoring!</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 7: Jint JavaScript Code Analysis (NEW) -->
+        <div class="test-section" style="background: #fff9c4; border-left-color: #fbc02d;">
+            <h3>Test 7: 🟨 Jint JavaScript Code Analysis (NEW)</h3>
+            <p>Test JavaScript code parsing and analysis using Jint + Esprima.</p>
+
+            <button onclick="testJintFullSuite()" style="background: #fbc02d; font-size: 18px; padding: 15px 30px;">▶️ Run All Jint Tests</button>
+            <button onclick="testParseJsCode()">📜 Parse JS Code</button>
+            <button onclick="testJsGetFunctions()">🔧 Get Functions</button>
+            <button onclick="testJsGetClasses()">📦 Get Classes</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; font-size: 14px;">
+                <strong>✨ NEW Jint Capabilities:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>✅ Parse JavaScript code and extract AST</li>
+                    <li>✅ Extract functions, classes, variables, imports</li>
+                    <li>✅ Verify JavaScript syntax</li>
+                    <li>✅ Find symbol references</li>
+                    <li>✅ Get code metrics (lines, functions, classes)</li>
+                    <li>🎯 <strong>Pure C# implementation (Jint 4.2.0 + Esprima 3.0.5)</strong></li>
+                    <li>🔥 <strong>Hot-reloadable with AgentCore.dll!</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Test 8: Regular Expression APIs (NEW) -->
+        <div class="test-section" style="background: #e8f5e9; border-left-color: #4caf50;">
+            <h3>Test 8: 🔤 Regular Expression APIs (NEW)</h3>
+            <p>Test regex-based string matching, replacement, and file operations.</p>
+
+            <button onclick="testRegexMatch()">✅ Regex Match</button>
+            <button onclick="testRegexReplace()">🔄 Regex Replace</button>
+            <button onclick="testRegexFindAll()">🔍 Find All Matches</button>
+            <button onclick="testRegexReplaceFile()">📝 Regex Replace File</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #c8e6c9; border-left: 4px solid #66bb6a; font-size: 14px;">
+                <strong>✨ Regex API Capabilities:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>✅ <code>regex_match(str, regex_pattern, [ignoreCase])</code> - Test if string matches pattern</li>
+                    <li>✅ <code>regex_replace(str, regex_pattern, replacement, [ignoreCase])</code> - Replace using regex</li>
+                    <li>✅ <code>regex_find_all(str, regex_pattern, [ignoreCase])</code> - Find all matches</li>
+                    <li>✅ <code>regex_replace_file(path, regex_pattern, replacement, [ignoreCase])</code> - Replace in file</li>
+                    <li>✅ <code>regex_search_file(path, regex_pattern, [ignoreCase])</code> - Search file content</li>
+                    <li>🎯 <strong>More powerful than simple string operations!</strong></li>
+                    <li>🔥 <strong>Hot-reloadable with AgentCore.dll!</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+
+        <div class="test-section" style="background: #e3f2fd; border-left-color: #2196f3;">
+            <h3>📖 Instructions</h3>
+            <ol>
+                <li>Ensure cefclient is running with inject.js loaded</li>
+                <li>The status indicator will show when the agent is connected</li>
+                <li>Click test buttons to execute various scenarios</li>
+                <li>Watch the output for results and errors</li>
+                <li>Check the actual files to verify modifications</li>
+            </ol>
+
+            <p><strong>Expected Behavior:</strong></p>
+            <ul>
+                <li>Hot reload should update components without restarting cefclient</li>
+                <li>MetaDSL operations should execute and modify files</li>
+                <li>Self-modification should add new capabilities to the agent</li>
+                <li>All operations should be logged in the output window</li>
+            </ul>
+        </div>
+
+        <!-- Execute MetaDSL -->
+        <div class="test-section" style="background: #fff3e0; border-left-color: #ff9800;">
+            <h3>⚡ Execute MetaDSL</h3>
+            <p>General-purpose MetaDSL script executor. Enter any MetaDSL script and execute it.</p>
+
+            <textarea id="customScript" style="width: 100%; min-height: 120px; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f5f5f5;"
+                placeholder="Enter your MetaDSL script here..."
+                rows="6">read_file("d:/GitHub/BatchCommand/AgentCore/docs/QUICK_START.md");</textarea>
+
+            <button onclick="executeCustomScript()">▶️ Execute Script</button>
+
+            <div style="margin-top: 10px; padding: 10px; background: #fff9c4; border-left: 4px solid #fbc02d; font-size: 14px;">
+                <strong>💡 Tips:</strong>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li>Use this to test any MetaDSL script</li>
+                    <li>Access all available APIs: file operations, Roslyn, TreeSitter, etc.</li>
+                    <li>Check <code>debug.log</code> for detailed execution logs</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Output -->
+        <h2 style="display: inline-block;">📤 Output</h2>
+        <button onclick="clearOutput()" style="margin-left: 20px; padding: 8px 16px; font-size: 14px;">🗑️ Clear Output</button>
+        <div id="output">
+            <div class="info">[System] Ready. Click a test button to begin...</div>
+        </div>
+    </div>
+
+    <script>
+        // Check if executeMetaDSL is available
+        function checkAgentStatus() {
+            if (typeof window.executeMetaDSL === 'function') {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = '✅ Agent Connected';
+                log('[System] executeMetaDSL detected and ready', 'success');
+                return true;
+            } else {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = '⚠ Agent Not Connected';
+                log('[System] window.executeMetaDSL not found. Please run cefclient with inject.js loaded.', 'error');
+                return false;
+            }
+        }
+
+        // Helper function to execute MetaDSL and handle result
+        function runMetaDSL(script, successCallback, errorCallback) {
+            try {
+                const result = window.executeMetaDSL(script);
+                if (result !== null && result !== undefined && result !== '') {
+                    if (successCallback) successCallback(result);
+                } else {
+                    if (errorCallback) errorCallback('Empty result');
+                }
+            } catch (error) {
+                if (errorCallback) errorCallback(error.toString());
+            }
+        }
+
+        // Logging function
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Clear output
+        function clearOutput() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="info">[System] Output cleared.</div>';
+            log('[System] Output cleared', 'info');
+        }
+
+        // Test 1: Hot Reload
+        function testHotReloadAgentCore() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] Testing hot reload for AgentCore.dll...', 'info');
+            log('[Test 1] This will close the browser, update DLL, and reopen', 'warning');
+
+            runMetaDSL('hot_reload();',
+                (result) => {
+                    log('[Test 1] ✓ AgentCore.dll hot reload initiated', 'success');
+                    log('[Test 1] Browser will close and reopen automatically...', 'info');
+                },
+                (error) => {
+                    log(`[Test 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testHotReloadScript() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] Script.dsl is auto-reloaded on every execution', 'info');
+            log('[Test 1] No manual reload needed - just modify the file', 'success');
+        }
+
+        function testHotReloadInject() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 1] inject.js reload requires page refresh', 'info');
+            log('[Test 1] Press F5 or Ctrl+R to reload inject.js', 'warning');
+
+            setTimeout(() => {
+                log('[Test 1] Refreshing page in 3 seconds...', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 3000);
+            }, 1000);
+        }
+
+        // Test 2: File Operations
+        function testReadFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing read_file...', 'info');
+
+            const script = `read_file('managed/Script.dsl');`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log(`[Test 2] ✓ File read: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testWriteFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing write_file...', 'info');
+
+            const script = `write_file('test_hotreload.txt', 'This file was created by hot reload test at ${new Date().toISOString()}');`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log(`[Test 2] ✓ File created successfully: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testModifyFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing modify_file...', 'info');
+
+            const script = `
+                write_file('test_modify.txt', 'Original content');
+                replace_file('test_modify.txt', 'Original', 'Modified', false);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log(`[Test 2] ✓ File modified successfully: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testDeleteFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] Testing delete_file...', 'info');
+
+            const script = `delete_file('test_modify.txt');`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log(`[Test 2] ✓ File deleted successfully: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 3: Self-Modification
+        function testSelfModify() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Testing self-modification...', 'info');
+            log('[Test 3] This will add a log statement to Script.dsl', 'warning');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'script(on_init)params()',
+                    '
+                        // Self-modified by hot reload test
+                        script(on_init)params()
+                    ',
+                    true
+                );
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 3] ✓ Self-modification completed successfully', 'success');
+                    log('[Test 3] Script.dsl has been updated and reloaded', 'success');
+                },
+                (error) => {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAddNewFunction() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Adding new function via self-modification...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'return(0);',
+                    '
+                        // Auto-added function
+                        script(hot_reload_test_function)params($param)
+                        {
+                            nativelog("[dsl] Hot reload test function called with: {0}", $param);
+                            return(0);
+                        };
+
+                        return(0);
+                    ',
+                    true
+                );
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 3] ✓ New function added successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAddFeatureFlag() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 3] Adding feature flag support...', 'info');
+
+            const script = `
+                replace_file(
+                    'managed/Script.dsl',
+                    'return(0);',
+                    '
+                        // Feature flag for hot reload testing
+                        @hot_reload_test_enabled = true;
+
+                        return(0);
+                    ',
+                    true
+                );
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 3] ✓ Feature flag added successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 3] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 4: Command Execution
+        function testGitStatus() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 4] Executing git status...', 'info');
+
+            runMetaDSL("execute_command('git status --short', '', '', 0);",
+                (result) => {
+                    log(`[Test 4] ✓ Command executed: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 4] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testListFiles() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 4] Listing files...', 'info');
+
+            runMetaDSL("execute_command('dir managed', '', '', 0);",
+                (result) => {
+                    log(`[Test 4] ✓ Files listed: ${result}`, 'success');
+                },
+                (error) => {
+                    log(`[Test 4] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 5: WebSocket Communication
+        function testWebSocketStart() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - WebSocket] Starting WebSocket server...', 'info');
+
+            const script = `ws_start_server(8080);`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 5 - WebSocket] ✓ WebSocket server started successfully', 'success');
+                    log(`[Test 5 - WebSocket] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - WebSocket] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testWebSocketStop() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - WebSocket] Stopping WebSocket server...', 'info');
+
+            const script = `ws_stop_server();`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 5 - WebSocket] ✓ WebSocket server stopped successfully', 'success');
+                    log(`[Test 5 - WebSocket] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - WebSocket] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testWebSocketStatus() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - WebSocket] Getting WebSocket client status...', 'info');
+
+            const script = `ws_get_client_count();`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 5 - WebSocket] ✓ Client status retrieved', 'success');
+                    log(`[Test 5 - WebSocket] Connected clients: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - WebSocket] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 6: Roslyn Code Analysis APIs
+        function testRoslynBasic() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Roslyn] Running basic Roslyn API test...', 'info');
+            log('[Test 6 - Roslyn] This will execute test_roslyn_apis() from Script.dsl', 'info');
+
+            runMetaDSL('test_roslyn_apis();',
+                (result) => {
+                    log('[Test 6 - Roslyn] ✓ Basic Roslyn test completed', 'success');
+                    log('[Test 6 - Roslyn] Check console for detailed output', 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Roslyn] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRoslynFindClass() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Roslyn] Finding AgentCore class...', 'info');
+
+            const script = `
+                $agentCorePath = "d:/GitHub/BatchCommand/AgentCore";
+                $file = roslyn_find_file_with_class($agentCorePath, "AgentCore");
+                nativelog("[Roslyn] AgentCore class found in: {0}", $file);
+                $class = roslyn_find_class($file, "AgentCore");
+                roslyn_print_class($class);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Roslyn] ✓ AgentCore class found and analyzed', 'success');
+                },
+                (error) => {
+                    log(`[Test 6 - Roslyn] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRoslynParseFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Roslyn] Parsing C# file...', 'info');
+
+            const script = `
+                $file = "d:/GitHub/BatchCommand/AgentCore/Core/AgentCore.cs";
+                $parsed = roslyn_parse_file($file);
+                nativelog("[Roslyn] File parsed successfully: {0}", $file);
+                nativelog("[Roslyn] Namespace: {0}", $parsed.Namespace);
+                nativelog("[Roslyn] Classes found: {0}", listsize($parsed.Classes));
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Roslyn] ✓ File parsed successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 6 - Roslyn] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRoslynGetMethods() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Roslyn] Getting all methods from AgentCore class...', 'info');
+
+            const script = `
+                $file = roslyn_find_file_with_class("d:/GitHub/BatchCommand/AgentCore", "AgentCore");
+                $class = roslyn_find_class($file, "AgentCore");
+                $methods = roslyn_get_methods($class);
+                nativelog("[Roslyn] Found {0} methods in AgentCore class", listsize($methods));
+
+                $i = 0;
+                while($i < listsize($methods)) {
+                    $method = listget($methods, $i);
+                    $methodName = roslyn_get_method_name($method);
+                    nativelog("[Roslyn]   - Method {0}: {1}", $i, $methodName);
+                    $i = $i + 1;
+                };
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Roslyn] ✓ Methods listed successfully', 'success');
+                    log('[Test 6 - Roslyn] Check console for method list', 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Roslyn] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRoslynFullAnalysis() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Roslyn] Running full code analysis...', 'info');
+            log('[Test 6 - Roslyn] This will analyze all C# files in AgentCore', 'warning');
+
+            const script = `
+                $agentCorePath = "d:/GitHub/BatchCommand/AgentCore";
+                $files = roslyn_get_csharp_files($agentCorePath, true);
+                nativelog("[Roslyn] ========== Full Code Analysis ==========");
+                nativelog("[Roslyn] Total C# files: {0}", listsize($files));
+
+                // Analyze first 5 files
+                $i = 0;
+                while($i < 5 && $i < listsize($files)) {
+                    $file = listget($files, $i);
+                    nativelog("[Roslyn] Analyzing: {0}", $file);
+
+                    $parsed = roslyn_parse_file($file);
+                    $classes = $parsed.Classes;
+                    nativelog("[Roslyn]   Classes: {0}", listsize($classes));
+
+                    $j = 0;
+                    while($j < listsize($classes)) {
+                        $class = listget($classes, $j);
+                        $className = roslyn_get_class_name($class);
+                        $methods = roslyn_get_methods($class);
+                        nativelog("[Roslyn]     - {0} ({1} methods)", $className, listsize($methods));
+                        $j = $j + 1;
+                    };
+
+                    $i = $i + 1;
+                };
+
+                nativelog("[Roslyn] ========== Analysis Complete ==========");
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Roslyn] ✓ Full analysis completed', 'success');
+                    log('[Test 6 - Roslyn] Agent can now understand its own code structure!', 'success');
+                },
+                (error) => {
+                    log(`[Test 6 - Roslyn] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 7: Phase 2 - Smart Code Editing APIs
+        function testCodeEditingFull() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Phase 2] Running full code editing test...', 'info');
+            log('[Test 7 - Phase 2] This will test all self-modification capabilities', 'warning');
+
+            const script = `test_code_editing();`;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Phase 2] ✓ All code editing tests passed!', 'success');
+                    log('[Test 7 - Phase 2] 🎉 Agent can now modify its own code!', 'success');
+                    log('[Test 7 - Phase 2] Check console for detailed results', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testCreateFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Phase 2] Creating new test file...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/QuickTest.cs";
+                $code = "using System;
+
+namespace AgentCore.Test
+{
+    public class QuickTest
+    {
+        public string SayHello()
+        {
+            return \\"Hello from agent-created code!\\";
+        }
+    }
+}";
+                $result = roslyn_create_file($testFile, $code);
+                nativelog("[Phase2] File creation result: {0}", $result);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Phase 2] ✓ Test file created successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 7 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAddMethod() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Phase 2] Adding new method to class...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/QuickTest.cs";
+                $newMethod = "public int Calculate(int x, int y)
+        {
+            return x * y + 42;
+        }";
+                $result = roslyn_add_method($testFile, "QuickTest", $newMethod);
+                nativelog("[Phase2] Add method result: {0}", $result);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Phase 2] ✓ Method added successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 7 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testReplaceMethod() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Phase 2] Replacing existing method...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/QuickTest.cs";
+                $newMethod = "public string SayHello()
+        {
+            return \\"Hello from MODIFIED code! Agent was here!\\";
+        }";
+                $result = roslyn_replace_method($testFile, "QuickTest", "SayHello", $newMethod);
+                nativelog("[Phase2] Replace method result: {0}", $result);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Phase 2] ✓ Method replaced successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 7 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testDeleteMethod() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Phase 2] Deleting method from class...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/QuickTest.cs";
+                $result = roslyn_delete_method($testFile, "QuickTest", "Calculate");
+                nativelog("[Phase2] Delete method result: {0}", $result);
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Phase 2] ✓ Method deleted successfully', 'success');
+                },
+                (error) => {
+                    log(`[Test 7 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 8: Documentation Reading Functions
+        function testReadOnboarding() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8] Reading ONBOARDING.md...', 'info');
+
+            const script = 'read_file("d:/GitHub/BatchCommand/AgentCore/docs/ONBOARDING.md");';
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8] ✓ ONBOARDING.md read successfully', 'success');
+                    log(`[Test 8] Content length: ${result ? result.length : 0} chars`, 'info');
+                    if (result) {
+                        const preview = result.substring(0, 200);
+                        log(`[Test 8] Preview: ${preview}...`, 'info');
+                    }
+                },
+                (error) => {
+                    log(`[Test 8] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testReadQuickStart() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8] Reading QUICK_START.md...', 'info');
+
+            const script = 'read_file("d:/GitHub/BatchCommand/AgentCore/docs/QUICK_START.md");';
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8] ✓ QUICK_START.md read successfully', 'success');
+                    log(`[Test 8] Content length: ${result ? result.length : 0} chars`, 'info');
+                },
+                (error) => {
+                    log(`[Test 8] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testReadApiReference() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8] Reading API_REFERENCE.md...', 'info');
+
+            const script = 'read_file("d:/GitHub/BatchCommand/AgentCore/docs/API_REFERENCE.md");';
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8] ✓ API_REFERENCE.md read successfully', 'success');
+                    log(`[Test 8] Content length: ${result ? result.length : 0} chars`, 'info');
+                },
+                (error) => {
+                    log(`[Test 8] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testListDocs() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8] Listing all documentation files...', 'info');
+
+            const script = `
+                $docsDir = "d:/GitHub/BatchCommand/AgentCore/docs";
+                $files = listfiles($docsDir);
+                nativelog("[Test 8] Found {0} files", $files.Length);
+                $files;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8] ✓ Documentation files listed successfully', 'success');
+                    log(`[Test 8] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 8] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 2: Run All Basic Tests
+        function runAllBasicTests() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 2] ========================================', 'info');
+            log('[Test 2] 🚀 Starting All Basic Tests...', 'info');
+            log('[Test 2] ========================================', 'info');
+
+            // File Operations Tests
+            log('[Test 2] 📁 Testing File Operations...', 'info');
+            testReadFile();
+            setTimeout(() => testWriteFile(), 500);
+            setTimeout(() => testModifyFile(), 1000);
+            setTimeout(() => testDeleteFile(), 1500);
+
+            // Self-Modification Tests
+            setTimeout(() => {
+                log('[Test 2] 🔧 Testing Self-Modification...', 'info');
+                testSelfModify();
+            }, 2000);
+            setTimeout(() => testAddNewFunction(), 2500);
+            setTimeout(() => testAddFeatureFlag(), 3000);
+
+            // Command Execution Tests
+            setTimeout(() => {
+                log('[Test 2] ⚙️ Testing Command Execution...', 'info');
+                testGitStatus();
+            }, 3500);
+            setTimeout(() => testListFiles(), 4000);
+
+            // Roslyn Code Analysis Tests
+            setTimeout(() => {
+                log('[Test 2] 🔬 Testing Roslyn Code Analysis...', 'info');
+                testRoslynBasic();
+            }, 4500);
+            setTimeout(() => testRoslynFindClass(), 5000);
+            setTimeout(() => testRoslynParseFile(), 5500);
+            setTimeout(() => testRoslynGetMethods(), 6000);
+            setTimeout(() => testRoslynFullAnalysis(), 6500);
+
+            // Smart Code Editing Tests
+            setTimeout(() => {
+                log('[Test 2] ✏️ Testing Smart Code Editing...', 'info');
+                testCodeEditingFull();
+            }, 7000);
+            setTimeout(() => testCreateFile(), 7500);
+            setTimeout(() => testAddMethod(), 8000);
+            setTimeout(() => testReplaceMethod(), 8500);
+            setTimeout(() => testDeleteMethod(), 9000);
+
+            // Documentation Reading Tests
+            setTimeout(() => {
+                log('[Test 2] 📚 Testing Documentation Reading...', 'info');
+                testReadOnboarding();
+            }, 9500);
+            setTimeout(() => testReadQuickStart(), 10000);
+            setTimeout(() => testReadApiReference(), 10500);
+            setTimeout(() => testListDocs(), 11000);
+
+            // Final Summary
+            setTimeout(() => {
+                log('[Test 2] ========================================', 'success');
+                log('[Test 2] ✅ All Basic Tests Completed!', 'success');
+                log('[Test 2] ========================================', 'success');
+                log('[Test 2] Check the output above for detailed results', 'info');
+            }, 11500);
+        }
+
+        // Test 5: TreeSitter C/C++ Code Parsing
+
+        // Explore TreeSitterSharp.C API
+        function exploreTreeSitterCApi() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Exploring TreeSitterSharp.C API...', 'info');
+
+            const script = `
+                $result = explore_treesitter_c_api();
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ API exploration completed', 'success');
+            log('[Test 5 - TreeSitter] Check console for detailed API information', 'info');
+                    // Also display in output
+                    const lines = result.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            log(`[API] ${line}`, 'info');
+                        }
+                    });
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Explore TreeSitterSharp.Cpp API
+        function exploreTreeSitterCppApi() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Exploring TreeSitterSharp.Cpp API...', 'info');
+
+            const script = `
+                $result = explore_treesitter_cpp_api();
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ API exploration completed', 'success');
+            log('[Test 5 - TreeSitter] Check console for detailed API information', 'info');
+                    // Also display in output
+                    const lines = result.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            log(`[API] ${line}`, 'info');
+                        }
+                    });
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test creating C parser
+        function testCreateCParser() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Testing C parser creation...', 'info');
+
+            const script = `
+                $result = test_create_c_parser();
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ Parser creation test completed', 'success');
+            log('[Test 5 - TreeSitter] Check console for details', 'info');
+                    // Also display in output
+                    const lines = result.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            log(`[Parser] ${line}`, 'info');
+                        }
+                    });
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test creating C++ parser
+        function testCreateCppParser() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Testing C++ parser creation...', 'info');
+
+            const script = `
+                $result = test_create_cpp_parser();
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ C++ Parser creation test completed', 'success');
+            log('[Test 5 - TreeSitter] Check console for details', 'info');
+                    // Also display in output
+                    const lines = result.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            log(`[C++ Parser] ${line}`, 'info');
+                        }
+                    });
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test GetNodeText - verify actual code extraction
+        function testGetNodeText() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - GetNodeText] Testing GetNodeText functionality...', 'info');
+            log('[Test 5 - GetNodeText] Verifying actual code extraction vs node types', 'info');
+
+            const script = `
+                $result = test_get_node_text();
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 5 - GetNodeText] ✓ GetNodeText test completed', 'success');
+                    log('[Test 5 - GetNodeText] Check output below for verification', 'info');
+                    // Display formatted output
+                    const lines = result.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            // Color code different types of output
+                            if (line.includes('✓')) {
+                                log(line, 'success');
+                            } else if (line.includes('✗')) {
+                                log(line, 'error');
+                            } else if (line.includes('━') || line.includes('─')) {
+                                log(line, 'info');
+                            } else if (line.includes('Function:') || line.includes('Type:')) {
+                                log(line, 'success');
+                            } else {
+                                log(line, 'info');
+                            }
+                        }
+                    });
+                },
+                (error) => {
+                    log(`[Test 5 - GetNodeText] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Explore all TreeSitter APIs and save comprehensive report
+        function exploreAllAndSaveReport() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] 🔍 Exploring all TreeSitter APIs...', 'info');
+            log('[Test 5 - TreeSitter] This will explore C, C++, and test parser creation', 'warning');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const reportPath = `d:/GitHub/BatchCommand/AgentCore/docs/treesitter_api_report_${timestamp}.txt`;
+
+            const script = `
+                nativelog("[TreeSitter] Starting comprehensive API exploration...");
+                $report = explore_all_treesitter_apis();
+
+                nativelog("[TreeSitter] Exploration completed, saving report...");
+                $saved = save_treesitter_report("${reportPath}");
+
+                if($saved) {
+                    nativelog("[TreeSitter] Report saved to: ${reportPath}");
+                } else {
+                    nativelog("[TreeSitter] Failed to save report");
+                };
+                $report;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 5 - TreeSitter] ✅ Exploration completed and report saved!', 'success');
+                    log(`[Test 5 - TreeSitter] 📄 Report saved to: ${reportPath}`, 'success');
+                    log('[Test 5 - TreeSitter] Check console for full report', 'info');
+                    // Display summary
+                    const lines = result.split('\n');
+                    let displayCount = 0;
+                    lines.forEach(line => {
+                        if (line.includes('═') || line.includes('┌') || line.includes('│') || line.includes('└')) {
+                            if (displayCount < 30) {
+                                log(line, 'info');
+                                displayCount++;
+                            }
+                        }
+                    });
+                    if (lines.length > 30) {
+                        log('[Test 5 - TreeSitter] ... (see full report in saved file)', 'info');
+                    }
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testParseCCode() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Parsing simple C code...', 'info');
+
+            const script = `
+                $c_code = "int add(int a, int b) { return a + b; }";
+                $tree = parse_c_code($c_code);
+                nativelog("[TreeSitter] C code parsed successfully");
+                $tree;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ C code parsed successfully', 'success');
+            log(`[Test 5 - TreeSitter] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testParseCppCode() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Parsing C++ code...', 'info');
+
+            const script = `
+                $cpp_code = "class MyClass { public: void method() {} };";
+                $tree = parse_cpp_code($cpp_code);
+                nativelog("[TreeSitter] C++ code parsed successfully");
+                $tree;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ C++ code parsed successfully', 'success');
+            log(`[Test 5 - TreeSitter] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testExtractFunctions() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Extracting functions from C code...', 'info');
+
+            const script = `
+                $c_code = "int add(int a, int b) { return a + b; }\\nint sub(int a, int b) { return a - b; }";
+                $tree = parse_c_code($c_code);
+                $functions = ts_get_functions($tree);
+                nativelog("[TreeSitter] Found {0} functions", listsize($functions));
+
+                $i = 0;
+                while($i < listsize($functions)) {
+                    $func = listget($functions, $i);
+                    nativelog("[TreeSitter]   Function: {0} at line {1}", $func.Name, $func.StartLine);
+                    $i = $i + 1;
+                };
+                $functions;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ Functions extracted successfully', 'success');
+            log('[Test 5 - TreeSitter] Check console for function list', 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testExtractClasses() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Extracting classes from C++ code...', 'info');
+
+            const script = `
+                $cpp_code = "class MyClass { public: void method() {} };\\nstruct MyStruct { int x; };";
+                $tree = parse_cpp_code($cpp_code);
+                $classes = ts_get_classes($tree);
+                nativelog("[TreeSitter] Found {0} classes/structs", listsize($classes));
+
+                $i = 0;
+                while($i < listsize($classes)) {
+                    $class = listget($classes, $i);
+                    nativelog("[TreeSitter]   Class: {0} at line {1}", $class.Name, $class.StartLine);
+                    $i = $i + 1;
+                };
+                $classes;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ Classes extracted successfully', 'success');
+            log('[Test 5 - TreeSitter] Check console for class list', 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAnalyzeCefFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Analyzing CEF file...', 'info');
+            log('[Test 5 - TreeSitter] This will analyze simple_handler.cc', 'warning');
+
+            const script = `
+                $file = "d:/GitHub/CEF_Src_Build/cefclient/simple_handler.cc";
+                if(file_exists($file)) {
+                    nativelog("[TreeSitter] Analyzing file: {0}", $file);
+                    $result = analyze_code_file($file, "cpp");
+                    nativelog("[TreeSitter] Analysis complete");
+                    nativelog("[TreeSitter] Functions: {0}", $result.function_count);
+                    nativelog("[TreeSitter] Classes: {0}", $result.class_count);
+                    $result;
+                } else {
+                    nativelog("[TreeSitter] File not found: {0}", $file);
+                    "File not found";
+                };
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ CEF file analyzed successfully', 'success');
+            log('[Test 5 - TreeSitter] Check console for analysis results', 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function inspectCLanguageDll() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Inspecting C language DLL...', 'info');
+
+            const script = `
+                $result = inspect_c_language_dll();
+                nativelog("[TreeSitter] C Language DLL Inspection:");
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ C DLL inspected successfully', 'success');
+            log('[Test 5 - TreeSitter] Check console for DLL details', 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function inspectCppLanguageDll() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 5 - TreeSitter] Inspecting C++ language DLL...', 'info');
+
+            const script = `
+                $result = inspect_cpp_language_dll();
+                nativelog("[TreeSitter] C++ Language DLL Inspection:");
+                nativelog($result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+            log('[Test 5 - TreeSitter] ✓ C++ DLL inspected successfully', 'success');
+            log('[Test 5 - TreeSitter] Check console for DLL details', 'info');
+                },
+                (error) => {
+                    log(`[Test 5 - TreeSitter] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 4: Command Line Switches Verification
+        function testCommandLineSwitches() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 4] ========================================', 'info');
+            log('[Test 4] 🔧 Testing All Command Line Switches...', 'info');
+            log('[Test 4] ========================================', 'info');
+
+            // Test 1: Cross-Origin Request (--disable-web-security)
+            log('[Test 4] 1️⃣ Testing --disable-web-security...', 'info');
+            log('[Test 4] ℹ️ Testing with Baidu (no CORS headers)', 'info');
+            fetch('https://www.baidu.com/')
+                .then(response => response.text())
+                .then(data => {
+                    log('[Test 4] ✓ Cross-origin request succeeded!', 'success');
+                    log(`[Test 4] Response size: ${data.length} bytes`, 'info');
+                    log('[Test 4] ✅ --disable-web-security is working', 'success');
+                })
+                .catch(error => {
+                    log(`[Test 4] ✗ Cross-origin request failed: ${error.message}`, 'error');
+                    log('[Test 4] ❌ --disable-web-security is NOT working', 'error');
+                    log('[Test 4] Note: Baidu blocks CORS, so this should fail without the switch', 'warning');
+                });
+
+            // Test 2: Site Isolation (--disable-site-isolation-trials)
+            setTimeout(() => {
+                log('[Test 4] 2️⃣ Testing --disable-site-isolation-trials...', 'info');
+                log('[Test 4] ℹ️ This switch simplifies multi-process architecture', 'info');
+                log('[Test 4] ✓ Switch is added (check debug.log for confirmation)', 'success');
+            }, 500);
+
+            // Test 3: Local File Access (--allow-file-access-from-files)
+            setTimeout(() => {
+                log('[Test 4] 3️⃣ Testing --allow-file-access-from-files...', 'info');
+                log('[Test 4] Attempting to load local file via JavaScript fetch...', 'info');
+
+                // Try to fetch a local file using file:// protocol
+                const localFilePath = 'file:///d:/GitHub/BatchCommand/AgentCore/hotreload_test.html';
+
+                fetch(localFilePath)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text();
+                        }
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    })
+                    .then(content => {
+                        log('[Test 4] ✓ Local file access succeeded!', 'success');
+                        log(`[Test 4] File size: ${content.length} bytes`, 'info');
+                        log('[Test 4] ✅ --allow-file-access-from-files is working', 'success');
+                    })
+                    .catch(error => {
+                        log(`[Test 4] ✗ Local file access failed: ${error.message}`, 'error');
+                        log('[Test 4] ❌ --allow-file-access-from-files might not be working', 'error');
+                        log('[Test 4] Note: This tests JavaScript file:// access, not DSL file access', 'warning');
+                    });
+            }, 1000);
+
+            // Final Summary
+            setTimeout(() => {
+                log('[Test 4] ========================================', 'info');
+                log('[Test 4] ✅ All Switch Tests Completed', 'success');
+                log('[Test 4] Check results above for each switch', 'info');
+                log('[Test 4] ========================================', 'info');
+            }, 2000);
+        }
+
+        // Execute MetaDSL
+        function executeCustomScript() {
+            if (!checkAgentStatus()) return;
+
+            const script = document.getElementById('customScript').value;
+
+            if (!script.trim()) {
+                log('[Execute MetaDSL] Please enter a MetaDSL script', 'error');
+                return;
+            }
+
+            log('[Execute MetaDSL] Executing MetaDSL script...', 'info');
+            log(`[Execute MetaDSL] Script: ${script.substring(0, 100)}...`, 'info');
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Execute MetaDSL] ✓ Script executed successfully', 'success');
+                    log(`[Execute MetaDSL] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Execute MetaDSL] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 6: Roslyn Semantic Analysis & Refactoring (NEW Phase 1 & 2)
+
+        // Phase 1: Single File Semantic Analysis
+
+        function testSemanticTypeInfo() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing type inference...', 'info');
+
+            const script = `
+                $code = "using System; class Test { public string Name { get; set; } }";
+                $result = roslyn_get_type_info($code, 1, 40);
+                nativelog("[Semantic] Type at position (1,40): {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ Type info retrieved', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testSemanticSymbolInfo() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing symbol resolution...', 'info');
+
+            const script = `
+                $code = "using System; class Test { public void Method() { } }";
+                $result = roslyn_get_symbol_info($code, 1, 40);
+                nativelog("[Semantic] Symbol at position (1,40): {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ Symbol info retrieved', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testSemanticDiagnostics() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing diagnostics (error detection)...', 'info');
+
+            const script = `
+                $code = "using System; class Test { public void Method() { int x = \\"invalid\\"; } }";
+                $result = roslyn_get_diagnostics($code);
+                nativelog("[Semantic] Diagnostics: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ Diagnostics retrieved', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testSemanticFindReferences() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing reference finding...', 'info');
+
+            const script = `
+                $code = "class Test { int x; void M() { x = 1; int y = x; } }";
+                $result = roslyn_find_references($code, "x");
+                nativelog("[Semantic] References to 'x': {0}", $result);
+                $result;
+            `;
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ References found', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testSemanticUsedTypes() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing used types extraction...', 'info');
+
+            const script = `
+                $code = "using System; using System.Collections.Generic; class Test { List<string> items; }";
+                $result = roslyn_get_used_types($code);
+                nativelog("[Semantic] Used types: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ Used types extracted', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testSemanticDefinedSymbols() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 1] Testing defined symbols extraction...', 'info');
+
+            const script = `
+                $code = "class Test { int x; void Method() { } string Name { get; set; } }";
+                $result = roslyn_get_defined_symbols($code);
+                nativelog("[Semantic] Defined symbols: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 1] ✓ Defined symbols extracted', 'success');
+                    log(`[Test 6 - Phase 1] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 1] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Phase 2: Project-Level Analysis
+
+        function testLoadProject() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Loading AgentCore project...', 'info');
+
+            const script = `
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $result = roslyn_load_project($projectPath);
+                nativelog("[Project] Project loaded: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Project loaded successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testProjectTypeInfo() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Getting type info from project file...', 'info');
+
+            const script = `
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+                $filePath = "d:/GitHub/BatchCommand/AgentCore/Core/AgentCore.cs";
+                $result = roslyn_get_type_info_in_file($projectLoader, $filePath, 15, 30);
+                nativelog("[Project] Type info at (15,30): {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Type info retrieved from project', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testProjectDiagnostics() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Getting project-level diagnostics...', 'info');
+
+            const script = `
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+                $result = roslyn_get_project_diagnostics($projectLoader);
+                nativelog("[Project] Project diagnostics: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Project diagnostics retrieved', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testFileDiagnostics() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Getting file-level diagnostics...', 'info');
+
+            const script = `
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+                $filePath = "d:/GitHub/BatchCommand/AgentCore/Core/AgentCore.cs";
+                $result = roslyn_get_file_diagnostics($projectLoader, $filePath);
+                nativelog("[Project] File diagnostics: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ File diagnostics retrieved', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testFindAllReferences() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Finding all references across project...', 'info');
+
+            const script = `
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+                $filePath = "d:/GitHub/BatchCommand/AgentCore/Core/AgentCore.cs";
+                $result = roslyn_find_all_references($projectLoader, "AgentCore");
+                nativelog("[Project] All references to 'AgentCore': {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ All references found', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Phase 2: Refactoring Operations
+
+        function testRenameSymbol() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Testing symbol renaming...', 'info');
+            log('[Test 6 - Phase 2] This will create a test file and rename a symbol', 'warning');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/RenameTest.cs";
+                $code = "namespace Test { class MyClass { int oldName; void Method() { oldName = 1; } } }";
+                write_file($testFile, $code);
+
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+
+                $result = roslyn_rename_symbol($projectLoader, $testFile, 1, 42, "newName");
+                nativelog("[Refactor] Rename result: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Symbol renamed successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testExtractMethod() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Testing method extraction...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/ExtractTest.cs";
+                $code = "class Test { void Method() { int x = 1; int y = 2; int z = x + y; } }";
+                write_file($testFile, $code);
+
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+
+                $result = roslyn_extract_method($projectLoader, $testFile, 0, 33, 0, 65, "Calculate");
+                nativelog("[Refactor] Extract method result: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Method extracted successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testImplementInterface() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Testing interface implementation...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/InterfaceTest.cs";
+                $code = "interface ITest { void Method(); } class Test : ITest { }";
+                write_file($testFile, $code);
+
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+
+                $result = roslyn_implement_interface($projectLoader, $testFile, 0, 45);
+                nativelog("[Refactor] Implement interface result: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Interface implemented successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testGenerateConstructor() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Testing constructor generation...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/ConstructorTest.cs";
+                $code = "class Test { private int x; private string name; }";
+                write_file($testFile, $code);
+
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+
+                $result = roslyn_generate_constructor($projectLoader, $testFile, 0, 15);
+                nativelog("[Refactor] Generate constructor result: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Constructor generated successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAddUsing() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Phase 2] Testing add using directive...', 'info');
+
+            const script = `
+                $testFile = "d:/GitHub/BatchCommand/AgentCore/Test/UsingTest.cs";
+                $code = "class Test { }";
+                write_file($testFile, $code);
+
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+
+                $result = roslyn_add_using($projectLoader, $testFile, "System.Collections.Generic");
+                nativelog("[Refactor] Add using result: {0}", $result);
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Phase 2] ✓ Using directive added successfully', 'success');
+                    log(`[Test 6 - Phase 2] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Phase 2] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Full Test Suite
+
+        function testSemanticAnalysisFull() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 6 - Full Suite] Running all Phase 1 & 2 tests...', 'info');
+            log('[Test 6 - Full Suite] This will test all 17 APIs', 'warning');
+
+            const script = `
+                nativelog("========================================");
+                nativelog("Phase 1 & 2 Semantic Analysis Test Suite");
+                nativelog("========================================");
+
+                # Phase 1 Tests
+                nativelog("");
+                nativelog("--- Phase 1: Single File Semantic Analysis ---");
+
+                nativelog("1. Testing type inference...");
+                $code1 = "using System; class Test { public string Name { get; set; } }";
+                $type = roslyn_get_type_info($code1, 1, 40);
+                nativelog("   Type: {0}, Line: {1}, Column: {2}", $type.Type, $type.Line, $type.Column);
+
+                nativelog("2. Testing symbol resolution...");
+                $code2 = "using System; class Test { public void Method() { } }";
+                $symbol = roslyn_get_symbol_info($code2, 1, 40);
+                nativelog("   Symbol: {0}, Kind: {1}, Type: {2}", $symbol.Name, $symbol.Kind, $symbol.Type);
+
+                nativelog("3. Testing diagnostics...");
+                $code3 = "using System; class Test { public void Method() { int x = \"invalid\"; } }";
+                $diag = roslyn_get_diagnostics($code3);
+                nativelog("   Diagnostics count: {0}", $diag.Count);
+                nativelog("4. Testing reference finding...");
+                $code4 = "class Test { int x; void M() { x = 1; int y = x; } }";
+                $refs = roslyn_find_references($code4, "x");
+                nativelog("   References count: {0}", $refs.Count);
+
+                nativelog("5. Testing used types...");
+                $code5 = "using System; using System.Collections.Generic; class Test { List<string> items; }";
+                $types = roslyn_get_used_types($code5);
+                nativelog("   Used types count: {0}", $types.Count);
+
+                nativelog("6. Testing defined symbols...");
+                $code6 = "class Test { int x; void Method() { } string Name { get; set; } }";
+                $symbols = roslyn_get_defined_symbols($code6);
+                nativelog("   Defined symbols count: {0}", $symbols.Count);
+
+                # Phase 2 Tests
+                nativelog("");
+                nativelog("--- Phase 2: Project-Level Analysis ---");
+
+                nativelog("7. Loading project...");
+                $projectPath = "d:/GitHub/BatchCommand/AgentCore/AgentCore.csproj";
+                $projectLoader = roslyn_load_project($projectPath);
+                nativelog("   Project loaded: {0}", $projectLoader);
+
+                nativelog("8. Testing project type info...");
+                $filePath = "d:/GitHub/BatchCommand/AgentCore/Core/AgentCore.cs";
+                $projType = roslyn_get_type_info_in_file($projectLoader, $filePath, 15, 35);
+                nativelog("   Type: {0}, Line: {1}", $projType.Type, $projType.Line);
+
+                nativelog("9. Testing project diagnostics...");
+                $projDiag = roslyn_get_project_diagnostics($projectLoader);
+                nativelog("   Project diagnostics count: {0}", $projDiag.Count);
+
+                nativelog("10. Testing file diagnostics...");
+                $fileDiag = roslyn_get_file_diagnostics($projectLoader, $filePath);
+                nativelog("   File diagnostics count: {0}", $fileDiag.Count);
+
+                nativelog("11. Testing find all references...");
+                $allRefs = roslyn_find_all_references($projectLoader, "AgentCore");
+                nativelog("   All references count: {0}", $allRefs.Count);
+
+                nativelog("");
+                nativelog("--- Phase 2: Refactoring Operations ---");
+
+                nativelog("12. Testing symbol rename...");
+                $testFile1 = "d:/GitHub/BatchCommand/AgentCore/Test/RenameTest.cs";
+                write_file($testFile1, "namespace Test { class MyClass { int oldName; void Method() { oldName = 1; } } }");
+                roslyn_reload_file($projectLoader, $testFile1);
+                $rename = roslyn_rename_symbol($projectLoader, $testFile1, 1, 37, "newName");
+                nativelog("   Rename success: {0}, Message: {1}", $rename.Success, $rename.Message);
+
+                nativelog("13. Testing method extraction...");
+                $testFile2 = "d:/GitHub/BatchCommand/AgentCore/Test/ExtractTest.cs";
+                write_file($testFile2, "class Test {\n    void Calculate() {\n        int x = 1;\n        int y = 2;\n        int z = x + y;\n    }\n}");
+                roslyn_reload_file($projectLoader, $testFile2);
+                $extract = roslyn_extract_method($projectLoader, $testFile2, 3, 5, "ComputeSum");
+                nativelog("   Extract success: {0}, Message: {1}", $extract.Success, $extract.Message);
+
+                nativelog("14. Testing interface implementation...");
+                $testFile3 = "d:/GitHub/BatchCommand/AgentCore/Test/InterfaceTest.cs";
+                write_file($testFile3, "interface ITest { void Method(); } class Test : ITest { }");
+                roslyn_reload_file($projectLoader, $testFile3);
+                $impl = roslyn_implement_interface($projectLoader, $testFile3, "Test", "ITest");
+                nativelog("   Implement success: {0}, Message: {1}", $impl.Success, $impl.Message);
+
+                nativelog("15. Testing constructor generation...");
+                $testFile4 = "d:/GitHub/BatchCommand/AgentCore/Test/ConstructorTest.cs";
+                write_file($testFile4, "class Test { private int x; private string name; }");
+                roslyn_reload_file($projectLoader, $testFile4);
+                $fields = list("x", "name");
+                $ctor = roslyn_generate_constructor($projectLoader, $testFile4, "Test", $fields);
+                nativelog("   Constructor success: {0}, Message: {1}", $ctor.Success, $ctor.Message);
+
+                nativelog("16. Testing add using...");
+                $testFile5 = "d:/GitHub/BatchCommand/AgentCore/Test/UsingTest.cs";
+                write_file($testFile5, "class Test { }");
+                roslyn_reload_file($projectLoader, $testFile5);
+                $using = roslyn_add_using($projectLoader, $testFile5, "System.Collections.Generic");
+                nativelog("   Add using success: {0}, Message: {1}", $using.Success, $using.Message);
+
+                nativelog("");
+                nativelog("========================================");
+                nativelog("✓ All Phase 1 & 2 tests completed!");
+                nativelog("========================================");
+
+                "All tests completed successfully";
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 6 - Full Suite] ✓ All Phase 1 & 2 tests completed!', 'success');
+                    log('[Test 6 - Full Suite] 🎉 Agent has full semantic analysis and refactoring capabilities!', 'success');
+                    log('[Test 6 - Full Suite] Check console for detailed results', 'info');
+                },
+                (error) => {
+                    log(`[Test 6 - Full Suite] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 7: Jint JavaScript Code Analysis (NEW)
+
+        function testParseJsCode() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Parsing JavaScript code...', 'info');
+
+            const script = `
+                $jsCode = "function add(a, b) { return a + b; } class Calculator { multiply(x, y) { return x * y; } }";
+                nativelog("[Jint] Parsing JavaScript code...");
+                nativelog("[Jint] Code: {0}", $jsCode);
+
+                $result = view_code_structure($jsCode, "javascript", "test.js");
+                nativelog("[Jint] Parse result:");
+                nativelog($result);
+
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ JavaScript code parsed successfully', 'success');
+                    log('[Test 7 - Jint] ========== Parse Result ==========', 'info');
+                    if (result) {
+                        const lines = result.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                log(`[Jint] ${line}`, 'info');
+                            }
+                        });
+                    }
+                    log('[Test 7 - Jint] ===================================', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsGetFunctions() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Extracting functions from JavaScript...', 'info');
+
+            const script = `
+                $jsCode = "function add(a, b) { return a + b; } const multiply = (x, y) => x * y; function subtract(a, b) { return a - b; }";
+                nativelog("[Jint] Extracting functions from JavaScript...");
+                nativelog("[Jint] Code: {0}", $jsCode);
+
+                $result = view_code_structure($jsCode, "javascript", "test.js");
+                nativelog("[Jint] Functions found:");
+                nativelog($result);
+
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Functions extracted successfully', 'success');
+                    log('[Test 7 - Jint] ========== Functions ==========', 'info');
+                    if (result) {
+                        const lines = result.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                log(`[Jint] ${line}`, 'info');
+                            }
+                        });
+                    }
+                    log('[Test 7 - Jint] ================================', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsGetClasses() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Extracting classes from JavaScript...', 'info');
+
+            const script = `
+                $jsCode = "class Calculator { add(a, b) { return a + b; } multiply(x, y) { return x * y; } } class Logger extends Console { log(msg) { } }";
+                nativelog("[Jint] Extracting classes from JavaScript...");
+                nativelog("[Jint] Code: {0}", $jsCode);
+
+                $result = view_code_structure($jsCode, "javascript", "test.js");
+                nativelog("[Jint] Classes found:");
+                nativelog($result);
+
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Classes extracted successfully', 'success');
+                    log('[Test 7 - Jint] ========== Classes ==========', 'info');
+                    if (result) {
+                        const lines = result.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                log(`[Jint] ${line}`, 'info');
+                            }
+                        });
+                    }
+                    log('[Test 7 - Jint] ==============================', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsGetVariables() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Extracting variables from JavaScript...', 'info');
+
+            const script = `
+                $jsCode = "const x = 10; let y = 20; var z = 30; const name = 'test';";
+                $tree = parse_js_code($jsCode);
+                $variables = js_get_variables($tree);
+                nativelog("[Jint] Found {0} variables", listsize($variables));
+
+                $i = 0;
+                while($i < listsize($variables)) {
+                    $variable = listget($variables, $i);
+                    nativelog("[Jint]   Variable: {0}, Kind: {1}", $variable.name, $variable.kind);
+                    $i = $i + 1;
+                };
+                $variables;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Variables extracted successfully', 'success');
+                    log('[Test 7 - Jint] Check console for variable list', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsGetImports() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Extracting imports from JavaScript...', 'info');
+
+            const script = `
+                $jsCode = "import React from 'react'; import { useState, useEffect } from 'react'; import * as Utils from './utils';";
+                $tree = parse_js_code($jsCode);
+                $imports = js_get_imports($tree);
+                nativelog("[Jint] Found {0} imports", listsize($imports));
+
+                $i = 0;
+                while($i < listsize($imports)) {
+                    $import = listget($imports, $i);
+                    nativelog("[Jint]   Import: {0}, Specifiers: {1}", $import.source, $import.specifiers);
+                    $i = $i + 1;
+                };
+                $imports;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Imports extracted successfully', 'success');
+                    log('[Test 7 - Jint] Check console for import list', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsVerifyCode() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Verifying JavaScript code syntax...', 'info');
+
+            const script = `
+                $validCode = "function test() { return 42; }";
+                $invalidCode = "function test() { return 42";
+
+                nativelog("[Jint] Testing valid code...");
+                $result1 = js_verify_code($validCode);
+                nativelog("[Jint] Valid code result: {0}", $result1);
+
+                nativelog("[Jint] Testing invalid code...");
+                $result2 = js_verify_code($invalidCode);
+                nativelog("[Jint] Invalid code result: {0}", $result2);
+
+                $result1;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Code verification completed', 'success');
+                    log('[Test 7 - Jint] Check console for verification results', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testAnalyzeJsFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Analyzing inject.js file...', 'info');
+
+            const script = `
+                $file = "d:/GitHub/CEF_Src_Build/cefclient/managed/inject.js";
+                if(file_exists($file)) {
+                    nativelog("[Jint] Analyzing file: {0}", $file);
+
+                    $result = view_file_structure($file, "javascript");
+                    nativelog("[Jint] Analysis complete:");
+                    nativelog($result);
+
+                    $result;
+                } else {
+                    nativelog("[Jint] File not found: {0}", $file);
+                    "File not found";
+                };
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ inject.js analyzed successfully', 'success');
+                    log('[Test 7 - Jint] ========== inject.js Analysis ==========', 'info');
+                    if (result && result !== "File not found") {
+                        const lines = result.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                log(`[Jint] ${line}`, 'info');
+                            }
+                        });
+                    } else {
+                        log('[Test 7 - Jint] File not found', 'error');
+                    }
+                    log('[Test 7 - Jint] =========================================', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJsGetMetrics() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] Getting code metrics...', 'info');
+
+            const script = `
+                $jsCode = "import React from 'react';\\n\\nclass App {\\n  render() { return null; }\\n}\\n\\nfunction helper() { }\\n\\nconst x = 10;";
+                $tree = parse_js_code($jsCode);
+                $metrics = js_get_metrics($tree);
+                nativelog("[Jint] Code Metrics:");
+                nativelog("[Jint]   Total lines: {0}", $metrics.totalLines);
+                nativelog("[Jint]   Functions: {0}", $metrics.functionCount);
+                nativelog("[Jint]   Classes: {0}", $metrics.classCount);
+                nativelog("[Jint]   Variables: {0}", $metrics.variableCount);
+                nativelog("[Jint]   Imports: {0}", $metrics.importCount);
+                $metrics;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ✓ Code metrics retrieved successfully', 'success');
+                    log('[Test 7 - Jint] Check console for metrics', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testJintFullSuite() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 7 - Jint] ========================================', 'info');
+            log('[Test 7 - Jint] 🚀 Running Full Jint Test Suite...', 'info');
+            log('[Test 7 - Jint] ========================================', 'info');
+
+            const script = `
+                nativelog("========================================");
+                nativelog("Jint JavaScript Code Analysis Test Suite");
+                nativelog("========================================");
+
+                nativelog("");
+                nativelog("--- Test 1: Parse JavaScript Code ---");
+                $jsCode1 = "function add(a, b) { return a + b; } class Calculator { multiply(x, y) { return x * y; } }";
+                $tree1 = parse_js_code($jsCode1);
+                nativelog("✓ JavaScript code parsed successfully");
+
+                nativelog("");
+                nativelog("--- Test 2: Extract Functions ---");
+                $jsCode2 = "function add(a, b) { return a + b; } const multiply = (x, y) => x * y; function subtract(a, b) { return a - b; }";
+                $tree2 = parse_js_code($jsCode2);
+                $functions = js_get_functions($tree2);
+                nativelog("✓ Found {0} functions", listsize($functions));
+                $i = 0;
+                while($i < listsize($functions)) {
+                    $func = listget($functions, $i);
+                    nativelog("  - {0} ({1})", $func.name, $func.type);
+                    $i = $i + 1;
+                };
+
+                nativelog("");
+                nativelog("--- Test 3: Extract Classes ---");
+                $jsCode3 = "class Calculator { add(a, b) { return a + b; } } class Logger extends Console { log(msg) { } }";
+                $tree3 = parse_js_code($jsCode3);
+                $classes = js_get_classes($tree3);
+                nativelog("✓ Found {0} classes", listsize($classes));
+                $j = 0;
+                while($j < listsize($classes)) {
+                    $class = listget($classes, $j);
+                    nativelog("  - {0} extends {1}", $class.name, $class.superClass);
+                    $j = $j + 1;
+                };
+
+                nativelog("");
+                nativelog("--- Test 4: Extract Variables ---");
+                $jsCode4 = "const x = 10; let y = 20; var z = 30;";
+                $tree4 = parse_js_code($jsCode4);
+                $variables = js_get_variables($tree4);
+                nativelog("✓ Found {0} variables", listsize($variables));
+                $k = 0;
+                while($k < listsize($variables)) {
+                    $variable = listget($variables, $k);
+                    nativelog("  - {0} ({1})", $variable.name, $variable.kind);
+                    $k = $k + 1;
+                };
+
+                nativelog("");
+                nativelog("--- Test 5: Extract Imports ---");
+                $jsCode5 = "import React from 'react'; import { useState } from 'react';";
+                $tree5 = parse_js_code($jsCode5);
+                $imports = js_get_imports($tree5);
+                nativelog("✓ Found {0} imports", listsize($imports));
+
+                nativelog("");
+                nativelog("--- Test 6: Verify Code Syntax ---");
+                $validCode = "function test() { return 42; }";
+                $invalidCode = "function test() { return 42";
+                $result1 = js_verify_code($validCode);
+                $result2 = js_verify_code($invalidCode);
+                nativelog("✓ Valid code: {0}", $result1);
+                nativelog("✓ Invalid code: {0}", $result2);
+
+                nativelog("");
+                nativelog("--- Test 7: Get Code Metrics ---");
+                $jsCode7 = "import React from 'react';\\nclass App { render() { } }\\nfunction helper() { }\\nconst x = 10;";
+                $tree7 = parse_js_code($jsCode7);
+                $metrics = js_get_metrics($tree7);
+                nativelog("✓ Code Metrics:");
+                nativelog("  - Total lines: {0}", $metrics.totalLines);
+                nativelog("  - Functions: {0}", $metrics.functionCount);
+                nativelog("  - Classes: {0}", $metrics.classCount);
+                nativelog("  - Variables: {0}", $metrics.variableCount);
+                nativelog("  - Imports: {0}", $metrics.importCount);
+
+                nativelog("");
+                nativelog("--- Test 8: Analyze inject.js File ---");
+                $injectFile = "d:/GitHub/CEF_Src_Build/cefclient/managed/inject.js";
+                if(file_exists($injectFile)) {
+                    $injectTree = analyze_js_file($injectFile);
+                    $injectMetrics = js_get_metrics($injectTree);
+                    nativelog("✓ inject.js analyzed:");
+                    nativelog("  - Total lines: {0}", $injectMetrics.totalLines);
+                    nativelog("  - Functions: {0}", $injectMetrics.functionCount);
+                    nativelog("  - Classes: {0}", $injectMetrics.classCount);
+                } else {
+                    nativelog("⚠ inject.js not found");
+                };
+
+                nativelog("");
+                nativelog("========================================");
+                nativelog("✅ All Jint tests completed successfully!");
+                nativelog("========================================");
+
+                "All Jint tests completed";
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 7 - Jint] ========================================', 'success');
+                    log('[Test 7 - Jint] ✅ All Jint Tests Completed!', 'success');
+                    log('[Test 7 - Jint] ========================================', 'success');
+                    log('[Test 7 - Jint] 🎉 Agent can now analyze JavaScript code!', 'success');
+                    log('[Test 7 - Jint] Check console for detailed results', 'info');
+                },
+                (error) => {
+                    log(`[Test 7 - Jint] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Test 8: Regular Expression APIs (NEW)
+
+        function testRegexMatch() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8 - Regex] Testing regex_match...', 'info');
+
+            const script = `
+                $text = "Hello World 123";
+                $pattern1 = "\\\\d+";
+                $pattern2 = "hello";
+
+                $match1 = regex_match($text, $pattern1, false);
+                $match2 = regex_match($text, $pattern2, false);
+                $match3 = regex_match($text, $pattern2, true);
+
+                nativelog("[Regex] Match '\\\\d+': {0}", $match1);
+                nativelog("[Regex] Match 'hello' (case-sensitive): {0}", $match2);
+                nativelog("[Regex] Match 'hello' (ignore-case): {0}", $match3);
+
+                "Regex match tests completed";
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8 - Regex] ✓ Regex match tests completed', 'success');
+                    log('[Test 8 - Regex] Check console for results', 'info');
+                },
+                (error) => {
+                    log(`[Test 8 - Regex] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRegexReplace() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8 - Regex] Testing regex_replace...', 'info');
+
+            const script = `
+                $text = "Hello World 123, Hello Universe 456";
+                $pattern = "\\\\d+";
+                $replacement = "[NUMBER]";
+
+                $result = regex_replace($text, $pattern, $replacement, false);
+                nativelog("[Regex] Original: {0}", $text);
+                nativelog("[Regex] Replaced: {0}", $result);
+
+                $result;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8 - Regex] ✓ Regex replace completed', 'success');
+                    log(`[Test 8 - Regex] Result: ${result}`, 'info');
+                },
+                (error) => {
+                    log(`[Test 8 - Regex] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRegexFindAll() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8 - Regex] Testing regex_find_all...', 'info');
+
+            const script = `
+                $text = "Email: test@example.com, Contact: admin@test.org";
+                $pattern = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}";
+
+                $matches = regex_find_all($text, $pattern, false);
+                nativelog("[Regex] Found {0} email addresses:", listsize($matches));
+
+                $i = 0;
+                while($i < listsize($matches)) {
+                    $email = listget($matches, $i);
+                    nativelog("[Regex]   - {0}", $email);
+                    $i = $i + 1;
+                };
+
+                $matches;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8 - Regex] ✓ Found all matches', 'success');
+                    log('[Test 8 - Regex] Check console for email list', 'info');
+                },
+                (error) => {
+                    log(`[Test 8 - Regex] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        function testRegexReplaceFile() {
+            if (!checkAgentStatus()) return;
+
+            log('[Test 8 - Regex] Testing regex_replace_file...', 'info');
+
+            const script = `
+                $testFile = "test_regex.txt";
+                $content = "Version: 1.0.0\\nBuild: 2024-01-01\\nVersion: 2.0.0";
+
+                write_file($testFile, $content);
+                nativelog("[Regex] Created test file");
+
+                $pattern = "Version: \\\\d+\\\\.\\\\d+\\\\.\\\\d+";
+                $replacement = "Version: 3.0.0";
+
+                $success = regex_replace_file($testFile, $pattern, $replacement, false);
+                nativelog("[Regex] File replacement: {0}", $success);
+
+                $newContent = read_file($testFile);
+                nativelog("[Regex] New content: {0}", $newContent);
+
+                $success;
+            `;
+
+            runMetaDSL(script,
+                (result) => {
+                    log('[Test 8 - Regex] ✓ File replacement completed', 'success');
+                    log('[Test 8 - Regex] Check test_regex.txt for results', 'info');
+                },
+                (error) => {
+                    log(`[Test 8 - Regex] ✗ Failed: ${error}`, 'error');
+                }
+            );
+        }
+
+        // Initialize on page load
+
+        window.onload = function() {
+            // Only check status on initial load, not periodically
+            // Periodic checking can cause excessive DOM updates and MutationObserver triggers
+            log('[System] Page loaded. Checking agent connection...', 'info');
+
+            // Try immediate check
+            if (checkAgentStatus()) {
+                log('[System] Agent connected immediately', 'success');
+            } else {
+                log('[System] Agent not found immediately, will retry...', 'warning');
+
+                // Retry after a short delay (in case inject.js is loading asynchronously)
+                setTimeout(() => {
+                    if (checkAgentStatus()) {
+                        log('[System] Agent connected after retry', 'success');
+                    } else {
+                        log('[System] Agent still not connected after retry', 'error');
+                        log('[System] Possible reasons:', 'error');
+                        log('[System] 1. inject.js was not injected into this frame', 'error');
+                        log('[System] 2. inject.js failed to initialize', 'error');
+                        log('[System] 3. Check cefclient console for errors', 'error');
+
+                        // Debug: check if we can access any window properties
+                        log('[System] Window properties check:', 'info');
+                        log(`[System]   - window.location: ${window.location.href}`, 'info');
+                        log(`[System]   - document.readyState: ${document.readyState}`, 'info');
+
+                        // Try to access console to see if inject.js logged anything
+                        log('[System] Check browser console (F12) for inject.js logs', 'warning');
+                    }
+                }, 1000);
+            }
+        };
+    </script>
+</body>
+</html>

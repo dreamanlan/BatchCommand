@@ -1,0 +1,45 @@
+﻿// @context
+// === 会话元信息 ===
+$session_id = "apply_diff_test_001";
+$timestamp = "2024-01-XX";
+$topic = "测试apply_diff API功能";
+
+// === 项目理解 ===
+$arch = "CefDotnetApp(框架:MetaDSL/通信/热更新) -> AgentCore(Agent逻辑,可热重载) -> inject.js(页面交互)";
+$key_dirs = ["d:/GitHub/BatchCommand/AgentCore", "d:/GitHub/BatchCommand/CefDotnetApp"];
+$key_files = ["d:/GitHub/BatchCommand/AgentCore/docs/context_template.txt"];
+
+// === 工作状态 ===
+$current_phase = "测试完成";
+$progress = "100% - 所有apply_diff API测试通过";
+$last_action = "验证apply_diff_full执行结果";
+
+// === 决策记录 ===
+$decisions = ["创建测试目录test_diff", "使用简单文本文件测试", "逐步测试各API变体"];
+$rejected_options = [];
+
+// === 任务管理 ===
+$completed = ["测试apply_diff(file,diffFile)", "测试apply_diff(file,diffContent,true)", "测试apply_diff_full(file,diffFile)"];
+$todo = ["测试更复杂的diff场景", "测试错误处理"];
+$blocked = [];
+
+// === 代码变更 ===
+$modified_files = ["d:/GitHub/BatchCommand/AgentCore/docs/test_diff/test_original.txt"];
+$new_apis = [];
+$breaking_changes = [];
+
+// === 知识积累 ===
+$learned = ["apply_diff支持两种模式:文件路径和内容直传", "apply_diff_full返回更详细信息包括library字段", "diff格式需要正确的上下文行"];
+$pitfalls = [];
+$tips = ["isContent=true时直接传diff内容字符串", "diff文件需要标准unified diff格式"];
+
+// === 测试结果 ===
+$test_results = {
+    "apply_diff(file,diffFile)": "PASS - 成功修改line2",
+    "apply_diff(file,content,true)": "PASS - 成功修改line3", 
+    "apply_diff_full(file,diffFile)": "PASS - 成功修改line4并添加line5"
+};
+
+// === 其他 ===
+$notes = "apply_diff API功能正常,可用于代码修改";
+$refs = ["d:/GitHub/BatchCommand/AgentCore/docs/test_diff/"];

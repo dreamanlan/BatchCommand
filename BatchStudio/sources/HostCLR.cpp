@@ -198,8 +198,9 @@ static void convert_separators_to_platform(std::string& pathName)
 
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 // Function to initialize .NET Core runtime
-int load_hostfxr()
+int load_hostfxr(int& out_rc)
 {
+    out_rc = 0;
 #ifdef USE_SPEC_DOTNET
     // Load hostfxr.dll and use dotnet framework in specific directory
     const char* hostfxr_path = "hostfxr.dll";
@@ -215,7 +216,8 @@ int load_hostfxr()
     size_t sz = sizeof(hostfxr_path_w) / sizeof(wchar_t);
     int rc0 = get_hostfxr_path(hostfxr_path_w, &sz, nullptr);
     if (rc0 != 0) {
-        printf_log("get_hostfxr_path failed: %d", rc0);
+        printf_log("get_hostfxr_path failed: %d (0x%x)", rc0, rc0);
+        out_rc = rc0;
         return -1;
     }
     char path[1025];
@@ -226,7 +228,8 @@ int load_hostfxr()
     size_t sz = sizeof(hostfxr_path);
     int rc0 = get_hostfxr_path(hostfxr_path, &sz, nullptr);
     if (rc0 != 0) {
-        printf_log("get_hostfxr_path failed: %d", rc0);
+        printf_log("get_hostfxr_path failed: %d (0x%x)", rc0, rc0);
+        out_rc = rc0;
         return -1;
     }
     printf("[native] hostfxr path: %s\n", hostfxr_path);
@@ -259,7 +262,7 @@ int load_hostfxr()
         return -3;
     }
 
-#ifdef USE_SEPC_DOTNET
+#ifdef USE_SPEC_DOTNET
     // Initialize the .NET Core runtime
     hostfxr_initialize_parameters parameters{
         sizeof(hostfxr_initialize_parameters),
@@ -278,7 +281,8 @@ int load_hostfxr()
     //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
     if (rc != 0 || cxt == nullptr)
     {
-        printf_log("Failed to initialize .NET Core runtime");
+        printf_log("Failed to initialize .NET Core runtime: %d (0x%x)", rc, rc);
+        out_rc = rc;
         return -4;
     }
 
@@ -286,7 +290,8 @@ int load_hostfxr()
     rc = get_delegate_fptr(cxt, hdt_load_assembly_and_get_function_pointer, reinterpret_cast<void**>(&load_assembly_and_get_function_pointer));
     if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
     {
-        printf_log("Failed to get load_assembly_and_get_function_pointer");
+        printf_log("Failed to get load_assembly_and_get_function_pointer: %d (0x%x)", rc, rc);
+        out_rc = rc;
         return -5;
     }
 
@@ -800,7 +805,7 @@ bool host_hide_windows_console()
 }
 
 // Function to call .NET Core method
-int load_dotnet_method()
+int load_dotnet_method(int& rc)
 {
     const char_t* dotnet_assembly_path = L"../managed/DotnetApp.dll";
     const char_t* dotnet_class_name = L"DotNetLib.Lib, DotnetApp";
@@ -843,7 +848,7 @@ int load_dotnet_method()
     // For UNMANAGEDCALLERSONLY_METHOD, this must be int (or other directly copyable type), not bool.
     typedef int (CORECLR_DELEGATE_CALLTYPE* register_api_fn)(void* arg);
     register_api_fn register_api = nullptr;
-    int rc = load_assembly_and_get_function_pointer(
+    rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path,
         dotnet_class_name,
         L"RegisterApi",

@@ -156,12 +156,17 @@ MainWindow::MainWindow(const QMap<QString, QString> &versions, QWidget *parent)
     QCoreApplication::addLibraryPath(absDir);
     QDir::setCurrent(absDir);
 
-    int r = load_hostfxr();
+    int rc = 0;
+    int r = load_hostfxr(rc);
     if (r != 0) {
-        QMessageBox::information(this, "Error", QString("Failed to load hostfxr: %1").arg(r));
+        QMessageBox::information(this, "Error", QString("Failed to load hostfxr: %1 (%2)").arg(r, rc));
         return;
     }
-    load_dotnet_method();
+    r = load_dotnet_method(rc);
+    if (r != 0) {
+        QMessageBox::information(this, "Error", QString("Failed to load dotnet method: %1 (%2)").arg(r, rc));
+        return;
+    }
 
     if (init_csharp_fptr) {
         ProcessResult result{};

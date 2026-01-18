@@ -401,7 +401,6 @@ void free_library(void* h)
 #endif
 }
 
-void host_output_log(const char* msg);
 void printf_log(const char* fmt, ...)
 {
     va_list vl;
@@ -411,7 +410,7 @@ void printf_log(const char* fmt, ...)
     buffer[len] = '\0';
     va_end(vl);
 
-    host_output_log(buffer);
+    printf("%s\n", buffer);
 
 #if defined(_MSC_VER)
     // Convert UTF-8 to wide char for OutputDebugString
@@ -452,6 +451,7 @@ int host_test(int a, float b, const char* c) {
 }
 void host_output_log(const char* msg)
 {
+    printf("%s\n", msg);
 }
 bool host_run_command(const char* cmd, const char* args, void* result)
 {
@@ -504,7 +504,7 @@ int load_hostfxr(int& out_rc)
     size_t sz = sizeof(hostfxr_path_w) / sizeof(wchar_t);
     int rc0 = get_hostfxr_path(hostfxr_path_w, &sz, nullptr);
     if (rc0 != 0) {
-        printf_log("get_hostfxr_path failed: %d", rc0);
+        printf_log("get_hostfxr_path failed: %d (0x%x)", rc0, rc0);
         out_rc = rc0;
         return -1;
     }
@@ -516,7 +516,7 @@ int load_hostfxr(int& out_rc)
     size_t sz = sizeof(hostfxr_path);
     int rc0 = get_hostfxr_path(hostfxr_path, &sz, nullptr);
     if (rc0 != 0) {
-        printf_log("get_hostfxr_path failed: %d", rc0);
+        printf_log("get_hostfxr_path failed: %d (0x%x)", rc0, rc0);
         out_rc = rc0;
         return -1;
     }
@@ -551,6 +551,8 @@ int load_hostfxr(int& out_rc)
         return -3;
     }
 
+    int argc = 1;
+    const char_t* argv[] = { L"./Managed/myapp.dll" };
 #ifdef USE_SPEC_DOTNET
     // Initialize the .NET Core runtime
     hostfxr_initialize_parameters parameters{
@@ -560,18 +562,17 @@ int load_hostfxr(int& out_rc)
     };
 
     hostfxr_handle cxt = nullptr;
-    int rc = init_config_fptr(L"./Managed/myapp.runtimeconfig.json", &parameters, &cxt);
+    //int rc = init_config_fptr(L"./Managed/myapp.runtimeconfig.json", &parameters, &cxt);
+    int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
 #else
     hostfxr_handle cxt = nullptr;
     int rc = init_config_fptr(L"./Managed/myapp.runtimeconfig.json", nullptr, &cxt);
+    //int rc = init_cmdline_fptr(argc, argv, nullptr, &cxt);
 #endif
 
-    //int argc = 1;
-    //const char_t* argv[] = { L"./publish/myapp.dll" };
-    //int rc = init_cmdline_fptr(argc, argv, &parameters, &cxt);
     if (rc != 0 || cxt == nullptr)
     {
-        printf_log("Failed to initialize .NET Core runtime: %d", rc);
+        printf_log("Failed to initialize .NET Core runtime: %d (0x%x)", rc, rc);
         out_rc = rc;
         return -4;
     }
@@ -580,12 +581,18 @@ int load_hostfxr(int& out_rc)
     rc = get_delegate_fptr(cxt, hdt_load_assembly_and_get_function_pointer, reinterpret_cast<void**>(&load_assembly_and_get_function_pointer));
     if (rc != 0 || load_assembly_and_get_function_pointer == nullptr)
     {
-        printf_log("Failed to get load_assembly_and_get_function_pointer: %d", rc);
+        printf_log("Failed to get load_assembly_and_get_function_pointer: %d (0x%x)", rc, rc);
         out_rc = rc;
         return -5;
     }
 
-    //run_app_fptr(cxt);
+    //Before using `hostfxr_run_app`, we must initialize the .NET Core runtime using `hostfxr_initialize_for_dotnet_command_line` instead of `hostfxr_initialize_for_runtime_config`.
+    rc = run_app_fptr(cxt);
+    if (rc != 0) {
+        printf_log("Failed to call hostfxr_run_app: %d (0x%x)", rc, rc);
+        out_rc = rc;
+        return -6;
+    }
 
     // Close the host context
     close_fptr(cxt);
@@ -594,7 +601,7 @@ int load_hostfxr(int& out_rc)
 }
 
 // Function to call .NET Core method
-int call_dotnet_method()
+int call_dotnet_method(int& rc)
 {
     const char_t* dotnet_assembly_path = L"./Managed/MyApp.dll";
     const char_t* dotnet_class_name = L"DotNetLib.Lib, MyApp";
@@ -611,7 +618,7 @@ int call_dotnet_method()
     // For UNMANAGEDCALLERSONLY_METHOD, this must be int (or other directly copyable type), not bool.
     typedef int (CORECLR_DELEGATE_CALLTYPE* register_api_fn)(void* arg);
     register_api_fn entry = nullptr;
-    int rc = load_assembly_and_get_function_pointer(
+    rc = load_assembly_and_get_function_pointer(
         dotnet_assembly_path,
         dotnet_class_name,
         L"RegisterApi",
@@ -948,7 +955,7 @@ int main(int argc, const char* argv[])
     if (use_coreclr) {
         int rc = 0;
         load_hostfxr(rc);
-        call_dotnet_method();
+        call_dotnet_method(rc);
     }
     else {
         const char* dataPath = "./Managed";

@@ -6,5 +6,12 @@ D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(738,2): wa
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(746,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(752,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
 D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptExternApiAndEntry.cpp(771,2): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+  ReadableRange.cpp
+  ReadableRangeAndroid.cpp
+  ReadableRangeIOS.cpp
+  ReadableRangeWin.cpp
+D:\GitHub\BatchCommand\DebugScriptVM\ReadableRange\ReadableRangeWin.cpp(150,52): warning C4244: “参数”: 从“const uint64_t”转换到“DWORD”，可能丢失数据
+  正在生成代码...
+  LINK : 没有找到 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll 或上一个增量链接没有生成它；正在执行完全链接
     正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

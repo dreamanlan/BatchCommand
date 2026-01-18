@@ -10,7 +10,9 @@ public static class Program
 {
     public static void Main()
     {
-        Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
+        //call mono GetInfo
+        //Console.WriteLine("Program.Main, we get: {0}", Api.GetInfo());
+        Console.WriteLine("Program.Main");
     }
 }
 
@@ -39,6 +41,7 @@ public delegate bool HostFindInPathDelegation(string filename, StringBuilder pat
 [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
 public delegate bool HostGetAdbExeDelegation(StringBuilder path, ref int path_size);
 
+//for mono host
 public static class Api
 {
     [MethodImplAttribute(MethodImplOptions.InternalCall)]

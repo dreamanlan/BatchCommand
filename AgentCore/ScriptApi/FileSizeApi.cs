@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -12,22 +13,24 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_file_size(path), aliased as file_size");
                 return BoxedValue.From(-1L);
+            }
 
             try {
                 string path = operands[0].AsString;
                 if (!System.IO.File.Exists(path)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"get_file_size: file not found: {path}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"get_file_size: file not found: {path}");
                     return BoxedValue.From(-1L);
                 }
-                
+
                 var fileInfo = new System.IO.FileInfo(path);
                 long size = fileInfo.Length;
                 return BoxedValue.From(size);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"get_file_size error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"get_file_size error: {ex.Message}");
                 return BoxedValue.From(-1L);
             }
         }

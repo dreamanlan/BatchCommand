@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Text;
 using CefDotnetApp.AgentCore.Utils;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
-using CefDotnetApp.AgentCore.Utils;
-using DotNetLib;
+using AgentPlugin.Abstractions;
 using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
@@ -15,7 +14,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 2) {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append(stringbuilder, val)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     var sb = operands[0].As<StringBuilder>();
                     var v = operands[1];
@@ -25,7 +29,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromObject(sb);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -35,7 +39,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 2) {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_line(stringbuilder, val)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     var sb = operands[0].As<StringBuilder>();
                     var v = operands[1];
@@ -45,7 +54,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromObject(sb);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -56,7 +65,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 2) {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_index_of(str, substr[, start, count]), aliased as string_find|stringfind|index_of|indexof|string_indexof|stringindexof");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 string srcstr = operands[0].GetString();
                 string str = operands[1].GetString();
                 if (srcstr != null && str != null) {
@@ -82,7 +96,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 2) {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_last_index_of(str, substr[, start, count]), aliased as last_index_of|lastindexof|string_last_indexof|stringlastindexof");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 string srcstr = operands[0].GetString();
                 string str = operands[1].GetString();
                 if (srcstr != null && str != null) {
@@ -108,7 +127,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 2) {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_index_of_any(str, substr[, start, count]), aliased as index_of_any|indexofany|string_indexof_any|stringindexofany");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 string srcstr = operands[0].GetString();
                 IList seps = operands[1].As<IList>();
                 if (srcstr != null && seps != null) {
@@ -147,7 +171,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 2) {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_last_index_of_any(str, substr[, start, count]), aliased as last_index_of_any|lastindexofany|string_last_indexof_any|stringlastindexofany");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 string srcstr = operands[0].GetString();
                 IList seps = operands[1].As<IList>();
                 if (srcstr != null && seps != null) {
@@ -186,7 +215,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             var sb = new StringBuilder();
-            foreach(var opd in operands) {
+            foreach (var opd in operands) {
                 sb.Append(opd.ToString());
             }
             return sb.ToString();
@@ -196,7 +225,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: length(str_or_list_or_dict), aliased as len|size|count");
+                return (BoxedValue)(-1);
+            }
+
+            {
                 string str = operands[0].AsString;
                 if (null != str) {
                     return BoxedValue.From(str.Length);
@@ -217,7 +251,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     }
                 }
             }
-            return -1;
         }
     }
     internal sealed class CharToIntExp : SimpleExpressionBase
@@ -225,7 +258,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: char_to_int(char_str)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 string str = operands[0].AsString;
                 if (!string.IsNullOrEmpty(str)) {
                     char c = str[0];
@@ -240,49 +278,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: int_to_char(int_ascii)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 int ascii = operands[0].GetInt();
                 char c = (char)ascii;
                 r = c.ToString();
-            }
-            return r;
-        }
-    }
-    internal sealed class StringReplaceExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            BoxedValue r = BoxedValue.NullObject;
-            if (operands.Count >= 3) {
-                string str = operands[0].AsString;
-                string key = operands[1].AsString;
-                string val = operands[2].AsString;
-                if (null != str && null != key && null != val) {
-                    if (string.IsNullOrEmpty(key)) {
-                        DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("The substr cannot be empty !!!");
-                        return BoxedValue.From(str);
-                    }
-                    if (key.IndexOf('\n') >= 0) {
-                        var result = DiffOperations.ReplaceFullLinesText(str, key, val);
-                        if (result.Success) {
-                            return BoxedValue.From(result.ResultContent);
-                        }
-                        else {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine(result.Error + "\nTry to use 'apply_diff' to replace multi-line text !!!");
-                            return BoxedValue.From(str);
-                        }
-                    }
-                    var trimedKey = key.Trim();
-                    var trimedVal = val.Trim();
-                    if (!str.Contains(trimedKey)) {
-                        NativeApi.AppendApiErrorInfoFormatLine("replace_string: substr not found");
-                    }
-                    r = str.Replace(trimedKey, trimedVal);
-                }
-                else {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("replace_string: str or substr or replace is null !!!");
-                    r = str;
-                }
             }
             return r;
         }

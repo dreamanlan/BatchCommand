@@ -54,4 +54,8 @@
       <HintPath>..\deps\TextCopy.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AbstractAgent\AbstractAgent.csproj" />
+  </ItemGroup>
 </Project>

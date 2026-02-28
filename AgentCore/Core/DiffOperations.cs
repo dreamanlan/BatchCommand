@@ -1,13 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
-using LibGit2Sharp;
 using CefDotnetApp.AgentCore.Utils;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -30,7 +28,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Apply unified diff patch to target file
         /// </summary>
-        public DiffResult ApplyDiff(string targetPath, string diffPath)
+        public DiffResult ApplyDiff(string targetPath, string diffPath, bool exactMatch = false)
         {
             try {
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
@@ -46,7 +44,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 var hunks = ParseUnifiedDiff(diffContent);
                 if (hunks.Count == 0)
-                    return new DiffResult { Success = false, Error = "No valid hunks found in diff", Library = "Basic" };
+                    return new DiffResult { Success = false, Error = "No valid hunks found in diff (only supports unified diff)", Library = "Basic" };
 
                 // Apply hunks from bottom to top to avoid line number shifting
                 var sortedHunks = hunks.OrderByDescending(h => h.OldStartLine).ToList();
@@ -54,7 +52,7 @@ namespace CefDotnetApp.AgentCore.Core
                 List<DiffHunkResult> hunkResults = new List<DiffHunkResult>();
 
                 foreach (var hunk in sortedHunks) {
-                    var hunkResult = ApplyHunk(resultLines, hunk);
+                    var hunkResult = ApplyHunk(resultLines, hunk, exactMatch);
                     hunkResults.Add(hunkResult);
                     if (!hunkResult.Success) {
                         return new DiffResult {
@@ -65,6 +63,9 @@ namespace CefDotnetApp.AgentCore.Core
                         };
                     }
                 }
+
+                // Report line number corrections
+                ReportLineNumberCorrections(hunkResults);
 
                 // Write the result
                 File.WriteAllLines(fullTargetPath, resultLines, Encoding.UTF8);
@@ -84,12 +85,12 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Apply unified diff content directly to target file
         /// </summary>
-        public DiffResult ApplyDiff(string targetPath, string diffContent, bool isContent)
+        public DiffResult ApplyDiff(string targetPath, string diffContent, bool isContent, bool exactMatch = false)
         {
             if (!isContent) {
                 if (File.Exists(diffContent)) {
                     // If isContent is false, treat as file path (backward compatibility)
-                    return ApplyDiff(targetPath, diffContent);
+                    return ApplyDiff(targetPath, diffContent, exactMatch);
                 }
                 isContent = true;
             }
@@ -103,7 +104,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 var hunks = ParseUnifiedDiff(diffContent);
                 if (hunks.Count == 0)
-                    return new DiffResult { Success = false, Error = "No valid hunks found in diff", Library = "Basic" };
+                    return new DiffResult { Success = false, Error = "No valid hunks found in diff (only supports unified diff)", Library = "Basic" };
 
                 // Apply hunks from bottom to top to avoid line number shifting
                 var sortedHunks = hunks.OrderByDescending(h => h.OldStartLine).ToList();
@@ -111,7 +112,7 @@ namespace CefDotnetApp.AgentCore.Core
                 List<DiffHunkResult> hunkResults = new List<DiffHunkResult>();
 
                 foreach (var hunk in sortedHunks) {
-                    var hunkResult = ApplyHunk(resultLines, hunk);
+                    var hunkResult = ApplyHunk(resultLines, hunk, exactMatch);
                     hunkResults.Add(hunkResult);
                     if (!hunkResult.Success) {
                         return new DiffResult {
@@ -122,6 +123,9 @@ namespace CefDotnetApp.AgentCore.Core
                         };
                     }
                 }
+
+                // Report line number corrections
+                ReportLineNumberCorrections(hunkResults);
 
                 // Write the result
                 File.WriteAllLines(fullTargetPath, resultLines, Encoding.UTF8);
@@ -140,701 +144,15 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         /// <summary>
-        /// Apply diff with full-featured support using LibGit2Sharp
+        /// Report line number corrections to error reporter as informational messages
         /// </summary>
-        public DiffResult ApplyDiffFull(string targetPath, string diffPath, bool createBackup = true)
+        private static void ReportLineNumberCorrections(List<DiffHunkResult> hunkResults)
         {
-            try {
-                string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
-                string fullDiffPath = PathHelper.EnsureAbsolutePath(diffPath, _basePath);
-
-                if (!File.Exists(fullDiffPath))
-                    return new DiffResult { Success = false, Error = "Diff file not found", Library = "LibGit2Sharp" };
-
-                // Create backup if requested
-                if (createBackup && File.Exists(fullTargetPath)) {
-                    string backupPath = fullTargetPath + ".backup";
-                    File.Copy(fullTargetPath, backupPath, true);
+            foreach (var hr in hunkResults) {
+                if (hr.Success && hr.CorrectedStartLine > 0 && hr.CorrectedStartLine != hr.OldStartLine) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(
+                        $"[diff info] Hunk line number corrected: specified line {hr.OldStartLine} -> actual line {hr.CorrectedStartLine}");
                 }
-
-                // Read diff content
-                string diffContent = File.ReadAllText(fullDiffPath, Encoding.UTF8);
-
-                // Try to use LibGit2Sharp for advanced processing
-                return ApplyDiffUsingLibGit2(fullTargetPath, diffContent, createBackup);
-            }
-            catch (Exception ex) {
-                return new DiffResult { Success = false, Error = ex.Message, Library = "LibGit2Sharp (Error)" };
-            }
-        }
-
-        /// <summary>
-        /// Apply diff using LibGit2Sharp native capabilities
-        /// This method creates a temporary Git repository and uses LibGit2Sharp's
-        /// Repository APIs to apply the patch in a Git-native way.
-        /// </summary>
-        /// <param name="targetPath">Path to the target file</param>
-        /// <param name="diffContent">Unified diff content to apply</param>
-        /// <param name="createBackup">Whether to create a backup of the target file</param>
-        /// <returns>DiffResult indicating success or failure</returns>
-        public DiffResult ApplyDiffUsingLibGit2Native(string targetPath, string diffContent, bool createBackup = true)
-        {
-            try {
-                string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
-
-                if (!File.Exists(fullTargetPath)) {
-                    return new DiffResult {
-                        Success = false,
-                        Error = $"Target file not found: {fullTargetPath}",
-                        Library = "LibGit2Sharp (Native)"
-                    };
-                }
-
-                // Create backup if requested
-                if (createBackup) {
-                    string backupPath = fullTargetPath + ".backup";
-                    File.Copy(fullTargetPath, backupPath, true);
-                }
-
-                // Create temporary directory for Git repository
-                string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-                Directory.CreateDirectory(tempDir);
-
-                string tempFilePath = Path.Combine(tempDir, Path.GetFileName(fullTargetPath));
-                File.Copy(fullTargetPath, tempFilePath, true);
-
-                try {
-                    // Initialize Git repository using LibGit2Sharp
-                    string repoPath = Repository.Init(tempDir);
-                    using (var repo = new Repository(repoPath)) {
-
-                        // Stage and commit the original file
-                        Commands.Stage(repo, "*");
-                        Signature author = new Signature("Agent", "agent@local", DateTimeOffset.Now);
-                        Commit commit = repo.Commit("Original state", author, author);
-
-                        // Write diff to temporary file
-                        string diffFilePath = Path.Combine(tempDir, "patch.diff");
-                        File.WriteAllText(diffFilePath, diffContent, Encoding.UTF8);
-
-                        // Note: LibGit2Sharp doesn't provide a direct "apply patch" API.
-                        // We'll use git apply command instead (see below).
-                    }
-
-                    // Use git apply command through LibGit2Sharp's wrapper or system
-                    // Since LibGit2Sharp doesn't expose git-apply, we need to use system git
-                    string gitPath = FindGitExecutable();
-                    if (string.IsNullOrEmpty(gitPath)) {
-                        return new DiffResult {
-                            Success = false,
-                            Error = "Git executable not found. Please ensure git is installed and in PATH.",
-                            Library = "LibGit2Sharp (Native)"
-                        };
-                    }
-
-                    // Apply patch using git apply in the temp directory
-                    ProcessStartInfo psi = new ProcessStartInfo {
-                        FileName = gitPath,
-                        Arguments = "apply patch.diff",
-                        WorkingDirectory = tempDir,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-
-                    using (var process = System.Diagnostics.Process.Start(psi)) {
-                        string output = process.StandardOutput.ReadToEnd();
-                        string error = process.StandardError.ReadToEnd();
-                        process.WaitForExit();
-
-                        if (process.ExitCode != 0) {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"git apply failed: {error}");
-                            return new DiffResult {
-                                Success = false,
-                                Error = $"Failed to apply patch: {error}",
-                                Library = "LibGit2Sharp (Native)"
-                            };
-                        }
-                    }
-
-                    // Read the modified file and apply back to target
-                    if (File.Exists(tempFilePath)) {
-                        string[] modifiedContent = File.ReadAllLines(tempFilePath, Encoding.UTF8);
-                        string[] originalContent = File.ReadAllLines(fullTargetPath, Encoding.UTF8);
-
-                        // Calculate changes
-                        int linesAdded = 0;
-                        int linesRemoved = 0;
-
-                        // Simple diff calculation
-                        var diff = CalculateDiff(originalContent, modifiedContent);
-                        linesAdded = diff.Item1;
-                        linesRemoved = diff.Item2;
-
-                        // Apply the changes
-                        File.WriteAllLines(fullTargetPath, modifiedContent, Encoding.UTF8);
-
-                        return new DiffResult {
-                            Success = true,
-                            LinesAdded = linesAdded,
-                            LinesRemoved = linesRemoved,
-                            Library = "LibGit2Sharp (Native)"
-                        };
-                    }
-                    else {
-                        return new DiffResult {
-                            Success = false,
-                            Error = "Modified file not found after patch application",
-                            Library = "LibGit2Sharp (Native)"
-                        };
-                    }
-                }
-                finally {
-                    // Clean up temporary directory
-                    try {
-                        if (Directory.Exists(tempDir)) {
-                            Directory.Delete(tempDir, true);
-                        }
-                    }
-                    catch (Exception ex) {
-                        DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Failed to clean up temp directory: {ex.Message}");
-                    }
-                }
-            }
-            catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"ApplyDiffUsingLibGit2Native error: {ex.Message}");
-                return new DiffResult {
-                    Success = false,
-                    Error = ex.Message,
-                    Library = "LibGit2Sharp (Native)"
-                };
-            }
-        }
-
-        /// <summary>
-        /// Find git executable in system PATH
-        /// </summary>
-        private string FindGitExecutable()
-        {
-            try {
-                var psi = new ProcessStartInfo {
-                    FileName = "git",
-                    Arguments = "--version",
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (var process = System.Diagnostics.Process.Start(psi)) {
-                    if (process != null) {
-                        process.WaitForExit(1000);
-                        if (process.ExitCode == 0) {
-                            return "git";
-                        }
-                    }
-                }
-            }
-            catch {
-                // Git not found
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Calculate diff between two arrays of lines using simple LCS-based algorithm
-        /// </summary>
-        private (int added, int removed) CalculateDiff(string[] original, string[] modified)
-        {
-            // Use a simple diff algorithm based on longest common subsequence
-            // This is more accurate than line-by-line comparison
-            int added = 0;
-            int removed = 0;
-
-            // Simple approach: count lines that exist in one but not the other
-            var originalSet = new HashSet<string>(original);
-            var modifiedSet = new HashSet<string>(modified);
-
-            // Lines in modified but not in original are added
-            foreach (var line in modified) {
-                if (!originalSet.Contains(line))
-                    added++;
-            }
-
-            // Lines in original but not in modified are removed
-            foreach (var line in original) {
-                if (!modifiedSet.Contains(line))
-                    removed++;
-            }
-
-            // If counts don't match, use simple length difference as fallback
-            if (added == 0 && removed == 0 && original.Length != modified.Length) {
-                if (modified.Length > original.Length)
-                    added = modified.Length - original.Length;
-                else
-                    removed = original.Length - modified.Length;
-            }
-
-            return (added, removed);
-        }
-
-        /// <summary>
-        /// Parse enhanced diff format with multiple file support
-        /// </summary>
-        private List<Patch> ParseEnhancedDiff(string diffContent)
-        {
-            var patches = new List<Patch>();
-            var lines = diffContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-
-            int i = 0;
-            while (i < lines.Length) {
-                string line = lines[i];
-
-                // Look for diff header
-                if (line.StartsWith("diff ") || line.StartsWith("index ")) {
-                    var patch = new Patch();
-
-                    // Parse file paths
-                    if (line.StartsWith("diff ")) {
-                        var match = Regex.Match(line, @"diff\s+--git\s+(a/.+)\s+(b/.+)");
-                        if (match.Success) {
-                            patch.OldPath = match.Groups[1].Value.Substring(2);
-                            patch.NewPath = match.Groups[2].Value.Substring(2);
-                            patch.TargetPath = patch.NewPath;
-                        }
-                    }
-
-                    // Skip to hunk headers
-                    while (i < lines.Length && !lines[i].StartsWith("@@")) {
-                        if (lines[i].StartsWith("new file"))
-                            patch.NewFile = true;
-                        else if (lines[i].StartsWith("deleted file"))
-                            patch.DeletedFile = true;
-                        i++;
-                    }
-
-                    // Parse hunks
-                    while (i < lines.Length && lines[i].StartsWith("@@")) {
-                        var hunk = ParseHunk(lines, ref i);
-                        if (hunk != null)
-                            patch.Hunks.Add(hunk);
-                    }
-
-                    if (patch.Hunks.Count > 0)
-                        patches.Add(patch);
-                }
-                else {
-                    i++;
-                }
-            }
-
-            return patches;
-        }
-
-        /// <summary>
-        /// Parse a single hunk from diff lines
-        /// </summary>
-        private Hunk ParseHunk(string[] lines, ref int index)
-        {
-            if (index >= lines.Length || !lines[index].StartsWith("@@"))
-                return null;
-
-            var hunk = new Hunk();
-            var match = Regex.Match(lines[index], @"^@@\s+-?(\d+)(?:,(\d+))?\s+\+?(\d+)(?:,(\d+))?\s+@@");
-            if (!match.Success)
-                return null;
-
-            hunk.OldStart = int.Parse(match.Groups[1].Value) - 1; // 0-based
-            hunk.OldCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 1;
-            hunk.NewStart = int.Parse(match.Groups[3].Value) - 1;
-            hunk.NewCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 1;
-
-            index++;
-
-            // Collect hunk lines
-            while (index < lines.Length) {
-                string line = lines[index];
-                if (line.StartsWith("@@") || line.StartsWith("diff ") || line.StartsWith("index "))
-                    break;
-
-                if (line.Length > 0) {
-                    char prefix = line[0];
-                    string content = line.Length > 1 ? line.Substring(1) : string.Empty;
-                    hunk.Lines.Add(new DiffLine { Prefix = prefix, Content = content });
-                }
-
-                index++;
-            }
-
-            return hunk;
-        }
-
-        /// <summary>
-        /// Apply patch to a file using LibGit2Sharp-like algorithm
-        /// </summary>
-        private DiffResult ApplyPatchToFile(string filePath, Patch patch)
-        {
-            try {
-                var lines = File.ReadAllLines(filePath, Encoding.UTF8).ToList();
-                var allHunkResults = new List<DiffHunkResult>();
-                int totalAdded = 0;
-                int totalRemoved = 0;
-
-                // Apply hunks from bottom to top
-                foreach (var hunk in patch.Hunks.OrderByDescending(h => h.OldStart)) {
-                    var result = ApplyEnhancedHunk(lines, hunk);
-                    allHunkResults.Add(result);
-
-                    if (!result.Success) {
-                        return new DiffResult {
-                            Success = false,
-                            Error = $"Failed to apply hunk at line {hunk.OldStart + 1}: {result.Error}",
-                            Library = "LibGit2Sharp"
-                        };
-                    }
-
-                    totalAdded += result.LinesAdded;
-                    totalRemoved += result.LinesRemoved;
-                }
-
-                File.WriteAllLines(filePath, lines, Encoding.UTF8);
-
-                return new DiffResult {
-                    Success = true,
-                    HunkResults = allHunkResults,
-                    LinesAdded = totalAdded,
-                    LinesRemoved = totalRemoved,
-                    Library = "LibGit2Sharp"
-                };
-            }
-            catch (Exception ex) {
-                return new DiffResult { Success = false, Error = ex.Message, Library = "LibGit2Sharp" };
-            }
-        }
-
-        /// <summary>
-        /// Apply enhanced hunk with better context matching
-        /// </summary>
-        private DiffHunkResult ApplyEnhancedHunk(List<string> lines, Hunk hunk)
-        {
-            var result = new DiffHunkResult {
-                OldStartLine = hunk.OldStart + 1,
-                NewStartLine = hunk.NewStart + 1
-            };
-
-            try {
-                // Enhanced context matching
-                int matchedIndex = FindEnhancedContextMatch(lines, hunk);
-                if (matchedIndex < 0) {
-                    result.Success = false;
-                    result.Error = "Context mismatch - cannot find suitable location";
-                    return result;
-                }
-
-                // Apply changes - use diff content directly, not position-based indexing
-                var newLines = new List<string>();
-                int linesRemoved = 0;
-                int linesAdded = 0;
-
-                // Process diff lines directly (similar to ApplyHunk)
-                foreach (var diffLine in hunk.Lines) {
-                    if (diffLine.Prefix == ' ' || diffLine.Prefix == '+') {
-                        // Context line or added line - use content from diff
-                        newLines.Add(diffLine.Content);
-                        if (diffLine.Prefix == '+')
-                            linesAdded++;
-                    }
-                    else if (diffLine.Prefix == '-') {
-                        // Removed line - don't add to newLines
-                        linesRemoved++;
-                    }
-                }
-
-                // Replace old lines with new lines
-                int oldCount = hunk.Lines.Count(l => l.Prefix != '+');
-                if (matchedIndex + oldCount <= lines.Count) {
-                    lines.RemoveRange(matchedIndex, oldCount);
-                    lines.InsertRange(matchedIndex, newLines);
-                }
-
-                result.Success = true;
-                result.LinesRemoved = linesRemoved;
-                result.LinesAdded = linesAdded;
-                return result;
-            }
-            catch (Exception ex) {
-                result.Success = false;
-                result.Error = ex.Message;
-                return result;
-            }
-        }
-
-        /// <summary>
-        /// Enhanced context matching with better algorithms
-        /// </summary>
-        private int FindEnhancedContextMatch(List<string> lines, Hunk hunk)
-        {
-            var contextLines = hunk.Lines.Where(l => l.Prefix == ' ').ToList();
-
-            if (contextLines.Count == 0) {
-                // No context, use exact position
-                if (hunk.OldStart >= 0 && hunk.OldStart < lines.Count)
-                    return hunk.OldStart;
-                return 0;
-            }
-
-            // Try exact match at expected position
-            if (TryExactMatch(lines, hunk.OldStart, contextLines, out int exactIndex))
-                return exactIndex;
-
-            // Enhanced fuzzy search with larger range
-            int searchRange = Math.Min(20, lines.Count / 3);
-            int bestMatch = -1;
-            float bestScore = 0;
-
-            for (int offset = -searchRange; offset <= searchRange; offset++) {
-                int testIndex = hunk.OldStart + offset;
-                if (testIndex < 0 || testIndex >= lines.Count)
-                    continue;
-
-                float score = CalculateMatchScore(lines, testIndex, contextLines, hunk.Lines.Count);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMatch = testIndex;
-                }
-            }
-
-            // Require at least 60% match for acceptance
-            if (bestScore >= 0.6f)
-                return bestMatch;
-
-            // Last resort: try to find context anywhere in file
-            return FindContextAnywhere(lines, contextLines);
-        }
-
-        /// <summary>
-        /// Try to find exact context match at specific position
-        /// </summary>
-        private static bool TryExactMatch(List<string> lines, int position, List<DiffLine> contextLines, out int matchedIndex)
-        {
-            matchedIndex = -1;
-
-            if (position < 0 || position >= lines.Count)
-                return false;
-
-            // Check if all context lines match at position
-            if (position + contextLines.Count > lines.Count)
-                return false;
-
-            int matched = 0;
-            for (int i = 0; i < contextLines.Count; i++) {
-                if (lines[position + i] == contextLines[i].Content)
-                    matched++;
-            }
-
-            if (matched == contextLines.Count) {
-                matchedIndex = position;
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Calculate match score for context
-        /// </summary>
-        private static float CalculateMatchScore(List<string> lines, int position, List<DiffLine> contextLines, int totalHunkLines)
-        {
-            if (contextLines.Count == 0)
-                return 0;
-
-            int matches = 0;
-            int searchWindow = Math.Min(10, lines.Count - position);
-
-            for (int i = 0; i < contextLines.Count && i < searchWindow; i++) {
-                if (position + i < lines.Count) {
-                    if (lines[position + i] == contextLines[i].Content)
-                        matches++;
-                    else if (string.IsNullOrWhiteSpace(lines[position + i]) && string.IsNullOrWhiteSpace(contextLines[i].Content))
-                        matches++; // Count whitespace-only lines as match
-                }
-            }
-
-            return (float)matches / contextLines.Count;
-        }
-
-        /// <summary>
-        /// Find context anywhere in the file (last resort)
-        /// </summary>
-        private static int FindContextAnywhere(List<string> lines, List<DiffLine> contextLines)
-        {
-            if (contextLines.Count == 0)
-                return 0;
-
-            // Look for first context line
-            string firstContext = contextLines[0].Content;
-            for (int i = 0; i < lines.Count; i++) {
-                if (lines[i] == firstContext) {
-                    // Check if following lines match
-                    bool allMatch = true;
-                    for (int j = 1; j < contextLines.Count; j++) {
-                        if (i + j >= lines.Count || lines[i + j] != contextLines[j].Content) {
-                            allMatch = false;
-                            break;
-                        }
-                    }
-
-                    if (allMatch)
-                        return i;
-                }
-            }
-
-            return -1;
-        }
-
-        /// <summary>
-        /// Apply patch to create a new file
-        /// </summary>
-        private static DiffHunkResult ApplyNewFilePatch(string filePath, Patch patch)
-        {
-            try {
-                var lines = new List<string>();
-                int totalAdded = 0;
-
-                foreach (var hunk in patch.Hunks) {
-                    foreach (var line in hunk.Lines) {
-                        if (line.Prefix == ' ' || line.Prefix == '+') {
-                            lines.Add(line.Content);
-                            totalAdded++;
-                        }
-                    }
-                }
-
-                // Ensure directory exists
-                var directory = Path.GetDirectoryName(filePath);
-                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-                    Directory.CreateDirectory(directory);
-
-                File.WriteAllLines(filePath, lines, Encoding.UTF8);
-
-                return new DiffHunkResult {
-                    Success = true,
-                    OldStartLine = 0,
-                    NewStartLine = 1,
-                    LinesAdded = totalAdded,
-                    LinesRemoved = 0
-                };
-            }
-            catch (Exception ex) {
-                return new DiffHunkResult {
-                    Success = false,
-                    Error = ex.Message
-                };
-            }
-        }
-
-        /// <summary>
-        /// Apply diff using LibGit2Sharp for advanced features
-        /// </summary>
-        private DiffResult ApplyDiffUsingLibGit2(string targetPath, string diffContent, bool createBackup)
-        {
-            try {
-                // Parse unified diff using enhanced parser
-                var patches = ParseEnhancedDiff(diffContent);
-                if (patches.Count == 0) {
-                    // Fallback to basic implementation if LibGit2Sharp parsing fails
-                    return ApplyDiffFallback(targetPath, diffContent);
-                }
-
-                List<DiffHunkResult> allHunkResults = new List<DiffHunkResult>();
-                int totalAdded = 0;
-                int totalRemoved = 0;
-
-                // Apply each patch
-                foreach (var patch in patches) {
-                    string targetFile = patch.TargetPath;
-                    if (string.IsNullOrEmpty(targetFile))
-                        targetFile = targetPath;
-
-                    if (!File.Exists(targetFile) && patch.NewFile) {
-                        // Create new file
-                        var fileResult = ApplyNewFilePatch(targetFile, patch);
-                        allHunkResults.Add(fileResult);
-                        if (!fileResult.Success) {
-                            return new DiffResult {
-                                Success = false,
-                                Error = $"Failed to create new file: {fileResult.Error}",
-                                Library = "LibGit2Sharp"
-                            };
-                        }
-                        totalAdded += fileResult.LinesAdded;
-                        continue;
-                    }
-
-                    if (!File.Exists(targetFile)) {
-                        return new DiffResult {
-                            Success = false,
-                            Error = $"Target file not found: {targetFile}",
-                            Library = "LibGit2Sharp"
-                        };
-                    }
-
-                    if (patch.DeletedFile) {
-                        // Delete file - read line count before deletion
-                        totalRemoved += File.ReadAllLines(targetFile).Length;
-                        File.Delete(targetFile);
-                        continue;
-                    }
-
-                    // Apply patch to existing file
-                    var result = ApplyPatchToFile(targetFile, patch);
-                    allHunkResults.AddRange(result.HunkResults);
-
-                    if (!result.Success) {
-                        return new DiffResult {
-                            Success = false,
-                            Error = result.Error,
-                            HunkResults = allHunkResults,
-                            Library = "LibGit2Sharp"
-                        };
-                    }
-
-                    totalAdded += result.LinesAdded;
-                    totalRemoved += result.LinesRemoved;
-                }
-
-                return new DiffResult {
-                    Success = true,
-                    HunkResults = allHunkResults,
-                    LinesAdded = totalAdded,
-                    LinesRemoved = totalRemoved,
-                    Library = "LibGit2Sharp"
-                };
-            }
-            catch (Exception ex) {
-                // Fallback to basic implementation on error
-                return ApplyDiffFallback(targetPath, diffContent);
-            }
-        }
-
-        /// <summary>
-        /// Fallback to basic implementation
-        /// </summary>
-        private DiffResult ApplyDiffFallback(string targetPath, string diffContent)
-        {
-            // Write diff to temporary file and use basic implementation
-            string tempDiff = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".diff");
-            try {
-                File.WriteAllText(tempDiff, diffContent, Encoding.UTF8);
-
-                // Use the temporary diff file path relative to base path
-                string relativeDiff = Path.GetRelativePath(_basePath, tempDiff);
-                return ApplyDiff(targetPath, relativeDiff);
-            }
-            finally {
-                if (File.Exists(tempDiff))
-                    File.Delete(tempDiff);
             }
         }
 
@@ -919,7 +237,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             return hunks;
         }
-        private static DiffHunkResult ApplyHunk(List<string> lines, DiffHunk hunk)
+        private static DiffHunkResult ApplyHunk(List<string> lines, DiffHunk hunk, bool exactMatch = false)
         {
             var result = new DiffHunkResult {
                 OldStartLine = hunk.OldStartLine + 1,  // Convert to 1-based for display
@@ -930,11 +248,45 @@ namespace CefDotnetApp.AgentCore.Core
                 int startIndex = hunk.OldStartLine;  // Already 0-based
 
                 // Find match using context + removed lines
-                int matchedIndex = FindContextMatch(lines, startIndex, hunk);
+                int matchedIndex = FindContextMatch(lines, startIndex, hunk, exactMatch);
                 if (matchedIndex < 0) {
                     result.Success = false;
                     result.Error = "Context mismatch";
                     return result;
+                }
+
+                // Record corrected line number if it differs from the specified one
+                int corrected1Based = matchedIndex + 1;
+                if (corrected1Based != result.OldStartLine) {
+                    result.CorrectedStartLine = corrected1Based;
+                }
+
+                // Determine if indent adjustment is needed for non-exact match
+                IndentAdjustParams indentParams = default;
+                bool needIndentAdjust = false;
+                if (!exactMatch) {
+                    // Find first non-empty original line (context or removed) in hunk
+                    var origLines = hunk.Lines.Where(l => l.Prefix == ' ' || l.Prefix == '-').ToList();
+                    DiffLine? firstNonEmptyOrig = null;
+                    int origOffset = 0;
+                    for (int oi = 0; oi < origLines.Count; oi++) {
+                        if (!string.IsNullOrWhiteSpace(origLines[oi].Content)) {
+                            firstNonEmptyOrig = origLines[oi];
+                            origOffset = oi;
+                            break;
+                        }
+                    }
+                    if (firstNonEmptyOrig != null && matchedIndex + origOffset < lines.Count) {
+                        string fileLine = lines[matchedIndex + origOffset];
+                        string diffOrigLine = firstNonEmptyOrig.Content;
+                        // Only adjust if not an exact match on this line
+                        if (fileLine != diffOrigLine) {
+                            needIndentAdjust = true;
+                            // Collect replacement lines (context + added) for detecting replacement indent style
+                            var replLines = hunk.Lines.Where(l => l.Prefix == ' ' || l.Prefix == '+').Select(l => l.Content);
+                            indentParams = CalcIndentAdjustment(lines, replLines, fileLine, diffOrigLine);
+                        }
+                    }
                 }
 
                 // Build new content by processing diff lines
@@ -944,7 +296,11 @@ namespace CefDotnetApp.AgentCore.Core
 
                 foreach (var diffLine in hunk.Lines) {
                     if (diffLine.Prefix == ' ' || diffLine.Prefix == '+') {
-                        newLines.Add(diffLine.Content);
+                        string lineContent = diffLine.Content;
+                        if (needIndentAdjust) {
+                            lineContent = ApplyIndentAdjustment(lineContent, indentParams);
+                        }
+                        newLines.Add(lineContent);
                         if (diffLine.Prefix == '+')
                             linesAdded++;
                     }
@@ -957,7 +313,7 @@ namespace CefDotnetApp.AgentCore.Core
                 int oldCount = hunk.Lines.Count(l => l.Prefix == ' ' || l.Prefix == '-');
 
                 // Boundary check
-                if (matchedIndex + oldCount > lines.Count) {
+                if (matchedIndex < 0 || matchedIndex + oldCount > lines.Count) {
                     result.Success = false;
                     result.Error = $"Hunk extends beyond file end: need {matchedIndex + oldCount} lines but file has {lines.Count}";
                     return result;
@@ -981,7 +337,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Find the best match for original lines (context + removed) in the file
         /// </summary>
-        private static int FindContextMatch(List<string> lines, int expectedIndex, DiffHunk hunk)
+        private static int FindContextMatch(List<string> lines, int expectedIndex, DiffHunk hunk, bool exactMatch = false)
         {
             // Build the list of original lines that should exist in the file
             var originalLines = hunk.Lines
@@ -999,20 +355,33 @@ namespace CefDotnetApp.AgentCore.Core
                 return expectedIndex;
             }
 
-            // Try exact match at expected position
-            if (TryMatchAt(lines, expectedIndex, originalLines))
+            // Try match at expected position
+            if (TryMatchAt(lines, expectedIndex, originalLines, exactMatch))
                 return expectedIndex;
 
-            // Fuzzy search with sliding window
-            int searchRange = Math.Min(10, lines.Count / 2);
-            for (int offset = 1; offset <= searchRange; offset++) {
+            // In exact match mode, only try the expected position with strict comparison
+            if (exactMatch)
+                return -1;
+
+            // Fuzzy search with sliding window (nearby first, then expand)
+            int nearRange = Math.Min(20, lines.Count / 2);
+            for (int offset = 1; offset <= nearRange; offset++) {
                 // Try below
-                if (TryMatchAt(lines, expectedIndex + offset, originalLines))
+                if (TryMatchAt(lines, expectedIndex + offset, originalLines, false))
                     return expectedIndex + offset;
 
                 // Try above
-                if (TryMatchAt(lines, expectedIndex - offset, originalLines))
+                if (TryMatchAt(lines, expectedIndex - offset, originalLines, false))
                     return expectedIndex - offset;
+            }
+
+            // Full file search as last resort
+            for (int i = 0; i < lines.Count; i++) {
+                // Skip already searched range
+                if (i >= Math.Max(0, expectedIndex - nearRange) && i <= Math.Min(lines.Count - 1, expectedIndex + nearRange))
+                    continue;
+                if (TryMatchAt(lines, i, originalLines, false))
+                    return i;
             }
 
             return -1;
@@ -1021,24 +390,28 @@ namespace CefDotnetApp.AgentCore.Core
         /// Try to match original lines (context + removed) at a specific position.
         /// First tries exact match, then falls back to normalized whitespace match.
         /// </summary>
-        private static bool TryMatchAt(List<string> lines, int startIndex, List<string> originalLines)
+        private static bool TryMatchAt(List<string> lines, int startIndex, List<string> originalLines, bool exactMatchOnly = false)
         {
             if (originalLines.Count == 0)
                 return true; // No lines to match
 
-            if (startIndex < 0 || startIndex + originalLines.Count > lines.Count)
+            if (startIndex < 0 || startIndex >= lines.Count || startIndex + originalLines.Count > lines.Count)
                 return false;
 
             // First try exact match
-            bool exactMatch = true;
+            bool isExact = true;
             for (int i = 0; i < originalLines.Count; i++) {
                 if (lines[startIndex + i] != originalLines[i]) {
-                    exactMatch = false;
+                    isExact = false;
                     break;
                 }
             }
-            if (exactMatch)
+            if (isExact)
                 return true;
+
+            // In exact match mode, do not try fuzzy matching
+            if (exactMatchOnly)
+                return false;
 
             // Second try: trim only (remove leading/trailing whitespace)
             bool trimMatch = true;
@@ -1064,14 +437,254 @@ namespace CefDotnetApp.AgentCore.Core
             return true;
         }
 
-        private static string NormalizeWhitespace(string line)
+        /// <summary>
+        /// Get leading whitespace of a line
+        /// </summary>
+        private static string GetLeadingWhitespace(string line)
+        {
+            int i = 0;
+            while (i < line.Length && char.IsWhiteSpace(line[i]))
+                i++;
+            return line.Substring(0, i);
+        }
+
+        /// <summary>
+        /// Find the first non-empty line from a list of lines and return its index.
+        /// Returns -1 if all lines are empty.
+        /// </summary>
+        private static int FindFirstNonEmptyLineIndex(IList<string> lines)
+        {
+            for (int i = 0; i < lines.Count; i++) {
+                if (!string.IsNullOrWhiteSpace(lines[i]))
+                    return i;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Detect indent style from a set of lines.
+        /// Returns (useTabs, spacesPerLevel).
+        /// useTabs=true means tab indentation, spacesPerLevel=0 in that case.
+        /// useTabs=false means space indentation, spacesPerLevel is the GCD of all non-zero indent lengths.
+        /// If no indentation detected, returns (false, 0).
+        /// </summary>
+        /// <summary>
+        /// Detect indent style from lines.
+        /// Returns (useTabs, spacesPerLevel, altSpacesPerLevel):
+        ///   useTabs=true  => primary is tabs, altSpacesPerLevel = GCD of space-indented lines (minority)
+        ///   useTabs=false => primary is spaces, altSpacesPerLevel = -1 if tabs also present, 0 otherwise
+        /// </summary>
+        private static (bool useTabs, int spacesPerLevel, int altSpacesPerLevel) DetectIndentStyle(IEnumerable<string> lines)
+        {
+            int tabCount = 0;
+            int spaceCount = 0;
+            int spaceGcd = 0;
+            foreach (string line in lines) {
+                if (string.IsNullOrEmpty(line))
+                    continue;
+                string ws = GetLeadingWhitespace(line);
+                if (ws.Length == 0)
+                    continue;
+                if (ws[0] == '\t') {
+                    tabCount++;
+                }
+                else if (ws[0] == ' ') {
+                    spaceCount++;
+                    spaceGcd = Gcd(spaceGcd, ws.Length);
+                }
+            }
+            if (tabCount > 0 && tabCount >= spaceCount) {
+                // Primary: tabs; alt: space GCD if any space lines exist
+                return (true, 0, spaceGcd);
+            }
+            if (spaceCount > 0 && spaceGcd > 0) {
+                // Primary: spaces; alt: mark -1 if tabs also present
+                return (false, spaceGcd, tabCount > 0 ? -1 : 0);
+            }
+            return (false, 0, 0);
+        }
+
+        /// <summary>
+        /// Calculate the GCD of two non-negative integers.
+        /// </summary>
+        private static int Gcd(int a, int b)
+        {
+            while (b != 0) {
+                int t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        /// <summary>
+        /// Count indent level of a line based on the given indent style.
+        /// For tabs: count leading tab chars.
+        /// For spaces: leading space count / spacesPerLevel.
+        /// Returns (level, remainder) where remainder is extra spaces that don't form a full level.
+        /// </summary>
+        private static (int level, int remainder) CountIndentLevel(string line, bool useTabs, int spacesPerLevel)
+        {
+            if (string.IsNullOrEmpty(line))
+                return (0, 0);
+            string ws = GetLeadingWhitespace(line);
+            if (ws.Length == 0)
+                return (0, 0);
+            if (useTabs) {
+                int tabs = 0;
+                while (tabs < ws.Length && ws[tabs] == '\t')
+                    tabs++;
+                return (tabs, 0);
+            }
+            else {
+                if (spacesPerLevel <= 0)
+                    return (0, ws.Length);
+                int spaces = 0;
+                while (spaces < ws.Length && ws[spaces] == ' ')
+                    spaces++;
+                return (spaces / spacesPerLevel, spaces % spacesPerLevel);
+            }
+        }
+
+        /// <summary>
+        /// Build indent string for a given level using file's indent style.
+        /// </summary>
+        private static string BuildIndent(int level, int remainderSpaces, bool fileUseTabs, int fileSpacesPerLevel)
+        {
+            if (level < 0) level = 0;
+            if (fileUseTabs)
+                return new string('\t', level) + (remainderSpaces > 0 ? new string(' ', remainderSpaces) : "");
+            int spl = fileSpacesPerLevel > 0 ? fileSpacesPerLevel : 4;
+            return new string(' ', level * spl + remainderSpaces);
+        }
+
+        /// <summary>
+        /// Indent adjustment parameters for style-aware indent conversion.
+        /// </summary>
+        private struct IndentAdjustParams
+        {
+            public bool FileUseTabs;
+            public int FileSpacesPerLevel;
+            public int FileAltSpacesPerLevel; // minority style info from file
+            public bool FileHasAltTabs;       // true when file primary is spaces but also has tab lines
+            public bool ReplUseTabs;
+            public int ReplSpacesPerLevel;
+            public int LevelOffset; // file first line level - search first line level
+        }
+
+        /// <summary>
+        /// Calculate indent adjustment parameters for style-aware indent conversion.
+        /// fileLines: all lines from the original file (for detecting file indent style).
+        /// replLines: replacement lines (for detecting replacement indent style).
+        /// fileLine: the first non-empty matched line in file.
+        /// searchLine: the first non-empty search/diff line.
+        /// </summary>
+        private static IndentAdjustParams CalcIndentAdjustment(IEnumerable<string> fileLines, IEnumerable<string> replLines, string fileLine, string searchLine)
+        {
+            var (fileUseTabs, fileSpl, fileAltSpl) = DetectIndentStyle(fileLines);
+            var (replUseTabs, replSpl, _) = DetectIndentStyle(replLines);
+            // Determine if file has both styles
+            bool fileHasAltTabs = !fileUseTabs && fileAltSpl == -1;
+            int fileAltSpaces = fileUseTabs ? fileAltSpl : 0; // only meaningful when primary is tabs
+            // Determine which style to use for parsing fileLine's indent
+            bool fileLineUseTabs = fileUseTabs;
+            int fileLineSpl = fileSpl;
+            if (!string.IsNullOrEmpty(fileLine)) {
+                string flWs = GetLeadingWhitespace(fileLine);
+                if (flWs.Length > 0) {
+                    if (flWs[0] == '\t' && !fileUseTabs && fileHasAltTabs) {
+                        // File primary is spaces, but this line uses tabs (minority)
+                        fileLineUseTabs = true;
+                        fileLineSpl = 0;
+                    }
+                    else if (flWs[0] == ' ' && fileUseTabs && fileAltSpaces > 0) {
+                        // File primary is tabs, but this line uses spaces (minority)
+                        fileLineUseTabs = false;
+                        fileLineSpl = fileAltSpaces;
+                    }
+                }
+            }
+            // Calculate level offset from first non-empty matched line
+            var (fileLevel, _) = CountIndentLevel(fileLine, fileLineUseTabs, fileLineSpl);
+            var (searchLevel, _) = CountIndentLevel(searchLine, replUseTabs, replSpl > 0 ? replSpl : fileSpl);
+            return new IndentAdjustParams {
+                FileUseTabs = fileUseTabs,
+                FileSpacesPerLevel = fileSpl,
+                FileAltSpacesPerLevel = fileAltSpaces,
+                FileHasAltTabs = fileHasAltTabs,
+                ReplUseTabs = replUseTabs,
+                ReplSpacesPerLevel = replSpl,
+                LevelOffset = fileLevel - searchLevel
+            };
+        }
+
+        /// <summary>
+        /// Apply indent adjustment to a single line using style-aware conversion.
+        /// Calculates the line's indent level (based on replacement style), adds levelOffset,
+        /// then rebuilds the indent using file's style.
+        /// </summary>
+        private static string ApplyIndentAdjustment(string line, IndentAdjustParams p)
+        {
+            if (string.IsNullOrEmpty(line))
+                return line;
+            // If both styles are unknown (no indentation detected), fall back to no-op
+            if (p.FileSpacesPerLevel == 0 && !p.FileUseTabs && p.ReplSpacesPerLevel == 0 && !p.ReplUseTabs && p.LevelOffset == 0)
+                return line;
+            string ws = GetLeadingWhitespace(line);
+            string content = line.Substring(ws.Length);
+            if (content.Length == 0)
+                return line;
+            // Use replacement style to count this line's indent level
+            int replSpl = p.ReplSpacesPerLevel > 0 ? p.ReplSpacesPerLevel : p.FileSpacesPerLevel;
+            bool replTabs = p.ReplUseTabs;
+            var (level, remainder) = CountIndentLevel(line, replTabs, replSpl);
+            int targetLevel = level + p.LevelOffset;
+            if (targetLevel < 0) targetLevel = 0;
+            string newIndent = BuildIndent(targetLevel, remainder, p.FileUseTabs, p.FileSpacesPerLevel);
+            return newIndent + content;
+        }
+
+        // Unicode word char: letter (\p{L}), digit (\p{N}), or underscore
+        internal static bool IsIdentifierChar(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == '_';
+        }
+
+        internal static string NormalizeWhitespace(string line)
         {
             if (string.IsNullOrEmpty(line))
                 return string.Empty;
 
-            // Replace all consecutive whitespace characters (space, tab, etc.) with a single space
-            // Then trim leading and trailing whitespace
-            return Regex.Replace(line.Trim(), @"\s+", " ");
+            string trimmed = line.Trim();
+            if (trimmed.Length == 0)
+                return string.Empty;
+
+            // Replace consecutive whitespace smartly:
+            // - If both sides are identifier chars [a-zA-Z0-9_], replace with single space
+            // - Otherwise (operator, bracket, punctuation on either side), replace with empty string
+            var sb = new StringBuilder(trimmed.Length);
+            int i = 0;
+            while (i < trimmed.Length) {
+                if (char.IsWhiteSpace(trimmed[i])) {
+                    // Skip all consecutive whitespace
+                    int wsStart = i;
+                    while (i < trimmed.Length && char.IsWhiteSpace(trimmed[i]))
+                        i++;
+                    // Check left and right characters
+                    bool leftIsIdent = wsStart > 0 && IsIdentifierChar(trimmed[wsStart - 1]);
+                    bool rightIsIdent = i < trimmed.Length && IsIdentifierChar(trimmed[i]);
+                    if (leftIsIdent && rightIsIdent) {
+                        sb.Append(' ');
+                    }
+                    // else: collapse to nothing
+                }
+                else {
+                    sb.Append(trimmed[i]);
+                    i++;
+                }
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
@@ -1182,11 +795,28 @@ namespace CefDotnetApp.AgentCore.Core
                     int startLine = match.StartLine - 1;  // Convert back to 0-based
                     int endLine = match.EndLine - 1;      // Convert back to 0-based
 
+                    // Determine if indent adjustment is needed
+                    // Check if first non-empty matched line is an exact match with search line
+                    var actualReplacementLines = replacementLines;
+                    int searchNonEmptyIdx = FindFirstNonEmptyLineIndex(effectiveSearchLines);
+                    if (searchNonEmptyIdx >= 0) {
+                        string fileFirstLine = targetLines[startLine + searchNonEmptyIdx];
+                        string searchFirstLine = effectiveSearchLines[searchNonEmptyIdx];
+                        // If not exact match, apply style-aware indent adjustment
+                        if (fileFirstLine != searchFirstLine) {
+                            var indentParams = CalcIndentAdjustment(targetLines, replacementLines, fileFirstLine, searchFirstLine);
+                            actualReplacementLines = new string[replacementLines.Length];
+                            for (int ri = 0; ri < replacementLines.Length; ri++) {
+                                actualReplacementLines[ri] = ApplyIndentAdjustment(replacementLines[ri], indentParams);
+                            }
+                        }
+                    }
+
                     // Remove matched lines
                     resultLines.RemoveRange(startLine, endLine - startLine + 1);
 
                     // Insert replacement lines
-                    resultLines.InsertRange(startLine, replacementLines);
+                    resultLines.InsertRange(startLine, actualReplacementLines);
                 }
 
                 // Build result content string
@@ -1243,7 +873,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Target file not found: {fullTargetPath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -1253,7 +883,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // Call ReplaceFullLinesText to perform the replacement
                 var result = ReplaceFullLinesText(targetContent, searchText, replacementText, replaceAll, normalizeWhitespace);
                 if (!result.Success) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Replace failed: {result.Error}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Replace failed: {result.Error}");
                     return false;
                 }
 
@@ -1263,7 +893,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"ReplaceFullLinesTextInFile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ReplaceFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }
@@ -1538,7 +1168,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Target file not found: {fullTargetPath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -1548,7 +1178,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // Call InsertAfterFullLinesText to perform the insertion
                 var result = InsertAfterFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);
                 if (!result.Success) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Insert after failed: {result.Error}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Insert after failed: {result.Error}");
                     return false;
                 }
 
@@ -1558,7 +1188,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"InsertAfterFullLinesTextInFile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"InsertAfterFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }
@@ -1579,7 +1209,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 if (!File.Exists(fullTargetPath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Target file not found: {fullTargetPath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Target file not found: {fullTargetPath}");
                     return false;
                 }
 
@@ -1589,7 +1219,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // Call InsertBeforeFullLinesText to perform the insertion
                 var result = InsertBeforeFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);
                 if (!result.Success) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Insert before failed: {result.Error}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Insert before failed: {result.Error}");
                     return false;
                 }
 
@@ -1599,7 +1229,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"InsertBeforeFullLinesTextInFile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"InsertBeforeFullLinesTextInFile error: {ex.Message}");
                 return false;
             }
         }
@@ -1614,31 +1244,32 @@ namespace CefDotnetApp.AgentCore.Core
         public int OldLineCount { get; set; }
         public int NewStartLine { get; set; }
         public int NewLineCount { get; set; }
-        public List<DiffLine> Lines { get; set; }
+        public List<DiffLine> Lines { get; set; } = new List<DiffLine>();
     }
 
     public class DiffLine
     {
         public char Prefix { get; set; }  // ' ' context, '-' remove, '+' add
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
     }
 
     public class DiffResult
     {
         public bool Success { get; set; }
-        public string Error { get; set; }
-        public List<DiffHunkResult> HunkResults { get; set; }
+        public string? Error { get; set; }
+        public List<DiffHunkResult> HunkResults { get; set; } = new List<DiffHunkResult>();
         public int LinesAdded { get; set; }
         public int LinesRemoved { get; set; }
-        public string Library { get; set; }
+        public string Library { get; set; } = string.Empty;
     }
 
     public class DiffHunkResult
     {
         public bool Success { get; set; }
-        public string Error { get; set; }
+        public string? Error { get; set; }
         public int OldStartLine { get; set; }
         public int NewStartLine { get; set; }
+        public int CorrectedStartLine { get; set; } // Actual matched line (1-based), 0 means no correction
         public int LinesAdded { get; set; }
         public int LinesRemoved { get; set; }
     }
@@ -1646,12 +1277,12 @@ namespace CefDotnetApp.AgentCore.Core
     public class ReplaceResult
     {
         public bool Success { get; set; }
-        public string Error { get; set; }
+        public string? Error { get; set; }
         public int LinesAdded { get; set; }
         public int LinesRemoved { get; set; }
-        public string ResultContent { get; set; }
+        public string ResultContent { get; set; } = string.Empty;
         public int ReplaceCount { get; set; }
-        public List<MatchInfo> AllMatches { get; set; }
+        public List<MatchInfo> AllMatches { get; set; } = new List<MatchInfo>();
     }
 
     public class MatchInfo
@@ -1660,24 +1291,4 @@ namespace CefDotnetApp.AgentCore.Core
         public int EndLine { get; set; }
     }
 
-    // Additional classes for full-featured diff support
-
-    public class Patch
-    {
-        public string OldPath { get; set; }
-        public string NewPath { get; set; }
-        public string TargetPath { get; set; }
-        public bool NewFile { get; set; }
-        public bool DeletedFile { get; set; }
-        public List<Hunk> Hunks { get; set; } = new List<Hunk>();
-    }
-
-    public class Hunk
-    {
-        public int OldStart { get; set; }
-        public int OldCount { get; set; }
-        public int NewStart { get; set; }
-        public int NewCount { get; set; }
-        public List<DiffLine> Lines { get; set; } = new List<DiffLine>();
-    }
 }

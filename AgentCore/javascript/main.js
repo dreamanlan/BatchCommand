@@ -58,31 +58,11 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
 
             clearHistory: function() {
                 messageHandler.clearHistory();
+                apiClient.resetConversation();
                 const messagesArea = document.getElementById('messages-area');
                 if (messagesArea) {
                     messagesArea.innerHTML = '';
                 }
-            },
-
-            // Hidden context management methods
-            // These contexts will be sent to LLM but not displayed in UI
-            addHiddenContext: function(context) {
-                messageHandler.addHiddenContext(context);
-                if (mainLogger) mainLogger.info('Added hidden context');
-            },
-
-            setHiddenContext: function(context) {
-                messageHandler.setHiddenContext(context);
-                if (mainLogger) mainLogger.info('Set hidden context');
-            },
-
-            clearHiddenContext: function() {
-                messageHandler.clearHiddenContext();
-                if (mainLogger) mainLogger.info('Cleared hidden context');
-            },
-
-            getHiddenContext: function() {
-                return messageHandler.getHiddenContext();
             },
 
             // Context configuration methods
@@ -94,13 +74,10 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
                 return messageHandler.getContextConfig();
             },
 
-            getAutoContext: function() {
-                return messageHandler.getAutoContext();
-            },
-
             // System prompt management methods
             setDialogPrompt: function(prompt) {
                 messageHandler.setDialogPrompt(prompt);
+                apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
                 if (mainLogger) mainLogger.info('Set dialog prompt via window API');
             },
 
@@ -117,6 +94,7 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
         // Also expose setDialogPrompt directly on window for inject.js compatibility
         window.setDialogPrompt = function(prompt) {
             messageHandler.setDialogPrompt(prompt);
+            apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
             if (mainLogger) mainLogger.info('Set dialog prompt via window.setDialogPrompt');
         };
 

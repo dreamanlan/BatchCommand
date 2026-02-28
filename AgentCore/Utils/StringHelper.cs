@@ -69,13 +69,8 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
                 return false;
 
-            try {
-                RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
-                return Regex.IsMatch(str, pattern, options);
-            }
-            catch (Exception) {
-                return false;
-            }
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            return Regex.IsMatch(str, pattern, options);
         }
 
         public static string ReplacePattern(string str, string pattern, string replacement, bool ignoreCase = false)
@@ -83,13 +78,8 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
                 return str;
 
-            try {
-                RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
-                return Regex.Replace(str, pattern, replacement, options);
-            }
-            catch (Exception) {
-                return str;
-            }
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            return Regex.Replace(str, pattern, replacement, options);
         }
 
         public static string Indent(string str, int spaces)
@@ -148,15 +138,10 @@ namespace CefDotnetApp.AgentCore.Utils
             if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
                 return matches;
 
-            try {
-                RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
-                MatchCollection matchCollection = Regex.Matches(str, pattern, options);
-                foreach (Match match in matchCollection) {
-                    matches.Add(match.Value);
-                }
-            }
-            catch (Exception) {
-                // Return empty list on error
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            MatchCollection matchCollection = Regex.Matches(str, pattern, options);
+            foreach (Match match in matchCollection) {
+                matches.Add(match.Value);
             }
 
             return matches;

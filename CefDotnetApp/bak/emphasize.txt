@@ -1,0 +1,5 @@
+记住，我们现在有3个会话参与者：用户、agent、LLM（也就是你），agent发的信息在开头会标记 Agent回复 ，用户的信息不会标注。
+如果当前工作需要暂停等待用户验证，请发停止agent的指令。
+避免用write_file覆盖已有代码文件，修改已有代码文件使用apply_diff或代码文件的文本替换replace_in_file/replace_range、行插入insert_after/insert_before与行删除delete_lines。
+agent不是立即能识别你最后发出的代码，所以有时候代码没有执行不要重复发代码，特别是涉及修改的代码，容易改出问题。此时也只回复继续直到agent回复没有代码执行了再发新代码。
+阅读完代码后可以做个小结，这样下次看到小结就知道了，不用反复查代码。

@@ -1,4 +1,5 @@
 ﻿using System;
+using AgentPlugin.Abstractions;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,264 +26,381 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
-            BatchCommand.BatchScript.Register("add", "add(a,b)", new ExpressionFactoryHelper<AddExp>());
-            BatchCommand.BatchScript.Register("sub", "sub(a,b)", new ExpressionFactoryHelper<SubExp>());
-            BatchCommand.BatchScript.Register("mul", "mul(a,b)", new ExpressionFactoryHelper<MulExp>());
-            BatchCommand.BatchScript.Register("div", "div(a,b)", new ExpressionFactoryHelper<DivExp>());
-            BatchCommand.BatchScript.Register("mod", "mod(a,b)", new ExpressionFactoryHelper<ModExp>());
-            BatchCommand.BatchScript.Register("bit_and", "bitand(a,b)", new ExpressionFactoryHelper<BitAndExp>());
-            BatchCommand.BatchScript.Register("bit_or", "bitor(a,b)", new ExpressionFactoryHelper<BitOrExp>());
-            BatchCommand.BatchScript.Register("bit_xor", "bitxor(a,b)", new ExpressionFactoryHelper<BitXorExp>());
-            BatchCommand.BatchScript.Register("bit_not", "bitnot(a)", new ExpressionFactoryHelper<BitNotExp>());
-            BatchCommand.BatchScript.Register("left_shift", "left_shift(a,b)", new ExpressionFactoryHelper<LShiftExp>());
-            BatchCommand.BatchScript.Register("right_shift", "right_shift(a,b)", new ExpressionFactoryHelper<RShiftExp>());
-            //BatchCommand.BatchScript.Register("max", "max(v1,v2)", new ExpressionFactoryHelper<MaxExp>());
-            //BatchCommand.BatchScript.Register("min", "min(v1,v2)", new ExpressionFactoryHelper<MinExp>());
-            //BatchCommand.BatchScript.Register("abs", "abs(v)", new ExpressionFactoryHelper<AbsExp>());
-            //BatchCommand.BatchScript.Register("sin", "sin(v)", new ExpressionFactoryHelper<SinExp>());
-            //BatchCommand.BatchScript.Register("cos", "cos(v)", new ExpressionFactoryHelper<CosExp>());
-            //BatchCommand.BatchScript.Register("tan", "tan(v)", new ExpressionFactoryHelper<TanExp>());
-            //BatchCommand.BatchScript.Register("asin", "asin(v)", new ExpressionFactoryHelper<AsinExp>());
-            //BatchCommand.BatchScript.Register("acos", "acos(v)", new ExpressionFactoryHelper<AcosExp>());
-            //BatchCommand.BatchScript.Register("atan", "atan(v)", new ExpressionFactoryHelper<AtanExp>());
-            //BatchCommand.BatchScript.Register("atan2", "atan2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
-            //BatchCommand.BatchScript.Register("sinh", "sinh(v)", new ExpressionFactoryHelper<SinhExp>());
-            //BatchCommand.BatchScript.Register("cosh", "cosh(v)", new ExpressionFactoryHelper<CoshExp>());
-            //BatchCommand.BatchScript.Register("tanh", "tanh(v)", new ExpressionFactoryHelper<TanhExp>());
-            BatchCommand.BatchScript.Register("rnd_int", "rnd_int(min,max)", new ExpressionFactoryHelper<RndIntExp>());
-            BatchCommand.BatchScript.Register("rnd_float", "rnd_float(min,max)", new ExpressionFactoryHelper<RndFloatExp>());
-            //BatchCommand.BatchScript.Register("pow", "pow(v1,v2)", new ExpressionFactoryHelper<PowExp>());
-            //BatchCommand.BatchScript.Register("sqrt", "sqrt(v)", new ExpressionFactoryHelper<SqrtExp>());
-            //BatchCommand.BatchScript.Register("exp", "exp(v)", new ExpressionFactoryHelper<ExpExp>());
-            //BatchCommand.BatchScript.Register("exp2", "exp2(v)", new ExpressionFactoryHelper<Exp2Exp>());
-            //BatchCommand.BatchScript.Register("log", "log(v)", new ExpressionFactoryHelper<LogExp>());
-            //BatchCommand.BatchScript.Register("log2", "log2(v)", new ExpressionFactoryHelper<Log2Exp>());
-            //BatchCommand.BatchScript.Register("log10", "log10(v)", new ExpressionFactoryHelper<Log10Exp>());
-            //BatchCommand.BatchScript.Register("floor", "floor(v)", new ExpressionFactoryHelper<FloorExp>());
-            //BatchCommand.BatchScript.Register("ceiling", "ceiling(v)", new ExpressionFactoryHelper<CeilingExp>());
-            //BatchCommand.BatchScript.Register("round", "round(v)", new ExpressionFactoryHelper<RoundExp>());
-            BatchCommand.BatchScript.Register("floor_to_int", "floor_to_int(v)", new ExpressionFactoryHelper<FloorToIntExp>());
-            BatchCommand.BatchScript.Register("ceiling_to_int", "ceiling_to_int(v)", new ExpressionFactoryHelper<CeilingToIntExp>());
-            BatchCommand.BatchScript.Register("round_to_int", "round_to_int(v)", new ExpressionFactoryHelper<RoundToIntExp>());
-            //BatchCommand.BatchScript.Register("bool", "bool(v)", new ExpressionFactoryHelper<BoolExp>());
-            //BatchCommand.BatchScript.Register("sbyte", "sbyte(v)", new ExpressionFactoryHelper<SByteExp>());
-            //BatchCommand.BatchScript.Register("byte", "byte(v)", new ExpressionFactoryHelper<ByteExp>());
-            //BatchCommand.BatchScript.Register("char", "char(v)", new ExpressionFactoryHelper<CharExp>());
-            //BatchCommand.BatchScript.Register("short", "short(v)", new ExpressionFactoryHelper<ShortExp>());
-            //BatchCommand.BatchScript.Register("ushort", "ushort(v)", new ExpressionFactoryHelper<UShortExp>());
-            //BatchCommand.BatchScript.Register("int", "int(v)", new ExpressionFactoryHelper<IntExp>());
-            //BatchCommand.BatchScript.Register("uint", "uint(v)", new ExpressionFactoryHelper<UIntExp>());
-            //BatchCommand.BatchScript.Register("long", "long(v)", new ExpressionFactoryHelper<LongExp>());
-            //BatchCommand.BatchScript.Register("ulong", "ulong(v)", new ExpressionFactoryHelper<ULongExp>());
-            //BatchCommand.BatchScript.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
-            //BatchCommand.BatchScript.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
-            //BatchCommand.BatchScript.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
-            BatchCommand.BatchScript.Register("f_to_i", "f_to_i(v)", new ExpressionFactoryHelper<FtoiExp>());
-            BatchCommand.BatchScript.Register("i_to_f", "i_to_f(v)", new ExpressionFactoryHelper<ItofExp>());
-            BatchCommand.BatchScript.Register("f_to_u", "f_to_u(v)", new ExpressionFactoryHelper<FtouExp>());
-            BatchCommand.BatchScript.Register("u_to_f", "u_to_f(v)", new ExpressionFactoryHelper<UtofExp>());
-            BatchCommand.BatchScript.Register("d_to_l", "d_to_l(v)", new ExpressionFactoryHelper<DtolExp>());
-            BatchCommand.BatchScript.Register("l_to_d", "l_to_d(v)", new ExpressionFactoryHelper<LtodExp>());
-            BatchCommand.BatchScript.Register("d_to_u", "d_to_u(v)", new ExpressionFactoryHelper<DtouExp>());
-            BatchCommand.BatchScript.Register("u_to_d", "u_to_d(v)", new ExpressionFactoryHelper<UtodExp>());
-            //BatchCommand.BatchScript.Register("lerp", "lerp(a,b,t)", new ExpressionFactoryHelper<LerpExp>());
-            BatchCommand.BatchScript.Register("lerp_unclamped", "lerp_unclamped(a,b,t)", new ExpressionFactoryHelper<LerpUnclampedExp>());
-            BatchCommand.BatchScript.Register("lerp_angle", "lerp_angle(a,b,t)", new ExpressionFactoryHelper<LerpAngleExp>());
-            BatchCommand.BatchScript.Register("smooth_step", "smooth_step(from,to,t)", new ExpressionFactoryHelper<SmoothStepExp>());
-            //BatchCommand.BatchScript.Register("clamp01", "clamp01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
-            //BatchCommand.BatchScript.Register("clamp", "clamp(v,v1,v2)", new ExpressionFactoryHelper<ClampExp>());
-            //BatchCommand.BatchScript.Register("approximately", "approximately(v1,v2)", new ExpressionFactoryHelper<ApproximatelyExp>());
-            BatchCommand.BatchScript.Register("is_power_of_two", "is_power_of_two(v)", new ExpressionFactoryHelper<IsPowerOfTwoExp>());
-            BatchCommand.BatchScript.Register("closest_power_of_two", "closest_power_of_two(v)", new ExpressionFactoryHelper<ClosestPowerOfTwoExp>());
-            BatchCommand.BatchScript.Register("next_power_of_two", "next_power_of_two(v)", new ExpressionFactoryHelper<NextPowerOfTwoExp>());
-            BatchCommand.BatchScript.Register("distance", "distance(x1,y1,x2,y2)", new ExpressionFactoryHelper<DistExp>());
-            BatchCommand.BatchScript.Register("distance_square", "distance_square(x1,y1,x2,y2)", new ExpressionFactoryHelper<DistSqrExp>());
-            BatchCommand.BatchScript.Register("great", "great(a,b)", new ExpressionFactoryHelper<GreatExp>());
-            BatchCommand.BatchScript.Register("great_equal", "great_equal(a,b)", new ExpressionFactoryHelper<GreatEqualExp>());
-            BatchCommand.BatchScript.Register("less", "less(a,b)", new ExpressionFactoryHelper<LessExp>());
-            BatchCommand.BatchScript.Register("less_equal", "less_equal(a,b)", new ExpressionFactoryHelper<LessEqualExp>());
-            BatchCommand.BatchScript.Register("equal", "equal(a,b)", new ExpressionFactoryHelper<EqualExp>());
-            BatchCommand.BatchScript.Register("not_equal", "not_equal(a,b)", new ExpressionFactoryHelper<NotEqualExp>());
-            BatchCommand.BatchScript.Register("and", "and(a,b)", new ExpressionFactoryHelper<AndExp>());
-            BatchCommand.BatchScript.Register("or", "or(a,b)", new ExpressionFactoryHelper<OrExp>());
-            BatchCommand.BatchScript.Register("not", "not(a)", new ExpressionFactoryHelper<NotExp>());
-            BatchCommand.BatchScript.Register("cond_expr", "cond_expr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
-            //BatchCommand.BatchScript.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
-            BatchCommand.BatchScript.Register("get_type_assembly_name", "get_type_assembly_name(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
-            BatchCommand.BatchScript.Register("get_type_full_name", "get_type_full_name(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
-            BatchCommand.BatchScript.Register("get_type_name", "get_type_name(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
-            BatchCommand.BatchScript.Register("get_type", "get_type(type_str)", new ExpressionFactoryHelper<GetTypeExp>());
-            BatchCommand.BatchScript.Register("change_type", "change_type(obj,type_str)", new ExpressionFactoryHelper<ChangeTypeExp>());
-            BatchCommand.BatchScript.Register("parse_enum", "parse_enum(type_str,val_str)", new ExpressionFactoryHelper<ParseEnumExp>());
-            BatchCommand.BatchScript.Register("is_null", "is_null(obj)", new ExpressionFactoryHelper<IsNullExp>());
-            //BatchCommand.BatchScript.Register("null", "null()", new ExpressionFactoryHelper<NullExp>());
-            BatchCommand.BatchScript.Register("equals_null", "equals_null(obj)", new ExpressionFactoryHelper<EqualsNullExp>());
-            BatchCommand.BatchScript.Register("dotnet_load", "dotnet_load(dll_path)", new ExpressionFactoryHelper<DotnetLoadExp>());
-            BatchCommand.BatchScript.Register("dotnet_new", "dotnet_new(assembly,type_name,arg1,arg2,...)", new ExpressionFactoryHelper<DotnetNewExp>());
-            BatchCommand.BatchScript.Register("string_substring", "string_substring(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
-            BatchCommand.BatchScript.Register("string_substr", "string_substr(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
-            BatchCommand.BatchScript.Register("substr", "substr(str[, start, count])", new ExpressionFactoryHelper<SubstringExp>());
-            BatchCommand.BatchScript.Register("new_string_builder", "new_string_builder()", new ExpressionFactoryHelper<NewStringBuilderExp>());
-            BatchCommand.BatchScript.Register("append_format", "append_format(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatExp>());
-            BatchCommand.BatchScript.Register("append_format_line", "append_format_line(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatLineExp>());
-            BatchCommand.BatchScript.Register("string_builder_to_string", "string_builder_to_string(sb)", new ExpressionFactoryHelper<StringBuilderToStringExp>());
-            BatchCommand.BatchScript.Register("string_join", "string_join(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
-            BatchCommand.BatchScript.Register("join_string", "join_string(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
-            BatchCommand.BatchScript.Register("string_split", "string_split(str, sep) or string_split(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
-            BatchCommand.BatchScript.Register("split_string", "split_string(str, sep) or split_string(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
-            BatchCommand.BatchScript.Register("join", "join(str, list)", new ExpressionFactoryHelper<StringJoinExp>());
-            BatchCommand.BatchScript.Register("split", "split(str, sep) or split(str, sep_char_list)", new ExpressionFactoryHelper<StringSplitExp>());
-            BatchCommand.BatchScript.Register("string_trim", "string_trim(str)", new ExpressionFactoryHelper<StringTrimExp>());
-            BatchCommand.BatchScript.Register("trim_string", "trim_string(str)", new ExpressionFactoryHelper<StringTrimExp>());
-            BatchCommand.BatchScript.Register("trim", "trim(str)", new ExpressionFactoryHelper<StringTrimExp>());
-            BatchCommand.BatchScript.Register("string_trim_start", "string_trim_start(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
-            BatchCommand.BatchScript.Register("trim_start_string", "trim_start_string(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
-            BatchCommand.BatchScript.Register("trim_start", "trim_start(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
-            BatchCommand.BatchScript.Register("string_trim_end", "string_trim_end(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
-            BatchCommand.BatchScript.Register("trim_end_string", "trim_end_string(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
-            BatchCommand.BatchScript.Register("trim_end", "trim_end(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
-            BatchCommand.BatchScript.Register("string_to_lower", "string_to_lower(str)", new ExpressionFactoryHelper<StringToLowerExp>());
-            BatchCommand.BatchScript.Register("string_to_upper", "string_to_upper(str)", new ExpressionFactoryHelper<StringToUpperExp>());
-            BatchCommand.BatchScript.Register("string_replace", "string_replace(str,key,rep_str)", new ExpressionFactoryHelper<StringReplaceExp>());
-            BatchCommand.BatchScript.Register("string_replace_char", "string_replace_char(str,key,char_as_str)", new ExpressionFactoryHelper<StringReplaceCharExp>());
-            BatchCommand.BatchScript.Register("make_string", "make_string(char1_as_str_or_int,char2_as_str_or_int,...)", new ExpressionFactoryHelper<MakeStringExp>());
-            BatchCommand.BatchScript.Register("string_contains", "string_contains(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringContainsExp>());
-            BatchCommand.BatchScript.Register("string_not_contains", "string_not_contains(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringNotContainsExp>());
-            BatchCommand.BatchScript.Register("string_contains_any", "string_contains_any(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringContainsAnyExp>());
-            BatchCommand.BatchScript.Register("string_not_contains_any", "string_not_contains_any(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
-            BatchCommand.BatchScript.Register("contains", "contains(str, substr1, ...)", new ExpressionFactoryHelper<StringContainsExp>());
-            BatchCommand.BatchScript.Register("contains_any", "contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringContainsAnyExp>());
-            BatchCommand.BatchScript.Register("not_contains", "not_contains(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsExp>());
-            BatchCommand.BatchScript.Register("not_contains_any", "not_contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
-            BatchCommand.BatchScript.Register("string_to_int", "string_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
-            BatchCommand.BatchScript.Register("str_to_int", "str_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
-            BatchCommand.BatchScript.Register("string_to_uint", "string_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
-            BatchCommand.BatchScript.Register("str_to_uint", "str_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
-            BatchCommand.BatchScript.Register("string_to_long", "string_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
-            BatchCommand.BatchScript.Register("str_to_long", "str_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
-            BatchCommand.BatchScript.Register("string_to_ulong", "string_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
-            BatchCommand.BatchScript.Register("str_to_ulong", "str_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
-            BatchCommand.BatchScript.Register("string_to_float", "string_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
-            BatchCommand.BatchScript.Register("str_to_float", "str_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
-            BatchCommand.BatchScript.Register("strint_to_double", "strint_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
-            BatchCommand.BatchScript.Register("str_to_double", "str_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
-            BatchCommand.BatchScript.Register("hex_string_to_int", "hex_string_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
-            BatchCommand.BatchScript.Register("hex_to_int", "hex_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
-            BatchCommand.BatchScript.Register("hex_string_to_uint", "hex_string_to_uint(str)", new ExpressionFactoryHelper<Hex2UintExp>());
-            BatchCommand.BatchScript.Register("hex_to_uint", "hex_to_uint(str)", new ExpressionFactoryHelper<Hex2UintExp>());
-            BatchCommand.BatchScript.Register("hex_string_to_long", "hex_string_to_long(str)", new ExpressionFactoryHelper<Hex2LongExp>());
-            BatchCommand.BatchScript.Register("hex_to_long", "hex_to_long(str)", new ExpressionFactoryHelper<Hex2LongExp>());
-            BatchCommand.BatchScript.Register("hex_string_to_ulong", "hex_string_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
-            BatchCommand.BatchScript.Register("hex_to_ulong", "hex_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
-            BatchCommand.BatchScript.Register("date_time_string", "date_time_string(fmt)", new ExpressionFactoryHelper<DatetimeStrExp>());
-            BatchCommand.BatchScript.Register("date_time_str", "date_time_str(fmt)", new ExpressionFactoryHelper<DatetimeStrExp>());
-            BatchCommand.BatchScript.Register("long_date_string", "long_date_string()", new ExpressionFactoryHelper<LongDateStrExp>());
-            BatchCommand.BatchScript.Register("long_date_str", "long_date_str()", new ExpressionFactoryHelper<LongDateStrExp>());
-            BatchCommand.BatchScript.Register("long_time_string", "long_time_string()", new ExpressionFactoryHelper<LongTimeStrExp>());
-            BatchCommand.BatchScript.Register("long_time_str", "long_time_str()", new ExpressionFactoryHelper<LongTimeStrExp>());
-            BatchCommand.BatchScript.Register("short_date_string", "short_date_string()", new ExpressionFactoryHelper<ShortDateStrExp>());
-            BatchCommand.BatchScript.Register("short_date_str", "short_date_str()", new ExpressionFactoryHelper<ShortDateStrExp>());
-            BatchCommand.BatchScript.Register("short_time_string", "short_time_string()", new ExpressionFactoryHelper<ShortTimeStrExp>());
-            BatchCommand.BatchScript.Register("short_time_str", "short_time_str()", new ExpressionFactoryHelper<ShortTimeStrExp>());
-            BatchCommand.BatchScript.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
-            //BatchCommand.BatchScript.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
-            BatchCommand.BatchScript.Register("tuple_set", "(var1,var2,...) = (v1,v2,...) or tuple_set((var1,var2,...), (v1,v2,...))", new ExpressionFactoryHelper<TupleSetExp>());
-            //BatchCommand.BatchScript.Register("array", "[v1,v2,...] or array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
-            BatchCommand.BatchScript.Register("to_array", "to_array(list)", new ExpressionFactoryHelper<ToArrayExp>());
-            BatchCommand.BatchScript.Register("list_count", "list_count(list)", new ExpressionFactoryHelper<ListSizeExp>());
-            BatchCommand.BatchScript.Register("list_size", "list_size(list)", new ExpressionFactoryHelper<ListSizeExp>());
-            //BatchCommand.BatchScript.Register("list", "list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
-            BatchCommand.BatchScript.Register("list_get", "list_get(list,index[,defval])", new ExpressionFactoryHelper<ListGetExp>());
-            BatchCommand.BatchScript.Register("list_set", "list_set(list,index,val)", new ExpressionFactoryHelper<ListSetExp>());
-            BatchCommand.BatchScript.Register("list_index_of", "list_index_of(list,val)", new ExpressionFactoryHelper<ListIndexOfExp>());
-            BatchCommand.BatchScript.Register("list_indexof", "list_indexof(list,val)", false, new ExpressionFactoryHelper<ListIndexOfExp>());
-            BatchCommand.BatchScript.Register("list_add", "list_add(list,val)", new ExpressionFactoryHelper<ListAddExp>());
-            BatchCommand.BatchScript.Register("list_remove", "list_remove(list,val)", new ExpressionFactoryHelper<ListRemoveExp>());
-            BatchCommand.BatchScript.Register("list_insert", "list_insert(list,index,val)", new ExpressionFactoryHelper<ListInsertExp>());
-            BatchCommand.BatchScript.Register("list_remove_at", "list_remove_at(list,index)", new ExpressionFactoryHelper<ListRemoveAtExp>());
-            BatchCommand.BatchScript.Register("list_clear", "list_clear(list)", new ExpressionFactoryHelper<ListClearExp>());
-            BatchCommand.BatchScript.Register("list_split", "list_split(list,ct) api, return list of list", new ExpressionFactoryHelper<ListSplitExp>());
-            BatchCommand.BatchScript.Register("hashtable_size", "hashtable_size(hash)", new ExpressionFactoryHelper<HashtableSizeExp>());
-            //BatchCommand.BatchScript.Register("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
-            BatchCommand.BatchScript.Register("hashtable_get", "hashtable_get(hash,key[,defval])", new ExpressionFactoryHelper<HashtableGetExp>());
-            BatchCommand.BatchScript.Register("hashtable_set", "hashtable_set(hash,key,val)", new ExpressionFactoryHelper<HashtableSetExp>());
-            BatchCommand.BatchScript.Register("hashtable_add", "hashtable_add(hash,key,val)", new ExpressionFactoryHelper<HashtableAddExp>());
-            BatchCommand.BatchScript.Register("hashtable_remove", "hashtable_remove(hash,key)", new ExpressionFactoryHelper<HashtableRemoveExp>());
-            BatchCommand.BatchScript.Register("hashtable_clear", "hashtable_clear(hash)", new ExpressionFactoryHelper<HashtableClearExp>());
-            BatchCommand.BatchScript.Register("hashtable_keys", "hashtable_keys(hash)", new ExpressionFactoryHelper<HashtableKeysExp>());
-            BatchCommand.BatchScript.Register("hashtable_values", "hashtable_values(hash)", new ExpressionFactoryHelper<HashtableValuesExp>());
-            BatchCommand.BatchScript.Register("list_hashtable", "list_hashtable(hash) api, return list of pair", new ExpressionFactoryHelper<ListHashtableExp>());
-            BatchCommand.BatchScript.Register("hashtable_split", "hashtable_split(hash,ct) api, return list of hashtable", new ExpressionFactoryHelper<HashtableSplitExp>());
-            //BatchCommand.BatchScript.Register("peek", "peek(queue_or_stack)", new ExpressionFactoryHelper<PeekExp>());
-            BatchCommand.BatchScript.Register("stack_size", "stack_size(stack)", new ExpressionFactoryHelper<StackSizeExp>());
-            //BatchCommand.BatchScript.Register("stack", "stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
-            //BatchCommand.BatchScript.Register("push", "push(stack,v)", new ExpressionFactoryHelper<PushExp>());
-            //BatchCommand.BatchScript.Register("pop", "pop(stack)", new ExpressionFactoryHelper<PopExp>());
-            BatchCommand.BatchScript.Register("stack_clear", "stack_clear(stack)", new ExpressionFactoryHelper<StackClearExp>());
-            BatchCommand.BatchScript.Register("queue_size", "queue_size(queue)", new ExpressionFactoryHelper<QueueSizeExp>());
-            //BatchCommand.BatchScript.Register("queue", "queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
-            //BatchCommand.BatchScript.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
-            //BatchCommand.BatchScript.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
-            BatchCommand.BatchScript.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());
-            BatchCommand.BatchScript.Register("set_env", "set_env(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
-            BatchCommand.BatchScript.Register("get_env", "get_env(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
-            //BatchCommand.BatchScript.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
-            //BatchCommand.BatchScript.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
-            //BatchCommand.BatchScript.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
-            //BatchCommand.BatchScript.Register("pwd", "pwd()", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
-            BatchCommand.BatchScript.Register("cmd_line", "cmd_line()", new ExpressionFactoryHelper<CommandLineExp>());
-            BatchCommand.BatchScript.Register("cmd_line_args", "cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg", new ExpressionFactoryHelper<CommandLineArgsExp>());
-            //BatchCommand.BatchScript.Register("os", "os()", new ExpressionFactoryHelper<OsExp>());
-            BatchCommand.BatchScript.Register("os_platform", "os_platform()", new ExpressionFactoryHelper<OsPlatformExp>());
-            BatchCommand.BatchScript.Register("os_version", "os_version()", new ExpressionFactoryHelper<OsVersionExp>());
-            BatchCommand.BatchScript.Register("get_full_path", "get_full_path(path)", new ExpressionFactoryHelper<GetFullPathExp>());
-            BatchCommand.BatchScript.Register("get_path_root", "get_path_root(path)", new ExpressionFactoryHelper<GetPathRootExp>());
-            BatchCommand.BatchScript.Register("get_random_file_name", "get_random_file_name()", new ExpressionFactoryHelper<GetRandomFileNameExp>());
-            BatchCommand.BatchScript.Register("get_temp_file_name", "get_temp_file_name()", new ExpressionFactoryHelper<GetTempFileNameExp>());
-            BatchCommand.BatchScript.Register("get_temp_path", "get_temp_path()", new ExpressionFactoryHelper<GetTempPathExp>());
-            BatchCommand.BatchScript.Register("has_extension", "has_extension(path)", new ExpressionFactoryHelper<HasExtensionExp>());
-            BatchCommand.BatchScript.Register("is_path_rooted", "is_path_rooted(path)", new ExpressionFactoryHelper<IsPathRootedExp>());
-            BatchCommand.BatchScript.Register("get_file_name", "get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
-            BatchCommand.BatchScript.Register("get_file_name_without_extension", "get_file_name_without_extension(path)", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
-            BatchCommand.BatchScript.Register("get_extension", "get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
-            BatchCommand.BatchScript.Register("get_directory_name", "get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
-            BatchCommand.BatchScript.Register("combine_path", "combine_path(path1,path2)", new ExpressionFactoryHelper<CombinePathExp>());
-            BatchCommand.BatchScript.Register("change_extension", "change_extension(path,ext)", new ExpressionFactoryHelper<ChangeExtensionExp>());
-            BatchCommand.BatchScript.Register("quote_path", "quote_path(path[,only_needed,single_quote])", new ExpressionFactoryHelper<QuotePathExp>());
-            //BatchCommand.BatchScript.Register("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine", new ExpressionFactoryHelper<EchoExp>());
-            BatchCommand.BatchScript.Register("call_stack", "call_stack()", new ExpressionFactoryHelper<CallStackExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_array", "clone_array(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_list", "clone_list(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_hashtable", "clone_hashtable(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_queue", "clone_queue(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_stack", "clone_stack(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clone_tuple", "clone_tuple(v)", false, new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy", "copy(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_array", "copy_array(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_list", "copy_list(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_hashtable", "copy_hashtable(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_queue", "copy_queue(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_stack", "copy_stack(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_tuple", "copy_tuple(v)", new ExpressionFactoryHelper<CloneExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("add", "add(a,b)", new ExpressionFactoryHelper<AddExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sub", "sub(a,b)", new ExpressionFactoryHelper<SubExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mul", "mul(a,b)", new ExpressionFactoryHelper<MulExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("div", "div(a,b)", new ExpressionFactoryHelper<DivExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mod", "mod(a,b)", new ExpressionFactoryHelper<ModExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bit_and", "bitand(a,b)", new ExpressionFactoryHelper<BitAndExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bit_or", "bitor(a,b)", new ExpressionFactoryHelper<BitOrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bit_xor", "bitxor(a,b)", new ExpressionFactoryHelper<BitXorExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bit_not", "bitnot(a)", new ExpressionFactoryHelper<BitNotExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("left_shift", "left_shift(a,b)", new ExpressionFactoryHelper<LShiftExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("right_shift", "right_shift(a,b)", new ExpressionFactoryHelper<RShiftExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("max", "max(v1,v2)", new ExpressionFactoryHelper<MaxExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("min", "min(v1,v2)", new ExpressionFactoryHelper<MinExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("abs", "abs(v)", new ExpressionFactoryHelper<AbsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("sin", "sin(v)", new ExpressionFactoryHelper<SinExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("cos", "cos(v)", new ExpressionFactoryHelper<CosExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("tan", "tan(v)", new ExpressionFactoryHelper<TanExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("asin", "asin(v)", new ExpressionFactoryHelper<AsinExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("acos", "acos(v)", new ExpressionFactoryHelper<AcosExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("atan", "atan(v)", new ExpressionFactoryHelper<AtanExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("atan2", "atan2(v1,v2)", new ExpressionFactoryHelper<Atan2Exp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("sinh", "sinh(v)", new ExpressionFactoryHelper<SinhExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("cosh", "cosh(v)", new ExpressionFactoryHelper<CoshExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("tanh", "tanh(v)", new ExpressionFactoryHelper<TanhExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("rnd_int", "rnd_int(min,max)", new ExpressionFactoryHelper<RndIntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("rnd_float", "rnd_float(min,max)", new ExpressionFactoryHelper<RndFloatExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("pow", "pow(v1,v2)", new ExpressionFactoryHelper<PowExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("sqrt", "sqrt(v)", new ExpressionFactoryHelper<SqrtExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("exp", "exp(v)", new ExpressionFactoryHelper<ExpExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("exp2", "exp2(v)", new ExpressionFactoryHelper<Exp2Exp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("log", "log(v)", new ExpressionFactoryHelper<LogExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("log2", "log2(v)", new ExpressionFactoryHelper<Log2Exp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("log10", "log10(v)", new ExpressionFactoryHelper<Log10Exp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("floor", "floor(v)", new ExpressionFactoryHelper<FloorExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("ceiling", "ceiling(v)", new ExpressionFactoryHelper<CeilingExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("round", "round(v)", new ExpressionFactoryHelper<RoundExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("floor_to_int", "floor_to_int(v)", new ExpressionFactoryHelper<FloorToIntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ceiling_to_int", "ceiling_to_int(v)", new ExpressionFactoryHelper<CeilingToIntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("round_to_int", "round_to_int(v)", new ExpressionFactoryHelper<RoundToIntExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("bool", "bool(v)", new ExpressionFactoryHelper<BoolExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("sbyte", "sbyte(v)", new ExpressionFactoryHelper<SByteExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("byte", "byte(v)", new ExpressionFactoryHelper<ByteExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("char", "char(v)", new ExpressionFactoryHelper<CharExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("short", "short(v)", new ExpressionFactoryHelper<ShortExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("ushort", "ushort(v)", new ExpressionFactoryHelper<UShortExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("int", "int(v)", new ExpressionFactoryHelper<IntExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("uint", "uint(v)", new ExpressionFactoryHelper<UIntExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("long", "long(v)", new ExpressionFactoryHelper<LongExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("ulong", "ulong(v)", new ExpressionFactoryHelper<ULongExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("f_to_i", "f_to_i(v)", new ExpressionFactoryHelper<FtoiExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("i_to_f", "i_to_f(v)", new ExpressionFactoryHelper<ItofExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("f_to_u", "f_to_u(v)", new ExpressionFactoryHelper<FtouExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("u_to_f", "u_to_f(v)", new ExpressionFactoryHelper<UtofExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("d_to_l", "d_to_l(v)", new ExpressionFactoryHelper<DtolExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("l_to_d", "l_to_d(v)", new ExpressionFactoryHelper<LtodExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("d_to_u", "d_to_u(v)", new ExpressionFactoryHelper<DtouExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("u_to_d", "u_to_d(v)", new ExpressionFactoryHelper<UtodExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("lerp", "lerp(a,b,t)", new ExpressionFactoryHelper<LerpExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("lerp_unclamped", "lerp_unclamped(a,b,t)", new ExpressionFactoryHelper<LerpUnclampedExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("lerp_angle", "lerp_angle(a,b,t)", new ExpressionFactoryHelper<LerpAngleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("smooth_step", "smooth_step(from,to,t)", new ExpressionFactoryHelper<SmoothStepExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("clamp01", "clamp01(v)", new ExpressionFactoryHelper<Clamp01Exp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("clamp", "clamp(v,v1,v2)", new ExpressionFactoryHelper<ClampExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("approximately", "approximately(v1,v2)", new ExpressionFactoryHelper<ApproximatelyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_power_of_two", "is_power_of_two(v)", new ExpressionFactoryHelper<IsPowerOfTwoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("closest_power_of_two", "closest_power_of_two(v)", new ExpressionFactoryHelper<ClosestPowerOfTwoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("next_power_of_two", "next_power_of_two(v)", new ExpressionFactoryHelper<NextPowerOfTwoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("distance", "distance(x1,y1,x2,y2)", new ExpressionFactoryHelper<DistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("distance_square", "distance_square(x1,y1,x2,y2)", new ExpressionFactoryHelper<DistSqrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("great", "great(a,b)", new ExpressionFactoryHelper<GreatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("great_equal", "great_equal(a,b)", new ExpressionFactoryHelper<GreatEqualExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("less", "less(a,b)", new ExpressionFactoryHelper<LessExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("less_equal", "less_equal(a,b)", new ExpressionFactoryHelper<LessEqualExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("equal", "equal(a,b)", new ExpressionFactoryHelper<EqualExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("not_equal", "not_equal(a,b)", new ExpressionFactoryHelper<NotEqualExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("and", "and(a,b)", new ExpressionFactoryHelper<AndExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("or", "or(a,b)", new ExpressionFactoryHelper<OrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("not", "not(a)", new ExpressionFactoryHelper<NotExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("cond_expr", "cond_expr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_type_assembly_name", "get_type_assembly_name(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_type_full_name", "get_type_full_name(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_type_name", "get_type_name(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_type", "get_type(type_str)", new ExpressionFactoryHelper<GetTypeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("change_type", "change_type(obj,type_str)", new ExpressionFactoryHelper<ChangeTypeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_enum", "parse_enum(type_str,val_str)", new ExpressionFactoryHelper<ParseEnumExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_null", "is_null(obj)", new ExpressionFactoryHelper<IsNullExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("null", "null()", new ExpressionFactoryHelper<NullExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("equals_null", "equals_null(obj)", new ExpressionFactoryHelper<EqualsNullExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("dotnet_load", "dotnet_load(dll_path)", new ExpressionFactoryHelper<DotnetLoadExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("dotnet_new", "dotnet_new(assembly,type_name,arg1,arg2,...)", new ExpressionFactoryHelper<DotnetNewExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_substring", "string_substring(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_substr", "string_substr(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("substr", "substr(str[, start, count])", new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_string_builder", "new_string_builder()", new ExpressionFactoryHelper<NewStringBuilderExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("append_format", "append_format(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("append_format_line", "append_format_line(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatLineExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_builder_to_string", "string_builder_to_string(sb)", new ExpressionFactoryHelper<StringBuilderToStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_join", "string_join(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("join_string", "join_string(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_split", "string_split(str, sep) or string_split(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("split_string", "split_string(str, sep) or split_string(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("join", "join(str, list)", new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("split", "split(str, sep) or split(str, sep_char_list)", new ExpressionFactoryHelper<StringSplitExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_trim", "string_trim(str)", new ExpressionFactoryHelper<StringTrimExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim_string", "trim_string(str)", new ExpressionFactoryHelper<StringTrimExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim", "trim(str)", new ExpressionFactoryHelper<StringTrimExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_trim_start", "string_trim_start(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim_start_string", "trim_start_string(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim_start", "trim_start(str)", new ExpressionFactoryHelper<StringTrimStartExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_trim_end", "string_trim_end(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim_end_string", "trim_end_string(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("trim_end", "trim_end(str)", new ExpressionFactoryHelper<StringTrimEndExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_lower", "string_to_lower(str)", new ExpressionFactoryHelper<StringToLowerExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_upper", "string_to_upper(str)", new ExpressionFactoryHelper<StringToUpperExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_replace", "string_replace(str, substr, replace[, exactMatch])", new ExpressionFactoryHelper<StringReplaceExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("replace_string", "replace_string(str, substr, replace[, exactMatch])", new ExpressionFactoryHelper<StringReplaceExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("replace", "replace(str, substr, replace[, exactMatch])", new ExpressionFactoryHelper<StringReplaceExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_replace_char", "string_replace_char(str,key,char_as_str)", new ExpressionFactoryHelper<StringReplaceCharExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("make_string", "make_string(char1_as_str_or_int,char2_as_str_or_int,...)", new ExpressionFactoryHelper<MakeStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_contains", "string_contains(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_not_contains", "string_not_contains(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringNotContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_contains_any", "string_contains_any(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringContainsAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_not_contains_any", "string_not_contains_any(str,str_or_list_1,str_or_list_2,...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("contains", "contains(str, substr1, ...)", new ExpressionFactoryHelper<StringContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("contains_any", "contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringContainsAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("not_contains", "not_contains(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("not_contains_any", "not_contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_int", "string_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_int", "str_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_uint", "string_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_uint", "str_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_long", "string_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_long", "str_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_ulong", "string_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_ulong", "str_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_to_float", "string_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_float", "str_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("strint_to_double", "strint_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("str_to_double", "str_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_int", "hex_string_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_to_int", "hex_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_uint", "hex_string_to_uint(str)", new ExpressionFactoryHelper<Hex2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_to_uint", "hex_to_uint(str)", new ExpressionFactoryHelper<Hex2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_long", "hex_string_to_long(str)", new ExpressionFactoryHelper<Hex2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_to_long", "hex_to_long(str)", new ExpressionFactoryHelper<Hex2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_ulong", "hex_string_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_to_ulong", "hex_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("date_time_string", "date_time_string([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("date_time_str", "date_time_str([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("long_date_string", "long_date_string()", new ExpressionFactoryHelper<LongDateStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("long_date_str", "long_date_str()", new ExpressionFactoryHelper<LongDateStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("long_time_string", "long_time_string()", new ExpressionFactoryHelper<LongTimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("long_time_str", "long_time_str()", new ExpressionFactoryHelper<LongTimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("short_date_string", "short_date_string()", new ExpressionFactoryHelper<ShortDateStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("short_date_str", "short_date_str()", new ExpressionFactoryHelper<ShortDateStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("short_time_string", "short_time_string()", new ExpressionFactoryHelper<ShortTimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("short_time_str", "short_time_str()", new ExpressionFactoryHelper<ShortTimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_tuple", "(v1,v2,...) or new_tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("tuple_set", "(var1,var2,...) = (v1,v2,...) or tuple_set((var1,var2,...), (v1,v2,...))", new ExpressionFactoryHelper<TupleSetExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("array", "[v1,v2,...] or array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_array", "[v1,v2,...] or new_array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newarray", "[v1,v2,...] or newarray(v1,v2,...) object", false, new ExpressionFactoryHelper<ArrayExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("to_array", "to_array(list)", new ExpressionFactoryHelper<ToArrayExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_count", "list_count(list)", new ExpressionFactoryHelper<ListSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_get_count", "list_get_count(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_list_count", "get_list_count(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_size", "list_size(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("list", "list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_list", "new_list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newlist", "newlist(v1,v2,...) object", false, new ExpressionFactoryHelper<ListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_get", "list_get(list,index[,defval])", new ExpressionFactoryHelper<ListGetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_set", "list_set(list,index,val)", new ExpressionFactoryHelper<ListSetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_index_of", "list_index_of(list,val)", new ExpressionFactoryHelper<ListIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_indexof", "list_indexof(list,val)", false, new ExpressionFactoryHelper<ListIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_add", "list_add(list,val)", new ExpressionFactoryHelper<ListAddExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_remove", "list_remove(list,val)", new ExpressionFactoryHelper<ListRemoveExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_insert", "list_insert(list,index,val)", new ExpressionFactoryHelper<ListInsertExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_remove_at", "list_remove_at(list,index)", new ExpressionFactoryHelper<ListRemoveAtExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_clear", "list_clear(list)", new ExpressionFactoryHelper<ListClearExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_split", "list_split(list,ct) api, return list of list", new ExpressionFactoryHelper<ListSplitExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_count", "hashtable_count(hash)", new ExpressionFactoryHelper<HashtableSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_get_count", "hashtable_get_count(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_hashtable_count", "get_hashtable_count(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_size", "hashtable_size(hash)", false, new ExpressionFactoryHelper<HashtableSizeExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or new_hashtable(k1=>v1,k2=>v2,...) or new_hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newhashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or newhashtable(k1=>v1,k2=>v2,...) or newhashtable(k1:v1,k2:v2,...) object", false, new ExpressionFactoryHelper<HashtableExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_get", "hashtable_get(hash,key[,defval])", new ExpressionFactoryHelper<HashtableGetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_set", "hashtable_set(hash,key,val)", new ExpressionFactoryHelper<HashtableSetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_add", "hashtable_add(hash,key,val)", new ExpressionFactoryHelper<HashtableAddExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_remove", "hashtable_remove(hash,key)", new ExpressionFactoryHelper<HashtableRemoveExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_clear", "hashtable_clear(hash)", new ExpressionFactoryHelper<HashtableClearExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_keys", "hashtable_keys(hash)", new ExpressionFactoryHelper<HashtableKeysExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_values", "hashtable_values(hash)", new ExpressionFactoryHelper<HashtableValuesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_hashtable", "list_hashtable(hash) api, return list of pair", new ExpressionFactoryHelper<ListHashtableExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_split", "hashtable_split(hash,ct) api, return list of hashtable", new ExpressionFactoryHelper<HashtableSplitExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("peek", "peek(queue_or_stack)", new ExpressionFactoryHelper<PeekExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stack_count", "stack_count(stack)", new ExpressionFactoryHelper<StackSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stack_get_count", "stack_get_count(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_stack_count", "get_stack_count(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stack_size", "stack_size(stack)", false, new ExpressionFactoryHelper<StackSizeExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("stack", "stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_stack", "new_stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newstack", "newstack(v1,v2,...) object", false, new ExpressionFactoryHelper<StackExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("push", "push(stack,v)", new ExpressionFactoryHelper<PushExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("pop", "pop(stack)", new ExpressionFactoryHelper<PopExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stack_clear", "stack_clear(stack)", new ExpressionFactoryHelper<StackClearExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("queue_count", "queue_count(queue)", new ExpressionFactoryHelper<QueueSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("queue_get_count", "queue_get_count(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_queue_count", "get_queue_count(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("queue_size", "queue_size(queue)", false, new ExpressionFactoryHelper<QueueSizeExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("queue", "queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("new_queue", "new_queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newqueue", "newqueue(v1,v2,...) object", false, new ExpressionFactoryHelper<QueueExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("set_env", "set_env(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_env", "get_env(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("pwd", "pwd()", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("cmd_line", "cmd_line()", new ExpressionFactoryHelper<CommandLineExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("cmd_line_args", "cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg", new ExpressionFactoryHelper<CommandLineArgsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("os", "os()", new ExpressionFactoryHelper<OsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("os_platform", "os_platform()", new ExpressionFactoryHelper<OsPlatformExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("os_version", "os_version()", new ExpressionFactoryHelper<OsVersionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_full_path", "get_full_path(path)", new ExpressionFactoryHelper<GetFullPathExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_path_root", "get_path_root(path)", new ExpressionFactoryHelper<GetPathRootExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_random_file_name", "get_random_file_name()", new ExpressionFactoryHelper<GetRandomFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_temp_file_name", "get_temp_file_name()", new ExpressionFactoryHelper<GetTempFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_temp_path", "get_temp_path()", new ExpressionFactoryHelper<GetTempPathExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("has_extension", "has_extension(path)", new ExpressionFactoryHelper<HasExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_path_rooted", "is_path_rooted(path)", new ExpressionFactoryHelper<IsPathRootedExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_file_name", "get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_file_name_without_extension", "get_file_name_without_extension(path)", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_extension", "get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_directory_name", "get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("combine_path", "combine_path(path1,path2,...)", new ExpressionFactoryHelper<CombinePathExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("change_extension", "change_extension(path,ext)", new ExpressionFactoryHelper<ChangeExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("quote_path", "quote_path(path[,only_needed,single_quote])", new ExpressionFactoryHelper<QuotePathExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine", new ExpressionFactoryHelper<EchoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("call_stack", "call_stack()", new ExpressionFactoryHelper<CallStackExp>());
 
-            BatchCommand.BatchScript.Register("file_echo", "file_echo(bool) or file_echo()", new ExpressionFactoryHelper<FileEchoExp>());
-            BatchCommand.BatchScript.Register("dir_exists", "dir_exists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            BatchCommand.BatchScript.Register("direxists", "direxists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            BatchCommand.BatchScript.Register("file_exists", "file_exists(file)", new ExpressionFactoryHelper<FileExistExp>());
-            BatchCommand.BatchScript.Register("fileexists", "fileexists(file)", new ExpressionFactoryHelper<FileExistExp>());
-            BatchCommand.BatchScript.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>());
-            BatchCommand.BatchScript.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
-            BatchCommand.BatchScript.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
-            BatchCommand.BatchScript.Register("list_all_files", "list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllFilesExp>());
-            BatchCommand.BatchScript.Register("create_dir", "create_dir(dir)", new ExpressionFactoryHelper<CreateDirectoryExp>());
-            BatchCommand.BatchScript.Register("make_dir", "make_dir(path)", new ExpressionFactoryHelper<CreateDirectoryExp>());
-            BatchCommand.BatchScript.Register("copy_dir", "copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<CopyDirectoryExp>());
-            BatchCommand.BatchScript.Register("move_dir", "move_dir(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
-            BatchCommand.BatchScript.Register("delete_dir", "delete_dir(dir)", new ExpressionFactoryHelper<DeleteDirectoryExp>());
-            //BatchCommand.BatchScript.Register("copy_file", "copy_file(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
-            BatchCommand.BatchScript.Register("copy_files", "copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
-            //BatchCommand.BatchScript.Register("move_file", "move_file(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
-            BatchCommand.BatchScript.Register("delete_file", "delete_file(file)", new ExpressionFactoryHelper<DeleteFileExp>());
-            BatchCommand.BatchScript.Register("delete_files", "delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
-            BatchCommand.BatchScript.Register("delete_all_files", "delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
-            BatchCommand.BatchScript.Register("get_file_info", "get_file_info(file)", new ExpressionFactoryHelper<GetFileInfoExp>());
-            BatchCommand.BatchScript.Register("get_dir_info", "get_dir_info(dir)", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
-            BatchCommand.BatchScript.Register("get_drive_info", "get_drive_info(drive)", new ExpressionFactoryHelper<GetDriveInfoExp>());
-            BatchCommand.BatchScript.Register("get_drives_info", "get_drives_info()", new ExpressionFactoryHelper<GetDrivesInfoExp>());
-            BatchCommand.BatchScript.Register("read_all_lines", "read_all_lines(file[,encoding])", new ExpressionFactoryHelper<ReadAllLinesExp>());
-            BatchCommand.BatchScript.Register("write_all_lines", "write_all_lines(file,lines[,encoding])", new ExpressionFactoryHelper<WriteAllLinesExp>());
-            BatchCommand.BatchScript.Register("read_all_text", "read_all_text(file[,encoding])", new ExpressionFactoryHelper<ReadAllTextExp>());
-            BatchCommand.BatchScript.Register("write_all_text", "write_all_text(file,txt[,encoding])", new ExpressionFactoryHelper<WriteAllTextExp>());
-            BatchCommand.BatchScript.Register("calc_md5", "calc_md5(file)", new ExpressionFactoryHelper<CalcMd5Exp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("file_echo", "file_echo(bool) or file_echo()", new ExpressionFactoryHelper<FileEchoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("dir_exists", "dir_exists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", false, new ExpressionFactoryHelper<DirectoryExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("file_exists", "file_exists(file)", new ExpressionFactoryHelper<FileExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", false, new ExpressionFactoryHelper<FileExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_all_files", "list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("create_dir", "create_dir(dir)", new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("make_dir", "make_dir(path)", new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_dir", "copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<CopyDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("move_dir", "move_dir(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("delete_dir", "delete_dir(dir)", new ExpressionFactoryHelper<DeleteDirectoryExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("copy_file", "copy_file(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_files", "copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("move_file", "move_file(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("delete_file", "delete_file(file)", new ExpressionFactoryHelper<DeleteFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("delete_files", "delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("delete_all_files", "delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_file_info", "get_file_info(file)", new ExpressionFactoryHelper<GetFileInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_dir_info", "get_dir_info(dir)", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_drive_info", "get_drive_info(drive)", new ExpressionFactoryHelper<GetDriveInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_drives_info", "get_drives_info()", new ExpressionFactoryHelper<GetDrivesInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("read_all_lines", "read_all_lines(file[,encoding])", new ExpressionFactoryHelper<ReadAllLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("write_all_lines", "write_all_lines(file,lines[,encoding])", new ExpressionFactoryHelper<WriteAllLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("read_all_text", "read_all_text(file[,encoding])", new ExpressionFactoryHelper<ReadAllTextExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("write_all_text", "write_all_text(file,txt[,encoding])", new ExpressionFactoryHelper<WriteAllTextExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("calc_md5", "calc_md5(file)", new ExpressionFactoryHelper<CalcMd5Exp>());
         }
 
+        internal sealed class CloneExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: clone(v), aliased as clone_array|clone_list|clone_hashtable|clone_queue|clone_stack|clone_tuple|copy|copy_array|copy_list|copy_hashtable|copy_queue|copy_stack|copy_tuple");
+                    return BoxedValue.NullObject;
+                }
+                if (operands.Count >= 1) {
+                    var val = operands[0];
+                    return Clone(val);
+                }
+                return BoxedValue.NullObject;
+            }
+            private BoxedValue Clone(BoxedValue val)
+            {
+                if (val.IsNullObject) {
+                    return BoxedValue.NullObject;
+                }
+                else if (val.IsString) {
+                    var str = val.GetString();
+                    return string.Concat(str);
+                }
+                else if (val.IsObject) {
+                    var obj = val.GetObject();
+                    if (obj is ICloneable cloneable) {
+                        return BoxedValue.FromObject(cloneable.Clone());
+                    }
+                    else if (obj is IList list) {
+                        var newList = new List<BoxedValue>();
+                        foreach (var item in list) {
+                            newList.Add(BoxedValue.FromObject(item));
+                        }
+                        return BoxedValue.FromObject(newList);
+                    }
+                    else if (obj is IDictionary dict) {
+                        var newDict = new Dictionary<BoxedValue, BoxedValue>();
+                        foreach (var key in dict.Keys) {
+                            var v = dict[key];
+                            newDict.Add(BoxedValue.FromObject(key), BoxedValue.FromObject(v));
+                        }
+                        return BoxedValue.FromObject(newDict);
+                    }
+                    else if (obj is Queue<BoxedValue> queue) {
+                        var newQueue = new Queue<BoxedValue>(queue);
+                        return BoxedValue.FromObject(newQueue);
+                    }
+                    else if (obj is Stack<BoxedValue> stack) {
+                        var newStack = new Stack<BoxedValue>(stack.ToArray());
+                        return BoxedValue.FromObject(newStack);
+                    }
+                    else if (obj is Tuple<BoxedValue> t1) {
+                        return BoxedValue.From(Tuple.Create(t1.Item1));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue> t2) {
+                        return BoxedValue.From(Tuple.Create(t2.Item1, t2.Item2));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue> t3) {
+                        return BoxedValue.From(Tuple.Create(t3.Item1, t3.Item2, t3.Item3));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue> t4) {
+                        return BoxedValue.From(Tuple.Create(t4.Item1, t4.Item2, t4.Item3, t4.Item4));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t5) {
+                        return BoxedValue.From(Tuple.Create(t5.Item1, t5.Item2, t5.Item3, t5.Item4, t5.Item5));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t6) {
+                        return BoxedValue.From(Tuple.Create(t6.Item1, t6.Item2, t6.Item3, t6.Item4, t6.Item5, t6.Item6));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t7) {
+                        return BoxedValue.From(Tuple.Create(t7.Item1, t7.Item2, t7.Item3, t7.Item4, t7.Item5, t7.Item6, t7.Item7));
+                    }
+                    else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, Tuple<BoxedValue>> t8) {
+                        return BoxedValue.From(Tuple.Create(t8.Item1, t8.Item2, t8.Item3, t8.Item4, t8.Item5, t8.Item6, t8.Item7, Tuple.Create(Clone(t8.Rest.Item1))));
+                    }
+                }
+                return val;
+            }
+        }
         internal sealed class AddExp : AbstractExpression
         {
             protected override BoxedValue DoCalc()
@@ -313,8 +431,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class SubExp : AbstractExpression
         {
@@ -343,8 +461,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class MulExp : AbstractExpression
         {
@@ -373,8 +491,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class DivExp : AbstractExpression
         {
@@ -403,8 +521,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class ModExp : AbstractExpression
         {
@@ -433,8 +551,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class BitAndExp : AbstractExpression
         {
@@ -458,8 +576,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class BitOrExp : AbstractExpression
         {
@@ -483,8 +601,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class BitXorExp : AbstractExpression
         {
@@ -508,8 +626,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class BitNotExp : AbstractExpression
         {
@@ -531,7 +649,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class LShiftExp : AbstractExpression
         {
@@ -555,8 +673,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class RShiftExp : AbstractExpression
         {
@@ -580,8 +698,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class MaxExp : AbstractExpression
         {
@@ -616,8 +734,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class MinExp : AbstractExpression
         {
@@ -652,8 +770,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class AbsExp : AbstractExpression
         {
@@ -677,7 +795,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class SinExp : AbstractExpression
         {
@@ -693,7 +811,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class CosExp : AbstractExpression
         {
@@ -709,7 +827,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class TanExp : AbstractExpression
         {
@@ -725,7 +843,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class AsinExp : AbstractExpression
         {
@@ -741,7 +859,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class AcosExp : AbstractExpression
         {
@@ -757,7 +875,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class AtanExp : AbstractExpression
         {
@@ -773,7 +891,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class Atan2Exp : AbstractExpression
         {
@@ -791,8 +909,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class SinhExp : AbstractExpression
         {
@@ -808,7 +926,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class CoshExp : AbstractExpression
         {
@@ -824,7 +942,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class TanhExp : AbstractExpression
         {
@@ -840,7 +958,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class RndIntExp : AbstractExpression
         {
@@ -858,8 +976,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
 
             private static Random s_Random = new Random();
         }
@@ -879,8 +997,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
 
             private static Random s_Random = new Random();
         }
@@ -900,8 +1018,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class SqrtExp : AbstractExpression
         {
@@ -917,7 +1035,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class ExpExp : AbstractExpression
         {
@@ -933,7 +1051,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class Exp2Exp : AbstractExpression
         {
@@ -949,7 +1067,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class LogExp : AbstractExpression
         {
@@ -977,8 +1095,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
 
             private int m_ArgNum;
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class Log2Exp : AbstractExpression
         {
@@ -994,7 +1112,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class Log10Exp : AbstractExpression
         {
@@ -1010,7 +1128,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class FloorExp : AbstractExpression
         {
@@ -1026,7 +1144,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class CeilingExp : AbstractExpression
         {
@@ -1042,7 +1160,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class RoundExp : AbstractExpression
         {
@@ -1058,7 +1176,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class FloorToIntExp : AbstractExpression
         {
@@ -1074,7 +1192,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class CeilingToIntExp : AbstractExpression
         {
@@ -1090,7 +1208,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class RoundToIntExp : AbstractExpression
         {
@@ -1106,7 +1224,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class BoolExp : AbstractExpression
         {
@@ -1122,7 +1240,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class SByteExp : AbstractExpression
         {
@@ -1138,7 +1256,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class ByteExp : AbstractExpression
         {
@@ -1154,7 +1272,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class CharExp : AbstractExpression
         {
@@ -1170,7 +1288,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class ShortExp : AbstractExpression
         {
@@ -1186,7 +1304,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class UShortExp : AbstractExpression
         {
@@ -1202,7 +1320,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class IntExp : AbstractExpression
         {
@@ -1218,7 +1336,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class UIntExp : AbstractExpression
         {
@@ -1234,7 +1352,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class LongExp : AbstractExpression
         {
@@ -1250,7 +1368,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class ULongExp : AbstractExpression
         {
@@ -1266,7 +1384,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class FloatExp : AbstractExpression
         {
@@ -1282,7 +1400,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class DoubleExp : AbstractExpression
         {
@@ -1298,7 +1416,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class DecimalExp : AbstractExpression
         {
@@ -1314,7 +1432,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class ItofExp : AbstractExpression
         {
@@ -1334,7 +1452,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class FtoiExp : AbstractExpression
         {
@@ -1354,7 +1472,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class UtofExp : AbstractExpression
         {
@@ -1374,7 +1492,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class FtouExp : AbstractExpression
         {
@@ -1394,7 +1512,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class LtodExp : AbstractExpression
         {
@@ -1414,7 +1532,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class DtolExp : AbstractExpression
         {
@@ -1434,7 +1552,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class UtodExp : AbstractExpression
         {
@@ -1454,7 +1572,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class DtouExp : AbstractExpression
         {
@@ -1474,7 +1592,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
         }
         internal sealed class LerpExp : AbstractExpression
         {
@@ -1495,9 +1613,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
         }
         internal sealed class LerpUnclampedExp : AbstractExpression
         {
@@ -1517,9 +1635,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
         }
         internal sealed class LerpAngleExp : AbstractExpression
         {
@@ -1543,9 +1661,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
 
             public static double Repeat(double t, double length)
             {
@@ -1572,9 +1690,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
         }
         internal sealed class Clamp01Exp : AbstractExpression
         {
@@ -1590,7 +1708,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class ClampExp : AbstractExpression
         {
@@ -1626,9 +1744,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
 
             public static double Clamp(double value, double min, double max)
             {
@@ -1667,8 +1785,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
 
             public static bool Approximately(double a, double b)
             {
@@ -1689,7 +1807,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
 
             public bool IsPowerOfTwo(int v)
             {
@@ -1711,7 +1829,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
 
             public int ClosestPowerOfTwo(int v)
             {
@@ -1733,7 +1851,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
+            private IExpression m_Op1 = null!;
 
             public int NextPowerOfTwo(int v)
             {
@@ -1761,10 +1879,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
-            private IExpression m_Op4;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
+            private IExpression m_Op4 = null!;
         }
         internal sealed class DistSqrExp : AbstractExpression
         {
@@ -1786,10 +1904,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
-            private IExpression m_Op3;
-            private IExpression m_Op4;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
+            private IExpression m_Op4 = null!;
         }
         internal sealed class GreatExp : AbstractExpression
         {
@@ -1807,8 +1925,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class GreatEqualExp : AbstractExpression
         {
@@ -1826,8 +1944,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class LessExp : AbstractExpression
         {
@@ -1845,8 +1963,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class LessEqualExp : AbstractExpression
         {
@@ -1864,8 +1982,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class EqualExp : AbstractExpression
         {
@@ -1883,8 +2001,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class NotEqualExp : AbstractExpression
         {
@@ -1902,8 +2020,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class AndExp : AbstractExpression
         {
@@ -1921,8 +2039,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class OrExp : AbstractExpression
         {
@@ -1940,8 +2058,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1;
-            private IExpression m_Op2;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
         }
         internal sealed class NotExp : AbstractExpression
         {
@@ -1957,7 +2075,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op;
+            private IExpression m_Op = null!;
         }
         internal sealed class CondExp : AbstractExpression
         {
@@ -1988,9 +2106,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1 = null;
-            private IExpression m_Op2 = null;
-            private IExpression m_Op3 = null;
+            private IExpression m_Op1 = null!;
+            private IExpression m_Op2 = null!;
+            private IExpression m_Op3 = null!;
         }
         internal sealed class TupleExp : AbstractExpression
         {
@@ -2258,7 +2376,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             private List<ValueTuple<string, int>> m_VarIds = new List<ValueTuple<string, int>>();
             private List<List<ValueTuple<string, int>>> m_EmbeddedVars = new List<List<ValueTuple<string, int>>>();
-            private IExpression m_Op = null;
+            private IExpression m_Op = null!;
         }
         internal sealed class FormatExp : AbstractExpression
         {
@@ -2295,9 +2413,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             {
                 var ret = BoxedValue.NullObject;
                 if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc();
+                    var obj = m_Expressions[0].Calc().GetObject();
                     try {
-                        ret = obj.GetType().AssemblyQualifiedName;
+                        if (null != obj) {
+                            ret = obj.GetType().AssemblyQualifiedName;
+                        }
+                        else {
+                            ret = "(null)";
+                        }
                     }
                     catch (Exception ex) {
                         Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
@@ -2322,9 +2445,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             {
                 var ret = BoxedValue.NullObject;
                 if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc();
+                    var obj = m_Expressions[0].Calc().GetObject();
                     try {
-                        ret = obj.GetType().FullName;
+                        if (null != obj) {
+                            ret = obj.GetType().FullName;
+                        }
+                        else {
+                            ret = "(null)";
+                        }
                     }
                     catch (Exception ex) {
                         Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
@@ -2349,9 +2477,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             {
                 var ret = BoxedValue.NullObject;
                 if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc();
+                    var obj = m_Expressions[0].Calc().GetObject();
                     try {
-                        ret = obj.GetType().Name;
+                        if (null != obj) {
+                            ret = obj.GetType().Name;
+                        }
+                        else {
+                            ret = "(null)";
+                        }
                     }
                     catch (Exception ex) {
                         Calculator.Log("Exception:{0}\n{1}", ex.Message, ex.StackTrace);
@@ -2451,7 +2584,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                 ret = CastTo<bool>(str);
                             }
                             else {
-                                Type t = Type.GetType(type);
+                                Type? t = Type.GetType(type);
                                 if (null != t) {
                                     ret = BoxedValue.FromObject(CastTo(t, str));
                                 }
@@ -2498,7 +2631,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                 ret = obj.GetBool();
                             }
                             else {
-                                Type t = Type.GetType(type);
+                                Type? t = Type.GetType(type);
                                 if (null != t) {
                                     ret = BoxedValue.FromObject(obj.CastTo(t));
                                 }
@@ -2534,7 +2667,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string type = m_Expressions[0].Calc().AsString;
                     string val = m_Expressions[1].Calc().AsString;
                     try {
-                        Type t = Type.GetType(type);
+                        Type? t = Type.GetType(type);
                         if (null != t) {
                             ret = BoxedValue.FromObject(Enum.Parse(t, val, true));
                         }
@@ -2619,6 +2752,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dotnet_load(dll_path)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     string path = operands[0].AsString;
@@ -2633,6 +2770,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dotnet_new(assembly,type_name,arg1,arg2,...)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var assem = operands[0].As<Assembly>();
@@ -2642,7 +2783,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         for (int i = 2; i < operands.Count; ++i) {
                             al.Add(operands[i].GetObject());
                         }
-                        r = BoxedValue.FromObject(assem.CreateInstance(typeName, false, BindingFlags.CreateInstance, null, al.ToArray(), System.Globalization.CultureInfo.CurrentCulture, null));
+                        r = BoxedValue.FromObject(assem.CreateInstance(typeName, false, BindingFlags.CreateInstance, null, al.ToArray()!, System.Globalization.CultureInfo.CurrentCulture, null));
                     }
                 }
                 return r;
@@ -2652,6 +2793,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_substring(str[,start,len]) function, aliased as string_substr|substr");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     string str = operands[0].GetString();
@@ -2675,6 +2820,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: new_string_builder()");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 0) {
                     r = BoxedValue.FromObject(new StringBuilder());
@@ -2686,6 +2835,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_format(sb,fmt,arg1,arg2,...)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var sb = operands[0].As<StringBuilder>();
@@ -2709,6 +2862,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_format_line(sb,fmt,arg1,arg2,...)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var sb = operands[0].As<StringBuilder>();
@@ -2738,6 +2895,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_builder_to_string(sb)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var sb = operands[0].As<StringBuilder>();
@@ -2752,6 +2913,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_join(sep,list), aliased as join_string|join");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     string sep = operands[0].AsString;
@@ -2780,6 +2945,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_split(str, sep) or string_split(str,sep_list), aliased as split_string|split");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     string str = operands[0].AsString;
@@ -2814,10 +2983,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_trim(str), aliased as trim_string|trim");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    r = str.Trim();
+                    if (str != null) {
+                        r = str.Trim();
+                    }
                 }
                 return r;
             }
@@ -2826,10 +3001,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_trim_start(str), aliased as trim_start_string|trim_start");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    r = str.TrimStart();
+                    if (str != null) {
+                        r = str.TrimStart();
+                    }
                 }
                 return r;
             }
@@ -2838,10 +3019,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_trim_end(str), aliased as trim_end_string|trim_end");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    r = str.TrimEnd();
+                    if (str != null) {
+                        r = str.TrimEnd();
+                    }
                 }
                 return r;
             }
@@ -2850,10 +3037,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_lower(str)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    r = str.ToLower();
+                    if (str != null) {
+                        r = str.ToLower();
+                    }
                 }
                 return r;
             }
@@ -2862,10 +3055,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_upper(str)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    r = str.ToUpper();
+                    if (str != null) {
+                        r = str.ToUpper();
+                    }
                 }
                 return r;
             }
@@ -2875,36 +3074,48 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 BoxedValue r = BoxedValue.NullObject;
-                if (operands.Count >= 3) {
-                    var str = operands[0].AsString;
-                    var key = operands[1].AsString;
-                    var val = operands[2].AsString;
-                    if (null != str && null != key && null != val) {
-                        if (string.IsNullOrEmpty(key)) {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("The key cannot be empty !!!");
-                            return BoxedValue.From(str);
-                        }
-                        if (key.IndexOf('\n') >= 0) {
-                            var result = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(str, key, val);
-                            if (result.Success) {
-                                return BoxedValue.From(result.ResultContent);
-                            }
-                            else {
-                                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine(result.Error + "\nTry to use 'apply_diff' to replace multi-line text !!!");
-                                return BoxedValue.From(str);
-                            }
-                        }
-                        var trimedKey = key.Trim();
-                        var trimedVal = val.Trim();
-                        if (!str.Contains(trimedKey)) {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("string_replace: key not found");
-                        }
-                        r = str.Replace(trimedKey, trimedVal);
+                if (operands.Count < 3 || operands.Count > 4) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_replace(str, substr, replace[, exactMatch]), aliased as replace_string|replace");
+                    return BoxedValue.NullObject;
+                }
+                var str = operands[0].AsString;
+                var key = operands[1].AsString;
+                var val = operands[2].AsString;
+                bool exactMatch = operands.Count > 3 ? operands[3].GetBool() : false;
+                if (null != str && null != key && null != val) {
+                    if (string.IsNullOrEmpty(key)) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The substr cannot be empty !!!");
+                        return BoxedValue.From(str);
+                    }
+                    // Level 1: Exact match (no modification to search string)
+                    if (str.Contains(key)) {
+                        r = str.Replace(key, val);
+                    }
+                    else if (exactMatch) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found (exact match)");
+                        return BoxedValue.From(str);
                     }
                     else {
-                        DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("string_replace: str or key or rep_str is null !!!");
-                        r = str;
+                        // Level 2: Trimmed match
+                        var trimedKey = key.Trim();
+                        var trimedVal = val.Trim();
+                        if (str.Contains(trimedKey)) {
+                            r = str.Replace(trimedKey, trimedVal);
+                        }
+                        else {
+                            // Level 3: Normalized whitespace matching (DiffOps fallback)
+                            var normResult = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(str, key, val, true);
+                            if (normResult.Success) {
+                                return BoxedValue.From(normResult.ResultContent);
+                            }
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found");
+                            return BoxedValue.From(str);
+                        }
                     }
+                }
+                else {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: str or substr or replace is null !!!");
+                    r = str;
                 }
                 return r;
             }
@@ -2913,6 +3124,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_replace_char(str,key,char_as_str)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 3) {
                     var str = operands[0].AsString;
@@ -2952,24 +3167,30 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_contains(str,str_or_list_1,str_or_list_2,...), aliased as contains");
+                    return BoxedValue.NullObject;
+                }
                 bool r = false;
                 if (operands.Count >= 2) {
                     string str = operands[0].AsString;
-                    r = true;
-                    for (int i = 1; i < operands.Count; ++i) {
-                        var list = operands[i].As<IList>();
-                        if (null != list) {
-                            foreach (var o in list) {
-                                var key = o as string;
+                    if (null != str) {
+                        r = true;
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var list = operands[i].As<IList>();
+                            if (null != list) {
+                                foreach (var o in list) {
+                                    var key = o as string;
+                                    if (!string.IsNullOrEmpty(key) && !str.Contains(key)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            else {
+                                var key = operands[i].AsString;
                                 if (!string.IsNullOrEmpty(key) && !str.Contains(key)) {
                                     return false;
                                 }
-                            }
-                        }
-                        else {
-                            var key = operands[i].AsString;
-                            if (!string.IsNullOrEmpty(key) && !str.Contains(key)) {
-                                return false;
                             }
                         }
                     }
@@ -2981,24 +3202,30 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_not_contains(str,str_or_list_1,str_or_list_2,...), aliased as not_contains");
+                    return BoxedValue.NullObject;
+                }
                 bool r = false;
                 if (operands.Count >= 2) {
                     string str = operands[0].AsString;
-                    r = true;
-                    for (int i = 1; i < operands.Count; ++i) {
-                        var list = operands[i].As<IList>();
-                        if (null != list) {
-                            foreach (var o in list) {
-                                var key = o as string;
+                    if (null != str) {
+                        r = true;
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var list = operands[i].As<IList>();
+                            if (null != list) {
+                                foreach (var o in list) {
+                                    var key = o as string;
+                                    if (!string.IsNullOrEmpty(key) && str.Contains(key)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            else {
+                                var key = operands[i].AsString;
                                 if (!string.IsNullOrEmpty(key) && str.Contains(key)) {
                                     return false;
                                 }
-                            }
-                        }
-                        else {
-                            var key = operands[i].AsString;
-                            if (!string.IsNullOrEmpty(key) && str.Contains(key)) {
-                                return false;
                             }
                         }
                     }
@@ -3010,15 +3237,32 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as contains_any");
+                    return BoxedValue.NullObject;
+                }
                 bool r = false;
                 if (operands.Count >= 2) {
-                    r = true;
                     string str = operands[0].AsString;
-                    for (int i = 1; i < operands.Count; ++i) {
-                        var list = operands[i].As<IList>();
-                        if (null != list) {
-                            foreach (var o in list) {
-                                var key = o as string;
+                    if (null != str) {
+                        r = true;
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var list = operands[i].As<IList>();
+                            if (null != list) {
+                                foreach (var o in list) {
+                                    var key = o as string;
+                                    if (!string.IsNullOrEmpty(key)) {
+                                        if (str.Contains(key)) {
+                                            return true;
+                                        }
+                                        else {
+                                            r = false;
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                var key = operands[i].AsString;
                                 if (!string.IsNullOrEmpty(key)) {
                                     if (str.Contains(key)) {
                                         return true;
@@ -3026,17 +3270,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                     else {
                                         r = false;
                                     }
-                                }
-                            }
-                        }
-                        else {
-                            var key = operands[i].AsString;
-                            if (!string.IsNullOrEmpty(key)) {
-                                if (str.Contains(key)) {
-                                    return true;
-                                }
-                                else {
-                                    r = false;
                                 }
                             }
                         }
@@ -3049,15 +3282,32 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_not_contains_any(str,str_or_list_1,str_or_list_2,...), aliased as not_contains_any");
+                    return BoxedValue.NullObject;
+                }
                 bool r = false;
                 if (operands.Count >= 2) {
-                    r = true;
                     string str = operands[0].AsString;
-                    for (int i = 1; i < operands.Count; ++i) {
-                        var list = operands[i].As<IList>();
-                        if (null != list) {
-                            foreach (var o in list) {
-                                var key = o as string;
+                    if (null != str) {
+                        r = true;
+                        for (int i = 1; i < operands.Count; ++i) {
+                            var list = operands[i].As<IList>();
+                            if (null != list) {
+                                foreach (var o in list) {
+                                    var key = o as string;
+                                    if (!string.IsNullOrEmpty(key)) {
+                                        if (!str.Contains(key)) {
+                                            return true;
+                                        }
+                                        else {
+                                            r = false;
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                var key = operands[i].AsString;
                                 if (!string.IsNullOrEmpty(key)) {
                                     if (!str.Contains(key)) {
                                         return true;
@@ -3065,17 +3315,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                     else {
                                         r = false;
                                     }
-                                }
-                            }
-                        }
-                        else {
-                            var key = operands[i].AsString;
-                            if (!string.IsNullOrEmpty(key)) {
-                                if (!str.Contains(key)) {
-                                    return true;
-                                }
-                                else {
-                                    r = false;
                                 }
                             }
                         }
@@ -3088,12 +3327,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_int(str), aliased as str_to_int");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    int v;
-                    if (int.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        int v;
+                        if (int.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3103,12 +3348,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_uint(str), aliased as str_to_uint");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    uint v;
-                    if (uint.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        uint v;
+                        if (uint.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3118,12 +3369,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_long(str), aliased as str_to_long");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    long v;
-                    if (long.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        long v;
+                        if (long.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3133,12 +3390,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_ulong(str), aliased as str_to_ulong");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    ulong v;
-                    if (ulong.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        ulong v;
+                        if (ulong.TryParse(str, System.Globalization.NumberStyles.Number, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3148,12 +3411,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_to_float(str), aliased as str_to_float");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    float v;
-                    if (float.TryParse(str, System.Globalization.NumberStyles.Float, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        float v;
+                        if (float.TryParse(str, System.Globalization.NumberStyles.Float, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3163,12 +3432,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: strint_to_double(str), aliased as str_to_double");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    double v;
-                    if (double.TryParse(str, System.Globalization.NumberStyles.Float, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        double v;
+                        if (double.TryParse(str, System.Globalization.NumberStyles.Float, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3178,12 +3453,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hex_string_to_int(str), aliased as hex_to_int");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    int v;
-                    if (int.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        int v;
+                        if (int.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3193,12 +3474,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hex_string_to_uint(str), aliased as hex_to_uint");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    uint v;
-                    if (uint.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        uint v;
+                        if (uint.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3208,12 +3495,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hex_string_to_long(str), aliased as hex_to_long");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    long v;
-                    if (long.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        long v;
+                        if (long.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3223,12 +3516,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hex_string_to_ulong(str), aliased as hex_to_ulong");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
-                    ulong v;
-                    if (ulong.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
-                        r = v;
+                    if (null != str) {
+                        ulong v;
+                        if (ulong.TryParse(str, System.Globalization.NumberStyles.HexNumber, null, out v)) {
+                            r = v;
+                        }
                     }
                 }
                 return r;
@@ -3238,10 +3537,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count > 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: date_time_string([fmt]), aliased as date_time_str");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var fmt = operands[0].AsString;
-                    r = DateTime.Now.ToString(fmt);
+                    if (null != fmt) {
+                        r = DateTime.Now.ToString(fmt);
+                    }
                 }
                 else {
                     r = DateTime.Now.ToString();
@@ -3253,6 +3558,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: long_date_string(), aliased as long_date_str");
+                    return BoxedValue.NullObject;
+                }
                 var r = BoxedValue.FromObject(DateTime.Now.ToLongDateString());
                 return r;
             }
@@ -3261,6 +3570,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: long_time_string(), aliased as long_time_str");
+                    return BoxedValue.NullObject;
+                }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortDateString());
                 return r;
             }
@@ -3269,6 +3582,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: short_date_string(), aliased as short_date_str");
+                    return BoxedValue.NullObject;
+                }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortDateString());
                 return r;
             }
@@ -3277,6 +3594,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: short_time_string(), aliased as short_time_str");
+                    return BoxedValue.NullObject;
+                }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortTimeString());
                 return r;
             }
@@ -3285,6 +3606,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_null_or_empty(str)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var str = operands[0].AsString;
@@ -3308,6 +3633,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: to_array(list)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var list = operands[0];
@@ -3329,6 +3658,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_count(list), aliased as list_get_count|get_list_count|list_size");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var list = operands[0].As<IList>();
@@ -3356,6 +3689,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_get(list,index[,defval])");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var list = operands[0].As<IList>();
@@ -3380,6 +3717,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_set(list,index,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 3) {
                     var list = operands[0].As<IList>();
@@ -3403,6 +3744,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_index_of(list,val), aliased as list_indexof");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var list = operands[0].As<IList>();
@@ -3421,6 +3766,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_add(list,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var list = operands[0].As<IList>();
@@ -3439,6 +3788,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_remove(list,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var list = operands[0].As<IList>();
@@ -3457,6 +3810,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_insert(list,index,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 3) {
                     var list = operands[0].As<IList>();
@@ -3476,6 +3833,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_remove_at(list,index)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var list = operands[0].As<IList>();
@@ -3491,6 +3852,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_clear(list)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var list = operands[0].As<IList>();
@@ -3505,6 +3870,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_split(list,ct) api, return list of list");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var enumer = operands[0].As<IEnumerable>();
@@ -3561,6 +3930,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_count(hash), aliased as hashtable_get_count|get_hashtable_count|hashtable_size");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dict = operands[0].As<IDictionary>();
@@ -3588,7 +3961,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             protected override bool Load(Dsl.FunctionData funcData)
             {
                 for (int i = 0; i < funcData.GetParamNum(); ++i) {
-                    Dsl.FunctionData callData = funcData.GetParam(i) as Dsl.FunctionData;
+                    Dsl.FunctionData? callData = funcData.GetParam(i) as Dsl.FunctionData;
                     if (null != callData && callData.GetParamNum() == 2) {
                         var expKey = Calculator.Load(callData.GetParam(0));
                         m_Expressions.Add(expKey);
@@ -3605,6 +3978,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_get(hash,key[,defval])");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var dict = operands[0].As<IDictionary>();
@@ -3633,6 +4010,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_set(hash,key,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 3) {
                     var dict = operands[0].As<IDictionary>();
@@ -3656,6 +4037,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_add(hash,key,val)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 3) {
                     var dict = operands[0].As<IDictionary>();
@@ -3679,6 +4064,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_remove(hash,key)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var dict = operands[0].As<IDictionary>();
@@ -3700,6 +4089,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_clear(hash)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dict = operands[0].As<IDictionary>();
@@ -3714,6 +4107,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_keys(hash)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dict = operands[0].As<IDictionary>();
@@ -3739,6 +4136,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_values(hash)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dict = operands[0].As<IDictionary>();
@@ -3764,6 +4165,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_hashtable(hash) api, return list of pair");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dict = operands[0].As<IDictionary>();
@@ -3782,6 +4187,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hashtable_split(hash,ct) api, return list of hashtable");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var dict = operands[0].As<IDictionary>();
@@ -3839,6 +4248,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: peek(queue_or_stack)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
@@ -3857,6 +4270,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: stack_count(stack), aliased as stack_get_count|get_stack_count|stack_size");
+                    return BoxedValue.NullObject;
+                }
                 int r = 0;
                 if (operands.Count >= 1) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
@@ -3884,6 +4301,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: push(stack,v)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
@@ -3899,6 +4320,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: pop(stack)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
@@ -3913,6 +4338,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: stack_clear(stack)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var stack = operands[0].As<Stack<BoxedValue>>();
@@ -3927,6 +4356,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: queue_count(queue), aliased as queue_get_count|get_queue_count|queue_size");
+                    return BoxedValue.NullObject;
+                }
                 int r = 0;
                 if (operands.Count >= 1) {
                     var queue = operands[0].As<Queue<BoxedValue>>();
@@ -3954,6 +4387,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: enqueue(queue,v)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var queue = operands[0].As<Queue<BoxedValue>>();
@@ -3969,6 +4406,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dequeue(queue)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var queue = operands[0].As<Queue<BoxedValue>>();
@@ -3983,6 +4424,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: queue_clear(queue)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var queue = operands[0].As<Queue<BoxedValue>>();
@@ -3997,6 +4442,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_env(k,v)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var key = operands[0].AsString;
@@ -4011,6 +4460,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_env(k)");
+                    return BoxedValue.NullObject;
+                }
                 string ret = string.Empty;
                 if (operands.Count >= 1) {
                     var key = operands[0].AsString;
@@ -4023,6 +4476,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: expand(str)");
+                    return BoxedValue.NullObject;
+                }
                 string ret = string.Empty;
                 if (operands.Count >= 1) {
                     var key = operands[0].AsString;
@@ -4042,6 +4499,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: cd(path)");
+                    return BoxedValue.NullObject;
+                }
                 string ret = string.Empty;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4068,6 +4529,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: cmd_line()");
+                    return BoxedValue.NullObject;
+                }
                 return Environment.CommandLine;
             }
         }
@@ -4075,6 +4540,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: cmd_line_args(prev_arg) or cmdlineargs() api, first return next arg, second return array of arg");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 1) {
                     string name = operands[0].AsString;
                     if (!string.IsNullOrEmpty(name)) {
@@ -4102,6 +4571,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: os_platform()");
+                    return BoxedValue.NullObject;
+                }
                 return Environment.OSVersion.Platform.ToString();
             }
         }
@@ -4109,6 +4582,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: os_version()");
+                    return BoxedValue.NullObject;
+                }
                 return Environment.OSVersion.Version.ToString();
             }
         }
@@ -4116,6 +4593,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_full_path(path)");
+                    return BoxedValue.NullObject;
+                }
                 string ret = string.Empty;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4131,6 +4612,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_path_root(path)");
+                    return BoxedValue.NullObject;
+                }
                 string ret = string.Empty;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4146,6 +4631,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_random_file_name()");
+                    return BoxedValue.NullObject;
+                }
                 return Path.GetRandomFileName();
             }
         }
@@ -4153,6 +4642,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_temp_file_name()");
+                    return BoxedValue.NullObject;
+                }
                 return Path.GetTempFileName();
             }
         }
@@ -4160,6 +4653,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_temp_path()");
+                    return BoxedValue.NullObject;
+                }
                 return Path.GetTempPath();
             }
         }
@@ -4167,6 +4664,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: has_extension(path)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4182,6 +4683,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_path_rooted(path)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4197,6 +4702,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_file_name(path)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4212,6 +4721,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_file_name_without_extension(path)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4227,6 +4740,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_extension(path)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4242,6 +4759,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_directory_name(path)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4257,15 +4778,25 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: combine_path(path1,path2,...)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
-                    var path1 = operands[0].AsString;
-                    var path2 = operands[1].AsString;
-                    if (null != path1 && null != path2) {
-                        path1 = Environment.ExpandEnvironmentVariables(path1);
-                        path2 = Environment.ExpandEnvironmentVariables(path2);
-                        r = Path.Combine(path1, path2);
+                    List<string> list = new List<string>();
+                    for (int ix = 0; ix < operands.Count; ++ix) {
+                        var v = operands[ix];
+                        var str = v.AsString;
+                        if (string.IsNullOrEmpty(str)) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(string.Format("Path {0} is null or empty", ix));
+                            return BoxedValue.NullObject;
+                        }
+                        list.Add(str);
                     }
+                    var path = Path.Combine(list.ToArray());
+                    path = Environment.ExpandEnvironmentVariables(path);
+                    r = path;
                 }
                 return r;
             }
@@ -4274,6 +4805,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: change_extension(path,ext)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var path = operands[0].AsString;
@@ -4290,6 +4825,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: quote_path(path[,only_needed,single_quote])");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var path = operands[0].AsString;
@@ -4353,6 +4892,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: echo(fmt,arg1,arg2,...) api, Console.WriteLine");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var obj = operands[0];
@@ -4383,6 +4926,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: call_stack()");
+                    return BoxedValue.NullObject;
+                }
                 var r = System.Environment.StackTrace;
                 return BoxedValue.FromObject(r);
             }
@@ -4391,6 +4938,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count > 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_echo(bool) or file_echo()");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 1) {
                     DslCalculator.FileEchoOn = operands[0].GetBool();
                 }
@@ -4401,6 +4952,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dir_exists(dir), aliased as direxists");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4414,6 +4969,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_exists(file), aliased as fileexists");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var file = operands[0].AsString;
@@ -4427,6 +4986,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var baseDir = operands[0].AsString;
@@ -4468,6 +5031,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var baseDir = operands[0].AsString;
@@ -4509,6 +5076,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var baseDir = operands[0].AsString;
@@ -4550,6 +5121,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var baseDir = operands[0].AsString;
@@ -4591,6 +5166,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: create_dir(dir), aliased as make_dir");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4611,6 +5190,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
+                    return BoxedValue.NullObject;
+                }
                 int ct = 0;
                 if (operands.Count >= 2) {
                     var dir1 = operands[0].AsString;
@@ -4689,6 +5272,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: move_dir(dir1,dir2)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 2) {
                     var dir1 = operands[0].AsString;
@@ -4714,6 +5301,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_dir(dir)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4734,6 +5325,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: copy_file(file1,file2)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 2) {
                     var file1 = operands[0].AsString;
@@ -4760,6 +5355,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
+                    return BoxedValue.NullObject;
+                }
                 int ct = 0;
                 if (operands.Count >= 2) {
                     var dir1 = operands[0].AsString;
@@ -4823,6 +5422,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: move_file(file1,file2)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 2) {
                     var file1 = operands[0].AsString;
@@ -4852,6 +5455,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_file(file)");
+                    return BoxedValue.NullObject;
+                }
                 bool ret = false;
                 if (operands.Count >= 1) {
                     var file = operands[0].AsString;
@@ -4872,6 +5479,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir");
+                    return BoxedValue.NullObject;
+                }
                 int ct = 0;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4916,6 +5527,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir");
+                    return BoxedValue.NullObject;
+                }
                 int ct = 0;
                 if (operands.Count >= 1) {
                     var dir = operands[0].AsString;
@@ -4960,6 +5575,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_file_info(file)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var file = operands[0].AsString;
@@ -4975,6 +5594,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_dir_info(dir)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var file = operands[0].AsString;
@@ -4990,6 +5613,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_drive_info(drive)");
+                    return BoxedValue.NullObject;
+                }
                 var ret = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var drive = operands[0].AsString;
@@ -5002,6 +5629,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_drives_info()");
+                    return BoxedValue.NullObject;
+                }
                 var ret = DriveInfo.GetDrives();
                 return BoxedValue.FromObject(ret);
             }
@@ -5010,6 +5641,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1 || operands.Count > 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_all_lines(file[,encoding])");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 1) {
                     string path = operands[0].AsString;
                     if (!string.IsNullOrEmpty(path)) {
@@ -5029,6 +5664,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_all_lines(file,lines[,encoding])");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 2) {
                     string path = operands[0].AsString;
                     var lines = operands[1].As<IList>();
@@ -5041,11 +5680,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         }
                         var strs = new List<string>();
                         foreach (var line in lines) {
-                            strs.Add(line.ToString());
+                            strs.Add(line.ToString() ?? string.Empty);
                         }
                         if (strs.Count == 0) {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("You cannot write empty values ​​to a file !!! If you want to delete some lines, use the 'delete_lines' function.");
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
                             return BoxedValue.From(false);
+                        }
+                        string ext = Path.GetExtension(path).ToLower();
+                        if (File.Exists(path) && ext != ".txt" && ext != ".md") {
+                            var lineCount = File.ReadAllLines(path).Length;
+                            var newLineCount = path.Split('\n').Length;
+                            if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
+                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                                return BoxedValue.From(false);
+                            }
                         }
                         File.WriteAllLines(path, strs, encoding);
                         return true;
@@ -5058,6 +5706,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 1 || operands.Count > 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_all_text(file[,encoding])");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 1) {
                     string path = operands[0].AsString;
                     if (!string.IsNullOrEmpty(path)) {
@@ -5077,6 +5729,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count < 2 || operands.Count > 3) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_all_text(file,txt[,encoding])");
+                    return BoxedValue.NullObject;
+                }
                 if (operands.Count >= 2) {
                     string path = operands[0].AsString;
                     var text = operands[1].AsString;
@@ -5088,8 +5744,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                             encoding = GetEncoding(v);
                         }
                         if (string.IsNullOrEmpty(text)) {
-                            DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("You cannot write empty values ​​to a file !!! If you want to delete some lines, use the 'delete_lines' function.");
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
                             return BoxedValue.From(false);
+                        }
+                        string ext = Path.GetExtension(path).ToLower();
+                        if (File.Exists(path) && ext != ".txt" && ext != ".md") {
+                            var lineCount = File.ReadAllLines(path).Length;
+                            var newLineCount = path.Split('\n').Length;
+                            if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
+                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                                return BoxedValue.From(false);
+                            }
                         }
                         File.WriteAllText(path, text, encoding);
                         return true;
@@ -5102,6 +5767,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: calc_md5(file)");
+                    return BoxedValue.NullObject;
+                }
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     var file = operands[0].AsString;
@@ -5113,7 +5782,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             public string CalcMD5(string file)
             {
-                byte[] array = null;
+                byte[]? array = null;
                 using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
                     MD5 md5 = MD5.Create();
                     array = md5.ComputeHash(stream);

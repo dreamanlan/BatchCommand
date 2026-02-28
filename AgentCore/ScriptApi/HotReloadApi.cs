@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using ScriptableFramework;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -28,6 +29,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 Core.AgentCore.Instance?.Logger.Error($"Error hot reloading: {ex.Message}");
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"hot_reload error: {ex.Message}");
+                }
                 return $"Error: {ex.Message}";
             }
         }

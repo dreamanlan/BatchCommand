@@ -1,72 +1,37 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Text;
+using TreeSitter;
+using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 
 namespace AgentCore.Tools
 {
     /// <summary>
-    /// Diagnostic tool to inspect TreeSitterSharp language DLLs
+    /// Diagnostic tool to inspect TreeSitter.DotNet language support
     /// </summary>
     public static class TreeSitterLanguageDiagnostics
     {
         /// <summary>
-        /// Inspect TreeSitterSharp.C assembly
+        /// Inspect C language support via TreeSitter.DotNet
         /// </summary>
         public static string InspectCLanguageAssembly()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("=== TreeSitterSharp.C Assembly Inspection ===");
+            sb.AppendLine("=== TreeSitter.DotNet C Language Inspection ===");
             sb.AppendLine();
 
             try
             {
-                var assembly = Assembly.Load("TreeSitterSharp.C");
-                sb.AppendLine($"Assembly: {assembly.FullName}");
-                sb.AppendLine($"Location: {assembly.Location}");
+                var lang = new Language("c");
+                sb.AppendLine($"Language: {lang.Name}");
+                sb.AppendLine($"ABI Version: {lang.AbiVersion}");
+                sb.AppendLine($"State Count: {lang.StateCount}");
                 sb.AppendLine();
 
-                var types = assembly.GetTypes();
-                sb.AppendLine($"Total types: {types.Length}");
-                sb.AppendLine();
-
-                foreach (var type in types.OrderBy(t => t.FullName))
-                {
-                    sb.AppendLine($"Type: {type.FullName}");
-                    sb.AppendLine($"  IsPublic: {type.IsPublic}");
-                    sb.AppendLine($"  IsClass: {type.IsClass}");
-                    sb.AppendLine($"  IsInterface: {type.IsInterface}");
-
-                    if (type.BaseType != null)
-                    {
-                        sb.AppendLine($"  BaseType: {type.BaseType.FullName}");
-                    }
-
-                    // List static properties
-                    var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static);
-                    if (staticProps.Length > 0)
-                    {
-                        sb.AppendLine("  Static Properties:");
-                        foreach (var prop in staticProps)
-                        {
-                            sb.AppendLine($"    {prop.PropertyType.Name} {prop.Name}");
-                        }
-                    }
-
-                    // List constructors
-                    var ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-                    if (ctors.Length > 0)
-                    {
-                        sb.AppendLine("  Constructors:");
-                        foreach (var ctor in ctors)
-                        {
-                            var parameters = string.Join(", ", ctor.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-                            sb.AppendLine($"    {type.Name}({parameters})");
-                        }
-                    }
-
-                    sb.AppendLine();
-                }
+                // Test parse
+                using var parser = new Parser(lang);
+                using var tree = parser.Parse("int main() { return 0; }");
+                sb.AppendLine($"Test parse successful, root type: {tree?.RootNode.Type ?? "null"}");
             }
             catch (Exception ex)
             {
@@ -78,67 +43,49 @@ namespace AgentCore.Tools
         }
 
         /// <summary>
-        /// Inspect TreeSitterSharp.Cpp assembly
+        /// Inspect C++ language support via TreeSitter.DotNet
         /// </summary>
         public static string InspectCppLanguageAssembly()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("=== TreeSitterSharp.Cpp Assembly Inspection ===");
+            sb.AppendLine("=== TreeSitter.DotNet C++ Language Inspection ===");
             sb.AppendLine();
 
             try
             {
-                var assembly = Assembly.Load("TreeSitterSharp.Cpp");
-                sb.AppendLine($"Assembly: {assembly.FullName}");
-                sb.AppendLine($"Location: {assembly.Location}");
+                var lang = new Language("cpp");
+                sb.AppendLine($"Language: {lang.Name}");
+                sb.AppendLine($"ABI Version: {lang.AbiVersion}");
+                sb.AppendLine($"State Count: {lang.StateCount}");
                 sb.AppendLine();
 
-                var types = assembly.GetTypes();
-                sb.AppendLine($"Total types: {types.Length}");
-                sb.AppendLine();
-
-                foreach (var type in types.OrderBy(t => t.FullName))
-                {
-                    sb.AppendLine($"Type: {type.FullName}");
-                    sb.AppendLine($"  IsPublic: {type.IsPublic}");
-                    sb.AppendLine($"  IsClass: {type.IsClass}");
-                    sb.AppendLine($"  IsInterface: {type.IsInterface}");
-
-                    if (type.BaseType != null)
-                    {
-                        sb.AppendLine($"  BaseType: {type.BaseType.FullName}");
-                    }
-
-                    // List static properties
-                    var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static);
-                    if (staticProps.Length > 0)
-                    {
-                        sb.AppendLine("  Static Properties:");
-                        foreach (var prop in staticProps)
-                        {
-                            sb.AppendLine($"    {prop.PropertyType.Name} {prop.Name}");
-                        }
-                    }
-
-                    // List constructors
-                    var ctors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance);
-                    if (ctors.Length > 0)
-                    {
-                        sb.AppendLine("  Constructors:");
-                        foreach (var ctor in ctors)
-                        {
-                            var parameters = string.Join(", ", ctor.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-                            sb.AppendLine($"    {type.Name}({parameters})");
-                        }
-                    }
-
-                    sb.AppendLine();
-                }
+                // Test parse
+                using var parser = new Parser(lang);
+                using var tree = parser.Parse("class Foo { public: void bar(); };");
+                sb.AppendLine($"Test parse successful, root type: {tree?.RootNode.Type ?? "null"}");
             }
             catch (Exception ex)
             {
                 sb.AppendLine($"Error: {ex.Message}");
                 sb.AppendLine($"Stack: {ex.StackTrace}");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// List all supported languages by TreeSitter.DotNet
+        /// </summary>
+        public static string ListSupportedLanguages()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("=== TreeSitter.DotNet Supported Languages ===");
+            sb.AppendLine();
+
+            foreach (var lang in DotNetParserAdapter.SupportedLanguages.OrderBy(l => l))
+            {
+                bool supported = DotNetParserAdapter.IsLanguageSupported(lang);
+                sb.AppendLine($"  {lang}: {(supported ? "OK" : "NOT AVAILABLE")}");
             }
 
             return sb.ToString();

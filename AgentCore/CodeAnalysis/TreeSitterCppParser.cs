@@ -1,10 +1,10 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using TreeSitterSharp;
-using TreeSitterSharp.Cpp;
+using TreeSitter;
 using CefDotnetApp.AgentCore.Models;
 
 namespace AgentCore.CodeAnalysis
@@ -12,8 +12,8 @@ namespace AgentCore.CodeAnalysis
     // TreeSitter-based C++ parser
     public class TreeSitterCppParser : ICodeParser
     {
-        private readonly CppParser _parser;
-        private string _sourceCode;
+        private readonly Parser _parser;
+        private string _sourceCode = string.Empty;
 
         public ProgrammingLanguage Language => ProgrammingLanguage.Cpp;
 
@@ -21,8 +21,8 @@ namespace AgentCore.CodeAnalysis
         {
             try
             {
-                // Create C++ parser using the correct API
-                _parser = new CppParser();
+                // Create C++ parser using TreeSitter.DotNet
+                _parser = new Parser(new Language("cpp"));
             }
             catch (Exception ex)
             {
@@ -41,7 +41,7 @@ namespace AgentCore.CodeAnalysis
             return ParseText(code, filePath);
         }
 
-        public ParsedCodeFile ParseText(string code, string filePath = null)
+        public ParsedCodeFile ParseText(string code, string? filePath = null)
         {
             var result = new ParsedCodeFile(filePath ?? "<memory>", ProgrammingLanguage.Cpp);
 
@@ -50,9 +50,14 @@ namespace AgentCore.CodeAnalysis
                 // Store source code for text extraction
                 _sourceCode = code;
 
-                // Parse the code - convert string to UTF8 bytes
-                var codeBytes = System.Text.Encoding.UTF8.GetBytes(code);
-                var tree = _parser.Parse(codeBytes.AsSpan());
+                // Parse the code directly as string
+                var tree = _parser.Parse(code);
+                if (tree == null)
+                {
+                    result.HasSyntaxErrors = true;
+                    result.SyntaxErrors.Add("Failed to parse C++ code: parser returned null");
+                    return result;
+                }
 
                 result.NativeSyntaxTree = tree;
 
@@ -69,12 +74,11 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private void ExtractSymbols(CppSyntaxTree tree, ParsedCodeFile result)
+        private void ExtractSymbols(Tree tree, ParsedCodeFile result)
         {
             try
             {
-                // Get the root node
-                var root = tree.Root;
+                var root = tree.RootNode;
 
                 // Traverse the tree to find functions and types
                 TraverseNode(root, result);
@@ -82,22 +86,22 @@ namespace AgentCore.CodeAnalysis
             catch (Exception ex)
             {
                 // Log but don't fail - we can still return partial results
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Warning: Failed to extract symbols: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Warning: Failed to extract symbols: {ex.Message}");
             }
         }
 
         private string _currentNamespace = string.Empty;
 
-        private void TraverseNode(CppSyntaxNode node, ParsedCodeFile result)
+        private void TraverseNode(Node node, ParsedCodeFile result)
         {
-            if (node == null)
+            if (node.Type == null)
             {
                 return;
             }
 
             try
             {
-                var nodeType = node.NodeType;
+                var nodeType = node.Type;
 
                 // Check for namespace definition
                 if (nodeType == "namespace_definition")
@@ -131,7 +135,7 @@ namespace AgentCore.CodeAnalysis
                     // Find the actual declaration (function or class)
                     foreach (var child in node.NamedChildren)
                     {
-                        var childType = child.NodeType;
+                    var childType = child.Type;
                         if (childType == "function_definition")
                         {
                             var funcInfo = ExtractFunctionInfo(child, result.FilePath);
@@ -204,7 +208,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private FunctionInfo ExtractFunctionInfo(CppSyntaxNode node, string filePath)
+        private FunctionInfo? ExtractFunctionInfo(Node node, string filePath)
         {
             try
             {
@@ -227,7 +231,7 @@ namespace AgentCore.CodeAnalysis
                     return null;
                 }
 
-                var funcName = GetNodeText(identifier);
+                var funcName = identifier.Text;
                 if (string.IsNullOrEmpty(funcName))
                 {
                     return null;
@@ -246,10 +250,10 @@ namespace AgentCore.CodeAnalysis
                     Parameters = parameters,
                     Location = new CodeLocation(
                         filePath,
-                        (int)node.StartPoint.Row + 1,
-                        (int)node.EndPoint.Row + 1,
-                        (int)node.StartPoint.Column,
-                        (int)node.EndPoint.Column)
+                        node.StartPosition.Row + 1,
+                        node.EndPosition.Row + 1,
+                        node.StartPosition.Column,
+                        node.EndPosition.Column)
                 };
             }
             catch
@@ -258,20 +262,19 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private string ExtractReturnType(CppSyntaxNode functionNode)
+        private string ExtractReturnType(Node functionNode)
         {
             try
             {
-                // Look for type nodes (primitive_type, type_identifier, etc.)
                 foreach (var child in functionNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
                         nodeType == "sized_type_specifier" || nodeType == "class_specifier" ||
                         nodeType == "struct_specifier" || nodeType == "union_specifier" ||
                         nodeType == "enum_specifier" || nodeType == "template_type")
                     {
-                        return GetNodeText(child);
+                        return child.Text;
                     }
                 }
                 return string.Empty;
@@ -282,7 +285,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private List<ParameterInfo> ExtractParameters(CppSyntaxNode declaratorNode)
+        private List<ParameterInfo> ExtractParameters(Node declaratorNode)
         {
             var parameters = new List<ParameterInfo>();
 
@@ -298,7 +301,7 @@ namespace AgentCore.CodeAnalysis
                 // Iterate through parameter_declaration nodes
                 foreach (var child in paramList.NamedChildren)
                 {
-                    if (child.NodeType == "parameter_declaration")
+                if (child.Type == "parameter_declaration")
                     {
                         var param = ExtractParameter(child);
                         if (param != null)
@@ -316,17 +319,16 @@ namespace AgentCore.CodeAnalysis
             return parameters;
         }
 
-        private ParameterInfo ExtractParameter(CppSyntaxNode paramNode)
+        private ParameterInfo? ExtractParameter(Node paramNode)
         {
             try
             {
                 string paramType = string.Empty;
                 string paramName = string.Empty;
 
-                // Extract type and name from parameter_declaration
                 foreach (var child in paramNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
 
                     // Type nodes
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
@@ -380,7 +382,7 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private List<TemplateParameterInfo> ExtractTemplateParameters(CppSyntaxNode templateNode)
+        private List<TemplateParameterInfo> ExtractTemplateParameters(Node templateNode)
         {
             var templateParams = new List<TemplateParameterInfo>();
 
@@ -396,7 +398,7 @@ namespace AgentCore.CodeAnalysis
                 // Iterate through template parameters
                 foreach (var child in paramList.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
 
                     // Type parameter (typename T or class T)
                     if (nodeType == "type_parameter_declaration")
@@ -407,7 +409,7 @@ namespace AgentCore.CodeAnalysis
 
                         foreach (var subChild in child.NamedChildren)
                         {
-                            var subType = subChild.NodeType;
+                            var subType = subChild.Type;
                             if (subType == "type_identifier")
                             {
                                 paramName = GetNodeText(subChild);
@@ -441,7 +443,7 @@ namespace AgentCore.CodeAnalysis
 
                         foreach (var subChild in child.NamedChildren)
                         {
-                            var subType = subChild.NodeType;
+                            var subType = subChild.Type;
                             if (subType == "primitive_type" || subType == "type_identifier")
                             {
                                 paramType = GetNodeText(subChild);
@@ -473,7 +475,7 @@ namespace AgentCore.CodeAnalysis
             return templateParams;
         }
 
-        private TypeInfo ExtractTypeInfo(CppSyntaxNode node, string filePath)
+        private TypeInfo? ExtractTypeInfo(Node node, string filePath)
         {
             try
             {
@@ -498,10 +500,10 @@ namespace AgentCore.CodeAnalysis
                     Fields = fields,
                     Location = new CodeLocation(
                         filePath,
-                        (int)node.StartPoint.Row + 1,
-                        (int)node.EndPoint.Row + 1,
-                        (int)node.StartPoint.Column,
-                        (int)node.EndPoint.Column)
+                        node.StartPosition.Row + 1,
+                        node.EndPosition.Row + 1,
+                        node.StartPosition.Column,
+                        node.EndPosition.Column)
                 };
             }
             catch
@@ -510,7 +512,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private List<FieldInfo> ExtractFields(CppSyntaxNode classNode, string filePath)
+        private List<FieldInfo> ExtractFields(Node classNode, string filePath)
         {
             var fields = new List<FieldInfo>();
 
@@ -526,7 +528,7 @@ namespace AgentCore.CodeAnalysis
                 // Iterate through field_declaration nodes
                 foreach (var child in fieldList.NamedChildren)
                 {
-                    if (child.NodeType == "field_declaration")
+                    if (child.Type == "field_declaration")
                     {
                         // Skip if it's a function definition (member function)
                         var funcDef = FindChildByType(child, "function_definition");
@@ -551,7 +553,7 @@ namespace AgentCore.CodeAnalysis
             return fields;
         }
 
-        private FieldInfo ExtractField(CppSyntaxNode fieldNode, string filePath)
+        private FieldInfo? ExtractField(Node fieldNode, string filePath)
         {
             try
             {
@@ -561,7 +563,7 @@ namespace AgentCore.CodeAnalysis
                 // Extract type and name from field_declaration
                 foreach (var child in fieldNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
 
                     // Type nodes
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
@@ -615,10 +617,10 @@ namespace AgentCore.CodeAnalysis
                         Name = fieldName,
                         Location = new CodeLocation(
                             filePath,
-                            (int)fieldNode.StartPoint.Row + 1,
-                            (int)fieldNode.EndPoint.Row + 1,
-                            (int)fieldNode.StartPoint.Column,
-                            (int)fieldNode.EndPoint.Column)
+                            fieldNode.StartPosition.Row + 1,
+                            fieldNode.EndPosition.Row + 1,
+                            fieldNode.StartPosition.Column,
+                            fieldNode.EndPosition.Column)
                     };
                 }
             }
@@ -630,16 +632,16 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private CppSyntaxNode FindChildByType(CppSyntaxNode node, string type)
+        private Node? FindChildByType(Node node, string type)
         {
-            if (node == null)
+            if (node.Type == null)
             {
                 return null;
             }
 
             foreach (var child in node.NamedChildren)
             {
-                if (child.NodeType == type)
+                if (child.Type == type)
                 {
                     return child;
                 }
@@ -648,22 +650,11 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private string GetNodeText(CppSyntaxNode node)
+        private string GetNodeText(Node node)
         {
-            if (node == null || string.IsNullOrEmpty(_sourceCode))
-                return string.Empty;
-
             try
             {
-                int start = (int)node.StartByte;
-                int end = (int)node.EndByte;
-
-                if (start >= 0 && end <= _sourceCode.Length && start < end)
-                {
-                    return _sourceCode.Substring(start, end - start);
-                }
-
-                return string.Empty;
+                return node.Text;
             }
             catch
             {
@@ -671,7 +662,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             if (parsed == null || parsed.Functions == null)
             {
@@ -722,7 +713,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             if (parsed == null || parsed.Types == null)
             {
@@ -737,7 +728,7 @@ namespace AgentCore.CodeAnalysis
             return parsed.Types.Where(t => MatchesPattern(t.Name, namePattern, ignoreCase)).ToList();
         }
 
-        public FunctionInfo FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
+        public FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
         {
             if (parsed == null || parsed.Functions == null)
             {
@@ -785,7 +776,7 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        public TypeInfo FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
+        public TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
         {
             if (parsed == null || parsed.Types == null)
             {

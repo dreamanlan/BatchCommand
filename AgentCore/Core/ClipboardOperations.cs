@@ -1,7 +1,7 @@
 using System;
 using TextCopy;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -9,43 +9,28 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public string GetText()
         {
-            try {
-                return ClipboardService.GetText() ?? string.Empty;
-            }
-            catch (Exception ex) {
-                throw new InvalidOperationException("Failed to get clipboard text", ex);
-            }
+            return ClipboardService.GetText() ?? string.Empty;
         }
 
         public bool SetText(string text)
         {
-            try {
-                if (text == null)
-                    text = string.Empty;
+            if (text == null)
+                text = string.Empty;
 
-                ClipboardService.SetText(text);
-                return true;
-            }
-            catch (Exception ex) {
-                throw new InvalidOperationException("Failed to set clipboard text", ex);
-            }
+            ClipboardService.SetText(text);
+            return true;
         }
 
         public bool Clear()
         {
-            try {
-                ClipboardService.SetText(string.Empty);
-                return true;
-            }
-            catch (Exception ex) {
-                throw new InvalidOperationException("Failed to clear clipboard", ex);
-            }
+            ClipboardService.SetText(string.Empty);
+            return true;
         }
 
         public bool HasText()
         {
             try {
-                string text = ClipboardService.GetText();
+                string? text = ClipboardService.GetText();
                 return !string.IsNullOrEmpty(text);
             }
             catch (Exception) {

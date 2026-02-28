@@ -46,7 +46,7 @@ namespace AgentCore.CodeAnalysis
                 };
 
                 // Extract nested type information
-                BuildNestedTypeInfo(classDecl, out bool isNested, out string parentTypeName, out string fullTypeName);
+                BuildNestedTypeInfo(classDecl, out bool isNested, out string? parentTypeName, out string fullTypeName);
                 classInfo.IsNested = isNested;
                 classInfo.ParentTypeName = parentTypeName;
                 classInfo.FullTypeName = fullTypeName;
@@ -249,14 +249,14 @@ namespace AgentCore.CodeAnalysis
         }
 
         // Find a specific class by name
-        public static RoslynClassInfo FindClass(SyntaxTree tree, string className)
+        public static RoslynClassInfo? FindClass(SyntaxTree tree, string className)
         {
             var classes = ExtractClasses(tree);
             return classes.FirstOrDefault(c => c.Name == className);
         }
 
         // Find a specific method in a class
-        public static RoslynMethodInfo FindMethod(RoslynClassInfo classInfo, string methodName)
+        public static RoslynMethodInfo? FindMethod(RoslynClassInfo classInfo, string methodName)
         {
             return classInfo?.Methods.FirstOrDefault(m => m.Name == methodName);
         }
@@ -278,7 +278,7 @@ namespace AgentCore.CodeAnalysis
                 };
 
                 // Extract nested type information
-                BuildNestedTypeInfo(interfaceDecl, out bool isNested, out string parentTypeName, out string fullTypeName);
+                BuildNestedTypeInfo(interfaceDecl, out bool isNested, out string? parentTypeName, out string fullTypeName);
                 interfaceInfo.IsNested = isNested;
                 interfaceInfo.ParentTypeName = parentTypeName;
                 interfaceInfo.FullTypeName = fullTypeName;
@@ -331,7 +331,7 @@ namespace AgentCore.CodeAnalysis
                 };
 
                 // Extract nested type information
-                BuildNestedTypeInfo(structDecl, out bool isNested, out string parentTypeName, out string fullTypeName);
+                BuildNestedTypeInfo(structDecl, out bool isNested, out string? parentTypeName, out string fullTypeName);
                 structInfo.IsNested = isNested;
                 structInfo.ParentTypeName = parentTypeName;
                 structInfo.FullTypeName = fullTypeName;
@@ -377,7 +377,7 @@ namespace AgentCore.CodeAnalysis
                 };
 
                 // Extract nested type information
-                BuildNestedTypeInfo(enumDecl, out bool isNested, out string parentTypeName, out string fullTypeName);
+                BuildNestedTypeInfo(enumDecl, out bool isNested, out string? parentTypeName, out string fullTypeName);
                 enumInfo.IsNested = isNested;
                 enumInfo.ParentTypeName = parentTypeName;
                 enumInfo.FullTypeName = fullTypeName;
@@ -420,7 +420,7 @@ namespace AgentCore.CodeAnalysis
             // Extract usings
             var usingDirectives = root.DescendantNodes().OfType<UsingDirectiveSyntax>();
             foreach (var usingDir in usingDirectives) {
-                parsedFile.Usings.Add(usingDir.Name.ToString());
+                parsedFile.Usings.Add(usingDir.Name?.ToString() ?? string.Empty);
             }
 
             // Extract namespace
@@ -466,14 +466,14 @@ namespace AgentCore.CodeAnalysis
         }
 
         // Build full type name including parent types for nested types
-        private static void BuildNestedTypeInfo(TypeDeclarationSyntax typeDecl, out bool isNested, out string parentTypeName, out string fullTypeName)
+        private static void BuildNestedTypeInfo(TypeDeclarationSyntax typeDecl, out bool isNested, out string? parentTypeName, out string fullTypeName)
         {
             var typeNames = new List<string>();
             typeNames.Add(typeDecl.Identifier.Text);
 
             // Walk up the parent types
             var currentNode = typeDecl.Parent;
-            TypeDeclarationSyntax parentType = null;
+            TypeDeclarationSyntax? parentType = null;
 
             while (currentNode != null)
             {
@@ -507,14 +507,14 @@ namespace AgentCore.CodeAnalysis
         }
 
         // Build full type name including parent types for nested enums
-        private static void BuildNestedTypeInfo(EnumDeclarationSyntax enumDecl, out bool isNested, out string parentTypeName, out string fullTypeName)
+        private static void BuildNestedTypeInfo(EnumDeclarationSyntax enumDecl, out bool isNested, out string? parentTypeName, out string fullTypeName)
         {
             var typeNames = new List<string>();
             typeNames.Add(enumDecl.Identifier.Text);
 
             // Walk up the parent types
             var currentNode = enumDecl.Parent;
-            SyntaxNode parentType = null;
+            SyntaxNode? parentType = null;
 
             while (currentNode != null)
             {
@@ -565,7 +565,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // Find file containing a specific class
-        public static string FindFileContainingClass(string directory, string className)
+        public static string? FindFileContainingClass(string directory, string className)
         {
             var files = FindCSharpFiles(directory);
 

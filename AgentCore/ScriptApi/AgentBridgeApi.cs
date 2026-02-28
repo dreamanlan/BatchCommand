@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -12,12 +13,131 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     /// Provides MetaDSL script-callable APIs for inject.js communication
     /// </summary>
 
+    // Parse agent command JSON
+    sealed class ParseAgentCommandExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: parse_agent_command(jsonData)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string jsonData = operands[0].AsString;
+                var options = new System.Text.Json.JsonSerializerOptions {
+                    PropertyNameCaseInsensitive = true
+                };
+                var command = System.Text.Json.JsonSerializer.Deserialize<Core.AgentCommand>(jsonData, options);
+                if (command == null) {
+                    return BoxedValue.NullObject;
+                }
+
+                // Return as a dictionary-like object that DSL can access
+                var dict = new Dictionary<string, object?>
+                {
+                    { "id", command.Id },
+                    { "command", command.Command },
+                    { "params", command.Params },
+                    { "timestamp", command.Timestamp }
+                };
+
+                return BoxedValue.FromObject(dict);
+            }
+            catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error parsing agent command: {ex.Message}");
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Parse agent notification JSON
+    sealed class ParseAgentNotificationExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: parse_agent_notification(jsonData)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string jsonData = operands[0].AsString;
+                var options = new System.Text.Json.JsonSerializerOptions {
+                    PropertyNameCaseInsensitive = true
+                };
+                var notification = System.Text.Json.JsonSerializer.Deserialize<Core.AgentNotification>(jsonData, options);
+                if (notification == null) {
+                    return BoxedValue.NullObject;
+                }
+
+                // Return as a dictionary-like object that DSL can access
+                var dict = new Dictionary<string, object?>
+                {
+                    { "type", notification.Type },
+                    { "data", notification.Data }
+                };
+
+                return BoxedValue.FromObject(dict);
+            }
+            catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error parsing agent notification: {ex.Message}");
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Get parameter from agent command params
+    sealed class GetMessageParamExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_message_param(paramsObj, key)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var paramsObj = operands[0].GetObject();
+                string key = operands[1].AsString;
+
+                if (null != key) {
+                    if (paramsObj is IDictionary<BoxedValue, BoxedValue> bvdict) {
+                        paramsObj = DslHelper.GetDictionaryFromBoxedValue(bvdict);
+                    }
+                    if (paramsObj is IDictionary<string, object?> dict && dict.ContainsKey(key)) {
+                        var value = dict[key];
+                        return DslHelper.GetBoxedValueFromValue(value);
+                    }
+                    else if (paramsObj is LitJson.JsonData jsonData) {
+                        if (jsonData.IsObject) {
+                            var value = jsonData[key];
+                            return DslHelper.GetBoxedValueFromJsonValue(value);
+                        }
+                    }
+                }
+                return BoxedValue.NullObject;
+            }
+            catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error getting command param: {ex.Message}");
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
     // Send command to inject.js
     sealed class SendCommandToInjectExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2) {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_command_to_inject(command, paramsJson)");
                 return BoxedValue.FromString("Error: Missing command or params parameter");
             }
 
@@ -37,11 +157,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
 
                 var core = Core.AgentCore.Instance;
-                core.AgentBridge.SendCommandToInject(command, parameters);
+                core.AgentBridge.SendCommandToInject(command, parameters ?? new Dictionary<string, object>());
 
                 return BoxedValue.FromString("Command sent");
             }
             catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"send_command_to_inject error: {ex.Message}");
+                }
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -52,7 +175,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3) {
+            if (operands.Count < 3 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_agent_response(messageId, success, data, error)");
                 return BoxedValue.FromString("{}");
             }
 
@@ -63,7 +187,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string error = operands.Count > 3 ? operands[3].AsString : "";
 
                 // Try to parse data as JSON, if successful use object, otherwise use string
-                object dataValue = dataStr;
+                object? dataValue = dataStr;
                 if (!string.IsNullOrEmpty(dataStr)) {
                     try {
                         var jsonOptions = new System.Text.Json.JsonSerializerOptions {
@@ -93,83 +217,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(json);
             }
             catch (Exception ex) {
+                if (Core.AgentCore.IsInitialized) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"build_agent_response error: {ex.Message}");
+                }
                 return BoxedValue.FromString($"{{\"error\":\"{ex.Message}\"}}");
-            }
-        }
-    }
-
-    // Parse agent command JSON
-    sealed class ParseAgentCommandExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 1) {
-                return BoxedValue.NullObject;
-            }
-
-            try {
-                string jsonData = operands[0].AsString;
-                var options = new System.Text.Json.JsonSerializerOptions {
-                    PropertyNameCaseInsensitive = true
-                };
-                var command = System.Text.Json.JsonSerializer.Deserialize<Core.AgentCommand>(jsonData, options);
-                if (command == null) {
-                    return BoxedValue.NullObject;
-                }
-
-                // Return as a dictionary-like object that DSL can access
-                var dict = new Dictionary<string, object>
-                {
-                    { "id", command.Id },
-                    { "command", command.Command },
-                    { "params", command.Params },
-                    { "timestamp", command.Timestamp }
-                };
-
-                return BoxedValue.FromObject(dict);
-            }
-            catch (Exception ex) {
-                if (Core.AgentCore.IsInitialized) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Error parsing agent command: {ex.Message}");
-                }
-                return BoxedValue.NullObject;
-            }
-        }
-    }
-
-    // Get parameter from agent command params
-    sealed class GetMessageParamExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2) {
-                return BoxedValue.NullObject;
-            }
-
-            try {
-                var paramsObj = operands[0].GetObject();
-                string key = operands[1].AsString;
-
-                if (paramsObj is IDictionary<BoxedValue, BoxedValue> bvdict) {
-                    paramsObj = DslHelper.GetDictionaryFromBoxedValue(bvdict);
-                }
-                if (paramsObj is IDictionary<string, object?> dict && dict.ContainsKey(key)) {
-                    var value = dict[key];
-                    return DslHelper.GetBoxedValueFromValue(value);
-                }
-                else if (paramsObj is LitJson.JsonData jsonData) {
-                    if (jsonData.IsObject) {
-                        var value = jsonData[key];
-                        return DslHelper.GetBoxedValueFromJsonValue(value);
-                    }
-                }
-                return BoxedValue.NullObject;
-            }
-            catch (Exception ex) {
-                if (Core.AgentCore.IsInitialized) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Error getting command param: {ex.Message}");
-                }
-                return BoxedValue.NullObject;
             }
         }
     }
@@ -179,7 +230,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_response_to_inject(responseJson)");
                 return BoxedValue.FromString("Error: Missing response JSON parameter");
             }
 
@@ -198,7 +250,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 if (Core.AgentCore.IsInitialized) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Error sending response to inject: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error sending response to inject: {ex.Message}");
                 }
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }

@@ -336,10 +336,12 @@
         .vac-icon-textarea {
             display: flex;
             gap: 8px;
+            flex-shrink: 0;
+            align-items: flex-end;
         }
 
         .vac-svg-button {
-            padding: 12px 20px;
+            padding: 10px 16px;
             background: #3498db;
             color: white;
             border: none;
@@ -347,7 +349,22 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
+            white-space: nowrap;
             transition: all 0.2s;
+        }
+
+        #stop-btn {
+            background: #e67e22;
+        }
+
+        #stop-btn:hover:not(.stop-disabled) {
+            background: #d35400;
+        }
+
+        #stop-btn.stop-disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         .vac-svg-button:hover:not(.vac-send-disabled) {
@@ -503,6 +520,7 @@
                          spellcheck="false"></div>
                 </div>
                 <div class="vac-icon-textarea">
+                    <button class="vac-svg-button stop-disabled" id="stop-btn">Stop</button>
                     <button class="vac-svg-button vac-send-disabled" id="send-btn">Send</button>
                 </div>
             </div>
@@ -541,6 +559,14 @@
                 <label for="username">Username:</label>
                 <input type="text" id="username" placeholder="Enter your username">
                 <small style="color: #7f8c8d; font-size: 12px;">Required for agent token mode, optional for personal token mode.</small>
+            </div>
+
+            <div class="config-group" id="stream-group" style="display: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="stream-enabled" style="margin: 0; width: auto;" checked>
+                    Enable Streaming
+                </label>
+                <small style="color: #7f8c8d; font-size: 12px;">Use SSE streaming mode (default: on)</small>
             </div>
 
             <div class="config-group">

@@ -19,6 +19,7 @@ class UIController {
             messagesArea: document.getElementById('messages-area'),
             editableContent: document.getElementById('editable-content'),
             sendBtn: document.getElementById('send-btn'),
+            stopBtn: document.getElementById('stop-btn'),
             loadingIndicator: document.getElementById('loading-indicator'),
             apiTypeSelect: document.getElementById('api-type'),
             configBtn: document.getElementById('config-btn'),
@@ -31,6 +32,8 @@ class UIController {
             usernameGroup: document.getElementById('username-group'),
             apiEndpointInput: document.getElementById('api-endpoint'),
             modelSelect: document.getElementById('model'),
+            streamCheckbox: document.getElementById('stream-enabled'),
+            streamGroup: document.getElementById('stream-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
             maxContextCharsInput: document.getElementById('max-context-chars'),
             saveBtn: document.getElementById('save-btn'),
@@ -83,6 +86,28 @@ class UIController {
         return div.innerHTML;
     }
 
+    getEditableText(element) {
+        // Extract plain text from contenteditable div, preserving line breaks
+        let text = '';
+        const childNodes = element.childNodes;
+        for (let i = 0; i < childNodes.length; i++) {
+            const node = childNodes[i];
+            if (node.nodeType === Node.TEXT_NODE) {
+                text += node.textContent;
+            } else if (node.nodeName === 'BR') {
+                text += '\n';
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // Block-level elements (div, p) add a newline before their content
+                // unless it's the first child
+                if (i > 0 && (node.nodeName === 'DIV' || node.nodeName === 'P')) {
+                    text += '\n';
+                }
+                text += this.getEditableText(node);
+            }
+        }
+        return text;
+    }
+
     initializeEventListeners() {
         // Input content changes
         this.elements.editableContent.addEventListener('input', () => {
@@ -109,6 +134,11 @@ class UIController {
             const config = this.apiClient.getConfig();
             config.apiType = e.target.value;
             this.apiClient.saveConfig(config);
+        });
+
+        // Stop button
+        this.elements.stopBtn.addEventListener('click', () => {
+            this.handleStopGeneration();
         });
 
         // Config button
@@ -165,12 +195,20 @@ class UIController {
         }
     }
 
+    handleStopGeneration() {
+        if (!this.isProcessing || this.elements.stopBtn.classList.contains('stop-disabled')) {
+            return;
+        }
+        if (uiLogger) uiLogger.info('Stop button clicked, aborting request');
+        this.apiClient.abort();
+    }
+
     async handleSendMessage() {
         if (this.isProcessing) {
             return;
         }
 
-        const content = this.elements.editableContent.textContent.trim();
+        const content = this.getEditableText(this.elements.editableContent).trim();
         if (!content) {
             return;
         }
@@ -185,6 +223,7 @@ class UIController {
 
         this.isProcessing = true;
         this.updateSendButtonState();
+        this.elements.stopBtn.classList.remove('stop-disabled');
 
         // Add user message
         this.messageHandler.addMessage('user', content);
@@ -197,43 +236,42 @@ class UIController {
         // Show loading indicator
         this.showLoading();
 
-        try {
-            // Set auto context before sending
-            const autoContext = this.messageHandler.getAutoContext();
-            if (autoContext) {
-                this.messageHandler.setHiddenContext([
-                    'Recent conversation history for context:',
-                    autoContext
-                ]);
-                if (uiLogger) uiLogger.info('Auto context set, length:', { length: autoContext.length });
-            }
+        let fullResponse = '';
 
-            // Get conversation context
+        try {
+            // Get conversation context (auto context is built-in)
             const messages = this.messageHandler.getConversationContext();
 
             // Create assistant message placeholder
             const assistantMessageId = this.createAssistantMessagePlaceholder();
 
             // Send to API with streaming
-            let fullResponse = '';
+            fullResponse = '';
+            const contextRounds = this.messageHandler.getContextConfig().contextRounds;
             await this.apiClient.sendMessage(messages, (chunk, accumulated) => {
                 fullResponse = accumulated;
                 this.updateAssistantMessage(assistantMessageId, accumulated);
-            });
+            }, contextRounds);
 
             // Save assistant response
             this.messageHandler.addMessage('assistant', fullResponse);
 
-            // Clear hidden context after successful response
-            this.messageHandler.clearHiddenContext();
-
         } catch (error) {
-            if (uiLogger) uiLogger.error('Error sending message:', error);
-            this.showError(error.message);
-            this.displayMessage('assistant', `Error: ${error.message}`);
+            if (error.message === 'Request cancelled') {
+                // User clicked Stop: save partial response if any
+                if (uiLogger) uiLogger.info('Generation stopped by user, partial response length:', { length: fullResponse.length });
+                if (fullResponse) {
+                    this.messageHandler.addMessage('assistant', fullResponse);
+                }
+            } else {
+                if (uiLogger) uiLogger.error('Error sending message:', error);
+                this.showError(error.message);
+                this.displayMessage('assistant', `Error: ${error.message}`);
+            }
         } finally {
             this.hideLoading();
             this.isProcessing = false;
+            this.elements.stopBtn.classList.add('stop-disabled');
             this.updateSendButtonState();
         }
     }
@@ -338,6 +376,7 @@ class UIController {
         this.elements.apiKeyInput.value = config.apiKey || '';
         this.elements.authModeSelect.value = config.authMode || 'personal';
         this.elements.usernameInput.value = config.username || '';
+        this.elements.streamCheckbox.checked = !!config.stream;
         this.elements.apiEndpointInput.value = config.apiEndpoint || '';
 
         // Load context configuration
@@ -363,6 +402,9 @@ class UIController {
         if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
             // Clear history from MessageHandler
             this.messageHandler.clearHistory();
+
+            // Reset API client conversation state
+            this.apiClient.resetConversation();
 
             // Clear displayed messages
             this.elements.messagesArea.innerHTML = '';
@@ -396,9 +438,11 @@ class UIController {
         if (apiType === 'auto_metadsl') {
             this.elements.authModeGroup.style.display = 'block';
             this.elements.usernameGroup.style.display = 'block';
+            this.elements.streamGroup.style.display = 'block';
         } else {
             this.elements.authModeGroup.style.display = 'none';
             this.elements.usernameGroup.style.display = 'none';
+            this.elements.streamGroup.style.display = 'none';
         }
     }
 
@@ -449,11 +493,13 @@ class UIController {
             return;
         }
 
+        const stream = this.elements.streamCheckbox.checked;
         const config = {
             apiType: apiType,
             apiKey: apiKey,
             authMode: authMode,
             username: username,
+            stream: stream,
             apiEndpoint: apiEndpoint,
             model: model
         };

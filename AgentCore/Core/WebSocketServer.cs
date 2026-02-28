@@ -1,6 +1,8 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -14,14 +16,16 @@ namespace CefDotnetApp.AgentCore.Core
     /// </summary>
     public class WebSocketServer : IDisposable
     {
-        private HttpListener _listener;
+        private HttpListener _listener = null!;
         private ConcurrentQueue<string> _receiveQueue;
         private List<WebSocket> _clients;
         private CancellationTokenSource _cancellationTokenSource;
-        private Thread _tickThread;
+        private Thread? _tickThread;
         private readonly object _lockObj = new object();
         private bool _isRunning;
         private int _port;
+        private DateTime _lastPingTime = DateTime.MinValue;
+        private static readonly TimeSpan s_pingInterval = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Gets whether the server is currently running
@@ -36,12 +40,12 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Event fired when a client connects
         /// </summary>
-        public event Action OnClientConnected;
+        public event Action? OnClientConnected;
 
         /// <summary>
         /// Event fired when a client disconnects
         /// </summary>
-        public event Action OnClientDisconnected;
+        public event Action? OnClientDisconnected;
 
         /// <summary>
         /// Creates a new WebSocket server instance
@@ -89,7 +93,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentCore.Instance.Logger.Error($"Failed to start WebSocket server: {ex.Message}");
+                AgentCore.Instance.Logger.Error($"Failed to start WebSocket server: {ex.Message}\nStack: {ex.StackTrace}");
                 _isRunning = false;
                 return false;
             }
@@ -146,7 +150,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentCore.Instance.Logger.Error($"Error stopping WebSocket server: {ex.Message}");
+                AgentCore.Instance.Logger.Error($"Error stopping WebSocket server: {ex.Message}\nStack: {ex.StackTrace}");
             }
         }
 
@@ -166,7 +170,22 @@ namespace CefDotnetApp.AgentCore.Core
 
                     if (context.Request.IsWebSocketRequest)
                     {
-                        _ = Task.Run(() => HandleWebSocketConnectionAsync(context, cancellationToken), cancellationToken);
+                        // Validate Origin header - only allow localhost/known connections
+                        string? origin = context.Request.Headers["Origin"];
+                        if (!string.IsNullOrEmpty(origin) &&
+                            !origin.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase) &&
+                            !origin.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase) &&
+                            !origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+                            !origin.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AgentCore.Instance.Logger.Warning($"WebSocket connection rejected from origin: {origin}");
+                            context.Response.StatusCode = 403;
+                            context.Response.Close();
+                        }
+                        else
+                        {
+                            _ = Task.Run(() => HandleWebSocketConnectionAsync(context, cancellationToken), cancellationToken);
+                        }
                     }
                     else
                     {
@@ -181,7 +200,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 catch (Exception ex)
                 {
-                    AgentCore.Instance.Logger.Error($"Error accepting connection: {ex.Message}");
+                    AgentCore.Instance.Logger.Error($"Error accepting connection: {ex.Message}\nStack: {ex.StackTrace}");
                 }
             }
         }
@@ -191,7 +210,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// </summary>
         private async Task HandleWebSocketConnectionAsync(HttpListenerContext context, CancellationToken cancellationToken)
         {
-            WebSocket webSocket = null;
+            WebSocket? webSocket = null;
 
             try
             {
@@ -209,7 +228,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // Receive loop with support for large messages (up to 4MB)
                 const int bufferSize = 4 * 1024 * 1024; // 4MB buffer
                 var buffer = new byte[bufferSize];
-                var messageBuilder = new List<byte>();
+                var messageBuilder = new MemoryStream();
 
                 while (webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
                 {
@@ -226,22 +245,19 @@ namespace CefDotnetApp.AgentCore.Core
                         if (result.MessageType == WebSocketMessageType.Text)
                         {
                             // Accumulate message fragments
-                            for (int i = 0; i < result.Count; i++)
-                            {
-                                messageBuilder.Add(buffer[i]);
-                            }
+                            messageBuilder.Write(buffer, 0, result.Count);
 
                             // Check if this is the end of the message
                             if (result.EndOfMessage)
                             {
-                                var message = Encoding.UTF8.GetString(messageBuilder.ToArray());
+                                var message = Encoding.UTF8.GetString(messageBuilder.GetBuffer(), 0, (int)messageBuilder.Length);
                                 _receiveQueue.Enqueue(message);
                                 AgentCore.Instance.Logger.Debug($"Message received from client, queued (length: {message.Length})");
-                                messageBuilder.Clear();
+                                messageBuilder.SetLength(0);
                             }
                             else
                             {
-                                AgentCore.Instance.Logger.Debug($"Received message fragment (accumulated: {messageBuilder.Count} bytes)");
+                                AgentCore.Instance.Logger.Debug($"Received message fragment (accumulated: {messageBuilder.Length} bytes)");
                             }
                         }
                     }
@@ -253,7 +269,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
             catch (Exception ex)
             {
-                AgentCore.Instance.Logger.Error($"WebSocket connection error: {ex.Message}");
+                AgentCore.Instance.Logger.Error($"WebSocket connection error: {ex.Message}\nStack: {ex.StackTrace}");
             }
             finally
             {
@@ -293,7 +309,7 @@ namespace CefDotnetApp.AgentCore.Core
                 try
                 {
                     // Process receive queue - dequeue one message, execute MetaDSL, broadcast result directly
-                    if (_receiveQueue.TryDequeue(out string receivedMessage))
+                    if (_receiveQueue.TryDequeue(out string? receivedMessage))
                     {
                         AgentCore.Instance.Logger.Info($"Processing message from queue: {receivedMessage.Substring(0, Math.Min(100, receivedMessage.Length))}...");
                         string result = ExecuteMetaDSLInWorker(receivedMessage);
@@ -309,6 +325,13 @@ namespace CefDotnetApp.AgentCore.Core
                         }
                     }
 
+                    // Periodic ping to detect and clean up half-open connections
+                    if (DateTime.UtcNow - _lastPingTime > s_pingInterval)
+                    {
+                        _lastPingTime = DateTime.UtcNow;
+                        CleanupDeadClients();
+                    }
+
                     // Small delay to prevent CPU spinning (100ms = 10 ticks per second)
                     Thread.Sleep(100);
                 }
@@ -318,7 +341,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 catch (Exception ex)
                 {
-                    AgentCore.Instance.Logger.Error($"Error processing queues: {ex.Message}");
+                    AgentCore.Instance.Logger.Error($"Error processing queues: {ex.Message}\nStack: {ex.StackTrace}");
                 }
             }
         }
@@ -331,7 +354,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             try {
                 AgentCore.Instance.Logger.Debug($"Executing MetaDSL: {message}");
-                string result = DotNetLib.CefDotnetAppApi.ExecuteMetaDslScript(message);
+                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message);
                 AgentCore.Instance.Logger.Debug($"MetaDSL execution completed, result length: {(result?.Length ?? 0)}");
                 var sb = new StringBuilder();
                 sb.AppendLine("MetaDSL {:");
@@ -340,6 +363,26 @@ namespace CefDotnetApp.AgentCore.Core
                 sb.AppendLine("Result {:");
                 sb.AppendLine(result);
                 sb.AppendLine(":};");
+                if (!string.IsNullOrEmpty(AgentCore.Instance.ToDo)) {
+                    sb.AppendLine();
+                    sb.AppendLine(AgentCore.Instance.ToDo);
+                }
+                if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
+                    sb.AppendLine();
+                    sb.AppendLine(AgentCore.Instance.History);
+                }
+                if (!string.IsNullOrEmpty(AgentCore.Instance.Context)) {
+                    sb.AppendLine();
+                    sb.AppendLine(AgentCore.Instance.Context);
+                }
+                else if (!string.IsNullOrEmpty(AgentCore.Instance.Plan)) {
+                    sb.AppendLine();
+                    sb.AppendLine(AgentCore.Instance.Plan);
+                }
+                if (!string.IsNullOrEmpty(AgentCore.Instance.Emphasize)) {
+                    sb.AppendLine();
+                    sb.AppendLine(AgentCore.Instance.Emphasize);
+                }
                 return sb.ToString();
             }
             catch (Exception ex)
@@ -402,6 +445,35 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         /// <summary>
+        /// Removes dead/closed WebSocket connections from the client list.
+        /// </summary>
+        private void CleanupDeadClients()
+        {
+            List<WebSocket>? deadClients = null;
+            lock (_lockObj)
+            {
+                for (int i = _clients.Count - 1; i >= 0; i--)
+                {
+                    var client = _clients[i];
+                    if (client.State != WebSocketState.Open && client.State != WebSocketState.Connecting)
+                    {
+                        deadClients ??= new List<WebSocket>();
+                        deadClients.Add(client);
+                        _clients.RemoveAt(i);
+                    }
+                }
+            }
+            if (deadClients != null)
+            {
+                foreach (var client in deadClients)
+                {
+                    try { client.Dispose(); } catch { }
+                }
+                AgentCore.Instance.Logger.Debug($"Cleaned up {deadClients.Count} dead WebSocket client(s)");
+            }
+        }
+
+        /// <summary>
         /// Gets the number of connected clients
         /// </summary>
         public int GetClientCount()
@@ -416,9 +488,9 @@ namespace CefDotnetApp.AgentCore.Core
         /// Dequeues a message from the receive queue
         /// </summary>
         /// <returns>Message or null if queue is empty</returns>
-        public string DequeueMessage()
+        public string? DequeueMessage()
         {
-            if (_receiveQueue.TryDequeue(out string message))
+            if (_receiveQueue.TryDequeue(out string? message))
             {
                 return message;
             }

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using AgentCore.CodeAnalysis.TreeSitter.Adapters;
+using AgentCore.CodeAnalysis.TreeSitter.Interfaces;
 using CefDotnetApp.AgentCore.Models;
 
 namespace AgentCore.CodeAnalysis
@@ -17,11 +19,11 @@ namespace AgentCore.CodeAnalysis
         // Cache entry for parsed files
         private class CacheEntry
         {
-            public ParsedCodeFile ParsedFile { get; set; }
+            public ParsedCodeFile ParsedFile { get; set; } = null!;
             public DateTime LastModified { get; set; }
-            public string CodeHash { get; set; }
+            public string? CodeHash { get; set; }
             public bool HasSyntaxErrors { get; set; }
-            public List<string> SyntaxErrors { get; set; }
+            public List<string> SyntaxErrors { get; set; } = new List<string>();
         }
 
         // Parse cache
@@ -31,7 +33,7 @@ namespace AgentCore.CodeAnalysis
             private readonly Dictionary<string, CacheEntry> _codeCache = new Dictionary<string, CacheEntry>();
             private const int MaxCodeCacheSize = 100;
 
-            public bool TryGetFile(string filePath, DateTime lastModified, out CacheEntry entry)
+            public bool TryGetFile(string filePath, DateTime lastModified, out CacheEntry? entry)
             {
                 if (_fileCache.TryGetValue(filePath, out entry))
                 {
@@ -42,7 +44,7 @@ namespace AgentCore.CodeAnalysis
                     // File modified, remove old cache
                     _fileCache.Remove(filePath);
                 }
-                entry = null;
+                entry = null!;
                 return false;
             }
 
@@ -57,7 +59,7 @@ namespace AgentCore.CodeAnalysis
                 };
             }
 
-            public bool TryGetCode(string codeHash, out CacheEntry entry)
+            public bool TryGetCode(string codeHash, out CacheEntry? entry)
             {
                 return _codeCache.TryGetValue(codeHash, out entry);
             }
@@ -120,7 +122,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // Check if parsed file has syntax errors and return error message if any
-        private static string CheckParsedFileSyntaxErrors(ParsedCodeFile parsed)
+        private static string? CheckParsedFileSyntaxErrors(ParsedCodeFile parsed)
         {
             if (parsed.HasSyntaxErrors && parsed.SyntaxErrors != null && parsed.SyntaxErrors.Count > 0)
             {
@@ -129,17 +131,126 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
+        // Language alias map: input string (lowercase) -> ProgrammingLanguage enum
+        private static readonly Dictionary<string, ProgrammingLanguage> s_languageAliases = new Dictionary<string, ProgrammingLanguage>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "c", ProgrammingLanguage.C },
+            { "cpp", ProgrammingLanguage.Cpp },
+            { "c++", ProgrammingLanguage.Cpp },
+            { "csharp", ProgrammingLanguage.CSharp },
+            { "c#", ProgrammingLanguage.CSharp },
+            { "c-sharp", ProgrammingLanguage.CSharp },
+            { "javascript", ProgrammingLanguage.JavaScript },
+            { "js", ProgrammingLanguage.JavaScript },
+            { "typescript", ProgrammingLanguage.TypeScript },
+            { "ts", ProgrammingLanguage.TypeScript },
+            { "tsx", ProgrammingLanguage.Tsx },
+            { "bash", ProgrammingLanguage.Bash },
+            { "shell", ProgrammingLanguage.Bash },
+            { "sh", ProgrammingLanguage.Bash },
+            { "python", ProgrammingLanguage.Python },
+            { "py", ProgrammingLanguage.Python },
+            { "rust", ProgrammingLanguage.Rust },
+            { "rs", ProgrammingLanguage.Rust },
+            { "go", ProgrammingLanguage.Go },
+            { "golang", ProgrammingLanguage.Go },
+            { "java", ProgrammingLanguage.Java },
+            { "swift", ProgrammingLanguage.Swift },
+            { "php", ProgrammingLanguage.PHP },
+            { "html", ProgrammingLanguage.Html },
+            { "css", ProgrammingLanguage.Css },
+            { "json", ProgrammingLanguage.Json },
+            { "toml", ProgrammingLanguage.Toml },
+            { "ruby", ProgrammingLanguage.Ruby },
+            { "rb", ProgrammingLanguage.Ruby },
+            { "scala", ProgrammingLanguage.Scala },
+            { "haskell", ProgrammingLanguage.Haskell },
+            { "hs", ProgrammingLanguage.Haskell },
+            { "julia", ProgrammingLanguage.Julia },
+            { "jl", ProgrammingLanguage.Julia },
+            { "ocaml", ProgrammingLanguage.OCaml },
+            { "agda", ProgrammingLanguage.Agda },
+            { "verilog", ProgrammingLanguage.Verilog },
+            { "ql", ProgrammingLanguage.QL },
+            { "razor", ProgrammingLanguage.Razor },
+            { "jsdoc", ProgrammingLanguage.JsDoc },
+            { "embedded-template", ProgrammingLanguage.EmbeddedTemplate },
+        };
+
+        // Map ProgrammingLanguage enum to TreeSitter language id string
+        private static readonly Dictionary<ProgrammingLanguage, string> s_treeSitterLanguageIds = new Dictionary<ProgrammingLanguage, string>
+        {
+            { ProgrammingLanguage.C, "c" },
+            { ProgrammingLanguage.Cpp, "cpp" },
+            { ProgrammingLanguage.CSharp, "c-sharp" },
+            { ProgrammingLanguage.JavaScript, "javascript" },
+            { ProgrammingLanguage.TypeScript, "typescript" },
+            { ProgrammingLanguage.Tsx, "tsx" },
+            { ProgrammingLanguage.Bash, "bash" },
+            { ProgrammingLanguage.Python, "python" },
+            { ProgrammingLanguage.Rust, "rust" },
+            { ProgrammingLanguage.Go, "go" },
+            { ProgrammingLanguage.Java, "java" },
+            { ProgrammingLanguage.Swift, "swift" },
+            { ProgrammingLanguage.PHP, "php" },
+            { ProgrammingLanguage.Html, "html" },
+            { ProgrammingLanguage.Css, "css" },
+            { ProgrammingLanguage.Json, "json" },
+            { ProgrammingLanguage.Toml, "toml" },
+            { ProgrammingLanguage.Ruby, "ruby" },
+            { ProgrammingLanguage.Scala, "scala" },
+            { ProgrammingLanguage.Haskell, "haskell" },
+            { ProgrammingLanguage.Julia, "julia" },
+            { ProgrammingLanguage.OCaml, "ocaml" },
+            { ProgrammingLanguage.Agda, "agda" },
+            { ProgrammingLanguage.Verilog, "verilog" },
+            { ProgrammingLanguage.QL, "ql" },
+            { ProgrammingLanguage.Razor, "razor" },
+            { ProgrammingLanguage.JsDoc, "jsdoc" },
+            { ProgrammingLanguage.EmbeddedTemplate, "embedded-template" },
+        };
+
+        // Resolve language alias string to ProgrammingLanguage enum.
+        // Input is converted to lowercase before matching.
+        public static ProgrammingLanguage? ResolveLanguage(string alias)
+        {
+            if (string.IsNullOrWhiteSpace(alias))
+                return null;
+
+            if (s_languageAliases.TryGetValue(alias.Trim(), out var language))
+                return language;
+
+            return null;
+        }
+
         public UnifiedCodeAnalysisApi()
         {
             _parsers = new Dictionary<ProgrammingLanguage, ICodeParser>();
             _cache = new ParseCache();
 
-            // Register TreeSitter parsers
+            // Register TreeSitter parsers for C/C++ (dedicated parsers)
             _parsers[ProgrammingLanguage.C] = new TreeSitterCParser();
             _parsers[ProgrammingLanguage.Cpp] = new TreeSitterCppParser();
 
             // Register Jint parser for JavaScript (pure C#, hot-reloadable)
             _parsers[ProgrammingLanguage.JavaScript] = new JintCodeParser();
+
+            // Register GenericTreeSitterParser for all languages with profiles
+            foreach (var kvp in LanguageProfile.Profiles)
+            {
+                if (!_parsers.ContainsKey(kvp.Key))
+                {
+                    try
+                    {
+                        _parsers[kvp.Key] = new GenericTreeSitterParser(kvp.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[CodeAnalysis] Warning: Failed to load parser for {kvp.Key}: {ex.Message}");
+                    }
+                }
+            }
         }
 
         public ParsedCodeFile ParseFile(string filePath)
@@ -159,7 +270,7 @@ namespace AgentCore.CodeAnalysis
             var lastModified = File.GetLastWriteTime(filePath);
             if (_cache.TryGetFile(filePath, lastModified, out var cacheEntry))
             {
-                return cacheEntry.ParsedFile;
+                return cacheEntry!.ParsedFile;
             }
 
             ParsedCodeFile result;
@@ -198,13 +309,13 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        public ParsedCodeFile ParseText(string code, ProgrammingLanguage language, string filePath = null)
+        public ParsedCodeFile ParseText(string code, ProgrammingLanguage language, string? filePath = null)
         {
             // Check cache first (for all languages)
             var cacheKey = GenerateCodeCacheKey(code);
             if (_cache.TryGetCode(cacheKey, out var cacheEntry))
             {
-                return cacheEntry.ParsedFile;
+                return cacheEntry!.ParsedFile;
             }
 
             ParsedCodeFile result;
@@ -243,7 +354,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             if (parsed.Language == ProgrammingLanguage.CSharp)
             {
@@ -258,7 +369,7 @@ namespace AgentCore.CodeAnalysis
             return new List<FunctionInfo>();
         }
 
-        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             if (parsed.Language == ProgrammingLanguage.CSharp)
             {
@@ -273,7 +384,7 @@ namespace AgentCore.CodeAnalysis
             return new List<TypeInfo>();
         }
 
-        public FunctionInfo FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
+        public FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
         {
             if (parsed.Language == ProgrammingLanguage.CSharp)
             {
@@ -328,7 +439,7 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        public TypeInfo FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
+        public TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
         {
             if (parsed.Language == ProgrammingLanguage.CSharp)
             {
@@ -373,7 +484,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        private ParsedCodeFile ParseCSharpText(string code, string filePath)
+        private ParsedCodeFile ParseCSharpText(string code, string? filePath)
         {
             var tree = RoslynParser.ParseCode(code, filePath ?? "<text>");
             var root = tree.GetRoot();
@@ -382,7 +493,7 @@ namespace AgentCore.CodeAnalysis
             // Extract usings
             var usingDirectives = root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.UsingDirectiveSyntax>();
             foreach (var usingDir in usingDirectives) {
-                roslynParsed.Usings.Add(usingDir.Name.ToString());
+                roslynParsed.Usings.Add(usingDir.Name?.ToString() ?? string.Empty);
             }
 
             // Extract namespace
@@ -403,7 +514,7 @@ namespace AgentCore.CodeAnalysis
             return ConvertFromRoslyn(roslynParsed);
         }
 
-        private List<FunctionInfo> FindCSharpFunctions(ParsedCodeFile parsed, string namePattern, bool ignoreCase = true)
+        private List<FunctionInfo> FindCSharpFunctions(ParsedCodeFile parsed, string? namePattern, bool ignoreCase = true)
         {
             var result = new List<FunctionInfo>();
 
@@ -452,7 +563,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        private List<TypeInfo> FindCSharpTypes(ParsedCodeFile parsed, string namePattern, bool ignoreCase = true)
+        private List<TypeInfo> FindCSharpTypes(ParsedCodeFile parsed, string? namePattern, bool ignoreCase = true)
         {
             var result = new List<TypeInfo>();
 
@@ -860,6 +971,7 @@ namespace AgentCore.CodeAnalysis
             {
                 ".cs" => ProgrammingLanguage.CSharp,
                 ".js" => ProgrammingLanguage.JavaScript,
+                ".jsx" => ProgrammingLanguage.JavaScript,
                 ".c" => ProgrammingLanguage.C,
                 ".h" => ProgrammingLanguage.C,
                 ".cpp" => ProgrammingLanguage.Cpp,
@@ -868,6 +980,22 @@ namespace AgentCore.CodeAnalysis
                 ".hpp" => ProgrammingLanguage.Cpp,
                 ".hh" => ProgrammingLanguage.Cpp,
                 ".hxx" => ProgrammingLanguage.Cpp,
+                ".ts" => ProgrammingLanguage.TypeScript,
+                ".tsx" => ProgrammingLanguage.Tsx,
+                ".sh" => ProgrammingLanguage.Bash,
+                ".bash" => ProgrammingLanguage.Bash,
+                ".py" => ProgrammingLanguage.Python,
+                ".pyw" => ProgrammingLanguage.Python,
+                ".rs" => ProgrammingLanguage.Rust,
+                ".go" => ProgrammingLanguage.Go,
+                ".java" => ProgrammingLanguage.Java,
+                ".swift" => ProgrammingLanguage.Swift,
+                ".php" => ProgrammingLanguage.PHP,
+                ".html" => ProgrammingLanguage.Html,
+                ".htm" => ProgrammingLanguage.Html,
+                ".css" => ProgrammingLanguage.Css,
+                ".json" => ProgrammingLanguage.Json,
+                ".toml" => ProgrammingLanguage.Toml,
                 _ => throw new NotSupportedException($"File extension {ext} is not supported")
             };
         }
@@ -896,7 +1024,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // B1. Function Search APIs
-        public string FindFunctions(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindFunctions(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -906,7 +1034,7 @@ namespace AgentCore.CodeAnalysis
             return FormatFunctionList(functions, filePath);
         }
 
-        public string FindFunctionsInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindFunctionsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -937,7 +1065,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // B2. Type Search APIs
-        public string FindTypes(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindTypes(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -947,7 +1075,7 @@ namespace AgentCore.CodeAnalysis
             return FormatTypeList(types, filePath);
         }
 
-        public string FindTypesInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindTypesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -978,7 +1106,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // B3. Variable Search APIs
-        public string FindVariables(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -987,7 +1115,7 @@ namespace AgentCore.CodeAnalysis
             return FormatVariables(parsed, namePattern, filePath);
         }
 
-        public string FindVariablesInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1014,7 +1142,7 @@ namespace AgentCore.CodeAnalysis
             return FormatVariable(parsed, variableName, fileName);
         }
 
-        public string FindGlobalVariables(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindGlobalVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1023,7 +1151,7 @@ namespace AgentCore.CodeAnalysis
             return FormatGlobalVariables(parsed, namePattern, filePath);
         }
 
-        public string FindGlobalVariablesInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindGlobalVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1032,7 +1160,7 @@ namespace AgentCore.CodeAnalysis
             return FormatGlobalVariables(parsed, namePattern, fileName);
         }
 
-        public string FindLocalVariables(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindLocalVariables(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1041,7 +1169,7 @@ namespace AgentCore.CodeAnalysis
             return FormatLocalVariables(parsed, namePattern, filePath);
         }
 
-        public string FindLocalVariablesInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindLocalVariablesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1050,7 +1178,7 @@ namespace AgentCore.CodeAnalysis
             return FormatLocalVariables(parsed, namePattern, fileName);
         }
 
-        public string FindParameters(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindParameters(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1059,7 +1187,7 @@ namespace AgentCore.CodeAnalysis
             return FormatParameters(parsed, namePattern, filePath);
         }
 
-        public string FindParametersInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindParametersInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1113,7 +1241,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        public string FindFields(string filePath, ProgrammingLanguage language, string className, string namePattern = null)
+        public string FindFields(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1145,7 +1273,7 @@ namespace AgentCore.CodeAnalysis
             return totalCount > 0 ? sb.ToString() : $"No fields found matching pattern '{namePattern ?? "*"}' in classes matching '{className}'";
         }
 
-        public string FindFieldsInCode(string code, ProgrammingLanguage language, string className, string namePattern = null, string fileName = "<text>")
+        public string FindFieldsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1213,7 +1341,7 @@ namespace AgentCore.CodeAnalysis
             return $"No field matching pattern '{fieldName}' found in classes matching '{className}'";
         }
 
-        public string FindProperties(string filePath, ProgrammingLanguage language, string className, string namePattern = null)
+        public string FindProperties(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1245,7 +1373,7 @@ namespace AgentCore.CodeAnalysis
             return totalCount > 0 ? sb.ToString() : $"No properties found matching pattern '{namePattern ?? "*"}' in classes matching '{className}'";
         }
 
-        public string FindPropertiesInCode(string code, ProgrammingLanguage language, string className, string namePattern = null, string fileName = "<text>")
+        public string FindPropertiesInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1313,7 +1441,7 @@ namespace AgentCore.CodeAnalysis
             return $"No property matching pattern '{propertyName}' found in classes matching '{className}'";
         }
 
-        public string FindMethods(string filePath, ProgrammingLanguage language, string className, string namePattern = null)
+        public string FindMethods(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1345,7 +1473,7 @@ namespace AgentCore.CodeAnalysis
             return totalCount > 0 ? sb.ToString() : $"No methods found matching pattern '{namePattern ?? "*"}' in classes matching '{className}'";
         }
 
-        public string FindMethodsInCode(string code, ProgrammingLanguage language, string className, string namePattern = null, string fileName = "<text>")
+        public string FindMethodsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1414,7 +1542,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // E. Event Search APIs
-        public string FindEvents(string filePath, ProgrammingLanguage language, string className, string namePattern = null)
+        public string FindEvents(string filePath, ProgrammingLanguage language, string className, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1446,7 +1574,7 @@ namespace AgentCore.CodeAnalysis
             return totalCount > 0 ? sb.ToString() : $"No events found matching pattern '{namePattern ?? "*"}' in classes matching '{className}'";
         }
 
-        public string FindEventsInCode(string code, ProgrammingLanguage language, string className, string namePattern = null, string fileName = "<text>")
+        public string FindEventsInCode(string code, ProgrammingLanguage language, string className, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1572,7 +1700,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // F. Interface Search APIs
-        public string FindInterfaces(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindInterfaces(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1584,7 +1712,7 @@ namespace AgentCore.CodeAnalysis
             return FormatInterfaceList(interfaces, filePath);
         }
 
-        public string FindInterfacesInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindInterfacesInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1617,7 +1745,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // G. Struct Search APIs
-        public string FindStructs(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindStructs(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1629,7 +1757,7 @@ namespace AgentCore.CodeAnalysis
             return FormatStructList(structs, filePath);
         }
 
-        public string FindStructsInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindStructsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1662,7 +1790,7 @@ namespace AgentCore.CodeAnalysis
         }
 
         // H. Enum Search APIs
-        public string FindEnums(string filePath, ProgrammingLanguage language, string namePattern = null)
+        public string FindEnums(string filePath, ProgrammingLanguage language, string? namePattern = null)
         {
             var parsed = ParseFile(filePath, language);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1674,7 +1802,7 @@ namespace AgentCore.CodeAnalysis
             return FormatEnumList(enums, filePath);
         }
 
-        public string FindEnumsInCode(string code, ProgrammingLanguage language, string namePattern = null, string fileName = "<text>")
+        public string FindEnumsInCode(string code, ProgrammingLanguage language, string? namePattern = null, string fileName = "<text>")
         {
             var parsed = ParseText(code, language, fileName);
             var errorMsg = CheckParsedFileSyntaxErrors(parsed);
@@ -1704,6 +1832,258 @@ namespace AgentCore.CodeAnalysis
 
             var enumType = parsed.Enums.FirstOrDefault(e => MatchesPattern(e.Name, enumName));
             return enumType != null ? FormatEnumDetail(enumType, fileName) : $"Enum matching pattern '{enumName}' not found";
+        }
+
+        // ========================================
+        // I. AST Node Search APIs (all languages)
+        // ========================================
+
+        // Find all AST nodes matching the pattern in a file
+        public string FindNodes(string filePath, ProgrammingLanguage language, string pattern)
+        {
+            if (!File.Exists(filePath))
+                return $"File not found: {filePath}";
+
+            var code = File.ReadAllText(filePath);
+            return FindNodesInternal(code, language, pattern, filePath);
+        }
+
+        // Find all AST nodes matching the pattern in code text
+        public string FindNodesInCode(string code, ProgrammingLanguage language, string pattern, string fileName = "<text>")
+        {
+            return FindNodesInternal(code, language, pattern, fileName);
+        }
+
+        // Find first AST node matching the pattern in a file
+        public string FindNode(string filePath, ProgrammingLanguage language, string pattern)
+        {
+            if (!File.Exists(filePath))
+                return $"File not found: {filePath}";
+
+            var code = File.ReadAllText(filePath);
+            return FindNodeInternal(code, language, pattern, filePath);
+        }
+
+        // Find first AST node matching the pattern in code text
+        public string FindNodeInCode(string code, ProgrammingLanguage language, string pattern, string fileName = "<text>")
+        {
+            return FindNodeInternal(code, language, pattern, fileName);
+        }
+
+        // Internal: find all matching nodes
+        private string FindNodesInternal(string code, ProgrammingLanguage language, string pattern, string fileName)
+        {
+            ITreeSitterTree tree;
+            try
+            {
+                tree = ParseTreeSitter(code, language);
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to parse {language}: {ex.Message}";
+            }
+
+            var matches = new List<(ITreeSitterNode node, string? nameFieldValue)>();
+            CollectMatchingNodes(tree.RootNode, code, pattern, matches);
+
+            if (matches.Count == 0)
+                return $"No nodes matching '{pattern}' found";
+
+            var sourceLines = code.Split('\n');
+            var sb = new StringBuilder();
+            sb.AppendLine($"=== AST Nodes Found: {matches.Count} (pattern: '{pattern}') ===");
+            sb.AppendLine($"File: {fileName} ({language})");
+            sb.AppendLine();
+
+            foreach (var (node, nameValue) in matches)
+            {
+                FormatNodeInfo(sb, node, sourceLines, nameValue);
+            }
+
+            return sb.ToString();
+        }
+
+        // Internal: find first matching node
+        private string FindNodeInternal(string code, ProgrammingLanguage language, string pattern, string fileName)
+        {
+            ITreeSitterTree tree;
+            try
+            {
+                tree = ParseTreeSitter(code, language);
+            }
+            catch (Exception ex)
+            {
+                return $"Failed to parse {language}: {ex.Message}";
+            }
+
+            var matches = new List<(ITreeSitterNode node, string? nameFieldValue)>();
+            CollectMatchingNodes(tree.RootNode, code, pattern, matches, firstOnly: true);
+
+            if (matches.Count == 0)
+                return $"No node matching '{pattern}' found";
+
+            var sourceLines = code.Split('\n');
+            var sb = new StringBuilder();
+            sb.AppendLine($"=== AST Node Found (pattern: '{pattern}') ===");
+            sb.AppendLine($"File: {fileName} ({language})");
+            sb.AppendLine();
+
+            var (node, nameValue) = matches[0];
+            FormatNodeInfo(sb, node, sourceLines, nameValue);
+
+            return sb.ToString();
+        }
+
+        // Parse code using TreeSitter for any supported language
+        private ITreeSitterTree ParseTreeSitter(string code, ProgrammingLanguage language)
+        {
+            if (!s_treeSitterLanguageIds.TryGetValue(language, out var langId))
+                throw new NotSupportedException($"Language {language} has no TreeSitter mapping");
+
+            var adapter = new DotNetParserAdapter(langId);
+            return adapter.Parse(code);
+        }
+
+        // Recursively collect nodes matching the pattern
+        private void CollectMatchingNodes(
+            ITreeSitterNode node, string sourceCode, string pattern,
+            List<(ITreeSitterNode, string?)> matches,
+            bool firstOnly = false)
+        {
+            if (firstOnly && matches.Count > 0)
+                return;
+
+            bool matched = false;
+            string? nameFieldValue = null;
+
+            // Match node's own text (excluding children text) against the pattern
+            if (!matched)
+            {
+                try
+                {
+                    var ownText = GetNodeOwnText(node, sourceCode);
+                    if (!string.IsNullOrEmpty(ownText))
+                    {
+                        try
+                        {
+                            if (Regex.IsMatch(ownText, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
+                                matched = true;
+                        }
+                        catch (ArgumentException)
+                        {
+                            // Invalid regex, fallback to substring match
+                            if (ownText.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
+                                matched = true;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Skip nodes that fail to get text
+                }
+            }
+
+            if (matched && node.IsNamed)
+            {
+                matches.Add((node, nameFieldValue));
+                if (firstOnly)
+                    return;
+            }
+
+            // Recurse into children
+            foreach (var child in node.Children)
+            {
+                if (firstOnly && matches.Count > 0)
+                    return;
+                if (child.IsNamed)
+                    CollectMatchingNodes(child, sourceCode, pattern, matches, firstOnly);
+            }
+        }
+
+        // Get node's own text by removing all children's text from the full node text
+        private static string GetNodeOwnText(ITreeSitterNode node, string sourceCode)
+        {
+            var fullText = node.GetText(sourceCode);
+            if (string.IsNullOrEmpty(fullText))
+                return fullText;
+
+            // If node has no children, the full text IS the own text
+            bool hasChildren = false;
+            foreach (var _ in node.Children)
+            {
+                hasChildren = true;
+                break;
+            }
+            if (!hasChildren)
+                return fullText;
+
+            // Remove each child's text from the full text
+            var ownText = fullText;
+            foreach (var child in node.Children)
+            {
+                try
+                {
+                    var childText = child.GetText(sourceCode);
+                    if (!string.IsNullOrEmpty(childText))
+                    {
+                        int idx = ownText.IndexOf(childText, StringComparison.Ordinal);
+                        if (idx >= 0)
+                            ownText = ownText.Remove(idx, childText.Length);
+                    }
+                }
+                catch
+                {
+                    // Skip children that fail to get text
+                }
+            }
+
+            return ownText.Trim();
+        }
+
+        // Format a single node's info for display
+        private void FormatNodeInfo(StringBuilder sb, ITreeSitterNode node, string[] sourceLines, string? nameFieldValue)
+        {
+            int startLine = node.StartPoint.Row + 1;
+            int startCol = node.StartPoint.Column;
+            int endLine = node.EndPoint.Row + 1;
+            int endCol = node.EndPoint.Column;
+            int lineCount = endLine - startLine + 1;
+
+            sb.AppendLine($"[Node] type: {node.Type}");
+            sb.AppendLine($"  Range: [{startLine}:{startCol}-{endLine}:{endCol}] ({lineCount} line{(lineCount != 1 ? "s" : "")})");
+
+            // Parent info
+            var parent = node.Parent;
+            sb.AppendLine($"  Parent: {(parent != null ? parent.Type : "(root)")}");
+
+            // Children count
+            int namedCount = 0;
+            int totalCount = 0;
+            foreach (var child in node.Children)
+            {
+                totalCount++;
+                if (child.IsNamed)
+                    namedCount++;
+            }
+            sb.AppendLine($"  Children: {namedCount} named, {totalCount} total");
+
+            // Name field if available
+            if (!string.IsNullOrEmpty(nameFieldValue))
+                sb.AppendLine($"  Name: {nameFieldValue}");
+
+            // Text preview from startLine
+            int lineIndex = startLine - 1;
+            if (lineIndex >= 0 && lineIndex < sourceLines.Length)
+            {
+                var lineText = sourceLines[lineIndex].TrimEnd('\r').Trim();
+                if (lineText.Length > 120)
+                    lineText = lineText.Substring(0, 120) + "...";
+                if (lineCount > 1)
+                    lineText += " ...";
+                sb.AppendLine($"  Text: {lineText}");
+            }
+
+            sb.AppendLine();
         }
 
         // ========================================
@@ -2019,7 +2399,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatVariables(ParsedCodeFile parsed, string namePattern, string filePath)
+        private string FormatVariables(ParsedCodeFile parsed, string? namePattern, string filePath)
         {
             var sb = new StringBuilder();
             var count = 0;
@@ -2071,7 +2451,7 @@ namespace AgentCore.CodeAnalysis
             return $"Variable '{variableName}' not found";
         }
 
-        private string FormatGlobalVariables(ParsedCodeFile parsed, string namePattern, string filePath)
+        private string FormatGlobalVariables(ParsedCodeFile parsed, string? namePattern, string filePath)
         {
             var sb = new StringBuilder();
             var count = 0;
@@ -2099,12 +2479,12 @@ namespace AgentCore.CodeAnalysis
             return count > 0 ? sb.ToString() : "No global variables found";
         }
 
-        private string FormatLocalVariables(ParsedCodeFile parsed, string namePattern, string filePath)
+        private string FormatLocalVariables(ParsedCodeFile parsed, string? namePattern, string filePath)
         {
             return "Local variable extraction not yet implemented for this language";
         }
 
-        private string FormatParameters(ParsedCodeFile parsed, string namePattern, string filePath)
+        private string FormatParameters(ParsedCodeFile parsed, string? namePattern, string filePath)
         {
             var sb = new StringBuilder();
             var count = 0;
@@ -2191,7 +2571,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatFields(TypeInfo type, string namePattern, string filePath)
+        private string FormatFields(TypeInfo type, string? namePattern, string filePath)
         {
             var fields = string.IsNullOrEmpty(namePattern)
                 ? type.Fields
@@ -2232,7 +2612,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatProperties(TypeInfo type, string namePattern, string filePath)
+        private string FormatProperties(TypeInfo type, string? namePattern, string filePath)
         {
             var properties = string.IsNullOrEmpty(namePattern)
                 ? type.Properties
@@ -2283,7 +2663,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatMethods(TypeInfo type, string namePattern, string filePath)
+        private string FormatMethods(TypeInfo type, string? namePattern, string filePath)
         {
             var methods = string.IsNullOrEmpty(namePattern)
                 ? type.Methods
@@ -2336,7 +2716,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatEvents(TypeInfo type, string namePattern, string filePath)
+        private string FormatEvents(TypeInfo type, string? namePattern, string filePath)
         {
             var events = string.IsNullOrEmpty(namePattern)
                 ? type.Events
@@ -2596,7 +2976,7 @@ namespace AgentCore.CodeAnalysis
             return sb.ToString();
         }
 
-        private string FormatLocation(CodeLocation location)
+        private string FormatLocation(CodeLocation? location)
         {
             if (location == null)
                 return "[unknown]";

@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using DotnetStoryScript;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -13,9 +12,19 @@ namespace CefDotnetApp.AgentCore.Core
     public class AgentCommand
     {
         public long Id { get; set; }
-        public string Command { get; set; }
-        public Dictionary<string, object> Params { get; set; }
+        public string? Command { get; set; }
+        public Dictionary<string, object>? Params { get; set; }
         public long Timestamp { get; set; }
+    }
+
+    /// <summary>
+    /// Notification structure from inject.js (no response expected)
+    /// Format: { type: "notification_type", data: { ... } }
+    /// </summary>
+    public class AgentNotification
+    {
+        public string? Type { get; set; }
+        public Dictionary<string, object>? Data { get; set; }
     }
 
     /// <summary>
@@ -25,8 +34,8 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public long Id { get; set; }
         public bool Success { get; set; }
-        public object Data { get; set; }
-        public string Error { get; set; }
+        public object? Data { get; set; }
+        public string? Error { get; set; }
     }
 
     /// <summary>
@@ -36,19 +45,19 @@ namespace CefDotnetApp.AgentCore.Core
     /// </summary>
     public class AgentBridge
     {
-        private Action<string, string[]> _executeJsAction;
+        private Action<string, string[]>? _sendJsCallAction;
         private readonly Action<string> _log;
 
-        public AgentBridge(Action<string, string[]> executeJsAction, Action<string> log)
+        public AgentBridge(Action<string, string[]>? sendJsCallAction, Action<string> log)
         {
-            _executeJsAction = executeJsAction;
+            _sendJsCallAction = sendJsCallAction;
             _log = log;
         }
 
-        // Set the callback to execute JavaScript
-        public void SetExecuteJsAction(Action<string, string[]> executeJsAction)
+        // Set the callback to send JavaScript call
+        public void SetSendJsCallAction(Action<string, string[]> sendJsCallAction)
         {
-            _executeJsAction = executeJsAction;
+            _sendJsCallAction = sendJsCallAction;
         }
 
         /// <summary>
@@ -62,15 +71,15 @@ namespace CefDotnetApp.AgentCore.Core
                     @params = parameters
                 };
 
-                var options = new JsonSerializerOptions {
+                var options = new System.Text.Json.JsonSerializerOptions {
                     PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                 };
-                string json = JsonSerializer.Serialize(cmd, options);
+                string json = System.Text.Json.JsonSerializer.Serialize(cmd, options);
 
                 // All C# to JS calls go through window object methods
                 // Pass JSON as array parameter
-                _executeJsAction("window.onAgentCommand", new string[] { json });
+                _sendJsCallAction?.Invoke("window.onAgentCommand", new string[] { json });
                 _log($"[AgentCommand] Sending command to inject.js: {command}");
             }
             catch (Exception ex) {
@@ -86,7 +95,7 @@ namespace CefDotnetApp.AgentCore.Core
             try {
                 // All C# to JS calls go through window object methods
                 // Pass JSON as array parameter
-                _executeJsAction("window.onAgentResponse", new string[] { responseJson });
+                _sendJsCallAction?.Invoke("window.onAgentResponse", new string[] { responseJson });
                 _log($"[AgentResponse] Sending response to inject.js");
             }
             catch (Exception ex) {

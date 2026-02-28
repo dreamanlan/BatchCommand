@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -21,8 +22,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_query_selector(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -33,7 +36,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildQuerySelector error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildQuerySelector error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -44,8 +47,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_click_element(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -56,7 +61,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildClickElement error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildClickElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -67,8 +72,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_value(selector, value)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -80,7 +87,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildSetValue error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetValue error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -91,8 +98,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_get_value(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -103,7 +112,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildGetValue error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildGetValue error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -114,8 +123,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_get_text(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -126,7 +137,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildGetText error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildGetText error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -137,8 +148,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_innerhtml(selector, html)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -150,7 +163,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildSetInnerHTML error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetInnerHTML error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -161,8 +174,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_wait_for_element(selector[, timeout_def_5000ms])");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -174,7 +189,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildWaitForElement error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildWaitForElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -185,8 +200,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_scroll_to_element(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -197,7 +214,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildScrollToElement error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildScrollToElement error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -208,8 +225,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_is_visible(selector)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -220,7 +239,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildIsVisible error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildIsVisible error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -231,8 +250,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_add_class(selector, className)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -244,7 +265,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildAddClass error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildAddClass error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -255,8 +276,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_remove_class(selector, className)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -268,7 +291,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildRemoveClass error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildRemoveClass error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -279,8 +302,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3)
+            if (operands.Count != 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_set_style(selector, property, value)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -293,7 +318,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildSetStyle error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildSetStyle error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -304,8 +329,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_inject_css(css)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -316,7 +343,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildInjectCSS error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildInjectCSS error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -327,8 +354,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: build_navigate_to(url)");
                 return BoxedValue.NullObject;
+            }
 
             if (!CheckInitialized())
                 return BoxedValue.NullObject;
@@ -339,8 +368,62 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"BuildNavigateTo error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"BuildNavigateTo error: {ex.Message}");
                 return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Send JavaScript code to the browser (async, no return value)
+    sealed class SendJsCodeExp : BrowserInteractionExpBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_js_code(jscode)");
+                return BoxedValue.FromBool(false);
+            }
+
+            if (!CheckInitialized())
+                return BoxedValue.FromBool(false);
+
+            try {
+                string jscode = operands[0].AsString;
+                Core.AgentCore.Instance.BrowserOps.SendJsCode(jscode);
+                return BoxedValue.FromBool(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"SendJsCode error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
+    // Send JavaScript function call to the browser (async, no return value)
+    sealed class SendJsCallExp : BrowserInteractionExpBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: send_js_call(jsfunc, arg1, arg2, ...)");
+                return BoxedValue.FromBool(false);
+            }
+
+            if (!CheckInitialized())
+                return BoxedValue.FromBool(false);
+
+            try {
+                string funcName = operands[0].AsString;
+                string[] args = new string[operands.Count - 1];
+                for (int i = 1; i < operands.Count; i++) {
+                    args[i - 1] = operands[i].AsString;
+                }
+                Core.AgentCore.Instance.BrowserOps.SendJsCall(funcName, args);
+                return BoxedValue.FromBool(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"SendJsCall error: {ex.Message}");
+                return BoxedValue.FromBool(false);
             }
         }
     }

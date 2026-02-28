@@ -19,10 +19,113 @@ using DotnetStoryScript.DslExpression;
 #pragma warning disable 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416
 namespace BatchCommand
 {
+    internal sealed class DebuggerLaunchExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 0)
+                throw new Exception("Expected: debuggerlaunch() api");
+            bool r = false;
+            if (!Debugger.IsAttached) {
+                r = Debugger.Launch();
+            }
+            return BoxedValue.FromBool(r);
+        }
+    }
+    internal sealed class DebuggerBreakExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 0)
+                throw new Exception("Expected: debuggerbreak() api");
+            Debugger.Break();
+            return BoxedValue.FromBool(Debugger.IsAttached);
+        }
+    }
+    internal sealed class CloneExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1)
+                throw new Exception("Expected: clone(v)");
+            if (operands.Count >= 1) {
+                var val = operands[0];
+                return Clone(val);
+            }
+            return BoxedValue.NullObject;
+        }
+        private BoxedValue Clone(BoxedValue val)
+        {
+            if (val.IsNullObject) {
+                return BoxedValue.NullObject;
+            }
+            else if (val.IsString) {
+                var str = val.GetString();
+                return string.Concat(str);
+            }
+            else if (val.IsObject) {
+                var obj = val.GetObject();
+                if (obj is ICloneable cloneable) {
+                    return BoxedValue.FromObject(cloneable.Clone());
+                }
+                else if (obj is IList list) {
+                    var newList = new List<BoxedValue>();
+                    foreach (var item in list) {
+                        newList.Add(BoxedValue.FromObject(item));
+                    }
+                    return BoxedValue.FromObject(newList);
+                }
+                else if (obj is IDictionary dict) {
+                    var newDict = new Dictionary<BoxedValue, BoxedValue>();
+                    foreach (var key in dict.Keys) {
+                        var v = dict[key];
+                        newDict.Add(BoxedValue.FromObject(key), BoxedValue.FromObject(v));
+                    }
+                    return BoxedValue.FromObject(newDict);
+                }
+                else if (obj is Queue<BoxedValue> queue) {
+                    var newQueue = new Queue<BoxedValue>(queue);
+                    return BoxedValue.FromObject(newQueue);
+                }
+                else if (obj is Stack<BoxedValue> stack) {
+                    var newStack = new Stack<BoxedValue>(stack.ToArray());
+                    return BoxedValue.FromObject(newStack);
+                }
+                else if (obj is Tuple<BoxedValue> t1) {
+                    return BoxedValue.From(Tuple.Create(t1.Item1));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue> t2) {
+                    return BoxedValue.From(Tuple.Create(t2.Item1, t2.Item2));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue> t3) {
+                    return BoxedValue.From(Tuple.Create(t3.Item1, t3.Item2, t3.Item3));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue> t4) {
+                    return BoxedValue.From(Tuple.Create(t4.Item1, t4.Item2, t4.Item3, t4.Item4));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t5) {
+                    return BoxedValue.From(Tuple.Create(t5.Item1, t5.Item2, t5.Item3, t5.Item4, t5.Item5));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t6) {
+                    return BoxedValue.From(Tuple.Create(t6.Item1, t6.Item2, t6.Item3, t6.Item4, t6.Item5, t6.Item6));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue> t7) {
+                    return BoxedValue.From(Tuple.Create(t7.Item1, t7.Item2, t7.Item3, t7.Item4, t7.Item5, t7.Item6, t7.Item7));
+                }
+                else if (obj is Tuple<BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, BoxedValue, Tuple<BoxedValue>> t8) {
+                    return BoxedValue.From(Tuple.Create(t8.Item1, t8.Item2, t8.Item3, t8.Item4, t8.Item5, t8.Item6, t8.Item7, Tuple.Create(Clone(t8.Rest.Item1))));
+                }
+            }
+            return val;
+        }
+    }
+
     internal sealed class TimeStatisticOnExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count > 1)
+                throw new Exception("Expected: timestat(bool) or timestat() api");
             if (operands.Count >= 1) {
                 BatchScript.TimeStatisticOn = operands[0].GetBool();
             }
@@ -34,6 +137,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 2 || operands.Count > 4)
+                throw new Exception("Expected: grep(lines,regex[,context_lines_after,context_lines_before]) api");
             BoxedValue r = BoxedValue.EmptyString;
             if (operands.Count >= 1) {
                 var lines = operands[0].As<IList<string>>();
@@ -105,6 +210,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 3 || operands.Count > 4)
+                throw new Exception("Expected: subst(lines,regex,subst[,count]) api, count is the max count of per subst");
             var r = BoxedValue.NullObject;
             if (operands.Count >= 3) {
                 var lines = operands[0].As<IList<string>>();
@@ -132,6 +239,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 2)
+                throw new Exception("Expected: awk(lines,scp[,removeEmpties,sep1,sep2,...]) api");
             var r = BoxedValue.NullObject;
             if (operands.Count >= 2) {
                 var lines = operands[0].As<IList<string>>();
@@ -194,6 +303,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getscriptdir() api");
             return BatchScript.ScriptDirectory;
         }
     }
@@ -202,6 +313,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: pause() api");
             var info = Console.ReadKey(true);
             return (int)info.KeyChar;
         }
@@ -211,6 +324,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count > 2)
+                throw new Exception("Expected: readline() api, Console.ReadLine");
             if (operands.Count >= 1) {
                 string dir = operands[0].AsString;
                 if (string.IsNullOrEmpty(dir)) {
@@ -233,6 +348,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count > 1)
+                throw new Exception("Expected: read([nodisplay]) api, Console.Read");
             bool nodisplay = false;
             if (operands.Count >= 1) {
                 nodisplay = operands[0].GetBool();
@@ -246,6 +363,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: clear() api, clear console");
             Console.Clear();
             return BoxedValue.NullObject;
         }
@@ -255,6 +374,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 1)
+                throw new Exception("Expected: write(fmt,arg1,arg2,....) api, Console.Write");
             if (operands.Count >= 1) {
                 var obj = operands[0].GetObject();
                 if (null != obj) {
@@ -282,14 +403,39 @@ namespace BatchCommand
             if (null != m_BeginChars && null != m_EndChars) {
                 var c1 = m_BeginChars.Calc().ToString();
                 var c2 = m_EndChars.Calc().ToString();
-                if (c1.Length == 2 && c2.Length == 2) {
+                if (c1.Length >= 2 && c2.Length >= 2) {
                     m_BeginFirst = c1[0];
                     m_BeginSecond = c1[1];
                     m_EndFirst = c2[0];
                     m_EndSecond = c2[1];
+
+                    m_BeginFirst2 = m_BeginFirst;
+                    m_BeginSecond2 = m_BeginSecond;
+                    m_EndFirst2 = m_EndFirst;
+                    m_EndSecond2 = m_EndSecond;
+
+                    m_CommentBeginFirst = '\0';
+                    m_CommentBeginSecond = '\0';
+                    m_CommentEndFirst = '\0';
+                    m_CommentEndSecond = '\0';
+                }
+                if (c1.Length >= 4 && c2.Length >= 4) {
+                    m_BeginFirst2 = c1[2];
+                    m_BeginSecond2 = c1[3];
+                    m_EndFirst2 = c2[2];
+                    m_EndSecond2 = c2[3];
+                }
+                if (c1.Length >= 6 && c2.Length >= 6) {
+                    m_CommentBeginFirst = c1[4];
+                    m_CommentBeginSecond = c1[5];
+                    m_CommentEndFirst = c2[4];
+                    m_CommentEndSecond = c2[5];
                 }
             }
-            Console.Write(BlockExp.CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder, m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond));
+            Console.Write(BlockExp.CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
+                , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
+                , m_BeginFirst2, m_BeginSecond2, m_EndFirst2, m_EndSecond2
+                , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
             return BoxedValue.NullObject;
         }
         protected override bool Load(Dsl.FunctionData funcData)
@@ -317,6 +463,14 @@ namespace BatchCommand
         private char m_BeginSecond = BlockExp.c_BeginSecond;
         private char m_EndFirst = BlockExp.c_EndFirst;
         private char m_EndSecond = BlockExp.c_EndSecond;
+        private char m_BeginFirst2 = BlockExp.c_BeginFirst2;
+        private char m_BeginSecond2 = BlockExp.c_BeginSecond2;
+        private char m_EndFirst2 = BlockExp.c_EndFirst2;
+        private char m_EndSecond2 = BlockExp.c_EndSecond2;
+        private char m_CommentBeginFirst = BlockExp.c_CommentBeginFirst;
+        private char m_CommentBeginSecond = BlockExp.c_CommentBeginSecond;
+        private char m_CommentEndFirst = BlockExp.c_CommentEndFirst;
+        private char m_CommentEndSecond = BlockExp.c_CommentEndSecond;
     }
 
     internal sealed class BlockExp : AbstractExpression
@@ -326,14 +480,39 @@ namespace BatchCommand
             if (null != m_BeginChars && null != m_EndChars) {
                 var c1 = m_BeginChars.Calc().ToString();
                 var c2 = m_EndChars.Calc().ToString();
-                if (c1.Length == 2 && c2.Length == 2) {
+                if (c1.Length >= 2 && c2.Length >= 2) {
                     m_BeginFirst = c1[0];
                     m_BeginSecond = c1[1];
                     m_EndFirst = c2[0];
                     m_EndSecond = c2[1];
+
+                    m_BeginFirst2 = m_BeginFirst;
+                    m_BeginSecond2 = m_BeginSecond;
+                    m_EndFirst2 = m_EndFirst;
+                    m_EndSecond2 = m_EndSecond;
+
+                    m_CommentBeginFirst = '\0';
+                    m_CommentBeginSecond = '\0';
+                    m_CommentEndFirst = '\0';
+                    m_CommentEndSecond = '\0';
+                }
+                if (c1.Length >= 4 && c2.Length >= 4) {
+                    m_BeginFirst2 = c1[2];
+                    m_BeginSecond2 = c1[3];
+                    m_EndFirst2 = c2[2];
+                    m_EndSecond2 = c2[3];
+                }
+                if (c1.Length >= 6 && c2.Length >= 6) {
+                    m_CommentBeginFirst = c1[4];
+                    m_CommentBeginSecond = c1[5];
+                    m_CommentEndFirst = c2[4];
+                    m_CommentEndSecond = c2[5];
                 }
             }
-            return BoxedValue.From(CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder, m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond));
+            return BoxedValue.From(CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
+                , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
+                , m_BeginFirst2, m_BeginSecond2, m_EndFirst2, m_EndSecond2
+                , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
         }
         protected override bool Load(Dsl.FunctionData funcData)
         {
@@ -360,8 +539,19 @@ namespace BatchCommand
         private char m_BeginSecond = c_BeginSecond;
         private char m_EndFirst = c_EndFirst;
         private char m_EndSecond = c_EndSecond;
+        private char m_BeginFirst2 = c_BeginFirst2;
+        private char m_BeginSecond2 = c_BeginSecond2;
+        private char m_EndFirst2 = c_EndFirst2;
+        private char m_EndSecond2 = c_EndSecond2;
+        private char m_CommentBeginFirst = c_CommentBeginFirst;
+        private char m_CommentBeginSecond = c_CommentBeginSecond;
+        private char m_CommentEndFirst = c_CommentEndFirst;
+        private char m_CommentEndSecond = c_CommentEndSecond;
 
-        internal static string CalcBlockString(string block, DslCalculator calculator, StringBuilder outputBuilder, StringBuilder tempBuilder, char beginFirst, char beginSecond, char endFirst, char endSecond)
+        internal static string CalcBlockString(string block, DslCalculator calculator, StringBuilder outputBuilder, StringBuilder tempBuilder
+            , char beginFirst, char beginSecond, char endFirst, char endSecond
+            , char beginFirst2, char beginSecond2, char endFirst2, char endSecond2
+            , char commentBeginFirst, char commentBeginSecond, char commentEndFirst, char commentEndSecond)
         {
             outputBuilder.Length = 0;
             for (int i = 0; i < block.Length; ++i) {
@@ -373,30 +563,21 @@ namespace BatchCommand
                 if (c == beginFirst && nc == beginSecond) {
                     ++i;
                     ++i;
-                    tempBuilder.Length = 0;
-                    for (int j = i; j < block.Length; ++j) {
-                        c = block[j];
-                        nc = '\0';
-                        if (j + 1 < block.Length) {
-                            nc = block[j + 1];
-                        }
-                        if (c == endFirst && nc == endSecond) {
-                            string varNameOrCode = tempBuilder.ToString().Trim();
-                            BoxedValue val;
-                            if (calculator.TryGetVariable(varNameOrCode, out val)) {
-                                outputBuilder.Append(val.ToString());
-                            }
-                            else {
-                                val = BatchScript.EvalAndRun(varNameOrCode);
-                                outputBuilder.Append(val.ToString());
-                            }
-                            i = j + 1;
-                            break;
-                        }
-                        else {
-                            tempBuilder.Append(c);
-                        }
-                    }
+                    ExtractBlockString(block, ref i, endFirst, endSecond, tempBuilder);
+                    BoxedValue val = CalcBlockString(calculator, tempBuilder);
+                    outputBuilder.Append(val.ToString());
+                }
+                else if (c == beginFirst2 && nc == beginSecond2) {
+                    ++i;
+                    ++i;
+                    ExtractBlockString(block, ref i, endFirst2, endSecond2, tempBuilder);
+                    BoxedValue val = CalcBlockString(calculator, tempBuilder);
+                    outputBuilder.Append(val.ToString());
+                }
+                else if (c == commentBeginFirst && nc == commentBeginSecond) {
+                    ++i;
+                    ++i;
+                    ExtractBlockString(block, ref i, commentEndFirst, commentEndSecond, tempBuilder);
                 }
                 else {
                     outputBuilder.Append(c);
@@ -404,16 +585,53 @@ namespace BatchCommand
             }
             return outputBuilder.ToString();
         }
+        internal static void ExtractBlockString(string block, ref int i, char endFirst, char endSecond, StringBuilder tempBuilder)
+        {
+            tempBuilder.Length = 0;
+            for (int j = i; j < block.Length; ++j) {
+                char c = block[j];
+                char nc = '\0';
+                if (j + 1 < block.Length) {
+                    nc = block[j + 1];
+                }
+                if (c == endFirst && nc == endSecond) {
+                    i = j + 1;
+                    break;
+                }
+                else {
+                    tempBuilder.Append(c);
+                }
+            }
+        }
+        internal static BoxedValue CalcBlockString(DslCalculator calculator, StringBuilder tempBuilder)
+        {
+            string varNameOrCode = tempBuilder.ToString().Trim();
+            BoxedValue val;
+            if (!calculator.TryGetVariable(varNameOrCode, out val)) {
+                val = BatchScript.EvalAndRun(varNameOrCode);
+            }
+            return val;
+        }
         internal const char c_BeginFirst = '{';
         internal const char c_BeginSecond = '%';
         internal const char c_EndFirst = '%';
         internal const char c_EndSecond = '}';
+        internal const char c_BeginFirst2 = '{';
+        internal const char c_BeginSecond2 = '{';
+        internal const char c_EndFirst2 = '}';
+        internal const char c_EndSecond2 = '}';
+        internal const char c_CommentBeginFirst = '{';
+        internal const char c_CommentBeginSecond = '#';
+        internal const char c_CommentEndFirst = '#';
+        internal const char c_CommentEndSecond = '}';
     }
 
     internal sealed class BeepExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count > 2)
+                throw new Exception("Expected: beep([frequence,duration]) api, Console.Beep, only on win32");
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 if (operands.Count >= 2) {
                     int f = operands[0].GetInt();
@@ -432,6 +650,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: gettitle() api, Console.Title, only on win32");
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 return Console.Title;
             }
@@ -443,6 +663,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 1)
+                throw new Exception("Expected: settitle(title) api");
             if (operands.Count >= 1) {
                 var title = operands[0].AsString;
                 if (null != title) {
@@ -457,6 +679,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getbufferwidth() api");
             return Console.BufferWidth;
         }
     }
@@ -465,6 +689,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getbufferheight() api");
             return Console.BufferHeight;
         }
     }
@@ -473,6 +699,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 2)
+                throw new Exception("Expected: setbuffersize(width,height) api");
             if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
                 if (operands.Count >= 2) {
                     int w = operands[0].GetInt();
@@ -488,6 +716,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getcursorleft() api");
             return Console.CursorLeft;
         }
     }
@@ -496,6 +726,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getcursortop() api");
             return Console.CursorTop;
         }
     }
@@ -504,6 +736,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 2)
+                throw new Exception("Expected: setcursorpos(left,top) api");
             if (operands.Count >= 2) {
                 int left = operands[0].GetInt();
                 int top = operands[1].GetInt();
@@ -517,6 +751,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getbgcolor() api, return str");
             //Enum.GetName(typeof(ConsoleColor), Console.BackgroundColor);
             return Console.BackgroundColor.ToString();
         }
@@ -526,6 +762,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 1)
+                throw new Exception("Expected: setbgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
             if (operands.Count >= 1) {
                 var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
@@ -540,6 +778,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getfgcolor() api, return str");
             //Enum.GetName(typeof(ConsoleColor), Console.ForegroundColor);
             return Console.ForegroundColor.ToString();
         }
@@ -549,6 +789,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 1)
+                throw new Exception("Expected: setfgcolor(color_name) api, color:Black,DarkBlue,DarkGreen,DarkCyan,DarkRed,DarkMagenta,DarkYellow,Gray,DarkGray,Blue,Green,Cyan,Red,Magenta,Yellow,White");
             if (operands.Count >= 1) {
                 var color = operands[0].AsString;
                 if (!string.IsNullOrEmpty(color)) {
@@ -563,6 +805,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: resetcolor() api");
             Console.ResetColor();
             return BoxedValue.NullObject;
         }
@@ -572,6 +816,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count > 2)
+                throw new Exception("Expected: setencoding([input[,output]]) api, def is UTF8");
             if (operands.Count >= 1) {
                 var encoding1 = operands[0];
                 var encoding2 = encoding1;
@@ -593,6 +839,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getinputencoding() api, return Encoding");
             return BoxedValue.FromObject(Console.InputEncoding);
         }
     }
@@ -601,6 +849,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getoutputencoding() api, return Encoding");
             return BoxedValue.FromObject(Console.OutputEncoding);
         }
     }
@@ -609,6 +859,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: console() api, return typeof(Console)");
             return typeof(Console);
         }
     }
@@ -617,6 +869,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: encoding() api, return typeof(Encoding)");
             return typeof(Encoding);
         }
     }
@@ -625,6 +879,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: env() api, return typeof(Environment)");
             return typeof(Environment);
         }
     }
@@ -633,6 +889,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 0)
+                throw new Exception("Expected: getclipboard() api");
             return TextCopy.ClipboardService.GetText();
         }
     }
@@ -641,6 +899,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count != 1)
+                throw new Exception("Expected: setclipboard(txt) api");
             if (operands.Count > 0) {
                 string txt = operands[0].AsString;
                 TextCopy.ClipboardService.SetText(txt);
@@ -654,6 +914,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 2 || operands.Count > 3)
+                throw new Exception("Expected: regread(keyname,valname[,defval]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
             if (operands.Count >= 2) {
                 string keyName = operands[0].AsString;
                 string valName = operands[1].AsString;
@@ -672,6 +934,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 3 || operands.Count > 4)
+                throw new Exception("Expected: regwrite(keyname,valname,val[,val_kind]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG, val_kind:0-unk,1-str,2-exstr,3-bin,4-dword,7-multistr,11-qword");
             if (operands.Count >= 3) {
                 string keyName = operands[0].AsString;
                 string valName = operands[1].AsString;
@@ -705,6 +969,8 @@ namespace BatchCommand
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
+            if (operands.Count < 1 || operands.Count > 2)
+                throw new Exception("Expected: regdelete(keyname[,valname]) api, root:HKEY_CURRENT_USER|HKEY_LOCAL_MACHINE|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_PERFORMANCE_DATA|HKEY_CURRENT_CONFIG");
             if (operands.Count >= 1) {
                 string keyName = operands[0].AsString;
                 bool delVal = false;
@@ -1170,6 +1436,9 @@ namespace BatchCommand
             Calculator.Init();
 
             //register Gm Command
+            Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
+            Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
+            Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
             Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());
             Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
@@ -1285,6 +1554,20 @@ namespace BatchCommand
                 LoadDslHelper(scpFile);
             }
         }
+        public static void LoadFunc(string funcName, string code, IList<string> paramNames, bool update)
+        {
+            if (update || Calculator.TryGetFuncInfo(funcName, out var funcInfo)) {
+                string procCode = string.Format("script{{ {0}; }};", code);
+                var file = new Dsl.DslFile();
+                file.SetStringDelimiter("[[", "]]");
+                ScriptableDslHelper.ForDslCalculator.SetCallbacks(file);
+                if (file.LoadFromString(procCode, msg => { OnDslError(msg); })) {
+                    var func = file.DslInfos[0] as Dsl.FunctionData;
+                    Debug.Assert(null != func);
+                    Calculator.LoadDsl(funcName, paramNames, func);
+                }
+            }
+        }
         public static BoxedValue Run(string scpFile)
         {
             return Run(scpFile, EmptyStringList, EmptyBoxedValueList);
@@ -1362,7 +1645,7 @@ namespace BatchCommand
             }
             return r;
         }
-        public static string EvalAsFunc(string code, IList<string> argNames)
+        public static string EvalAsFunc(string code, IList<string> paramNames)
         {
             string id = System.Guid.NewGuid().ToString();
             string procCode = string.Format("script{{ {0}; }};", code);
@@ -1372,16 +1655,16 @@ namespace BatchCommand
             if (file.LoadFromString(procCode, msg => { OnDslError(msg); })) {
                 var func = file.DslInfos[0] as Dsl.FunctionData;
                 Debug.Assert(null != func);
-                Calculator.LoadDsl(id, argNames, func);
+                Calculator.LoadDsl(id, paramNames, func);
                 return id;
             }
             return string.Empty;
         }
-        public static string EvalAsFunc(Dsl.FunctionData func, IList<string> argNames)
+        public static string EvalAsFunc(Dsl.FunctionData func, IList<string> paramNames)
         {
             string id = System.Guid.NewGuid().ToString();
             Debug.Assert(null != func);
-            Calculator.LoadDsl(id, argNames, func);
+            Calculator.LoadDsl(id, paramNames, func);
             return id;
         }
         public static List<BoxedValue> NewCalculatorValueList()

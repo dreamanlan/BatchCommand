@@ -5,9 +5,9 @@ namespace CefDotnetApp.AgentCore.Models
 {
     public class FileInfoModel
     {
-        public string Path { get; set; }
-        public string Name { get; set; }
-        public string Extension { get; set; }
+        public string Path { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Extension { get; set; } = string.Empty;
         public long Size { get; set; }
         public DateTime CreationTime { get; set; }
         public DateTime LastWriteTime { get; set; }

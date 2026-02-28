@@ -14,12 +14,14 @@ using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Net;
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 using System.Text.RegularExpressions;
+using System.Linq;
+using BatchCommand;
 
-public static class Program
+internal static class Program
 {
-    public static void Main()
+    internal static void Main()
     {
         Console.WriteLine("[csharp] Program.Main");
     }
@@ -39,6 +41,71 @@ public struct HostApi
     public IntPtr CommandLineAppendSwitch;
     public IntPtr CommandLineAppendSwitchWithValue;
     public IntPtr CommandLineRemoveSwitch;
+    // CommandLine extended
+    public IntPtr CommandLineIsValid;
+    public IntPtr CommandLineIsReadOnly;
+    public IntPtr CommandLineHasSwitches;
+    public IntPtr CommandLineHasArguments;
+    public IntPtr CommandLineGetProgram;
+    public IntPtr CommandLineSetProgram;
+    public IntPtr CommandLineGetCommandLineString;
+    public IntPtr CommandLineGetArgv;
+    public IntPtr CommandLineGetSwitches;
+    public IntPtr CommandLineGetArguments;
+    public IntPtr CommandLineAppendArgument;
+    public IntPtr CommandLinePrependWrapper;
+    public IntPtr CommandLineGetGlobal;
+    // Browser traversal
+    public IntPtr GetAllBrowserIds;
+    public IntPtr GetBrowserById;
+    public IntPtr NotifyBrowserCreated;
+    public IntPtr NotifyBrowserDestroyed;
+    // Browser properties
+    public IntPtr BrowserGetId;
+    public IntPtr BrowserGetUrl;
+    public IntPtr BrowserIsLoading;
+    public IntPtr BrowserIsPopup;
+    public IntPtr BrowserHasDocument;
+    // Browser frame access
+    public IntPtr BrowserGetFrameCount;
+    public IntPtr BrowserGetFrameIdentifiers;
+    public IntPtr BrowserGetFrameNames;
+    public IntPtr BrowserGetMainFrame;
+    public IntPtr BrowserGetFocusedFrame;
+    public IntPtr BrowserGetFrameByIdentifier;
+    public IntPtr BrowserGetFrameByName;
+    // Browser actions
+    public IntPtr BrowserReload;
+    public IntPtr BrowserReloadIgnoreCache;
+    public IntPtr BrowserStopLoad;
+    // Browser host actions
+    public IntPtr BrowserClose;
+    public IntPtr BrowserSetFocus;
+    public IntPtr BrowserGetOpenerId;
+    // Frame properties
+    public IntPtr FrameGetUrl;
+    public IntPtr FrameGetName;
+    public IntPtr FrameGetIdentifier;
+    public IntPtr FrameIsMain;
+    public IntPtr FrameIsValid;
+    public IntPtr FrameIsFocused;
+    public IntPtr FrameGetParent;
+    public IntPtr FrameGetBrowser;
+    // Frame actions
+    public IntPtr FrameLoadUrl;
+    // CefRequest properties
+    public IntPtr RequestIsReadOnly;
+    public IntPtr RequestGetUrl;
+    public IntPtr RequestGetMethod;
+    public IntPtr RequestGetReferrerUrl;
+    public IntPtr RequestGetReferrerPolicy;
+    public IntPtr RequestGetHeaderMap;
+    public IntPtr RequestGetHeaderByName;
+    public IntPtr RequestGetFlags;
+    public IntPtr RequestGetFirstPartyForCookies;
+    public IntPtr RequestGetResourceType;
+    public IntPtr RequestGetTransitionType;
+    public IntPtr RequestGetIdentifier;
 }
 
 // delegate for native api
@@ -64,9 +131,154 @@ public delegate void HostCommandLineAppendSwitchDelegation(IntPtr command_line, 
 public delegate void HostCommandLineAppendSwitchWithValueDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string value);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostCommandLineRemoveSwitchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+// CommandLine extended
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostCommandLineIsValidDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostCommandLineIsReadOnlyDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostCommandLineHasSwitchesDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostCommandLineHasArgumentsDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetProgramDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostCommandLineSetProgramDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string program);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetCommandLineStringDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetArgvDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetSwitchesDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetArgumentsDelegation(IntPtr command_line);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostCommandLineAppendArgumentDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string argument);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostCommandLinePrependWrapperDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string wrapper);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCommandLineGetGlobalDelegation();
+// Browser traversal
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostGetAllBrowserIdsDelegation();
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostGetBrowserByIdDelegation(int browser_id);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostNotifyBrowserCreatedDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostNotifyBrowserDestroyedDelegation(IntPtr browser);
+// Browser properties
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserGetIdDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetUrlDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostBrowserIsLoadingDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostBrowserIsPopupDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostBrowserHasDocumentDelegation(IntPtr browser);
+// Browser frame access
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserGetFrameCountDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetFrameIdentifiersDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetFrameNamesDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetMainFrameDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetFocusedFrameDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetFrameByIdentifierDelegation(IntPtr browser, [MarshalAs(UnmanagedType.LPUTF8Str)] string identifier);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostBrowserGetFrameByNameDelegation(IntPtr browser, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+// Browser actions
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostBrowserReloadDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostBrowserReloadIgnoreCacheDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostBrowserStopLoadDelegation(IntPtr browser);
+// Browser host actions
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostBrowserCloseDelegation(IntPtr browser, int force_close);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostBrowserSetFocusDelegation(IntPtr browser, int focus);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserGetOpenerIdDelegation(IntPtr browser);
+// Frame properties
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostFrameGetUrlDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostFrameGetNameDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostFrameGetIdentifierDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostFrameIsMainDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostFrameIsValidDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostFrameIsFocusedDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostFrameGetParentDelegation(IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostFrameGetBrowserDelegation(IntPtr frame);
+// Frame actions
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostFrameLoadUrlDelegation(IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
+// CefRequest properties
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate bool HostRequestIsReadOnlyDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetUrlDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetMethodDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetReferrerUrlDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostRequestGetReferrerPolicyDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetHeaderMapDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetHeaderByNameDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostRequestGetFlagsDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostRequestGetFirstPartyForCookiesDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostRequestGetResourceTypeDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostRequestGetTransitionTypeDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate ulong HostRequestGetIdentifierDelegation(IntPtr request);
 
 namespace DotNetLib
 {
+    sealed class ImportExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var files = new List<string>();
+            for (int ix = 1; ix < operands.Count; ix++) {
+                var str = operands[ix].AsString;
+                if (!string.IsNullOrEmpty(str)) {
+                    string path;
+                    if (Path.IsPathRooted(str)) {
+                        path = str;
+                    }
+                    else {
+                        path = Path.Combine(Lib.BasePath, "managed", str);
+                    }
+                    files.Add(path);
+                }
+            }
+            BatchScript.LoadIncludes(files);
+            if (BatchScript.HasDslErrors)
+                return BoxedValue.FromBool(false);
+            return BoxedValue.FromBool(true);
+        }
+    }
     sealed class NativeLogExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -111,6 +323,76 @@ namespace DotNetLib
             return str;
         }
     }
+    sealed class GetStringInLengthExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                NativeApi.AppendApiErrorInfoLine("Expected: getstringinlength(str, len[, get_the_end_def_false])");
+                return BoxedValue.EmptyString;
+            }
+            string str = operands[0].AsString;
+            int len = operands[1].GetInt();
+            bool getTheEnd = operands.Count > 2 ? operands[2].GetBool() : false;
+            if (!string.IsNullOrEmpty(str)) {
+                if (getTheEnd) {
+                    return BoxedValue.From(str.Length > len ? "..." + str.Substring(str.Length - len, len) : str);
+                }
+                else {
+                    return BoxedValue.From(str.Length > len ? str.Substring(0, len) + "..." : str);
+                }
+            }
+            return BoxedValue.EmptyString;
+        }
+    }
+    sealed class QuoteStringExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: quotestring(str)");
+                return BoxedValue.EmptyString;
+            }
+            string str = operands[0].AsString;
+            if (!string.IsNullOrEmpty(str)) {
+                NativeApi.QuoteString(str);
+            }
+            return BoxedValue.EmptyString;
+        }
+    }
+    sealed class StripQuotesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: stripquotes(str)");
+                return BoxedValue.EmptyString;
+            }
+            string str = operands[0].AsString;
+            if (!string.IsNullOrEmpty(str)) {
+                NativeApi.QuoteString(str);
+            }
+            return BoxedValue.EmptyString;
+        }
+    }
+    sealed class GetDotnetInfoExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("AppContext.BaseDirectory: " + AppContext.BaseDirectory);
+            sb.AppendLine("AppDomain.BaseDirectory: " + AppDomain.CurrentDomain.BaseDirectory);
+            var entry = Assembly.GetEntryAssembly()?.Location ?? "<null>";
+            sb.AppendLine("EntryAssembly.Location: " + entry);
+            sb.AppendLine("ExecutingAssembly.Location: " + Assembly.GetExecutingAssembly().Location);
+            sb.AppendLine("Process.MainModule: " + Process.GetCurrentProcess().MainModule?.FileName);
+            sb.AppendLine("Environment.CurrentDirectory: " + Environment.CurrentDirectory);
+            sb.AppendLine("BasePath: " + Lib.BasePath);
+            sb.AppendLine("AppDir: " + Lib.AppDir);
+            sb.AppendLine("IsMac: " + Lib.IsMac);
+            return sb.ToString();
+        }
+    }
     sealed class HandleThreadQueueExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -148,6 +430,8 @@ namespace DotNetLib
                 string pattern = op.ToString();
                 regexes.Add(new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled));
             }
+            // regex match over UserApiDocs
+            var matchedApiKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var pair in BatchCommand.BatchScript.UserApiDocs) {
                 bool match = regexes.Count == 0;
                 string info = string.Format("{0}: {1}", pair.Key, pair.Value);
@@ -158,8 +442,33 @@ namespace DotNetLib
                     }
                 }
                 if (match) {
+                    matchedApiKeys.Add(pair.Key);
                     sb.AppendLine(info);
                 }
+            }
+            // semantic search over UserApiDocs
+            if (regexes.Count > 0 && Lib.AgentPlugin != null) {
+                var queries = new List<string>(regexes.Count);
+                foreach (var regex in regexes) {
+                    string q = NativeApi.CleanStringData(regex.ToString());
+                    if (!string.IsNullOrWhiteSpace(q))
+                        queries.Add(q);
+                }
+                var semanticResults = Lib.AgentPlugin.SemanticSearch(
+                    queries,
+                    BatchCommand.BatchScript.UserApiDocs.Select(p => (p.Key, p.Key + ": " + p.Value)),
+                    5);
+                if (semanticResults != null) {
+                    foreach (var (key, text, score) in semanticResults) {
+                        if (!matchedApiKeys.Contains(key)) {
+                            sb.AppendLine(string.Format("{0} ({1})", text, score));
+                        }
+                    }
+                }
+            }
+            if (null != Lib.AgentPlugin) {
+                string infos = Lib.AgentPlugin.SkillHelp(regexes);
+                sb.Append(infos);
             }
             return sb.ToString();
         }
@@ -174,6 +483,7 @@ namespace DotNetLib
                 string pattern = op.ToString();
                 regexes.Add(new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled));
             }
+            var matchedApiKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var pair in Calculator.ApiDocs) {
                 bool match = regexes.Count == 0;
                 string info = string.Format("{0}: {1}", pair.Key, pair.Value);
@@ -184,8 +494,33 @@ namespace DotNetLib
                     }
                 }
                 if (match) {
+                    matchedApiKeys.Add(pair.Key);
                     sb.AppendLine(info);
                 }
+            }
+            // semantic search over apiDocs
+            if (regexes.Count > 0 && Lib.AgentPlugin != null) {
+                var queries = new List<string>(regexes.Count);
+                foreach (var regex in regexes) {
+                    string q = NativeApi.CleanStringData(regex.ToString());
+                    if (!string.IsNullOrWhiteSpace(q))
+                        queries.Add(q);
+                }
+                var semanticResults = Lib.AgentPlugin.SemanticSearch(
+                    queries,
+                    BatchCommand.BatchScript.ApiDocs.Select(p => (p.Key, p.Key + ": " + p.Value)),
+                    5);
+                if (semanticResults != null) {
+                    foreach (var (key, text, score) in semanticResults) {
+                        if (!matchedApiKeys.Contains(key)) {
+                            sb.AppendLine(string.Format("{0} ({1})", text, score));
+                        }
+                    }
+                }
+            }
+            if (null != Lib.AgentPlugin) {
+                string infos = Lib.AgentPlugin.SkillHelp(regexes);
+                sb.Append(infos);
             }
             return sb.ToString();
         }
@@ -202,7 +537,7 @@ namespace DotNetLib
         PID_BROWSER,
         PID_RENDERER,
     }
-    public class NativeApi
+    public class NativeApi : INativeApi, IErrorReporter, IDslEngine
     {
         public NativeApi(IntPtr apis)
         {
@@ -218,18 +553,95 @@ namespace DotNetLib
             m_CommandLineAppendSwitchApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineAppendSwitchDelegation>(hostApi.CommandLineAppendSwitch);
             m_CommandLineAppendSwitchWithValueApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineAppendSwitchWithValueDelegation>(hostApi.CommandLineAppendSwitchWithValue);
             m_CommandLineRemoveSwitchApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineRemoveSwitchDelegation>(hostApi.CommandLineRemoveSwitch);
+            // CommandLine extended
+            m_CommandLineIsValidApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineIsValidDelegation>(hostApi.CommandLineIsValid);
+            m_CommandLineIsReadOnlyApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineIsReadOnlyDelegation>(hostApi.CommandLineIsReadOnly);
+            m_CommandLineHasSwitchesApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineHasSwitchesDelegation>(hostApi.CommandLineHasSwitches);
+            m_CommandLineHasArgumentsApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineHasArgumentsDelegation>(hostApi.CommandLineHasArguments);
+            m_CommandLineGetProgramApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetProgramDelegation>(hostApi.CommandLineGetProgram);
+            m_CommandLineSetProgramApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineSetProgramDelegation>(hostApi.CommandLineSetProgram);
+            m_CommandLineGetCommandLineStringApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetCommandLineStringDelegation>(hostApi.CommandLineGetCommandLineString);
+            m_CommandLineGetArgvApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetArgvDelegation>(hostApi.CommandLineGetArgv);
+            m_CommandLineGetSwitchesApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetSwitchesDelegation>(hostApi.CommandLineGetSwitches);
+            m_CommandLineGetArgumentsApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetArgumentsDelegation>(hostApi.CommandLineGetArguments);
+            m_CommandLineAppendArgumentApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineAppendArgumentDelegation>(hostApi.CommandLineAppendArgument);
+            m_CommandLinePrependWrapperApi = Marshal.GetDelegateForFunctionPointer<HostCommandLinePrependWrapperDelegation>(hostApi.CommandLinePrependWrapper);
+            m_CommandLineGetGlobalApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetGlobalDelegation>(hostApi.CommandLineGetGlobal);
+            m_GetAllBrowserIdsApi = Marshal.GetDelegateForFunctionPointer<HostGetAllBrowserIdsDelegation>(hostApi.GetAllBrowserIds);
+            m_GetBrowserByIdApi = Marshal.GetDelegateForFunctionPointer<HostGetBrowserByIdDelegation>(hostApi.GetBrowserById);
+            m_NotifyBrowserCreatedApi = Marshal.GetDelegateForFunctionPointer<HostNotifyBrowserCreatedDelegation>(hostApi.NotifyBrowserCreated);
+            m_NotifyBrowserDestroyedApi = Marshal.GetDelegateForFunctionPointer<HostNotifyBrowserDestroyedDelegation>(hostApi.NotifyBrowserDestroyed);
+            m_BrowserGetIdApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetIdDelegation>(hostApi.BrowserGetId);
+            m_BrowserGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetUrlDelegation>(hostApi.BrowserGetUrl);
+            m_BrowserIsLoadingApi = Marshal.GetDelegateForFunctionPointer<HostBrowserIsLoadingDelegation>(hostApi.BrowserIsLoading);
+            m_BrowserIsPopupApi = Marshal.GetDelegateForFunctionPointer<HostBrowserIsPopupDelegation>(hostApi.BrowserIsPopup);
+            m_BrowserHasDocumentApi = Marshal.GetDelegateForFunctionPointer<HostBrowserHasDocumentDelegation>(hostApi.BrowserHasDocument);
+            m_BrowserGetFrameCountApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFrameCountDelegation>(hostApi.BrowserGetFrameCount);
+            m_BrowserGetFrameIdentifiersApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFrameIdentifiersDelegation>(hostApi.BrowserGetFrameIdentifiers);
+            m_BrowserGetFrameNamesApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFrameNamesDelegation>(hostApi.BrowserGetFrameNames);
+            m_BrowserGetMainFrameApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetMainFrameDelegation>(hostApi.BrowserGetMainFrame);
+            m_BrowserGetFocusedFrameApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFocusedFrameDelegation>(hostApi.BrowserGetFocusedFrame);
+            m_BrowserGetFrameByIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFrameByIdentifierDelegation>(hostApi.BrowserGetFrameByIdentifier);
+            m_BrowserGetFrameByNameApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetFrameByNameDelegation>(hostApi.BrowserGetFrameByName);
+            m_BrowserReloadApi = Marshal.GetDelegateForFunctionPointer<HostBrowserReloadDelegation>(hostApi.BrowserReload);
+            m_BrowserReloadIgnoreCacheApi = Marshal.GetDelegateForFunctionPointer<HostBrowserReloadIgnoreCacheDelegation>(hostApi.BrowserReloadIgnoreCache);
+            m_BrowserStopLoadApi = Marshal.GetDelegateForFunctionPointer<HostBrowserStopLoadDelegation>(hostApi.BrowserStopLoad);
+            m_BrowserCloseApi = Marshal.GetDelegateForFunctionPointer<HostBrowserCloseDelegation>(hostApi.BrowserClose);
+            m_BrowserSetFocusApi = Marshal.GetDelegateForFunctionPointer<HostBrowserSetFocusDelegation>(hostApi.BrowserSetFocus);
+            m_BrowserGetOpenerIdApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetOpenerIdDelegation>(hostApi.BrowserGetOpenerId);
+            m_FrameGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetUrlDelegation>(hostApi.FrameGetUrl);
+            m_FrameGetNameApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetNameDelegation>(hostApi.FrameGetName);
+            m_FrameGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetIdentifierDelegation>(hostApi.FrameGetIdentifier);
+            m_FrameIsMainApi = Marshal.GetDelegateForFunctionPointer<HostFrameIsMainDelegation>(hostApi.FrameIsMain);
+            m_FrameIsValidApi = Marshal.GetDelegateForFunctionPointer<HostFrameIsValidDelegation>(hostApi.FrameIsValid);
+            m_FrameIsFocusedApi = Marshal.GetDelegateForFunctionPointer<HostFrameIsFocusedDelegation>(hostApi.FrameIsFocused);
+            m_FrameGetParentApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetParentDelegation>(hostApi.FrameGetParent);
+            m_FrameGetBrowserApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetBrowserDelegation>(hostApi.FrameGetBrowser);
+            m_FrameLoadUrlApi = Marshal.GetDelegateForFunctionPointer<HostFrameLoadUrlDelegation>(hostApi.FrameLoadUrl);
+            // CefRequest properties
+            m_RequestIsReadOnlyApi = Marshal.GetDelegateForFunctionPointer<HostRequestIsReadOnlyDelegation>(hostApi.RequestIsReadOnly);
+            m_RequestGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetUrlDelegation>(hostApi.RequestGetUrl);
+            m_RequestGetMethodApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetMethodDelegation>(hostApi.RequestGetMethod);
+            m_RequestGetReferrerUrlApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetReferrerUrlDelegation>(hostApi.RequestGetReferrerUrl);
+            m_RequestGetReferrerPolicyApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetReferrerPolicyDelegation>(hostApi.RequestGetReferrerPolicy);
+            m_RequestGetHeaderMapApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetHeaderMapDelegation>(hostApi.RequestGetHeaderMap);
+            m_RequestGetHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetHeaderByNameDelegation>(hostApi.RequestGetHeaderByName);
+            m_RequestGetFlagsApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetFlagsDelegation>(hostApi.RequestGetFlags);
+            m_RequestGetFirstPartyForCookiesApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetFirstPartyForCookiesDelegation>(hostApi.RequestGetFirstPartyForCookies);
+            m_RequestGetResourceTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetResourceTypeDelegation>(hostApi.RequestGetResourceType);
+            m_RequestGetTransitionTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetTransitionTypeDelegation>(hostApi.RequestGetTransitionType);
+            m_RequestGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetIdentifierDelegation>(hostApi.RequestGetIdentifier);
         }
 
         public void NativeLog(string msg)
         {
-            if (m_NativeLogApi == null) {
-                return;
+            bool isMainThread = Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId;
+            string txt = string.Format("thread:{0} {1}{2}: {3}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty, msg);
+            //Console.WriteLine(txt);
+            var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines) {
+                if (isMainThread) {
+                    NativeLogImpl(line);
+                }
+                else {
+                    EnqueueNativeLog(line);
+                }
             }
-            m_NativeLogApi.Invoke(msg, Browser, Frame);
         }
         public void JavascriptLog(string msg)
         {
-            SendJavascriptCall("console.log", new string[] { msg });
+            bool isMainThread = Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId;
+            string txt = string.Format("thread:{0} {1}{2}: {3}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty, msg);
+            //Console.WriteLine(txt);
+            var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines) {
+                if (isMainThread) {
+                    JavascriptLogImpl(line);
+                }
+                else {
+                    EnqueueJsLog(line);
+                }
+            }
         }
         public void SendCefMessage(string msg, string[] args, int cef_process_id)
         {
@@ -383,41 +795,129 @@ namespace DotNetLib
         }
         public void AppendApiErrorInfoFormatForDSL(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormat(fmt, args);
+            if (args.Length == 0) {
+                ApiErrorInfo.Append(fmt);
+            }
+            else {
+                ApiErrorInfo.AppendFormat(fmt, args);
+            }
         }
         public void AppendApiErrorInfoFormatLineForDSL(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormat(fmt, args);
-            ApiErrorInfo.AppendLine();
+            if (args.Length == 0) {
+                ApiErrorInfo.AppendLine(fmt);
+            }
+            else {
+                ApiErrorInfo.AppendFormat(fmt, args);
+                ApiErrorInfo.AppendLine();
+            }
         }
         public bool HasApiErrorInfoForDSL => ApiErrorInfo.Length > 0;
         public string GetApiErrorInfoForDSL() => ApiErrorInfo.ToString();
 
-        public static void ClearApiErrorInfo()
+        internal static string LoadDslFunc(string func, string code, IList<string> paramNames, bool update)
+        {
+            if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
+                return Lib.LoadFunc(func, code, paramNames, update);
+            }
+            else {
+                return CefDotnetAppApi.LoadFunc(func, code, paramNames, update);
+            }
+        }
+        internal static string CallDslFunc(string func, List<string> args)
+        {
+            var bvals = BatchScript.NewCalculatorValueList();
+            foreach (var arg in args) {
+                bvals.Add(arg);
+            }
+            var result = BatchScript.Call(func, bvals);
+            BatchScript.RecycleCalculatorValueList(bvals);
+            if (result.IsNullObject) {
+                return "null";
+            }
+            else if (null != Lib.AgentPlugin) {
+                return Lib.AgentPlugin.ResultToString(result);
+            }
+            else {
+                return result.ToString();
+            }
+        }
+        internal static void ClearApiErrorInfo()
         {
             ApiErrorInfo.Clear();
         }
-        public static void AppendApiErrorInfo(string msg)
+        internal static void AppendApiErrorInfo(string msg)
         {
             ApiErrorInfo.Append(msg);
         }
-        public static void AppendApiErrorInfoLine(string msg)
+        internal static void AppendApiErrorInfoLine(string msg)
         {
             ApiErrorInfo.AppendLine(msg);
         }
-        public static void AppendApiErrorInfoFormat(string fmt, params object[] args)
+        internal static void AppendApiErrorInfoFormat(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormat(fmt, args);
+            if (args.Length == 0)
+                ApiErrorInfo.Append(fmt);
+            else
+                ApiErrorInfo.AppendFormat(fmt, args);
         }
-        public static void AppendApiErrorInfoFormatLine(string fmt, params object[] args)
+        internal static void AppendApiErrorInfoFormatLine(string fmt, params object[] args)
         {
-            ApiErrorInfo.AppendFormat(fmt, args);
-            ApiErrorInfo.AppendLine();
+            if (args.Length == 0)
+                ApiErrorInfo.AppendLine(fmt);
+            else {
+                ApiErrorInfo.AppendFormat(fmt, args);
+                ApiErrorInfo.AppendLine();
+            }
         }
-        public static bool HasApiErrorInfo => ApiErrorInfo.Length > 0;
-        public static string GetApiErrorInfo() => ApiErrorInfo.ToString();
+        internal static string GetStringInLength(string str, int len, bool getTheEnd)
+        {
+            if (!string.IsNullOrEmpty(str)) {
+                if (getTheEnd) {
+                    return str.Length > len ? "..." + str.Substring(str.Length - len, len) : str;
+                }
+                else {
+                    return str.Length > len ? str.Substring(0, len) + "..." : str;
+                }
+            }
+            return string.Empty;
+        }
+        internal static string QuoteString(string? value)
+        {
+            if (value == null) value = string.Empty;
+            // if numeric, no quotes needed
+            if (double.TryParse(value, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out _))
+                return value;
+            // wrap in double quotes, escape internal double quotes and backslashes
+            return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        }
+        internal static string StripQuotes(string? s)
+        {
+            if (s == null) return string.Empty;
+            if (s.Length >= 2 && s[0] == '"' && s[s.Length - 1] == '"')
+                return s.Substring(1, s.Length - 2);
+            if (s.Length >= 2 && s[0] == '\'' && s[s.Length - 1] == '\'')
+                return s.Substring(1, s.Length - 2);
+            return s;
+        }
+        /// <summary>
+        /// Strip all non-alphanumeric characters from a string to produce clean tokens for semantic search.
+        /// Replaces any character that is not a Unicode letter or digit (including CJK punctuation) with a space.
+        /// </summary>
+        internal static string CleanStringData(string pattern)
+        {
+            if (string.IsNullOrEmpty(pattern))
+                return pattern;
+            // Replace any character that is not a Unicode letter (\p{L}) or digit (\p{N}) with space.
+            // This covers ASCII punctuation, CJK punctuation, and all other non-word characters.
+            string s = Regex.Replace(pattern, @"[^\p{L}\p{N}]", " ");
+            return Regex.Replace(s, @" {2,}", " ").Trim();
+        }
+        internal static bool HasApiErrorInfo => ApiErrorInfo.Length > 0;
+        internal static string GetApiErrorInfo() => ApiErrorInfo.ToString();
 
-        public static StringBuilder ApiErrorInfo
+        internal static StringBuilder ApiErrorInfo
         {
             get {
                 if (s_ApiErrorInfo == null) {
@@ -426,46 +926,64 @@ namespace DotNetLib
                 return s_ApiErrorInfo!;
             }
         }
-        public static void SetContext(IntPtr browser, IntPtr frame)
+        internal static void SetContext(IntPtr browser, IntPtr frame)
         {
             s_Browser = browser;
             s_Frame = frame;
         }
-        public static void SetLastContext(IntPtr browser, IntPtr frame)
+
+        //INativeApi explicit interface implementation(delegates to static methods)
+        string INativeApi.GetStringInLength(string str, int len, bool getTheEnd) => GetStringInLength(str, len, getTheEnd);
+        string INativeApi.QuoteString(string? value) => QuoteString(value);
+        string INativeApi.StripQuotes(string? s) => StripQuotes(s);
+
+        // IErrorReporter explicit interface implementation (delegates to static methods)
+        void IErrorReporter.ClearApiErrorInfo() => ClearApiErrorInfo();
+        void IErrorReporter.AppendApiErrorInfo(string msg) => AppendApiErrorInfo(msg);
+        void IErrorReporter.AppendApiErrorInfoLine(string msg) => AppendApiErrorInfoLine(msg);
+        void IErrorReporter.AppendApiErrorInfoFormat(string fmt, params object[] args) => AppendApiErrorInfoFormat(fmt, args);
+        void IErrorReporter.AppendApiErrorInfoFormatLine(string fmt, params object[] args) => AppendApiErrorInfoFormatLine(fmt, args);
+        bool IErrorReporter.HasApiErrorInfo => HasApiErrorInfo;
+        string IErrorReporter.GetApiErrorInfo() => GetApiErrorInfo();
+
+        // IDslEngine explicit interface implementation (delegates to static methods)
+        string IDslEngine.LoadDslFunc(string func, string code, IList<string> paramNames, bool update) => LoadDslFunc(func, code, paramNames, update);
+        string IDslEngine.CallDslFunc(string func, List<string> args) => CallDslFunc(func, args);
+        string IDslEngine.ExecuteMetaDslScript(string script) => CefDotnetAppApi.ExecuteMetaDslScript(script);
+        void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
+        void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
+
+        internal static void SetLastContext(IntPtr browser, IntPtr frame)
         {
             s_LastBrowser = browser;
             s_LastFrame = frame;
         }
-        public static void SetCommandLine(IntPtr command_line)
-        {
-            s_CommandLine = command_line;
-        }
-        public static nint Browser
+
+        internal static nint Browser
         {
             get => IntPtr.Zero != s_LastBrowser ? s_LastBrowser : s_Browser;
             set => s_Browser = value;
         }
-        public static nint Frame
+        internal static nint Frame
         {
             get => IntPtr.Zero != s_LastFrame ? s_LastFrame : s_Frame;
             set => s_Frame = value;
         }
-        public static int LastSourceProcessId { get => s_LastSourceProcessId; set => s_LastSourceProcessId = value; }
+        internal static int LastSourceProcessId { get => s_LastSourceProcessId; set => s_LastSourceProcessId = value; }
 
-        public bool HasSwitch(string name)
+        internal bool CommandLineHasSwitch(IntPtr commandLine, string name)
         {
-            if (s_CommandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineHasSwitchApi == null) {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineHasSwitchApi == null) {
                 return false;
             }
-            return m_CommandLineHasSwitchApi(s_CommandLine, name);
+            return m_CommandLineHasSwitchApi(commandLine, name);
         }
-
-        public string GetSwitchValue(string name)
+        internal string CommandLineGetSwitchValue(IntPtr commandLine, string name)
         {
-            if (s_CommandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineGetSwitchValueApi == null) {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineGetSwitchValueApi == null) {
                 return string.Empty;
             }
-            IntPtr resultPtr = m_CommandLineGetSwitchValueApi(s_CommandLine, name);
+            IntPtr resultPtr = m_CommandLineGetSwitchValueApi(commandLine, name);
             if (resultPtr == IntPtr.Zero) {
                 return string.Empty;
             }
@@ -476,39 +994,365 @@ namespace DotNetLib
                 m_FreeNativeStringApi?.Invoke(resultPtr);
             }
         }
-
-        public void AppendSwitch(string name)
+        internal void CommandLineAppendSwitch(IntPtr commandLine, string name)
         {
-            if (s_CommandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineAppendSwitchApi == null) {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineAppendSwitchApi == null) {
                 return;
             }
-            m_CommandLineAppendSwitchApi(s_CommandLine, name);
+            m_CommandLineAppendSwitchApi(commandLine, name);
         }
-
-        public void AppendSwitchWithValue(string name, string value)
+        internal void CommandLineAppendSwitchWithValue(IntPtr commandLine, string name, string value)
         {
-            if (s_CommandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineAppendSwitchWithValueApi == null) {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineAppendSwitchWithValueApi == null) {
                 return;
             }
-            m_CommandLineAppendSwitchWithValueApi(s_CommandLine, name, value ?? string.Empty);
+            m_CommandLineAppendSwitchWithValueApi(commandLine, name, value ?? string.Empty);
         }
-
-        public void RemoveSwitch(string name)
+        internal void CommandLineRemoveSwitch(IntPtr commandLine, string name)
         {
-            if (s_CommandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineRemoveSwitchApi == null) {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(name) || m_CommandLineRemoveSwitchApi == null) {
                 return;
             }
-            m_CommandLineRemoveSwitchApi(s_CommandLine, name);
+            m_CommandLineRemoveSwitchApi(commandLine, name);
+        }
+        internal bool CommandLineIsValid(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineIsValidApi == null) return false;
+            return m_CommandLineIsValidApi(commandLine);
+        }
+        internal bool CommandLineIsReadOnly(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineIsReadOnlyApi == null) return false;
+            return m_CommandLineIsReadOnlyApi(commandLine);
+        }
+        internal bool CommandLineHasSwitches(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineHasSwitchesApi == null) return false;
+            return m_CommandLineHasSwitchesApi(commandLine);
+        }
+        internal bool CommandLineHasArguments(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineHasArgumentsApi == null) return false;
+            return m_CommandLineHasArgumentsApi(commandLine);
+        }
+        internal string CommandLineGetProgram(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineGetProgramApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_CommandLineGetProgramApi(commandLine));
+        }
+        internal void CommandLineSetProgram(IntPtr commandLine, string program)
+        {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(program) || m_CommandLineSetProgramApi == null) return;
+            m_CommandLineSetProgramApi(commandLine, program);
+        }
+        internal string CommandLineGetCommandLineString(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineGetCommandLineStringApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_CommandLineGetCommandLineStringApi(commandLine));
+        }
+        internal string CommandLineGetArgv(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineGetArgvApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_CommandLineGetArgvApi(commandLine));
+        }
+        internal string CommandLineGetSwitches(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineGetSwitchesApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_CommandLineGetSwitchesApi(commandLine));
+        }
+        internal string CommandLineGetArguments(IntPtr commandLine)
+        {
+            if (commandLine == IntPtr.Zero || m_CommandLineGetArgumentsApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_CommandLineGetArgumentsApi(commandLine));
+        }
+        internal void CommandLineAppendArgument(IntPtr commandLine, string argument)
+        {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(argument) || m_CommandLineAppendArgumentApi == null) return;
+            m_CommandLineAppendArgumentApi(commandLine, argument);
+        }
+        internal void CommandLinePrependWrapper(IntPtr commandLine, string wrapper)
+        {
+            if (commandLine == IntPtr.Zero || string.IsNullOrEmpty(wrapper) || m_CommandLinePrependWrapperApi == null) return;
+            m_CommandLinePrependWrapperApi(commandLine, wrapper);
+        }
+        internal IntPtr CommandLineGetGlobal()
+        {
+            if (m_CommandLineGetGlobalApi == null) return IntPtr.Zero;
+            return m_CommandLineGetGlobalApi();
+        }
+        /// <summary>
+        /// Get a CommandLineProxy wrapping the global (read-only) CefCommandLine.
+        /// Only valid after CefInitialize has completed.
+        /// </summary>
+        public CommandLineProxy? GetGlobalCommandLine()
+        {
+            IntPtr ptr = CommandLineGetGlobal();
+            if (ptr == IntPtr.Zero) return null;
+            return new CommandLineProxy(ptr, this);
         }
 
-        internal void EnqueueNativeLog(string log)
+        // Helper: read a native string returned by C++ and free it
+        private string ReadAndFreeNativeString(IntPtr ptr)
         {
-            s_NativeLogQueue.Enqueue(log);
+            if (ptr == IntPtr.Zero) return string.Empty;
+            try {
+                return Marshal.PtrToStringUTF8(ptr) ?? string.Empty;
+            }
+            finally {
+                m_FreeNativeStringApi?.Invoke(ptr);
+            }
         }
 
-        internal void EnqueueJsLog(string log)
+        // --- Browser traversal ---
+        public int[] GetAllBrowserIds()
         {
-            s_JsLogQueue.Enqueue(log);
+            if (m_GetAllBrowserIdsApi == null) return Array.Empty<int>();
+            string raw = ReadAndFreeNativeString(m_GetAllBrowserIdsApi());
+            if (string.IsNullOrEmpty(raw)) return Array.Empty<int>();
+            var parts = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var result = new List<int>(parts.Length);
+            foreach (var p in parts) {
+                if (int.TryParse(p.Trim(), out int id)) result.Add(id);
+            }
+            return result.ToArray();
+        }
+        public IntPtr GetBrowserById(int browserId)
+        {
+            if (m_GetBrowserByIdApi == null) return IntPtr.Zero;
+            return m_GetBrowserByIdApi(browserId);
+        }
+        public void NotifyBrowserCreated(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_NotifyBrowserCreatedApi == null) return;
+            m_NotifyBrowserCreatedApi(browser);
+        }
+        public void NotifyBrowserDestroyed(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_NotifyBrowserDestroyedApi == null) return;
+            m_NotifyBrowserDestroyedApi(browser);
+        }
+
+        // --- Browser properties ---
+        public int BrowserGetId(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetIdApi == null) return 0;
+            return m_BrowserGetIdApi(browser);
+        }
+        public string BrowserGetUrl(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetUrlApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_BrowserGetUrlApi(browser));
+        }
+        public bool BrowserIsLoading(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserIsLoadingApi == null) return false;
+            return m_BrowserIsLoadingApi(browser);
+        }
+        public bool BrowserIsPopup(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserIsPopupApi == null) return false;
+            return m_BrowserIsPopupApi(browser);
+        }
+        public bool BrowserHasDocument(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserHasDocumentApi == null) return false;
+            return m_BrowserHasDocumentApi(browser);
+        }
+
+        // --- Browser frame access ---
+        public int BrowserGetFrameCount(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFrameCountApi == null) return 0;
+            return m_BrowserGetFrameCountApi(browser);
+        }
+        public string[] BrowserGetFrameIdentifiers(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFrameIdentifiersApi == null) return Array.Empty<string>();
+            string raw = ReadAndFreeNativeString(m_BrowserGetFrameIdentifiersApi(browser));
+            if (string.IsNullOrEmpty(raw)) return Array.Empty<string>();
+            return raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        }
+        public string[] BrowserGetFrameNames(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFrameNamesApi == null) return Array.Empty<string>();
+            string raw = ReadAndFreeNativeString(m_BrowserGetFrameNamesApi(browser));
+            if (string.IsNullOrEmpty(raw)) return Array.Empty<string>();
+            return raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        }
+        public IntPtr BrowserGetMainFrame(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetMainFrameApi == null) return IntPtr.Zero;
+            return m_BrowserGetMainFrameApi(browser);
+        }
+        public IntPtr BrowserGetFocusedFrame(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFocusedFrameApi == null) return IntPtr.Zero;
+            return m_BrowserGetFocusedFrameApi(browser);
+        }
+        public IntPtr BrowserGetFrameByIdentifier(IntPtr browser, string identifier)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFrameByIdentifierApi == null) return IntPtr.Zero;
+            return m_BrowserGetFrameByIdentifierApi(browser, identifier);
+        }
+        public IntPtr BrowserGetFrameByName(IntPtr browser, string name)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetFrameByNameApi == null) return IntPtr.Zero;
+            return m_BrowserGetFrameByNameApi(browser, name);
+        }
+
+        // --- Browser actions ---
+        public void BrowserReload(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserReloadApi == null) return;
+            m_BrowserReloadApi(browser);
+        }
+        public void BrowserReloadIgnoreCache(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserReloadIgnoreCacheApi == null) return;
+            m_BrowserReloadIgnoreCacheApi(browser);
+        }
+        public void BrowserStopLoad(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserStopLoadApi == null) return;
+            m_BrowserStopLoadApi(browser);
+        }
+
+        // --- Browser host actions ---
+        public void BrowserClose(IntPtr browser, bool forceClose = false)
+        {
+            if (browser == IntPtr.Zero || m_BrowserCloseApi == null) return;
+            m_BrowserCloseApi(browser, forceClose ? 1 : 0);
+        }
+        public void BrowserSetFocus(IntPtr browser, bool focus)
+        {
+            if (browser == IntPtr.Zero || m_BrowserSetFocusApi == null) return;
+            m_BrowserSetFocusApi(browser, focus ? 1 : 0);
+        }
+        public int BrowserGetOpenerId(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserGetOpenerIdApi == null) return 0;
+            return m_BrowserGetOpenerIdApi(browser);
+        }
+
+        // --- Frame properties ---
+        public string FrameGetUrl(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameGetUrlApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_FrameGetUrlApi(frame));
+        }
+        public string FrameGetName(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameGetNameApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_FrameGetNameApi(frame));
+        }
+        public string FrameGetIdentifier(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameGetIdentifierApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_FrameGetIdentifierApi(frame));
+        }
+        public bool FrameIsMain(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameIsMainApi == null) return false;
+            return m_FrameIsMainApi(frame);
+        }
+        public bool FrameIsValid(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameIsValidApi == null) return false;
+            return m_FrameIsValidApi(frame);
+        }
+        public bool FrameIsFocused(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameIsFocusedApi == null) return false;
+            return m_FrameIsFocusedApi(frame);
+        }
+        public IntPtr FrameGetParent(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameGetParentApi == null) return IntPtr.Zero;
+            return m_FrameGetParentApi(frame);
+        }
+        public IntPtr FrameGetBrowser(IntPtr frame)
+        {
+            if (frame == IntPtr.Zero || m_FrameGetBrowserApi == null) return IntPtr.Zero;
+            return m_FrameGetBrowserApi(frame);
+        }
+
+        // --- Frame actions ---
+        public void FrameLoadUrl(IntPtr frame, string url)
+        {
+            if (frame == IntPtr.Zero || string.IsNullOrEmpty(url) || m_FrameLoadUrlApi == null) return;
+            m_FrameLoadUrlApi(frame, url);
+        }
+
+        // --- CefRequest properties ---
+        public bool RequestIsReadOnly(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestIsReadOnlyApi == null) return true;
+            return m_RequestIsReadOnlyApi(request);
+        }
+        public string RequestGetUrl(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetUrlApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetUrlApi(request));
+        }
+        public string RequestGetMethod(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetMethodApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetMethodApi(request));
+        }
+        public string RequestGetReferrerUrl(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetReferrerUrlApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetReferrerUrlApi(request));
+        }
+        public int RequestGetReferrerPolicy(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetReferrerPolicyApi == null) return 0;
+            return m_RequestGetReferrerPolicyApi(request);
+        }
+        public string RequestGetHeaderMap(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetHeaderMapApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetHeaderMapApi(request));
+        }
+        public string RequestGetHeaderByName(IntPtr request, string name)
+        {
+            if (request == IntPtr.Zero || string.IsNullOrEmpty(name) || m_RequestGetHeaderByNameApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetHeaderByNameApi(request, name));
+        }
+        public int RequestGetFlags(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetFlagsApi == null) return 0;
+            return m_RequestGetFlagsApi(request);
+        }
+        public string RequestGetFirstPartyForCookies(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetFirstPartyForCookiesApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_RequestGetFirstPartyForCookiesApi(request));
+        }
+        public int RequestGetResourceType(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetResourceTypeApi == null) return 0;
+            return m_RequestGetResourceTypeApi(request);
+        }
+        public int RequestGetTransitionType(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetTransitionTypeApi == null) return 0;
+            return m_RequestGetTransitionTypeApi(request);
+        }
+        public ulong RequestGetIdentifier(IntPtr request)
+        {
+            if (request == IntPtr.Zero || m_RequestGetIdentifierApi == null) return 0;
+            return m_RequestGetIdentifierApi(request);
+        }
+
+        public void EnqueueMcpCallback(string serverId, string callbackTag, string result)
+        {
+            s_McpCallbackQueue.Enqueue(new Tuple<string, string, string>(serverId, callbackTag, result));
+        }
+
+        public void EnqueueLlmCallback(string providerId, string tag, string topic, string reply)
+        {
+            s_LlmCallbackQueue.Enqueue(new Tuple<string, string, string, string>(providerId, tag, topic, reply));
         }
 
         internal void HandleAllQueues(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
@@ -559,6 +1403,47 @@ namespace DotNetLib
                     }
                 }
             }
+
+            // Process MCP callback queue
+            if (m_SendCefMessageApi != null) {
+                while (s_McpCallbackQueue.TryDequeue(out var mcpItem)) {
+                    try {
+                        SendCefMessage("mcp_callback", new string[] { mcpItem.Item1, mcpItem.Item2, mcpItem.Item3 }, 0);
+                    }
+                    catch (Exception ex) {
+                        Lib.NativeLogNoLock($"[csharp] Error processing McpCallback queue: {ex.Message}");
+                    }
+                }
+                // Process LLM callback queue
+                while (s_LlmCallbackQueue.TryDequeue(out var llmItem)) {
+                    try {
+                        SendCefMessage("llm_callback", new string[] { llmItem.Item1, llmItem.Item2, llmItem.Item3, llmItem.Item4 }, 0);
+                    }
+                    catch (Exception ex) {
+                        Lib.NativeLogNoLock($"[csharp] Error processing LlmCallback queue: {ex.Message}");
+                    }
+                }
+            }
+        }
+
+        private void EnqueueNativeLog(string log)
+        {
+            s_NativeLogQueue.Enqueue(log);
+        }
+        private void EnqueueJsLog(string log)
+        {
+            s_JsLogQueue.Enqueue(log);
+        }
+        private void NativeLogImpl(string msg)
+        {
+            if (m_NativeLogApi == null) {
+                return;
+            }
+            m_NativeLogApi.Invoke(msg, Browser, Frame);
+        }
+        private void JavascriptLogImpl(string msg)
+        {
+            SendJavascriptCall("console.log", new string[] { msg });
         }
 
         private HostNativeLogDelegation? m_NativeLogApi;
@@ -572,6 +1457,71 @@ namespace DotNetLib
         private HostCommandLineAppendSwitchDelegation? m_CommandLineAppendSwitchApi;
         private HostCommandLineAppendSwitchWithValueDelegation? m_CommandLineAppendSwitchWithValueApi;
         private HostCommandLineRemoveSwitchDelegation? m_CommandLineRemoveSwitchApi;
+        // CommandLine extended
+        private HostCommandLineIsValidDelegation? m_CommandLineIsValidApi;
+        private HostCommandLineIsReadOnlyDelegation? m_CommandLineIsReadOnlyApi;
+        private HostCommandLineHasSwitchesDelegation? m_CommandLineHasSwitchesApi;
+        private HostCommandLineHasArgumentsDelegation? m_CommandLineHasArgumentsApi;
+        private HostCommandLineGetProgramDelegation? m_CommandLineGetProgramApi;
+        private HostCommandLineSetProgramDelegation? m_CommandLineSetProgramApi;
+        private HostCommandLineGetCommandLineStringDelegation? m_CommandLineGetCommandLineStringApi;
+        private HostCommandLineGetArgvDelegation? m_CommandLineGetArgvApi;
+        private HostCommandLineGetSwitchesDelegation? m_CommandLineGetSwitchesApi;
+        private HostCommandLineGetArgumentsDelegation? m_CommandLineGetArgumentsApi;
+        private HostCommandLineAppendArgumentDelegation? m_CommandLineAppendArgumentApi;
+        private HostCommandLinePrependWrapperDelegation? m_CommandLinePrependWrapperApi;
+        private HostCommandLineGetGlobalDelegation? m_CommandLineGetGlobalApi;
+        // Browser traversal
+        private HostGetAllBrowserIdsDelegation? m_GetAllBrowserIdsApi;
+        private HostGetBrowserByIdDelegation? m_GetBrowserByIdApi;
+        private HostNotifyBrowserCreatedDelegation? m_NotifyBrowserCreatedApi;
+        private HostNotifyBrowserDestroyedDelegation? m_NotifyBrowserDestroyedApi;
+        // Browser properties
+        private HostBrowserGetIdDelegation? m_BrowserGetIdApi;
+        private HostBrowserGetUrlDelegation? m_BrowserGetUrlApi;
+        private HostBrowserIsLoadingDelegation? m_BrowserIsLoadingApi;
+        private HostBrowserIsPopupDelegation? m_BrowserIsPopupApi;
+        private HostBrowserHasDocumentDelegation? m_BrowserHasDocumentApi;
+        // Browser frame access
+        private HostBrowserGetFrameCountDelegation? m_BrowserGetFrameCountApi;
+        private HostBrowserGetFrameIdentifiersDelegation? m_BrowserGetFrameIdentifiersApi;
+        private HostBrowserGetFrameNamesDelegation? m_BrowserGetFrameNamesApi;
+        private HostBrowserGetMainFrameDelegation? m_BrowserGetMainFrameApi;
+        private HostBrowserGetFocusedFrameDelegation? m_BrowserGetFocusedFrameApi;
+        private HostBrowserGetFrameByIdentifierDelegation? m_BrowserGetFrameByIdentifierApi;
+        private HostBrowserGetFrameByNameDelegation? m_BrowserGetFrameByNameApi;
+        // Browser actions
+        private HostBrowserReloadDelegation? m_BrowserReloadApi;
+        private HostBrowserReloadIgnoreCacheDelegation? m_BrowserReloadIgnoreCacheApi;
+        private HostBrowserStopLoadDelegation? m_BrowserStopLoadApi;
+        // Browser host actions
+        private HostBrowserCloseDelegation? m_BrowserCloseApi;
+        private HostBrowserSetFocusDelegation? m_BrowserSetFocusApi;
+        private HostBrowserGetOpenerIdDelegation? m_BrowserGetOpenerIdApi;
+        // Frame properties
+        private HostFrameGetUrlDelegation? m_FrameGetUrlApi;
+        private HostFrameGetNameDelegation? m_FrameGetNameApi;
+        private HostFrameGetIdentifierDelegation? m_FrameGetIdentifierApi;
+        private HostFrameIsMainDelegation? m_FrameIsMainApi;
+        private HostFrameIsValidDelegation? m_FrameIsValidApi;
+        private HostFrameIsFocusedDelegation? m_FrameIsFocusedApi;
+        private HostFrameGetParentDelegation? m_FrameGetParentApi;
+        private HostFrameGetBrowserDelegation? m_FrameGetBrowserApi;
+        // Frame actions
+        private HostFrameLoadUrlDelegation? m_FrameLoadUrlApi;
+        // CefRequest properties
+        private HostRequestIsReadOnlyDelegation? m_RequestIsReadOnlyApi;
+        private HostRequestGetUrlDelegation? m_RequestGetUrlApi;
+        private HostRequestGetMethodDelegation? m_RequestGetMethodApi;
+        private HostRequestGetReferrerUrlDelegation? m_RequestGetReferrerUrlApi;
+        private HostRequestGetReferrerPolicyDelegation? m_RequestGetReferrerPolicyApi;
+        private HostRequestGetHeaderMapDelegation? m_RequestGetHeaderMapApi;
+        private HostRequestGetHeaderByNameDelegation? m_RequestGetHeaderByNameApi;
+        private HostRequestGetFlagsDelegation? m_RequestGetFlagsApi;
+        private HostRequestGetFirstPartyForCookiesDelegation? m_RequestGetFirstPartyForCookiesApi;
+        private HostRequestGetResourceTypeDelegation? m_RequestGetResourceTypeApi;
+        private HostRequestGetTransitionTypeDelegation? m_RequestGetTransitionTypeApi;
+        private HostRequestGetIdentifierDelegation? m_RequestGetIdentifierApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -584,24 +1534,208 @@ namespace DotNetLib
         [ThreadStatic]
         private static int s_LastSourceProcessId = -1;
         [ThreadStatic]
-        private static IntPtr s_CommandLine = IntPtr.Zero;
-        [ThreadStatic]
         private static StringBuilder? s_ApiErrorInfo = null;
 
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_NativeLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JsLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JavascriptCodeQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>> s_JavascriptFuncQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>>();
+        // McpCallback queue: (serverId, callbackTag, result)
+        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string>> s_McpCallbackQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string>>();
+        // LlmCallback queue: (providerId, tag, topic, reply)
+        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string, string>> s_LlmCallbackQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string, string>>();
 
         private const int c_max_path_length = 1024;
         private const int c_max_info_length = 4096;
     }
-    public static class Lib
+
+    /// <summary>
+    /// Proxy wrapper for a native CefBrowser pointer.
+    /// The pointer is valid only within the current call stack; do not store long-term.
+    /// </summary>
+    public class BrowserProxy
+    {
+        private readonly IntPtr m_Browser;
+        private readonly NativeApi m_Api;
+
+        public BrowserProxy(IntPtr browser, NativeApi api)
+        {
+            m_Browser = browser;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_Browser;
+        public bool IsValid => m_Browser != IntPtr.Zero;
+
+        public int Id => m_Api.BrowserGetId(m_Browser);
+        public string Url => m_Api.BrowserGetUrl(m_Browser);
+        public bool IsLoading => m_Api.BrowserIsLoading(m_Browser);
+        public bool IsPopup => m_Api.BrowserIsPopup(m_Browser);
+        public bool HasDocument => m_Api.BrowserHasDocument(m_Browser);
+        public int FrameCount => m_Api.BrowserGetFrameCount(m_Browser);
+        public int OpenerId => m_Api.BrowserGetOpenerId(m_Browser);
+
+        public string[] GetFrameIdentifiers() => m_Api.BrowserGetFrameIdentifiers(m_Browser);
+        public string[] GetFrameNames() => m_Api.BrowserGetFrameNames(m_Browser);
+
+        public FrameProxy? GetMainFrame()
+        {
+            var ptr = m_Api.BrowserGetMainFrame(m_Browser);
+            return ptr != IntPtr.Zero ? new FrameProxy(ptr, m_Api) : null;
+        }
+        public FrameProxy? GetFocusedFrame()
+        {
+            var ptr = m_Api.BrowserGetFocusedFrame(m_Browser);
+            return ptr != IntPtr.Zero ? new FrameProxy(ptr, m_Api) : null;
+        }
+        public FrameProxy? GetFrameByIdentifier(string identifier)
+        {
+            var ptr = m_Api.BrowserGetFrameByIdentifier(m_Browser, identifier);
+            return ptr != IntPtr.Zero ? new FrameProxy(ptr, m_Api) : null;
+        }
+        public FrameProxy? GetFrameByName(string name)
+        {
+            var ptr = m_Api.BrowserGetFrameByName(m_Browser, name);
+            return ptr != IntPtr.Zero ? new FrameProxy(ptr, m_Api) : null;
+        }
+
+        public void Reload() => m_Api.BrowserReload(m_Browser);
+        public void ReloadIgnoreCache() => m_Api.BrowserReloadIgnoreCache(m_Browser);
+        public void StopLoad() => m_Api.BrowserStopLoad(m_Browser);
+        public void Close(bool forceClose = false) => m_Api.BrowserClose(m_Browser, forceClose);
+        public void SetFocus(bool focus) => m_Api.BrowserSetFocus(m_Browser, focus);
+    }
+
+    /// <summary>
+    /// Proxy wrapper for a native CefFrame pointer.
+    /// The pointer is valid only within the current call stack; do not store long-term.
+    /// </summary>
+    public class FrameProxy
+    {
+        private readonly IntPtr m_Frame;
+        private readonly NativeApi m_Api;
+
+        public FrameProxy(IntPtr frame, NativeApi api)
+        {
+            m_Frame = frame;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_Frame;
+        public bool IsValid => m_Api.FrameIsValid(m_Frame);
+        public bool IsMain => m_Api.FrameIsMain(m_Frame);
+        public bool IsFocused => m_Api.FrameIsFocused(m_Frame);
+        public string Url => m_Api.FrameGetUrl(m_Frame);
+        public string Name => m_Api.FrameGetName(m_Frame);
+        public string Identifier => m_Api.FrameGetIdentifier(m_Frame);
+
+        public FrameProxy? GetParent()
+        {
+            var ptr = m_Api.FrameGetParent(m_Frame);
+            return ptr != IntPtr.Zero ? new FrameProxy(ptr, m_Api) : null;
+        }
+        public BrowserProxy? GetBrowser()
+        {
+            var ptr = m_Api.FrameGetBrowser(m_Frame);
+            return ptr != IntPtr.Zero ? new BrowserProxy(ptr, m_Api) : null;
+        }
+
+        public void LoadUrl(string url) => m_Api.FrameLoadUrl(m_Frame, url);
+    }
+
+    /// <summary>
+    /// Proxy wrapper for a native CefRequest pointer.
+    /// The pointer is valid only within the current call stack; do not store long-term.
+    /// </summary>
+    public class CefRequestProxy
+    {
+        private readonly IntPtr m_Request;
+        private readonly NativeApi m_Api;
+
+        public CefRequestProxy(IntPtr request, NativeApi api)
+        {
+            m_Request = request;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_Request;
+        public bool IsReadOnly => m_Api.RequestIsReadOnly(m_Request);
+        public string Url => m_Api.RequestGetUrl(m_Request);
+        public string Method => m_Api.RequestGetMethod(m_Request);
+        public string ReferrerUrl => m_Api.RequestGetReferrerUrl(m_Request);
+        public int ReferrerPolicy => m_Api.RequestGetReferrerPolicy(m_Request);
+        /// <summary>
+        /// Get header map as newline-separated "key:value" pairs (split by first ':').
+        /// </summary>
+        public string HeaderMap => m_Api.RequestGetHeaderMap(m_Request);
+        public string GetHeaderByName(string name) => m_Api.RequestGetHeaderByName(m_Request, name);
+        public int Flags => m_Api.RequestGetFlags(m_Request);
+        public string FirstPartyForCookies => m_Api.RequestGetFirstPartyForCookies(m_Request);
+        public int ResourceType => m_Api.RequestGetResourceType(m_Request);
+        public int TransitionType => m_Api.RequestGetTransitionType(m_Request);
+        public ulong Identifier => m_Api.RequestGetIdentifier(m_Request);
+    }
+
+    /// <summary>
+    /// Proxy wrapper for a native CefCommandLine pointer.
+    /// Passed as parameter during OnBeforeCommandLineProcessing / OnBeforeChildProcessLaunch callbacks,
+    /// or obtained via GetGlobalCommandLine() for the read-only global instance (after CefInitialize).
+    /// </summary>
+    public class CommandLineProxy
+    {
+        private readonly IntPtr m_CommandLine;
+        private readonly NativeApi m_Api;
+
+        public CommandLineProxy(IntPtr commandLine, NativeApi api)
+        {
+            m_CommandLine = commandLine;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_CommandLine;
+        public bool IsValid => m_Api.CommandLineIsValid(m_CommandLine);
+        public bool IsReadOnly => m_Api.CommandLineIsReadOnly(m_CommandLine);
+        public bool HasSwitches => m_Api.CommandLineHasSwitches(m_CommandLine);
+        public bool HasArguments => m_Api.CommandLineHasArguments(m_CommandLine);
+        public string Program
+        {
+            get => m_Api.CommandLineGetProgram(m_CommandLine);
+            set => m_Api.CommandLineSetProgram(m_CommandLine, value);
+        }
+        public string CommandLineString => m_Api.CommandLineGetCommandLineString(m_CommandLine);
+
+        public bool HasSwitch(string name) => m_Api.CommandLineHasSwitch(m_CommandLine, name);
+        public string GetSwitchValue(string name) => m_Api.CommandLineGetSwitchValue(m_CommandLine, name);
+        public void AppendSwitch(string name) => m_Api.CommandLineAppendSwitch(m_CommandLine, name);
+        public void AppendSwitchWithValue(string name, string value) => m_Api.CommandLineAppendSwitchWithValue(m_CommandLine, name, value);
+        public void RemoveSwitch(string name) => m_Api.CommandLineRemoveSwitch(m_CommandLine, name);
+
+        /// <summary>
+        /// Get the original command line string as a newline-separated list.
+        /// </summary>
+        public string GetArgv() => m_Api.CommandLineGetArgv(m_CommandLine);
+        /// <summary>
+        /// Get all switches as key=value pairs separated by newline.
+        /// </summary>
+        public string GetSwitches() => m_Api.CommandLineGetSwitches(m_CommandLine);
+        /// <summary>
+        /// Get non-switch arguments as a newline-separated list.
+        /// </summary>
+        public string GetArguments() => m_Api.CommandLineGetArguments(m_CommandLine);
+        public void AppendArgument(string argument) => m_Api.CommandLineAppendArgument(m_CommandLine, argument);
+        public void PrependWrapper(string wrapper) => m_Api.CommandLinePrependWrapper(m_CommandLine, wrapper);
+    }
+
+    internal static class Lib
     {
         [UnmanagedCallersOnly]
-        public static int RegisterApi(IntPtr apis)
+        internal static int RegisterApi(IntPtr apis)
         {
             s_NativeApi = new NativeApi(apis);
+            // Initialize the AgentFrameworkService singleton with concrete implementations
+            AgentFrameworkService.Instance.SetNativeApi(s_NativeApi);
+            AgentFrameworkService.Instance.SetErrorReporter(s_NativeApi);
+            AgentFrameworkService.Instance.SetDslEngine(s_NativeApi);
             //We must load AgentCore's dependencies before loading AgentCore itself.
             PrepareBatchScript();
             return 0;
@@ -622,22 +1756,40 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnBeforeCommandLineProcessingDelegation(int process_type, IntPtr command_line);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnBeforeChildProcessLaunchDelegation(int process_type, IntPtr command_line);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnAlreadyRunningAppRelaunchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string current_directory);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRenderProcessTerminatedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string startup_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int status, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_string);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, bool is_main);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, bool is_main);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnRendererLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, bool is_main, IntPtr js_code, ref int code_size);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnRendererLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, bool is_loading, bool can_go_back, bool can_go_forward);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnRendererLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveJsMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
 
-        public static void OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
+        internal static void OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
-
+            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeLogNoLock("[csharp] Init CommandLine: " + cmd_line);
             NativeLogNoLock("[csharp] Init BasePath: " + path);
             NativeLogNoLock("[csharp] Init AppDir: " + app_dir);
@@ -657,40 +1809,23 @@ namespace DotNetLib
                     if ((int)CefProcessType.RendererProcess == process_type) {
                         // Before loading the DSL script, we must register all APIs.
 
-                        // Register assembly resolve event handler before loading AgentCore
-                        // This ensures that assembly dependencies are loaded from the correct location
-                        AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
-
-                        // Only load AgentCore and hot reload manager in renderer process
-                        // Load AgentCore plugin
-                        bool loadSuccess = LoadAgentPlugin();
-                        if (loadSuccess && s_AgentPlugin != null) {
+                        var framework = AgentFrameworkService.Instance;
+                        // Load AgentCore and hot reload manager in renderer process
+                        bool loadSuccess = framework.LoadAgentPlugin(s_BasePath, s_AppDir, s_IsMac);
+                        if (loadSuccess) {
                             NativeLogNoLock("[csharp] AgentPlugin loaded successfully");
-
-                            // Set native API for the plugin
-                            s_AgentPlugin.SetNativeApi(s_NativeApi);
-                            NativeLogNoLock("[csharp] NativeApi set successfully for AgentPlugin");
-
-                            // Initialize hot reload manager
-                            if (s_HotReloadManager == null) {
-                                s_HotReloadManager = new HotReloadManager(s_BasePath);
-                                s_HotReloadManager.SetCallback(OnFileChanged);
-                                s_HotReloadManager.StartWatching();
-                                NativeLogNoLock("[csharp] Hot reload manager started in renderer process");
-                            }
                         }
                         else {
                             NativeLogNoLock("[csharp] Warning: AgentPlugin loading failed, agent features will not be available");
                         }
                     }
 
+                    if(TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
+                        s_DslScriptFile = switchValue;
+                        s_DslScriptFileChanged = true;
+                        NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_DslScriptFile));
+                    }
                     TryLoadDSL();
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -701,7 +1836,7 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
-        public static void OnFinalize()
+        internal static void OnFinalize()
         {
             NativeLogNoLock("[csharp] Finalize");
 
@@ -711,12 +1846,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_finalize");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -727,20 +1856,20 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
 
-            if (null != s_AgentPlugin) {
-                s_AgentPlugin.Shutdown();
-            }
+            AgentFrameworkService.Instance.ShutdownPlugin();
 
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.LastSourceProcessId = -1;
         }
 
-        public static void OnBrowserInit(IntPtr browser)
+        internal static void OnBrowserInit(IntPtr browser)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
+            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, IntPtr.Zero);
             NativeLogNoLock("[csharp] Browser Init");
+            s_NativeApi?.NotifyBrowserCreated(browser);
 
             try {
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_init"));
@@ -748,12 +1877,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_init");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -765,7 +1888,7 @@ namespace DotNetLib
             }
         }
 
-        public static void OnBrowserFinalize(IntPtr browser)
+        internal static void OnBrowserFinalize(IntPtr browser)
         {
             NativeApi.SetContext(browser, IntPtr.Zero);
             NativeLogNoLock("[csharp] Browser Finalize");
@@ -776,12 +1899,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -792,12 +1909,13 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
 
+            s_NativeApi?.NotifyBrowserDestroyed(browser);
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.LastSourceProcessId = -1;
         }
 
-        public static bool OnBrowserHotReloadCopyFiles(string url)
+        internal static bool OnBrowserHotReloadCopyFiles(string url)
         {
             NativeLogNoLock("[csharp] Browser Hot Reload Copy Files, url: " + url);
 
@@ -819,7 +1937,7 @@ namespace DotNetLib
             return false;
         }
 
-        public static void OnBrowserHotReloadCompleted(IntPtr browser, IntPtr frame, string url)
+        internal static void OnBrowserHotReloadCompleted(IntPtr browser, IntPtr frame, string url)
         {
             NativeApi.SetContext(browser, frame);
             NativeLogNoLock("[csharp] Browser Hot Reload Completed, url: " + url);
@@ -830,12 +1948,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_completed", url);
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -847,10 +1959,10 @@ namespace DotNetLib
             }
         }
 
-        public static int OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent)
+        internal static int OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}", query_id, request, persistent));
+            NativeLogNoLock(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}", query_id, GetStringInLength(request), persistent));
 
             try {
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_cef_query"));
@@ -858,12 +1970,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_cef_query", query_id, request, persistent);
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -877,10 +1983,12 @@ namespace DotNetLib
             return -1;
         }
 
-        public static void OnRendererInit(IntPtr browser, IntPtr frame, string url)
+        internal static void OnRendererInit(IntPtr browser, IntPtr frame, string url)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
+            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, frame);
+            s_StartupUrl = url;
 
             NativeLogNoLock($"[csharp] Renderer Init, url={url}");
 
@@ -890,13 +1998,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-                    BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.From(url));
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.FromString(url));
                     BatchCommand.BatchScript.Call("on_renderer_init", vargs);
@@ -908,7 +2009,7 @@ namespace DotNetLib
             }
         }
 
-        public static void OnRendererFinalize(IntPtr browser, IntPtr frame)
+        internal static void OnRendererFinalize(IntPtr browser, IntPtr frame)
         {
             NativeApi.SetContext(browser, frame);
             NativeLogNoLock("[csharp] Renderer Finalize");
@@ -919,12 +2020,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     BoxedValue r = BatchCommand.BatchScript.Call("on_renderer_finalize");
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
@@ -940,22 +2035,38 @@ namespace DotNetLib
             NativeApi.LastSourceProcessId = -1;
         }
 
-        public static bool OnLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size)
+        internal static void OnLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
         {
             NativeApi.SetLastContext(browser, frame);
+            NativeLogNoLock($"[csharp] OnLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(url));
+                    vargs.Add(BoxedValue.From(transition_type));
+                    vargs.Add(BoxedValue.FromBool(is_main));
+                    BatchCommand.BatchScript.Call("on_load_start", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnLoadStart:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static bool OnLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size)
+        {
+            NativeApi.SetLastContext(browser, frame);
+            s_LoadedUrl = url;
             NativeLogNoLock($"[csharp] OnLoadEnd: url={url}, http_status_code={http_status_code}, inject_all_frame={inject_all_frame}, is_main={is_main}");
 
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-                    BatchCommand.BatchScript.SetGlobalVariable("loadedurl", BoxedValue.FromString(url));
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.FromString(url));
                     vargs.Add(BoxedValue.From(http_status_code));
@@ -1003,7 +2114,7 @@ namespace DotNetLib
             return false;
         }
 
-        public static void OnLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
+        internal static void OnLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
         {
             NativeApi.SetLastContext(browser, frame);
             NativeLogNoLock($"[csharp] OnLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
@@ -1012,12 +2123,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.FromString(url ?? ""));
                     vargs.Add(BoxedValue.From(is_loading));
@@ -1032,7 +2137,7 @@ namespace DotNetLib
             }
         }
 
-        public static void OnLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
+        internal static void OnLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
         {
             NativeApi.SetLastContext(browser, frame);
             NativeLogNoLock($"[csharp] OnLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
@@ -1041,12 +2146,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(error_code));
                     vargs.Add(BoxedValue.FromString(error_text));
@@ -1060,7 +2159,129 @@ namespace DotNetLib
             }
         }
 
-        public static void OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string)
+        internal static void OnRendererLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
+        {
+            NativeApi.SetLastContext(browser, frame);
+            NativeLogNoLock($"[csharp] OnRendererLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(url));
+                    vargs.Add(BoxedValue.From(transition_type));
+                    vargs.Add(BoxedValue.FromBool(is_main));
+                    BatchCommand.BatchScript.Call("on_renderer_load_start", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnRendererLoadStart:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static bool OnRendererLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool is_main, IntPtr js_code, ref int code_size)
+        {
+            NativeApi.SetLastContext(browser, frame);
+            NativeLogNoLock($"[csharp] OnRendererLoadEnd: url={url}, http_status_code={http_status_code}, is_main={is_main}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(url));
+                    vargs.Add(BoxedValue.From(http_status_code));
+                    vargs.Add(BoxedValue.FromBool(is_main));
+                    var r = BatchCommand.BatchScript.Call("on_renderer_load_end", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    if (!r.IsNullObject) {
+                        NativeLogNoLock($"[csharp] on_renderer_load_end result type: {r.Type}");
+
+                        if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                            var tuple = r.GetTuple2();
+                            if (null != tuple) {
+                                bool useCustomCode = tuple.Item1.GetBool();
+                                string jsCode = tuple.Item2.GetString();
+
+                                NativeLogNoLock($"[csharp] on_renderer_load_end returned: useCustomCode={useCustomCode}, jsCode.Length={jsCode?.Length ?? 0}");
+
+                                if (useCustomCode) {
+                                    if (string.IsNullOrEmpty(jsCode)) {
+                                        code_size = 0;
+                                        return true;
+                                    }
+                                    else {
+                                        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(jsCode);
+                                        if (bytes.Length < code_size) {
+                                            Marshal.Copy(bytes, 0, js_code, bytes.Length);
+                                            code_size = bytes.Length;
+                                            return true;
+                                        }
+                                        else {
+                                            NativeLogNoLock($"[csharp] Renderer JS code too large: {bytes.Length} >= {code_size}");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnRendererLoadEnd:" + e.Message + "\n" + e.StackTrace);
+            }
+
+            return false;
+        }
+
+        internal static void OnRendererLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
+        {
+            NativeApi.SetLastContext(browser, frame);
+            NativeLogNoLock($"[csharp] OnRendererLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(url ?? ""));
+                    vargs.Add(BoxedValue.From(is_loading));
+                    vargs.Add(BoxedValue.From(can_go_back));
+                    vargs.Add(BoxedValue.From(can_go_forward));
+                    BatchCommand.BatchScript.Call("on_renderer_loading_state_change", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnRendererLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static void OnRendererLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
+        {
+            NativeApi.SetLastContext(browser, frame);
+            NativeLogNoLock($"[csharp] OnRendererLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(error_code));
+                    vargs.Add(BoxedValue.FromString(error_text));
+                    vargs.Add(BoxedValue.FromString(failed_url));
+                    BatchCommand.BatchScript.Call("on_renderer_load_error", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnRendererLoadError:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static void OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string)
         {
             NativeApi.SetLastContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRenderProcessTerminated: startup_url={startup_url}, url={url}, status={status}, error_code={error_code}, error_string={error_string}");
@@ -1069,12 +2290,6 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.FromString(startup_url));
                     vargs.Add(BoxedValue.FromString(url));
@@ -1090,23 +2305,18 @@ namespace DotNetLib
             }
         }
 
-        public static void OnBeforeCommandLineProcessing(int process_type, IntPtr command_line)
+        internal static void OnBeforeCommandLineProcessing(int process_type, IntPtr command_line)
         {
-            NativeApi.SetCommandLine(command_line);
             NativeLogNoLock($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                    BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                    BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                    BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                    BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                    BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
+                    var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(process_type));
+                    vargs.Add(BoxedValue.From(cmdLineProxy));
                     BatchCommand.BatchScript.Call("on_before_command_line_processing", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                 }
@@ -1114,11 +2324,121 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnBeforeCommandLineProcessing:" + e.Message + "\n" + e.StackTrace);
             }
-
-            NativeApi.SetCommandLine(IntPtr.Zero);
         }
 
-        public static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
+        internal static void OnBeforeChildProcessLaunch(int process_type, IntPtr command_line)
+        {
+            NativeLogNoLock($"[csharp] OnBeforeChildProcessLaunch process_type={process_type}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(process_type));
+                    vargs.Add(BoxedValue.From(cmdLineProxy));
+                    BatchCommand.BatchScript.Call("on_before_child_process_launch", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnBeforeChildProcessLaunch:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static bool OnAlreadyRunningAppRelaunch(IntPtr command_line, string current_directory)
+        {
+            NativeLogNoLock($"[csharp] OnAlreadyRunningAppRelaunch current_directory={current_directory}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(cmdLineProxy));
+                    vargs.Add(BoxedValue.FromString(current_directory ?? ""));
+                    var r = BatchCommand.BatchScript.Call("on_already_running_app_relaunch", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    return r.GetBool();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnAlreadyRunningAppRelaunch:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+
+        internal static bool OnBeforeBrowse(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value)
+        {
+            NativeApi.SetLastContext(browser, frame);
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(user_gesture));
+                    vargs.Add(BoxedValue.From(is_redirect));
+                    var r = BatchCommand.BatchScript.Call("on_before_browse", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    // Return value convention: (handled, return_value)
+                    // If handled is true, out_return_value is set and we return true
+                    if (!r.IsNullObject) {
+                        var list = r.GetObject() as IList<BoxedValue>;
+                        if (list != null && list.Count >= 2) {
+                            bool handled = list[0].GetBool();
+                            if (handled) {
+                                out_return_value = list[1].GetBool();
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnBeforeBrowse:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+
+        internal static bool OnBeforeResourceLoad(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value)
+        {
+            NativeApi.SetLastContext(browser, frame);
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    var r = BatchCommand.BatchScript.Call("on_before_resource_load", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    // Return value convention: (handled, return_value_int)
+                    // If handled is true, out_return_value is set and we return true
+                    if (!r.IsNullObject) {
+                        var list = r.GetObject() as IList<BoxedValue>;
+                        if (list != null && list.Count >= 2) {
+                            bool handled = list[0].GetBool();
+                            if (handled) {
+                                out_return_value = list[1].GetInt();
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+
+        internal static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
         {
             string[] argArray = new string[argCount];
             for (int i = 0; i < argCount; i++) {
@@ -1128,7 +2448,7 @@ namespace DotNetLib
             OnReceiveCefMessage(msg, new List<string>(argArray), browser, frame, source_process_id);
         }
 
-        public static void OnReceiveJsMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame)
+        internal static void OnReceiveJsMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame)
         {
             string[] argArray = new string[argCount];
             for (int i = 0; i < argCount; i++) {
@@ -1138,7 +2458,7 @@ namespace DotNetLib
             OnReceiveJsMessage(msg, new List<string>(argArray), browser, frame);
         }
 
-        public static bool OnExecuteMetaDSL(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
+        internal static bool OnExecuteMetaDSL(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
         {
             string[] argArray = new string[argCount];
             for (int i = 0; i < argCount; i++) {
@@ -1164,7 +2484,7 @@ namespace DotNetLib
             return true;
         }
 
-        public static string OnExecuteMetaDSL(List<string> args, IntPtr browser, IntPtr frame)
+        internal static string OnExecuteMetaDSL(List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
                 NativeApi.SetLastContext(browser, frame);
@@ -1190,25 +2510,20 @@ namespace DotNetLib
             return string.Empty;
         }
 
-        public static void OnReceiveCefMessage(string msg, List<string> args, IntPtr browser, IntPtr frame, int source_process_id)
+        internal static void OnReceiveCefMessage(string msg, List<string> args, IntPtr browser, IntPtr frame, int source_process_id)
         {
             lock (s_Lock) {
                 NativeApi.SetLastContext(browser, frame);
                 NativeApi.LastSourceProcessId = source_process_id;
 
                 try {
-                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, string.Join(",", args), source_process_id, s_ProcessType));
+                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, GetStringInLength(args), source_process_id, s_ProcessType));
 
                     if (null != s_NativeApi) {
+                        TryLoadDSL();
 
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                        BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                        BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                        BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-                        BatchCommand.BatchScript.SetGlobalVariable("sourceprocessid", BoxedValue.From(source_process_id));
                         var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                        vargs.Add(BoxedValue.From(source_process_id));
                         vargs.Add(BoxedValue.FromString(msg));
                         foreach (var arg in args) {
                             vargs.Add(BoxedValue.FromString(arg));
@@ -1226,24 +2541,19 @@ namespace DotNetLib
             }
         }
 
-        public static void OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
+        internal static void OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
                 NativeApi.SetLastContext(browser, frame);
 
                 try {
-                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1} process type:{2}", msg, string.Join(",", args), s_ProcessType));
+                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1} process type:{2}", msg, GetStringInLength(args), s_ProcessType));
 
                     if (null != s_NativeApi) {
+                        TryLoadDSL();
 
-                        BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
-                        BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
-                        BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
-                        BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
-                        BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
-                        BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-                        BatchCommand.BatchScript.SetGlobalVariable("sourceprocessid", BoxedValue.From(NativeApi.LastSourceProcessId));
                         var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                        vargs.Add(BoxedValue.From(NativeApi.LastSourceProcessId));
                         vargs.Add(BoxedValue.FromString(msg));
                         foreach (var arg in args) {
                             vargs.Add(BoxedValue.FromString(arg));
@@ -1261,40 +2571,54 @@ namespace DotNetLib
             }
         }
 
-        public static string BasePath
+        internal static string BasePath
         {
             get {
                 return s_BasePath;
             }
         }
 
-        public static IAgentPlugin? AgentPlugin
+        internal static string AppDir
         {
             get {
-                return s_AgentPlugin;
+                return s_AppDir;
             }
         }
 
-        public static int MainThreadId
+        internal static bool IsMac
+        {
+            get {
+                return s_IsMac;
+            }
+        }
+
+        internal static IAgentPlugin? AgentPlugin
+        {
+            get {
+                return AgentFrameworkService.Instance.AgentPlugin;
+            }
+        }
+
+        internal static int MainThreadId
         {
             get {
                 return s_MainThreadId;
             }
         }
 
-        public static void NativeLog(string msg)
+        internal static void NativeLog(string msg)
         {
             lock (s_Lock) {
                 NativeLogNoLock(msg);
             }
         }
-        public static void JsLog(string msg)
+        internal static void JsLog(string msg)
         {
             lock (s_Lock) {
                 JsLogNoLock(msg);
             }
         }
-        public static void HandleThreadQueue(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
+        internal static void HandleThreadQueue(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
         {
             bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
             if (isMainThread && null != s_NativeApi) {
@@ -1304,341 +2628,50 @@ namespace DotNetLib
         internal static void NativeLogNoLock(string msg)
         {
             if (null != s_NativeApi) {
-                bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
-                string txt = string.Format("thread:{0} {1}{2}: {3}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty, msg);
-                //Console.WriteLine(txt);
-                var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines) {
-                    if (isMainThread) {
-                        s_NativeApi.NativeLog(line);
-                    }
-                    else {
-                        s_NativeApi.EnqueueNativeLog(line);
-                    }
-                }
+                s_NativeApi.NativeLog(msg);
             }
         }
         internal static void JsLogNoLock(string msg)
         {
             if (null != s_NativeApi) {
-                bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
-                string txt = string.Format("thread:{0} {1}{2}: {3}", Thread.CurrentThread.ManagedThreadId, Thread.CurrentThread.Name, isMainThread ? "(main)" : string.Empty, msg);
-                //Console.WriteLine(txt);
-                var lines = txt.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var line in lines) {
-                    if (isMainThread) {
-                        s_NativeApi.JavascriptLog(line);
-                    }
-                    else {
-                        s_NativeApi.EnqueueJsLog(line);
-                    }
-                }
+                s_NativeApi.JavascriptLog(msg);
             }
         }
-
-        private static void TryLoadDSL()
-        {
-            PrepareBatchScript();
-            string path = Path.Combine(s_BasePath, "./managed/Script.dsl");
-            var fi = new FileInfo(path);
-            if (fi.Exists) {
-                if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
-                    s_DslScriptTime = fi.LastWriteTime;
-                    s_DslScriptPath = path;
-
-                    string errorMsg = string.Empty;
-                    if (File.Exists(fi.FullName)) {
-                        BatchCommand.BatchScript.Load(fi.FullName);
-                        NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
-                    }
-                    else {
-                        errorMsg = "DSL script file does not exist";
-                        NativeLogNoLock("[csharp] " + errorMsg + ": " + fi.FullName);
-                    }
-                }
-            }
-            else {
-                NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
-            }
-        }
-        // Execute MetaDSL script
-        private static string ExecuteMetaDslScript(string script)
-        {
-            try {
-                // Execute the script directly using the DSL interpreter
-                BatchCommand.BatchScript.ClearDslErrors();
-                NativeApi.ClearApiErrorInfo();
-                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var sb = new StringBuilder();
-                if (!BatchCommand.BatchScript.HasDslErrors) {
-                    var result = BatchCommand.BatchScript.Call(id);
-                    if (result.IsNullObject) {
-                        sb.AppendLine("null");
-                    }
-                    else if (null != s_AgentPlugin) {
-                        sb.AppendLine(s_AgentPlugin.ResultToString(result));
-                    }
-                    else {
-                        sb.AppendLine(result.ToString());
-                    }
-                }
-                if (NativeApi.HasApiErrorInfo) {
-                    sb.AppendLine();
-                    sb.Append(NativeApi.GetApiErrorInfo());
-                }
-                if (BatchCommand.BatchScript.HasDslErrors) {
-                    sb.AppendLine();
-                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
-                }
-                return sb.ToString();
-            }
-            catch (Exception ex) {
-                NativeLogNoLock($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
-                return $"Error: {ex.Message}";
-            }
-        }
-
-        private static Assembly OnAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            try {
-                string? assemblyName = new AssemblyName(args.Name).Name;
-                NativeLogNoLock($"[csharp] AssemblyResolve: Requesting {assemblyName}");
-
-                // If the assembly is already loaded, return it
-                Assembly[] loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-                foreach (Assembly assembly in loadedAssemblies) {
-                    if (assembly.GetName().Name == assemblyName) {
-                        NativeLogNoLock($"[csharp] AssemblyResolve: {assemblyName} already loaded");
-                        return assembly;
-                    }
-                }
-
-                // Try to load from the managed directory
-                string managedPath = Path.Combine(s_BasePath, "managed");
-                string assemblyPath = Path.Combine(managedPath, assemblyName + ".dll");
-
-                if (File.Exists(assemblyPath)) {
-                    NativeLogNoLock($"[csharp] AssemblyResolve: Loading {assemblyName} from {assemblyPath}");
-                    return Assembly.LoadFrom(assemblyPath);
-                }
-
-                NativeLogNoLock($"[csharp] AssemblyResolve: Could not find {assemblyName} in {managedPath}");
-                return null;
-            }
-            catch (Exception ex) {
-                NativeLogNoLock($"[csharp] AssemblyResolve exception: {ex.Message}");
-                return null;
-            }
-        }
-
-        private static bool LoadAgentPlugin()
-        {
-            try {
-                string pluginPath = Path.Combine(s_BasePath, "managed", "AgentCore.dll");
-                if (!File.Exists(pluginPath)) {
-                    NativeLogNoLock($"[csharp] AgentCore.dll not found at: {pluginPath}");
-                    return false;
-                }
-
-                NativeLogNoLock($"[csharp] Loading AgentCore.dll from: {pluginPath}");
-
-                // Use Assembly.Load instead of LoadFrom to share assembly load context
-                // This ensures interface types are compatible across assemblies
-                AssemblyName assemblyName = AssemblyName.GetAssemblyName(pluginPath);
-                NativeLogNoLock($"[csharp] Assembly name: {assemblyName.FullName}");
-
-                // Load the assembly into the default load context
-                Assembly? pluginAssembly = Assembly.Load(assemblyName);
-                if (pluginAssembly == null) {
-                    NativeLogNoLock("[csharp] Failed to load AgentCore.dll using Assembly.Load");
-                    // Fallback to LoadFrom if Load fails
-                    NativeLogNoLock("[csharp] Trying fallback to Assembly.LoadFrom...");
-                    pluginAssembly = Assembly.LoadFrom(pluginPath);
-                }
-
-                NativeLogNoLock($"[csharp] Loaded assembly: {pluginAssembly.FullName}");
-
-                // Find the AgentPlugin type
-                Type? pluginType = pluginAssembly.GetType("CefDotnetApp.AgentCore.AgentPlugin");
-                if (pluginType == null) {
-                    NativeLogNoLock("[csharp] AgentPlugin type not found in AgentCore.dll");
-                    // List all available types for debugging
-                    NativeLogNoLock("[csharp] Available types in AgentCore.dll:");
-                    foreach (var type in pluginAssembly.GetTypes()) {
-                        NativeLogNoLock($"[csharp]   - {type.FullName}");
-                    }
-                    return false;
-                }
-
-                NativeLogNoLock($"[csharp] Found AgentPlugin type: {pluginType.FullName}");
-
-                // Create instance and use interface casting
-                object? pluginInstance = Activator.CreateInstance(pluginType);
-                if (pluginInstance == null) {
-                    NativeLogNoLock("[csharp] Failed to create AgentPlugin instance (Activator.CreateInstance returned null)");
-                    return false;
-                }
-
-                NativeLogNoLock($"[csharp] Created instance of type: {pluginInstance.GetType().FullName}");
-
-                // Try to cast to IAgentPlugin
-                s_AgentPlugin = pluginInstance as IAgentPlugin;
-                if (s_AgentPlugin == null) {
-                    NativeLogNoLock("[csharp] Failed to cast AgentPlugin instance to IAgentPlugin");
-
-                    // Check if instance implements the interface
-                    Type interfaceType = typeof(IAgentPlugin);
-                    NativeLogNoLock($"[csharp] IAgentPlugin interface: {interfaceType.AssemblyQualifiedName}");
-                    NativeLogNoLock($"[csharp] Instance implements IAgentPlugin: {interfaceType.IsAssignableFrom(pluginType)}");
-
-                    // List all implemented interfaces
-                    NativeLogNoLock("[csharp] Interfaces implemented by AgentPlugin:");
-                    foreach (var iface in pluginType.GetInterfaces()) {
-                        NativeLogNoLock($"[csharp]   - {iface.AssemblyQualifiedName}");
-                    }
-
-                    return false;
-                }
-
-                NativeLogNoLock("[csharp] Successfully cast to IAgentPlugin");
-
-                // Initialize the plugin
-                s_AgentPlugin.Initialize(s_BasePath, s_AppDir, s_IsMac);
-                NativeLogNoLock("[csharp] AgentPlugin loaded and initialized successfully");
-
-                // Register Script APIs through the plugin
-                s_AgentPlugin.RegisterScriptApis();
-                NativeLogNoLock("[csharp] Script APIs registered successfully");
-
-                return true;
-            }
-            catch (Exception ex) {
-                NativeLogNoLock($"[csharp] Error loading AgentPlugin: {ex.Message}");
-                NativeLogNoLock($"[csharp] Stack trace: {ex.StackTrace}");
-                if (ex.InnerException != null) {
-                    NativeLogNoLock($"[csharp] Inner exception: {ex.InnerException.Message}");
-                    NativeLogNoLock($"[csharp] Inner stack trace: {ex.InnerException.StackTrace}");
-                }
-                return false;
-            }
-        }
-
-        private static void RegisterBatchScriptApi()
-        {
-            CefDotnetAppApi.AddCommonApiDocs();
-            // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
-            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
-            BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
-
-            // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
-
-            // Only valid in MainThread
-            BatchCommand.BatchScript.Register("handlethreadqueue", "handlethreadqueue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", new ExpressionFactoryHelper<HandleThreadQueueExp>());
-        }
-
-        private static void OnFileChanged(string filePath, string fileType)
-        {
-            NativeLogNoLock($"[csharp] File changed detected: {fileType} - {filePath}");
-
-            try {
-                switch (fileType) {
-                    case "DSL Script":
-                        // Script.dsl is reloaded automatically on next message processing
-                        NativeLogNoLock("[csharp] Script.dsl will be reloaded on next message");
-                        break;
-
-                    case "AgentCore DLL":
-                        // Need to reload the plugin - this requires careful handling
-                        NativeLogNoLock("[csharp] AgentCore.dll changed - hot reload scheduled");
-                        // Note: Full plugin reload requires app restart or careful unloading
-                        break;
-
-                    case "Inject Script":
-                        // Directly trigger hot reload in current renderer process
-                        // HotReloadManager only runs in renderer, so we can directly execute JavaScript
-                        if (s_NativeApi != null) {
-                            NativeLogNoLock("[csharp] Inject script changed, triggering hot reload directly");
-                            // All C# to JS calls go through window object methods
-                            s_NativeApi.SendJavascriptCode("window.onAgentCommand(JSON.stringify({command:'hot_reload',params:{component:'inject'}}))");
-                        }
-                        break;
-                }
-            }
-            catch (Exception ex) {
-                NativeLogNoLock($"[csharp] Error handling file change: {ex.Message}");
-            }
-        }
-
-        private static void PrepareBatchScript()
-        {
-            if (!s_BatchScriptInited) {
-                BatchCommand.BatchScript.Init();
-                RegisterBatchScriptApi();
-                s_BatchScriptInited = true;
-            }
-        }
-
-        private static bool s_BatchScriptInited = false;
-        private static string s_CmdLine = string.Empty;
-        private static string s_BasePath = string.Empty;
-        private static string s_AppDir = string.Empty;
-        private static bool s_IsMac = false;
-        private static int s_ProcessType = -1;
-        private static string s_DslScriptPath = string.Empty;
-        private static DateTime s_DslScriptTime = DateTime.Now;
-        private static int s_MainThreadId = 0;
-        private static object s_Lock = new object();
-        private static IAgentPlugin? s_AgentPlugin = null;
-        private static HotReloadManager? s_HotReloadManager = null;
-
-        private static List<string> s_EmptyArgs = new List<string>();
-        private static StringBuilder s_StringBuilder = new StringBuilder();
-        private static StringWriter s_StringWriter = new StringWriter(s_StringBuilder);
-        private static NativeApi? s_NativeApi;
-    }
-    public static class CefDotnetAppApi
-    {
-        // Execute MetaDSL script
-        public static string ExecuteMetaDslScript(string script)
+        internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)
         {
             try {
                 PrepareBatchScript();
                 // Execute the script directly using the DSL interpreter
                 BatchCommand.BatchScript.ClearDslErrors();
-                NativeApi.ClearApiErrorInfo();
-                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var sb = new StringBuilder();
-                if (!BatchCommand.BatchScript.HasDslErrors) {
-                    var result = BatchCommand.BatchScript.Call(id);
-                    if (result.IsNullObject) {
-                        sb.Append("null");
-                    }
-                    else if (null != Lib.AgentPlugin) {
-                        sb.Append(Lib.AgentPlugin.ResultToString(result));
-                    }
-                    else {
-                        sb.Append(result.ToString());
-                    }
-                }
-                if (NativeApi.HasApiErrorInfo) {
-                    sb.AppendLine();
-                    sb.Append(NativeApi.GetApiErrorInfo());
-                }
+                BatchScript.LoadFunc(func, code, paramNames, update);
                 if (BatchCommand.BatchScript.HasDslErrors) {
-                    sb.AppendLine();
-                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
+                    return BatchCommand.BatchScript.GetDslErrors();
                 }
-                return sb.ToString();
+                return string.Empty;
             }
             catch (Exception ex) {
-                Lib.NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
                 return $"Error: {ex.Message}";
             }
         }
+        internal static void RefreshGlobalVars()
+        {
+            //reset global vars
+            BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
+            BatchCommand.BatchScript.SetGlobalVariable("commandline", BoxedValue.FromString(s_CmdLine));
+            BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
+            BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
+            BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
+            BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
+            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.From(s_StartupUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("loadedurl", BoxedValue.FromString(s_LoadedUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
+            BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
+            BatchCommand.BatchScript.SetGlobalVariable("dslfilechanged", BoxedValue.FromBool(s_DslScriptFileChanged));
+            BatchCommand.BatchScript.ClearDslErrors();
+        }
         internal static void AddCommonApiDocs()
         {
+            BatchCommand.BatchScript.AddUserApiDoc("clone", "clone(list_or_dict) api");
             BatchCommand.BatchScript.AddUserApiDoc("args", "args() api");
             BatchCommand.BatchScript.AddUserApiDoc("arg", "arg(ix) api");
             BatchCommand.BatchScript.AddUserApiDoc("argnum", "argnum() api");
@@ -1736,13 +2769,244 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("os", "os()");
             BatchCommand.BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
         }
+
+        private static string GetStringInLength(List<string> args)
+        {
+            var sb = new StringBuilder();
+            bool first = true;
+            foreach (var arg in args) {
+                if (first) {
+                    first = false;
+                }
+                else {
+                    sb.Append('|');
+                }
+                sb.Append(GetStringInLength(arg));
+            }
+            return sb.ToString();
+        }
+        private static string GetStringInLength(string str)
+        {
+            return NativeApi.GetStringInLength(str, 100, false);
+        }
+
+        // Parse --metadsl=value from raw command line string
+        private static bool TryGetSwitchValueFromRawCommandLine(string cmdLine, string switchName, out string switchValue)
+        {
+            switchValue = string.Empty;
+            string prefix = "--" + switchName + "=";
+            int idx = cmdLine.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+                return false;
+            int start = idx + prefix.Length;
+            // Handle quoted value
+            if (start < cmdLine.Length && cmdLine[start] == '"') {
+                int end = cmdLine.IndexOf('"', start + 1);
+                switchValue = end > start ? cmdLine.Substring(start + 1, end - start - 1) : string.Empty;
+                return true;
+            }
+            // Unquoted: take until next space
+            int spaceIdx = cmdLine.IndexOf(' ', start);
+            switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
+            return true;
+        }
+        private static void TryLoadDSL()
+        {
+            PrepareBatchScript();
+            string path = Path.Combine(s_BasePath, "managed", s_DslScriptFile);
+            var fi = new FileInfo(path);
+            if (fi.Exists) {
+                if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {
+                    s_DslScriptTime = fi.LastWriteTime;
+                    s_DslScriptPath = path;
+
+                    string errorMsg = string.Empty;
+                    if (File.Exists(fi.FullName)) {
+                        BatchCommand.BatchScript.Load(fi.FullName);
+                        BatchCommand.BatchScript.Call("init_global_consts");
+                        NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
+                    }
+                    else {
+                        errorMsg = "DSL script file does not exist";
+                        NativeLogNoLock("[csharp] " + errorMsg + ": " + fi.FullName);
+                    }
+                }
+            }
+            else {
+                NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
+            }
+            RefreshGlobalVars();
+            NativeApi.ClearApiErrorInfo();
+        }
+        // Execute MetaDSL script
+        private static string ExecuteMetaDslScript(string script)
+        {
+            try {
+                // Execute the script directly using the DSL interpreter
+                RefreshGlobalVars();
+                NativeApi.ClearApiErrorInfo();
+                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
+                var sb = new StringBuilder();
+                if (!BatchCommand.BatchScript.HasDslErrors) {
+                    var result = BatchCommand.BatchScript.Call(id);
+                    string resultStr;
+                    if (result.IsNullObject) {
+                        resultStr = "null";
+                    }
+                    else if (null != Lib.AgentPlugin) {
+                        resultStr = Lib.AgentPlugin.ResultToString(result);
+                    }
+                    else {
+                        resultStr = result.ToString();
+                    }
+                    int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
+                    if (maxResultSize > 0 && resultStr.Length > maxResultSize) {
+                        resultStr = resultStr.Substring(0, maxResultSize) + "\n... [truncated, exceeded max result size " + maxResultSize + "]";
+                    }
+                    sb.AppendLine(resultStr);
+                }
+                if (NativeApi.HasApiErrorInfo) {
+                    sb.AppendLine();
+                    sb.Append(NativeApi.GetApiErrorInfo());
+                }
+                if (BatchCommand.BatchScript.HasDslErrors) {
+                    sb.AppendLine();
+                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex) {
+                NativeLogNoLock($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+        }
+
         private static void RegisterBatchScriptApi()
         {
             AddCommonApiDocs();
-
             // Basic framework APIs (defined in Program.cs)
+            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
+            BatchCommand.BatchScript.Register("getstringinlength", "getstringinlength(str, len[, get_the_end_def_false])", false, new ExpressionFactoryHelper<GetStringInLengthExp>());
+            BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
+            BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
+            BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
+            BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
+            BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
+
+            // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
+
+            // Only valid in MainThread
+            BatchCommand.BatchScript.Register("handlethreadqueue", "handlethreadqueue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", new ExpressionFactoryHelper<HandleThreadQueueExp>());
+        }
+        private static void PrepareBatchScript()
+        {
+            if (!s_BatchScriptInited) {
+                BatchCommand.BatchScript.Init();
+                RegisterBatchScriptApi();
+                s_BatchScriptInited = true;
+            }
+        }
+
+        [ThreadStatic]
+        private static bool s_BatchScriptInited = false;
+        private static string s_CmdLine = string.Empty;
+        private static string s_BasePath = string.Empty;
+        private static string s_AppDir = string.Empty;
+        private static bool s_IsMac = false;
+        private static int s_ProcessType = -1;
+        private static string s_StartupUrl = string.Empty;
+        private static string s_LoadedUrl = string.Empty;
+        private static string s_DslScriptPath = string.Empty;
+        private static string s_DslScriptFile = "Script.dsl";
+        private static bool s_DslScriptFileChanged = false;
+        private static DateTime s_DslScriptTime = DateTime.Now;
+        private static int s_MainThreadId = 0;
+        private static object s_Lock = new object();
+
+        private static List<string> s_EmptyArgs = new List<string>();
+        private static StringBuilder s_StringBuilder = new StringBuilder();
+        private static StringWriter s_StringWriter = new StringWriter(s_StringBuilder);
+        private static NativeApi? s_NativeApi;
+    }
+    internal static class CefDotnetAppApi
+    {
+        // Execute MetaDSL script
+        internal static string ExecuteMetaDslScript(string script)
+        {
+            try {
+                PrepareBatchScript();
+                // Execute the script directly using the DSL interpreter
+                Lib.RefreshGlobalVars();
+                NativeApi.ClearApiErrorInfo();
+                var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
+                var sb = new StringBuilder();
+                if (!BatchCommand.BatchScript.HasDslErrors) {
+                    var result = BatchCommand.BatchScript.Call(id);
+                    string resultStr;
+                    if (result.IsNullObject) {
+                        resultStr = "null";
+                    }
+                    else if (null != Lib.AgentPlugin) {
+                        resultStr = Lib.AgentPlugin.ResultToString(result);
+                    }
+                    else {
+                        resultStr = result.ToString();
+                    }
+                    int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
+                    if (maxResultSize > 0 && resultStr.Length > maxResultSize) {
+                        resultStr = resultStr.Substring(0, maxResultSize) + "\n... [truncated, exceeded max result size " + maxResultSize + "]";
+                    }
+                    sb.Append(resultStr);
+                }
+                if (NativeApi.HasApiErrorInfo) {
+                    sb.AppendLine();
+                    sb.Append(NativeApi.GetApiErrorInfo());
+                }
+                if (BatchCommand.BatchScript.HasDslErrors) {
+                    sb.AppendLine();
+                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex) {
+                Lib.NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+        }
+        internal static string LoadFunc(string func, string code, IList<string> paramNames, bool update)
+        {
+            try {
+                PrepareBatchScript();
+                // Execute the script directly using the DSL interpreter
+                BatchCommand.BatchScript.ClearDslErrors();
+                BatchScript.LoadFunc(func, code, paramNames, update);
+                if (BatchCommand.BatchScript.HasDslErrors) {
+                    return BatchCommand.BatchScript.GetDslErrors();
+                }
+                return string.Empty;
+            }
+            catch (Exception ex) {
+                return $"Error: {ex.Message}";
+            }
+        }
+        private static void RegisterBatchScriptApi()
+        {
+            Lib.AddCommonApiDocs();
+
+            // Basic framework APIs (defined in Program.cs)
+            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
+            BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
+            BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
+            BatchCommand.BatchScript.Register("getstringinlength", "getstringinlength(str, len[, get_the_end_def_false])", false, new ExpressionFactoryHelper<GetStringInLengthExp>());
+            BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
+            BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
+            BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 
@@ -1760,6 +3024,7 @@ namespace DotNetLib
             }
         }
 
+        [ThreadStatic]
         private static bool s_BatchScriptInited = false;
         private static List<string> s_EmptyArgs = new List<string>();
     }

@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using System.Linq;
 using AgentCore.CodeAnalysis;
@@ -10,23 +11,23 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
     public class CodeAnalysisApi
     {
         // Parse a C# file and return parsed file object
-        public static object ParseCSharpFile(string filePath)
+        public static object? ParseCSharpFile(string filePath)
         {
             try {
                 var parsedFile = RoslynParser.ParseFileComplete(filePath);
                 return parsedFile;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error parsing file {filePath}: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error parsing file {filePath}: {ex.Message}");
                 return null;
             }
         }
 
         // Find a class in a parsed file or by parsing a file
-        public static object FindClass(object fileOrPath, string className)
+        public static object? FindClass(object fileOrPath, string className)
         {
             try {
-                RoslynParsedFile parsedFile = null;
+                RoslynParsedFile? parsedFile = null;
 
                 if (fileOrPath is string filePath) {
                     parsedFile = RoslynParser.ParseFileComplete(filePath);
@@ -35,37 +36,37 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                     parsedFile = pf;
                 }
                 else {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("[CodeAnalysisApi] Invalid input type for FindClass");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindClass");
                     return null;
                 }
 
                 return parsedFile?.Classes.FirstOrDefault(c => c.Name == className);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error finding class {className}: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding class {className}: {ex.Message}");
                 return null;
             }
         }
 
         // Find a method in a class
-        public static object FindMethod(object classInfo, string methodName)
+        public static object? FindMethod(object classInfo, string methodName)
         {
             try {
                 if (classInfo is RoslynClassInfo ci) {
                     return ci.Methods.FirstOrDefault(m => m.Name == methodName);
                 }
 
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("[CodeAnalysisApi] Invalid input type for FindMethod");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for FindMethod");
                 return null;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error finding method {methodName}: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding method {methodName}: {ex.Message}");
                 return null;
             }
         }
 
         // Get location information from a code element
-        public static object GetLocation(object codeElement)
+        public static object? GetLocation(object codeElement)
         {
             try {
                 if (codeElement is RoslynClassInfo ci) {
@@ -75,42 +76,42 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                     return mi.Location;
                 }
 
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("[CodeAnalysisApi] Invalid input type for GetLocation");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("[CodeAnalysisApi] Invalid input type for GetLocation");
                 return null;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error getting location: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting location: {ex.Message}");
                 return null;
             }
         }
 
         // Get all C# files in a directory
-        public static object GetCSharpFiles(string directory, bool recursive = true)
+        public static object? GetCSharpFiles(string directory, bool recursive = true)
         {
             try {
                 var files = RoslynParser.FindCSharpFiles(directory, recursive);
                 return files;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error getting C# files from {directory}: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error getting C# files from {directory}: {ex.Message}");
                 return new List<string>();
             }
         }
 
         // Find file containing a specific class
-        public static string FindFileWithClass(string directory, string className)
+        public static string? FindFileWithClass(string directory, string className)
         {
             try {
                 return RoslynParser.FindFileContainingClass(directory, className);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error finding file with class {className}: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error finding file with class {className}: {ex.Message}");
                 return null;
             }
         }
 
         // Get class name from a class info object
-        public static string GetClassName(object classInfo)
+        public static string? GetClassName(object classInfo)
         {
             if (classInfo is RoslynClassInfo ci) {
                 return ci.Name;
@@ -119,7 +120,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         }
 
         // Get method name from a method info object
-        public static string GetMethodName(object methodInfo)
+        public static string? GetMethodName(object methodInfo)
         {
             if (methodInfo is RoslynMethodInfo mi) {
                 return mi.Name;
@@ -137,7 +138,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         }
 
         // Get method full text
-        public static string GetMethodText(object methodInfo)
+        public static string? GetMethodText(object methodInfo)
         {
             if (methodInfo is RoslynMethodInfo mi) {
                 return mi.FullText;
@@ -187,7 +188,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.AddMethodToClass(filePath, className, methodCode);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error adding method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding method: {ex.Message}");
                 return false;
             }
         }
@@ -201,7 +202,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.ReplaceMethod(filePath, className, methodName, newMethodCode);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error replacing method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error replacing method: {ex.Message}");
                 return false;
             }
         }
@@ -215,7 +216,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.InsertMethodAfter(filePath, className, afterMethodName, newMethodCode);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error inserting method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error inserting method: {ex.Message}");
                 return false;
             }
         }
@@ -229,7 +230,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.DeleteMethod(filePath, className, methodName);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error deleting method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error deleting method: {ex.Message}");
                 return false;
             }
         }
@@ -243,7 +244,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.AddClassToFile(filePath, classCode);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error adding class: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error adding class: {ex.Message}");
                 return false;
             }
         }
@@ -257,7 +258,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.CreateNewFile(filePath, code);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error creating file: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error creating file: {ex.Message}");
                 return false;
             }
         }
@@ -271,7 +272,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
                 return SmartCodeEditor.VerifyCodeCompiles(code);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[CodeAnalysisApi] Error verifying code: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[CodeAnalysisApi] Error verifying code: {ex.Message}");
                 return false;
             }
         }
@@ -280,7 +281,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         // Note: TreeSitter test methods have been moved to Tools/TestTreeSitter.cs
 
         /// <summary>
-        /// Explore TreeSitterSharp.C assembly types and methods
+        /// Explore TreeSitter.DotNet C language API
         /// </summary>
         public static string ExploreTreeSitterCApi()
         {
@@ -288,7 +289,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis
         }
 
         /// <summary>
-        /// Explore TreeSitterSharp.Cpp assembly types and methods
+        /// Explore TreeSitter.DotNet C++ language API
         /// </summary>
         public static string ExploreTreeSitterCppApi()
         {

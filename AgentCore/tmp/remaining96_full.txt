@@ -1,0 +1,217 @@
+﻿
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\UnifiedCodeAnalysisApi.cs(162,24): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\UnifiedCodeAnalysisApi.cs(207,24): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Tools\TestTreeSitter.cs(85,55): warning CS8600: Converting null literal or possible null value t
+o non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\SkillManager.cs(273,196): warning CS8604: Possible null reference argument for parameter 'a
+rgs' in 'void LoggingAndDebugging.Error(string message, params object[] args)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.cspro
+j]
+d:\GitHub\BatchCommand\AgentCore\Tools\TestTreeSitter.cs(252,55): warning CS8600: Converting null literal or possible null value 
+to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\AgentCore.cs(117,54): warning CS8604: Possible null reference argument for parameter 'path1
+' in 'string Path.Combine(string path1, string path2, string path3)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\DiffOperations.cs(226,38): warning CS8600: Converting null literal or possible null value t
+o non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(50,34): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(89,32): warning CS8602: Dereference of a possibly null reference. 
+[d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(95,45): warning CS8604: Possible null reference argument for param
+eter 'path1' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(95,64): warning CS8604: Possible null reference argument for param
+eter 'path2' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(174,31): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(180,79): warning CS8604: Possible null reference argument for para
+meter 'path2' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(209,31): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(272,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(291,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(305,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(322,32): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(326,32): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(345,20): warning CS8603: Possible null reference return. [d:\GitHu
+b\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(49,71): warning CS8600: Converting null literal or possible null va
+lue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\NativeLibraryLoader.cs(129,61): warning CS8622: Nullability of reference types in type of p
+arameter 'sender' of 'void NativeLibraryLoader.OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)' doesn't match the targe
+t delegate 'AssemblyLoadEventHandler' (possibly because of nullability attributes). [d:\GitHub\BatchCommand\AgentCore\AgentCore.c
+sproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(281,75): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(334,72): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynRefactoring.cs(22,28): warning CS8601: Possible null reference assignment. [d
+:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynRefactoring.cs(19,16): warning CS8618: Non-nullable field '_compilation' must
+ contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nullable. [
+d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(380,70): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(423,39): warning CS8602: Dereference of a possibly null reference. 
+[d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(22,28): warning CS8601: Possible null reference assignmen
+t. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(189,58): warning CS8604: Possible null reference argument
+ for parameter 'node' in 'SymbolInfo ModelExtensions.GetSymbolInfo(SemanticModel semanticModel, SyntaxNode node, CancellationToke
+n cancellationToken = default(CancellationToken))'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(365,35): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(399,39): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(150,36): warning CS8625: Cannot convert null literal to non-nulla
+ble reference type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(140,16): warning CS8618: Non-nullable field '_externalEnglishTrie
+' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nulla
+ble. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(328,50): warning CS8600: Converting null literal or possible null
+ value to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(330,25): warning CS8602: Dereference of a possibly null reference
+. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(149,35): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(166,39): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(168,53): warning CS8602: Dereference of a possibl
+y null reference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(184,31): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(121,16): warning CS8618: Non-nullable field '_par
+ser' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nu
+llable. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(149,35): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(166,39): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(168,53): warning CS8602: Dereference of a possibly 
+null reference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(184,31): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(121,16): warning CS8618: Non-nullable field '_parse
+r' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as null
+able. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\SmartCodeEditor.cs(263,59): warning CS8604: Possible null reference argument for pa
+rameter 'newNode' in 'CompilationUnitSyntax SyntaxNodeExtensions.ReplaceNode<CompilationUnitSyntax>(CompilationUnitSyntax root, S
+yntaxNode oldNode, SyntaxNode newNode)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\ScriptApi\FrameworkApiAlias.cs(2667,124): warning CS8620: Argument of type 'object?[]' cannot be
+ used for parameter 'args' of type 'object[]' in 'object? Assembly.CreateInstance(string typeName, bool ignoreCase, BindingFlags 
+bindingAttr, Binder? binder, object[]? args, CultureInfo? culture, object[]? activationAttributes)' due to differences in the nul
+lability of reference types. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\UnifiedCodeAnalysisApi.cs(162,24): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\UnifiedCodeAnalysisApi.cs(207,24): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Tools\TestTreeSitter.cs(85,55): warning CS8600: Converting null literal or possible null value t
+o non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\SkillManager.cs(273,196): warning CS8604: Possible null reference argument for parameter 'a
+rgs' in 'void LoggingAndDebugging.Error(string message, params object[] args)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.cspro
+j]
+d:\GitHub\BatchCommand\AgentCore\Tools\TestTreeSitter.cs(252,55): warning CS8600: Converting null literal or possible null value 
+to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\AgentCore.cs(117,54): warning CS8604: Possible null reference argument for parameter 'path1
+' in 'string Path.Combine(string path1, string path2, string path3)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\DiffOperations.cs(226,38): warning CS8600: Converting null literal or possible null value t
+o non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(50,34): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(89,32): warning CS8602: Dereference of a possibly null reference. 
+[d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(95,45): warning CS8604: Possible null reference argument for param
+eter 'path1' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(95,64): warning CS8604: Possible null reference argument for param
+eter 'path2' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(174,31): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(180,79): warning CS8604: Possible null reference argument for para
+meter 'path2' in 'string Path.Combine(string path1, string path2)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(209,31): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(272,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(291,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(305,20): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(322,32): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(326,32): warning CS8602: Dereference of a possibly null reference.
+ [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\ProjectLoader.cs(345,20): warning CS8603: Possible null reference return. [d:\GitHu
+b\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(49,71): warning CS8600: Converting null literal or possible null va
+lue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\NativeLibraryLoader.cs(129,61): warning CS8622: Nullability of reference types in type of p
+arameter 'sender' of 'void NativeLibraryLoader.OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)' doesn't match the targe
+t delegate 'AssemblyLoadEventHandler' (possibly because of nullability attributes). [d:\GitHub\BatchCommand\AgentCore\AgentCore.c
+sproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(281,75): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(334,72): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynRefactoring.cs(22,28): warning CS8601: Possible null reference assignment. [d
+:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynRefactoring.cs(19,16): warning CS8618: Non-nullable field '_compilation' must
+ contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nullable. [
+d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(380,70): warning CS8600: Converting null literal or possible null v
+alue to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynParser.cs(423,39): warning CS8602: Dereference of a possibly null reference. 
+[d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(22,28): warning CS8601: Possible null reference assignmen
+t. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(189,58): warning CS8604: Possible null reference argument
+ for parameter 'node' in 'SymbolInfo ModelExtensions.GetSymbolInfo(SemanticModel semanticModel, SyntaxNode node, CancellationToke
+n cancellationToken = default(CancellationToken))'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(365,35): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\RoslynSemanticAnalyzer.cs(399,39): warning CS8602: Dereference of a possibly null r
+eference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(150,36): warning CS8625: Cannot convert null literal to non-nulla
+ble reference type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(140,16): warning CS8618: Non-nullable field '_externalEnglishTrie
+' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nulla
+ble. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(328,50): warning CS8600: Converting null literal or possible null
+ value to non-nullable type. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\Core\MixedSegmenterEnhanced.cs(330,25): warning CS8602: Dereference of a possibly null reference
+. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(149,35): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(166,39): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(168,53): warning CS8602: Dereference of a possibl
+y null reference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(184,31): warning CS8601: Possible null reference 
+assignment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CppAdapter.cs(121,16): warning CS8618: Non-nullable field '_par
+ser' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as nu
+llable. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(149,35): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(166,39): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(168,53): warning CS8602: Dereference of a possibly 
+null reference. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(184,31): warning CS8601: Possible null reference as
+signment. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\TreeSitter\Adapters\CAdapter.cs(121,16): warning CS8618: Non-nullable field '_parse
+r' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field as null
+able. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\CodeAnalysis\SmartCodeEditor.cs(263,59): warning CS8604: Possible null reference argument for pa
+rameter 'newNode' in 'CompilationUnitSyntax SyntaxNodeExtensions.ReplaceNode<CompilationUnitSyntax>(CompilationUnitSyntax root, S
+yntaxNode oldNode, SyntaxNode newNode)'. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+d:\GitHub\BatchCommand\AgentCore\ScriptApi\FrameworkApiAlias.cs(2667,124): warning CS8620: Argument of type 'object?[]' cannot be
+ used for parameter 'args' of type 'object[]' in 'object? Assembly.CreateInstance(string typeName, bool ignoreCase, BindingFlags 
+bindingAttr, Binder? binder, object[]? args, CultureInfo? culture, object[]? activationAttributes)' due to differences in the nul
+lability of reference types. [d:\GitHub\BatchCommand\AgentCore\AgentCore.csproj]
+
+

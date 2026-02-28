@@ -137,6 +137,33 @@ namespace CefDotnetApp.AgentCore.Utils
             else if (value is string strValue) {
                 return BoxedValue.FromString(strValue);
             }
+            else if (value is System.Text.Json.JsonElement jsonElem) {
+                switch (jsonElem.ValueKind) {
+                    case System.Text.Json.JsonValueKind.Undefined:
+                    case System.Text.Json.JsonValueKind.Null:
+                        return BoxedValue.NullObject;
+                    case System.Text.Json.JsonValueKind.Array:
+                        return BoxedValue.FromObject(GetBoxedValueFromJsonList(jsonElem));
+                    case System.Text.Json.JsonValueKind.Object:
+                        return BoxedValue.FromObject(GetBoxedValueFromJsonDictionary(jsonElem));
+                    case System.Text.Json.JsonValueKind.Number: {
+                            var str = jsonElem.GetRawText();
+                            if (TryParseNumeric(str, out var v)) {
+                                return v;
+                            }
+                            else {
+                                return BoxedValue.FromString(jsonElem.ToString());
+                            }
+                        }
+                    case System.Text.Json.JsonValueKind.True:
+                        return BoxedValue.From(true);
+                    case System.Text.Json.JsonValueKind.False:
+                        return BoxedValue.From(false);
+                    case System.Text.Json.JsonValueKind.String:
+                    default:
+                        return BoxedValue.FromString(jsonElem.ToString());
+                }
+            }
             else {
                 if (null != value) {
                     if (value is IList<string?> strlist) {
@@ -310,10 +337,118 @@ namespace CefDotnetApp.AgentCore.Utils
             }
             return newDict;
         }
+        public static IList<BoxedValue> GetBoxedValueFromJsonList(System.Text.Json.JsonElement list)
+        {
+            var newList = new List<BoxedValue>();
+            foreach (var v in list.EnumerateArray()) {
+                newList.Add(GetBoxedValueFromValue(v));
+            }
+            return newList;
+        }
+        public static IDictionary<BoxedValue, BoxedValue> GetBoxedValueFromJsonDictionary(System.Text.Json.JsonElement dict)
+        {
+            var newDict = new Dictionary<BoxedValue, BoxedValue>();
+            foreach (var prop in dict.EnumerateObject()) {
+                var k = BoxedValue.FromString(prop.Name);
+                var v = GetBoxedValueFromValue(prop.Value);
+                newDict.Add(k, v);
+            }
+            return newDict;
+        }
+        public static bool TryParseNumeric(string str, out BoxedValue val)
+        {
+            string type = string.Empty;
+            return TryParseNumeric(str, ref type, out val);
+        }
+        public static bool TryParseNumeric(string str, ref string type, out BoxedValue val)
+        {
+            bool ret = false;
+            val = BoxedValue.NullObject;
+            if (str.Length > 2 && str[0] == '0' && str[1] == 'x') {
+                char c = str[str.Length - 1];
+                if (c == 'u' || c == 'U') {
+                    str = str.Substring(0, str.Length - 1);
+                }
+                if (ulong.TryParse(str.Substring(2), System.Globalization.NumberStyles.HexNumber, System.Globalization.NumberFormatInfo.CurrentInfo, out var v)) {
+                    str = v.ToString();
+                }
+                type = "uint";
+            }
+            else if (str.Length >= 2) {
+                char c = str[str.Length - 1];
+                if (c == 'u' || c == 'U') {
+                    str = str.Substring(0, str.Length - 1);
+                    type = "uint";
+                }
+                else if (c == 'f' || c == 'F') {
+                    str = str.Substring(0, str.Length - 1);
+                    c = str[str.Length - 1];
+                    if (c == 'l' || c == 'L') {
+                        str = str.Substring(0, str.Length - 1);
+                    }
+                    type = "float";
+                }
+            }
+            if (type == "float" || type != "uint" && str.IndexOfAny(s_FloatExponent) > 0) {
+                if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.NumberFormatInfo.CurrentInfo, out var v)) {
+                    val.Set((float)v);
+                    type = "float";
+                    ret = true;
+                }
+            }
+            else if (str.Length > 1 && str[0] == '0') {
+                ulong v = Convert.ToUInt64(str, 8);
+                val.Set((uint)v);
+                type = "uint";
+                ret = true;
+            }
+            else if (long.TryParse(str, out var lv)) {
+                if (lv > int.MaxValue || type == "uint") {
+                    val.Set((uint)lv);
+                    type = "uint";
+                }
+                else {
+                    val.Set((int)lv);
+                    type = "int";
+                }
+                ret = true;
+            }
+            else if (ulong.TryParse(str, out var uv)) {
+                val.Set(uv);
+                type = "uint";
+                ret = true;
+            }
+            if (!ret && TryParseBool(str, out var bv)) {
+                val.Set(bv);
+                type = "bool";
+                ret = true;
+            }
+            return ret;
+        }
+        public static bool TryParseBool(string v, out bool val)
+        {
+            if (bool.TryParse(v, out val)) {
+                return true;
+            }
+            else if (int.TryParse(v, out var ival)) {
+                val = ival != 0;
+                return true;
+            }
+            else if (v == "true") {
+                val = true;
+                return true;
+            }
+            else if (v == "false") {
+                val = false;
+                return true;
+            }
+            return false;
+        }
         public static void AppendIndent(StringBuilder sb, int indent)
         {
             sb.Append(s_IndentString.Substring(0, indent * 4));
         }
         public static string s_IndentString = "                                                                                                                                                                                                                                                                ";
+        public static char[] s_FloatExponent = new char[] { 'e', 'E', '.' };
     }
 }

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CefDotnetApp.AgentCore.Utils;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -18,7 +18,8 @@ namespace CefDotnetApp.AgentCore.Core
 
         public HttpClientOperations(int timeoutSeconds = 30)
         {
-            _httpClient = new HttpClient {
+            var handler = RedirectHandler.Create(new System.Net.Http.SocketsHttpHandler());
+            _httpClient = new HttpClient(handler) {
                 Timeout = TimeSpan.FromSeconds(timeoutSeconds)
             };
             _defaultHeaders = new Dictionary<string, string>();
@@ -39,40 +40,40 @@ namespace CefDotnetApp.AgentCore.Core
                 _httpClient.DefaultRequestHeaders.Remove(name);
         }
 
-        public string Get(string url, Dictionary<string, string> headers = null)
+        public string Get(string url, Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"GET request failed: {url}", ex);
+                throw new HttpRequestException($"GET request failed: {url}, {ex.Message}", ex);
             }
         }
 
-        public byte[] GetBytes(string url, Dictionary<string, string> headers = null)
+        public byte[] GetBytes(string url, Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsByteArrayAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"GET bytes request failed: {url}", ex);
+                throw new HttpRequestException($"GET bytes request failed: {url}, {ex.Message}", ex);
             }
         }
 
         public string Post(string url, string content, string contentType = "application/json",
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -80,17 +81,17 @@ namespace CefDotnetApp.AgentCore.Core
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"POST request failed: {url}", ex);
+                throw new HttpRequestException($"POST request failed: {url}, {ex.Message}", ex);
             }
         }
 
         public string PostForm(string url, Dictionary<string, string> formData,
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -98,17 +99,17 @@ namespace CefDotnetApp.AgentCore.Core
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"POST form request failed: {url}", ex);
+                throw new HttpRequestException($"POST form request failed: {url}, {ex.Message}", ex);
             }
         }
 
         public string Put(string url, string content, string contentType = "application/json",
-            Dictionary<string, string> headers = null)
+            Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Put, url);
@@ -116,37 +117,37 @@ namespace CefDotnetApp.AgentCore.Core
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"PUT request failed: {url}", ex);
+                throw new HttpRequestException($"PUT request failed: {url}, {ex.Message}", ex);
             }
         }
 
-        public string Delete(string url, Dictionary<string, string> headers = null)
+        public string Delete(string url, Dictionary<string, string>? headers = null)
         {
             try {
                 var request = new HttpRequestMessage(HttpMethod.Delete, url);
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"DELETE request failed: {url}", ex);
+                throw new HttpRequestException($"DELETE request failed: {url}, {ex.Message}", ex);
             }
         }
 
-        public bool DownloadFile(string url, string savePath, Dictionary<string, string> headers = null)
+        public bool DownloadFile(string url, string savePath, Dictionary<string, string>? headers = null)
         {
             try {
                 byte[] data = GetBytes(url, headers);
 
-                string directory = Path.GetDirectoryName(savePath);
+                string? directory = Path.GetDirectoryName(savePath);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
@@ -154,12 +155,12 @@ namespace CefDotnetApp.AgentCore.Core
                 return true;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"Download file failed: {url}", ex);
+                throw new HttpRequestException($"Download file failed: {url}, {ex.Message}", ex);
             }
         }
 
         public string UploadFile(string url, string filePath, string fieldName = "file",
-            Dictionary<string, string> formData = null, Dictionary<string, string> headers = null)
+            Dictionary<string, string>? formData = null, Dictionary<string, string>? headers = null)
         {
             try {
                 if (!File.Exists(filePath))
@@ -182,16 +183,16 @@ namespace CefDotnetApp.AgentCore.Core
                 AddHeaders(request, headers);
 
                 var response = _httpClient.SendAsync(request).Result;
-                response.EnsureSuccessStatusCode();
+                HttpResponseHelper.EnsureSuccessOrThrowDetailed(response);
 
                 return response.Content.ReadAsStringAsync().Result;
             }
             catch (Exception ex) {
-                throw new HttpRequestException($"Upload file failed: {url}", ex);
+                throw new HttpRequestException($"Upload file failed: {url}, {ex.Message}", ex);
             }
         }
 
-        private void AddHeaders(HttpRequestMessage request, Dictionary<string, string> headers)
+        private void AddHeaders(HttpRequestMessage request, Dictionary<string, string>? headers)
         {
             if (headers != null) {
                 foreach (var kvp in headers) {

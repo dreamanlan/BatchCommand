@@ -13,7 +13,7 @@ namespace AgentCore.CodeAnalysis
     public static class CodeMetricsAnalyzer
     {
         // Extract documentation comment from a syntax node
-        public static string ExtractDocumentationComment(SyntaxNode node)
+        public static string? ExtractDocumentationComment(SyntaxNode node)
         {
             var trivia = node.GetLeadingTrivia();
             var docComments = new List<string>();
@@ -113,9 +113,9 @@ namespace AgentCore.CodeAnalysis
             {
                 dependencies.Add(new DependencyInfo
                 {
-                    Name = usingDir.Name.ToString().Split('.').LastOrDefault(),
+                    Name = usingDir.Name?.ToString().Split('.').LastOrDefault() ?? string.Empty,
                     Type = "using",
-                    FullName = usingDir.Name.ToString(),
+                    FullName = usingDir.Name?.ToString() ?? string.Empty,
                     Location = GetCodeLocation(tree, usingDir)
                 });
             }
@@ -131,7 +131,7 @@ namespace AgentCore.CodeAnalysis
                         var typeName = baseType.Type.ToString();
                         dependencies.Add(new DependencyInfo
                         {
-                            Name = typeName.Split('.').LastOrDefault(),
+                        Name = typeName.Split('.').LastOrDefault() ?? string.Empty,
                             Type = "type_reference",
                             FullName = typeName,
                             Location = GetCodeLocation(tree, baseType)

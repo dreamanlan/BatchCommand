@@ -11,6 +11,13 @@ class APIClient {
         this.config = this.loadConfig();
         this.abortController = null;
         this.conversationId = ''; // For auto_metadsl conversation management
+        this.autoMetaDSLRoundCount = 0; // Track rounds for periodic system prompt injection
+    }
+
+    resetConversation() {
+        this.conversationId = '';
+        this.autoMetaDSLRoundCount = 0;
+        if (apiLogger) apiLogger.info('Conversation reset');
     }
 
     loadConfig() {
@@ -27,9 +34,10 @@ class APIClient {
             apiType: 'openai',
             apiKey: '',
             apiEndpoint: '',
-            model: 'gpt-4',
+            model: 'gpt-4.1',
             username: '', // For auto_metadsl auth
-            authMode: 'personal' // 'personal' or 'agent' for auto_metadsl
+            authMode: 'personal', // 'personal' or 'agent' for auto_metadsl
+            stream: true // Use streaming for auto_metadsl
         };
     }
 
@@ -65,7 +73,7 @@ class APIClient {
         return this.config.apiEndpoint || this.getDefaultEndpoint();
     }
 
-    async sendMessage(messages, onChunk) {
+    async sendMessage(messages, onChunk, contextRounds) {
         this.validateConfig();
 
         // Create new abort controller for this request
@@ -76,7 +84,7 @@ class APIClient {
         } else if (this.config.apiType === 'claude') {
             return await this.sendClaudeMessage(messages, onChunk);
         } else if (this.config.apiType === 'auto_metadsl') {
-            return await this.sendAutoMetaDSLMessage(messages, onChunk);
+            return await this.sendAutoMetaDSLMessage(messages, onChunk, contextRounds);
         } else {
             throw new Error('Unsupported API type: ' + this.config.apiType);
         }
@@ -86,7 +94,7 @@ class APIClient {
         const endpoint = this.getEndpoint();
 
         const requestBody = {
-            model: this.config.model || 'gpt-4',
+            model: this.config.model || 'gpt-4.1',
             messages: messages,
             stream: true
         };
@@ -116,9 +124,9 @@ class APIClient {
         const claudeMessages = this.convertToClaudeFormat(messages);
 
         const requestBody = {
-            model: this.config.model || 'claude-3-5-sonnet-20241022',
+            model: this.config.model || 'claude-sonnet-4-20250514',
             messages: claudeMessages,
-            max_tokens: 4096,
+            max_tokens: 8192,
             stream: true
         };
 
@@ -141,7 +149,7 @@ class APIClient {
         return await this.handleStreamResponse(response, onChunk, 'claude');
     }
 
-    async sendAutoMetaDSLMessage(messages, onChunk) {
+    async sendAutoMetaDSLMessage(messages, onChunk, contextRounds) {
         const endpoint = this.getEndpoint();
 
         // Get the last user message
@@ -150,13 +158,25 @@ class APIClient {
             throw new Error('No user message found');
         }
 
+        // Periodically prepend system context (dialogPrompt)
+        let messageContent = lastUserMessage.content;
+        if (contextRounds && contextRounds > 0 && this.autoMetaDSLRoundCount % contextRounds === 0) {
+            const systemMessages = messages.filter(m => m.role === 'system');
+            if (systemMessages.length > 0) {
+                const systemContext = systemMessages.map(m => m.content).join('\n\n');
+                messageContent = systemContext + '\n\n' + messageContent;
+                if (apiLogger) apiLogger.info('Injected system context at round:', { round: this.autoMetaDSLRoundCount });
+            }
+        }
+        this.autoMetaDSLRoundCount++;
+
         // Build request body in auto_metadsl format
         const requestBody = {
             input: {
-                message: lastUserMessage.content,
+                message: messageContent,
                 conversation_id: this.conversationId || '',
                 model: this.config.model || 'deepseek-v3.1',
-                stream: true,
+                stream: !!this.config.stream,
                 enable_web_search: false,
                 chat_extra: {
                     attached_images: [],
@@ -370,22 +390,33 @@ class APIClient {
     getAvailableModels(apiType) {
         if (apiType === 'openai') {
             return [
-                { value: 'gpt-4', label: 'GPT-4' },
-                { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
-                { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }
+                { value: 'o3', label: 'o3' },
+                { value: 'o3-mini', label: 'o3-mini' },
+                { value: 'o4-mini', label: 'o4-mini' },
+                { value: 'gpt-4.1', label: 'GPT-4.1' },
+                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
+                { value: 'gpt-4o', label: 'GPT-4o' },
+                { value: 'gpt-4o-mini', label: 'GPT-4o Mini' }
             ];
         } else if (apiType === 'claude') {
             return [
+                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
+                { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' },
                 { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-                { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-                { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-                { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
+                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
             ];
         } else if (apiType === 'auto_metadsl') {
             return [
-                { value: 'deepseek-v3.1', label: 'DeepSeek V3.1' },
-                { value: 'deepseek-v3.2', label: 'DeepSeek V3.2' },
-                { value: 'glm-4.7', label: 'GLM-4.7' }
+                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
+                { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
+                { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
+                { value: 'kimi-k2.5', label: 'Kimi-K2.5' },
+                { value: 'glm-4.7', label: 'GLM-4.7' },
+                { value: 'glm-5', label: 'GLM-5' },
+                { value: 'hunyuan-2.0-thinking', label: 'HY-2.0-Think' },
+                { value: 'hunyuan-2.0-instruct', label: 'HY-2.0-Instruct' }
             ];
         }
         return [];

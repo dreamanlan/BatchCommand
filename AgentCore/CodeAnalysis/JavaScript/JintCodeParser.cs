@@ -44,7 +44,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        public ParsedCodeFile ParseText(string code, string filePath = null)
+        public ParsedCodeFile ParseText(string code, string? filePath = null)
         {
             var tree = _analyzer.AnalyzeCode(code, out string error);
             var result = ConvertToUnifiedFormat(tree, filePath ?? "<text>");
@@ -59,7 +59,7 @@ namespace AgentCore.CodeAnalysis
             return result;
         }
 
-        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             var result = new List<FunctionInfo>();
 
@@ -122,7 +122,7 @@ namespace AgentCore.CodeAnalysis
             return funcInfo;
         }
 
-        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
             if (string.IsNullOrEmpty(namePattern))
             {
@@ -134,7 +134,7 @@ namespace AgentCore.CodeAnalysis
                 .ToList();
         }
 
-        public FunctionInfo FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
+        public FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
         {
             // First, search in global functions
             foreach (var func in parsed.Functions)
@@ -176,12 +176,12 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        public TypeInfo FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
+        public TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
         {
             return parsed.Types.FirstOrDefault(t => MatchesPattern(t.Name, typeName, ignoreCase));
         }
 
-        private ParsedCodeFile ConvertToUnifiedFormat(JsTreeWrapper tree, string filePath)
+        private ParsedCodeFile ConvertToUnifiedFormat(JsTreeWrapper? tree, string filePath)
         {
             var result = new ParsedCodeFile(filePath, ProgrammingLanguage.JavaScript)
             {

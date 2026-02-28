@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -12,13 +13,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count < 1 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: execute_command(command, arguments, workingDir[, timeout_def_30000ms])");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string command = operands[0].AsString;
-                string arguments = operands.Count > 1 ? operands[1].AsString : null;
-                string workingDir = operands.Count > 2 ? operands[2].AsString : null;
+                string? arguments = operands.Count > 1 ? operands[1].AsString : null;
+                string? workingDir = operands.Count > 2 ? operands[2].AsString : null;
                 int timeout = operands.Count > 3 ? operands[3].GetInt() : 30000;
 
                 var result = Core.AgentCore.Instance.ProcessOps.ExecuteCommand(command, arguments, workingDir, timeout);
@@ -34,7 +37,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromObject(dict);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"ExecuteCommand error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ExecuteCommand error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -45,20 +48,22 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: start_process(processId, command, arguments, workingDir)");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string processId = operands[0].AsString;
                 string command = operands[1].AsString;
-                string arguments = operands.Count > 2 ? operands[2].AsString : null;
-                string workingDir = operands.Count > 3 ? operands[3].AsString : null;
+                string? arguments = operands.Count > 2 ? operands[2].AsString : null;
+                string? workingDir = operands.Count > 3 ? operands[3].AsString : null;
 
                 string id = Core.AgentCore.Instance.ProcessOps.StartProcess(processId, command, arguments, workingDir);
                 return BoxedValue.FromString(id);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"StartProcess error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"StartProcess error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -69,8 +74,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: stop_process(processId[, timeout_def_5000ms])");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string processId = operands[0].AsString;
@@ -80,7 +87,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"StopProcess error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"StopProcess error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -91,8 +98,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_process_running(processId)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string processId = operands[0].AsString;
@@ -100,7 +109,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"IsProcessRunning error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"IsProcessRunning error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -111,8 +120,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_process_input(processId, input)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string processId = operands[0].AsString;
@@ -122,7 +133,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"WriteProcessInput error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"WriteProcessInput error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -133,16 +144,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_process_output(processId)");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string processId = operands[0].AsString;
-                string output = Core.AgentCore.Instance.ProcessOps.ReadProcessOutput(processId);
+                string? output = Core.AgentCore.Instance.ProcessOps.ReadProcessOutput(processId);
                 return output != null ? BoxedValue.FromString(output) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"ReadProcessOutput error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ReadProcessOutput error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -153,16 +166,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_process_error(processId)");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string processId = operands[0].AsString;
-                string error = Core.AgentCore.Instance.ProcessOps.ReadProcessError(processId);
+                string? error = Core.AgentCore.Instance.ProcessOps.ReadProcessError(processId);
                 return error != null ? BoxedValue.FromString(error) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"ReadProcessError error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ReadProcessError error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }

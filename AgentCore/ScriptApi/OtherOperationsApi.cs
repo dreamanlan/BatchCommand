@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -20,7 +21,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(text);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"getclipboard error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"getclipboard error: {ex.Message}");
                 return BoxedValue.FromString(string.Empty);
             }
         }
@@ -30,14 +31,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_clipboard(text)");
+                return BoxedValue.From(false);
+            }
+
+            {
                 try {
                     string text = operands[0].AsString;
                     bool result = Core.AgentCore.Instance.ClipboardOps.SetText(text);
                     return BoxedValue.From(result);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"setclipboard error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"setclipboard error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -49,7 +55,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count < 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: log_info(fmt, ...)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string fmt = operands[0].AsString;
                     var args = new object[operands.Count - 1];
@@ -59,7 +70,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     Core.AgentCore.Instance.Logger.Info(fmt, args);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"loginfo error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"loginfo error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -70,7 +81,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count < 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: log_error(fmt, ...)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string fmt = operands[0].AsString;
                     var args = new object[operands.Count - 1];
@@ -80,7 +96,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     Core.AgentCore.Instance.Logger.Error(fmt, args);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"logerror error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"logerror error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -91,7 +107,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count < 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: log_warning(fmt, ...)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string fmt = operands[0].AsString;
                     var args = new object[operands.Count - 1];
@@ -101,7 +122,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     Core.AgentCore.Instance.Logger.Warning(fmt, args);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"logwarning error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"logwarning error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -113,14 +134,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: fetch(url), aliased as http_get");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string url = operands[0].AsString;
                     string result = Core.AgentCore.Instance.HttpClient.Get(url);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"httpget error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"httpget error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -131,7 +157,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 2) {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post(url, content, contentType)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string url = operands[0].AsString;
                     string content = operands[1].AsString;
@@ -140,7 +171,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"httppost error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"httppost error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -151,7 +182,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 2) {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file(url, savePath)");
+                return BoxedValue.From(false);
+            }
+
+            {
                 try {
                     string url = operands[0].AsString;
                     string savePath = operands[1].AsString;
@@ -159,7 +195,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(result);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"downloadfile error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"downloadfile error: {ex.Message}");
                 }
             }
             return BoxedValue.From(false);
@@ -171,18 +207,23 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: to_json(obj, prettyPrint)");
+                return BoxedValue.FromString("null");
+            }
+
+            {
                 try {
-                    object obj = operands[0].GetObject();
-                    if (obj is IDictionary<BoxedValue, BoxedValue> dict) {
-                        obj = DslHelper.GetDictionaryFromBoxedValue(dict);
+                    object? obj = DslHelper.GetValueFromBoxedValue(operands[0]);
+                    if (null == obj) {
+                        return BoxedValue.FromString("null");
                     }
                     bool prettyPrint = operands.Count > 1 ? operands[1].GetBool() : false;
                     string json = JsonHelper.ToJson(obj, prettyPrint);
                     return BoxedValue.FromString(json);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"tojson error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"tojson error: {ex.Message}");
                 }
             }
             return BoxedValue.FromString("null");
@@ -193,14 +234,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: from_json(json)");
+                return BoxedValue.NullObject;
+            }
+
+            {
                 try {
                     string json = operands[0].AsString;
-                    object obj = JsonHelper.FromJson(json);
-                    return BoxedValue.FromObject(obj);
+                    object? obj = JsonHelper.FromJson(json);
+                    return DslHelper.GetBoxedValueFromValue(obj);
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
                 }
             }
             return BoxedValue.NullObject;
@@ -226,7 +272,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromObject(dict);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"newobject error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"newobject error: {ex.Message}");
                 return BoxedValue.FromObject(new Dictionary<string, object>());
             }
         }
@@ -236,7 +282,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: to_string(val)");
+                return (BoxedValue)string.Empty;
+            }
+
+            {
                 try {
                     var v = operands[0];
                     var sb = new StringBuilder();
@@ -244,7 +295,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return sb.ToString();
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fromjson error: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fromjson error: {ex.Message}");
                 }
             }
             return string.Empty;
@@ -255,9 +306,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count >= 1) {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_length(val), aliased as stringlength|strlen");
+                return (BoxedValue)(-1);
+            }
+
+            {
                 string str = operands[0].AsString;
-                return BoxedValue.From(str.Length);
+                if (!string.IsNullOrEmpty(str)) {
+                    return BoxedValue.From(str.Length);
+                }
             }
             return -1;
         }

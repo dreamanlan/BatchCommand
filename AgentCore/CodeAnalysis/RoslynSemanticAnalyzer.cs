@@ -12,14 +12,14 @@ namespace AgentCore.CodeAnalysis
     // Semantic analysis using Roslyn
     public class RoslynSemanticAnalyzer
     {
-        private ProjectLoader _projectLoader;
-        private CSharpCompilation _compilation;
+        private ProjectLoader? _projectLoader;
+        private CSharpCompilation _compilation = null!;
 
         // Constructor for project-level analysis (Phase 2)
         public RoslynSemanticAnalyzer(ProjectLoader projectLoader)
         {
             _projectLoader = projectLoader;
-            _compilation = projectLoader.Compilation;
+            _compilation = projectLoader.Compilation!;
         }
 
         // Constructor for single-file analysis (Phase 1)
@@ -41,7 +41,7 @@ namespace AgentCore.CodeAnalysis
         private static List<MetadataReference> GetDefaultReferences()
         {
             var references = new List<MetadataReference>();
-            var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
 
             var coreAssemblies = new[] {
                 "System.Runtime.dll",
@@ -75,7 +75,7 @@ namespace AgentCore.CodeAnalysis
                 tree = CSharpSyntaxTree.ParseText(code);
                 _compilation = _compilation.AddSyntaxTrees(tree);
             }
-            return _compilation.GetSemanticModel(tree);
+            return _compilation.GetSemanticModel(tree!);
         }
 
         // Get semantic model for file (project-level)
@@ -104,15 +104,15 @@ namespace AgentCore.CodeAnalysis
             var position = tree.GetText().Lines[line - 1].Start + (column - 1);
             var node = root.FindToken(position).Parent;
 
-            var typeInfo = semanticModel.GetTypeInfo(node);
+            var typeInfo = semanticModel.GetTypeInfo(node!);
 
             return new RoslynTypeInfo {
-                Type = typeInfo.Type?.ToDisplayString(),
-                ConvertedType = typeInfo.ConvertedType?.ToDisplayString(),
+                Type = typeInfo.Type?.ToDisplayString() ?? string.Empty,
+                ConvertedType = typeInfo.ConvertedType?.ToDisplayString() ?? string.Empty,
                 IsNullable = typeInfo.Type?.NullableAnnotation == NullableAnnotation.Annotated,
                 Line = line,
                 Column = column,
-                NodeText = node.ToString()
+                NodeText = node?.ToString() ?? string.Empty
             };
         }
 
@@ -131,12 +131,12 @@ namespace AgentCore.CodeAnalysis
             var position = tree.GetText().Lines[line - 1].Start + (column - 1);
             var node = root.FindToken(position).Parent;
 
-            var typeInfo = semanticModel.GetTypeInfo(node);
+            var typeInfo = semanticModel.GetTypeInfo(node!);
 
             // If GetTypeInfo returns null, try GetDeclaredSymbol for declarations
-            string typeString = typeInfo.Type?.ToDisplayString();
+            string? typeString = typeInfo.Type?.ToDisplayString();
             if (string.IsNullOrEmpty(typeString)) {
-                var symbol = semanticModel.GetDeclaredSymbol(node);
+                var symbol = semanticModel.GetDeclaredSymbol(node!);
                 if (symbol != null) {
                     typeString = (symbol as IFieldSymbol)?.Type?.ToDisplayString()
                         ?? (symbol as IPropertySymbol)?.Type?.ToDisplayString()
@@ -146,8 +146,8 @@ namespace AgentCore.CodeAnalysis
             }
 
             return new RoslynTypeInfo {
-                Type = typeString,
-                ConvertedType = typeInfo.ConvertedType?.ToDisplayString(),
+                Type = typeString ?? string.Empty,
+                ConvertedType = typeInfo.ConvertedType?.ToDisplayString() ?? string.Empty,
                 IsNullable = typeInfo.Type?.NullableAnnotation == NullableAnnotation.Annotated,
                 Line = line,
                 Column = column
@@ -186,12 +186,12 @@ namespace AgentCore.CodeAnalysis
                 node = token.Parent;
             }
 
-            var symbolInfo = semanticModel.GetSymbolInfo(node);
+            var symbolInfo = semanticModel.GetSymbolInfo(node!);
             var symbol = symbolInfo.Symbol;
 
             if (symbol == null) {
                 // Try to get declared symbol if this is a declaration
-                symbol = semanticModel.GetDeclaredSymbol(node);
+                symbol = semanticModel.GetDeclaredSymbol(node!);
             }
 
             if (symbol == null) {
@@ -210,9 +210,9 @@ namespace AgentCore.CodeAnalysis
                     ?? (symbol as IPropertySymbol)?.Type?.ToDisplayString()
                     ?? (symbol as IFieldSymbol)?.Type?.ToDisplayString()
                     ?? (symbol as ILocalSymbol)?.Type?.ToDisplayString()
-                    ?? (symbol as IParameterSymbol)?.Type?.ToDisplayString(),
-                ContainingType = symbol.ContainingType?.ToDisplayString(),
-                ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString(),
+                    ?? (symbol as IParameterSymbol)?.Type?.ToDisplayString() ?? string.Empty,
+                ContainingType = symbol.ContainingType?.ToDisplayString() ?? string.Empty,
+                ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty,
                 IsStatic = symbol.IsStatic,
                 IsAbstract = symbol.IsAbstract,
                 IsVirtual = symbol.IsVirtual,
@@ -247,9 +247,9 @@ namespace AgentCore.CodeAnalysis
                 Kind = symbol.Kind.ToString(),
                 Type = (symbol as IMethodSymbol)?.ReturnType?.ToDisplayString()
                     ?? (symbol as IPropertySymbol)?.Type?.ToDisplayString()
-                    ?? (symbol as IFieldSymbol)?.Type?.ToDisplayString(),
-                ContainingType = symbol.ContainingType?.ToDisplayString(),
-                ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString(),
+                    ?? (symbol as IFieldSymbol)?.Type?.ToDisplayString() ?? string.Empty,
+                ContainingType = symbol.ContainingType?.ToDisplayString() ?? string.Empty,
+                ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty,
                 IsStatic = symbol.IsStatic,
                 IsAbstract = symbol.IsAbstract,
                 IsVirtual = symbol.IsVirtual,
@@ -362,7 +362,7 @@ namespace AgentCore.CodeAnalysis
                         Line = lineSpan.StartLinePosition.Line + 1,
                         Column = lineSpan.StartLinePosition.Character + 1,
                         FilePath = tree.FilePath,
-                        Context = identifier.Parent.ToString()
+                        Context = identifier.Parent?.ToString() ?? string.Empty
                     });
                 }
             }
@@ -396,7 +396,7 @@ namespace AgentCore.CodeAnalysis
                             Line = lineSpan.StartLinePosition.Line + 1,
                             Column = lineSpan.StartLinePosition.Character + 1,
                             FilePath = tree.FilePath,
-                            Context = identifier.Parent.ToString()
+                            Context = identifier.Parent?.ToString() ?? string.Empty
                         });
                     }
                 }
@@ -470,9 +470,9 @@ namespace AgentCore.CodeAnalysis
                         Kind = symbol.Kind.ToString(),
                         Type = (symbol as IMethodSymbol)?.ReturnType?.ToDisplayString()
                             ?? (symbol as IPropertySymbol)?.Type?.ToDisplayString()
-                            ?? (symbol as IFieldSymbol)?.Type?.ToDisplayString(),
-                        ContainingType = symbol.ContainingType?.ToDisplayString(),
-                        ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString(),
+                            ?? (symbol as IFieldSymbol)?.Type?.ToDisplayString() ?? string.Empty,
+                        ContainingType = symbol.ContainingType?.ToDisplayString() ?? string.Empty,
+                        ContainingNamespace = symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty,
                         IsStatic = symbol.IsStatic,
                         IsAbstract = symbol.IsAbstract,
                         IsVirtual = symbol.IsVirtual,
@@ -512,50 +512,50 @@ namespace AgentCore.CodeAnalysis
     // Type information result
     public class RoslynTypeInfo
     {
-        public string Type { get; set; }
-        public string ConvertedType { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string ConvertedType { get; set; } = string.Empty;
         public bool IsNullable { get; set; }
         public int Line { get; set; }
         public int Column { get; set; }
-        public string NodeText { get; set; }
+        public string NodeText { get; set; } = string.Empty;
     }
 
     // Symbol information result
     public class RoslynSymbolInfo
     {
-        public string Name { get; set; }
-        public string Kind { get; set; }
-        public string Type { get; set; }
-        public string ContainingType { get; set; }
-        public string ContainingNamespace { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Kind { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string ContainingType { get; set; } = string.Empty;
+        public string ContainingNamespace { get; set; } = string.Empty;
         public bool IsStatic { get; set; }
         public bool IsAbstract { get; set; }
         public bool IsVirtual { get; set; }
         public bool IsOverride { get; set; }
-        public string Accessibility { get; set; }
+        public string Accessibility { get; set; } = string.Empty;
         public int Line { get; set; }
         public int Column { get; set; }
-        public string DefinitionLocation { get; set; }
+        public string DefinitionLocation { get; set; } = string.Empty;
     }
 
     // Diagnostic (error/warning) result
     public class RoslynDiagnostic
     {
-        public string Id { get; set; }
-        public string Message { get; set; }
-        public string Severity { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
         public int Line { get; set; }
         public int Column { get; set; }
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;
     }
 
     // Reference location result
     public class RoslynReference
     {
-        public string SymbolName { get; set; }
+        public string SymbolName { get; set; } = string.Empty;
         public int Line { get; set; }
         public int Column { get; set; }
-        public string FilePath { get; set; }
-        public string Context { get; set; }
+        public string FilePath { get; set; } = string.Empty;
+        public string Context { get; set; } = string.Empty;
     }
 }

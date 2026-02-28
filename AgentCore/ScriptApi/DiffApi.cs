@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -7,21 +8,23 @@ using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
-    // apply_diff(targetPath, diffPath) - apply unified diff patch to target file
+    // apply_diff(targetPath, diffPath[, isContent[, exactMatch]]) - apply unified diff patch to target file
     sealed class ApplyDiffExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
                 return BoxedValue.NullObject;
+            }
 
-            try
-            {
+            try {
                 string targetPath = operands[0].AsString;
                 string diffPathOrContent = operands[1].AsString;
                 bool isContent = operands.Count > 2 ? Convert.ToBoolean(operands[2].GetObject()) : false;
+                bool exactMatch = operands.Count > 3 ? Convert.ToBoolean(operands[3].GetObject()) : false;
 
-                var result = Core.AgentCore.Instance.DiffOps.ApplyDiff(targetPath, diffPathOrContent, isContent);
+                var result = Core.AgentCore.Instance.DiffOps.ApplyDiff(targetPath, diffPathOrContent, isContent, exactMatch);
 
                 var resultObj = new Dictionary<string, object>
                 {
@@ -31,12 +34,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     { "linesRemoved", result.LinesRemoved }
                 };
 
-                if (result.HunkResults != null)
-                {
+                if (result.HunkResults != null) {
                     var hunks = new List<object>();
-                    foreach (var hunk in result.HunkResults)
-                    {
-                        hunks.Add(new Dictionary<string, object>
+                    foreach (var hunk in result.HunkResults) {
+                        var hunkDict = new Dictionary<string, object>
                         {
                             { "oldStartLine", hunk.OldStartLine },
                             { "newStartLine", hunk.NewStartLine },
@@ -44,16 +45,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                             { "error", hunk.Error ?? string.Empty },
                             { "linesAdded", hunk.LinesAdded },
                             { "linesRemoved", hunk.LinesRemoved }
-                        });
+                        };
+                        if (hunk.CorrectedStartLine > 0) {
+                            hunkDict["correctedStartLine"] = hunk.CorrectedStartLine;
+                        }
+                        hunks.Add(hunkDict);
                     }
                     resultObj["hunks"] = hunks;
                 }
 
                 return BoxedValue.FromObject(resultObj);
             }
-            catch (Exception ex)
-            {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydiff error: {ex.Message}");
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"applydiff error: {ex.Message}, Expected: apply_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]), aliased as apply_unified_diff|applydiff");
                 var errorObj = new Dictionary<string, object>
                 {
                     { "success", false },
@@ -66,127 +70,4 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // apply_diff_full(targetPath, diffPath) - apply diff with full features (using LibGit2Sharp)
-    sealed class ApplyDiffFullExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string targetPath = operands[0].AsString;
-                string diffPath = operands[1].AsString;
-                bool createBackup = operands.Count > 2 ? Convert.ToBoolean(operands[2].GetObject()) : true;
-
-                // Use full-featured diff implementation with LibGit2Sharp
-                var result = Core.AgentCore.Instance.DiffOps.ApplyDiffFull(targetPath, diffPath, createBackup);
-
-                var resultObj = new Dictionary<string, object>
-                {
-                    { "success", result.Success },
-                    { "error", result.Error ?? string.Empty },
-                    { "linesAdded", result.LinesAdded },
-                    { "linesRemoved", result.LinesRemoved },
-                    { "library", result.Library ?? "Unknown" }
-                };
-
-                if (result.HunkResults != null)
-                {
-                    var hunks = new List<object>();
-                    foreach (var hunk in result.HunkResults)
-                    {
-                        hunks.Add(new Dictionary<string, object>
-                        {
-                            { "oldStartLine", hunk.OldStartLine },
-                            { "newStartLine", hunk.NewStartLine },
-                            { "success", hunk.Success },
-                            { "error", hunk.Error ?? string.Empty },
-                            { "linesAdded", hunk.LinesAdded },
-                            { "linesRemoved", hunk.LinesRemoved }
-                        });
-                    }
-                    resultObj["hunks"] = hunks;
-                }
-
-                return BoxedValue.FromObject(resultObj);
-            }
-            catch (Exception ex)
-            {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydifffull error: {ex.Message}");
-                var errorObj = new Dictionary<string, object>
-                {
-                    { "success", false },
-                    { "error", ex.Message },
-                    { "linesAdded", 0 },
-                    { "linesRemoved", 0 },
-                    { "library", "Error" }
-                };
-                return BoxedValue.FromObject(errorObj);
-            }
-        }
-    }
-
-    // apply_diff_libgit2(targetPath, diffContent, createBackup) - apply diff using LibGit2Sharp native capabilities
-    sealed class ApplyDiffLibGit2Exp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2)
-                return BoxedValue.NullObject;
-
-            try
-            {
-                string targetPath = operands[0].AsString;
-                string diffContent = operands[1].AsString;
-                bool createBackup = operands.Count > 2 ? Convert.ToBoolean(operands[2].GetObject()) : true;
-
-                // Use LibGit2Sharp native implementation
-                var result = Core.AgentCore.Instance.DiffOps.ApplyDiffUsingLibGit2Native(targetPath, diffContent, createBackup);
-
-                var resultObj = new Dictionary<string, object>
-                {
-                    { "success", result.Success },
-                    { "error", result.Error ?? string.Empty },
-                    { "linesAdded", result.LinesAdded },
-                    { "linesRemoved", result.LinesRemoved },
-                    { "library", result.Library ?? "Unknown" }
-                };
-
-                if (result.HunkResults != null)
-                {
-                    var hunks = new List<object>();
-                    foreach (var hunk in result.HunkResults)
-                    {
-                        hunks.Add(new Dictionary<string, object>
-                        {
-                            { "oldStartLine", hunk.OldStartLine },
-                            { "newStartLine", hunk.NewStartLine },
-                            { "success", hunk.Success },
-                            { "error", hunk.Error ?? string.Empty },
-                            { "linesAdded", hunk.LinesAdded },
-                            { "linesRemoved", hunk.LinesRemoved }
-                        });
-                    }
-                    resultObj["hunks"] = hunks;
-                }
-
-                return BoxedValue.FromObject(resultObj);
-            }
-            catch (Exception ex)
-            {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"applydifflibgit2 error: {ex.Message}");
-                var errorObj = new Dictionary<string, object>
-                {
-                    { "success", false },
-                    { "error", ex.Message },
-                    { "linesAdded", 0 },
-                    { "linesRemoved", 0 },
-                    { "library", "Error" }
-                };
-                return BoxedValue.FromObject(errorObj);
-            }
-        }
-    }
 }

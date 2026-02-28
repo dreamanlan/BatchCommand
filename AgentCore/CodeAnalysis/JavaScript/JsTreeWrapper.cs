@@ -213,7 +213,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis.JavaScript
 
         public string GetText()
         {
-            if (Location == null || string.IsNullOrEmpty(SourceCode))
+            if (string.IsNullOrEmpty(SourceCode))
                 return string.Empty;
 
             var lines = SourceCode.Split('\n');

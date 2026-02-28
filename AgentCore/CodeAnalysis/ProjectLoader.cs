@@ -1,4 +1,5 @@
 using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,15 +12,15 @@ namespace AgentCore.CodeAnalysis
     // Project loader for building Roslyn Compilation from .csproj files
     public class ProjectLoader
     {
-        private string _projectPath;
-        private string _projectDirectory;
-        private XDocument _projectXml;
-        private CSharpCompilation _compilation;
+        private string? _projectPath;
+        private string? _projectDirectory;
+        private XDocument? _projectXml;
+        private CSharpCompilation? _compilation;
         private Dictionary<string, SyntaxTree> _syntaxTrees = new Dictionary<string, SyntaxTree>();
 
-        public string ProjectPath => _projectPath;
-        public string ProjectDirectory => _projectDirectory;
-        public CSharpCompilation Compilation => _compilation;
+        public string? ProjectPath => _projectPath;
+        public string? ProjectDirectory => _projectDirectory;
+        public CSharpCompilation? Compilation => _compilation;
         public IReadOnlyDictionary<string, SyntaxTree> SyntaxTrees => _syntaxTrees;
 
         // Load project from .csproj file
@@ -47,7 +48,7 @@ namespace AgentCore.CodeAnalysis
         private void BuildCompilation()
         {
             // Get project name
-            string projectName = Path.GetFileNameWithoutExtension(_projectPath);
+            string projectName = Path.GetFileNameWithoutExtension(_projectPath) ?? string.Empty;
 
             // Parse all C# files in project
             var sourceFiles = GetSourceFiles();
@@ -57,7 +58,7 @@ namespace AgentCore.CodeAnalysis
                     _syntaxTrees[file] = tree;
                 }
                 catch (Exception ex) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"Warning: Failed to parse {file}: {ex.Message}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Warning: Failed to parse {file}: {ex.Message}");
                 }
             }
 
@@ -86,13 +87,13 @@ namespace AgentCore.CodeAnalysis
             var files = new List<string>();
 
             // Get explicitly included files from .csproj
-            var compileItems = _projectXml.Descendants()
+            var compileItems = _projectXml?.Descendants()
                 .Where(e => e.Name.LocalName == "Compile")
                 .Select(e => e.Attribute("Include")?.Value)
-                .Where(v => v != null);
+                .Where(v => v != null) ?? Enumerable.Empty<string?>();
 
             foreach (var item in compileItems) {
-                var fullPath = Path.Combine(_projectDirectory, item);
+                var fullPath = Path.Combine(_projectDirectory ?? string.Empty, item ?? string.Empty);
                 if (File.Exists(fullPath)) {
                     files.Add(fullPath);
                 }
@@ -100,7 +101,7 @@ namespace AgentCore.CodeAnalysis
 
             // If no explicit Compile items, use default glob pattern (SDK-style projects)
             if (files.Count == 0) {
-                files = Directory.GetFiles(_projectDirectory, "*.cs", SearchOption.AllDirectories)
+            files = Directory.GetFiles(_projectDirectory ?? string.Empty, "*.cs", SearchOption.AllDirectories)
                     .Where(f => !f.Contains("\\obj\\") && !f.Contains("\\bin\\"))
                     .ToList();
             }
@@ -129,7 +130,7 @@ namespace AgentCore.CodeAnalysis
         private void AddDefaultReferences(List<MetadataReference> references)
         {
             // Get runtime directory
-            var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var runtimeDir = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
 
             // Core assemblies
             var coreAssemblies = new[] {
@@ -171,17 +172,17 @@ namespace AgentCore.CodeAnalysis
         // Add project references
         private void AddProjectReferences(List<MetadataReference> references)
         {
-            var projectRefs = _projectXml.Descendants()
+            var projectRefs = _projectXml?.Descendants()
                 .Where(e => e.Name.LocalName == "ProjectReference")
                 .Select(e => e.Attribute("Include")?.Value)
-                .Where(v => v != null);
+                .Where(v => v != null) ?? Enumerable.Empty<string?>();
 
             foreach (var projRef in projectRefs) {
-                var refPath = Path.Combine(_projectDirectory, projRef);
+                var refPath = Path.Combine(_projectDirectory ?? string.Empty, projRef ?? string.Empty);
                 if (File.Exists(refPath)) {
                     try {
                         // Try to find compiled DLL
-                        var refDir = Path.GetDirectoryName(refPath);
+                        var refDir = Path.GetDirectoryName(refPath) ?? string.Empty;
                         var refName = Path.GetFileNameWithoutExtension(refPath);
                         var dllPath = Path.Combine(refDir, "bin", "Debug", "net8.0", $"{refName}.dll");
 
@@ -206,29 +207,31 @@ namespace AgentCore.CodeAnalysis
         // Add NuGet package references
         private void AddPackageReferences(List<MetadataReference> references)
         {
-            var packageRefs = _projectXml.Descendants()
+            var packageRefQuery = _projectXml?.Descendants()
                 .Where(e => e.Name.LocalName == "PackageReference")
                 .Select(e => new {
                     Name = e.Attribute("Include")?.Value,
                     Version = e.Attribute("Version")?.Value ?? e.Element(XName.Get("Version", e.Name.NamespaceName))?.Value
                 })
-                .Where(p => p.Name != null);
+                .Where(p => p.Name != null)
+                .ToList();
+            var packageRefs = packageRefQuery ?? new List<object>().Select(o => new { Name = (string?)null, Version = (string?)null }).ToList();
 
             // Try to find NuGet packages in common locations
             var nugetPaths = new[] {
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages"),
-                Path.Combine(_projectDirectory, "packages")
+                Path.Combine(_projectDirectory ?? string.Empty, "packages")
             };
 
             foreach (var package in packageRefs) {
                 foreach (var nugetPath in nugetPaths) {
                     if (!Directory.Exists(nugetPath)) continue;
 
-                    var packageDir = Path.Combine(nugetPath, package.Name.ToLower());
+                    var packageDir = Path.Combine(nugetPath, package.Name?.ToLower() ?? string.Empty);
                     if (!Directory.Exists(packageDir)) continue;
 
                     // Find version directory
-                    string versionDir = null;
+                    string? versionDir = null;
                     if (package.Version != null) {
                         versionDir = Path.Combine(packageDir, package.Version);
                     }
@@ -269,7 +272,7 @@ namespace AgentCore.CodeAnalysis
                 throw new FileNotFoundException($"File not in project: {filePath}");
             }
 
-            return _compilation.GetSemanticModel(_syntaxTrees[filePath]);
+            return _compilation!.GetSemanticModel(_syntaxTrees[filePath]);
         }
 
         // Get syntax tree for a file (with path normalization)
@@ -288,7 +291,7 @@ namespace AgentCore.CodeAnalysis
         // Get all diagnostics for the project
         public IEnumerable<Diagnostic> GetDiagnostics()
         {
-            return _compilation.GetDiagnostics();
+            return _compilation!.GetDiagnostics();
         }
 
         // Get diagnostics for a specific file
@@ -302,7 +305,7 @@ namespace AgentCore.CodeAnalysis
             }
 
             var tree = _syntaxTrees[filePath];
-            return _compilation.GetDiagnostics().Where(d => d.Location.SourceTree == tree);
+            return _compilation!.GetDiagnostics().Where(d => d.Location.SourceTree == tree);
         }
 
         // Reload a file (after modification)
@@ -319,17 +322,17 @@ namespace AgentCore.CodeAnalysis
 
             if (_syntaxTrees.ContainsKey(filePath)) {
                 var oldTree = _syntaxTrees[filePath];
-                _compilation = _compilation.ReplaceSyntaxTree(oldTree, newTree);
+                _compilation = _compilation!.ReplaceSyntaxTree(oldTree, newTree);
                 _syntaxTrees[filePath] = newTree;
             }
             else {
-                _compilation = _compilation.AddSyntaxTrees(newTree);
+                _compilation = _compilation!.AddSyntaxTrees(newTree);
                 _syntaxTrees[filePath] = newTree;
             }
         }
 
         // Get symbol at position
-        public ISymbol GetSymbolAt(string filePath, int line, int column)
+        public ISymbol? GetSymbolAt(string filePath, int line, int column)
         {
             // Normalize path to handle both / and \ separators
             filePath = Path.GetFullPath(filePath.Replace('/', Path.DirectorySeparatorChar));
@@ -342,7 +345,7 @@ namespace AgentCore.CodeAnalysis
             var position = tree.GetText().Lines[line - 1].Start + (column - 1);
 
             var node = root.FindToken(position).Parent;
-            return semanticModel.GetSymbolInfo(node).Symbol;
+            return semanticModel.GetSymbolInfo(node!).Symbol;
         }
 
         // Get type info at position
@@ -359,7 +362,7 @@ namespace AgentCore.CodeAnalysis
             var position = tree.GetText().Lines[line - 1].Start + (column - 1);
 
             var node = root.FindToken(position).Parent;
-            return semanticModel.GetTypeInfo(node);
+            return semanticModel.GetTypeInfo(node!);
         }
     }
 }

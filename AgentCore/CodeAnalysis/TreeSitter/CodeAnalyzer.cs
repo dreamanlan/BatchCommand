@@ -137,20 +137,43 @@ namespace AgentCore.CodeAnalysis.TreeSitter
             switch (language.ToLower())
             {
                 case "c":
-                case "cpp":
-                    var declarator = node.GetChildByFieldName("declarator");
-                    if (declarator != null)
+                    var nameNode = node.GetChildByFieldName("declarator");
+                    if (nameNode != null)
                     {
-                        var identifier = FindIdentifierInDeclarator(declarator, sourceCode);
+                        var identifier = FindIdentifierInDeclarator(nameNode, sourceCode);
                         if (identifier != null)
                             return identifier.GetText(sourceCode);
                     }
                     break;
 
-                case "javascript":
-                    var nameNode = node.GetChildByFieldName("name");
+                case "cpp":
+                    nameNode = node.GetChildByFieldName("declarator");
                     if (nameNode != null)
-                        return nameNode.GetText(sourceCode);
+                    {
+                        var identifier = FindIdentifierInDeclarator(nameNode, sourceCode);
+                        if (identifier != null)
+                            return identifier.GetText(sourceCode);
+                    }
+                    break;
+
+                case "python":
+                case "ruby":
+                case "javascript":
+                case "typescript":
+                case "tsx":
+                case "java":
+                case "go":
+                case "rust":
+                case "swift":
+                case "scala":
+                case "php":
+                case "c-sharp":
+                case "haskell":
+                case "julia":
+                case "bash":
+                    var fnName = node.GetChildByFieldName("name");
+                    if (fnName != null)
+                        return fnName.GetText(sourceCode);
                     break;
             }
 
@@ -162,13 +185,21 @@ namespace AgentCore.CodeAnalysis.TreeSitter
             switch (language.ToLower())
             {
                 case "cpp":
-                    var nameNode = node.GetChildByFieldName("name");
-                    if (nameNode != null)
-                        return nameNode.GetText(sourceCode);
-                    break;
-
+                case "c-sharp":
+                case "java":
+                case "python":
+                case "ruby":
                 case "javascript":
-                    nameNode = node.GetChildByFieldName("name");
+                case "typescript":
+                case "tsx":
+                case "go":
+                case "rust":
+                case "swift":
+                case "scala":
+                case "php":
+                case "haskell":
+                case "julia":
+                    var nameNode = node.GetChildByFieldName("name");
                     if (nameNode != null)
                         return nameNode.GetText(sourceCode);
                     break;
@@ -201,10 +232,10 @@ namespace AgentCore.CodeAnalysis.TreeSitter
             {
                 case "c":
                     return new HashSet<string> { "function_definition" };
-
                 case "cpp":
                     return new HashSet<string> { "function_definition" };
-
+                case "python":
+                    return new HashSet<string> { "function_definition" };
                 case "javascript":
                     return new HashSet<string>
                     {
@@ -213,9 +244,46 @@ namespace AgentCore.CodeAnalysis.TreeSitter
                         "arrow_function",
                         "method_definition"
                     };
-
+                case "typescript":
+                case "tsx":
+                    return new HashSet<string>
+                    {
+                        "function_declaration",
+                        "function_expression",
+                        "arrow_function",
+                        "method_definition"
+                    };
+                case "java":
+                    return new HashSet<string> { "method_declaration", "constructor_declaration" };
+                case "c-sharp":
+                    return new HashSet<string> { "method_declaration", "constructor_declaration" };
+                case "go":
+                    return new HashSet<string> { "function_declaration", "method_declaration" };
+                case "rust":
+                    return new HashSet<string> { "function_item" };
+                case "ruby":
+                    return new HashSet<string> { "method", "singleton_method" };
+                case "php":
+                    return new HashSet<string> { "function_definition", "method_declaration" };
+                case "swift":
+                    return new HashSet<string> { "function_declaration" };
+                case "scala":
+                    return new HashSet<string> { "function_definition", "function_declaration" };
+                case "bash":
+                    return new HashSet<string> { "function_definition" };
+                case "haskell":
+                    return new HashSet<string> { "function" };
+                case "julia":
+                    return new HashSet<string> { "function_definition", "short_function_definition" };
                 default:
-                    return new HashSet<string>();
+                    // Generic fallback for unknown languages
+                    return new HashSet<string>
+                    {
+                        "function_definition",
+                        "function_declaration",
+                        "method_declaration",
+                        "method_definition"
+                    };
             }
         }
 
@@ -225,15 +293,44 @@ namespace AgentCore.CodeAnalysis.TreeSitter
             {
                 case "c":
                     return new HashSet<string> { "struct_specifier" };
-
                 case "cpp":
                     return new HashSet<string> { "class_specifier", "struct_specifier" };
-
+                case "python":
+                    return new HashSet<string> { "class_definition" };
                 case "javascript":
                     return new HashSet<string> { "class_declaration" };
-
+                case "typescript":
+                case "tsx":
+                    return new HashSet<string> { "class_declaration", "interface_declaration" };
+                case "java":
+                    return new HashSet<string> { "class_declaration", "interface_declaration", "enum_declaration" };
+                case "c-sharp":
+                    return new HashSet<string> { "class_declaration", "interface_declaration", "struct_declaration", "enum_declaration" };
+                case "go":
+                    return new HashSet<string> { "type_declaration" };
+                case "rust":
+                    return new HashSet<string> { "struct_item", "enum_item", "impl_item", "trait_item" };
+                case "ruby":
+                    return new HashSet<string> { "class", "module" };
+                case "php":
+                    return new HashSet<string> { "class_declaration", "interface_declaration" };
+                case "swift":
+                    return new HashSet<string> { "class_declaration", "struct_declaration", "protocol_declaration" };
+                case "scala":
+                    return new HashSet<string> { "class_definition", "object_definition", "trait_definition" };
+                case "haskell":
+                    return new HashSet<string> { "data_declaration", "newtype_declaration", "type_class_declaration" };
+                case "julia":
+                    return new HashSet<string> { "struct_definition", "abstract_definition" };
                 default:
-                    return new HashSet<string>();
+                    // Generic fallback for unknown languages
+                    return new HashSet<string>
+                    {
+                        "class_definition",
+                        "class_declaration",
+                        "struct_specifier",
+                        "interface_declaration"
+                    };
             }
         }
     }

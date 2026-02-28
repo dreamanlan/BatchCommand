@@ -68,3 +68,5 @@ x64/Debug/MonoBleedingEdge
 *.pdb
 docs
 docs
+/AgentCore/nodejs/node_modules
+/AgentCore/Tests

@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using TreeSitterSharp;
-using TreeSitterSharp.C;
+using TreeSitter;
 using CefDotnetApp.AgentCore.Core;
 using CefDotnetApp.AgentCore.Models;
 
@@ -12,8 +11,8 @@ namespace AgentCore.CodeAnalysis
     // TreeSitter-based C parser
     public class TreeSitterCParser : ICodeParser
     {
-        private readonly CParser _parser;
-        private string _sourceCode;
+        private readonly Parser _parser;
+        private string _sourceCode = string.Empty;
 
         public ProgrammingLanguage Language => ProgrammingLanguage.C;
 
@@ -21,8 +20,8 @@ namespace AgentCore.CodeAnalysis
         {
             try
             {
-                // Create C parser using the correct API
-                _parser = new CParser();
+                // Create C parser using TreeSitter.DotNet
+                _parser = new Parser(new Language("c"));
             }
             catch (Exception ex)
             {
@@ -41,7 +40,7 @@ namespace AgentCore.CodeAnalysis
             return ParseText(code, filePath);
         }
 
-        public ParsedCodeFile ParseText(string code, string filePath = null)
+        public ParsedCodeFile ParseText(string code, string? filePath = null)
         {
             var result = new ParsedCodeFile(filePath ?? "<memory>", ProgrammingLanguage.C);
 
@@ -50,9 +49,14 @@ namespace AgentCore.CodeAnalysis
                 // Store source code for text extraction
                 _sourceCode = code;
 
-                // Parse the code - convert string to UTF8 bytes
-                var codeBytes = System.Text.Encoding.UTF8.GetBytes(code);
-                var tree = _parser.Parse(codeBytes.AsSpan());
+                // Parse the code directly as string
+                var tree = _parser.Parse(code);
+                if (tree == null)
+                {
+                    result.HasSyntaxErrors = true;
+                    result.SyntaxErrors.Add("Failed to parse C code: parser returned null");
+                    return result;
+                }
 
                 result.NativeSyntaxTree = tree;
 
@@ -69,21 +73,21 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private void ExtractSymbols(CSyntaxTree tree, ParsedCodeFile result)
+        private void ExtractSymbols(Tree tree, ParsedCodeFile result)
         {
             // Get the root node and traverse the tree to find functions and types
-            var root = tree.Root;
+            var root = tree.RootNode;
             TraverseNode(root, result);
         }
 
-        private void TraverseNode(CSyntaxNode node, ParsedCodeFile result)
+        private void TraverseNode(Node node, ParsedCodeFile result)
         {
-            if (node == null)
+            if (node.Type == null)
             {
                 return;
             }
 
-            var nodeType = node.NodeType;
+            var nodeType = node.Type;
 
             // Check for function definitions
             if (nodeType == "function_definition")
@@ -111,7 +115,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private FunctionInfo ExtractFunctionInfo(CSyntaxNode node, string filePath)
+        private FunctionInfo? ExtractFunctionInfo(Node node, string filePath)
         {
             try
             {
@@ -147,10 +151,10 @@ namespace AgentCore.CodeAnalysis
                     Parameters = parameters,
                     Location = new CodeLocation(
                         filePath,
-                        (int)node.StartPoint.Row + 1,
-                        (int)node.EndPoint.Row + 1,
-                        (int)node.StartPoint.Column,
-                        (int)node.EndPoint.Column)
+                        node.StartPosition.Row + 1,
+                        node.EndPosition.Row + 1,
+                        node.StartPosition.Column,
+                        node.EndPosition.Column)
                 };
             }
             catch
@@ -159,19 +163,18 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private string ExtractReturnType(CSyntaxNode functionNode)
+        private string ExtractReturnType(Node functionNode)
         {
             try
             {
-                // Look for type nodes (primitive_type, type_identifier, etc.)
                 foreach (var child in functionNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
                         nodeType == "sized_type_specifier" || nodeType == "struct_specifier" ||
                         nodeType == "union_specifier" || nodeType == "enum_specifier")
                     {
-                        return GetNodeText(child);
+                        return child.Text;
                     }
                 }
                 return string.Empty;
@@ -182,7 +185,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private List<ParameterInfo> ExtractParameters(CSyntaxNode declaratorNode)
+        private List<ParameterInfo> ExtractParameters(Node declaratorNode)
         {
             var parameters = new List<ParameterInfo>();
 
@@ -198,7 +201,7 @@ namespace AgentCore.CodeAnalysis
                 // Iterate through parameter_declaration nodes
                 foreach (var child in paramList.NamedChildren)
                 {
-                    if (child.NodeType == "parameter_declaration")
+                    if (child.Type == "parameter_declaration")
                     {
                         var param = ExtractParameter(child);
                         if (param != null)
@@ -216,17 +219,16 @@ namespace AgentCore.CodeAnalysis
             return parameters;
         }
 
-        private ParameterInfo ExtractParameter(CSyntaxNode paramNode)
+        private ParameterInfo? ExtractParameter(Node paramNode)
         {
             try
             {
                 string paramType = string.Empty;
                 string paramName = string.Empty;
 
-                // Extract type and name from parameter_declaration
                 foreach (var child in paramNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
 
                     // Type nodes
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
@@ -235,10 +237,9 @@ namespace AgentCore.CodeAnalysis
                     {
                         paramType = GetNodeText(child);
                     }
-                    // Name nodes
                     else if (nodeType == "identifier")
                     {
-                        paramName = GetNodeText(child);
+                        paramName = child.Text;
                     }
                     // Pointer declarator
                     else if (nodeType == "pointer_declarator")
@@ -269,7 +270,7 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private TypeInfo ExtractTypeInfo(CSyntaxNode node, string filePath)
+        private TypeInfo? ExtractTypeInfo(Node node, string filePath)
         {
             try
             {
@@ -279,7 +280,7 @@ namespace AgentCore.CodeAnalysis
                     return null;
                 }
 
-                var typeName = GetNodeText(identifier);
+                var typeName = identifier.Text;
                 if (string.IsNullOrEmpty(typeName))
                 {
                     return null;
@@ -294,10 +295,10 @@ namespace AgentCore.CodeAnalysis
                     Fields = fields,
                     Location = new CodeLocation(
                         filePath,
-                        (int)node.StartPoint.Row + 1,
-                        (int)node.EndPoint.Row + 1,
-                        (int)node.StartPoint.Column,
-                        (int)node.EndPoint.Column)
+                        node.StartPosition.Row + 1,
+                        node.EndPosition.Row + 1,
+                        node.StartPosition.Column,
+                        node.EndPosition.Column)
                 };
             }
             catch
@@ -306,7 +307,7 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        private List<FieldInfo> ExtractFields(CSyntaxNode structNode, string filePath)
+        private List<FieldInfo> ExtractFields(Node structNode, string filePath)
         {
             var fields = new List<FieldInfo>();
 
@@ -322,7 +323,7 @@ namespace AgentCore.CodeAnalysis
                 // Iterate through field_declaration nodes
                 foreach (var child in fieldList.NamedChildren)
                 {
-                    if (child.NodeType == "field_declaration")
+                    if (child.Type == "field_declaration")
                     {
                         var field = ExtractField(child, filePath);
                         if (field != null)
@@ -340,17 +341,16 @@ namespace AgentCore.CodeAnalysis
             return fields;
         }
 
-        private FieldInfo ExtractField(CSyntaxNode fieldNode, string filePath)
+        private FieldInfo? ExtractField(Node fieldNode, string filePath)
         {
             try
             {
                 string fieldType = string.Empty;
                 string fieldName = string.Empty;
 
-                // Extract type and name from field_declaration
                 foreach (var child in fieldNode.NamedChildren)
                 {
-                    var nodeType = child.NodeType;
+                    var nodeType = child.Type;
 
                     // Type nodes
                     if (nodeType == "primitive_type" || nodeType == "type_identifier" ||
@@ -359,10 +359,9 @@ namespace AgentCore.CodeAnalysis
                     {
                         fieldType = GetNodeText(child);
                     }
-                    // Name nodes (field_identifier)
                     else if (nodeType == "field_identifier")
                     {
-                        fieldName = GetNodeText(child);
+                        fieldName = child.Text;
                     }
                     // Pointer declarator
                     else if (nodeType == "pointer_declarator")
@@ -384,10 +383,10 @@ namespace AgentCore.CodeAnalysis
                         Name = fieldName,
                         Location = new CodeLocation(
                             filePath,
-                            (int)fieldNode.StartPoint.Row + 1,
-                            (int)fieldNode.EndPoint.Row + 1,
-                            (int)fieldNode.StartPoint.Column,
-                            (int)fieldNode.EndPoint.Column)
+                            fieldNode.StartPosition.Row + 1,
+                            fieldNode.EndPosition.Row + 1,
+                            fieldNode.StartPosition.Column,
+                            fieldNode.EndPosition.Column)
                     };
                 }
             }
@@ -399,16 +398,16 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private CSyntaxNode FindChildByType(CSyntaxNode node, string type)
+        private Node? FindChildByType(Node node, string type)
         {
-            if (node == null)
+            if (node.Type == null)
             {
                 return null;
             }
 
             foreach (var child in node.NamedChildren)
             {
-                if (child.NodeType == type)
+                if (child.Type == type)
                 {
                     return child;
                 }
@@ -417,24 +416,11 @@ namespace AgentCore.CodeAnalysis
             return null;
         }
 
-        private string GetNodeText(CSyntaxNode node)
+        private string GetNodeText(Node node)
         {
-            if (node == null || string.IsNullOrEmpty(_sourceCode))
-            {
-                return string.Empty;
-            }
-
             try
             {
-                int start = (int)node.StartByte;
-                int end = (int)node.EndByte;
-
-                if (start >= 0 && end <= _sourceCode.Length && start < end)
-                {
-                    return _sourceCode.Substring(start, end - start);
-                }
-
-                return string.Empty;
+                return node.Text;
             }
             catch
             {
@@ -442,24 +428,57 @@ namespace AgentCore.CodeAnalysis
             }
         }
 
-        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
-            return new List<FunctionInfo>();
+            if (parsed == null || parsed.Functions == null)
+                return new List<FunctionInfo>();
+
+            if (string.IsNullOrEmpty(namePattern))
+                return new List<FunctionInfo>(parsed.Functions);
+
+            return parsed.Functions.Where(f => MatchesPattern(f.Name, namePattern, ignoreCase)).ToList();
         }
 
-        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true)
+        public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
-            return new List<TypeInfo>();
+            if (parsed == null || parsed.Types == null)
+                return new List<TypeInfo>();
+
+            if (string.IsNullOrEmpty(namePattern))
+                return new List<TypeInfo>(parsed.Types);
+
+            return parsed.Types.Where(t => MatchesPattern(t.Name, namePattern, ignoreCase)).ToList();
         }
 
-        public FunctionInfo FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
+        public FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
         {
-            return null;
+            if (parsed == null || parsed.Functions == null)
+                return null;
+
+            return parsed.Functions.FirstOrDefault(f => MatchesPattern(f.Name, functionName, ignoreCase));
         }
 
-        public TypeInfo FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
+        public TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
         {
-            return null;
+            if (parsed == null || parsed.Types == null)
+                return null;
+
+            return parsed.Types.FirstOrDefault(t => MatchesPattern(t.Name, typeName, ignoreCase));
+        }
+
+        private static bool MatchesPattern(string name, string pattern, bool ignoreCase = true)
+        {
+            try
+            {
+                var options = ignoreCase ? System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                                         : System.Text.RegularExpressions.RegexOptions.None;
+                return System.Text.RegularExpressions.Regex.IsMatch(name, pattern, options);
+            }
+            catch (ArgumentException)
+            {
+                var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                return name.IndexOf(pattern, comparison) >= 0;
+            }
         }
     }
 }

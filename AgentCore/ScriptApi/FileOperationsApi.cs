@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using AgentPlugin.Abstractions;
 using System.Collections;
 using System.Collections.Generic;
 using DotnetStoryScript;
@@ -14,8 +15,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_file(path)");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string path = operands[0].AsString;
@@ -23,7 +26,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(content ?? string.Empty);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"readfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"readfile error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -34,21 +37,32 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_file(path, content)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
                 if (string.IsNullOrEmpty(content)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("You cannot write empty values ​​to a file !!! If you want to delete some lines, use the 'delete_lines' function.");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
+                }
+                string ext = Path.GetExtension(path).ToLower();
+                if (File.Exists(path) && ext != ".txt" && ext != ".md") {
+                    var lineCount = File.ReadAllLines(path).Length;
+                    var newLineCount = path.Split('\n').Length;
+                    if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
+                        return BoxedValue.From(false);
+                    }
                 }
                 bool result = Core.AgentCore.Instance.FileOps.WriteFile(path, content);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"writefile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"writefile error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -59,21 +73,23 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file(path, content)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
                 if (string.IsNullOrEmpty(content)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine("You cannot append empty values ​​to a file !!!");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values to a file !!!");
                     return BoxedValue.From(false);
                 }
                 bool result = Core.AgentCore.Instance.FileOps.AppendFile(path, content);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"appendfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"appendfile error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -84,8 +100,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: copy_file(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string sourcePath = operands[0].AsString;
@@ -95,7 +113,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"copyfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"copyfile error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -106,8 +124,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: move_file(sourcePath, destPath, overwrite)");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string sourcePath = operands[0].AsString;
@@ -117,7 +137,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"movefile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"movefile error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -128,8 +148,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_exists(path), aliased as file_exist");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string path = operands[0].AsString;
@@ -137,7 +159,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"fileexists error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fileexists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -148,8 +170,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dir_exists(path), aliased as dir_exist");
                 return BoxedValue.From(false);
+            }
 
             try {
                 string path = operands[0].AsString;
@@ -157,7 +181,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"direxists error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"direxists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -168,8 +192,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_dir_info(path, glob_pattern, recursive)");
                 return BoxedValue.NullObject;
+            }
 
             try {
                 string path = operands[0].AsString;
@@ -186,7 +212,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"listdir error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"listdir error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -197,8 +223,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2)
-                return BoxedValue.FromString("Usage: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before])");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before]), aliased as grep_log_file");
+                return BoxedValue.FromString("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before])");
+            }
 
             try {
                 string logFile = operands[0].AsString;
@@ -209,7 +237,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"search_log_file error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_log_file error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }
@@ -220,8 +248,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1)
-                return BoxedValue.FromString("Usage: tail_log_file(log_file, lines)");
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_log_file(log_file, lines)");
+                return BoxedValue.FromString("Expected: tail_log_file(log_file, lines)");
+            }
 
             try {
                 string logFile = operands[0].AsString;
@@ -230,7 +260,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"tail_log_file error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"tail_log_file error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }

@@ -8,20 +8,29 @@
     ".NETCoreApp,Version=v8.0": {
       "AgentCore/1.0.0": {
         "dependencies": {
-          "CefDotnetApp": "1.0.0",
+          "AbstractAgent": "1.0.0",
           "Esprima": "3.0.5",
+          "HnswLite": "1.0.6",
+          "HnswLite.RamStorage": "1.0.6",
           "Jint": "4.2.0",
-          "LibGit2Sharp": "0.31.0",
+          "Lucene.Net": "4.8.0-beta00016",
+          "Lucene.Net.Analysis.Common": "4.8.0-beta00016",
+          "Lucene.Net.QueryParser": "4.8.0-beta00016",
           "Microsoft.Build": "17.8.3",
           "Microsoft.Build.Locator": "1.6.10",
           "Microsoft.CodeAnalysis.CSharp": "4.8.0",
           "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.8.0",
+          "Microsoft.Data.Sqlite": "8.0.0",
+          "Microsoft.ML": "3.0.1",
+          "Microsoft.ML.OnnxRuntime": "1.20.1",
+          "Microsoft.ML.Tokenizers": "2.0.0",
           "NuGet.Packaging": "6.8.0",
           "NuGet.Protocol": "6.8.0",
           "TextCopy": "6.2.1",
-          "TreeSitterSharp": "0.5.0",
-          "TreeSitterSharp.C": "0.5.0",
-          "TreeSitterSharp.Cpp": "0.5.0",
+          "Tokenizers.DotNet": "1.4.0",
+          "Tokenizers.DotNet.runtime.win-x64": "1.4.0",
+          "TreeSitter.DotNet": "1.3.0",
+          "jieba.NET": "0.42.2",
           "Common": "1.0.0.0",
           "DotnetStoryScript": "1.0.0.0",
           "Dsl": "0.0.0.0",
@@ -48,11 +57,62 @@
           }
         }
       },
+      "Google.Protobuf/3.30.2": {
+        "runtime": {
+          "lib/net5.0/Google.Protobuf.dll": {
+            "assemblyVersion": "3.30.2.0",
+            "fileVersion": "3.30.2.0"
+          }
+        }
+      },
+      "HnswLite/1.0.6": {
+        "runtime": {
+          "lib/net8.0/HnswIndex.dll": {
+            "assemblyVersion": "1.0.6.0",
+            "fileVersion": "1.0.6.0"
+          }
+        }
+      },
+      "HnswLite.RamStorage/1.0.6": {
+        "dependencies": {
+          "HnswLite": "1.0.6"
+        },
+        "runtime": {
+          "lib/net8.0/HnswIndex.RamStorage.dll": {
+            "assemblyVersion": "1.0.6.0",
+            "fileVersion": "1.0.6.0"
+          }
+        }
+      },
       "Humanizer.Core/2.14.1": {
         "runtime": {
           "lib/net6.0/Humanizer.dll": {
             "assemblyVersion": "2.14.0.0",
             "fileVersion": "2.14.1.48190"
+          }
+        }
+      },
+      "J2N/2.0.0": {
+        "runtime": {
+          "lib/net6.0/J2N.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.0"
+          }
+        }
+      },
+      "jieba.NET/0.42.2": {
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.3",
+          "System.Configuration.ConfigurationManager": "7.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/JiebaNet.Analyser.dll": {
+            "assemblyVersion": "0.42.2.0",
+            "fileVersion": "0.42.2.0"
+          },
+          "lib/netstandard2.0/JiebaNet.Segmenter.dll": {
+            "assemblyVersion": "0.42.2.0",
+            "fileVersion": "0.42.2.0"
           }
         }
       },
@@ -67,78 +127,61 @@
           }
         }
       },
-      "LibGit2Sharp/0.31.0": {
+      "Lucene.Net/4.8.0-beta00016": {
         "dependencies": {
-          "LibGit2Sharp.NativeBinaries": "2.0.323"
+          "J2N": "2.0.0",
+          "Microsoft.Extensions.Configuration.Abstractions": "2.0.0"
         },
         "runtime": {
-          "lib/net8.0/LibGit2Sharp.dll": {
-            "assemblyVersion": "0.31.0.0",
-            "fileVersion": "0.31.0.0"
+          "lib/net6.0/Lucene.Net.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.8.0.0"
           }
         }
       },
-      "LibGit2Sharp.NativeBinaries/2.0.323": {
-        "runtimeTargets": {
-          "runtimes/linux-arm/native/libgit2-3f4182d.so": {
-            "rid": "linux-arm",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-arm64/native/libgit2-3f4182d.so": {
-            "rid": "linux-arm64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-musl-arm/native/libgit2-3f4182d.so": {
-            "rid": "linux-musl-arm",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-musl-arm64/native/libgit2-3f4182d.so": {
-            "rid": "linux-musl-arm64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-musl-x64/native/libgit2-3f4182d.so": {
-            "rid": "linux-musl-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-ppc64le/native/libgit2-3f4182d.so": {
-            "rid": "linux-ppc64le",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/linux-x64/native/libgit2-3f4182d.so": {
-            "rid": "linux-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/osx-arm64/native/libgit2-3f4182d.dylib": {
-            "rid": "osx-arm64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/osx-x64/native/libgit2-3f4182d.dylib": {
-            "rid": "osx-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          },
-          "runtimes/win-arm64/native/git2-3f4182d.dll": {
-            "rid": "win-arm64",
-            "assetType": "native",
-            "fileVersion": "1.8.4.0"
-          },
-          "runtimes/win-x64/native/git2-3f4182d.dll": {
-            "rid": "win-x64",
-            "assetType": "native",
-            "fileVersion": "1.8.4.0"
-          },
-          "runtimes/win-x86/native/git2-3f4182d.dll": {
-            "rid": "win-x86",
-            "assetType": "native",
-            "fileVersion": "1.8.4.0"
+      "Lucene.Net.Analysis.Common/4.8.0-beta00016": {
+        "dependencies": {
+          "Lucene.Net": "4.8.0-beta00016"
+        },
+        "runtime": {
+          "lib/net6.0/Lucene.Net.Analysis.Common.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.8.0.0"
+          }
+        }
+      },
+      "Lucene.Net.Queries/4.8.0-beta00016": {
+        "dependencies": {
+          "Lucene.Net": "4.8.0-beta00016"
+        },
+        "runtime": {
+          "lib/net6.0/Lucene.Net.Queries.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.8.0.0"
+          }
+        }
+      },
+      "Lucene.Net.QueryParser/4.8.0-beta00016": {
+        "dependencies": {
+          "Lucene.Net.Analysis.Common": "4.8.0-beta00016",
+          "Lucene.Net.Queries": "4.8.0-beta00016",
+          "Lucene.Net.Sandbox": "4.8.0-beta00016"
+        },
+        "runtime": {
+          "lib/net6.0/Lucene.Net.QueryParser.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.8.0.0"
+          }
+        }
+      },
+      "Lucene.Net.Sandbox/4.8.0-beta00016": {
+        "dependencies": {
+          "Lucene.Net": "4.8.0-beta00016"
+        },
+        "runtime": {
+          "lib/net6.0/Lucene.Net.Sandbox.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.8.0.0"
           }
         }
       },
@@ -147,14 +190,6 @@
           "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
             "assemblyVersion": "7.0.0.0",
             "fileVersion": "7.0.22.51805"
-          }
-        }
-      },
-      "Microsoft.Bcl.HashCode/1.1.1": {
-        "runtime": {
-          "lib/netcoreapp2.1/Microsoft.Bcl.HashCode.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "4.700.20.56604"
           }
         }
       },
@@ -185,7 +220,7 @@
           "Microsoft.CodeAnalysis.Analyzers": "3.3.4",
           "System.Collections.Immutable": "7.0.0",
           "System.Reflection.Metadata": "7.0.0",
-          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
         },
         "runtime": {
           "lib/net7.0/Microsoft.CodeAnalysis.dll": {
@@ -399,6 +434,34 @@
           }
         }
       },
+      "Microsoft.Data.Sqlite/8.0.0": {
+        "dependencies": {
+          "Microsoft.Data.Sqlite.Core": "8.0.0",
+          "SQLitePCLRaw.bundle_e_sqlite3": "2.1.6"
+        }
+      },
+      "Microsoft.Data.Sqlite.Core/8.0.0": {
+        "dependencies": {
+          "SQLitePCLRaw.core": "2.1.6"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Data.Sqlite.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        }
+      },
+      "Microsoft.Extensions.Configuration.Abstractions/2.0.0": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "2.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Extensions.Configuration.Abstractions.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.17205"
+          }
+        }
+      },
       "Microsoft.Extensions.DependencyInjection.Abstractions/7.0.0": {
         "runtime": {
           "lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
@@ -407,8 +470,272 @@
           }
         }
       },
+      "Microsoft.Extensions.Primitives/2.0.0": {
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Extensions.Primitives.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.0.17205"
+          }
+        }
+      },
+      "Microsoft.ML/3.0.1": {
+        "dependencies": {
+          "Microsoft.ML.CpuMath": "3.0.1",
+          "Microsoft.ML.DataView": "3.0.1",
+          "Newtonsoft.Json": "13.0.3",
+          "System.CodeDom": "4.5.0",
+          "System.Collections.Immutable": "7.0.0",
+          "System.Memory": "4.5.5",
+          "System.Reflection.Emit.Lightweight": "4.3.0",
+          "System.Threading.Channels": "7.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.ML.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.Data.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.KMeansClustering.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.PCA.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.StandardTrainers.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.Transforms.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          },
+          "lib/netstandard2.0/Microsoft.ML.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/linux-arm/native/libLdaNative.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libLdaNative.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libLdaNative.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libLdaNative.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libLdaNative.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/LdaNative.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.2100.124.6804"
+          },
+          "runtimes/win-x64/native/LdaNative.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.2100.124.6804"
+          },
+          "runtimes/win-x86/native/LdaNative.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.2100.124.6804"
+          }
+        }
+      },
+      "Microsoft.ML.CpuMath/3.0.1": {
+        "dependencies": {
+          "System.Numerics.Tensors": "8.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Microsoft.ML.CpuMath.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          }
+        }
+      },
+      "Microsoft.ML.DataView/3.0.1": {
+        "dependencies": {
+          "System.Collections.Immutable": "7.0.0",
+          "System.Memory": "4.5.5"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.ML.DataView.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "3.0.124.6804"
+          }
+        }
+      },
+      "Microsoft.ML.OnnxRuntime/1.20.1": {
+        "dependencies": {
+          "Microsoft.ML.OnnxRuntime.Managed": "1.20.1"
+        },
+        "runtimeTargets": {
+          "runtimes/android/native/onnxruntime.aar": {
+            "rid": "android",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/ios/native/onnxruntime.xcframework.zip": {
+            "rid": "ios",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libonnxruntime.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libonnxruntime_providers_shared.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libonnxruntime.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libonnxruntime_providers_shared.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libonnxruntime.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libonnxruntime.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/onnxruntime.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-arm64/native/onnxruntime.lib": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/onnxruntime_providers_shared.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-arm64/native/onnxruntime_providers_shared.lib": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/onnxruntime.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-x64/native/onnxruntime.lib": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/onnxruntime_providers_shared.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-x64/native/onnxruntime_providers_shared.lib": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/onnxruntime.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-x86/native/onnxruntime.lib": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/onnxruntime_providers_shared.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "1.20.24.1119"
+          },
+          "runtimes/win-x86/native/onnxruntime_providers_shared.lib": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Microsoft.ML.OnnxRuntime.Managed/1.20.1": {
+        "dependencies": {
+          "System.Memory": "4.5.5"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.ML.OnnxRuntime.dll": {
+            "assemblyVersion": "1.20.1.0",
+            "fileVersion": "1.20.1.0"
+          }
+        }
+      },
+      "Microsoft.ML.Tokenizers/2.0.0": {
+        "dependencies": {
+          "Google.Protobuf": "3.30.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.ML.Tokenizers.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "2.0.25.55704"
+          }
+        }
+      },
       "Microsoft.NET.StringTools/17.8.3": {},
-      "Microsoft.Win32.SystemEvents/7.0.0": {},
+      "Microsoft.NETCore.Platforms/1.1.0": {},
+      "Microsoft.NETCore.Targets/1.1.0": {},
+      "Microsoft.Win32.SystemEvents/7.0.0": {
+        "runtime": {
+          "lib/net7.0/Microsoft.Win32.SystemEvents.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net7.0/Microsoft.Win32.SystemEvents.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        }
+      },
       "Newtonsoft.Json/13.0.3": {
         "runtime": {
           "lib/net6.0/Newtonsoft.Json.dll": {
@@ -481,11 +808,149 @@
           }
         }
       },
-      "Scriban/5.9.0": {
+      "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
+        "dependencies": {
+          "SQLitePCLRaw.lib.e_sqlite3": "2.1.6",
+          "SQLitePCLRaw.provider.e_sqlite3": "2.1.6"
+        },
         "runtime": {
-          "lib/net7.0/Scriban.dll": {
-            "assemblyVersion": "5.0.0.0",
-            "fileVersion": "5.9.0.0"
+          "lib/netstandard2.0/SQLitePCLRaw.batteries_v2.dll": {
+            "assemblyVersion": "2.1.6.2060",
+            "fileVersion": "2.1.6.2060"
+          }
+        }
+      },
+      "SQLitePCLRaw.core/2.1.6": {
+        "dependencies": {
+          "System.Memory": "4.5.5"
+        },
+        "runtime": {
+          "lib/netstandard2.0/SQLitePCLRaw.core.dll": {
+            "assemblyVersion": "2.1.6.2060",
+            "fileVersion": "2.1.6.2060"
+          }
+        }
+      },
+      "SQLitePCLRaw.lib.e_sqlite3/2.1.6": {
+        "runtimeTargets": {
+          "runtimes/browser-wasm/nativeassets/net8.0/e_sqlite3.a": {
+            "rid": "browser-wasm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libe_sqlite3.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libe_sqlite3.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-armel/native/libe_sqlite3.so": {
+            "rid": "linux-armel",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-mips64/native/libe_sqlite3.so": {
+            "rid": "linux-mips64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-arm/native/libe_sqlite3.so": {
+            "rid": "linux-musl-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-arm64/native/libe_sqlite3.so": {
+            "rid": "linux-musl-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-musl-x64/native/libe_sqlite3.so": {
+            "rid": "linux-musl-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-ppc64le/native/libe_sqlite3.so": {
+            "rid": "linux-ppc64le",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-s390x/native/libe_sqlite3.so": {
+            "rid": "linux-s390x",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libe_sqlite3.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libe_sqlite3.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/maccatalyst-arm64/native/libe_sqlite3.dylib": {
+            "rid": "maccatalyst-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/maccatalyst-x64/native/libe_sqlite3.dylib": {
+            "rid": "maccatalyst-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libe_sqlite3.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libe_sqlite3.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm/native/e_sqlite3.dll": {
+            "rid": "win-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/e_sqlite3.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/e_sqlite3.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/e_sqlite3.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "SQLitePCLRaw.provider.e_sqlite3/2.1.6": {
+        "dependencies": {
+          "SQLitePCLRaw.core": "2.1.6"
+        },
+        "runtime": {
+          "lib/net6.0/SQLitePCLRaw.provider.e_sqlite3.dll": {
+            "assemblyVersion": "2.1.6.2060",
+            "fileVersion": "2.1.6.2060"
+          }
+        }
+      },
+      "System.CodeDom/4.5.0": {
+        "runtime": {
+          "lib/netstandard2.0/System.CodeDom.dll": {
+            "assemblyVersion": "4.0.1.0",
+            "fileVersion": "4.6.26515.6"
           }
         }
       },
@@ -555,21 +1020,104 @@
           "System.Diagnostics.EventLog": "7.0.0",
           "System.Security.Cryptography.ProtectedData": "7.0.0",
           "System.Security.Permissions": "7.0.0"
+        },
+        "runtime": {
+          "lib/net7.0/System.Configuration.ConfigurationManager.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
         }
       },
-      "System.Diagnostics.EventLog/7.0.0": {},
+      "System.Diagnostics.EventLog/7.0.0": {
+        "runtime": {
+          "lib/net7.0/System.Diagnostics.EventLog.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net7.0/System.Diagnostics.EventLog.Messages.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win/lib/net7.0/System.Diagnostics.EventLog.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        }
+      },
       "System.Drawing.Common/7.0.0": {
         "dependencies": {
           "Microsoft.Win32.SystemEvents": "7.0.0"
+        },
+        "runtime": {
+          "lib/net7.0/System.Drawing.Common.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net7.0/System.Drawing.Common.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
         }
       },
       "System.Formats.Asn1/6.0.0": {},
+      "System.IO/4.3.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0",
+          "System.Runtime": "4.3.0",
+          "System.Text.Encoding": "4.3.0",
+          "System.Threading.Tasks": "4.3.0"
+        }
+      },
       "System.IO.Pipelines/7.0.0": {
         "runtime": {
           "lib/net7.0/System.IO.Pipelines.dll": {
             "assemblyVersion": "7.0.0.0",
             "fileVersion": "7.0.22.51805"
           }
+        }
+      },
+      "System.Memory/4.5.5": {},
+      "System.Numerics.Tensors/8.0.0": {
+        "runtime": {
+          "lib/net8.0/System.Numerics.Tensors.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        }
+      },
+      "System.Reflection/4.3.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0",
+          "System.IO": "4.3.0",
+          "System.Reflection.Primitives": "4.3.0",
+          "System.Runtime": "4.3.0"
+        }
+      },
+      "System.Reflection.Emit.ILGeneration/4.3.0": {
+        "dependencies": {
+          "System.Reflection": "4.3.0",
+          "System.Reflection.Primitives": "4.3.0",
+          "System.Runtime": "4.3.0"
+        }
+      },
+      "System.Reflection.Emit.Lightweight/4.3.0": {
+        "dependencies": {
+          "System.Reflection": "4.3.0",
+          "System.Reflection.Emit.ILGeneration": "4.3.0",
+          "System.Reflection.Primitives": "4.3.0",
+          "System.Runtime": "4.3.0"
         }
       },
       "System.Reflection.Metadata/7.0.0": {
@@ -583,7 +1131,20 @@
           "System.Reflection.Metadata": "7.0.0"
         }
       },
-      "System.Runtime.CompilerServices.Unsafe/6.0.0": {},
+      "System.Reflection.Primitives/4.3.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0",
+          "System.Runtime": "4.3.0"
+        }
+      },
+      "System.Runtime/4.3.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0"
+        }
+      },
+      "System.Runtime.CompilerServices.Unsafe/6.1.2": {},
       "System.Security.Cryptography.Pkcs/6.0.4": {
         "dependencies": {
           "System.Formats.Asn1": "6.0.0"
@@ -622,20 +1183,48 @@
       "System.Security.Permissions/7.0.0": {
         "dependencies": {
           "System.Windows.Extensions": "7.0.0"
+        },
+        "runtime": {
+          "lib/net7.0/System.Security.Permissions.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
         }
       },
       "System.Security.Principal.Windows/5.0.0": {},
-      "System.Text.Encodings.Web/8.0.0-rc.2.23479.6": {},
-      "System.Text.Json/8.0.0-rc.2.23479.6": {
+      "System.Text.Encoding/4.3.0": {
         "dependencies": {
-          "System.Text.Encodings.Web": "8.0.0-rc.2.23479.6"
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0",
+          "System.Runtime": "4.3.0"
         }
       },
       "System.Threading.Channels/7.0.0": {},
+      "System.Threading.Tasks/4.3.0": {
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Targets": "1.1.0",
+          "System.Runtime": "4.3.0"
+        }
+      },
       "System.Threading.Tasks.Dataflow/7.0.0": {},
       "System.Windows.Extensions/7.0.0": {
         "dependencies": {
           "System.Drawing.Common": "7.0.0"
+        },
+        "runtime": {
+          "lib/net7.0/System.Windows.Extensions.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net7.0/System.Windows.Extensions.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.0.22.51805"
+          }
         }
       },
       "TextCopy/6.2.1": {
@@ -649,221 +1238,1314 @@
           }
         }
       },
-      "tree-sitter/0.4.19": {
+      "Tokenizers.DotNet/1.4.0": {
         "dependencies": {
-          "tree-sitter.runtime.linux-arm64": "0.4.19",
-          "tree-sitter.runtime.linux-x64": "0.4.19",
-          "tree-sitter.runtime.osx-arm64": "0.4.19",
-          "tree-sitter.runtime.osx-x64": "0.4.19",
-          "tree-sitter.runtime.win-arm64": "0.4.19",
-          "tree-sitter.runtime.win-x64": "0.4.19",
-          "tree-sitter.runtime.win-x86": "0.4.19"
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
+        },
+        "runtime": {
+          "lib/net6.0/Tokenizers.DotNet.dll": {
+            "assemblyVersion": "1.4.1.0",
+            "fileVersion": "2026.2.27.22559"
+          }
         }
       },
-      "tree-sitter-c/0.4.19": {
-        "dependencies": {
-          "tree-sitter-c.runtime.linux-arm64": "0.4.19",
-          "tree-sitter-c.runtime.linux-x64": "0.4.19",
-          "tree-sitter-c.runtime.osx-arm64": "0.4.19",
-          "tree-sitter-c.runtime.osx-x64": "0.4.19",
-          "tree-sitter-c.runtime.win-arm64": "0.4.19",
-          "tree-sitter-c.runtime.win-x64": "0.4.19",
-          "tree-sitter-c.runtime.win-x86": "0.4.19"
-        }
-      },
-      "tree-sitter-c.runtime.linux-arm64/0.4.19": {
+      "Tokenizers.DotNet.runtime.win-x64/1.4.0": {
         "runtimeTargets": {
+          "runtimes/win-x64/native/hf_tokenizers.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "TreeSitter.DotNet/1.3.0": {
+        "runtime": {
+          "lib/netstandard2.0/TreeSitter.dll": {
+            "assemblyVersion": "1.3.0.0",
+            "fileVersion": "1.3.0.0"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/linux-arm/native/libtree-sitter-agda.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-bash.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-c-sharp.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-c.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-cpp.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-css.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-embedded-template.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-go.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-haskell.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-html.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-java.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-javascript.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-jsdoc.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-json.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-julia.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-ocaml-type.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-ocaml.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-php.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-python.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-ql.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-razor.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-ruby.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-rust.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-scala.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-tsx.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-typescript.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter-verilog.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm/native/libtree-sitter.so": {
+            "rid": "linux-arm",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-agda.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-bash.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-c-sharp.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/linux-arm64/native/libtree-sitter-c.so": {
             "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.linux-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/linux-x64/native/libtree-sitter-c.so": {
-            "rid": "linux-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.osx-arm64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/osx-arm64/native/libtree-sitter-c.dylib": {
-            "rid": "osx-arm64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.osx-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/osx-x64/native/libtree-sitter-c.dylib": {
-            "rid": "osx-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.win-arm64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-arm64/native/tree-sitter-c.dll": {
-            "rid": "win-arm64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.win-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-x64/native/tree-sitter-c.dll": {
-            "rid": "win-x64",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-c.runtime.win-x86/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-x86/native/tree-sitter-c.dll": {
-            "rid": "win-x86",
-            "assetType": "native",
-            "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp/0.4.19": {
-        "dependencies": {
-          "tree-sitter-cpp.runtime.linux-arm64": "0.4.19",
-          "tree-sitter-cpp.runtime.linux-x64": "0.4.19",
-          "tree-sitter-cpp.runtime.osx-arm64": "0.4.19",
-          "tree-sitter-cpp.runtime.osx-x64": "0.4.19",
-          "tree-sitter-cpp.runtime.win-arm64": "0.4.19",
-          "tree-sitter-cpp.runtime.win-x64": "0.4.19",
-          "tree-sitter-cpp.runtime.win-x86": "0.4.19"
-        }
-      },
-      "tree-sitter-cpp.runtime.linux-arm64/0.4.19": {
-        "runtimeTargets": {
+          },
           "runtimes/linux-arm64/native/libtree-sitter-cpp.so": {
             "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.linux-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/linux-x64/native/libtree-sitter-cpp.so": {
-            "rid": "linux-x64",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-css.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.osx-arm64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/osx-arm64/native/libtree-sitter-cpp.dylib": {
-            "rid": "osx-arm64",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-embedded-template.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.osx-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/osx-x64/native/libtree-sitter-cpp.dylib": {
-            "rid": "osx-x64",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-go.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.win-arm64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-arm64/native/tree-sitter-cpp.dll": {
-            "rid": "win-arm64",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-haskell.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.win-x64/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-x64/native/tree-sitter-cpp.dll": {
-            "rid": "win-x64",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-html.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter-cpp.runtime.win-x86/0.4.19": {
-        "runtimeTargets": {
-          "runtimes/win-x86/native/tree-sitter-cpp.dll": {
-            "rid": "win-x86",
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-java.so": {
+            "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.linux-arm64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-javascript.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-jsdoc.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-json.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-julia.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-ocaml-type.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-ocaml.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-php.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-python.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-ql.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-razor.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-ruby.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-rust.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-scala.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-tsx.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-typescript.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-arm64/native/libtree-sitter-verilog.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/linux-arm64/native/libtree-sitter.so": {
             "rid": "linux-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.linux-x64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/linux-x64/native/libtree-sitter-agda.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-bash.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-c-sharp.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-c.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-cpp.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-css.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-embedded-template.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-go.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-haskell.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-html.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-java.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-javascript.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-jsdoc.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-json.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-julia.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-ocaml-type.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-ocaml.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-php.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-python.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-ql.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-razor.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-ruby.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-rust.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-scala.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-tsx.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-typescript.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x64/native/libtree-sitter-verilog.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/linux-x64/native/libtree-sitter.so": {
             "rid": "linux-x64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.osx-arm64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/linux-x86/native/libtree-sitter-agda.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-bash.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-c-sharp.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-c.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-cpp.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-css.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-embedded-template.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-go.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-haskell.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-html.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-java.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-javascript.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-jsdoc.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-json.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-julia.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-ocaml-type.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-ocaml.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-php.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-python.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-ql.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-razor.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-ruby.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-rust.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-scala.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-tsx.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-typescript.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter-verilog.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/linux-x86/native/libtree-sitter.so": {
+            "rid": "linux-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-agda.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-bash.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-c-sharp.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-c.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-cpp.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-css.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-embedded-template.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-go.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-haskell.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-html.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-java.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-javascript.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-jsdoc.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-json.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-julia.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-php.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-python.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-ql.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-razor.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-ruby.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-rust.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-scala.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-tsx.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-typescript.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-arm64/native/libtree-sitter-verilog.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/osx-arm64/native/libtree-sitter.dylib": {
             "rid": "osx-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.osx-x64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/osx-x64/native/libtree-sitter-agda.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-bash.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-c-sharp.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-c.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-cpp.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-css.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-embedded-template.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-go.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-haskell.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-html.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-java.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-javascript.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-jsdoc.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-json.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-julia.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-php.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-python.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-ql.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-razor.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-ruby.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-rust.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-scala.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-tsx.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-typescript.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx-x64/native/libtree-sitter-verilog.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/osx-x64/native/libtree-sitter.dylib": {
             "rid": "osx-x64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.win-arm64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/win-arm64/native/tree-sitter-agda.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-bash.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-c-sharp.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-c.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-cpp.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-css.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-embedded-template.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-go.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-haskell.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-html.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-java.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-javascript.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-jsdoc.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-json.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-julia.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-ocaml-type.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-ocaml.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-php.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-python.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-ql.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-razor.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-ruby.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-rust.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-scala.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-swift.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-toml.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-tsq.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-tsx.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-typescript.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-arm64/native/tree-sitter-verilog.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/win-arm64/native/tree-sitter.dll": {
             "rid": "win-arm64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.win-x64/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/win-x64/native/tree-sitter-agda.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-bash.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-c-sharp.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-c.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-cpp.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-css.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-embedded-template.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-go.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-haskell.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-html.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-java.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-javascript.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-jsdoc.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-json.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-julia.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-ocaml-type.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-ocaml.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-php.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-python.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-ql.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-razor.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-ruby.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-rust.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-scala.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-swift.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-toml.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-tsq.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-tsx.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-typescript.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x64/native/tree-sitter-verilog.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/win-x64/native/tree-sitter.dll": {
             "rid": "win-x64",
             "assetType": "native",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "tree-sitter.runtime.win-x86/0.4.19": {
-        "runtimeTargets": {
+          },
+          "runtimes/win-x86/native/tree-sitter-agda.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-bash.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-c-sharp.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-c.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-cpp.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-css.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-embedded-template.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-go.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-haskell.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-html.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-java.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-javascript.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-jsdoc.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-json.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-julia.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-ocaml-type.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-ocaml.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-php.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-python.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-ql.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-razor.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-ruby.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-rust.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-scala.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-swift.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-toml.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-tsq.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-tsx.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-typescript.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win-x86/native/tree-sitter-verilog.dll": {
+            "rid": "win-x86",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
           "runtimes/win-x86/native/tree-sitter.dll": {
             "rid": "win-x86",
             "assetType": "native",
@@ -871,65 +2553,9 @@
           }
         }
       },
-      "TreeSitterSharp/0.5.0": {
-        "dependencies": {
-          "tree-sitter": "0.4.19"
-        },
+      "AbstractAgent/1.0.0": {
         "runtime": {
-          "lib/net8.0/TreeSitterSharp.dll": {
-            "assemblyVersion": "0.5.0.0",
-            "fileVersion": "0.5.0.0"
-          }
-        }
-      },
-      "TreeSitterSharp.C/0.5.0": {
-        "dependencies": {
-          "TreeSitterSharp": "0.5.0",
-          "TreeSitterSharp.NodeTypesSourceGenerators": "0.5.0",
-          "tree-sitter-c": "0.4.19"
-        },
-        "runtime": {
-          "lib/net8.0/TreeSitterSharp.C.dll": {
-            "assemblyVersion": "0.5.0.0",
-            "fileVersion": "0.5.0.0"
-          }
-        }
-      },
-      "TreeSitterSharp.Cpp/0.5.0": {
-        "dependencies": {
-          "TreeSitterSharp": "0.5.0",
-          "TreeSitterSharp.NodeTypesSourceGenerators": "0.5.0",
-          "tree-sitter-cpp": "0.4.19"
-        },
-        "runtime": {
-          "lib/net8.0/TreeSitterSharp.Cpp.dll": {
-            "assemblyVersion": "0.5.0.0",
-            "fileVersion": "0.5.0.0"
-          }
-        }
-      },
-      "TreeSitterSharp.NodeTypesSourceGenerators/0.5.0": {
-        "dependencies": {
-          "Humanizer.Core": "2.14.1",
-          "Microsoft.Bcl.HashCode": "1.1.1",
-          "Microsoft.CodeAnalysis.CSharp": "4.8.0",
-          "Microsoft.CodeAnalysis.CSharp.Workspaces": "4.8.0",
-          "Scriban": "5.9.0",
-          "System.Text.Json": "8.0.0-rc.2.23479.6"
-        },
-        "runtime": {
-          "lib/netstandard2.0/TreeSitterSharp.NodeTypesSourceGenerators.dll": {
-            "assemblyVersion": "0.5.0.0",
-            "fileVersion": "0.5.0.0"
-          }
-        }
-      },
-      "CefDotnetApp/1.0.0": {
-        "dependencies": {
-          "TextCopy": "6.2.1"
-        },
-        "runtime": {
-          "CefDotnetApp.dll": {
+          "AbstractAgent.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -997,12 +2623,47 @@
       "path": "esprima/3.0.5",
       "hashPath": "esprima.3.0.5.nupkg.sha512"
     },
+    "Google.Protobuf/3.30.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Y2aOVLIt75yeeEWigg9V9YnjsEm53sADtLGq0gLhwaXpk3iu8tYSoauolyhenagA2sWno2TQ2WujI0HQd6s1Vw==",
+      "path": "google.protobuf/3.30.2",
+      "hashPath": "google.protobuf.3.30.2.nupkg.sha512"
+    },
+    "HnswLite/1.0.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LjdYZMnmpNgPBFxB8c5ZqBr77v/Br7ooFbuehlZRdZiw5b4h3VSEmTF3amocNuK3PBRpCeY84N2G0xg5pjMglQ==",
+      "path": "hnswlite/1.0.6",
+      "hashPath": "hnswlite.1.0.6.nupkg.sha512"
+    },
+    "HnswLite.RamStorage/1.0.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-TK9eUuYNThctq+g2OGTqMlhFsogOzAdXTeBebsilazsAj2NUUJrNogDllXkdnpIcXjsIkHAt2YJ/kAVILcgQGA==",
+      "path": "hnswlite.ramstorage/1.0.6",
+      "hashPath": "hnswlite.ramstorage.1.0.6.nupkg.sha512"
+    },
     "Humanizer.Core/2.14.1": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw==",
       "path": "humanizer.core/2.14.1",
       "hashPath": "humanizer.core.2.14.1.nupkg.sha512"
+    },
+    "J2N/2.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-M5bwDajAARZiyqupU+rHQJnsVLxNBOHJ8vKYHd8LcLIb1FgLfzzcJvc31Qo5Xz/GEHFjDF9ScjKL/ks/zRTXuA==",
+      "path": "j2n/2.0.0",
+      "hashPath": "j2n.2.0.0.nupkg.sha512"
+    },
+    "jieba.NET/0.42.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-QHt38dXnEGd1ZeZCBwW1oFAVzXULxQ6fxZG502gNR6n53Vt+7Ivs4+JzBsGT2tI/7HocL6vT1KcdrVpm+YVS9w==",
+      "path": "jieba.net/0.42.2",
+      "hashPath": "jieba.net.0.42.2.nupkg.sha512"
     },
     "Jint/4.2.0": {
       "type": "package",
@@ -1011,19 +2672,40 @@
       "path": "jint/4.2.0",
       "hashPath": "jint.4.2.0.nupkg.sha512"
     },
-    "LibGit2Sharp/0.31.0": {
+    "Lucene.Net/4.8.0-beta00016": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-b3+UfV7LjKMjAHWwl7VawejiOv2gJIC6dTCA/S0puLTHACAA/Oeb5JJmWUQMeyH/T/WR/LaIK8bk2RbdFnrZvg==",
-      "path": "libgit2sharp/0.31.0",
-      "hashPath": "libgit2sharp.0.31.0.nupkg.sha512"
+      "sha512": "sha512-DCtUbE/NIrisNI7hRwU+UKS3Cr6S2vH1XB9wvEHHI3anu5OUpX1Fkr/PDC7oFCaol/QCvzVLbLZVizAT1aTLpA==",
+      "path": "lucene.net/4.8.0-beta00016",
+      "hashPath": "lucene.net.4.8.0-beta00016.nupkg.sha512"
     },
-    "LibGit2Sharp.NativeBinaries/2.0.323": {
+    "Lucene.Net.Analysis.Common/4.8.0-beta00016": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-Kg+fJGWhGj5qRXG0Ilj4ddhuodGXZg57yhfX6OVUDR0M2DKg/UR42/d74+qv5l1qotc1qJilo/ho7xQnULP6yA==",
-      "path": "libgit2sharp.nativebinaries/2.0.323",
-      "hashPath": "libgit2sharp.nativebinaries.2.0.323.nupkg.sha512"
+      "sha512": "sha512-7pjEAIliWdih6E3I0hCE8hKcKKRx1LLzeQBslF1fhvzE1Sal4NyHd8RFJHV1Z+yHlBw4gCyyVIDZADiIoyqwxg==",
+      "path": "lucene.net.analysis.common/4.8.0-beta00016",
+      "hashPath": "lucene.net.analysis.common.4.8.0-beta00016.nupkg.sha512"
+    },
+    "Lucene.Net.Queries/4.8.0-beta00016": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XBzdMDlan68V2ZlhAlP8Fd+Xx2Le8ec7cEN1kFF45Sipa3Q8L/tilJfwS9VHvMTvGkwPM/yj62eGbfGBgIMR8Q==",
+      "path": "lucene.net.queries/4.8.0-beta00016",
+      "hashPath": "lucene.net.queries.4.8.0-beta00016.nupkg.sha512"
+    },
+    "Lucene.Net.QueryParser/4.8.0-beta00016": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-5dVvjXmzPaK8GD/eblJopTJMQmO6c6fvVPfBIOw46+jyZR+yESkUnWF1LtLoLXZQNrl4Dx8LKdes5G1QAM7eGA==",
+      "path": "lucene.net.queryparser/4.8.0-beta00016",
+      "hashPath": "lucene.net.queryparser.4.8.0-beta00016.nupkg.sha512"
+    },
+    "Lucene.Net.Sandbox/4.8.0-beta00016": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wMsRZtbNx0wvX3mtNjpOwQmKx3Ij4UGHWIYHbvnzMWlPUTgtOpYSj02REL4hOxI71WBZylpGB5EWfQ2eEld63g==",
+      "path": "lucene.net.sandbox/4.8.0-beta00016",
+      "hashPath": "lucene.net.sandbox.4.8.0-beta00016.nupkg.sha512"
     },
     "Microsoft.Bcl.AsyncInterfaces/7.0.0": {
       "type": "package",
@@ -1031,13 +2713,6 @@
       "sha512": "sha512-3aeMZ1N0lJoSyzqiP03hqemtb1BijhsJADdobn/4nsMJ8V1H+CrpuduUe4hlRdx+ikBQju1VGjMD1GJ3Sk05Eg==",
       "path": "microsoft.bcl.asyncinterfaces/7.0.0",
       "hashPath": "microsoft.bcl.asyncinterfaces.7.0.0.nupkg.sha512"
-    },
-    "Microsoft.Bcl.HashCode/1.1.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-MalY0Y/uM/LjXtHfX/26l2VtN4LDNZ2OE3aumNOHDLsT4fNYy2hiHXI4CXCqKpNUNm7iJ2brrc4J89UdaL56FA==",
-      "path": "microsoft.bcl.hashcode/1.1.1",
-      "hashPath": "microsoft.bcl.hashcode.1.1.1.nupkg.sha512"
     },
     "Microsoft.Build/17.8.3": {
       "type": "package",
@@ -1095,6 +2770,27 @@
       "path": "microsoft.codeanalysis.workspaces.common/4.8.0",
       "hashPath": "microsoft.codeanalysis.workspaces.common.4.8.0.nupkg.sha512"
     },
+    "Microsoft.Data.Sqlite/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-H+iC5IvkCCKSNHXzL3JARvDn7VpkvuJM91KVB89sKjeTF/KX/BocNNh93ZJtX5MCQKb/z4yVKgkU2sVIq+xKfg==",
+      "path": "microsoft.data.sqlite/8.0.0",
+      "hashPath": "microsoft.data.sqlite.8.0.0.nupkg.sha512"
+    },
+    "Microsoft.Data.Sqlite.Core/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pujbzfszX7jAl7oTbHhqx7pxd9jibeyHHl8zy1gd55XMaKWjDtc5XhhNYwQnrwWYCInNdVoArbaaAvLgW7TwuA==",
+      "path": "microsoft.data.sqlite.core/8.0.0",
+      "hashPath": "microsoft.data.sqlite.core.8.0.0.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Configuration.Abstractions/2.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-rHFrXqMIvQNq51H8RYTO4IWmDOYh8NUzyqGlh0xHWTP6XYnKk7Ryinys2uDs+Vu88b3AMlM3gBBSs78m6OQpYQ==",
+      "path": "microsoft.extensions.configuration.abstractions/2.0.0",
+      "hashPath": "microsoft.extensions.configuration.abstractions.2.0.0.nupkg.sha512"
+    },
     "Microsoft.Extensions.DependencyInjection.Abstractions/7.0.0": {
       "type": "package",
       "serviceable": true,
@@ -1102,12 +2798,75 @@
       "path": "microsoft.extensions.dependencyinjection.abstractions/7.0.0",
       "hashPath": "microsoft.extensions.dependencyinjection.abstractions.7.0.0.nupkg.sha512"
     },
+    "Microsoft.Extensions.Primitives/2.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ukg53qNlqTrK38WA30b5qhw0GD7y3jdI9PHHASjdKyTcBHTevFM2o23tyk3pWCgAV27Bbkm+CPQ2zUe1ZOuYSA==",
+      "path": "microsoft.extensions.primitives/2.0.0",
+      "hashPath": "microsoft.extensions.primitives.2.0.0.nupkg.sha512"
+    },
+    "Microsoft.ML/3.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-AE4DFwsDNVM5+2RVH3X9mRsqPSs+DrEd7TVA5TyLxPEerQC8wl5YTVQOVMsWCp2AroWGXEIny8xyXdOXfC+9BA==",
+      "path": "microsoft.ml/3.0.1",
+      "hashPath": "microsoft.ml.3.0.1.nupkg.sha512"
+    },
+    "Microsoft.ML.CpuMath/3.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-uVDD37oZMzPOtSpiACtVSOin7++4qohkAhsMO2l+90AToNPjatKTd6XiJoVI3+k7gxnP6UL7WJSafWOq4/s2KQ==",
+      "path": "microsoft.ml.cpumath/3.0.1",
+      "hashPath": "microsoft.ml.cpumath.3.0.1.nupkg.sha512"
+    },
+    "Microsoft.ML.DataView/3.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-mkZt1r6Nx5CAoD3klhC7VMQFzwWMHHjoYpv3X9u+GMvTMbSRaDdiA88HUoOzT7kCeq4/L1nKctmrByhLK28Xjw==",
+      "path": "microsoft.ml.dataview/3.0.1",
+      "hashPath": "microsoft.ml.dataview.3.0.1.nupkg.sha512"
+    },
+    "Microsoft.ML.OnnxRuntime/1.20.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NzUD79BC6R7TKROLyB3XCzXTpbNZ1YfOdVbult7hoFvd/xyRecOMiRO5HTzkPXvaFlcvZ91+WNCiroAPzUE7Dw==",
+      "path": "microsoft.ml.onnxruntime/1.20.1",
+      "hashPath": "microsoft.ml.onnxruntime.1.20.1.nupkg.sha512"
+    },
+    "Microsoft.ML.OnnxRuntime.Managed/1.20.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+EVcEcKdq3gkw6iu8TYl2coJxfPnMi1YQc6eZ80BGNlw6mbBCxNGe6h4udDCwENYWsXFvYjoBc6412t40tl4ew==",
+      "path": "microsoft.ml.onnxruntime.managed/1.20.1",
+      "hashPath": "microsoft.ml.onnxruntime.managed.1.20.1.nupkg.sha512"
+    },
+    "Microsoft.ML.Tokenizers/2.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+b8lT4cLLO/sBR2hjvE/qG6qrZG15h7/PBvnIrzTh4xDaAxdHUY6449rC+1pHzQUsBiCHZVbj+VMn+xS0sL7TA==",
+      "path": "microsoft.ml.tokenizers/2.0.0",
+      "hashPath": "microsoft.ml.tokenizers.2.0.0.nupkg.sha512"
+    },
     "Microsoft.NET.StringTools/17.8.3": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-y6DiuacjlIfXH3XVQG5htf+4oheinZAo7sHbITB3z7yCXQec48f9ZhGSXkr+xn1bfl73Yc3ZQEW2peJ5X68AvQ==",
       "path": "microsoft.net.stringtools/17.8.3",
       "hashPath": "microsoft.net.stringtools.17.8.3.nupkg.sha512"
+    },
+    "Microsoft.NETCore.Platforms/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
+      "path": "microsoft.netcore.platforms/1.1.0",
+      "hashPath": "microsoft.netcore.platforms.1.1.0.nupkg.sha512"
+    },
+    "Microsoft.NETCore.Targets/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-aOZA3BWfz9RXjpzt0sRJJMjAscAUm3Hoa4UWAfceV9UTYxgwZ1lZt5nO2myFf+/jetYQo4uTP7zS8sJY67BBxg==",
+      "path": "microsoft.netcore.targets/1.1.0",
+      "hashPath": "microsoft.netcore.targets.1.1.0.nupkg.sha512"
     },
     "Microsoft.Win32.SystemEvents/7.0.0": {
       "type": "package",
@@ -1165,12 +2924,40 @@
       "path": "nuget.versioning/6.8.0",
       "hashPath": "nuget.versioning.6.8.0.nupkg.sha512"
     },
-    "Scriban/5.9.0": {
+    "SQLitePCLRaw.bundle_e_sqlite3/2.1.6": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-V725wLd3YKTRua8kTHUwJYTvIouNqyMBzNaNamCLlZPTyeP4gl+WJtqXDnWMe+mTftTGEVYZgbR1pLRmdKjK1g==",
-      "path": "scriban/5.9.0",
-      "hashPath": "scriban.5.9.0.nupkg.sha512"
+      "sha512": "sha512-BmAf6XWt4TqtowmiWe4/5rRot6GerAeklmOPfviOvwLoF5WwgxcJHAxZtySuyW9r9w+HLILnm8VfJFLCUJYW8A==",
+      "path": "sqlitepclraw.bundle_e_sqlite3/2.1.6",
+      "hashPath": "sqlitepclraw.bundle_e_sqlite3.2.1.6.nupkg.sha512"
+    },
+    "SQLitePCLRaw.core/2.1.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wO6v9GeMx9CUngAet8hbO7xdm+M42p1XeJq47ogyRoYSvNSp0NGLI+MgC0bhrMk9C17MTVFlLiN6ylyExLCc5w==",
+      "path": "sqlitepclraw.core/2.1.6",
+      "hashPath": "sqlitepclraw.core.2.1.6.nupkg.sha512"
+    },
+    "SQLitePCLRaw.lib.e_sqlite3/2.1.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2ObJJLkIUIxRpOUlZNGuD4rICpBnrBR5anjyfUFQep4hMOIeqW+XGQYzrNmHSVz5xSWZ3klSbh7sFR6UyDj68Q==",
+      "path": "sqlitepclraw.lib.e_sqlite3/2.1.6",
+      "hashPath": "sqlitepclraw.lib.e_sqlite3.2.1.6.nupkg.sha512"
+    },
+    "SQLitePCLRaw.provider.e_sqlite3/2.1.6": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-PQ2Oq3yepLY4P7ll145P3xtx2bX8xF4PzaKPRpw9jZlKvfe4LE/saAV82inND9usn1XRpmxXk7Lal3MTI+6CNg==",
+      "path": "sqlitepclraw.provider.e_sqlite3/2.1.6",
+      "hashPath": "sqlitepclraw.provider.e_sqlite3.2.1.6.nupkg.sha512"
+    },
+    "System.CodeDom/4.5.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-gqpR1EeXOuzNQWL7rOzmtdIz3CaXVjSQCiaGOs2ivjPwynKSJYm39X81fdlp7WuojZs/Z5t1k5ni7HtKQurhjw==",
+      "path": "system.codedom/4.5.0",
+      "hashPath": "system.codedom.4.5.0.nupkg.sha512"
     },
     "System.Collections.Immutable/7.0.0": {
       "type": "package",
@@ -1249,12 +3036,54 @@
       "path": "system.formats.asn1/6.0.0",
       "hashPath": "system.formats.asn1.6.0.0.nupkg.sha512"
     },
+    "System.IO/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3qjaHvxQPDpSOYICjUoTsmoq5u6QJAFRUITgeT/4gqkF1bajbSmb1kwSxEA8AHlofqgcKJcM8udgieRNhaJ5Cg==",
+      "path": "system.io/4.3.0",
+      "hashPath": "system.io.4.3.0.nupkg.sha512"
+    },
     "System.IO.Pipelines/7.0.0": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-jRn6JYnNPW6xgQazROBLSfpdoczRw694vO5kKvMcNnpXuolEixUyw6IBuBs2Y2mlSX/LdLvyyWmfXhaI3ND1Yg==",
       "path": "system.io.pipelines/7.0.0",
       "hashPath": "system.io.pipelines.7.0.0.nupkg.sha512"
+    },
+    "System.Memory/4.5.5": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw==",
+      "path": "system.memory/4.5.5",
+      "hashPath": "system.memory.4.5.5.nupkg.sha512"
+    },
+    "System.Numerics.Tensors/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-fhODzTe9ON9IzmRfyVeA6L8yXOciMtpq1YufkRVBliggcVKZE+XDxqIn46+yF4PWR6wNPuDpXtPpuY86VcKxUA==",
+      "path": "system.numerics.tensors/8.0.0",
+      "hashPath": "system.numerics.tensors.8.0.0.nupkg.sha512"
+    },
+    "System.Reflection/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-KMiAFoW7MfJGa9nDFNcfu+FpEdiHpWgTcS2HdMpDvt9saK3y/G4GwprPyzqjFH9NTaGPQeWNHU+iDlDILj96aQ==",
+      "path": "system.reflection/4.3.0",
+      "hashPath": "system.reflection.4.3.0.nupkg.sha512"
+    },
+    "System.Reflection.Emit.ILGeneration/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-59tBslAk9733NXLrUJrwNZEzbMAcu8k344OYo+wfSVygcgZ9lgBdGIzH/nrg3LYhXceynyvTc8t5/GD4Ri0/ng==",
+      "path": "system.reflection.emit.ilgeneration/4.3.0",
+      "hashPath": "system.reflection.emit.ilgeneration.4.3.0.nupkg.sha512"
+    },
+    "System.Reflection.Emit.Lightweight/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oadVHGSMsTmZsAF864QYN1t1QzZjIcuKU3l2S9cZOwDdDueNTrqq1yRj7koFfIGEnKpt6NjpL3rOzRhs4ryOgA==",
+      "path": "system.reflection.emit.lightweight/4.3.0",
+      "hashPath": "system.reflection.emit.lightweight.4.3.0.nupkg.sha512"
     },
     "System.Reflection.Metadata/7.0.0": {
       "type": "package",
@@ -1270,12 +3099,26 @@
       "path": "system.reflection.metadataloadcontext/7.0.0",
       "hashPath": "system.reflection.metadataloadcontext.7.0.0.nupkg.sha512"
     },
-    "System.Runtime.CompilerServices.Unsafe/6.0.0": {
+    "System.Reflection.Primitives/4.3.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-/iUeP3tq1S0XdNNoMz5C9twLSrM/TH+qElHkXWaPvuNOt+99G75NrV0OS2EqHx5wMN7popYjpc8oTjC1y16DLg==",
-      "path": "system.runtime.compilerservices.unsafe/6.0.0",
-      "hashPath": "system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512"
+      "sha512": "sha512-5RXItQz5As4xN2/YUDxdpsEkMhvw3e6aNveFXUn4Hl/udNTCNhnKp8lT9fnc3MhvGKh1baak5CovpuQUXHAlIA==",
+      "path": "system.reflection.primitives/4.3.0",
+      "hashPath": "system.reflection.primitives.4.3.0.nupkg.sha512"
+    },
+    "System.Runtime/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-JufQi0vPQ0xGnAczR13AUFglDyVYt4Kqnz1AZaiKZ5+GICq0/1MH/mO/eAJHt/mHW1zjKBJd7kV26SrxddAhiw==",
+      "path": "system.runtime/4.3.0",
+      "hashPath": "system.runtime.4.3.0.nupkg.sha512"
+    },
+    "System.Runtime.CompilerServices.Unsafe/6.1.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2hBr6zdbIBTDE3EhK7NSVNdX58uTK6iHW/P/Axmm9sl1xoGSLqDvMtpecn226TNwHByFokYwJmt/aQQNlO5CRw==",
+      "path": "system.runtime.compilerservices.unsafe/6.1.2",
+      "hashPath": "system.runtime.compilerservices.unsafe.6.1.2.nupkg.sha512"
     },
     "System.Security.Cryptography.Pkcs/6.0.4": {
       "type": "package",
@@ -1305,19 +3148,12 @@
       "path": "system.security.principal.windows/5.0.0",
       "hashPath": "system.security.principal.windows.5.0.0.nupkg.sha512"
     },
-    "System.Text.Encodings.Web/8.0.0-rc.2.23479.6": {
+    "System.Text.Encoding/4.3.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-n66ZIJjetmrMq9hJ61Xed2cp9O2zr/VdzhhURjkLDEFOZ38/VpOWnvM3CWCXA18NbM7x0tdKZYex9rj0NimpPA==",
-      "path": "system.text.encodings.web/8.0.0-rc.2.23479.6",
-      "hashPath": "system.text.encodings.web.8.0.0-rc.2.23479.6.nupkg.sha512"
-    },
-    "System.Text.Json/8.0.0-rc.2.23479.6": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-SXMjrmm/e0Om+731AEUgm+81dC+i9mV54nKJGOq9+zTYpzujMCmSQSMS1sgQb0gmiiAfTfRC5WgD3l92cfAP+g==",
-      "path": "system.text.json/8.0.0-rc.2.23479.6",
-      "hashPath": "system.text.json.8.0.0-rc.2.23479.6.nupkg.sha512"
+      "sha512": "sha512-BiIg+KWaSDOITze6jGQynxg64naAPtqGHBwDrLaCtixsa5bKiR8dpPOHA7ge3C0JJQizJE+sfkz1wV+BAKAYZw==",
+      "path": "system.text.encoding/4.3.0",
+      "hashPath": "system.text.encoding.4.3.0.nupkg.sha512"
     },
     "System.Threading.Channels/7.0.0": {
       "type": "package",
@@ -1325,6 +3161,13 @@
       "sha512": "sha512-qmeeYNROMsONF6ndEZcIQ+VxR4Q/TX/7uIVLJqtwIWL7dDWeh0l1UIqgo4wYyjG//5lUNhwkLDSFl+pAWO6oiA==",
       "path": "system.threading.channels/7.0.0",
       "hashPath": "system.threading.channels.7.0.0.nupkg.sha512"
+    },
+    "System.Threading.Tasks/4.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LbSxKEdOUhVe8BezB/9uOGGppt+nZf6e1VFyw6v3DN6lqitm0OSn2uXMOdtP0M3W4iMcqcivm2J6UgqiwwnXiA==",
+      "path": "system.threading.tasks/4.3.0",
+      "hashPath": "system.threading.tasks.4.3.0.nupkg.sha512"
     },
     "System.Threading.Tasks.Dataflow/7.0.0": {
       "type": "package",
@@ -1347,203 +3190,28 @@
       "path": "textcopy/6.2.1",
       "hashPath": "textcopy.6.2.1.nupkg.sha512"
     },
-    "tree-sitter/0.4.19": {
+    "Tokenizers.DotNet/1.4.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-CZbcWFFJWcniYAjYPgu+H/tU6ikv7JSuh4ZLOK4PS9JgKNupkz6jWP5rm/Qt0c10OZqmDxm2RfHJ2KAKJ6z/GA==",
-      "path": "tree-sitter/0.4.19",
-      "hashPath": "tree-sitter.0.4.19.nupkg.sha512"
+      "sha512": "sha512-+4BZxn+So8bUDZrWPL/Z3WacpwSdvRkpT5530V0XLrMsCeRgf2oOh4/p36qmH0+ChT+ybMvtOKnqowWARhiYDg==",
+      "path": "tokenizers.dotnet/1.4.0",
+      "hashPath": "tokenizers.dotnet.1.4.0.nupkg.sha512"
     },
-    "tree-sitter-c/0.4.19": {
+    "Tokenizers.DotNet.runtime.win-x64/1.4.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-LefgjdIPWAPTO9AAEje72wdLTvY8SnT6DI4AFUsvmA7DVnN69XtdrLFlfiVOuTQMPJXcf5pD4l1mym02jSrB7g==",
-      "path": "tree-sitter-c/0.4.19",
-      "hashPath": "tree-sitter-c.0.4.19.nupkg.sha512"
+      "sha512": "sha512-ZNNjBvAefW+EeSPCT7Hg4s5qP3OOvd0aPGQwTGU46/mcyCZvGMmtr077opKSgdZaGVL/m28OtBVLbrxznDAhyw==",
+      "path": "tokenizers.dotnet.runtime.win-x64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.win-x64.1.4.0.nupkg.sha512"
     },
-    "tree-sitter-c.runtime.linux-arm64/0.4.19": {
+    "TreeSitter.DotNet/1.3.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-vom9m/eoYWPxCo0C8yjUTHmHSHvP3UsR+5jArbWRAuZiwco6n3pp5u+F2QE9Kn4davh50/z+niUSjQSSKcUHOw==",
-      "path": "tree-sitter-c.runtime.linux-arm64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.linux-arm64.0.4.19.nupkg.sha512"
+      "sha512": "sha512-VFl5j5UguKI3BvdQ/bbHDrDP1FG7lkEjv9LZCQ01bPe4NuAiXQVnEfuFRWdJ8TA9NmY/D7qqGkj8CuD3ptiDDw==",
+      "path": "treesitter.dotnet/1.3.0",
+      "hashPath": "treesitter.dotnet.1.3.0.nupkg.sha512"
     },
-    "tree-sitter-c.runtime.linux-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-kov+J8zWLV3AMxgw/12l5vYNTgZ3+Uxsc4xd8kmTvxBnlAviJkwLpEPE/Quoj0Xn+DTl+ABZuaF2G8NR3SYDIQ==",
-      "path": "tree-sitter-c.runtime.linux-x64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.linux-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-c.runtime.osx-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-XP7WbGbntLQqZiejRJUk1m4yN41MARAYGSFbKRKnDah7O0ubLg574OQP+wnlFOmciNOIF9ta49iIQQwDi2eMrA==",
-      "path": "tree-sitter-c.runtime.osx-arm64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.osx-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-c.runtime.osx-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-2CWsClnU60oGT38sruQMegcovB0IDlOJRka8CsoEQ+vcOdwz5cVh/TrjfjZa5ilRTBoonGMETKwzVQrqckKv/A==",
-      "path": "tree-sitter-c.runtime.osx-x64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.osx-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-c.runtime.win-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-dZSE9BLKlfzkmC58xQy7NSThBLcs8PsrN78uzQ0HDfVskdCJdsOwDnhdIipUCkAHd8YL/ww/zl0RowvRFHnzMA==",
-      "path": "tree-sitter-c.runtime.win-arm64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.win-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-c.runtime.win-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-60GPi7ZXot5/Dkj/c6YbAWI6xYxlxBkWjM57ET0Awszaq6+XBtGJmPbZ4+feZRBVQUGp0SCngmxYu6IQcpU7uQ==",
-      "path": "tree-sitter-c.runtime.win-x64/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.win-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-c.runtime.win-x86/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-9GRZFSBAWDRvAask3/PzKjtboqvHLLlKu05YTFPTH6KEsz52Y7zwIoWmh5x2uasYYA5vwZ5BMA3bPcf8q5eF2Q==",
-      "path": "tree-sitter-c.runtime.win-x86/0.4.19",
-      "hashPath": "tree-sitter-c.runtime.win-x86.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-p7cg3mwxXhCNKVzYlcsn0MZYUYbk1QAGTKQINvNpBhf3YOVJJmSQrzkCRjMAgFH34/d6gHcfGedXfaaTJ8rJ8w==",
-      "path": "tree-sitter-cpp/0.4.19",
-      "hashPath": "tree-sitter-cpp.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.linux-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-8wI+gM+QuZOePeyyeOPwLN88tytCXWiV+6yReh3nJe7oIL2nHmVUamslf9lDAUgsPvuae3WjBBFAtnxgss4P+Q==",
-      "path": "tree-sitter-cpp.runtime.linux-arm64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.linux-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.linux-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-50Xgb8ccXBkuYEldV7CphTEx5HZgyo8JvEB55X3cHMKLDZzSaj+VwRAX/8P+NkS7lugj3QI09UQQVxpGCRFNQg==",
-      "path": "tree-sitter-cpp.runtime.linux-x64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.linux-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.osx-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-76D+9Xk72zk8jh8qe66PFs5mOgKWb/IMvcK/K8UQ9XjmCWPlTAMW0xEt+FwEwpi2dPeOf9zAhIXX8C4IZ2EGWA==",
-      "path": "tree-sitter-cpp.runtime.osx-arm64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.osx-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.osx-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-bHZY9MgtPoU+gUPxnv4psdgmQLSvrVH0WPyH6x7syFCjovx0ndSEuCY+y2e+/ek3ZcCh2Ej0ONFyzwhuDHqRog==",
-      "path": "tree-sitter-cpp.runtime.osx-x64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.osx-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.win-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Jon8R9iraXASVHw3IXdYTRclmwVRJvKMoGu4oK2HgpOM7pH7ySiK4tZrqDUZ9AwZJpEMxWfW5cTxug+Ay1yG9A==",
-      "path": "tree-sitter-cpp.runtime.win-arm64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.win-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.win-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-yppRkjbwWm+3026cQ+qZJqkxKD4OPwzICh5fsQez9yn0dN5yEPmP2MUlxWbCuFglosbtcdZ27S5WpPD+qi0RkA==",
-      "path": "tree-sitter-cpp.runtime.win-x64/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.win-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter-cpp.runtime.win-x86/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-pMQfqkr3yebQdXdcPRlh9lktE9roM4YHhpRTmqG9gdxfA4WjFanoFYYFEfzkOs2VHd6czeS/81z/J7sC9oqFAA==",
-      "path": "tree-sitter-cpp.runtime.win-x86/0.4.19",
-      "hashPath": "tree-sitter-cpp.runtime.win-x86.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.linux-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-8goBM1wYJ6rBpxMhv63KIzOXb9R7b6FzmrfAADiy04HpZfi+tLw4NEuFUYIUdLCGDhUvpdYcF9E8CmNdzLKpKQ==",
-      "path": "tree-sitter.runtime.linux-arm64/0.4.19",
-      "hashPath": "tree-sitter.runtime.linux-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.linux-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-JFuB3byOCkXr2Wv+lsQz75vS5m7rukHgZu3dms8B0xOSnSbLkM+hg6RT/2sbQOHFlJtVmFC/+Khksl/OW55Sww==",
-      "path": "tree-sitter.runtime.linux-x64/0.4.19",
-      "hashPath": "tree-sitter.runtime.linux-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.osx-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-OiqXpHv/DgTPsXIlw8N22eYKnr+Mr2f93vZFsM6wXosy6MM6gs78+y6Xq+M4jtADuTI8XcnuODhovXTspc334A==",
-      "path": "tree-sitter.runtime.osx-arm64/0.4.19",
-      "hashPath": "tree-sitter.runtime.osx-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.osx-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-JpNY0uiGnuJYpumfseddENV9JvkQuZpJF1Cp0NFuerpbY4vJmPYJTfj0wbHHe9pMZzKmd5zQV403T35RrcxVlg==",
-      "path": "tree-sitter.runtime.osx-x64/0.4.19",
-      "hashPath": "tree-sitter.runtime.osx-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.win-arm64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-8w7MyZ5i1vkGRT09Swbl2yz1besyXmGVCnb8uvZkSrwKHRCOZIGZUpHOARwSxw/uRca1VsiPNyZrClbojbekTQ==",
-      "path": "tree-sitter.runtime.win-arm64/0.4.19",
-      "hashPath": "tree-sitter.runtime.win-arm64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.win-x64/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-bttueCOvObHbc/+XS3NHZPqwSKYCRzryxJ4pG0XsniYM3qjkyYz+aKegtigSeTsEPFKNc6D4WdR6yHEiJKL7SQ==",
-      "path": "tree-sitter.runtime.win-x64/0.4.19",
-      "hashPath": "tree-sitter.runtime.win-x64.0.4.19.nupkg.sha512"
-    },
-    "tree-sitter.runtime.win-x86/0.4.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-h7CpHG8xVquawBrEosClNXs6D8svBVAh3mdr1EWEWfAdnATjxP5XojvDoCSjRM+2RVaBcL6a7ZNn30DQEgqyAw==",
-      "path": "tree-sitter.runtime.win-x86/0.4.19",
-      "hashPath": "tree-sitter.runtime.win-x86.0.4.19.nupkg.sha512"
-    },
-    "TreeSitterSharp/0.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-lZiayUGm8i5hclp3ejzTNkVWTFV3NvE3tMNwGaOXXiFl265OUuqNiSxlB0vvgAPE1CFAajy3vRuPNBmf9CIi7w==",
-      "path": "treesittersharp/0.5.0",
-      "hashPath": "treesittersharp.0.5.0.nupkg.sha512"
-    },
-    "TreeSitterSharp.C/0.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-ew6wkuEpDPh3MHrCHX6H7VXdelwmFGHjtH0+GCxQzJkMDz+GVyrIoakZYyOJF5yqm/WKQrFR8ZG81C/om9ji8g==",
-      "path": "treesittersharp.c/0.5.0",
-      "hashPath": "treesittersharp.c.0.5.0.nupkg.sha512"
-    },
-    "TreeSitterSharp.Cpp/0.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-E0wm+bOGWHxjVOQhUZn10CFyuwS7clkWRenAF3Ebzf4Y612Ajg8cnSF8hnB1CIvke4PXzYiSg/SIsooCsnBACQ==",
-      "path": "treesittersharp.cpp/0.5.0",
-      "hashPath": "treesittersharp.cpp.0.5.0.nupkg.sha512"
-    },
-    "TreeSitterSharp.NodeTypesSourceGenerators/0.5.0": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-BUrwZnygb7Ox7JvUpnw2ygRbZE2OLYK+1Sx+4ONhoQNQSSB+aX7/4QgJlz7cimcUMGzSuvJaiTPz9e2Vz9RBiQ==",
-      "path": "treesittersharp.nodetypessourcegenerators/0.5.0",
-      "hashPath": "treesittersharp.nodetypessourcegenerators.0.5.0.nupkg.sha512"
-    },
-    "CefDotnetApp/1.0.0": {
+    "AbstractAgent/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

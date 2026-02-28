@@ -11,14 +11,14 @@ namespace AgentCore.CodeAnalysis
 
         ParsedCodeFile Parse(string filePath);
 
-        ParsedCodeFile ParseText(string code, string filePath = null);
+        ParsedCodeFile ParseText(string code, string? filePath = null);
 
-        List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true);
+        List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true);
 
-        List<TypeInfo> FindTypes(ParsedCodeFile parsed, string namePattern = null, bool ignoreCase = true);
+        List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true);
 
-        FunctionInfo FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true);
+        FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true);
 
-        TypeInfo FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true);
+        TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true);
     }
 }

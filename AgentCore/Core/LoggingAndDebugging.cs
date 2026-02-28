@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -18,11 +18,11 @@ namespace CefDotnetApp.AgentCore.Core
     public class LoggingAndDebugging
     {
         private readonly LogLevel _minLogLevel;
-        private Action<string> _nativeLogAction;
-        private Action<string> _jsLogAction;
+        private Action<string>? _nativeLogAction;
+        private Action<string>? _jsLogAction;
 
         public LoggingAndDebugging(LogLevel minLogLevel = LogLevel.Info,
-            Action<string> nativeLogAction = null, Action<string> jsLogAction = null)
+            Action<string>? nativeLogAction = null, Action<string>? jsLogAction = null)
         {
             _minLogLevel = minLogLevel;
             _nativeLogAction = nativeLogAction;
@@ -113,7 +113,7 @@ namespace CefDotnetApp.AgentCore.Core
             Log(LogLevel.Fatal, message, args);
         }
 
-        public void Exception(Exception ex, string message = null)
+        public void Exception(Exception ex, string? message = null)
         {
             string exMessage = message != null
                 ? $"{message}: {ex.Message}\n{ex.StackTrace}"

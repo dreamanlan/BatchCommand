@@ -1,9 +1,11 @@
 using System;
-using CefDotnetApp.Interfaces;
+using System.Collections.Generic;
+using AgentPlugin.Abstractions;
 using CefDotnetApp.AgentCore.Core;
 using ScriptableFramework;
 using CefDotnetApp.AgentCore.Utils;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CefDotnetApp.AgentCore
 {
@@ -12,8 +14,8 @@ namespace CefDotnetApp.AgentCore
     /// </summary>
     public class AgentPlugin : IAgentPlugin
     {
-        private string _basePath;
-        private string _appDir;
+        private string _basePath = string.Empty;
+        private string _appDir = string.Empty;
         private bool _isMac;
         private bool _isInitialized;
 
@@ -33,12 +35,18 @@ namespace CefDotnetApp.AgentCore
 
             _isInitialized = true;
             Core.AgentCore.Instance.Logger.Info($"AgentPlugin initialized at {_basePath}");
+
+            // scan skills directory
+            var skillsDir = System.IO.Path.Combine(_basePath, "skills");
+            Core.AgentCore.Instance.SkillMgr.LoadSkills(skillsDir);
+            Core.AgentCore.Instance.BuildSkillDocs();
+            Core.AgentCore.Instance.Logger.Info($"Skills loaded from {skillsDir}");
         }
 
         /// <summary>
         /// Set the native API for browser interaction
         /// </summary>
-        public void SetNativeApi(DotNetLib.NativeApi nativeApi)
+        public void SetNativeApi(INativeApi nativeApi)
         {
             if (!_isInitialized)
                 throw new InvalidOperationException("AgentPlugin not initialized. Call Initialize first.");
@@ -48,7 +56,7 @@ namespace CefDotnetApp.AgentCore
                 Core.AgentCore.Instance.Logger.Info("NativeApi set successfully in AgentPlugin");
             }
             catch (Exception ex) {
-                Core.AgentCore.Instance.Logger.Error($"Error setting NativeApi: {ex.Message}");
+                Core.AgentCore.Instance.Logger.Error($"Error setting NativeApi: {ex.Message}\nStack: {ex.StackTrace}");
                 throw;
             }
         }
@@ -65,7 +73,7 @@ namespace CefDotnetApp.AgentCore
                 Core.AgentCore.Instance.Logger.Info("Script APIs registered successfully");
             }
             catch (Exception ex) {
-                Core.AgentCore.Instance.Logger.Error($"Error registering script APIs: {ex.Message}");
+                Core.AgentCore.Instance.Logger.Error($"Error registering script APIs: {ex.Message}\nStack: {ex.StackTrace}");
                 throw;
             }
         }
@@ -75,6 +83,30 @@ namespace CefDotnetApp.AgentCore
             var sb = new StringBuilder();
             DslHelper.ConvertToString(result, sb, 0, true);
             return sb.ToString();
+        }
+
+        public string SkillHelp(IList<Regex> keyRegexes)
+        {
+            return Core.AgentCore.Instance.GetSkillHelp(keyRegexes);
+        }
+
+        public IList<(string key, string text, float score)>? SemanticSearch(
+            IList<string> queries,
+            IEnumerable<(string key, string text)> candidates,
+            int topN)
+        {
+            return Core.AgentCore.Instance.SemanticSearch(queries, candidates, topN);
+        }
+
+        public int GetMaxResultSize()
+        {
+            return Core.AgentCore.Instance.MaxResultSize;
+        }
+
+        public string RefreshSkills()
+        {
+            var skillsDir = System.IO.Path.Combine(_basePath, "skills");
+            return Core.AgentCore.Instance.RefreshSkills(skillsDir);
         }
 
         public void Shutdown()

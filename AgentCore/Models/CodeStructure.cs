@@ -30,13 +30,13 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a method in the code (Roslyn-based detailed info)
     public class RoslynMethodInfo
     {
-        public string Name { get; set; }
-        public string ReturnType { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string ReturnType { get; set; } = string.Empty;
         public List<RoslynParameterInfo> Parameters { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public string FullText { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public string FullText { get; set; } = string.Empty;
+        public Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax? SyntaxNode { get; set; }
 
         public RoslynMethodInfo()
         {
@@ -52,8 +52,8 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a method parameter
     public class RoslynParameterInfo
     {
-        public string Name { get; set; }
-        public string Type { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
 
         public override string ToString()
         {
@@ -64,14 +64,14 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a property in the code
     public class RoslynPropertyInfo
     {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string Modifiers { get; set; }
-        public CodeLocation Location { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string? Modifiers { get; set; }
+        public CodeLocation? Location { get; set; }
         public bool HasGetter { get; set; }
         public bool HasSetter { get; set; }
         public bool IsAutoProperty { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax SyntaxNode { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax? SyntaxNode { get; set; }
 
         public override string ToString()
         {
@@ -82,13 +82,13 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a field in the code
     public class RoslynFieldInfo
     {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string Modifiers { get; set; }
-        public CodeLocation Location { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string? Modifiers { get; set; }
+        public CodeLocation? Location { get; set; }
         public bool IsReadonly { get; set; }
         public bool IsConst { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax SyntaxNode { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.FieldDeclarationSyntax? SyntaxNode { get; set; }
 
         public override string ToString()
         {
@@ -99,11 +99,11 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents an event in the code
     public class RoslynEventInfo
     {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string Modifiers { get; set; }
-        public CodeLocation Location { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.EventDeclarationSyntax SyntaxNode { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string? Modifiers { get; set; }
+        public CodeLocation? Location { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.EventDeclarationSyntax? SyntaxNode { get; set; }
 
         public override string ToString()
         {
@@ -114,12 +114,12 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a constructor in the code
     public class RoslynConstructorInfo
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public List<RoslynParameterInfo> Parameters { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public string FullText { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.ConstructorDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public string FullText { get; set; } = string.Empty;
+        public Microsoft.CodeAnalysis.CSharp.Syntax.ConstructorDeclarationSyntax? SyntaxNode { get; set; }
 
         public RoslynConstructorInfo()
         {
@@ -135,22 +135,22 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a class in the code (Roslyn-based detailed info)
     public class RoslynClassInfo
     {
-        public string Name { get; set; }
-        public string Namespace { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Namespace { get; set; }
         public List<RoslynMethodInfo> Methods { get; set; }
         public List<RoslynPropertyInfo> Properties { get; set; }
         public List<RoslynFieldInfo> Fields { get; set; }
         public List<RoslynConstructorInfo> Constructors { get; set; }
         public List<RoslynEventInfo> Events { get; set; }
         public List<string> BaseTypes { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.TypeDeclarationSyntax? SyntaxNode { get; set; }
 
         // Nested type information
         public bool IsNested { get; set; }
-        public string ParentTypeName { get; set; }
-        public string FullTypeName { get; set; }
+        public string? ParentTypeName { get; set; }
+        public string? FullTypeName { get; set; }
 
         public RoslynClassInfo()
         {
@@ -166,7 +166,7 @@ namespace CefDotnetApp.AgentCore.Models
         {
             get
             {
-                var typeName = IsNested ? FullTypeName : Name;
+                var typeName = IsNested ? FullTypeName ?? Name : Name;
                 return string.IsNullOrEmpty(Namespace) ? typeName : $"{Namespace}.{typeName}";
             }
         }
@@ -180,14 +180,14 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a parsed C# file (Roslyn-based)
     public class RoslynParsedFile
     {
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;
         public List<RoslynClassInfo> Classes { get; set; }
         public List<RoslynInterfaceInfo> Interfaces { get; set; }
         public List<RoslynStructInfo> Structs { get; set; }
         public List<RoslynEnumInfo> Enums { get; set; }
         public List<string> Usings { get; set; }
-        public string Namespace { get; set; }
-        public Microsoft.CodeAnalysis.SyntaxTree SyntaxTree { get; set; }
+        public string? Namespace { get; set; }
+        public Microsoft.CodeAnalysis.SyntaxTree? SyntaxTree { get; set; }
 
         public RoslynParsedFile(string filePath)
         {
@@ -203,19 +203,19 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents an interface in the code
     public class RoslynInterfaceInfo
     {
-        public string Name { get; set; }
-        public string Namespace { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Namespace { get; set; }
         public List<RoslynMethodInfo> Methods { get; set; }
         public List<RoslynPropertyInfo> Properties { get; set; }
         public List<string> BaseInterfaces { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax? SyntaxNode { get; set; }
 
         // Nested type information
         public bool IsNested { get; set; }
-        public string ParentTypeName { get; set; }
-        public string FullTypeName { get; set; }
+        public string? ParentTypeName { get; set; }
+        public string? FullTypeName { get; set; }
 
         public RoslynInterfaceInfo()
         {
@@ -228,7 +228,7 @@ namespace CefDotnetApp.AgentCore.Models
         {
             get
             {
-                var typeName = IsNested ? FullTypeName : Name;
+                var typeName = IsNested ? FullTypeName ?? Name : Name;
                 return string.IsNullOrEmpty(Namespace) ? typeName : $"{Namespace}.{typeName}";
             }
         }
@@ -242,20 +242,20 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents a struct in the code
     public class RoslynStructInfo
     {
-        public string Name { get; set; }
-        public string Namespace { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Namespace { get; set; }
         public List<RoslynMethodInfo> Methods { get; set; }
         public List<RoslynPropertyInfo> Properties { get; set; }
         public List<RoslynFieldInfo> Fields { get; set; }
         public List<RoslynConstructorInfo> Constructors { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.StructDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.StructDeclarationSyntax? SyntaxNode { get; set; }
 
         // Nested type information
         public bool IsNested { get; set; }
-        public string ParentTypeName { get; set; }
-        public string FullTypeName { get; set; }
+        public string? ParentTypeName { get; set; }
+        public string? FullTypeName { get; set; }
 
         public RoslynStructInfo()
         {
@@ -269,7 +269,7 @@ namespace CefDotnetApp.AgentCore.Models
         {
             get
             {
-                var typeName = IsNested ? FullTypeName : Name;
+                var typeName = IsNested ? FullTypeName ?? Name : Name;
                 return string.IsNullOrEmpty(Namespace) ? typeName : $"{Namespace}.{typeName}";
             }
         }
@@ -283,17 +283,17 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents an enum in the code
     public class RoslynEnumInfo
     {
-        public string Name { get; set; }
-        public string Namespace { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Namespace { get; set; }
         public List<RoslynEnumMemberInfo> Members { get; set; }
-        public CodeLocation Location { get; set; }
-        public string Modifiers { get; set; }
-        public Microsoft.CodeAnalysis.CSharp.Syntax.EnumDeclarationSyntax SyntaxNode { get; set; }
+        public CodeLocation? Location { get; set; }
+        public string? Modifiers { get; set; }
+        public Microsoft.CodeAnalysis.CSharp.Syntax.EnumDeclarationSyntax? SyntaxNode { get; set; }
 
         // Nested type information
         public bool IsNested { get; set; }
-        public string ParentTypeName { get; set; }
-        public string FullTypeName { get; set; }
+        public string? ParentTypeName { get; set; }
+        public string? FullTypeName { get; set; }
 
         public RoslynEnumInfo()
         {
@@ -304,7 +304,7 @@ namespace CefDotnetApp.AgentCore.Models
         {
             get
             {
-                var typeName = IsNested ? FullTypeName : Name;
+                var typeName = IsNested ? FullTypeName ?? Name : Name;
                 return string.IsNullOrEmpty(Namespace) ? typeName : $"{Namespace}.{typeName}";
             }
         }
@@ -318,8 +318,8 @@ namespace CefDotnetApp.AgentCore.Models
     // Represents an enum member
     public class RoslynEnumMemberInfo
     {
-        public string Name { get; set; }
-        public string Value { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Value { get; set; }
 
         public override string ToString()
         {

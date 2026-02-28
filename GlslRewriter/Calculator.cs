@@ -1551,7 +1551,7 @@ namespace GlslRewriter
                 if (c == 'u' || c == 'U') {
                     str = str.Substring(0, str.Length - 1);
                 }
-                if (ulong.TryParse(str.Substring(2), NumberStyles.HexNumber, NumberFormatInfo.CurrentInfo, out var v)) {
+                if (ulong.TryParse(str.Substring(2), System.Globalization.NumberStyles.HexNumber, System.Globalization.NumberFormatInfo.CurrentInfo, out var v)) {
                     str = v.ToString();
                 }
                 type = "uint";
@@ -1571,8 +1571,8 @@ namespace GlslRewriter
                     type = "float";
                 }
             }
-            if (type == "float" || str.IndexOfAny(s_FloatExponent) > 0) {
-                if (double.TryParse(str, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
+            if (type == "float" || type != "uint" && str.IndexOfAny(s_FloatExponent) > 0) {
+                if (double.TryParse(str, System.Globalization.NumberStyles.Float, System.Globalization.NumberFormatInfo.CurrentInfo, out var v)) {
                     val.Set((float)v);
                     type = "float";
                     ret = true;
@@ -1600,7 +1600,7 @@ namespace GlslRewriter
                 type = "uint";
                 ret = true;
             }
-            else if(TryParseBool(str, out var bv)) {
+            if (!ret && TryParseBool(str, out var bv)) {
                 val.Set(bv);
                 type = "bool";
                 ret = true;

@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -43,7 +44,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -69,7 +70,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error adding method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding method: {ex.Message}");
                 return false;
             }
         }
@@ -86,7 +87,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -101,7 +102,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -111,7 +112,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == methodName);
 
                 if (oldMethod == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
                     return false;
                 }
 
@@ -122,7 +123,7 @@ namespace AgentCore.CodeAnalysis
                 var newMethod = tempClass.Members.First() as MethodDeclarationSyntax;
 
                 if (newMethod == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Failed to parse new method code");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse new method code");
                     return false;
                 }
 
@@ -140,7 +141,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error replacing method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error replacing method: {ex.Message}");
                 return false;
             }
         }
@@ -157,7 +158,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -172,7 +173,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -182,7 +183,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == afterMethodName);
 
                 if (afterMethod == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Method '{afterMethodName}' not found in class '{className}'");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{afterMethodName}' not found in class '{className}'");
                     return false;
                 }
 
@@ -213,7 +214,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error inserting method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error inserting method: {ex.Message}");
                 return false;
             }
         }
@@ -229,7 +230,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -244,7 +245,7 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(c => c.Identifier.Text == className);
 
                 if (classDecl == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Class '{className}' not found in {filePath}");
                     return false;
                 }
 
@@ -254,13 +255,13 @@ namespace AgentCore.CodeAnalysis
                     .FirstOrDefault(m => m.Identifier.Text == methodName);
 
                 if (methodToDelete == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Method '{methodName}' not found in class '{className}'");
                     return false;
                 }
 
                 // Remove the method
-                var updatedClass = classDecl.RemoveNode(methodToDelete, SyntaxRemoveOptions.KeepNoTrivia);
-                var newRoot = root.ReplaceNode(classDecl, updatedClass);
+                var updatedClass = classDecl.RemoveNode(methodToDelete!, SyntaxRemoveOptions.KeepNoTrivia);
+                var newRoot = root.ReplaceNode(classDecl, updatedClass!);
 
                 // Format the code
                 var workspace = new AdhocWorkspace();
@@ -272,7 +273,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error deleting method: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error deleting method: {ex.Message}");
                 return false;
             }
         }
@@ -287,7 +288,7 @@ namespace AgentCore.CodeAnalysis
         {
             try {
                 if (!File.Exists(filePath)) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] File not found: {filePath}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] File not found: {filePath}");
                     return false;
                 }
 
@@ -302,7 +303,7 @@ namespace AgentCore.CodeAnalysis
                 var newClass = classRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().FirstOrDefault();
 
                 if (newClass == null) {
-                    DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Failed to parse class code");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Failed to parse class code");
                     return false;
                 }
 
@@ -343,7 +344,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error adding class: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error adding class: {ex.Message}");
                 return false;
             }
         }
@@ -376,7 +377,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error creating file: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error creating file: {ex.Message}");
                 return false;
             }
         }
@@ -391,7 +392,7 @@ namespace AgentCore.CodeAnalysis
                 var tree = CSharpSyntaxTree.ParseText(code);
 
                 // Add comprehensive references
-                var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+                var assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location) ?? string.Empty;
                 var references = new List<MetadataReference>
                 {
                     MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
@@ -424,7 +425,7 @@ namespace AgentCore.CodeAnalysis
                 return true;
             }
             catch (Exception ex) {
-                DotNetLib.NativeApi.AppendApiErrorInfoFormatLine($"[SmartCodeEditor] Error verifying code: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[SmartCodeEditor] Error verifying code: {ex.Message}");
                 return false;
             }
         }

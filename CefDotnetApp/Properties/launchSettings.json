@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CefDotnetApp": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

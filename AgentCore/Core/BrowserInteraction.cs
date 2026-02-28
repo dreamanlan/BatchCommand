@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -10,17 +10,17 @@ namespace CefDotnetApp.AgentCore.Core
     /// BrowserInteraction - Unified entry point for browser interactions
     /// Provides two main responsibilities:
     /// 1. Build JavaScript code snippets for DOM operations (Build* methods)
-    /// 2. Execute JavaScript code in the browser (ExecuteJs/CallJsFunction methods)
+    /// 2. Send JavaScript code to the browser (SendJsCode/SendJsCall methods)
     /// </summary>
     public class BrowserInteraction
     {
-        private Action<string> _executeJsAction;
-        private Action<string, string[]> _callJsAction;
+        private Action<string>? _sendJsCodeAction;
+        private Action<string, string[]>? _sendJsCallAction;
 
-        public BrowserInteraction(Action<string> executeJsAction = null, Action<string, string[]> callJsAction = null)
+        public BrowserInteraction(Action<string>? sendJsCodeAction = null, Action<string, string[]>? sendJsCallAction = null)
         {
-            _executeJsAction = executeJsAction;
-            _callJsAction = callJsAction;
+            _sendJsCodeAction = sendJsCodeAction;
+            _sendJsCallAction = sendJsCallAction;
         }
 
         public string BuildQuerySelector(string selector)
@@ -254,7 +254,7 @@ namespace CefDotnetApp.AgentCore.Core
             return $"{BuildQuerySelector(selector)}?.remove()";
         }
 
-        public string BuildCreateElement(string tagName, string id = null, string className = null, string innerHTML = null)
+        public string BuildCreateElement(string tagName, string? id = null, string? className = null, string? innerHTML = null)
         {
             var sb = new StringBuilder();
             sb.Append($"(function() {{ const el = document.createElement('{EscapeJsString(tagName)}');");
@@ -317,26 +317,26 @@ namespace CefDotnetApp.AgentCore.Core
             return sb.ToString();
         }
 
-        public void ExecuteJs(string script)
+        public void SendJsCode(string script)
         {
-            _executeJsAction?.Invoke(script);
+            _sendJsCodeAction?.Invoke(script);
         }
 
-        public void CallJsFunction(string functionName, params string[] args)
+        public void SendJsCall(string functionName, params string[] args)
         {
-            _callJsAction?.Invoke(functionName, args);
+            _sendJsCallAction?.Invoke(functionName, args);
         }
 
-        // Set or update the execute JavaScript action
-        public void SetExecuteJsAction(Action<string> executeJsAction)
+        // Set or update the send JavaScript code action
+        public void SetSendJsCodeAction(Action<string> sendJsCodeAction)
         {
-            _executeJsAction = executeJsAction;
+            _sendJsCodeAction = sendJsCodeAction;
         }
 
-        // Set or update the call JavaScript function action
-        public void SetCallJsAction(Action<string, string[]> callJsAction)
+        // Set or update the send JavaScript call action
+        public void SetSendJsCallAction(Action<string, string[]> sendJsCallAction)
         {
-            _callJsAction = callJsAction;
+            _sendJsCallAction = sendJsCallAction;
         }
 
 

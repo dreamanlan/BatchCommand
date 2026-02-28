@@ -13,7 +13,7 @@ namespace AgentCore.CodeAnalysis
     public class RoslynRefactoring
     {
         private ProjectLoader _projectLoader;
-        private CSharpCompilation _compilation;
+        private CSharpCompilation? _compilation;
 
         // Constructor for project-level refactoring
         public RoslynRefactoring(ProjectLoader projectLoader)
@@ -36,7 +36,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Find all references
                 var references = new List<Location>();
-                foreach (var tree in _compilation.SyntaxTrees) {
+                foreach (var tree in _compilation!.SyntaxTrees) {
                     var semanticModel = _compilation.GetSemanticModel(tree);
                     var root = tree.GetRoot();
 
@@ -61,7 +61,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Build changes
                 var changes = new List<RoslynFileChange>();
-                var groupedByFile = references.GroupBy(r => r.SourceTree.FilePath);
+                var groupedByFile = references.GroupBy(r => r.SourceTree!.FilePath);
 
                 foreach (var group in groupedByFile) {
                     var fileChanges = new List<RoslynTextChange>();
@@ -122,11 +122,12 @@ namespace AgentCore.CodeAnalysis
 
                 // Analyze data flow
                 var dataFlow = semanticModel.AnalyzeDataFlow(statements.First(), statements.Last());
+                if (dataFlow == null) return new RoslynRefactoringResult { Success = false, Message = "Error: Could not analyze data flow" };
 
                 // Get parameters (variables used but not declared in selection)
                 var parameters = dataFlow.DataFlowsIn
                     .Where(s => s.Kind == SymbolKind.Local || s.Kind == SymbolKind.Parameter)
-                    .Select(s => $"{(s as ILocalSymbol)?.Type?.ToDisplayString() ?? (s as IParameterSymbol)?.Type?.ToDisplayString()} {s.Name}")
+                    .Select(s => $"{(s as ILocalSymbol)?.Type?.ToDisplayString() ?? (s as IParameterSymbol)?.Type?.ToDisplayString() ?? "object"} {s.Name}")
                     .ToList();
 
                 // Get return type (variables assigned in selection and used after)
@@ -194,7 +195,7 @@ private {returnType} {methodName}({string.Join(", ", parameters)})
                 }
 
                 // Find interface symbol
-                var interfaceSymbol = _compilation.GetTypeByMetadataName(interfaceName);
+                var interfaceSymbol = _compilation!.GetTypeByMetadataName(interfaceName);
                 if (interfaceSymbol == null) {
                     // Try to find in current compilation
                     interfaceSymbol = _compilation.GetSymbolsWithName(interfaceName, SymbolFilter.Type)
@@ -338,7 +339,7 @@ public {className}({parameters})
                 // Check if using already exists
                 var existingUsings = root.DescendantNodes()
                     .OfType<UsingDirectiveSyntax>()
-                    .Select(u => u.Name.ToString())
+                    .Select(u => u.Name?.ToString() ?? string.Empty)
                     .ToList();
 
                 if (existingUsings.Contains(namespaceName)) {
@@ -383,16 +384,16 @@ public {className}({parameters})
     public class RoslynRefactoringResult
     {
         public bool Success { get; set; }
-        public string Message { get; set; }
-        public string GeneratedCode { get; set; }
-        public string ReplacementCode { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string GeneratedCode { get; set; } = string.Empty;
+        public string ReplacementCode { get; set; } = string.Empty;
         public List<RoslynFileChange> FileChanges { get; set; } = new List<RoslynFileChange>();
     }
 
     // File change for refactoring
     public class RoslynFileChange
     {
-        public string FilePath { get; set; }
+        public string FilePath { get; set; } = string.Empty;
         public List<RoslynTextChange> Changes { get; set; } = new List<RoslynTextChange>();
     }
 
@@ -401,7 +402,7 @@ public {className}({parameters})
     {
         public int Line { get; set; }
         public int Column { get; set; }
-        public string OldText { get; set; }
-        public string NewText { get; set; }
+        public string OldText { get; set; } = string.Empty;
+        public string NewText { get; set; } = string.Empty;
     }
 }

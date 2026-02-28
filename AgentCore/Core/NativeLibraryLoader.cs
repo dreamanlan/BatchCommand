@@ -112,6 +112,15 @@ namespace CefDotnetApp.AgentCore.Core
 
                 try
                 {
+                    // Preload Everything64 native DLL for file search
+                    PreloadEverythingDll();
+
+                    // Preload SQLite native DLL before any SqliteConnection is created
+                    PreloadSqliteDll();
+
+                    // Preload OnnxRuntime native DLLs before any NativeMethods is accessed
+                    PreloadOnnxRuntimeDlls();
+
                     // Preload all TreeSitter native DLLs from the native directory
                     PreloadTreeSitterDlls();
 
@@ -124,9 +133,7 @@ namespace CefDotnetApp.AgentCore.Core
                     Log("info", "[NativeLibraryLoader] Registered AssemblyLoad event handler for TreeSitter assemblies");
 
                     // Try to set up resolvers for already-loaded assemblies
-                    SetupDllImportResolver("TreeSitterSharp");
-                    SetupDllImportResolver("TreeSitterSharp.C");
-                    SetupDllImportResolver("TreeSitterSharp.Cpp");
+                    SetupDllImportResolver("TreeSitter.DotNet");
 
                     _initialized = true;
                     Log("info", "[NativeLibraryLoader] TreeSitter native library resolver initialized");
@@ -136,6 +143,107 @@ namespace CefDotnetApp.AgentCore.Core
                     Log("error", $"[NativeLibraryLoader] Failed to initialize: {ex.Message}");
                     throw;
                 }
+            }
+        }
+
+        private static void PreloadEverythingDll()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            try
+            {
+                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (string.IsNullOrEmpty(agentCoreDir))
+                    return;
+
+                string rid = GetRuntimeIdentifier();
+                var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
+                var dllPath = Path.Combine(nativeDir, "Everything.dll");
+
+                if (!File.Exists(dllPath))
+                {
+                    Log("warning", $"[NativeLibraryLoader] Everything.dll not found at: {dllPath}");
+                    return;
+                }
+
+                if (NativeLibrary.TryLoad(dllPath, out _))
+                    Log("info", $"[NativeLibraryLoader] Successfully preloaded Everything.dll from {dllPath}");
+                else
+                    Log("warning", $"[NativeLibraryLoader] Failed to preload Everything.dll from {dllPath}");
+            }
+            catch (Exception ex)
+            {
+                Log("error", $"[NativeLibraryLoader] Exception preloading Everything.dll: {ex.Message}");
+            }
+        }
+
+        private static void PreloadSqliteDll()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            try
+            {
+                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (string.IsNullOrEmpty(agentCoreDir))
+                    return;
+
+                string rid = GetRuntimeIdentifier();
+                var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
+                var dllPath = Path.Combine(nativeDir, "e_sqlite3.dll");
+
+                if (!File.Exists(dllPath))
+                {
+                    Log("warning", $"[NativeLibraryLoader] e_sqlite3.dll not found at: {dllPath}");
+                    return;
+                }
+
+                if (NativeLibrary.TryLoad(dllPath, out _))
+                    Log("info", $"[NativeLibraryLoader] Successfully preloaded e_sqlite3.dll from {dllPath}");
+                else
+                    Log("warning", $"[NativeLibraryLoader] Failed to preload e_sqlite3.dll from {dllPath}");
+            }
+            catch (Exception ex)
+            {
+                Log("error", $"[NativeLibraryLoader] Exception preloading e_sqlite3.dll: {ex.Message}");
+            }
+        }
+
+        private static void PreloadOnnxRuntimeDlls()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
+
+            try
+            {
+                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (string.IsNullOrEmpty(agentCoreDir))
+                    return;
+
+                string rid = GetRuntimeIdentifier();
+                var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
+
+                // Load providers_shared first as it is a dependency of onnxruntime.dll
+                string[] dlls = { "onnxruntime_providers_shared.dll", "onnxruntime.dll" };
+                foreach (var dllName in dlls)
+                {
+                    var dllPath = Path.Combine(nativeDir, dllName);
+                    if (!File.Exists(dllPath))
+                    {
+                        Log("warning", $"[NativeLibraryLoader] {dllName} not found at: {dllPath}");
+                        continue;
+                    }
+
+                    if (NativeLibrary.TryLoad(dllPath, out _))
+                        Log("info", $"[NativeLibraryLoader] Successfully preloaded {dllName} from {dllPath}");
+                    else
+                        Log("warning", $"[NativeLibraryLoader] Failed to preload {dllName} from {dllPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("error", $"[NativeLibraryLoader] Exception preloading OnnxRuntime DLLs: {ex.Message}");
             }
         }
 
@@ -165,8 +273,12 @@ namespace CefDotnetApp.AgentCore.Core
                     return;
                 }
 
-                // Preload DLLs in dependency order: tree-sitter.dll first, then language-specific DLLs
-                string[] dllsToPreload = { "tree-sitter.dll", "tree-sitter-c.dll", "tree-sitter-cpp.dll" };
+                // Preload tree-sitter.dll first, then all language-specific DLLs found in the directory
+                string[] dllsToPreload = Directory.GetFiles(nativeDir, "tree-sitter*.dll")
+                    .Select(Path.GetFileName)
+                    .OrderBy(n => n == "tree-sitter.dll" ? 0 : 1) // tree-sitter.dll first
+                    .ThenBy(n => n)
+                    .ToArray()!;
 
                 foreach (var dllName in dllsToPreload)
                 {
@@ -206,12 +318,12 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        private static void OnAssemblyLoad(object sender, AssemblyLoadEventArgs args)
+        private static void OnAssemblyLoad(object? sender, AssemblyLoadEventArgs args)
         {
             try
             {
                 var assemblyName = args.LoadedAssembly.GetName().Name;
-                if (assemblyName != null && assemblyName.StartsWith("TreeSitterSharp", StringComparison.OrdinalIgnoreCase))
+                if (assemblyName != null && (assemblyName.StartsWith("TreeSitter", StringComparison.OrdinalIgnoreCase)))
                 {
                     Log("info", $"[NativeLibraryLoader] TreeSitter assembly loaded: {assemblyName}, setting up DllImportResolver");
                     SetupDllImportResolver(assemblyName);
@@ -350,13 +462,6 @@ namespace CefDotnetApp.AgentCore.Core
 
             try
             {
-                // Only handle tree-sitter related DLLs
-                if (!libraryName.StartsWith("tree-sitter", StringComparison.OrdinalIgnoreCase))
-                {
-                    Log("debug", $"[NativeLibraryLoader] Skipping '{libraryName}' (not a tree-sitter DLL)");
-                    return IntPtr.Zero; // Let default resolver handle it
-                }
-
                 Log("info", $"[NativeLibraryLoader] Resolving '{libraryName}' for assembly '{assembly.GetName().Name}'");
 
                 // Get the directory where AgentCore.dll is located
@@ -373,9 +478,9 @@ namespace CefDotnetApp.AgentCore.Core
 
                 var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
 
-                // CRITICAL: If loading a language-specific DLL (tree-sitter-c, tree-sitter-cpp),
+                // CRITICAL: If loading a tree-sitter language-specific DLL,
                 // ensure tree-sitter.dll is loaded first as a dependency
-                if (libraryName != "tree-sitter" && _treeSitterHandle == IntPtr.Zero)
+                if (libraryName.StartsWith("tree-sitter-", StringComparison.OrdinalIgnoreCase) && _treeSitterHandle == IntPtr.Zero)
                 {
                     var treeSitterPath = Path.Combine(nativeDir, "tree-sitter.dll");
                     if (File.Exists(treeSitterPath))
@@ -488,16 +593,12 @@ namespace CefDotnetApp.AgentCore.Core
                     return false;
                 }
 
-                // Check for required DLLs
-                string[] requiredDlls = { "tree-sitter.dll", "tree-sitter-c.dll", "tree-sitter-cpp.dll" };
-                foreach (var dll in requiredDlls)
+                // Check for tree-sitter core DLL (required)
+                var coreDll = Path.Combine(runtimesDir, "tree-sitter.dll");
+                if (!File.Exists(coreDll))
                 {
-                    var dllPath = Path.Combine(runtimesDir, dll);
-                    if (!File.Exists(dllPath))
-                    {
-                        Log("warning", $"[NativeLibraryLoader] Required DLL not found: {dllPath}");
-                        return false;
-                    }
+                    Log("warning", $"[NativeLibraryLoader] Required DLL not found: {coreDll}");
+                    return false;
                 }
 
                 Log("info", $"[NativeLibraryLoader] All required native libraries found in: {runtimesDir}");

@@ -5,6 +5,10 @@
 			"path": "."
 		},
 		{
+			"name": "AbstractAgent",
+			"path": "../AbstractAgent"
+		},
+		{
 			"name": "AgentCore",
 			"path": "../AgentCore"
 		},
@@ -13,10 +17,15 @@
 			"path": "../../CEF_Src_Build/cefclient"
 		},
 		{
+			"name": "cef",
 			"path": "../../CEF_Src_Build/chromium_git/chromium/src/cef"
 		},
 		{
+			"name": "AiWebGame",
 			"path": "../../../AiWebGame"
+		},
+		{
+			"path": "../../../AiClaw"
 		}
 	],
 	"settings": {}

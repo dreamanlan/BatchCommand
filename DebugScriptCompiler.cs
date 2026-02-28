@@ -7471,7 +7471,7 @@ namespace CppDebugScript
                     type = "float";
                 }
             }
-            if (type == "float" || str.IndexOfAny(s_FloatExponent) > 0) {
+            if (type == "float" || type != "uint" && str.IndexOfAny(s_FloatExponent) > 0) {
                 if (double.TryParse(str, NumberStyles.Float, NumberFormatInfo.CurrentInfo, out var v)) {
                     dval = v;
                     type = "float";

@@ -1,5 +1,4 @@
 using System;
-using System.Text.Json;
 using LitJson;
 
 namespace CefDotnetApp.AgentCore.Utils
@@ -11,46 +10,31 @@ namespace CefDotnetApp.AgentCore.Utils
             if (obj == null)
                 return "null";
 
-            try {
-                JsonWriter writer = new JsonWriter();
-                writer.PrettyPrint = prettyPrint;
-                JsonMapper.ToJson(obj, writer);
-                return writer.ToString();
-            }
-            catch (Exception ex) {
-                return $"{{\"error\": \"Failed to serialize: {ex.Message}\"}}";
-            }
+            JsonWriter writer = new JsonWriter();
+            writer.PrettyPrint = prettyPrint;
+            JsonMapper.ToJson(obj, writer);
+            return writer.ToString();
         }
 
-        public static T FromJson<T>(string json)
+        public static T? FromJson<T>(string json) where T : class
         {
             if (string.IsNullOrEmpty(json))
-                return default(T);
+                return default;
 
-            try {
-                return JsonMapper.ToObject<T>(json);
-            }
-            catch (Exception) {
-                return default(T);
-            }
+            return JsonMapper.ToObject<T>(json);
         }
 
-        public static object FromJson(string json)
+        public static object? FromJson(string json)
         {
             if (string.IsNullOrEmpty(json))
                 return null;
 
-            try {
-                return JsonMapper.ToObject(json);
-            }
-            catch (Exception) {
-                return null;
-            }
+            return JsonMapper.ToObject(json);
         }
 
-        public static bool TryParseJson(string json, out JsonData result)
+        public static bool TryParseJson(string json, out JsonData? result)
         {
-            result = null;
+            result = default;
             if (string.IsNullOrEmpty(json))
                 return false;
 

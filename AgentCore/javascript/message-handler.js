@@ -9,7 +9,6 @@ const msgLogger = window.logger ? window.logger.createLogger('MessageHandler') :
 class MessageHandler {
     constructor() {
         this.messages = [];
-        this.hiddenContext = []; // Hidden context that won't be displayed in UI
         this.dialogPrompt = ''; // Dialog prompt that will be sent as first message
         this.config = {
             contextRounds: 12, // Number of conversation rounds to include in auto context
@@ -81,12 +80,32 @@ class MessageHandler {
         };
     }
 
-    getConversationContext(maxMessages = 20) {
-        // Get last N messages for API context
-        const messages = this.messages.slice(-maxMessages).map(m => ({
+    getConversationContext(maxMessages) {
+        // Default to contextRounds * 2 (each round = user + assistant pair)
+        const limit = maxMessages || this.config.contextRounds * 2;
+        const maxChars = this.config.maxContextChars;
+
+        // Get last N messages and clean content for context
+        // Skip cleaning for the last message only if it is a user message (current request)
+        const sliced = this.messages.slice(-limit);
+        const lastIdx = sliced.length - 1;
+        const skipLastClean = lastIdx >= 0 && sliced[lastIdx].role === 'user';
+        const messages = sliced.map((m, idx) => ({
             role: m.role,
-            content: m.content
+            content: (skipLastClean && idx === lastIdx) ? m.content : this.cleanContentForContext(m.role, m.content)
         }));
+
+        // Truncate if total chars exceed maxContextChars
+        let totalChars = 0;
+        let startIdx = 0;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            totalChars += messages[i].content.length;
+            if (totalChars > maxChars) {
+                startIdx = i + 1;
+                break;
+            }
+        }
+        const trimmedMessages = messages.slice(startIdx);
 
         // Build context array starting with system prompt if available
         const contextMessages = [];
@@ -99,46 +118,31 @@ class MessageHandler {
             });
         }
 
-        // Add other hidden context as system messages if any
-        if (this.hiddenContext.length > 0) {
-            const hiddenContextMessages = this.hiddenContext.map(ctx => ({
-                role: 'system',
-                content: ctx
-            }));
-            contextMessages.push(...hiddenContextMessages);
-        }
-
         // Add conversation messages
-        contextMessages.push(...messages);
+        contextMessages.push(...trimmedMessages);
 
         return contextMessages;
     }
 
-    addHiddenContext(context) {
-        if (context && typeof context === 'string') {
-            this.hiddenContext.push(context);
-            if (msgLogger) msgLogger.info('Added hidden context, total:', { count: this.hiddenContext.length });
+    cleanContentForContext(role, content) {
+        if (!content) return '';
+
+        if (role === 'user') {
+            // Replace agent reply content with placeholder
+            const agentReplyMarker = '\u3010Agent\u56de\u590d\u3011'; // Agent reply marker
+            if (content.startsWith(agentReplyMarker)) {
+                return '...';
+            }
         }
-    }
 
-    setHiddenContext(context) {
-        if (Array.isArray(context)) {
-            this.hiddenContext = context.filter(c => typeof c === 'string');
-        } else if (typeof context === 'string') {
-            this.hiddenContext = [context];
-        } else {
-            this.hiddenContext = [];
+        if (role === 'assistant') {
+            // Remove MetaDSL code blocks (markdown fenced blocks starting with // @execute or # @execute)
+            content = content.replace(/```[^\n]*\n\s*(\/\/ @execute|# @execute)[\s\S]*?```/g, '');
+            // Clean up excessive blank lines left after removal
+            content = content.replace(/\n{3,}/g, '\n\n').trim();
         }
-        if (msgLogger) msgLogger.info('Set hidden context, total:', { count: this.hiddenContext.length });
-    }
 
-    clearHiddenContext() {
-        this.hiddenContext = [];
-        if (msgLogger) msgLogger.info('Cleared hidden context');
-    }
-
-    getHiddenContext() {
-        return [...this.hiddenContext];
+        return content;
     }
 
     setContextConfig(config) {
@@ -153,38 +157,6 @@ class MessageHandler {
 
     getContextConfig() {
         return { ...this.config };
-    }
-
-    getAutoContext() {
-        // Get recent conversation history for auto context
-        // First, get last N rounds (each round = user + assistant message pair)
-        const rounds = this.config.contextRounds;
-        const maxChars = this.config.maxContextChars;
-
-        // Get last N*2 messages (N rounds)
-        const recentMessages = this.messages.slice(-rounds * 2);
-
-        if (recentMessages.length === 0) {
-            return '';
-        }
-
-        // Format messages as context string
-        let contextStr = recentMessages.map(m => {
-            const role = m.role === 'user' ? 'User' : 'Assistant';
-            return `${role}: ${m.content}`;
-        }).join('\n\n');
-
-        // If exceeds max chars, take the last part
-        if (contextStr.length > maxChars) {
-            contextStr = contextStr.substring(contextStr.length - maxChars);
-            // Try to start from a complete message boundary
-            const firstNewline = contextStr.indexOf('\n\n');
-            if (firstNewline > 0 && firstNewline < 1000) {
-                contextStr = contextStr.substring(firstNewline + 2);
-            }
-        }
-
-        return contextStr;
     }
 
     setDialogPrompt(prompt) {

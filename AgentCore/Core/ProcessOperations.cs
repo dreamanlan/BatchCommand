@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-using CefDotnetApp.Interfaces;
+using AgentPlugin.Abstractions;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -20,9 +20,12 @@ namespace CefDotnetApp.AgentCore.Core
             _processes = new Dictionary<string, Process>();
         }
 
-        public ProcessResult ExecuteCommand(string command, string arguments = null, string workingDirectory = null, int timeoutMs = 30000)
+        public ProcessResult ExecuteCommand(string command, string? arguments = null, string? workingDirectory = null, int timeoutMs = 30000)
         {
             try {
+                command = Environment.ExpandEnvironmentVariables(command);
+                arguments = Environment.ExpandEnvironmentVariables(arguments ?? string.Empty);
+                workingDirectory = Environment.ExpandEnvironmentVariables(workingDirectory ?? Directory.GetCurrentDirectory());
                 var processInfo = new ProcessStartInfo {
                     FileName = command,
                     Arguments = arguments ?? string.Empty,
@@ -88,9 +91,12 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        public async Task<ProcessResult> ExecuteCommandAsync(string command, string arguments = null, string workingDirectory = null, int timeoutMs = 30000, CancellationToken cancellationToken = default)
+        public async Task<ProcessResult> ExecuteCommandAsync(string command, string? arguments = null, string? workingDirectory = null, int timeoutMs = 30000, CancellationToken cancellationToken = default)
         {
             try {
+                command = Environment.ExpandEnvironmentVariables(command);
+                arguments = Environment.ExpandEnvironmentVariables(arguments ?? string.Empty);
+                workingDirectory = Environment.ExpandEnvironmentVariables(workingDirectory ?? Directory.GetCurrentDirectory());
                 var processInfo = new ProcessStartInfo {
                     FileName = command,
                     Arguments = arguments ?? string.Empty,
@@ -165,9 +171,12 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        public string StartProcess(string processId, string command, string arguments = null, string workingDirectory = null)
+        public string StartProcess(string processId, string command, string? arguments = null, string? workingDirectory = null)
         {
             lock (_lockObject) {
+                command = Environment.ExpandEnvironmentVariables(command);
+                arguments = Environment.ExpandEnvironmentVariables(arguments ?? string.Empty);
+                workingDirectory = Environment.ExpandEnvironmentVariables(workingDirectory ?? Directory.GetCurrentDirectory());
                 if (_processes.ContainsKey(processId)) {
                     throw new InvalidOperationException($"Process with ID '{processId}' already exists");
                 }
@@ -229,7 +238,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        public string ReadProcessOutput(string processId)
+        public string? ReadProcessOutput(string processId)
         {
             lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
@@ -245,7 +254,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        public string ReadProcessError(string processId)
+        public string? ReadProcessError(string processId)
         {
             lock (_lockObject) {
                 if (!_processes.ContainsKey(processId))
@@ -316,8 +325,8 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public bool Success { get; set; }
         public int ExitCode { get; set; }
-        public string Output { get; set; }
-        public string Error { get; set; }
+        public string Output { get; set; } = string.Empty;
+        public string Error { get; set; } = string.Empty;
         public TimeSpan ExecutionTime { get; set; }
     }
 }

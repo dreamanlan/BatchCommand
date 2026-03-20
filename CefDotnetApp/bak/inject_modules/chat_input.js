@@ -24,6 +24,7 @@
       this.cfgEnvGroup = null;
       this.cfgEnvKey = null;
       this.cfgEnvValue = null;
+      this.onVisibilityChange = null;
       this.createPanel();
       // _restoreConfig is async, called explicitly from main.js after SecretStore is ready
     }
@@ -71,7 +72,7 @@
         border-radius: 8px;
         display: flex;
         flex-direction: column;
-        z-index: 9999;
+        z-index: 10001;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         padding: 8px;
@@ -111,6 +112,16 @@
         btn.onclick = action;
         row0.appendChild(btn);
       });
+
+      // Close button in row0
+      const spacer = document.createElement('div');
+      spacer.style.cssText = 'flex:1;';
+      row0.appendChild(spacer);
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '&times;';
+      closeBtn.style.cssText = 'background:none;border:none;color:#999;font-size:18px;cursor:pointer;padding:0 4px;';
+      closeBtn.onclick = () => this.hide();
+      row0.appendChild(closeBtn);
 
       // Row 1: single-line text input
       this.textInput = document.createElement('input');
@@ -564,11 +575,13 @@
     show() {
       this.visible = true;
       this.panel.style.display = 'flex';
+      if (this.onVisibilityChange) this.onVisibilityChange(true);
     }
 
     hide() {
       this.visible = false;
       this.panel.style.display = 'none';
+      if (this.onVisibilityChange) this.onVisibilityChange(false);
     }
 
     toggle() {

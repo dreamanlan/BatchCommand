@@ -624,6 +624,206 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights
+    sealed class SemanticSetWeightsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_set_weights(vectorWeight, bm25Weight)");
+                return BoxedValue.From(false);
+            }
+            try {
+                double vw = operands[0].GetDouble();
+                double bw = operands[1].GetDouble();
+                Core.AgentCore.Instance.SemanticIndex.SetHybridWeights(vw, bw);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_set_weights error: {ex.Message}");
+            }
+            return BoxedValue.From(false);
+        }
+    }
+
+    // semantic_set_recall_multiplier(multiplier) - set HNSW recall multiplier
+    sealed class SemanticSetRecallMultiplierExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_set_recall_multiplier(multiplier)");
+                return BoxedValue.From(false);
+            }
+            try {
+                int multiplier = (int)operands[0].GetLong();
+                Core.AgentCore.Instance.SemanticIndex.SetHnswRecallMultiplier(multiplier);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_set_recall_multiplier error: {ex.Message}");
+            }
+            return BoxedValue.From(false);
+        }
+    }
+
+    // semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter
+    sealed class SemanticRebuildFtsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_rebuild_fts(collection)");
+                return BoxedValue.From(0);
+            }
+            try {
+                string collection = operands[0].AsString;
+                int count = Core.AgentCore.Instance.SemanticIndex.RebuildFtsIndex(collection);
+                return BoxedValue.From(count);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_rebuild_fts error: {ex.Message}");
+            }
+            return BoxedValue.From(0);
+        }
+    }
+
+    // keyword_set_search_scope(scope) - set keyword search FTS scope: "all", "content", or "metadata"
+    sealed class KeywordSetSearchScopeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_set_search_scope(scope), scope: 'all'|'content'|'metadata'");
+                return BoxedValue.From(false);
+            }
+            try {
+                string scope = operands[0].AsString;
+                Core.AgentCore.Instance.SemanticIndex.SetSearchScope(scope);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_set_search_scope error: {ex.Message}");
+            }
+            return BoxedValue.From(false);
+        }
+    }
+
+    // keyword_get_search_scope() - get current keyword search FTS scope
+    sealed class KeywordGetSearchScopeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                return BoxedValue.FromString(Core.AgentCore.Instance.SemanticIndex.GetSearchScope());
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"keyword_get_search_scope error: {ex.Message}");
+            }
+            return BoxedValue.FromString("all");
+        }
+    }
+
+    // sqlite_execute(sql) - execute a non-query SQL statement, returns affected rows
+    sealed class SqliteExecuteExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_execute(sql)");
+                return BoxedValue.From(-1);
+            }
+            try {
+                string sql = operands[0].AsString;
+                int affected = Core.AgentCore.Instance.SemanticIndex.ExecuteSql(sql);
+                return BoxedValue.From(affected);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_execute error: {ex.Message}");
+                return BoxedValue.From(-1);
+            }
+        }
+    }
+
+    // sqlite_query(sql) - execute a query SQL statement, returns JSON array
+    sealed class SqliteQueryExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_query(sql)");
+                return BoxedValue.FromString("[error] missing arguments");
+            }
+            try {
+                string sql = operands[0].AsString;
+                string result = Core.AgentCore.Instance.SemanticIndex.QuerySql(sql);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_query error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    // sqlite_backup([path]) - backup database using VACUUM INTO
+    sealed class SqliteBackupExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count > 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_backup([path])");
+                return BoxedValue.FromString("[error] too many arguments");
+            }
+            try {
+                string? path = operands.Count > 0 ? operands[0].AsString : null;
+                string result = Core.AgentCore.Instance.SemanticIndex.BackupDatabase(path);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_backup error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    // sqlite_restore(path) - restore database from backup file
+    sealed class SqliteRestoreExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_restore(backupPath)");
+                return BoxedValue.FromString("[error] missing arguments");
+            }
+            try {
+                string backupPath = operands[0].AsString;
+                string result = Core.AgentCore.Instance.SemanticIndex.RestoreDatabase(backupPath);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_restore error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    // semantic_migrate_fts() - migrate FTS schema to latest version
+    sealed class SemanticMigrateFtsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                string report = Core.AgentCore.Instance.SemanticIndex.MigrateFtsSchema();
+                return BoxedValue.FromString(report);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_migrate_fts error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
     public static class SemanticApi
     {
         public static void RegisterApis()
@@ -651,6 +851,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_order_by_time", "keyword_search_order_by_time(collection, query[, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchOrderByTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_order_by_time", "semantic_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenOrderByTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
+            // search config APIs
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_weights", "semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights, default 0.6/0.4", new ExpressionFactoryHelper<SemanticSetWeightsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_recall_multiplier", "semantic_set_recall_multiplier(multiplier) - set HNSW recall multiplier, default 5", new ExpressionFactoryHelper<SemanticSetRecallMultiplierExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_rebuild_fts", "semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter, returns count", new ExpressionFactoryHelper<SemanticRebuildFtsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_set_search_scope", "keyword_set_search_scope(scope) - set keyword search FTS scope: 'all'(default),'content','metadata'. Only affects keyword_search series.", new ExpressionFactoryHelper<KeywordSetSearchScopeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_get_search_scope", "keyword_get_search_scope() - get current keyword search FTS scope", new ExpressionFactoryHelper<KeywordGetSearchScopeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_migrate_fts", "semantic_migrate_fts() - migrate FTS schema to latest version, returns report", new ExpressionFactoryHelper<SemanticMigrateFtsExp>());
+            // SQLite direct execution APIs
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_execute", "sqlite_execute(sql) - execute non-query SQL (INSERT/UPDATE/DELETE/DDL), returns affected rows", new ExpressionFactoryHelper<SqliteExecuteExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_backup", "sqlite_backup([path]) - backup database using VACUUM INTO, returns backup file path", new ExpressionFactoryHelper<SqliteBackupExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_restore", "sqlite_restore(backupPath) - restore database from backup file, clears in-memory indexes", new ExpressionFactoryHelper<SqliteRestoreExp>());
         }
     }
 }

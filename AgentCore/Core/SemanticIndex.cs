@@ -66,7 +66,20 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly Dictionary<string, CollectionIndex> _collections = new Dictionary<string, CollectionIndex>(StringComparer.Ordinal);
         private readonly object _collectionsLock = new object();
         private RerankService? _rerankService;
+        private MixedSegmenterEnhanced? _segmenter;
         private bool _disposed = false;
+
+        // Configurable hybrid scoring weights (vector vs bm25)
+        private double _vectorWeight = 0.6;
+        private double _bm25Weight = 0.4;
+        // HNSW recall multiplier: actual recall = topN * multiplier
+        private int _hnswRecallMultiplier = 5;
+        // FTS search scope: "all" (default), "content", "metadata"
+        private string _searchScope = "content";
+        // Detected FTS schema version at runtime
+        private int _schemaVersion = 1;
+        // Current schema version for new databases
+        private const int CurrentSchemaVersion = 2;
 
         /// <summary>Fired when a collection finishes background loading.</summary>
         public event Action<string>? OnCollectionReady;
@@ -74,10 +87,47 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>Set an optional reranker to apply after HNSW+BM25 retrieval.</summary>
         public void SetRerankService(RerankService? reranker) => _rerankService = reranker;
 
+        /// <summary>Set an optional segmenter for improved Chinese/mixed-language FTS5 tokenization.</summary>
+        public void SetSegmenter(MixedSegmenterEnhanced? segmenter) => _segmenter = segmenter;
+
+        /// <summary>Set hybrid scoring weights (must sum to 1.0). Default: vector=0.6, bm25=0.4.</summary>
+        public void SetHybridWeights(double vectorWeight, double bm25Weight)
+        {
+            double sum = vectorWeight + bm25Weight;
+            if (sum <= 0) return;
+            _vectorWeight = vectorWeight / sum;
+            _bm25Weight = bm25Weight / sum;
+        }
+
+        /// <summary>Set HNSW recall multiplier. Actual HNSW recall = topN * multiplier. Default: 5.</summary>
+        public void SetHnswRecallMultiplier(int multiplier)
+        {
+            _hnswRecallMultiplier = Math.Max(1, multiplier);
+        }
+
+        /// <summary>Set FTS search scope: "all" (default), "content", or "metadata".</summary>
+        public void SetSearchScope(string scope)
+        {
+            scope = (scope ?? "all").Trim().ToLowerInvariant();
+            if (scope != "content" && scope != "metadata" && scope != "all")
+                scope = "all";
+            // If schema is V1 (no metadata column), metadata scope falls back to all
+            if (_schemaVersion < 2 && scope == "metadata")
+                scope = "all";
+            _searchScope = scope;
+        }
+
+        /// <summary>Get current FTS search scope.</summary>
+        public string GetSearchScope() => _searchScope;
+
+        /// <summary>Get detected FTS schema version.</summary>
+        public int GetSchemaVersion() => _schemaVersion;
+
         public SemanticIndex(string dbPath)
         {
             _dbPath = dbPath;
             EnsureSchema();
+            _schemaVersion = DetectSchemaVersion();
         }
 
         // ---- Public API ----
@@ -140,9 +190,16 @@ namespace CefDotnetApp.AgentCore.Core
             cmd.ExecuteNonQuery();
             using var ftsCmd = conn.CreateCommand();
             ftsCmd.Transaction = txn;
-            ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
+            if (_schemaVersion >= 2) {
+                ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
+                ftsCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata ?? ""));
+            } else {
+                ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
+            }
             ftsCmd.Parameters.AddWithValue("@id", id);
-            ftsCmd.Parameters.AddWithValue("@content", content);
+            // Use segmenter for FTS5 content if available, so BM25 works well with Chinese
+            string ftsContent = SegmentForFts(content);
+            ftsCmd.Parameters.AddWithValue("@content", ftsContent);
             ftsCmd.Parameters.AddWithValue("@col", collection);
             ftsCmd.ExecuteNonQuery();
             txn.Commit();
@@ -204,56 +261,78 @@ namespace CefDotnetApp.AgentCore.Core
                     return new List<SearchResultItem>();
             }
 
+            // Expand HNSW recall pool for better coverage
+            bool hasReranker = _rerankService != null && _rerankService.IsReady && !string.IsNullOrWhiteSpace(query);
+            int hnswRecallN = topN * _hnswRecallMultiplier;
+            int finalRecallN = hasReranker ? topN * 10 : topN;
+
             IEnumerable<VectorResult> hits;
             col.Lock.EnterReadLock();
             try {
                 if (col.Graph == null)
                     return new List<SearchResultItem>();
-                hits = col.Graph.GetTopKAsync(queryVector.ToList(), topN).GetAwaiter().GetResult();
+                hits = col.Graph.GetTopKAsync(queryVector.ToList(), hnswRecallN).GetAwaiter().GetResult();
             }
             finally {
                 col.Lock.ExitReadLock();
             }
 
-            if (!hits.Any())
-                return new List<SearchResultItem>();
+            // build candidate map from HNSW results
+            var candidateMap = new Dictionary<string, double>(StringComparer.Ordinal);
+            foreach (var h in hits) {
+                string hid = h.GUID.ToString("N");
+                candidateMap[hid] = 1.0 - (double)h.Distance; // cosine distance -> similarity
+            }
 
-            // expand recall pool when reranker is available
-            bool hasReranker = _rerankService != null && _rerankService.IsReady && !string.IsNullOrWhiteSpace(query);
-            int recallN = hasReranker ? topN * 10 : topN;
-
-            // build candidate id list
-            var candidates = hits.Select(h => new {
-                Id = h.GUID.ToString("N"),
-                VectorScore = 1.0 - (double)h.Distance  // cosine distance -> similarity
-            }).ToList();
-
-            // fetch BM25 scores from FTS5
+            // fetch BM25 scores from FTS5 + independent BM25 recall channel
             var bm25Map = new Dictionary<string, double>(StringComparer.Ordinal);
             using var conn = OpenConnection();
             string ftsQuery = BuildFtsQuery(query);
             if (!string.IsNullOrEmpty(ftsQuery)) {
-                var idList = string.Join(",", candidates.Select(c => $"'{c.Id}'"));
-                using var ftsCmd = conn.CreateCommand();
-                ftsCmd.CommandText = $"SELECT id, bm25(semantic_fts) FROM semantic_fts WHERE collection=@col AND content MATCH @q AND id IN ({idList})";
-                ftsCmd.Parameters.AddWithValue("@col", collection);
-                ftsCmd.Parameters.AddWithValue("@q", ftsQuery);
-                using var ftsReader = ftsCmd.ExecuteReader();
-                while (ftsReader.Read()) {
-                    string fid = ftsReader.GetString(0);
-                    double raw = ftsReader.GetDouble(1); // negative in SQLite FTS5
-                    bm25Map[fid] = 1.0 / (1.0 + Math.Abs(raw)); // normalize to (0,1]
+                // Score BM25 within HNSW candidates
+                if (candidateMap.Count > 0) {
+                    var idList = string.Join(",", candidateMap.Keys.Select(id => $"'{id}'"));
+                    using var ftsCmd = conn.CreateCommand();
+                    ftsCmd.CommandText = $"SELECT id, {GetBm25Expression()} FROM semantic_fts WHERE collection=@col AND semantic_fts MATCH @q AND id IN ({idList})";
+                    ftsCmd.Parameters.AddWithValue("@col", collection);
+                    ftsCmd.Parameters.AddWithValue("@q", ftsQuery);
+                    using var ftsReader = ftsCmd.ExecuteReader();
+                    while (ftsReader.Read()) {
+                        string fid = ftsReader.GetString(0);
+                        double raw = ftsReader.GetDouble(1); // negative in SQLite FTS5
+                        bm25Map[fid] = 1.0 / (1.0 + Math.Abs(raw)); // normalize to (0,1]
+                    }
+                }
+                // Independent BM25 recall: find additional candidates not in HNSW results
+                using var bm25RecallCmd = conn.CreateCommand();
+                bm25RecallCmd.CommandText = $"SELECT id, {GetBm25Expression()} AS score\nFROM semantic_fts\nWHERE collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
+                bm25RecallCmd.Parameters.AddWithValue("@col", collection);
+                bm25RecallCmd.Parameters.AddWithValue("@q", ftsQuery);
+                bm25RecallCmd.Parameters.AddWithValue("@n", hnswRecallN);
+                using var bm25Reader = bm25RecallCmd.ExecuteReader();
+                while (bm25Reader.Read()) {
+                    string bid = bm25Reader.GetString(0);
+                    double raw = bm25Reader.GetDouble(1);
+                    double normalized = 1.0 / (1.0 + Math.Abs(raw));
+                    if (!bm25Map.ContainsKey(bid))
+                        bm25Map[bid] = normalized;
+                    // Add BM25-only candidates to the candidate map (no vector score)
+                    if (!candidateMap.ContainsKey(bid))
+                        candidateMap[bid] = 0.0;
                 }
             }
 
-            // hybrid scoring: 0.6 * vector + 0.4 * bm25
-            var hybridRanked = candidates
+            if (candidateMap.Count == 0)
+                return new List<SearchResultItem>();
+
+            // hybrid scoring with configurable weights
+            var hybridRanked = candidateMap
                 .Select(c => new {
-                    c.Id,
-                    HybridScore = 0.6 * c.VectorScore + 0.4 * (bm25Map.TryGetValue(c.Id, out var b) ? b : 0.0)
+                    Id = c.Key,
+                    HybridScore = _vectorWeight * c.Value + _bm25Weight * (bm25Map.TryGetValue(c.Key, out var b) ? b : 0.0)
                 })
                 .OrderByDescending(c => c.HybridScore)
-                .Take(recallN)
+                .Take(finalRecallN)
                 .ToList();
 
             // fetch content for reranker or final output
@@ -488,8 +567,46 @@ CREATE TABLE IF NOT EXISTS semantic_records (
     created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_collection ON semantic_records(collection);
-CREATE VIRTUAL TABLE IF NOT EXISTS semantic_fts USING fts5(id UNINDEXED, content, collection UNINDEXED);";
+CREATE VIRTUAL TABLE IF NOT EXISTS semantic_fts USING fts5(id UNINDEXED, content, metadata, collection UNINDEXED);
+CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, version INTEGER NOT NULL);";
             cmd.ExecuteNonQuery();
+            // Only set current version for truly new databases.
+            // For legacy databases (have records but no version row), insert version 1
+            // so that MigrateFtsSchema() will run the proper migration.
+            using var chkCmd = conn.CreateCommand();
+            chkCmd.CommandText = "SELECT COUNT(*) FROM semantic_schema_version WHERE id=1";
+            long hasVer = (long)chkCmd.ExecuteScalar()!;
+            if (hasVer == 0) {
+                using var cntCmd = conn.CreateCommand();
+                cntCmd.CommandText = "SELECT COUNT(*) FROM semantic_records";
+                long recCount = (long)cntCmd.ExecuteScalar()!;
+                int verToInsert = recCount > 0 ? 1 : CurrentSchemaVersion;
+                using var verCmd = conn.CreateCommand();
+                verCmd.CommandText = "INSERT INTO semantic_schema_version(id, version) VALUES(1, @ver)";
+                verCmd.Parameters.AddWithValue("@ver", verToInsert);
+                verCmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>Detect the current FTS schema version from the database.</summary>
+        private int DetectSchemaVersion()
+        {
+            try {
+                using var conn = OpenConnection();
+                // Check if version table exists
+                using var chkCmd = conn.CreateCommand();
+                chkCmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='semantic_schema_version'";
+                var result = chkCmd.ExecuteScalar();
+                if (result == null)
+                    return 1; // No version table means V1 (legacy)
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT version FROM semantic_schema_version WHERE id=1";
+                var ver = cmd.ExecuteScalar();
+                return ver != null ? Convert.ToInt32(ver) : 1;
+            }
+            catch {
+                return 1;
+            }
         }
 
         private SqliteConnection OpenConnection()
@@ -520,19 +637,123 @@ CREATE VIRTUAL TABLE IF NOT EXISTS semantic_fts USING fts5(id UNINDEXED, content
         }
 
         /// <summary>
-        /// Build a FTS5 MATCH query string from the raw text query.
-        /// Splits on whitespace, escapes special chars, joins with OR.
+        /// Segment content for FTS5 storage. Uses MixedSegmenter if available for better
+        /// Chinese tokenization; otherwise returns original content.
         /// </summary>
-        private static string BuildFtsQuery(string rawQuery)
+        private string SegmentForFts(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return content;
+            if (_segmenter == null)
+                return content;
+            try {
+                var tokens = _segmenter.Segment(content);
+                if (tokens.Count == 0)
+                    return content;
+                return string.Join(" ", tokens);
+            }
+            catch {
+                return content;
+            }
+        }
+
+        /// <summary>
+        /// Build a FTS5 MATCH query string from the raw text query.
+        /// Uses MixedSegmenter for Chinese/mixed-language tokenization if available;
+        /// otherwise falls back to whitespace/punctuation splitting.
+        /// </summary>
+        private string BuildFtsQuery(string rawQuery, bool useScope = false)
         {
             if (string.IsNullOrWhiteSpace(rawQuery))
                 return string.Empty;
-            var tokens = rawQuery.Split(new char[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0)
+            IEnumerable<string> tokens;
+            if (_segmenter != null) {
+                try {
+                    var segmented = _segmenter.Segment(rawQuery);
+                    tokens = segmented.Where(t => !string.IsNullOrWhiteSpace(t));
+                }
+                catch {
+                    tokens = rawQuery.Split(new char[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+                }
+            }
+            else {
+                tokens = rawQuery.Split(new char[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+            var tokenList = tokens.ToList();
+            if (tokenList.Count == 0)
                 return string.Empty;
             // FTS5: escape double-quotes by doubling them, wrap each token in quotes
-            var parts = tokens.Select(t => '"' + t.Replace("\"", "\"\"") + '"');
-            return string.Join(" OR ", parts);
+            var parts = tokenList.Select(t => '"' + t.Replace("\"", "\"\"") + '"');
+            string joined = string.Join(" OR ", parts);
+            // Apply column scope for V2 schema (only when useScope=true, i.e. keyword_search)
+            if (useScope && _schemaVersion >= 2) {
+                if (_searchScope == "content")
+                    return "content : (" + joined + ")";
+                else if (_searchScope == "metadata")
+                    return "metadata : (" + joined + ")";
+            }
+            return joined;
+        }
+
+        /// <summary>
+        /// Get the bm25() SQL expression adjusted for current search scope.
+        /// V2 schema has 2 indexed columns: content(0), metadata(1).
+        /// </summary>
+        private string GetBm25Expression(bool useScope = false)
+        {
+            if (_schemaVersion < 2)
+                return "bm25(semantic_fts)";
+            if (useScope) {
+                if (_searchScope == "content")
+                    return "bm25(semantic_fts, 1.0, 0.0)";
+                if (_searchScope == "metadata")
+                    return "bm25(semantic_fts, 0.0, 1.0)";
+            }
+            return "bm25(semantic_fts, 1.0, 1.0)";
+        }
+
+        /// <summary>
+        /// Rebuild the FTS5 index for a collection using the current segmenter.
+        /// Call this after changing the segmenter to re-tokenize all stored content.
+        /// </summary>
+        public int RebuildFtsIndex(string collection)
+        {
+            int count = 0;
+            using var conn = OpenConnection();
+            // Delete existing FTS entries for this collection
+            using (var delCmd = conn.CreateCommand()) {
+                delCmd.CommandText = "DELETE FROM semantic_fts WHERE collection=@col";
+                delCmd.Parameters.AddWithValue("@col", collection);
+                delCmd.ExecuteNonQuery();
+            }
+            // Re-insert with segmented content (and metadata for V2)
+            using var selCmd = conn.CreateCommand();
+            selCmd.CommandText = "SELECT id, content, metadata FROM semantic_records WHERE collection=@col";
+            selCmd.Parameters.AddWithValue("@col", collection);
+            using var reader = selCmd.ExecuteReader();
+            var rows = new List<(string id, string content, string metadata)>();
+            while (reader.Read()) {
+                rows.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? "" : reader.GetString(2)));
+            }
+            reader.Close();
+            using var txn = conn.BeginTransaction();
+            foreach (var (id, content, metadata) in rows) {
+                using var insCmd = conn.CreateCommand();
+                insCmd.Transaction = txn;
+                if (_schemaVersion >= 2) {
+                    insCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
+                    insCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata));
+                } else {
+                    insCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
+                }
+                insCmd.Parameters.AddWithValue("@id", id);
+                insCmd.Parameters.AddWithValue("@content", SegmentForFts(content));
+                insCmd.Parameters.AddWithValue("@col", collection);
+                insCmd.ExecuteNonQuery();
+                count++;
+            }
+            txn.Commit();
+            return count;
         }
 
         /// <summary>
@@ -564,17 +785,13 @@ CREATE VIRTUAL TABLE IF NOT EXISTS semantic_fts USING fts5(id UNINDEXED, content
 
         private List<SearchResultItem> KeywordSearchCoreInternal(string collection, string query, int topN, long startTime, long endTime)
         {
-            string ftsQuery = BuildFtsQuery(query);
+            string ftsQuery = BuildFtsQuery(query, useScope: true);
             if (string.IsNullOrEmpty(ftsQuery))
                 return new List<SearchResultItem>();
 
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"SELECT f.id, bm25(semantic_fts) AS score
-FROM semantic_fts f
-WHERE f.collection=@col AND f.content MATCH @q
-ORDER BY score
-LIMIT @n";
+            cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score\nFROM semantic_fts f\nWHERE f.collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
             cmd.Parameters.AddWithValue("@col", collection);
             cmd.Parameters.AddWithValue("@q", ftsQuery);
             cmd.Parameters.AddWithValue("@n", topN);
@@ -651,6 +868,198 @@ LIMIT @n";
             else
                 dt = DateTime.ParseExact(timeStr, "yyyyMMdd HHmmss", System.Globalization.CultureInfo.InvariantCulture);
             return new DateTimeOffset(dt, TimeSpan.Zero).ToUnixTimeSeconds();
+        }
+
+        /// <summary>
+        /// Migrate FTS schema to the latest version. Detects current version and applies
+        /// incremental migrations. Returns a report string.
+        /// </summary>
+        public string MigrateFtsSchema()
+        {
+            int currentVer = DetectSchemaVersion();
+            if (currentVer >= CurrentSchemaVersion)
+                return $"Already at version {currentVer}, no migration needed.";
+            var sb = new StringBuilder();
+            sb.AppendLine($"Current FTS schema version: {currentVer}");
+            // Backup database before migration
+            try {
+                string backupPath = BackupDatabase();
+                sb.AppendLine($"Database backed up to: {backupPath}");
+            }
+            catch (Exception ex) {
+                sb.AppendLine($"Warning: backup failed ({ex.Message}), proceeding with migration.");
+            }
+            if (currentVer < 2) {
+                MigrateV1ToV2();
+                sb.AppendLine("Migrated V1 -> V2: added metadata column to FTS5 table.");
+            }
+            // Future migrations go here: if (currentVer < 3) { MigrateV2ToV3(); ... }
+            _schemaVersion = DetectSchemaVersion();
+            sb.AppendLine($"Migration complete. Current version: {_schemaVersion}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Backup the database using VACUUM INTO for consistency.
+        /// Returns the backup file path. If backupPath is null, generates a timestamped path.
+        /// </summary>
+        public string BackupDatabase(string? backupPath = null)
+        {
+            if (string.IsNullOrWhiteSpace(backupPath))
+                backupPath = _dbPath + $".bak_{DateTime.Now:yyyyMMdd_HHmmss}";
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "VACUUM INTO @path";
+            cmd.Parameters.AddWithValue("@path", backupPath);
+            cmd.ExecuteNonQuery();
+            return backupPath;
+        }
+
+        /// <summary>
+        /// Restore the database from a backup file. Replaces the current database,
+        /// clears all in-memory HNSW indexes, and re-initializes schema detection.
+        /// </summary>
+        public string RestoreDatabase(string backupPath)
+        {
+            if (!File.Exists(backupPath))
+                return $"[error] Backup file not found: {backupPath}";
+            var sb = new StringBuilder();
+            // 1. Reset all in-memory collection states
+            lock (_collectionsLock) {
+                foreach (var col in _collections.Values) {
+                    col.Lock.EnterWriteLock();
+                    try {
+                        col.Graph = null;
+                        col.State = CollectionState.NotLoaded;
+                        col.ReadyTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    }
+                    finally {
+                        col.Lock.ExitWriteLock();
+                    }
+                }
+                _collections.Clear();
+            }
+            sb.AppendLine("In-memory indexes cleared.");
+            // 2. Replace database file (delete WAL/SHM first to avoid stale state)
+            string walPath = _dbPath + "-wal";
+            string shmPath = _dbPath + "-shm";
+            try { if (File.Exists(walPath)) File.Delete(walPath); } catch { }
+            try { if (File.Exists(shmPath)) File.Delete(shmPath); } catch { }
+            File.Copy(backupPath, _dbPath, overwrite: true);
+            sb.AppendLine($"Database restored from: {backupPath}");
+            // 3. Re-detect schema version
+            _schemaVersion = DetectSchemaVersion();
+            sb.AppendLine($"Schema version: {_schemaVersion}");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Execute a non-query SQL statement (INSERT/UPDATE/DELETE/DDL).
+        /// Returns the number of affected rows.
+        /// </summary>
+        public int ExecuteSql(string sql)
+        {
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            return cmd.ExecuteNonQuery();
+        }
+
+        /// <summary>
+        /// Execute a query SQL statement (SELECT). Returns JSON array of row objects.
+        /// Each row is a JSON object with column names as keys.
+        /// </summary>
+        public string QuerySql(string sql)
+        {
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            using var reader = cmd.ExecuteReader();
+            var sb = new StringBuilder("[");
+            bool firstRow = true;
+            while (reader.Read()) {
+                if (!firstRow) sb.Append(',');
+                firstRow = false;
+                sb.Append('{');
+                bool firstCol = true;
+                for (int i = 0; i < reader.FieldCount; i++) {
+                    if (!firstCol) sb.Append(',');
+                    firstCol = false;
+                    string colName = reader.GetName(i);
+                    sb.Append(EscapeJson(colName));
+                    sb.Append(':');
+                    if (reader.IsDBNull(i)) {
+                        sb.Append("null");
+                    } else {
+                        var fieldType = reader.GetFieldType(i);
+                        if (fieldType == typeof(long) || fieldType == typeof(int)) {
+                            sb.Append(reader.GetValue(i).ToString());
+                        } else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+                            sb.Append(Convert.ToDouble(reader.GetValue(i)).ToString("G"));
+                        } else {
+                            sb.Append(EscapeJson(reader.GetValue(i).ToString() ?? ""));
+                        }
+                    }
+                }
+                sb.Append('}');
+            }
+            sb.Append(']');
+            return sb.ToString();
+        }
+
+        private void MigrateV1ToV2()
+        {
+            using var conn = OpenConnection();
+            using var txn = conn.BeginTransaction();
+            // Drop old FTS table
+            using (var dropCmd = conn.CreateCommand()) {
+                dropCmd.Transaction = txn;
+                dropCmd.CommandText = "DROP TABLE IF EXISTS semantic_fts";
+                dropCmd.ExecuteNonQuery();
+            }
+            // Create new FTS table with metadata column
+            using (var createCmd = conn.CreateCommand()) {
+                createCmd.Transaction = txn;
+                createCmd.CommandText = "CREATE VIRTUAL TABLE semantic_fts USING fts5(id UNINDEXED, content, metadata, collection UNINDEXED)";
+                createCmd.ExecuteNonQuery();
+            }
+            // Re-populate from semantic_records (all collections)
+            using var selCmd = conn.CreateCommand();
+            selCmd.Transaction = txn;
+            selCmd.CommandText = "SELECT id, collection, content, metadata FROM semantic_records";
+            using var reader = selCmd.ExecuteReader();
+            var rows = new List<(string id, string collection, string content, string metadata)>();
+            while (reader.Read()) {
+                rows.Add((
+                    reader.GetString(0),
+                    reader.GetString(1),
+                    reader.GetString(2),
+                    reader.IsDBNull(3) ? "" : reader.GetString(3)
+                ));
+            }
+            reader.Close();
+            foreach (var (id, collection, content, metadata) in rows) {
+                using var insCmd = conn.CreateCommand();
+                insCmd.Transaction = txn;
+                insCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
+                insCmd.Parameters.AddWithValue("@id", id);
+                insCmd.Parameters.AddWithValue("@content", SegmentForFts(content));
+                insCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata));
+                insCmd.Parameters.AddWithValue("@col", collection);
+                insCmd.ExecuteNonQuery();
+            }
+            // Create version table if not exists and update version
+            using (var verTableCmd = conn.CreateCommand()) {
+                verTableCmd.Transaction = txn;
+                verTableCmd.CommandText = "CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, version INTEGER NOT NULL)";
+                verTableCmd.ExecuteNonQuery();
+            }
+            using (var verCmd = conn.CreateCommand()) {
+                verCmd.Transaction = txn;
+                verCmd.CommandText = "INSERT OR REPLACE INTO semantic_schema_version(id, version) VALUES(1, 2)";
+                verCmd.ExecuteNonQuery();
+            }
+            txn.Commit();
         }
 
         public void Dispose()

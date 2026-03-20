@@ -166,12 +166,12 @@ namespace CefDotnetApp.AgentCore.Core
                 try
                 {
                     string reply = await provider.ChatAsync(tag, topic, message);
-                    nativeApi.EnqueueLlmCallback(providerId, tag, topic, reply);
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{providerId}/{tag}': {ex.Message}");
-                    nativeApi.EnqueueLlmCallback(providerId, tag, topic, $"[error] {ex.Message}");
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {ex.Message}" });
                 }
                 finally
                 {
@@ -207,12 +207,12 @@ namespace CefDotnetApp.AgentCore.Core
                 try
                 {
                     string reply = await provider.ChatWithImagesAsync(tag, topic, message, imageUrls);
-                    nativeApi.EnqueueLlmCallback(providerId, tag, topic, reply);
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImages error for '{providerId}/{tag}': {ex.Message}");
-                    nativeApi.EnqueueLlmCallback(providerId, tag, topic, $"[error] {ex.Message}");
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {ex.Message}" });
                 }
                 finally
                 {

@@ -166,13 +166,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_after(path, searchLiteralText, content[, allOccurrences[, exactMatch]]) - insert content after literal text
-    sealed class InsertAfterExp : SimpleExpressionBase
+    // insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]]) - insert content after literal text
+    sealed class InsertAfterTextExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_after(path, searchLiteralText, content[, allOccurrences[, exactMatch]]), aliased as insert_file_after");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]])");
                 return BoxedValue.From(false);
             }
 
@@ -187,7 +187,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
                     return BoxedValue.From(false);
                 }
-                bool result = Core.AgentCore.Instance.FileOps.InsertAfter(path, searchLiteralText, content, allOccurrences, exactMatch);
+                bool result = Core.AgentCore.Instance.FileOps.InsertAfterText(path, searchLiteralText, content, allOccurrences, exactMatch);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
@@ -197,13 +197,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_before(path, searchLiteralText, content[, allOccurrences[, exactMatch]]) - insert content before literal text
-    sealed class InsertBeforeExp : SimpleExpressionBase
+    // insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]]) - insert content before literal text
+    sealed class InsertBeforeTextExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_before(path, searchLiteralText, content[, allOccurrences[, exactMatch]]), aliased as insert_file_before");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]])");
                 return BoxedValue.From(false);
             }
 
@@ -218,7 +218,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
                     return BoxedValue.From(false);
                 }
-                bool result = Core.AgentCore.Instance.FileOps.InsertBefore(path, searchLiteralText, content, allOccurrences, exactMatch);
+                bool result = Core.AgentCore.Instance.FileOps.InsertBeforeText(path, searchLiteralText, content, allOccurrences, exactMatch);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
@@ -234,7 +234,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_lines(path, startLine, endLine), aliased as delete_file_lines");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: delete_lines(path, startLine, endLine)");
                 return BoxedValue.From(false);
             }
 
@@ -278,7 +278,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"searchfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_lines error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -290,7 +290,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_lines(path, startLine, endLine), aliased as read_file_lines");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_lines(path, startLine, endLine)");
                 return BoxedValue.NullObject;
             }
 
@@ -346,14 +346,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // search_file(path, regex_pattern[, context_lines_after, context_lines_before]) - search file with regex pattern and return matches with context
-    sealed class SearchFileExp : SimpleExpressionBase
+    // search_in_file(path, regex_pattern[, context_lines_after, context_lines_before]) - search file with regex pattern and return matches with context
+    sealed class SearchInFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_file(path, regex_pattern[, context_lines_after, context_lines_before]), aliased as searchfile|grep_file|grepfile");
-                return BoxedValue.FromString("Expected: search_file(path, regex_pattern[, context_lines_after, context_lines_before])");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before]), aliased as grep_file|grepfile");
+                return BoxedValue.FromString("Expected: search_in_file(path, regex_pattern[, context_lines_after, context_lines_before])");
             }
 
             try {
@@ -365,8 +365,254 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_file error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_file error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - search files with regex pattern and return matches with context
+    sealed class SearchInFilesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files|grepfiles");
+                return BoxedValue.FromString("Expected: search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])");
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
+                int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
+                List<string>? filterAndNewExts = null;
+                if (operands.Count > 4) {
+                    filterAndNewExts = new List<string>();
+                    for (int i = 4; i < operands.Count; i++) {
+                        string str = operands[i].AsString;
+                        if (str != null) {
+                            filterAndNewExts.Add(str);
+                            continue;
+                        }
+                        var strList = operands[i].As<System.Collections.IList>();
+                        if (strList == null) {
+                            continue;
+                        }
+                        foreach (object strObj in strList) {
+                            if (strObj is string tempStr) {
+                                filterAndNewExts.Add(tempStr);
+                            }
+                        }
+                    }
+                }
+                string result = Core.AgentCore.Instance.FileOps.SearchFiles(path, pattern, contextLinesAfter, contextLinesBefore, filterAndNewExts);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files error: {ex.Message}");
+                return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // count_lines(path[, startLine, endLine]) - display file lines with line number, indent info, and left-aligned content
+    sealed class CountLinesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: count_lines(path[, startLine, endLine])");
+                return BoxedValue.FromString("Expected: count_lines(path[, startLine, endLine])");
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                if (!System.IO.File.Exists(fullPath)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_lines: file not found: {path}");
+                    return BoxedValue.FromString($"Error: file not found: {path}");
+                }
+
+                string[] allLines = System.IO.File.ReadAllLines(fullPath, System.Text.Encoding.UTF8);
+                int totalLines = allLines.Length;
+                if (totalLines == 0) {
+                    return BoxedValue.FromString("(empty file, 0 lines)");
+                }
+
+                int startLine = operands.Count > 1 ? operands[1].GetInt() : 1;
+                int endLine = operands.Count > 2 ? operands[2].GetInt() : totalLines;
+
+                // Clamp to file boundary
+                if (startLine < 1) startLine = 1;
+                if (endLine > totalLines) endLine = totalLines;
+                if (startLine > totalLines) startLine = totalLines;
+                if (endLine < 1) endLine = 1;
+                if (startLine > endLine) {
+                    return BoxedValue.FromString($"(no lines in range {startLine}-{endLine}, file has {totalLines} lines)");
+                }
+
+                // First pass: compute indent info strings and find max prefix width
+                int count = endLine - startLine + 1;
+                string[] indentInfos = new string[count];
+                int maxPrefixLen = 0;
+
+                for (int i = 0; i < count; i++) {
+                    int lineNum = startLine + i;
+                    string line = allLines[lineNum - 1];
+                    string indentInfo = BuildIndentInfo(line);
+                    indentInfos[i] = indentInfo;
+                    // Prefix format: "lineNum: indentInfo" or "lineNum:" if no indent
+                    string prefix = indentInfo.Length > 0
+                        ? $"{lineNum}: {indentInfo}"
+                        : $"{lineNum}:";
+                    if (prefix.Length > maxPrefixLen)
+                        maxPrefixLen = prefix.Length;
+                }
+
+                // Second pass: build output with fixed-width prefix
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"[{path}] lines {startLine}-{endLine} of {totalLines}");
+
+                for (int i = 0; i < count; i++) {
+                    int lineNum = startLine + i;
+                    string line = allLines[lineNum - 1];
+                    string indentInfo = indentInfos[i];
+                    string prefix = indentInfo.Length > 0
+                        ? $"{lineNum}: {indentInfo}"
+                        : $"{lineNum}:";
+                    sb.Append(prefix.PadRight(maxPrefixLen));
+                    sb.Append('\t');
+                    sb.AppendLine(line);
+                }
+
+                return BoxedValue.FromString(sb.ToString());
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_lines error: {ex.Message}");
+                return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Build indent info string from leading whitespace.
+        /// Counts consecutive segments of tabs and spaces.
+        /// E.g. "\t\t   " => " 2 tab  3 spc", "    \t" => " 4 spc  1 tab", "\t" => " 1 tab", "  " => " 2 spc", "" => ""
+        /// </summary>
+        private static string BuildIndentInfo(string line)
+        {
+            if (line.Length == 0) return "";
+
+            var sb = new System.Text.StringBuilder();
+            int pos = 0;
+
+            while (pos < line.Length) {
+                char ch = line[pos];
+                if (ch == '\t') {
+                    int segStart = pos;
+                    while (pos < line.Length && line[pos] == '\t') pos++;
+                    if (sb.Length > 0) sb.Append(' ');
+                    sb.Append($"{pos - segStart,2} tab");
+                }
+                else if (ch == ' ') {
+                    int segStart = pos;
+                    while (pos < line.Length && line[pos] == ' ') pos++;
+                    if (sb.Length > 0) sb.Append(' ');
+                    sb.Append($"{pos - segStart,2} spc");
+                }
+                else {
+                    break;
+                }
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    // insert_after_line(path, line, insert_content) - insert content after specified line number (content starts on a new line)
+    sealed class InsertAfterLineExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_after_line(path, line, insert_content), aliased as insert_after");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                int line = operands[1].GetInt();
+                string insertContent = operands[2].AsString;
+
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                if (!System.IO.File.Exists(fullPath)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: file not found: {path}");
+                    return BoxedValue.From(false);
+                }
+
+                var lines = new List<string>(System.IO.File.ReadAllLines(fullPath, System.Text.Encoding.UTF8));
+                if (line < 1 || line > lines.Count) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: line {line} out of range (1-{lines.Count})");
+                    return BoxedValue.From(false);
+                }
+
+                // Split insert_content by newlines and insert after the specified line
+                string[] newLines = insertContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                lines.InsertRange(line, newLines);
+
+                // Detect original line ending
+                string originalContent = System.IO.File.ReadAllText(fullPath, System.Text.Encoding.UTF8);
+                string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
+                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), System.Text.Encoding.UTF8);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // insert_before_line(path, line, insert_content) - insert content before specified line number (content starts on a new line)
+    sealed class InsertBeforeLineExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: insert_before_line(path, line, insert_content), aliased as insert_before");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                int line = operands[1].GetInt();
+                string insertContent = operands[2].AsString;
+
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                if (!System.IO.File.Exists(fullPath)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: file not found: {path}");
+                    return BoxedValue.From(false);
+                }
+
+                var lines = new List<string>(System.IO.File.ReadAllLines(fullPath, System.Text.Encoding.UTF8));
+                if (line < 1 || line > lines.Count) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: line {line} out of range (1-{lines.Count})");
+                    return BoxedValue.From(false);
+                }
+
+                // Split insert_content by newlines and insert before the specified line
+                string[] newLines = insertContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                lines.InsertRange(line - 1, newLines);
+
+                // Detect original line ending
+                string originalContent = System.IO.File.ReadAllText(fullPath, System.Text.Encoding.UTF8);
+                string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
+                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), System.Text.Encoding.UTF8);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line error: {ex.Message}");
+                return BoxedValue.From(false);
             }
         }
     }

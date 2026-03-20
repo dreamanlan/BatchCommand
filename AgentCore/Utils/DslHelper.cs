@@ -164,6 +164,9 @@ namespace CefDotnetApp.AgentCore.Utils
                         return BoxedValue.FromString(jsonElem.ToString());
                 }
             }
+            else if (value is LitJson.JsonData jsonData) {
+                return GetBoxedValueFromJsonValue(jsonData);
+            }
             else {
                 if (null != value) {
                     if (value is IList<string?> strlist) {

@@ -3,17 +3,20 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
-	@ProjectPath = "D:/AiWebGame";
-	@ProjectPrefix = "aiwebgame";
-	@MarquisHistory = @ProjectPrefix + "_marquis_history";
-	@ChiliarchHistory = @ProjectPrefix + "_chiliarch_history";
-	@CenturionHistory = @ProjectPrefix + "_centurion_history";
-	@DecurionHistory = @ProjectPrefix + "_decurion_history";
-	@LegionnaireHistory = @ProjectPrefix + "_legionnaire_history";
 	@EnableLlmPM = true;
 	//@LlmProviderId = "ollama_local";
 	@LlmProviderId = "auto_metadsl";
 	@LastHistoryCount = 0;
+
+	@ProjectIdentity = get_project_identity();
+	@ProjectDirectory = get_project_dir();
+	if (!stringisnullorempty(@ProjectIdentity)) {
+		@MarquisHistory = @ProjectIdentity + "_marquis_history";
+		@ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
+		@CenturionHistory = @ProjectIdentity + "_centurion_history";
+		@DecurionHistory = @ProjectIdentity + "_decurion_history";
+		@LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
+	};
 };
 script(on_init)
 {
@@ -45,6 +48,10 @@ script(on_renderer_finalize)
 
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
+	if ($processType == 0) {
+		//debuggerlaunch();
+	};
+
 	// Add command line switches here
 	// Example: $cmdLine.AppendSwitch("disable-gpu");
 	// Example: $cmdLine.AppendSwitchWithValue("remote-debugging-port", "9222");
@@ -87,6 +94,17 @@ script(on_before_child_process_launch)params($processType, $cmdLine)
 {
 	// $cmdLine is the child process command line (passed as parameter)
 	nativelog("[dsl] on_before_child_process_launch {0}", $processType);
+	//debuggerbreak();
+
+	// Copy custom switches from browser process to child process
+	if (initialprojectidentityinited) {
+		$cmdLine.AppendSwitchWithValue("projectidentity", initialprojectidentity);
+		nativelog("[dsl] on_before_child_process_launch: copied --initialprojectidentity={0} to child process", initialprojectidentity);
+	};
+	if (dslfilechanged) {
+		$cmdLine.AppendSwitchWithValue("metadsl", dslfile);
+		nativelog("[dsl] on_before_child_process_launch: copied --metadsl={0} to child process", dslfile);
+	};
 };
 
 script(on_already_running_app_relaunch)params($cmdLine, $curDir)
@@ -155,6 +173,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, read_file(combine_path($base, "openclaw_http.js")));
 		append_line($sb, read_file(combine_path($base, "openclaw_ws.js")));
 		append_line($sb, read_file(combine_path($base, "openclaw_panel.js")));
+		append_line($sb, read_file(combine_path($base, "project_panel.js")));
 		append_line($sb, read_file(combine_path($base, "spellcheck.js")));
 		append_line($sb, read_file(combine_path($base, "ws_manager.js")));
 		append_line($sb, read_file(combine_path($base, "main.js")));
@@ -196,6 +215,12 @@ script(on_receive_cef_message)params($srcProcId,$msg,$arg1,$arg2,$arg3,$arg4)
 		}
 		elif ($msg == "mcp_callback") {
 			handle_mcp_callback($arg1, $arg2, $arg3);
+		}
+		elif ($msg == "skill_callback") {
+			handle_skill_callback($arg1, $arg2, $arg3, $arg4);
+		}
+		elif ($msg == "command_callback") {
+			handle_command_callback($arg1, $arg2, $arg3, $arg4);
 		}
 		else {
 			//nativeapi.SendJavascriptCallForDSL("alert", [$msg]);
@@ -268,26 +293,30 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	$queuedCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getQueuedCount",[]));
 
 	if ($tag == "llm_pm_project") {
-		$planFile = combine_path(@ProjectPath, "docs/plan.txt");
+		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
 		write_file($planFile, $reply);
 		set_plan($reply);
+		llm_clear_history(@LlmProviderId, $tag);
 
 		send_command_to_inject("send_message", to_json({text: $reply}));
 	}
 	elif ($tag == "llm_pm_context") {
-		$contextFile = combine_path(@ProjectPath, "docs/context.txt");
+		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 		write_file($contextFile, $reply);
 		set_context($reply);
+		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "llm_pm_plan") {
-		$planFile = combine_path(@ProjectPath, "docs/plan.txt");
+		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
 		write_file($planFile, $reply);
 		set_plan($reply);
+		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "llm_pm_align") {
-		$todoFile = combine_path(@ProjectPath, "docs/todo.txt");
+		$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 		write_file($todoFile, $reply);
 		set_todo($reply);
+		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -311,6 +340,22 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		};
 		send_command_to_inject("send_llm_callback", to_json({text: $reply}));
 	};
+};
+
+script(handle_skill_callback)params($cmdStr, $argStr, $workDir, $resultText)
+{
+	nativelog("[dsl] skill_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, getstringinlength($resultText,100));
+
+	$text = format("[skill Result] cmd={0} arg={1} work_dir={2}\n{3}", $cmdStr, $argStr, $workDir, $resultText);
+	send_command_to_inject("send_message", to_json({text: $text}));
+};
+
+script(handle_command_callback)params($cmdStr, $argStr, $workDir, $resultText)
+{
+	nativelog("[dsl] command_callback: cmd={0} arg={1} work_dir={2} result={3}", $cmdStr, $argStr, $workDir, getstringinlength($resultText,100));
+
+	$text = format("[command Result] cmd={0} arg={1} work_dir={2}\n{3}", $cmdStr, $argStr, $workDir, $resultText);
+	send_command_to_inject("send_message", to_json({text: $text}));
 };
 
 // Handle agent command
@@ -360,6 +405,12 @@ script(handle_agent_command)params($jsonData)
 	}
 	elif ($command == "update_agent_configs") {
 		handle_update_agent_configs_command($id, $params);
+	}
+	elif ($command == "get_initial_project_identity") {
+		handle_get_initial_project_identity_command($id, $params);
+	}
+	elif ($command == "update_project_config") {
+		handle_update_project_config_command($id, $params);
 	}
 	else {
 		nativelog("[dsl] Unknown command: {0}", $command);
@@ -446,6 +497,58 @@ script(handle_update_agent_configs_command)params($id, $params)
 	searxng_set_url("https://www.gamexyz.net:8090");
 };
 
+// Handle get_initial_project_identity command from inject.js project panel
+// Returns initial projectIdentity from C#
+script(handle_get_initial_project_identity_command)params($id, $params)
+{
+	nativelog("[dsl] Handling get_initial_project_identity command, ID: {0}", $id);
+
+	$projectIdentity = initialprojectidentity;
+
+	nativelog("[dsl] get_initial_project_identity: identity={0}", $projectIdentity);
+
+	$result = to_json({projectIdentity: $projectIdentity});
+	$response = build_agent_response($id, true, $result, "");
+	send_response_to_inject($response);
+};
+
+// Handle update_project_config command from inject.js project panel
+// params: projectDir, projectIdentity
+script(handle_update_project_config_command)params($id, $params)
+{
+	nativelog("[dsl] Handling update_project_config command, ID: {0}", $id);
+
+	$projectDir = get_message_param($params, "projectDir");
+	$projectIdentity = get_message_param($params, "projectIdentity");
+
+	nativelog("[dsl] update_project_config: dir={0} identity={1}", $projectDir, $projectIdentity);
+
+	if (strlen($projectDir) == 0 || strlen($projectIdentity) == 0) {
+		$response = build_agent_response($id, false, "", "projectDir and projectIdentity are required");
+		send_response_to_inject($response);
+		return("error");
+	};
+
+	// Update C# agent state
+	set_project_dir($projectDir);
+	set_project_identity($projectIdentity);
+
+	// Update DSL global variables
+	init_global_consts();
+
+	// Re-init semantic history collections for new project
+	semantic_init(@MarquisHistory);
+	semantic_init(@ChiliarchHistory);
+	semantic_init(@CenturionHistory);
+	semantic_init(@DecurionHistory);
+	semantic_init(@LegionnaireHistory);
+
+	$response = build_agent_response($id, true, "ok", "");
+	send_response_to_inject($response);
+
+	nativelog("[dsl] update_project_config done: path={0} identity={1}", @ProjectDirectory, @ProjectIdentity);
+};
+
 script(induction_info)params($batch, $infos, $session)
 {
 	nativelog("[dsl] induction_info, batch: {0}, infos: {1}, session: {2}", $batch, count($infos), $session);
@@ -464,12 +567,12 @@ script(induction_info)params($batch, $infos, $session)
 
 script(induction_plan)params()
 {
-	$planFile = combine_path(@ProjectPath, "docs/plan.txt");
+	$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
 
-	$planHistory = read_file(combine_path(@ProjectPath, "docs/plan.txt"));
-	$todoHistory = read_file(combine_path(@ProjectPath, "docs/todo.txt"));
-	$contextHistory = read_file(combine_path(@ProjectPath, "docs/context.txt"));
-	$conversationHistory = read_file(combine_path(@ProjectPath, "docs/history.txt"));
+	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
+	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
+	$conversationHistory = read_file(combine_path(@ProjectDirectory, "docs/history.txt"));
 
 	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
 		"【以下是最近的待办事项】：\n{1}\n" +
@@ -480,57 +583,61 @@ script(induction_plan)params()
 		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在3000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		llm_chat(@LlmProviderId, "llm_pm_project", "project_history", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
 			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $planFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	};
 };
 
 script(induction_context)params($count,$queuedCount,$pageType)
 {
-	$contextFile = combine_path(@ProjectPath, "docs/context.txt");
+	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 	// Load recent conversation history from semantic index
+	$marquisHistory = semantic_get_recent(@MarquisHistory, 1);
+	$chiliarchHistory = semantic_get_recent(@ChiliarchHistory, 1);
+	$centurionHistory = semantic_get_recent(@CenturionHistory, 1);
+	$decurionHistory = semantic_get_recent(@DecurionHistory, 5);
 	$conversationHistory = semantic_get_recent(@LegionnaireHistory, $count);
 
 	@LastHistoryCount = semantic_count(@LegionnaireHistory);
 
-	$planHistory = read_file(combine_path(@ProjectPath, "docs/plan.txt"));
-	$todoHistory = read_file(combine_path(@ProjectPath, "docs/todo.txt"));
-	$contextHistory = read_file(combine_path(@ProjectPath, "docs/context.txt"));
+	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
+	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
 	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
 		"【以下是最近的待办事项】：\n{1}\n" +
 		"【以下是最近上下文信息】：\n{2}\n" +
-		"【以下是最近对话历史】：\n{3}", $planHistory, $todoHistory, $contextHistory, $conversationHistory);
+		"【以下是最近对话历史】：\n{3}{4}{5}{6}{7}", $planHistory, $todoHistory, $contextHistory, $marquisHistory, $chiliarchHistory, $centurionHistory, $decurionHistory, $conversationHistory);
 	$prompt = format("{0}\n\n以上内容结合系统介绍、开发计划与开发进度，以PM身份总结一下清晰详尽的关键内容" +
 		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成），" +
-		"除总结外，增加一个近期会话章节，详细列出最近的会话内容（重新整理，只去掉json格式与重复信息，控制在3000字以内）", $prompt);
+		"除总结外，增加一个近期会话章节，总结最近的会话内容（重新整理，去掉json格式与重复信息，控制在3000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		llm_chat(@LlmProviderId, "llm_pm_context", "context_summary", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
 			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $contextFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	};
 };
 
 script(induction_todo)params($count,$queuedCount,$pageType)
 {
-	$todoFile = combine_path(@ProjectPath, "docs/todo.txt");
+	$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 	// Load recent conversation history from semantic index
 	$conversationHistory = semantic_get_recent(@LegionnaireHistory, $count);
 
-	$todoHistory = read_file(combine_path(@ProjectPath, "docs/todo.txt"));
-	$contextHistory = read_file(combine_path(@ProjectPath, "docs/context.txt"));
+	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
 	$prompt = format("【以下是最近的待办事项】：\n{0}\n" +
 		"【以下是最近上下文信息】：\n{1}\n" +
@@ -540,13 +647,13 @@ script(induction_todo)params($count,$queuedCount,$pageType)
 		"（一次回复输出完成,字数控制到300~500字左右）", $prompt);
 
 	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		llm_chat(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
 			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $todoFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, true);
+		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	};
 };
@@ -565,7 +672,7 @@ script(SaveHistory)params()
 		$rec = $$;
 		append_format_line($history, "{0} {1}", $rec.Content, $rec.Metadata);
 	};
-	$historyFile = combine_path(@ProjectPath, "docs/history.txt");
+	$historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
 	$historyStr = string_builder_to_string($history);
 	write_file($historyFile, $historyStr);
 	set_history($historyStr);
@@ -598,13 +705,6 @@ script(handle_agent_notification)params($jsonData)
 		// Auto-start MetaDSL Worker on port 9527 with auto-reconnect enabled
 		send_command_to_inject("ws_start", to_json({port: 9527}));
 
-		// Start background loading of conversation history collection
-		semantic_init(@MarquisHistory);
-		semantic_init(@ChiliarchHistory);
-		semantic_init(@CenturionHistory);
-		semantic_init(@DecurionHistory);
-		semantic_init(@LegionnaireHistory);
-
 		if (@EnableLlmPM) {
 			llm_clear_history(@LlmProviderId, "llm_pm_plan");
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
@@ -621,8 +721,8 @@ script(handle_agent_notification)params($jsonData)
 		$basePromptFile = combine_path(basepath, "docs/system_prompt.txt");
 		$toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
 		$emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
-		$projectPromptFile = combine_path(@ProjectPath, "docs/project_prompt.txt");
-		$planFile = combine_path(@ProjectPath, "docs/plan.txt");
+		$projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
+		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
 
 		$basePrompt = read_file($basePromptFile);
 		$toplevelRules = read_file($toplevelRulesFile);
@@ -645,9 +745,9 @@ script(handle_agent_notification)params($jsonData)
 		set_project_prompt($projectPrompt);
 		set_emphasize($emphasize);
 		set_plan($plan);
-		set_context(read_file(combine_path(@ProjectPath, "docs/context.txt")));
-		set_todo(read_file(combine_path(@ProjectPath, "docs/todo.txt")));
-		set_history(read_file(combine_path(@ProjectPath, "docs/history.txt")));
+		set_context(read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
+		set_todo(read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
+		set_history(read_file(combine_path(@ProjectDirectory, "docs/history.txt")));
 
 		send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
 
@@ -669,7 +769,7 @@ script(handle_agent_notification)params($jsonData)
 		delete_file(combine_path(appdir, "console.log"));
 
 		// Read context file
-		$contextFile = combine_path(@ProjectPath, "docs/context.txt");
+		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 
 		$data = get_message_param($notif, "data");
 		$pageType = get_message_param($data, "pageType");
@@ -702,9 +802,9 @@ script(handle_agent_notification)params($jsonData)
 		$conversations = get_message_param($data, "conversations");
 		$count = size($conversations);
 
-		set_plan(read_file(combine_path(@ProjectPath, "docs/plan.txt")));
-		set_context(read_file(combine_path(@ProjectPath, "docs/context.txt")));
-		set_todo(read_file(combine_path(@ProjectPath, "docs/todo.txt")));
+		set_plan(read_file(combine_path(@ProjectDirectory, "docs/plan.txt")));
+		set_context(read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
+		set_todo(read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
 
 		nativelog("[dsl] Saving {0} new conversation(s) to history", $count);
 
@@ -742,6 +842,11 @@ script(handle_agent_notification)params($jsonData)
 		induction_info($chiliarchBatch, $chiliarchs, "llm_pm_marquis");
 
 		nativelog("[dsl] Saved Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
+
+		if (add_cur_context_rounds() == 0) {
+			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());
+			send_command_to_inject("send_message", to_json({text: $prompt}));
+		};
 	}
 	elif ($type == "agent_need_to_plan") {
 		nativelog("[dsl] agent_need_to_plan notification received");
@@ -756,7 +861,7 @@ script(handle_agent_notification)params($jsonData)
 		$queuedCount = get_message_param($data, "queuedCount");
 		$pageType = get_message_param($data, "pageType");
 		$count = get_message_param($data, "count");
-		$planPath = combine_path(@ProjectPath, "docs/plan.txt");
+		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
 
 		nativelog("[dsl] agent_need_to_plan notification: {0}({1}) queued:{2} page:{3} count:{4} {5}", $lastFromLLM, gettypename($lastFromLLM), $queuedCount, $pageType, $count, getstringinlength($lastScannedMessage,100));
 
@@ -808,37 +913,51 @@ script(handle_agent_notification)params($jsonData)
 				return(true);
 			}
 			elif (string_contains($lastScannedMessage, "//", "@execute") || string_contains($lastScannedMessage, "MetaDSL", "{:", ":}")  || string_contains($lastScannedMessage, "MetaDsl", "{:", ":}") || string_contains($lastScannedMessage, "metadsl", "{:", ":}")) {
-				nativelog("[dsl] Sending 'metadsl代码要使用markdown代码块语法' to LLM");
+				if (string_contains($lastScannedMessage, "js_request", "keep_llm_context")) {
+					if (@EnableLlmPM) {
+						nativelog("[dsl] Sending '稍后请阅读context.txt与history.txt了解上下文' to LLM");
 
-				$prompt = format("ref{{:\n{0}\n:}};\n\nmetadsl代码要使用markdown代码块语法", $lastScannedMessage);
-				send_command_to_inject("send_message", to_json({text: $prompt}));
-				return(true);
+						$prompt = format("ref{{:\n{0}\n:}};\n\n已提交上下文更新请求，稍后请阅读context.txt与history.txt了解上下文", $lastScannedMessage);
+						send_command_to_inject("send_message", to_json({text: $prompt}));
+					};
+					return(true);
+				}
+				else {
+					nativelog("[dsl] Sending 'metadsl代码要使用markdown代码块语法' to LLM");
+
+					$prompt = format("ref{{:\n{0}\n:}};\n\nmetadsl代码要使用markdown代码块语法", $lastScannedMessage);
+					send_command_to_inject("send_message", to_json({text: $prompt}));
+					return(true);
+				};
 			}
-		elif (file_exists($planPath)) {
-			nativelog("[dsl] lastFromLLM=true, queuedCount={0} induction_plan", $queuedCount);
-			induction_plan();
+			elif (file_exists($planPath)) {
+				nativelog("[dsl] lastFromLLM=true, queuedCount={0} induction_plan", $queuedCount);
+				induction_plan();
+			}
+			else {
+				nativelog("[dsl] lastFromLLM=true, queuedCount={0} enter else branch", $queuedCount);
+			};
 		}
 		else {
-			nativelog("[dsl] lastFromLLM=true, queuedCount={0} enter else branch", $queuedCount);
-		};
-	}
-	else {
-		nativelog("[dsl] lastFromLLM=false, queuedCount={0}", $queuedCount);
+			nativelog("[dsl] lastFromLLM=false, queuedCount={0}", $queuedCount);
 
-		if (string_contains($lastScannedMessage, "MetaDSL", "hot_reload")) {
-			nativelog("[dsl] Sending '热更完成，继续' to LLM");
+			if (string_contains($lastScannedMessage, "MetaDSL", "hot_reload")) {
+				nativelog("[dsl] Sending '热更完成，继续' to LLM");
 
-			send_command_to_inject("send_message", to_json({text: "热更完成，继续"}));
-			return(true);
-		}
-		elif (file_exists($planPath)) {
-			nativelog("[dsl] lastFromLLM=false, queuedCount={0} induction_plan", $queuedCount);
-			induction_plan();
+				send_command_to_inject("send_message", to_json({text: "热更完成，继续"}));
+				return(true);
+			}
+			elif (file_exists($planPath)) {
+				nativelog("[dsl] lastFromLLM=false, queuedCount={0} induction_plan", $queuedCount);
+				induction_plan();
 			}
 			else {
 				nativelog("[dsl] lastFromLLM=false, queuedCount={0} enter else branch", $queuedCount);
 			};
 		};
+	}
+	else {
+		nativelog("[dsl] Unknown notification type: {0}", $type);
 	};
 };
 

@@ -39,8 +39,12 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("replace_in_file", "replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("multi_replace", "multi_replace(path, editsJson) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...]", new ExpressionFactoryHelper<MultiReplaceExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("replace_range", "replace_range(path, startLine, endLine, newContent)", new ExpressionFactoryHelper<ReplaceRangeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("insert_after", "insert_after(path, searchLiteralText, content[, allOccurrences[, exactMatch]])", new ExpressionFactoryHelper<InsertAfterExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("insert_before", "insert_before(path, searchLiteralText, content[, allOccurrences[, exactMatch]])", new ExpressionFactoryHelper<InsertBeforeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_after_text", "insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]])", new ExpressionFactoryHelper<InsertAfterTextExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_before_text", "insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]])", new ExpressionFactoryHelper<InsertBeforeTextExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_after", "insert_after(path, line, insert_content) - insert content after specified line number", new ExpressionFactoryHelper<InsertAfterLineExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_before", "insert_before(path, line, insert_content) - insert content before specified line number", new ExpressionFactoryHelper<InsertBeforeLineExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_after_line", "insert_after_line(path, line, insert_content) - insert content after specified line number", new ExpressionFactoryHelper<InsertAfterLineExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("insert_before_line", "insert_before_line(path, line, insert_content) - insert content before specified line number", new ExpressionFactoryHelper<InsertBeforeLineExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("delete_lines", "delete_lines(path, startLine, endLine)", new ExpressionFactoryHelper<DeleteLinesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("search_lines", "search_lines(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string. auto fallback to substring if regex invalid", new ExpressionFactoryHelper<SearchLinesInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("search_lines_in_file", "search_lines_in_file(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string. auto fallback to substring if regex invalid", false, new ExpressionFactoryHelper<SearchLinesInFileExp>());
@@ -50,10 +54,14 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_line_count", "get_file_line_count(path)", false, new ExpressionFactoryHelper<GetLineCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("line_count", "line_count(path)", new ExpressionFactoryHelper<GetLineCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_line_count", "file_line_count(path)", false, new ExpressionFactoryHelper<GetLineCountExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("search_file", "search_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("searchfile", "searchfile(path, regex_pattern[, context_lines_after, context_lines_before])", false, new ExpressionFactoryHelper<SearchFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("grep_file", "grep_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("grepfile", "grepfile(path, regex_pattern[, context_lines_after, context_lines_before])", false, new ExpressionFactoryHelper<SearchFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("search_in_file", "search_in_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("grep_file", "grep_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("grepfile", "grepfile(path, regex_pattern[, context_lines_after, context_lines_before])", false, new ExpressionFactoryHelper<SearchInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("search_in_files", "search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", new ExpressionFactoryHelper<SearchInFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("grep_files", "grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", new ExpressionFactoryHelper<SearchInFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("grepfiles", "grepfiles(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", false, new ExpressionFactoryHelper<SearchInFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("count_lines", "count_lines(path[, startLine, endLine]) - display lines with line number, indent info, and content", new ExpressionFactoryHelper<CountLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("countlines", "countlines(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountLinesExp>());
 
             // Diff Operations
             AgentFrameworkService.Instance.DslEngine!.Register("apply_unified_diff", "apply_unified_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]) return Object(success/error/linesAdded/linesRemoved), use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<ApplyDiffExp>());
@@ -74,6 +82,8 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("http_get", "http_get(url)", new ExpressionFactoryHelper<HttpGetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("http_post", "http_post(url, content, contentType)", new ExpressionFactoryHelper<HttpPostExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("download_file", "download_file(url, savePath)", new ExpressionFactoryHelper<DownloadFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("set_http_user_agent", "set_http_user_agent(user_agent) - set User-Agent header for http_get/http_post/download_file", new ExpressionFactoryHelper<SetHttpUserAgentExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_http_user_agent", "get_http_user_agent() - get current User-Agent header string", new ExpressionFactoryHelper<GetHttpUserAgentExp>());
 
             // JSON Operations
             AgentFrameworkService.Instance.DslEngine!.Register("to_json", "to_json(obj, prettyPrint)", new ExpressionFactoryHelper<ToJsonExp>());
@@ -83,8 +93,11 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("string_length", "string_length(str)", new ExpressionFactoryHelper<StringLengthExp>());
 
             // Process Operations
-            AgentFrameworkService.Instance.DslEngine!.Register("execute_command", "execute_command(command, arguments, workingDir[, timeout_def_30000ms]) return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string", new ExpressionFactoryHelper<ExecuteCommandExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("start_process", "start_process(processId, command, arguments, workingDir)", new ExpressionFactoryHelper<StartProcessExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("execute_script", "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args]) return Object(success/exitCode/output/error/executionTime)[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};, use 'to_string' to convert to a string", new ExpressionFactoryHelper<ExecuteScriptExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("execute_script_async", "execute_script_async(callbackTag[, language, workingDir, timeout_def_30000ms, cmd_and_args]) return Object(success/exitCode/output/error/executionTime)[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :}; - async exec, result via command_callback", new ExpressionFactoryHelper<ExecuteScriptAsyncExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("execute_command", "execute_command(command[, arguments, workingDir, timeout_def_30000ms]) return Object(success/exitCode/output/error/executionTime)[params($a,$b,...)delimiter(begin_chars,end_chars)], use 'to_string' to convert to a string", new ExpressionFactoryHelper<ExecuteCommandExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("execute_command_async", "execute_command_async(callbackTag, command[, arguments, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)] - async exec, result via command_callback", new ExpressionFactoryHelper<ExecuteCommandAsyncExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("start_process", "start_process(processId, command[, arguments, workingDir])[params($a,$b,...)delimiter(begin_chars,end_chars)]", new ExpressionFactoryHelper<StartProcessExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("stop_process", "stop_process(processId[, timeout_def_5000ms])", new ExpressionFactoryHelper<StopProcessExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_process_running", "is_process_running(processId)", new ExpressionFactoryHelper<IsProcessRunningExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("write_process_input", "write_process_input(processId, input)", new ExpressionFactoryHelper<WriteProcessInputExp>());

@@ -395,6 +395,21 @@
       this.toggleClawButton.onclick = () => this.toggleClawPanel();
       optionBar.appendChild(this.toggleClawButton);
 
+      // Toggle Project Panel button (default visible)
+      this.toggleProjectButton = document.createElement('button');
+      this.toggleProjectButton.textContent = '\u2713 Project';
+      this.toggleProjectButton.style.cssText = `
+        padding: 3px 7px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+      this.toggleProjectButton.onclick = () => this.toggleProjectPanel();
+      optionBar.appendChild(this.toggleProjectButton);
+
       // JS Hot Reload toggle button
       this.jsHotReloadButton = document.createElement('button');
       this.jsHotReloadButton.textContent = CONFIG.config.panel.jsHotReload ? '\u2713 JS Reload' : '\u2717 JS Reload';
@@ -879,6 +894,21 @@
         const on = this.openClawPanel.visible;
         this.toggleClawButton.textContent = on ? '\u2713 OpenClaw' : '\u2717 OpenClaw';
         this.toggleClawButton.style.background = on ? '#4caf50' : '#666';
+      }
+    }
+
+    toggleProjectPanel() {
+      if (this.projectPanel) {
+        this.projectPanel.toggle();
+        this.updateProjectButtonState();
+      }
+    }
+
+    updateProjectButtonState() {
+      if (this.projectPanel && this.toggleProjectButton) {
+        const on = this.projectPanel.visible;
+        this.toggleProjectButton.textContent = on ? '\u2713 Project' : '\u2717 Project';
+        this.toggleProjectButton.style.background = on ? '#4caf50' : '#666';
       }
     }
 

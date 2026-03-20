@@ -21,13 +21,15 @@ namespace CefDotnetApp.AgentCore.Core
         private StreamReader? _stdout;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
-        private static readonly TimeSpan s_sendTimeout = TimeSpan.FromSeconds(60);
-        private static readonly TimeSpan s_lockTimeout = TimeSpan.FromSeconds(65);
+        private readonly TimeSpan _sendTimeout;
+        private readonly TimeSpan _lockTimeout;
 
         public bool IsConnected => _process != null && !_process.HasExited;
 
-        public StdioTransport(string target)
+        public StdioTransport(string target, int timeoutMs = 60000)
         {
+            _sendTimeout = TimeSpan.FromMilliseconds(timeoutMs);
+            _lockTimeout = TimeSpan.FromMilliseconds(timeoutMs + 5000);
             // Expand environment variables before splitting command and arguments
             string expanded = Environment.ExpandEnvironmentVariables(target);
             int spaceIdx = expanded.IndexOf(' ');
@@ -77,7 +79,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (_stdin == null || _stdout == null)
                 throw new InvalidOperationException("StdioTransport not connected");
 
-            if (!await _lock.WaitAsync(s_lockTimeout))
+            if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("StdioTransport: timed out waiting for send lock");
             try
             {
@@ -86,12 +88,12 @@ namespace CefDotnetApp.AgentCore.Core
                 // Wrap ReadLineAsync with timeout to prevent indefinite blocking
                 var readTask = _stdout.ReadLineAsync();
                 using var delayCts = new CancellationTokenSource();
-                var delayTask = Task.Delay(s_sendTimeout, delayCts.Token);
+                var delayTask = Task.Delay(_sendTimeout, delayCts.Token);
                 var completed = await Task.WhenAny(readTask, delayTask);
                 if (completed == readTask)
                     delayCts.Cancel(); // cancel unused delay to avoid Task leak
                 else
-                    throw new TimeoutException($"StdioTransport: no response within {s_sendTimeout.TotalSeconds}s");
+                    throw new TimeoutException($"StdioTransport: no response within {_sendTimeout.TotalSeconds}s");
                 string? line = await readTask;
                 return line ?? string.Empty;
             }

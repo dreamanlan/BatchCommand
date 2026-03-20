@@ -171,6 +171,53 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
+        /// <summary>
+        /// Executes a command asynchronously and sends the result via EnqueueCefMessage.
+        /// callbackTag is used as the CEF message name, resultJson as the argument.
+        /// Returns immediately; result arrives via on_receive_cef_message with msg=callbackTag.
+        /// </summary>
+        public void ExecuteCommandWithCallback(string command, string? arguments, string? workingDirectory, int timeoutMs, string callbackTag, string? cleanupFile = null)
+        {
+            var nativeApi = Core.AgentCore.Instance.GetNativeApi();
+            if (nativeApi == null) return;
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var result = await ExecuteCommandAsync(command, arguments, workingDirectory, timeoutMs);
+                    string resultJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        success = result.Success,
+                        exitCode = result.ExitCode,
+                        output = result.Output,
+                        error = result.Error,
+                        executionTime = result.ExecutionTime.TotalMilliseconds
+                    });
+                    nativeApi.EnqueueCefMessage(callbackTag, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, resultJson });
+                }
+                catch (Exception ex)
+                {
+                    string errorJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        success = false,
+                        exitCode = -1,
+                        output = string.Empty,
+                        error = $"Exception: {ex.Message}",
+                        executionTime = 0.0
+                    });
+                    nativeApi.EnqueueCefMessage(callbackTag, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, errorJson });
+                }
+                finally
+                {
+                    if (cleanupFile != null)
+                    {
+                        try { File.Delete(cleanupFile); } catch { }
+                    }
+                }
+            });
+        }
+
         public string StartProcess(string processId, string command, string? arguments = null, string? workingDirectory = null)
         {
             lock (_lockObject) {
@@ -286,6 +333,24 @@ namespace CefDotnetApp.AgentCore.Core
                     return false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Generate a unique random file path in the temp directory with the specified extension.
+        /// Uses Path.GetRandomFileName() with File.Exists check to avoid collisions.
+        /// </summary>
+        public static string GetUniqueRandomFilePath(string ext)
+        {
+            string tempDir = Path.GetTempPath();
+            string filePath;
+            int maxAttempts = 10;
+            do {
+                filePath = Path.Combine(tempDir, Path.GetRandomFileName() + ext);
+            } while (File.Exists(filePath) && --maxAttempts > 0);
+            if (File.Exists(filePath)) {
+                throw new InvalidOperationException("Failed to generate a unique temp file path after multiple attempts.");
+            }
+            return filePath;
         }
 
         public void StopAllProcesses()

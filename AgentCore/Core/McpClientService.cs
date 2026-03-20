@@ -170,7 +170,10 @@ namespace CefDotnetApp.AgentCore.Core
 
             IMcpTransport transport;
             if (type == "stdio")
-                transport = new StdioTransport(target);
+            {
+                var (_, stdioTimeoutMs) = ExtractTransportOptions(serverId, 60000);
+                transport = new StdioTransport(target, stdioTimeoutMs);
+            }
             else if (type == "sse")
                 transport = BuildSseTransport(serverId, target);
             else if (type == "streamable-http")
@@ -316,13 +319,13 @@ namespace CefDotnetApp.AgentCore.Core
                                 string reconnResult = Connect(serverId, conn.Type, conn.Target);
                                 if (!reconnResult.StartsWith("ok"))
                                 {
-                                    nativeApi.EnqueueMcpCallback(serverId, callbackTag, $"[error] reconnect failed: {reconnResult}");
-                                    return;
+                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, $"[error] reconnect failed: {reconnResult}" });
+                                return;
                                 }
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                 {
-                                    nativeApi.EnqueueMcpCallback(serverId, callbackTag, "[error] server not found after reconnect");
-                                    return;
+                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, "[error] server not found after reconnect" });
+                                return;
                                 }
                                 req = JsonRpcHelper.BuildRequest("tools/call", new
                                 {
@@ -339,12 +342,12 @@ namespace CefDotnetApp.AgentCore.Core
 
                     string resp = await conn.Transport.SendRequestAsync(req);
                     string result = ExtractToolResult(resp);
-                    nativeApi.EnqueueMcpCallback(serverId, callbackTag, result);
+                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, result });
                 }
                 catch (Exception ex)
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
-                    nativeApi.EnqueueMcpCallback(serverId, callbackTag, $"[error] {ex.Message}");
+                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, $"[error] {ex.Message}" });
                 }
             });
 
@@ -357,10 +360,10 @@ namespace CefDotnetApp.AgentCore.Core
         /// Extracts headers and timeout from pending options for a server.
         /// Header values containing %var% patterns are resolved here at Connect time.
         /// </summary>
-        private (Dictionary<string, string>? headers, int timeoutMs) ExtractTransportOptions(string serverId)
+        private (Dictionary<string, string>? headers, int timeoutMs) ExtractTransportOptions(string serverId, int defaultTimeoutMs = 300000)
         {
             Dictionary<string, string>? headers = null;
-            int timeoutMs = 300000; // default 5 minutes
+            int timeoutMs = defaultTimeoutMs;
             if (_pendingOptions.TryGetValue(serverId, out var opts))
             {
                 lock (opts)

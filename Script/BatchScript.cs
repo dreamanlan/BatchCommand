@@ -42,6 +42,33 @@ namespace BatchCommand
             return BoxedValue.FromBool(Debugger.IsAttached);
         }
     }
+    internal sealed class GetStringInLengthExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                throw new Exception("Expected: getstringinlength(str, len[, begin_or_end_or_beginend])");
+            }
+            string str = operands[0].AsString;
+            int len = operands[1].GetInt();
+            int beginOrEndOrBeginEnd = operands.Count > 2 ? operands[2].GetInt() : 0;
+            if (!string.IsNullOrEmpty(str)) {
+                if (str.Length <= len) {
+                    return BoxedValue.FromString(str);
+                }
+                switch (beginOrEndOrBeginEnd) {
+                    case 1:
+                        return BoxedValue.From("..." + str.Substring(str.Length - len, len));
+                    case 2:
+                        return BoxedValue.From(str.Substring(0, len / 2) + "..." + str.Substring(str.Length - len / 2, len / 2));
+                    case 0:
+                    default:
+                        return BoxedValue.From(str.Substring(0, len) + "...");
+                }
+            }
+            return BoxedValue.EmptyString;
+        }
+    }
     internal sealed class CloneExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1438,6 +1465,7 @@ namespace BatchCommand
             //register Gm Command
             Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
             Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
+            Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin_end_or_beginend])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
             Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());

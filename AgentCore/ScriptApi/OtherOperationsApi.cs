@@ -202,6 +202,28 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    sealed class SetHttpUserAgentExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_http_user_agent(user_agent)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string ua = operands[0].AsString;
+            Core.AgentCore.Instance.HttpClient.SetUserAgent(ua);
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    sealed class GetHttpUserAgentExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.FromString(Core.AgentCore.Instance.HttpClient.GetUserAgent());
+        }
+    }
+
     // JSON Operations
     sealed class ToJsonExp : SimpleExpressionBase
     {

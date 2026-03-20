@@ -305,7 +305,7 @@ namespace CefDotnetApp.AgentCore.Core
             return true;
         }
 
-        public bool InsertAfter(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
+        public bool InsertAfterText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -362,7 +362,7 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool InsertBefore(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
+        public bool InsertBeforeText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -571,6 +571,38 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             return result.ToString();
+        }
+
+        public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (File.Exists(fullPath)) {
+                return SearchFile(path, searchRegex, contextLinesAfter, contextLinesBefore);
+            }
+            if (!Directory.Exists(fullPath)) {
+                return $"Directory not found: {path}";
+            }
+
+            if (null == filterAndNewExts) {
+                filterAndNewExts = new List<string> { "*.txt", "*.md", "*.jsonl", "*.json", "*.xml", "*.yaml", "*.csv", "*.htm", "*.html", "*.css",
+                    "*.js", "*.py", "*.java", "*.c", "*.cpp", "*.h", "*.hpp", "*.m", "*.mm", "*.cxx", "*.hxx", "*.cc", "*.hh", "*.swift", "*.kt",
+                    "*.cs", "*.vb", "*.php", "*.asp", "*.aspx", "*.jsp", "*.cgi", "*.pl", "*.rb", "*.lua", "*.go", "*.rs", "*.kts", "*.fs", "*.fsx",
+                    "*.ts", "*.tsx", "*.jsx", "*.dsl", "*.sh", "*.bat", "*.cmd", "*.toml", "*.tml", "*.log"};
+            }
+            if (filterAndNewExts.Count <= 0) {
+                filterAndNewExts.Add("*");
+            }
+            var sb = new StringBuilder();
+            for (int i = 0; i < filterAndNewExts.Count; ++i) {
+                string filter = filterAndNewExts[i];
+                string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
+                foreach (string file in files) {
+                    sb.AppendLine($"====== {file} ======");
+                    var result = SearchFile(file, searchRegex, contextLinesAfter, contextLinesBefore);
+                    sb.AppendLine(result);
+                }
+            }
+            return sb.ToString();
         }
 
         public string SearchLogFile(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)

@@ -13,6 +13,8 @@ namespace CefDotnetApp.AgentCore.Core
 {
     public class HttpClientOperations
     {
+        private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7559.172 Safari/537.36";
+
         private readonly HttpClient _httpClient;
         private readonly Dictionary<string, string> _defaultHeaders;
 
@@ -23,6 +25,7 @@ namespace CefDotnetApp.AgentCore.Core
                 Timeout = TimeSpan.FromSeconds(timeoutSeconds)
             };
             _defaultHeaders = new Dictionary<string, string>();
+            SetDefaultHeader("User-Agent", DefaultUserAgent);
         }
 
         public void SetDefaultHeader(string name, string value)
@@ -38,6 +41,16 @@ namespace CefDotnetApp.AgentCore.Core
             _defaultHeaders.Remove(name);
             if (_httpClient.DefaultRequestHeaders.Contains(name))
                 _httpClient.DefaultRequestHeaders.Remove(name);
+        }
+
+        public string GetUserAgent()
+        {
+            return _defaultHeaders.TryGetValue("User-Agent", out var ua) ? ua : string.Empty;
+        }
+
+        public void SetUserAgent(string userAgent)
+        {
+            SetDefaultHeader("User-Agent", userAgent);
         }
 
         public string Get(string url, Dictionary<string, string>? headers = null)

@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // OpenClaw WebSocket + HTTP Relay Server
 // - Forwards 'message' and 'tool_request' type messages between authenticated clients
 // - Provides HTTP REST API that bridges to WS clients
@@ -17,6 +17,8 @@ const WS_PATH = process.env.OPENCLAW_WS_PATH || '/ws';
 const CONFIG_PATH = path.join(__dirname, 'config.json');
 const HTTP_TIMEOUT = parseInt(process.env.OPENCLAW_HTTP_TIMEOUT || '60000', 10);
 
+
+
 // Simple logger
 function log(level, msg) {
   const ts = new Date().toISOString();
@@ -30,9 +32,9 @@ function loadConfig() {
   try {
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8');
     const parsed = JSON.parse(raw);
-    config.apiKeys = Array.isArray(parsed.apiKeys) ? parsed.apiKeys : [];
+    config.apiKeys = (parsed.apiKeys && typeof parsed.apiKeys === 'object' && !Array.isArray(parsed.apiKeys)) ? parsed.apiKeys : {};
     config.maxConnectionsPerKey = parseInt(parsed.maxConnectionsPerKey, 10) || 3;
-    log('INFO', `Config loaded: ${config.apiKeys.length} apiKey(s), maxConn/key=${config.maxConnectionsPerKey}`);
+    log('INFO', `Config loaded: ${Object.keys(config.apiKeys).length} apiKey(s), maxConn/key=${config.maxConnectionsPerKey}`);
   } catch (e) {
     log('ERROR', `Failed to load config: ${e.message}`);
   }
@@ -103,7 +105,7 @@ function httpCheckAuth(req) {
   const auth = req.headers['authorization'] || '';
   const match = auth.match(/^Bearer\s+(.+)$/i);
   if (!match) return false;
-  return config.apiKeys.includes(match[1]);
+  return match[1] in config.apiKeys;
 }
 
 // ---- Pending HTTP requests (waiting for WS response) ----
@@ -283,9 +285,10 @@ wss.on('connection', (ws, req) => {
     // ---- Handle auth ----
     if (msgType === 'auth') {
       const token = msg.token || '';
-      if (config.apiKeys.includes(token)) {
+      if (token in config.apiKeys) {
         ws._authenticated = true;
         ws._apiKey = token;
+        ws._clientName = config.apiKeys[token] || ('client-' + clientId);
         ws._lastPingTime = Date.now();
         // Enforce max connections per apiKey
         const maxConn = config.maxConnectionsPerKey;
@@ -310,8 +313,8 @@ wss.on('connection', (ws, req) => {
           leastActive.close(4003, 'Max connections per key exceeded');
           sameKeyClients.splice(sameKeyClients.indexOf(leastActive), 1);
         }
-        ws.send(JSON.stringify({ type: 'auth_ok' }));
-        log('INFO', `Client #${clientId} authenticated (key=...${token.slice(-6)}, connections=${sameKeyClients.length}/${maxConn})`);
+        ws.send(JSON.stringify({ type: 'auth_ok', name: ws._clientName }));
+        log('INFO', `Client #${clientId} authenticated as '${ws._clientName}' (key=...${token.slice(-6)}, connections=${sameKeyClients.length}/${maxConn})`);
       } else {
         log('WARN', `Client #${clientId} auth failed (invalid token)`);
         sendError(ws, 'AUTH_FAILED', 'Invalid API key');
@@ -337,7 +340,32 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // ---- Handle message and tool_request (broadcast) ----
+    // ---- Handle control commands (status only) ----
+    if (msgType === 'control') {
+      if (!ws._authenticated) {
+        sendError(ws, 'UNAUTHORIZED', 'Authentication required');
+        return;
+      }
+      const action = msg.action;
+      if (action === 'status') {
+        const clients = [];
+        for (const c of wss.clients) {
+          if (c._authenticated) {
+            clients.push({ id: c._relayId, name: c._clientName || 'unknown', apiKey: '...' + (c._apiKey || '').slice(-6) });
+          }
+        }
+        ws.send(JSON.stringify({
+          type: 'control_status',
+          clients: clients,
+          totalConnections: wss.clients.size
+        }));
+      } else {
+        sendError(ws, 'UNKNOWN_ACTION', `Unknown control action: ${action}`);
+      }
+      return;
+    }
+
+    // ---- Handle message and tool_request (AiClaw relay mode) ----
     if (msgType === 'message' || msgType === 'tool_request') {
       if (!ws._authenticated) {
         log('WARN', `Client #${clientId} not authenticated, rejecting message`);
@@ -347,15 +375,76 @@ wss.on('connection', (ws, req) => {
 
       log('DEBUG', `Client #${clientId} => ${preview}`);
 
-      // Broadcast to all other authenticated clients
-      let sent = 0;
-      for (const client of wss.clients) {
-        if (client !== ws && client.readyState === 1 && client._authenticated) {
-          client.send(dataStr);
-          sent++;
+      const isAiClaw = (ws._clientName === 'AiClaw');
+
+      if (isAiClaw) {
+        // AiClaw sends message: forward to targets based on receiver field
+        let msgObj;
+        try {
+          msgObj = JSON.parse(dataStr);
+        } catch (_) {
+          msgObj = null;
         }
+        if (!msgObj) {
+          sendError(ws, 'INVALID_FORMAT', 'Message must be valid JSON');
+          return;
+        }
+
+        const receiver = msgObj.receiver || '*';
+        // Remove receiver field before forwarding
+        delete msgObj.receiver;
+        const forwardStr = JSON.stringify(msgObj);
+
+        let sent = 0;
+        for (const client of wss.clients) {
+          if (client === ws || client.readyState !== 1 || !client._authenticated) continue;
+          if (client._clientName === 'AiClaw') continue; // skip other AiClaw connections
+
+          if (receiver === '*') {
+            // Send to all non-AiClaw clients
+            client.send(forwardStr);
+            sent++;
+          } else if (receiver.startsWith('!')) {
+            // Send to all except the named client
+            const excludeName = receiver.substring(1);
+            if (client._clientName !== excludeName) {
+              client.send(forwardStr);
+              sent++;
+            }
+          } else {
+            // Send to specific named client only
+            if (client._clientName === receiver) {
+              client.send(forwardStr);
+              sent++;
+            }
+          }
+        }
+        log('DEBUG', `AiClaw => ${sent} client(s) (receiver=${receiver})`);
+      } else {
+        // Non-AiClaw client sends message: add sender field and forward to AiClaw
+        let msgObj;
+        try {
+          msgObj = JSON.parse(dataStr);
+        } catch (_) {
+          msgObj = null;
+        }
+        if (!msgObj) {
+          sendError(ws, 'INVALID_FORMAT', 'Message must be valid JSON');
+          return;
+        }
+
+        msgObj.sender = ws._clientName || ('client-' + clientId);
+        const forwardStr = JSON.stringify(msgObj);
+
+        let sent = 0;
+        for (const client of wss.clients) {
+          if (client.readyState === 1 && client._authenticated && client._clientName === 'AiClaw') {
+            client.send(forwardStr);
+            sent++;
+          }
+        }
+        log('DEBUG', `Client #${clientId} (${ws._clientName}) => AiClaw (${sent} connection(s))`);
       }
-      log('DEBUG', `Broadcast from #${clientId} to ${sent} client(s)`);
       return;
     }
 

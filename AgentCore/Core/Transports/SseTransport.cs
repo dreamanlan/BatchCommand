@@ -17,12 +17,13 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly HttpClient _httpClient;
         private bool _connected;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-        private static readonly TimeSpan s_lockTimeout = TimeSpan.FromSeconds(65);
+        private readonly TimeSpan _lockTimeout;
 
         public bool IsConnected => _connected;
 
         public SseTransport(string target, Dictionary<string, string>? headers = null, int timeoutMs = 300000)
         {
+            _lockTimeout = TimeSpan.FromMilliseconds(timeoutMs + 5000);
             _baseUrl = target.TrimEnd('/');
             var socketHandler = new SocketsHttpHandler
             {
@@ -66,7 +67,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private async Task<string> PostAsync(string jsonBody)
         {
-            if (!await _lock.WaitAsync(s_lockTimeout))
+            if (!await _lock.WaitAsync(_lockTimeout))
                 throw new TimeoutException("SseTransport: timed out waiting for send lock");
             try
             {

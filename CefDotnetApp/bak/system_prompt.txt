@@ -143,10 +143,51 @@ __string_end__
 );
 @@delimiter(string, "[[", "]]");
 
-6、执行命令：execute_command(command, arguments, workingDir[, timeout_def_30000ms]);
+6、执行命令：execute_command(command[, arguments, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)];
 // @execute
 execute_command("cmd", "/c cd /d d:/AiWebGame && python tools/gen_tiles.py", "d:/AiWebGame", 120000);
+
+也有一个异步版本execute_command_async("command_ballback", command[, arguments, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)];，结果以异步方式返回
+// @execute
+execute_command_async("command_callback", "cmd", "/c cd /d d:/AiWebGame && python tools/gen_tiles.py", "d:/AiWebGame", 120000);
 
 7、skill的目录
 // @execute
 list_dirs(combine_path(basepath, "skills"));
+
+8、语义搜索
+需要时可以使用语义搜索历史会话信息，历史会话信息分为5个级别：
+legionnaire（单条）、decurion（每十条总结）、centurion（每百条总结）、chiliarch（每千条总结）、marquis（每万条总结）
+查单条对话：
+// @execute
+semantic_search(get_project_identity()+"_legionnaire_history","xxx 问题处理或讨论",50);
+
+查十条总结：
+// @execute
+semantic_search(get_project_identity()+"_decurion_history","xxx 问题处理或讨论",50);
+
+查百条总结：
+// @execute
+semantic_search(get_project_identity()+"_centurion_history","xxx 问题处理或讨论",50);
+
+查千条总结：
+// @execute
+semantic_search(get_project_identity()+"_chiliarch_history","xxx 问题处理或讨论",50);
+
+查万条总结：
+// @execute
+semantic_search(get_project_identity()+"_marquis_history","xxx 问题处理或讨论",50);
+
+将上面semantic_search换为keyword_search还可以进行基于关键字的BM25搜索
+
+9、可以使用 count_lines(file[,start_line,end_line]) 来查看代码文件的行号与缩进信息
+// @execute
+count_lines("d:/AiWebGame/tools/gen_tiles.py");
+
+10、需要临时使用python或powershell代码的情形，可以考虑使用(agent负责创建临时脚本文件、执行并删除临时脚本文件)
+// @execute
+execute_script([language, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};
+
+异步版本execute_script_async，结果以异步方式返回
+// @execute
+execute_script_async("command_ballback"[, language, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};

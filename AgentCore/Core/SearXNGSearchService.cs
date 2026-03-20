@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using LitJson;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -32,6 +34,14 @@ namespace CefDotnetApp.AgentCore.Core
                 return "error: url is empty";
             _instanceUrl = url.TrimEnd('/');
             return "ok";
+        }
+
+        /// <summary>
+        /// Get the current SearXNG instance URL. Returns empty string if not set.
+        /// </summary>
+        public string GetUrl()
+        {
+            return _instanceUrl;
         }
 
         /// <summary>
@@ -96,35 +106,30 @@ namespace CefDotnetApp.AgentCore.Core
         private string FormatResults(string json, string query, int count)
         {
             try {
-                object? parsed = Utils.JsonHelper.FromJson(json);
-                if (parsed == null)
+                if (!Utils.JsonHelper.TryParseJson(json, out var root) || root == null || !root.IsObject)
                     return "[error] Failed to parse search response.";
-
-                var root = parsed as Dictionary<string, object?>;
-                if (root == null)
-                    return "[error] Unexpected response format.";
 
                 var sb = new StringBuilder();
                 sb.AppendLine($"Search results for: {query}");
                 sb.AppendLine(new string('-', 40));
 
                 // SearXNG returns results in a top-level "results" array
-                if (root.TryGetValue("results", out var resultsObj) && resultsObj is List<object?> results) {
+                if (root.Keys.Contains("results") && root["results"].IsArray) {
+                    JsonData results = root["results"];
                     int idx = 1;
-                    foreach (var item in results) {
-                        if (idx > count) break;
-                        if (item is Dictionary<string, object?> r) {
-                            string title = GetStringValue(r, "title");
-                            string url = GetStringValue(r, "url");
-                            string content = GetStringValue(r, "content");
+                    for (int i = 0; i < results.Count && idx <= count; i++) {
+                        JsonData r = results[i];
+                        if (!r.IsObject) continue;
+                        string title = GetJsonString(r, "title");
+                        string url = GetJsonString(r, "url");
+                        string content = GetJsonString(r, "content");
 
-                            sb.AppendLine($"[{idx}] {title}");
-                            sb.AppendLine($"    URL: {url}");
-                            if (!string.IsNullOrEmpty(content))
-                                sb.AppendLine($"    {content}");
-                            sb.AppendLine();
-                            idx++;
-                        }
+                        sb.AppendLine($"[{idx}] {title}");
+                        sb.AppendLine($"    URL: {url}");
+                        if (!string.IsNullOrEmpty(content))
+                            sb.AppendLine($"    {content}");
+                        sb.AppendLine();
+                        idx++;
                     }
                     if (idx == 1)
                         sb.AppendLine("No results found.");
@@ -140,10 +145,10 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        private static string GetStringValue(Dictionary<string, object?> dict, string key)
+        private static string GetJsonString(JsonData obj, string key)
         {
-            if (dict.TryGetValue(key, out var val) && val != null)
-                return val.ToString() ?? string.Empty;
+            if (obj.Keys.Contains(key) && obj[key].IsString)
+                return (string)obj[key] ?? string.Empty;
             return string.Empty;
         }
     }

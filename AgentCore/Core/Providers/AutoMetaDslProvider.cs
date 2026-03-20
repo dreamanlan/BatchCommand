@@ -22,6 +22,7 @@ namespace CefDotnetApp.AgentCore.Core
         private string _authMode = "personal";
         private string _username = "";
         private bool _stream = true;
+        private bool _keepSession = true;
         private int _contextRounds = 12;
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
@@ -29,9 +30,12 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
         // conversation_id per tag, updated from response to inherit history
         private readonly ConcurrentDictionary<string, string> _conversationIds = new();
+        // local history per tag for _keepSession=false mode
+        private readonly ConcurrentDictionary<string, List<(string role, string content)>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         // chat_extra entries per tag: tag -> (key -> values[])
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, string[]>> _chatExtras = new();
+        private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = CreateHttpClient();
 
         public AutoMetaDslProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> apiKeyResolver, int maxRetries = 3)
@@ -48,7 +52,9 @@ namespace CefDotnetApp.AgentCore.Core
             if (key == "auth_mode") _authMode = value;
             else if (key == "username") _username = value;
             else if (key == "stream") _stream = value == "true" || value == "1";
+            else if (key == "keep_session") _keepSession = value == "true" || value == "1";
             else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
+            else if (key == "timeout" && int.TryParse(value, out var ts) && ts > 0) _timeoutSeconds = ts;
         }
 
         public void SetSystemPrompt(string tag, string prompt)
@@ -59,7 +65,12 @@ namespace CefDotnetApp.AgentCore.Core
 
         public bool IsBusy(string tag) => _busySessions.TryGetValue(tag, out var b) && b;
 
-        public void ClearHistory(string tag) => _conversationIds.TryRemove(tag, out _);
+        public void ClearHistory(string tag)
+        {
+            _conversationIds.TryRemove(tag, out _);
+            _sessions.TryRemove(tag, out _);
+            _sendCounts.TryRemove(tag, out _);
+        }
 
         public void AddChatExtra(string tag, string key, string[] values)
         {
@@ -84,21 +95,46 @@ namespace CefDotnetApp.AgentCore.Core
 
         private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
         {
-            string convId = _conversationIds.GetOrAdd(tag, _ => "");
+            string convId = _keepSession ? _conversationIds.GetOrAdd(tag, _ => "") : "";
             bool useStream = _stream;
 
-            // inject system prompt every _contextRounds sends (including the first)
-            int count = _sendCounts.GetOrAdd(tag, _ => 0);
-            if (count % _contextRounds == 0 &&
-                _systemPrompts.TryGetValue(tag, out var sysPrompt) && !string.IsNullOrEmpty(sysPrompt))
+            // build message with history and system prompt
+            string finalMessage;
+            if (!_keepSession)
             {
-                message = sysPrompt + "\n" + message;
+                // local history mode: always prepend system prompt + history
+                var history = _sessions.GetOrAdd(tag, _ => new List<(string, string)>());
+                var sb = new StringBuilder();
+                if (_systemPrompts.TryGetValue(tag, out var sp) && !string.IsNullOrEmpty(sp))
+                    sb.Append(sp).Append('\n');
+                lock (history)
+                {
+                    foreach (var (role, content) in history)
+                        sb.Append('[').Append(role).Append("]: ").Append(content).Append('\n');
+                }
+                sb.Append("[User]: ").Append(message);
+                finalMessage = sb.ToString();
+                lock (history) { history.Add(("User", message)); }
             }
-            _sendCounts[tag] = count + 1;
+            else
+            {
+                // server session mode: inject system prompt every _contextRounds sends
+                int count = _sendCounts.GetOrAdd(tag, _ => 0);
+                if (count % _contextRounds == 0 &&
+                    _systemPrompts.TryGetValue(tag, out var sysPrompt) && !string.IsNullOrEmpty(sysPrompt))
+                {
+                    finalMessage = sysPrompt + "\n" + message;
+                }
+                else
+                {
+                    finalMessage = message;
+                }
+                _sendCounts[tag] = count + 1;
+            }
 
             var input = new
             {
-                message,
+                message = finalMessage,
                 conversation_id = convId,
                 model = _model,
                 stream = useStream,
@@ -114,12 +150,13 @@ namespace CefDotnetApp.AgentCore.Core
 
             reply = await HttpRetryHelper.RetryAsync(async () =>
             {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
                 using var req = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
                 AddAuthHeaders(req);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // always use ResponseHeadersRead to support SSE line-by-line reading
-                using var resp = await s_http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                using var resp = await s_http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(resp);
 
                 var sb = new StringBuilder();
@@ -168,7 +205,21 @@ namespace CefDotnetApp.AgentCore.Core
             }, _maxRetries, "AutoMetaDslProvider");
 
             // persist updated conversation_id for history continuation
-            _conversationIds[tag] = newConvId;
+            if (_keepSession)
+                _conversationIds[tag] = newConvId;
+
+            // record assistant reply in local history
+            if (!_keepSession)
+            {
+                var hist = _sessions.GetOrAdd(tag, _ => new List<(string, string)>());
+                lock (hist)
+                {
+                    hist.Add(("Assistant", reply));
+                    // keep local history bounded
+                    if (hist.Count > 128)
+                        hist.RemoveRange(0, hist.Count - 128);
+                }
+            }
             return reply;
         }
 

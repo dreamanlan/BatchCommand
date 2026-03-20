@@ -206,7 +206,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 var result = new List<BoxedValue>();
 
                 foreach (var file in files) {
-                    result.Add(BoxedValue.FromString(file.Path));
+                    result.Add(BoxedValue.FromString(file.ToString()));
                 }
 
                 return BoxedValue.FromObject(result);

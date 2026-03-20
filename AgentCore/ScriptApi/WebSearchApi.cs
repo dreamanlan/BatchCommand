@@ -54,6 +54,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// searxng_get_url()
+    /// Returns the current SearXNG instance URL, or empty string if not set.
+    /// </summary>
+    sealed class SearXNGGetUrlExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.GetUrl());
+        }
+    }
+
+    /// <summary>
     /// web_search(query[, count])
     /// Searches the web via the currently active search engine (Brave or SearXNG).
     /// Returns formatted text results (title + URL + description).
@@ -117,6 +129,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("searxng_set_url",
                 "searxng_set_url(url) - set SearXNG instance URL and activate SearXNG engine",
                 new ExpressionFactoryHelper<SearXNGSetUrlExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("searxng_get_url",
+                "searxng_get_url() - get current SearXNG instance URL, returns empty string if not set",
+                new ExpressionFactoryHelper<SearXNGGetUrlExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("web_search",
                 "web_search(query[, count]) - search the web via active engine (Brave/SearXNG), returns formatted text (default 5 results, max 20)",
                 new ExpressionFactoryHelper<WebSearchExp>());

@@ -14,12 +14,15 @@ namespace CefDotnetApp.AgentCore.Core
     /// </summary>
     internal class OllamaProvider : ILlmProvider
     {
-        private const int c_maxHistoryMessages = 50;
+        private const int c_maxHistoryMessages = 64;
         private readonly string _baseUrl;
         private readonly string _model;
         private readonly ConcurrentDictionary<string, List<object>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
+        private readonly ConcurrentDictionary<string, int> _sendCounts = new();
+        private int _contextRounds = 12;
+        private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler
             {
@@ -35,10 +38,25 @@ namespace CefDotnetApp.AgentCore.Core
             _model = model;
         }
 
-        public void SetOption(string key, string value) { }
-        public void SetSystemPrompt(string tag, string prompt) => _systemPrompts[tag] = prompt;
+        private bool _keepSession = false;
+
+        public void SetOption(string key, string value)
+        {
+            if (key == "keep_session") _keepSession = value == "true" || value == "1";
+            else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
+            else if (key == "timeout" && int.TryParse(value, out var ts) && ts > 0) _timeoutSeconds = ts;
+        }
+        public void SetSystemPrompt(string tag, string prompt)
+        {
+            _systemPrompts[tag] = prompt;
+            _sendCounts[tag] = 0;
+        }
         public bool IsBusy(string tag) => _busySessions.TryGetValue(tag, out var b) && b;
-        public void ClearHistory(string tag) => _sessions.TryRemove(tag, out _);
+        public void ClearHistory(string tag)
+        {
+            _sessions.TryRemove(tag, out _);
+            _sendCounts.TryRemove(tag, out _);
+        }
 
         public async Task<string> ChatAsync(string tag, string topic, string message)
         {
@@ -48,18 +66,36 @@ namespace CefDotnetApp.AgentCore.Core
             List<object> snapshot;
             lock (messages)
             {
-                snapshot = new List<object>(messages);
-                if (_systemPrompts.TryGetValue(tag, out var sysPrompt) && !string.IsNullOrEmpty(sysPrompt))
-                    snapshot.Insert(0, new { role = "system", content = sysPrompt });
+                if (_keepSession)
+                {
+                    // server session mode: only send current message
+                    snapshot = new List<object> { new { role = "user", content = message } };
+                    // inject system prompt every _contextRounds sends
+                    int count = _sendCounts.GetOrAdd(tag, _ => 0);
+                    if (count % _contextRounds == 0 &&
+                        _systemPrompts.TryGetValue(tag, out var sp1) && !string.IsNullOrEmpty(sp1))
+                    {
+                        snapshot.Insert(0, new { role = "system", content = sp1 });
+                    }
+                    _sendCounts[tag] = count + 1;
+                }
+                else
+                {
+                    // local history mode: send full history + always prepend system prompt
+                    snapshot = new List<object>(messages);
+                    if (_systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2))
+                        snapshot.Insert(0, new { role = "system", content = sp2 });
+                }
             }
 
             var requestBody = new { model = _model, messages = snapshot, stream = true };
             string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
 
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
             string url = $"{_baseUrl}/api/chat";
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-            using var response = await s_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            using var response = await s_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
             await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
 
             var sb = new StringBuilder();

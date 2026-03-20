@@ -1,8 +1,15 @@
-  function getStringInLength(str, length) {
+  function getStringInLength(str, length, beginOrEndOrBeginEnd) {
     if (str.length <= length) {
       return str;
     }
-    return str.substring(0, length) + '...';
+    switch(beginOrEndOrBeginEnd) {
+      case 0:
+        return str.substring(0, length) + '...';
+      case 1:
+        return '...' + str.substring(str.length - length);
+      case 2:
+        return str.substring(0, length / 2) + '...' + str.substring(str.length - length / 2);
+    }
   }
   // ============================================================================
   // Logger - Unified logging to console, panel, and C#

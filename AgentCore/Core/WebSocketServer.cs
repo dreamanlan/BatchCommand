@@ -17,7 +17,7 @@ namespace CefDotnetApp.AgentCore.Core
     public class WebSocketServer : IDisposable
     {
         private HttpListener _listener = null!;
-        private ConcurrentQueue<string> _receiveQueue;
+        private ConcurrentQueue<(string message, WebSocket client)> _receiveQueue;
         private List<WebSocket> _clients;
         private CancellationTokenSource _cancellationTokenSource;
         private Thread? _tickThread;
@@ -26,6 +26,11 @@ namespace CefDotnetApp.AgentCore.Core
         private int _port;
         private DateTime _lastPingTime = DateTime.MinValue;
         private static readonly TimeSpan s_pingInterval = TimeSpan.FromSeconds(30);
+        // Per-connection context round counter
+        private readonly ConcurrentDictionary<WebSocket, int> _contextRounds = new();
+        // Worker concurrency control
+        private int _maxWorkerConcurrency = 16;
+        private int _activeWorkers = 0;
 
         /// <summary>
         /// Gets whether the server is currently running
@@ -36,6 +41,15 @@ namespace CefDotnetApp.AgentCore.Core
         /// Gets the port the server is listening on
         /// </summary>
         public int Port => _port;
+
+        /// <summary>
+        /// Gets or sets the maximum number of concurrent MetaDSL worker tasks
+        /// </summary>
+        public int MaxWorkerConcurrency
+        {
+            get => _maxWorkerConcurrency;
+            set => _maxWorkerConcurrency = Math.Max(1, value);
+        }
 
         /// <summary>
         /// Event fired when a client connects
@@ -52,7 +66,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// </summary>
         public WebSocketServer()
         {
-            _receiveQueue = new ConcurrentQueue<string>();
+            _receiveQueue = new ConcurrentQueue<(string, WebSocket)>();
             _clients = new List<WebSocket>();
             _cancellationTokenSource = new CancellationTokenSource();
         }
@@ -221,6 +235,7 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     _clients.Add(webSocket);
                 }
+                _contextRounds[webSocket] = 0;
 
                 OnClientConnected?.Invoke();
                 AgentCore.Instance.Logger.Info("WebSocket client connected");
@@ -251,7 +266,7 @@ namespace CefDotnetApp.AgentCore.Core
                             if (result.EndOfMessage)
                             {
                                 var message = Encoding.UTF8.GetString(messageBuilder.GetBuffer(), 0, (int)messageBuilder.Length);
-                                _receiveQueue.Enqueue(message);
+                                _receiveQueue.Enqueue((message, webSocket));
                                 AgentCore.Instance.Logger.Debug($"Message received from client, queued (length: {message.Length})");
                                 messageBuilder.SetLength(0);
                             }
@@ -279,6 +294,7 @@ namespace CefDotnetApp.AgentCore.Core
                     {
                         _clients.Remove(webSocket);
                     }
+                    _contextRounds.TryRemove(webSocket, out _);
 
                     try
                     {
@@ -300,7 +316,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         /// <summary>
         /// Processes receive queue on tick (runs in dedicated thread)
-        /// Tick thread: dequeue from receive queue -> ExecuteMetaDSLInWorker -> broadcast result
+        /// Tick thread: dequeue from receive queue -> dispatch to worker tasks via thread pool
         /// </summary>
         private void ProcessQueuesLoop(CancellationToken cancellationToken)
         {
@@ -308,21 +324,46 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 try
                 {
-                    // Process receive queue - dequeue one message, execute MetaDSL, broadcast result directly
-                    if (_receiveQueue.TryDequeue(out string? receivedMessage))
+                    // Dispatch messages to worker tasks when concurrency slots are available
+                    while (_activeWorkers < _maxWorkerConcurrency
+                        && _receiveQueue.TryDequeue(out var received))
                     {
-                        AgentCore.Instance.Logger.Info($"Processing message from queue: {receivedMessage.Substring(0, Math.Min(100, receivedMessage.Length))}...");
-                        string result = ExecuteMetaDSLInWorker(receivedMessage);
-                        if (!string.IsNullOrEmpty(result))
+                        Interlocked.Increment(ref _activeWorkers);
+                        var msg = received;
+                        Task.Run(() =>
                         {
-                            AgentCore.Instance.Logger.Info($"Broadcasting result (length: {result.Length}) to {GetClientCount()} client(s)");
-                            // Fire and forget - WebSocket send is async non-blocking
-                            _ = BroadcastMessageAsync(result);
-                        }
-                        else
-                        {
-                            AgentCore.Instance.Logger.Debug("MetaDSL execution returned empty result");
-                        }
+                            try
+                            {
+                                AgentCore.Instance.Logger.Info($"Worker processing message (active: {_activeWorkers}/{_maxWorkerConcurrency}): {msg.message.Substring(0, Math.Min(100, msg.message.Length))}...");
+
+                                // Determine whether to append context for this round
+                                int maxRounds = AgentCore.Instance.MaxContextRounds;
+                                int rounds = _contextRounds.AddOrUpdate(msg.client, 0, (_, old) => old + 1);
+                                bool appendContext = (maxRounds <= 1) || (rounds % maxRounds == 0);
+                                if (appendContext) {
+                                    AgentCore.Instance.CurContextRounds = 0;
+                                }
+
+                                string result = ExecuteMetaDSLInWorker(msg.message, appendContext);
+                                if (!string.IsNullOrEmpty(result))
+                                {
+                                    AgentCore.Instance.Logger.Info($"Broadcasting result (length: {result.Length}) to {GetClientCount()} client(s), appendContext={appendContext}");
+                                    _ = BroadcastMessageAsync(result);
+                                }
+                                else
+                                {
+                                    AgentCore.Instance.Logger.Debug("MetaDSL execution returned empty result");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                AgentCore.Instance.Logger.Error($"Worker error: {ex.Message}\nStack: {ex.StackTrace}");
+                            }
+                            finally
+                            {
+                                Interlocked.Decrement(ref _activeWorkers);
+                            }
+                        }, cancellationToken);
                     }
 
                     // Periodic ping to detect and clean up half-open connections
@@ -350,7 +391,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// Executes MetaDSL code in worker thread (called by Tick thread)
         /// This is where the agent logic processes incoming messages
         /// </summary>
-        private string ExecuteMetaDSLInWorker(string message)
+        private string ExecuteMetaDSLInWorker(string message, bool appendContext)
         {
             try {
                 AgentCore.Instance.Logger.Debug($"Executing MetaDSL: {message}");
@@ -363,25 +404,38 @@ namespace CefDotnetApp.AgentCore.Core
                 sb.AppendLine("Result {:");
                 sb.AppendLine(result);
                 sb.AppendLine(":};");
-                if (!string.IsNullOrEmpty(AgentCore.Instance.ToDo)) {
-                    sb.AppendLine();
-                    sb.AppendLine(AgentCore.Instance.ToDo);
+
+                var record = sb.ToString();
+                var embedding = Core.AgentCore.Instance.EmbeddingService;
+                if (embedding.IsReady) {
+                    if (AgentCore.Instance.SemanticIndex.IsReady("metadsl_history")) {
+                        float[]? vector = embedding.Encode(record);
+                        if (null != vector) {
+                            AgentCore.Instance.SemanticIndex.Add("metadsl_history", record, vector, string.Format("{{source: \"metadsl\", date: \"{0}\"}}", DateTime.Now.ToString()));
+                        }
+                    }
+                    else {
+                        AgentCore.Instance.SemanticIndex.InitCollection("metadsl_history");
+                    }
                 }
-                if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
-                    sb.AppendLine();
-                    sb.AppendLine(AgentCore.Instance.History);
-                }
-                if (!string.IsNullOrEmpty(AgentCore.Instance.Context)) {
-                    sb.AppendLine();
-                    sb.AppendLine(AgentCore.Instance.Context);
-                }
-                else if (!string.IsNullOrEmpty(AgentCore.Instance.Plan)) {
-                    sb.AppendLine();
-                    sb.AppendLine(AgentCore.Instance.Plan);
-                }
-                if (!string.IsNullOrEmpty(AgentCore.Instance.Emphasize)) {
-                    sb.AppendLine();
-                    sb.AppendLine(AgentCore.Instance.Emphasize);
+
+                if (appendContext) {
+                    if (!string.IsNullOrEmpty(AgentCore.Instance.ToDo)) {
+                        sb.AppendLine();
+                        sb.AppendLine(AgentCore.Instance.ToDo);
+                    }
+                    if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
+                        sb.AppendLine();
+                        sb.AppendLine(AgentCore.Instance.History);
+                    }
+                    if (!string.IsNullOrEmpty(AgentCore.Instance.Context)) {
+                        sb.AppendLine();
+                        sb.AppendLine(AgentCore.Instance.Context);
+                    }
+                    if (!string.IsNullOrEmpty(AgentCore.Instance.Emphasize)) {
+                        sb.AppendLine();
+                        sb.AppendLine(AgentCore.Instance.Emphasize);
+                    }
                 }
                 return sb.ToString();
             }
@@ -490,9 +544,9 @@ namespace CefDotnetApp.AgentCore.Core
         /// <returns>Message or null if queue is empty</returns>
         public string? DequeueMessage()
         {
-            if (_receiveQueue.TryDequeue(out string? message))
+            if (_receiveQueue.TryDequeue(out var item))
             {
-                return message;
+                return item.message;
             }
             return null;
         }

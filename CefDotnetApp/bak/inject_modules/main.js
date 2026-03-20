@@ -27,6 +27,12 @@
       // Async restore config (secrets loaded from SecretStore)
       await chatInputPanel._restoreConfig();
       panel.chatInputPanel = chatInputPanel;
+      // Sync button state when chat panel visibility changes
+      chatInputPanel.onVisibilityChange = () => {
+        const on = chatInputPanel.visible;
+        panel.toggleChatButton.textContent = on ? '\u2713 Chat Panel' : '\u2717 Chat Panel';
+        panel.toggleChatButton.style.background = on ? '#4caf50' : '#666';
+      };
       // Default hidden, user can toggle via panel button
       chatInputPanel.hide();
       // Create and link OpenClaw panel (default hidden)
@@ -34,6 +40,25 @@
       // Async restore config (secrets loaded from SecretStore)
       await openClawPanel._restoreConfig();
       panel.openClawPanel = openClawPanel;
+      // Sync button state when openclaw panel visibility changes
+      openClawPanel.onVisibilityChange = () => {
+        const on = openClawPanel.visible;
+        panel.toggleClawButton.textContent = on ? '\u2713 OpenClaw' : '\u2717 OpenClaw';
+        panel.toggleClawButton.style.background = on ? '#4caf50' : '#666';
+      };
+      // Create and link Project panel (default visible)
+      const projectPanel = new ProjectPanel(bridge);
+      // Async restore config (query C# for current project, then load localStorage)
+      await projectPanel._restoreConfig();
+      panel.projectPanel = projectPanel;
+      // Sync button state when project panel visibility changes
+      projectPanel.onVisibilityChange = () => {
+        panel.updateProjectButtonState();
+      };
+      // Only show project panel when LLM type is detected (not unknown)
+      if (pageAdapter.pageType !== 'unknown') {
+        projectPanel.show();
+      }
       // Link panel to monitor for logging
       metadslMonitor.panel = panel;
       // Link panel to logger
@@ -45,6 +70,16 @@
       // Set callback for page type changes
       pageAdapter.onPageTypeChanged = (newType) => {
         panel.updateLLMType(newType);
+        // Show/hide project panel based on LLM type
+        if (panel.projectPanel) {
+          if (newType !== 'unknown') {
+            panel.projectPanel.show();
+            panel.updateProjectButtonState();
+          } else {
+            panel.projectPanel.hide();
+            panel.updateProjectButtonState();
+          }
+        }
         // Auto-start monitor when page type is detected
         if (newType !== 'unknown' && !metadslMonitor.enabled) {
           metadslMonitor.start();

@@ -1,7 +1,7 @@
 {
-  "apiKeys": [
-    "test1",
-    "test2"
-  ],
+  "apiKeys": {
+    "test1": "claw-A",
+    "test2": "claw-B"
+  },
   "maxConnectionsPerKey": 3
 }

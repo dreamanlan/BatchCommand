@@ -225,7 +225,7 @@
     }
 
     startAgent() {
-      if (this.panel.autoPlanEnabled) {
+      if (this.panel.bridge.autoPlanEnabled) {
         this.sendResultToLLM('Agent already started');
         return;
       }
@@ -233,7 +233,7 @@
       this.sendResultToLLM('Agent started');
     }
     stopAgent() {
-      if (!this.panel.autoPlanEnabled) {
+      if (!this.panel.bridge.autoPlanEnabled) {
         this.sendResultToLLM('Agent already stopped');
         return;
       }
@@ -1074,7 +1074,7 @@
           const jsEval = trimedCommand.substring(js_eval_prefix.length).trim();
           this.info('JavaScript eval detected:', jsEval);
           if (gameWindow) {
-            gameWindow.postMessage({ type: 'js_eval', code: jsEval }, "http://localhost:8081");
+            gameWindow.postMessage({ type: 'js_eval', code: jsEval }, '*');
           } else {
             this.sendResultToLLM("gameWindow not available, use js_request:open_project_window first");
           }

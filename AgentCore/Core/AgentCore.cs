@@ -91,6 +91,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         // Agent state properties - readable/writable by DSL scripts
         public string ProjectDir { get; set; } = string.Empty;
+        public string ProjectIdentity { get; set; } = string.Empty;
         public string SystemPrompt { get; set; } = string.Empty;
         public string ProjectPrompt { get; set; } = string.Empty;
         public string Plan { get; set; } = string.Empty;
@@ -101,6 +102,32 @@ namespace CefDotnetApp.AgentCore.Core
 
         public int MaxLinesDeletedByWriteFile { get; set; } = 20;
         public int MaxResultSize { get; set; } = 0;
+        // How often to append context info in WebSocket responses (0 = every round)
+        public int MaxContextRounds { get; set; } = 3;
+        // Current context round counter (atomic via Interlocked)
+        private int _curContextRounds = 0;
+        public int CurContextRounds
+        {
+            get => System.Threading.Interlocked.CompareExchange(ref _curContextRounds, 0, 0);
+            set => System.Threading.Interlocked.Exchange(ref _curContextRounds, value);
+        }
+        /// <summary>
+        /// Atomically increments CurContextRounds by 1, modulo MaxContextRounds.
+        /// When MaxContextRounds is 0, always returns 0.
+        /// Returns the new value after the operation.
+        /// </summary>
+        public int AddCurContextRounds()
+        {
+            int max = MaxContextRounds;
+            if (max <= 0)
+                return 0;
+            int oldVal, newVal;
+            do {
+                oldVal = _curContextRounds;
+                newVal = (oldVal + 1) % max;
+            } while (System.Threading.Interlocked.CompareExchange(ref _curContextRounds, newVal, oldVal) != oldVal);
+            return newVal;
+        }
 
         /// <summary>
         /// Sets a value in the three-level agent environment dictionary.
@@ -260,6 +287,7 @@ namespace CefDotnetApp.AgentCore.Core
             _tfIdfService = new TfIdfService();
             string dbPath = System.IO.Path.Combine(_basePath, "onnx", "semantic.db");
             _semanticIndex = new SemanticIndex(dbPath);
+            _semanticIndex.SetSegmenter(_mixedSegmenter);
             _braveSearch = new BraveSearchService(_httpClient);
             _searxngSearch = new SearXNGSearchService(_httpClient);
             _webSearchRouter = new WebSearchRouter(_braveSearch, _searxngSearch);
@@ -305,6 +333,10 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 catch (Exception ex) {
                     System.Console.WriteLine($"[AgentCore] Warning: Failed to load reranker model: {ex.Message}");
+                }
+
+                if (null != _instance.EmbeddingService && _instance.EmbeddingService.IsReady) {
+                    _instance.SemanticIndex.InitCollection("metadsl_history");
                 }
             }
         }

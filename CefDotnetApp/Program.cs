@@ -323,28 +323,6 @@ namespace DotNetLib
             return str;
         }
     }
-    sealed class GetStringInLengthExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count < 2 || operands.Count > 3) {
-                NativeApi.AppendApiErrorInfoLine("Expected: getstringinlength(str, len[, get_the_end_def_false])");
-                return BoxedValue.EmptyString;
-            }
-            string str = operands[0].AsString;
-            int len = operands[1].GetInt();
-            bool getTheEnd = operands.Count > 2 ? operands[2].GetBool() : false;
-            if (!string.IsNullOrEmpty(str)) {
-                if (getTheEnd) {
-                    return BoxedValue.From(str.Length > len ? "..." + str.Substring(str.Length - len, len) : str);
-                }
-                else {
-                    return BoxedValue.From(str.Length > len ? str.Substring(0, len) + "..." : str);
-                }
-            }
-            return BoxedValue.EmptyString;
-        }
-    }
     sealed class QuoteStringExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -373,6 +351,23 @@ namespace DotNetLib
                 NativeApi.QuoteString(str);
             }
             return BoxedValue.EmptyString;
+        }
+    }
+    sealed class TryGetRawCommandLineSwitchExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: try_get_raw_command_line_switch(str), return (bool, str)");
+                return BoxedValue.EmptyString;
+            }
+            string str = operands[0].AsString;
+            if (!string.IsNullOrEmpty(str)) {
+                if (Lib.TryGetSwitchValueFromRawCommandLine(Lib.CmdLine, str, out var val)) {
+                    return Tuple.Create(BoxedValue.FromBool(true), BoxedValue.FromString(val));
+                }
+            }
+            return Tuple.Create(BoxedValue.FromBool(true), BoxedValue.EmptyString);
         }
     }
     sealed class GetDotnetInfoExp : SimpleExpressionBase
@@ -870,14 +865,20 @@ namespace DotNetLib
                 ApiErrorInfo.AppendLine();
             }
         }
-        internal static string GetStringInLength(string str, int len, bool getTheEnd)
+        internal static string GetStringInLength(string str, int len, int beginOrEndOrBeginEnd)
         {
             if (!string.IsNullOrEmpty(str)) {
-                if (getTheEnd) {
-                    return str.Length > len ? "..." + str.Substring(str.Length - len, len) : str;
+                if (str.Length <= len) {
+                    return str;
                 }
-                else {
-                    return str.Length > len ? str.Substring(0, len) + "..." : str;
+                switch (beginOrEndOrBeginEnd) {
+                    case 1:
+                        return "..." + str.Substring(str.Length - len, len);
+                    case 2:
+                        return str.Substring(0, len / 2) + "..." + str.Substring(str.Length - len / 2, len / 2);
+                    case 0:
+                    default:
+                        return str.Substring(0, len) + "...";
                 }
             }
             return string.Empty;
@@ -933,7 +934,7 @@ namespace DotNetLib
         }
 
         //INativeApi explicit interface implementation(delegates to static methods)
-        string INativeApi.GetStringInLength(string str, int len, bool getTheEnd) => GetStringInLength(str, len, getTheEnd);
+        string INativeApi.GetStringInLength(string str, int len, int beginOrEndOrBeginEnd) => GetStringInLength(str, len, beginOrEndOrBeginEnd);
         string INativeApi.QuoteString(string? value) => QuoteString(value);
         string INativeApi.StripQuotes(string? s) => StripQuotes(s);
 
@@ -1345,14 +1346,9 @@ namespace DotNetLib
             return m_RequestGetIdentifierApi(request);
         }
 
-        public void EnqueueMcpCallback(string serverId, string callbackTag, string result)
+        public void EnqueueCefMessage(string msgName, string[] args)
         {
-            s_McpCallbackQueue.Enqueue(new Tuple<string, string, string>(serverId, callbackTag, result));
-        }
-
-        public void EnqueueLlmCallback(string providerId, string tag, string topic, string reply)
-        {
-            s_LlmCallbackQueue.Enqueue(new Tuple<string, string, string, string>(providerId, tag, topic, reply));
+            s_CefMessageQueue.Enqueue(new Tuple<string, string[]>(msgName, args));
         }
 
         internal void HandleAllQueues(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
@@ -1404,23 +1400,14 @@ namespace DotNetLib
                 }
             }
 
-            // Process MCP callback queue
+            // Process unified CefMessage callback queue
             if (m_SendCefMessageApi != null) {
-                while (s_McpCallbackQueue.TryDequeue(out var mcpItem)) {
+                while (s_CefMessageQueue.TryDequeue(out var cefItem)) {
                     try {
-                        SendCefMessage("mcp_callback", new string[] { mcpItem.Item1, mcpItem.Item2, mcpItem.Item3 }, 0);
+                        SendCefMessage(cefItem.Item1, cefItem.Item2, 0);
                     }
                     catch (Exception ex) {
-                        Lib.NativeLogNoLock($"[csharp] Error processing McpCallback queue: {ex.Message}");
-                    }
-                }
-                // Process LLM callback queue
-                while (s_LlmCallbackQueue.TryDequeue(out var llmItem)) {
-                    try {
-                        SendCefMessage("llm_callback", new string[] { llmItem.Item1, llmItem.Item2, llmItem.Item3, llmItem.Item4 }, 0);
-                    }
-                    catch (Exception ex) {
-                        Lib.NativeLogNoLock($"[csharp] Error processing LlmCallback queue: {ex.Message}");
+                        Lib.NativeLogNoLock($"[csharp] Error processing CefMessage queue ({cefItem.Item1}): {ex.Message}");
                     }
                 }
             }
@@ -1540,10 +1527,8 @@ namespace DotNetLib
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JsLogQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<string> s_JavascriptCodeQueue = new System.Collections.Concurrent.ConcurrentQueue<string>();
         private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>> s_JavascriptFuncQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>>();
-        // McpCallback queue: (serverId, callbackTag, result)
-        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string>> s_McpCallbackQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string>>();
-        // LlmCallback queue: (providerId, tag, topic, reply)
-        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string, string>> s_LlmCallbackQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string, string, string>>();
+        // Unified CefMessage callback queue: (msgName, args)
+        private static System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>> s_CefMessageQueue = new System.Collections.Concurrent.ConcurrentQueue<Tuple<string, string[]>>();
 
         private const int c_max_path_length = 1024;
         private const int c_max_info_length = 4096;
@@ -1824,6 +1809,11 @@ namespace DotNetLib
                         s_DslScriptFile = switchValue;
                         s_DslScriptFileChanged = true;
                         NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_DslScriptFile));
+                    }
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjIdentity)) {
+                        s_InitialProjectIdentity = prjIdentity;
+                        s_InitialProjectIdentityInited = true;
+                        NativeLogNoLock(string.Format("[csharp] parse --projectidentity:{0}, set InitialProjectIdentity", s_InitialProjectIdentity));
                     }
                     TryLoadDSL();
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
@@ -2571,6 +2561,13 @@ namespace DotNetLib
             }
         }
 
+        internal static string CmdLine
+        {
+            get {
+                return s_CmdLine;
+            }
+        }
+
         internal static string BasePath
         {
             get {
@@ -2606,6 +2603,26 @@ namespace DotNetLib
             }
         }
 
+        // Parse --metadsl=value from raw command line string
+        internal static bool TryGetSwitchValueFromRawCommandLine(string cmdLine, string switchName, out string switchValue)
+        {
+            switchValue = string.Empty;
+            string prefix = "--" + switchName + "=";
+            int idx = cmdLine.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+                return false;
+            int start = idx + prefix.Length;
+            // Handle quoted value
+            if (start < cmdLine.Length && cmdLine[start] == '"') {
+                int end = cmdLine.IndexOf('"', start + 1);
+                switchValue = end > start ? cmdLine.Substring(start + 1, end - start - 1) : string.Empty;
+                return true;
+            }
+            // Unquoted: take until next space
+            int spaceIdx = cmdLine.IndexOf(' ', start);
+            switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
+            return true;
+        }
         internal static void NativeLog(string msg)
         {
             lock (s_Lock) {
@@ -2667,6 +2684,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
             BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
             BatchCommand.BatchScript.SetGlobalVariable("dslfilechanged", BoxedValue.FromBool(s_DslScriptFileChanged));
+            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
+            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentityinited", BoxedValue.FromBool(s_InitialProjectIdentityInited));
             BatchCommand.BatchScript.ClearDslErrors();
         }
         internal static void AddCommonApiDocs()
@@ -2787,29 +2806,9 @@ namespace DotNetLib
         }
         private static string GetStringInLength(string str)
         {
-            return NativeApi.GetStringInLength(str, 100, false);
+            return NativeApi.GetStringInLength(str, 100, 0);
         }
 
-        // Parse --metadsl=value from raw command line string
-        private static bool TryGetSwitchValueFromRawCommandLine(string cmdLine, string switchName, out string switchValue)
-        {
-            switchValue = string.Empty;
-            string prefix = "--" + switchName + "=";
-            int idx = cmdLine.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-                return false;
-            int start = idx + prefix.Length;
-            // Handle quoted value
-            if (start < cmdLine.Length && cmdLine[start] == '"') {
-                int end = cmdLine.IndexOf('"', start + 1);
-                switchValue = end > start ? cmdLine.Substring(start + 1, end - start - 1) : string.Empty;
-                return true;
-            }
-            // Unquoted: take until next space
-            int spaceIdx = cmdLine.IndexOf(' ', start);
-            switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
-            return true;
-        }
         private static void TryLoadDSL()
         {
             PrepareBatchScript();
@@ -2888,12 +2887,14 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("getstringinlength", "getstringinlength(str, len[, get_the_end_def_false])", false, new ExpressionFactoryHelper<GetStringInLengthExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
             BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
             BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
             BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("trygetrawswitch", "trygetrawswitch(str)", false, new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
+            BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
+            BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 
@@ -2923,6 +2924,8 @@ namespace DotNetLib
         private static string s_DslScriptPath = string.Empty;
         private static string s_DslScriptFile = "Script.dsl";
         private static bool s_DslScriptFileChanged = false;
+        private static string s_InitialProjectIdentity = string.Empty;
+        private static bool s_InitialProjectIdentityInited = false;
         private static DateTime s_DslScriptTime = DateTime.Now;
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
@@ -3001,12 +3004,14 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
-            BatchCommand.BatchScript.Register("getstringinlength", "getstringinlength(str, len[, get_the_end_def_false])", false, new ExpressionFactoryHelper<GetStringInLengthExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
             BatchCommand.BatchScript.Register("quote_string", "quote_string(str)", new ExpressionFactoryHelper<QuoteStringExp>());
             BatchCommand.BatchScript.Register("stripquotes", "stripquotes(str)", false, new ExpressionFactoryHelper<StripQuotesExp>());
             BatchCommand.BatchScript.Register("strip_quotes", "strip_quotes(str)", new ExpressionFactoryHelper<StripQuotesExp>());
+            BatchCommand.BatchScript.Register("trygetrawswitch", "trygetrawswitch(str)", false, new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
+            BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
+            BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 

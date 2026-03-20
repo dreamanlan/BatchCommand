@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using AgentPlugin.Abstractions;
+using CefDotnetApp.AgentCore.Utils;
 using Dsl;
 
 namespace CefDotnetApp.AgentCore.Core
@@ -24,24 +25,13 @@ namespace CefDotnetApp.AgentCore.Core
         public string BeginChars { get; set; } = string.Empty;
         public string EndChars { get; set; } = string.Empty;
         public bool IsMetaDSL { get; set; } = false;
+        public bool IsAsync { get; set; } = false;
+        public int TimeoutMs { get; set; } = 60000;
         public HashSet<int> LoadedOnThread { get; set; } = new HashSet<int>();
     }
 
     public class SkillManager
     {
-        private const char c_BeginFirst = '{';
-        private const char c_BeginSecond = '%';
-        private const char c_EndFirst = '%';
-        private const char c_EndSecond = '}';
-        private const char c_BeginFirst2 = '{';
-        private const char c_BeginSecond2 = '{';
-        private const char c_EndFirst2 = '}';
-        private const char c_EndSecond2 = '}';
-        private const char c_CommentBeginFirst = '{';
-        private const char c_CommentBeginSecond = '#';
-        private const char c_CommentEndFirst = '#';
-        private const char c_CommentEndSecond = '}';
-
         private StringBuilder _outputBuilder = new StringBuilder();
         private StringBuilder _tempBuilder = new StringBuilder();
         private Dictionary<string, string> _envs = new Dictionary<string, string>();
@@ -244,6 +234,8 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             string toolDoc = string.Empty;
+            bool isAsync = false;
+            int timeoutMs = 60000;
             SkillToolInfo? toolInfo = null;
 
             int paramNum = toolFd.GetParamNum();
@@ -255,6 +247,28 @@ namespace CefDotnetApp.AgentCore.Core
                     var docCall = pfd.ThisOrLowerOrderCall;
                     if (docCall != null && docCall.IsValid() && docCall.GetParamNum() > 0)
                         toolDoc = StripQuotes(docCall.GetParam(0).GetId()) ?? string.Empty;
+                    continue;
+                }
+                // async() or async(true/false)
+                if (pfd != null && pfd.IsValid() && pfd.GetId() == "async") {
+                    var asyncCall = pfd.ThisOrLowerOrderCall;
+                    if (asyncCall != null && asyncCall.IsValid() && asyncCall.GetParamNum() > 0) {
+                        string val = StripQuotes(asyncCall.GetParam(0).GetId());
+                        isAsync = !string.Equals(val, "false", StringComparison.OrdinalIgnoreCase);
+                    }
+                    else {
+                        isAsync = true;
+                    }
+                    continue;
+                }
+                // timeout(ms)
+                if (pfd != null && pfd.IsValid() && pfd.GetId() == "timeout") {
+                    var timeoutCall = pfd.ThisOrLowerOrderCall;
+                    if (timeoutCall != null && timeoutCall.IsValid() && timeoutCall.GetParamNum() > 0) {
+                        string val = StripQuotes(timeoutCall.GetParam(0).GetId());
+                        if (int.TryParse(val, out int ms) && ms > 0)
+                            timeoutMs = ms;
+                    }
                     continue;
                 }
                 // command($p1,$p2){: script line :} is a FunctionData with body
@@ -292,6 +306,8 @@ namespace CefDotnetApp.AgentCore.Core
                 };
             }
             toolInfo.Document = toolDoc;
+            toolInfo.IsAsync = isAsync;
+            toolInfo.TimeoutMs = timeoutMs;
             tools.Add(toolInfo);
         }
 
@@ -408,55 +424,8 @@ namespace CefDotnetApp.AgentCore.Core
                     argDict.Add(paramName, argValue);
                 }
 
-                char beginFirst = c_BeginFirst;
-                char beginSecond = c_BeginSecond;
-                char endFirst = c_EndFirst;
-                char endSecond = c_EndSecond;
-                char beginFirst2 = c_BeginFirst2;
-                char beginSecond2 = c_BeginSecond2;
-                char endFirst2 = c_EndFirst2;
-                char endSecond2 = c_EndSecond2;
-                char commentBeginFirst = c_CommentBeginFirst;
-                char commentBeginSecond = c_CommentBeginSecond;
-                char commentEndFirst = c_CommentEndFirst;
-                char commentEndSecond = c_CommentEndSecond;
-
-                var c1 = skill.BeginChars;
-                var c2 = skill.EndChars;
-                if (c1.Length >= 2 && c2.Length >= 2) {
-                    beginFirst = c1[0];
-                    beginSecond = c1[1];
-                    endFirst = c2[0];
-                    endSecond = c2[1];
-
-                    beginFirst2 = beginFirst;
-                    beginSecond2 = beginSecond;
-                    endFirst2 = endFirst;
-                    endSecond2 = endSecond;
-
-                    commentBeginFirst = '\0';
-                    commentBeginSecond = '\0';
-                    commentEndFirst = '\0';
-                    commentEndSecond = '\0';
-                }
-                if (c1.Length >= 4 && c2.Length >= 4) {
-                    beginFirst2 = c1[2];
-                    beginSecond2 = c1[3];
-                    endFirst2 = c2[2];
-                    endSecond2 = c2[3];
-                }
-                if (c1.Length >= 6 && c2.Length >= 6) {
-                    commentBeginFirst = c1[4];
-                    commentBeginSecond = c1[5];
-                    commentEndFirst = c2[4];
-                    commentEndSecond = c2[5];
-                }
-
                 cmd = cmd.Trim();
-                cmd = CalcBlockString(cmd, argDict, _envs, _outputBuilder, _tempBuilder
-                    , beginFirst, beginSecond, endFirst, endSecond
-                    , beginFirst2, beginSecond2, endFirst2, endSecond2
-                    , commentBeginFirst, commentBeginSecond, commentEndFirst, commentEndSecond);
+                cmd = TemplateCode.CalcBlockString(cmd, argDict, _envs, _outputBuilder, _tempBuilder, skill.BeginChars, skill.EndChars);
 
                 // execute via shell
                 string shell, shellArg;
@@ -469,7 +438,12 @@ namespace CefDotnetApp.AgentCore.Core
                     shellArg = "-c " + cmd;
                 }
 
-                var result = _processOps.ExecuteCommand(shell, shellArg, null, 60000);
+                if (skill.IsAsync) {
+                    _processOps.ExecuteCommandWithCallback(shell, shellArg, null, skill.TimeoutMs, "skill_callback");
+                    return $"[async] skill '{skillKey}' started, result will arrive via skill_callback";
+                }
+
+                var result = _processOps.ExecuteCommand(shell, shellArg, null, skill.TimeoutMs);
                 var sb = new StringBuilder();
                 if (!string.IsNullOrEmpty(result.Output))
                     sb.Append(result.Output);
@@ -484,70 +458,6 @@ namespace CefDotnetApp.AgentCore.Core
                         sb.AppendLine().Append($"[hint] refer to {skill.SkillMd} for usage details");
                 }
                 return sb.ToString();
-            }
-        }
-
-        private static string CalcBlockString(string block, Dictionary<string, string> args, Dictionary<string, string> envs, StringBuilder outputBuilder, StringBuilder paramAndEnvBuilder
-            , char beginFirst, char beginSecond, char endFirst, char endSecond
-            , char beginFirst2, char beginSecond2, char endFirst2, char endSecond2
-            , char commentBeginFirst, char commentBeginSecond, char commentEndFirst, char commentEndSecond)
-        {
-            outputBuilder.Length = 0;
-            for (int i = 0; i < block.Length; ++i) {
-                char c = block[i];
-                char nc = '\0';
-                if (i + 1 < block.Length) {
-                    nc = block[i + 1];
-                }
-                if (c == beginFirst && nc == beginSecond) {
-                    ++i;
-                    ++i;
-                    ExtractBlockString(block, ref i, endFirst, endSecond, paramAndEnvBuilder);
-                    ReplaceParamAndEnvs(args, envs, outputBuilder, paramAndEnvBuilder);
-                }
-                else if (c == beginFirst2 && nc == beginSecond2) {
-                    ++i;
-                    ++i;
-                    ExtractBlockString(block, ref i, endFirst2, endSecond2, paramAndEnvBuilder);
-                    ReplaceParamAndEnvs(args, envs, outputBuilder, paramAndEnvBuilder);
-                }
-                else if (c == commentBeginFirst && nc == commentBeginSecond) {
-                    ++i;
-                    ++i;
-                    ExtractBlockString(block, ref i, commentEndFirst, commentEndSecond, paramAndEnvBuilder);
-                }
-                else {
-                    outputBuilder.Append(c);
-                }
-            }
-            return outputBuilder.ToString();
-        }
-        private static void ExtractBlockString(string block, ref int i, char endFirst, char endSecond, StringBuilder paramAndEnvBuilder)
-        {
-            paramAndEnvBuilder.Length = 0;
-            for (int j = i; j < block.Length; ++j) {
-                char c = block[j];
-                char nc = '\0';
-                if (j + 1 < block.Length) {
-                    nc = block[j + 1];
-                }
-                if (c == endFirst && nc == endSecond) {
-                    i = j + 1;
-                    break;
-                }
-                else {
-                    paramAndEnvBuilder.Append(c);
-                }
-            }
-        }
-        private static void ReplaceParamAndEnvs(Dictionary<string, string> args, Dictionary<string, string> envs, StringBuilder outputBuilder, StringBuilder paramAndEnvBuilder)
-        {
-            string key = paramAndEnvBuilder.ToString().Trim();
-            if (args.TryGetValue(key, out var val)) {
-                outputBuilder.Append(val);
-            }
-            else if (envs.TryGetValue(key, out var env)) {
-                outputBuilder.Append(env);
             }
         }
 

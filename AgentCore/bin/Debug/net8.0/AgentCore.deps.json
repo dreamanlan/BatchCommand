@@ -28,6 +28,11 @@
           "NuGet.Protocol": "6.8.0",
           "TextCopy": "6.2.1",
           "Tokenizers.DotNet": "1.4.0",
+          "Tokenizers.DotNet.runtime.linux-arm64": "1.4.0",
+          "Tokenizers.DotNet.runtime.linux-x64": "1.4.0",
+          "Tokenizers.DotNet.runtime.osx-arm64": "1.4.0",
+          "Tokenizers.DotNet.runtime.osx-x64": "1.4.0",
+          "Tokenizers.DotNet.runtime.win-arm64": "1.4.0",
           "Tokenizers.DotNet.runtime.win-x64": "1.4.0",
           "TreeSitter.DotNet": "1.3.0",
           "jieba.NET": "0.42.2",
@@ -1246,6 +1251,51 @@
           "lib/net6.0/Tokenizers.DotNet.dll": {
             "assemblyVersion": "1.4.1.0",
             "fileVersion": "2026.2.27.22559"
+          }
+        }
+      },
+      "Tokenizers.DotNet.runtime.linux-arm64/1.4.0": {
+        "runtimeTargets": {
+          "runtimes/linux-arm64/native/libhf_tokenizers.so": {
+            "rid": "linux-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Tokenizers.DotNet.runtime.linux-x64/1.4.0": {
+        "runtimeTargets": {
+          "runtimes/linux-x64/native/libhf_tokenizers.so": {
+            "rid": "linux-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Tokenizers.DotNet.runtime.osx-arm64/1.4.0": {
+        "runtimeTargets": {
+          "runtimes/osx-arm64/native/libhf_tokenizers.dylib": {
+            "rid": "osx-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Tokenizers.DotNet.runtime.osx-x64/1.4.0": {
+        "runtimeTargets": {
+          "runtimes/osx-x64/native/libhf_tokenizers.dylib": {
+            "rid": "osx-x64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Tokenizers.DotNet.runtime.win-arm64/1.4.0": {
+        "runtimeTargets": {
+          "runtimes/win-arm64/native/hf_tokenizers.dll": {
+            "rid": "win-arm64",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
@@ -3196,6 +3246,41 @@
       "sha512": "sha512-+4BZxn+So8bUDZrWPL/Z3WacpwSdvRkpT5530V0XLrMsCeRgf2oOh4/p36qmH0+ChT+ybMvtOKnqowWARhiYDg==",
       "path": "tokenizers.dotnet/1.4.0",
       "hashPath": "tokenizers.dotnet.1.4.0.nupkg.sha512"
+    },
+    "Tokenizers.DotNet.runtime.linux-arm64/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lINFDBMsZqw7xnBIVqmqy5qhU2tleOfBRwogA8TKgo/31QhFDWMC+hTvOB/z0CdSOcmdMJvN0SMGI8DaQ0/QqQ==",
+      "path": "tokenizers.dotnet.runtime.linux-arm64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.linux-arm64.1.4.0.nupkg.sha512"
+    },
+    "Tokenizers.DotNet.runtime.linux-x64/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-eL8MCop/fDCNBQ6kXwfJ+ss7vnx/YO+0bUiYsHYBXD9ihNphsJRjVD3/YnB78TcVpnJe6rFweARk4ZaWJyxS4Q==",
+      "path": "tokenizers.dotnet.runtime.linux-x64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.linux-x64.1.4.0.nupkg.sha512"
+    },
+    "Tokenizers.DotNet.runtime.osx-arm64/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-nY8ya39chWRvTFmdAmgXScpzXU94g7v6rLE61YYi+sUmTTgjxRFpXp4la+8XARJ8dt3zrTVmqzcU/o58AVR1Xg==",
+      "path": "tokenizers.dotnet.runtime.osx-arm64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.osx-arm64.1.4.0.nupkg.sha512"
+    },
+    "Tokenizers.DotNet.runtime.osx-x64/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-6Cp6b7QBqVi1V20lEHdZCOshKym2rPTliMmIThcAEgvXkWFoXTXriR8wfv4FVPauJnMMiHc5FEG/8Es3O6tfig==",
+      "path": "tokenizers.dotnet.runtime.osx-x64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.osx-x64.1.4.0.nupkg.sha512"
+    },
+    "Tokenizers.DotNet.runtime.win-arm64/1.4.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oYgUtPfU3diE3zl+XhTYD/6YhTRpDnuHikCxmQqyzxEkISTHfzFOn4PaiKyCf0FVlG5+tZUkNSM6lKooD7Q17Q==",
+      "path": "tokenizers.dotnet.runtime.win-arm64/1.4.0",
+      "hashPath": "tokenizers.dotnet.runtime.win-arm64.1.4.0.nupkg.sha512"
     },
     "Tokenizers.DotNet.runtime.win-x64/1.4.0": {
       "type": "package",

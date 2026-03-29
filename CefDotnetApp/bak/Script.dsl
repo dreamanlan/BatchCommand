@@ -80,6 +80,9 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 	$cmdLine.AppendSwitch("disable-renderer-backgrounding");
 	$cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
 
+	// Override user-agent-product to look like standard Chrome
+	$cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/144.0.7559.172");
+
 	$platform = osplatform();
 	nativelog("[dsl] on_before_command_line_processing platform:{0}", $platform);
 	if (stringcontains($platform,"Win32")) {
@@ -580,7 +583,7 @@ script(induction_plan)params()
 		"【以下是最近对话历史】：\n{3}", $planHistory, $todoHistory, $contextHistory, $conversationHistory);
 
 	$prompt = format("{0}\n\n以PM身份重述一下项目概况、开发计划与待办事项" +
-		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在3000字以内）", $prompt);
+		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在2000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);

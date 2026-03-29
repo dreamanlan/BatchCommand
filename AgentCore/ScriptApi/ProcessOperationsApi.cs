@@ -29,19 +29,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             for (int i = 0; i < m_Expressions.Count; i++) {
                 operands.Add(m_Expressions[i].Calc());
             }
-            var argVals = new Dictionary<string, string>();
-            for (int i = 0; i < m_ParamNames.Count; i++) {
-                string paramName = m_ParamNames[i];
-                if (Calculator.TryGetVariable(paramName, out var value) && !value.IsNullObject) {
-                    argVals[paramName] = value.ToString();
+            var bindingVals = new Dictionary<string, string>();
+            for (int i = 0; i < m_BindingNames.Count; i++) {
+                string bindingName = m_BindingNames[i];
+                if (Calculator.TryGetVariable(bindingName, out var value) && !value.IsNullObject) {
+                    bindingVals[bindingName] = value.ToString();
                 }
                 else {
-                    argVals[paramName] = string.Empty;
+                    bindingVals[bindingName] = string.Empty;
                 }
             }
-            return OnCalc(operands, argVals);
+            return OnCalc(operands, bindingVals);
         }
-        protected abstract BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals);
+        protected abstract BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals);
 
         protected override bool Load(Dsl.FunctionData callData)
         {
@@ -69,8 +69,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     if (NeedExternScript)
                         func = func.ThisOrLowerOrderCall;
                     var id = func.GetId();
-                    if (id == "params") {
-                        LoadParamNames(func);
+                    if (id == "bindings") {
+                        LoadBindingNames(func);
                     }
                     else if (id == "delimiter" && func.GetParamNum() == 2) {
                         m_BeginChars = func.GetParamId(0);
@@ -91,21 +91,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             return true;
         }
-        private void LoadParamNames(Dsl.FunctionData callData)
+        private void LoadBindingNames(Dsl.FunctionData callData)
         {
             for (int i = 0; i < callData.GetParamNum(); ++i) {
                 string name = callData.GetParamId(i);
-                m_ParamNames.Add(name);
+                m_BindingNames.Add(name);
             }
         }
 
         // Apply template substitution with params and skill envs
-        protected string ApplyTemplate(string text, Dictionary<string, string> argVals)
+        protected string ApplyTemplate(string text, Dictionary<string, string> bindingVals)
         {
             var envs = Core.AgentCore.Instance.SkillMgr.Envs;
             var sb1 = new StringBuilder();
             var sb2 = new StringBuilder();
-            return TemplateCode.CalcBlockString(text, argVals, envs, sb1, sb2, m_BeginChars, m_EndChars);
+            return TemplateCode.CalcBlockString(text, bindingVals, envs, sb1, sb2, m_BeginChars, m_EndChars);
         }
 
         // Build command and arguments for script execution based on file extension
@@ -235,7 +235,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         protected List<IExpression> m_Expressions = new List<IExpression>();
-        protected List<string> m_ParamNames = new List<string>();
+        protected List<string> m_BindingNames = new List<string>();
         protected string m_BeginChars = string.Empty;
         protected string m_EndChars = string.Empty;
         protected string m_Script = string.Empty;
@@ -253,9 +253,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count > 3) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
@@ -273,7 +273,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.NullObject;
                 }
 
-                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, argVals));
+                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, bindingVals));
                 string file = ProcessOperations.GetUniqueRandomFilePath(ext);
                 File.WriteAllText(file, script);
 
@@ -307,9 +307,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptAsyncExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script_async(callbackTag[, language, workingDir, timeout_def_30000ms, cmd_and_args])[params($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script_async(callbackTag[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 1 || operands.Count > 4) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
@@ -328,7 +328,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.NullObject;
                 }
 
-                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, argVals));
+                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, bindingVals));
                 string file = ProcessOperations.GetUniqueRandomFilePath(ext);
                 File.WriteAllText(file, script);
 
@@ -346,9 +346,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Execute command synchronously
     sealed class ExecuteCommandExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command(command[, arguments, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command(command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 1 || operands.Count > 4) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
@@ -361,9 +361,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string? workingDir = operands.Count > 2 ? operands[2].AsString : null;
                 int timeout = operands.Count > 3 ? operands[3].GetInt() : 30000;
 
-                command = ApplyTemplate(command, argVals);
+                command = ApplyTemplate(command, bindingVals);
                 if (arguments != null)
-                    arguments = ApplyTemplate(arguments, argVals);
+                    arguments = ApplyTemplate(arguments, bindingVals);
 
                 var result = Core.AgentCore.Instance.ProcessOps.ExecuteCommand(command, arguments, workingDir, timeout);
 
@@ -387,9 +387,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Execute command asynchronously with callback via command_callback CEF message
     sealed class ExecuteCommandAsyncExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command_async(callbackTag, command[, arguments, workingDir, timeout_def_30000ms])[params($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command_async(callbackTag, command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
             if (operands.Count < 2 || operands.Count > 5) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
@@ -403,9 +403,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string? workingDir = operands.Count > 3 ? operands[3].AsString : null;
                 int timeout = operands.Count > 4 ? operands[4].GetInt() : 30000;
 
-                command = ApplyTemplate(command, argVals);
+                command = ApplyTemplate(command, bindingVals);
                 if (arguments != null)
-                    arguments = ApplyTemplate(arguments, argVals);
+                    arguments = ApplyTemplate(arguments, bindingVals);
 
                 Core.AgentCore.Instance.ProcessOps.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackTag);
                 return BoxedValue.FromString("ok, async exec, result via command_callback");

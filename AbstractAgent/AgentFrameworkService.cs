@@ -21,6 +21,11 @@ namespace AgentPlugin.Abstractions
 
         private HotReloadManager? _hotReloadManager;
 
+        // Pre-cached assembly bytes for sandbox environments where file I/O
+        // may be restricted after initial loading phase.
+        // Key: assembly name (without extension), Value: (dll bytes, pdb bytes or null)
+        private Dictionary<string, (byte[] dll, byte[]? pdb)>? _assemblyCache;
+
         private AgentFrameworkService() { }
 
         public static AgentFrameworkService Instance
@@ -85,13 +90,49 @@ namespace AgentPlugin.Abstractions
                     }
                 }
 
-                // Try to load from the managed directory
+                // Try to load from pre-cached bytes first (for sandbox environments)
+                if (_assemblyCache != null && assemblyName != null &&
+                    _assemblyCache.TryGetValue(assemblyName, out var cached)) {
+                    Log($"[csharp] AssemblyResolve: Loading {assemblyName} from pre-cached bytes");
+                    try {
+                        if (cached.pdb != null) {
+                            return Assembly.Load(cached.dll, cached.pdb);
+                        }
+                        return Assembly.Load(cached.dll);
+                    }
+                    catch (Exception cacheEx) {
+                        Log($"[csharp] AssemblyResolve: Cache loading failed for {assemblyName}: {cacheEx.Message}");
+                    }
+                }
+
+                // Fallback: try to load from the managed directory directly
                 string managedPath = Path.Combine(basePath, "managed");
                 string assemblyPath = Path.Combine(managedPath, assemblyName + ".dll");
 
                 if (File.Exists(assemblyPath)) {
                     Log($"[csharp] AssemblyResolve: Loading {assemblyName} from {assemblyPath}");
-                    return Assembly.LoadFrom(assemblyPath);
+                    try {
+                        return Assembly.LoadFrom(assemblyPath);
+                    }
+                    catch (Exception loadFromEx) {
+                        // Assembly.LoadFrom may fail on macOS in sandbox environments.
+                        // Fall back to loading from raw bytes.
+                        Log($"[csharp] AssemblyResolve: LoadFrom failed for {assemblyName}: {loadFromEx.Message}");
+                        Log($"[csharp] AssemblyResolve: Falling back to byte[] loading for {assemblyName}");
+                        try {
+                            byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
+                            string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
+                            if (File.Exists(pdbPath)) {
+                                byte[] pdbBytes = File.ReadAllBytes(pdbPath);
+                                return Assembly.Load(assemblyBytes, pdbBytes);
+                            }
+                            return Assembly.Load(assemblyBytes);
+                        }
+                        catch (Exception bytesEx) {
+                            Log($"[csharp] AssemblyResolve: Byte[] loading also failed for {assemblyName}: {bytesEx.Message}");
+                            return null;
+                        }
+                    }
                 }
 
                 Log($"[csharp] AssemblyResolve: Could not find {assemblyName} in {managedPath}");
@@ -104,32 +145,107 @@ namespace AgentPlugin.Abstractions
         }
 
         /// <summary>
+        /// Pre-cache all DLL files from the managed directory into memory.
+        /// This must be called before sandbox restrictions take effect, so that
+        /// AssemblyResolve can load assemblies from memory even when file I/O
+        /// is blocked by the Chromium sandbox on macOS.
+        /// </summary>
+        private void PreCacheAssemblies(string basePath)
+        {
+            try {
+                string managedPath = Path.Combine(basePath, "managed");
+                if (!Directory.Exists(managedPath)) {
+                    Log($"[csharp] PreCacheAssemblies: managed directory not found: {managedPath}");
+                    return;
+                }
+
+                _assemblyCache = new Dictionary<string, (byte[] dll, byte[]? pdb)>(StringComparer.OrdinalIgnoreCase);
+                string[] dllFiles = Directory.GetFiles(managedPath, "*.dll");
+                int cachedCount = 0;
+
+                foreach (string dllPath in dllFiles) {
+                    try {
+                        string name = Path.GetFileNameWithoutExtension(dllPath);
+                        byte[] dllBytes = File.ReadAllBytes(dllPath);
+                        byte[]? pdbBytes = null;
+
+                        string pdbPath = Path.ChangeExtension(dllPath, ".pdb");
+                        if (File.Exists(pdbPath)) {
+                            try {
+                                pdbBytes = File.ReadAllBytes(pdbPath);
+                            }
+                            catch {
+                                // PDB loading is optional, ignore errors
+                            }
+                        }
+
+                        _assemblyCache[name] = (dllBytes, pdbBytes);
+                        cachedCount++;
+                    }
+                    catch (Exception ex) {
+                        Log($"[csharp] PreCacheAssemblies: Failed to cache {Path.GetFileName(dllPath)}: {ex.Message}");
+                    }
+                }
+
+                Log($"[csharp] PreCacheAssemblies: Cached {cachedCount}/{dllFiles.Length} assemblies from {managedPath}");
+            }
+            catch (Exception ex) {
+                Log($"[csharp] PreCacheAssemblies: Error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Load AgentCore.dll plugin via reflection and initialize it.
         /// </summary>
         public bool LoadAgentPlugin(string basePath, string appDir, bool isMac)
         {
             try {
+                // Pre-cache all managed DLLs into memory BEFORE sandbox restrictions
+                // take effect. On macOS, Chromium's sandbox may restrict file I/O
+                // for renderer/helper processes, so we read everything into memory
+                // while we still have file system access.
+                PreCacheAssemblies(basePath);
+
                 // Register assembly resolve event handler before loading AgentCore
                 AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => OnAssemblyResolve(sender, args, basePath);
 
                 string pluginPath = Path.Combine(basePath, "managed", "AgentCore.dll");
-                if (!File.Exists(pluginPath)) {
-                    Log($"[csharp] AgentCore.dll not found at: {pluginPath}");
-                    return false;
-                }
 
                 Log($"[csharp] Loading AgentCore.dll from: {pluginPath}");
 
-                // Use Assembly.Load instead of LoadFrom to share assembly load context
-                AssemblyName assemblyName = AssemblyName.GetAssemblyName(pluginPath);
-                Log($"[csharp] Assembly name: {assemblyName.FullName}");
+                Assembly? pluginAssembly = null;
 
-                // Load the assembly into the default load context
-                Assembly? pluginAssembly = Assembly.Load(assemblyName);
+                // Try loading from file first (normal path)
+                try {
+                    if (File.Exists(pluginPath)) {
+                        AssemblyName assemblyName = AssemblyName.GetAssemblyName(pluginPath);
+                        Log($"[csharp] Assembly name: {assemblyName.FullName}");
+                        pluginAssembly = Assembly.Load(assemblyName);
+                        if (pluginAssembly == null) {
+                            Log("[csharp] Failed to load AgentCore.dll using Assembly.Load");
+                            Log("[csharp] Trying fallback to Assembly.LoadFrom...");
+                            pluginAssembly = Assembly.LoadFrom(pluginPath);
+                        }
+                    }
+                }
+                catch (Exception fileLoadEx) {
+                    Log($"[csharp] File-based loading failed for AgentCore.dll: {fileLoadEx.Message}");
+                }
+
+                // Fallback: load from pre-cached bytes (for sandbox environments)
+                if (pluginAssembly == null && _assemblyCache != null &&
+                    _assemblyCache.TryGetValue("AgentCore", out var cachedCore)) {
+                    Log("[csharp] Loading AgentCore.dll from pre-cached bytes");
+                    if (cachedCore.pdb != null) {
+                        pluginAssembly = Assembly.Load(cachedCore.dll, cachedCore.pdb);
+                    } else {
+                        pluginAssembly = Assembly.Load(cachedCore.dll);
+                    }
+                }
+
                 if (pluginAssembly == null) {
-                    Log("[csharp] Failed to load AgentCore.dll using Assembly.Load");
-                    Log("[csharp] Trying fallback to Assembly.LoadFrom...");
-                    pluginAssembly = Assembly.LoadFrom(pluginPath);
+                    Log("[csharp] AgentCore.dll could not be loaded from any source");
+                    return false;
                 }
 
                 Log($"[csharp] Loaded assembly: {pluginAssembly.FullName}");

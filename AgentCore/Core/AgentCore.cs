@@ -304,7 +304,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Initialize native library loader for TreeSitter
                 try {
-                    NativeLibraryLoader.Initialize();
+                    NativeLibraryLoader.Initialize(basePath);
                 }
                 catch (Exception ex) {
                     // At this point, Logger instance is not yet available, use Console as fallback

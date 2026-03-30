@@ -26,6 +26,12 @@ bool FDbgScpHookHelper::DbgScpBreakpointWithInfo(const char* file, int line, con
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 
@@ -47,6 +53,12 @@ bool FDbgScpHookHelper::DbgScpBreakpointWithIntKeyInfo(const char* file, int lin
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 
@@ -68,6 +80,12 @@ bool FDbgScpHookHelper::DbgScpBreakpointWithStrKeyInfo(const char* file, int lin
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 
@@ -93,6 +111,12 @@ bool FDbgScpHookHelper::DbgScpAssertWithInfo(const char* file, int line, const c
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 
@@ -118,6 +142,12 @@ bool FDbgScpHookHelper::DbgScpAssertWithIntKeyInfo(const char* file, int line, c
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 
@@ -143,6 +173,12 @@ bool FDbgScpHookHelper::DbgScpAssertWithStrKeyInfo(const char* file, int line, c
 	va_list args;
 	va_start(args, fmt);
 	int num = vsnprintf(buffer, c_buffer_capacity, fmt, args);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (num < 0) {
+        num = 0;
+    } else if (num >= static_cast<int>(sizeof(buffer) - 1)) {
+        num = static_cast<int>(sizeof(buffer) - 1);
+    }
 	buffer[num]	= '\0';
 	va_end(args);
 

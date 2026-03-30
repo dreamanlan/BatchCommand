@@ -14,6 +14,10 @@ namespace CefDotnetApp.AgentCore.Core
         private static bool _initialized = false;
         private static readonly object _lock = new object();
 
+        // Fallback managed directory path for HostCLR environments where
+        // Assembly.GetExecutingAssembly().Location may return empty string.
+        private static string? _managedDir;
+
         // Log caching for early initialization (before AgentCore.Instance is available)
         private static readonly System.Collections.Generic.List<(string level, string message)> _logCache = new();
         private static bool _logsFlushed = false;
@@ -29,6 +33,19 @@ namespace CefDotnetApp.AgentCore.Core
         private static extern bool SetDefaultDllDirectories(uint directoryFlags);
 
         private const uint LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x00001000;
+
+        /// <summary>
+        /// Get the full native library filename for the current platform.
+        /// On Windows: {name}.dll, on macOS: lib{name}.dylib, on Linux: lib{name}.so
+        /// </summary>
+        private static string GetNativeLibraryFileName(string baseName)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return $"{baseName}.dll";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return $"lib{baseName}.dylib";
+            return $"lib{baseName}.so"; // Linux and others
+        }
 
         /// <summary>
         /// Internal logging method that caches logs until AgentCore is ready
@@ -100,15 +117,50 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         /// <summary>
-        /// Initialize native library loading for TreeSitter
-        /// Must be called before any TreeSitter functionality is used
+        /// Get the AgentCore directory path.
+        /// First tries Assembly.GetExecutingAssembly().Location, then falls back
+        /// to the stored _managedDir path (for HostCLR environments).
         /// </summary>
-        public static void Initialize()
+        private static string? GetAgentCoreDir()
+        {
+            var location = Assembly.GetExecutingAssembly().Location;
+            if (!string.IsNullOrEmpty(location))
+            {
+                var dir = Path.GetDirectoryName(location);
+                if (!string.IsNullOrEmpty(dir))
+                    return dir;
+            }
+
+            // Fallback to stored managed directory path
+            if (!string.IsNullOrEmpty(_managedDir))
+            {
+                Log("info", $"[NativeLibraryLoader] Using fallback managed directory: {_managedDir}");
+                return _managedDir;
+            }
+
+            Log("warning", "[NativeLibraryLoader] Assembly.Location is empty and no fallback managed directory set");
+            return null;
+        }
+
+        /// <summary>
+        /// Initialize native library loading.
+        /// </summary>
+        /// <param name="basePath">Optional base path (parent of 'managed' directory).
+        /// Used as fallback when Assembly.Location is empty (e.g. in HostCLR environments
+        /// where assemblies may be loaded from byte arrays).</param>
+        public static void Initialize(string? basePath = null)
         {
             lock (_lock)
             {
                 if (_initialized)
                     return;
+
+                // Store managed directory path as fallback for Assembly.Location
+                if (!string.IsNullOrEmpty(basePath))
+                {
+                    _managedDir = Path.Combine(basePath, "managed");
+                    Log("info", $"[NativeLibraryLoader] Managed directory fallback set to: {_managedDir}");
+                }
 
                 try
                 {
@@ -153,7 +205,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                     return;
 
@@ -178,86 +230,190 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
+        // Cached path to the native e_sqlite3 library for DllImportResolver
+        private static string? _sqliteNativeLibPath;
+
         private static void PreloadSqliteDll()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
-                    return;
-
-                string rid = GetRuntimeIdentifier();
-                var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
-                var dllPath = Path.Combine(nativeDir, "e_sqlite3.dll");
-
-                if (!File.Exists(dllPath))
                 {
-                    Log("warning", $"[NativeLibraryLoader] e_sqlite3.dll not found at: {dllPath}");
+                    Log("warning", "[NativeLibraryLoader] Cannot determine AgentCore directory, cannot preload SQLite");
                     return;
                 }
 
-                if (NativeLibrary.TryLoad(dllPath, out _))
-                    Log("info", $"[NativeLibraryLoader] Successfully preloaded e_sqlite3.dll from {dllPath}");
+                Log("info", $"[NativeLibraryLoader] AgentCore directory: {agentCoreDir}");
+
+                string rid = GetRuntimeIdentifier();
+                var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
+                var libName = GetNativeLibraryFileName("e_sqlite3");
+                var libPath = Path.Combine(nativeDir, libName);
+
+                if (!File.Exists(libPath))
+                {
+                    Log("warning", $"[NativeLibraryLoader] {libName} not found at: {libPath}");
+                    return;
+                }
+
+                // Step 1: Preload the native e_sqlite3 library into the process
+                if (NativeLibrary.TryLoad(libPath, out _))
+                {
+                    Log("info", $"[NativeLibraryLoader] Successfully preloaded {libName} from {libPath}");
+                    _sqliteNativeLibPath = libPath;
+                }
                 else
-                    Log("warning", $"[NativeLibraryLoader] Failed to preload e_sqlite3.dll from {dllPath}");
+                {
+                    Log("warning", $"[NativeLibraryLoader] Failed to preload {libName} from {libPath}");
+                    return;
+                }
+
+                // Step 2: Register DllImportResolver for the SQLitePCLRaw provider assembly.
+                // In HostCLR environments, the default DllImport probing paths may not include
+                // the runtimes/<rid>/native directory, causing P/Invoke calls to e_sqlite3 to fail.
+                try
+                {
+                    RegisterSqliteDllImportResolver();
+                }
+                catch (Exception resolverEx)
+                {
+                    Log("warning", $"[NativeLibraryLoader] Failed to register SQLite DllImportResolver: {resolverEx.Message}");
+                }
+
+                // Step 3: Explicitly initialize SQLitePCLRaw provider.
+                // This must happen BEFORE SqliteConnection's static constructor runs,
+                // otherwise the cctor will attempt Batteries_V2.Init() via reflection
+                // which may fail in custom host environments.
+                try
+                {
+                    SQLitePCL.Batteries_V2.Init();
+                    Log("info", "[NativeLibraryLoader] SQLitePCL.Batteries_V2.Init() succeeded");
+                }
+                catch (Exception initEx)
+                {
+                    Log("warning", $"[NativeLibraryLoader] SQLitePCL.Batteries_V2.Init() failed: {initEx.Message}");
+                    // Fallback: try to manually set the provider
+                    try
+                    {
+                        SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
+                        Log("info", "[NativeLibraryLoader] Manually set SQLitePCL provider (SQLite3Provider_e_sqlite3) succeeded");
+                    }
+                    catch (Exception providerEx)
+                    {
+                        Log("error", $"[NativeLibraryLoader] Failed to manually set SQLitePCL provider: {providerEx.Message}");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Log("error", $"[NativeLibraryLoader] Exception preloading e_sqlite3.dll: {ex.Message}");
+                Log("error", $"[NativeLibraryLoader] Exception preloading SQLite native library: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Register a DllImportResolver for assemblies that P/Invoke into e_sqlite3.
+        /// This ensures that when SQLitePCLRaw.provider.e_sqlite3 calls [DllImport("e_sqlite3")],
+        /// the runtime can find the native library at the correct path.
+        /// </summary>
+        private static void RegisterSqliteDllImportResolver()
+        {
+            if (string.IsNullOrEmpty(_sqliteNativeLibPath))
+                return;
+
+            // Register resolver for already-loaded assemblies
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var name = asm.GetName().Name;
+                if (name != null && name.Contains("SQLitePCLRaw.provider"))
+                {
+                    try
+                    {
+                        NativeLibrary.SetDllImportResolver(asm, SqliteDllImportResolver);
+                        Log("info", $"[NativeLibraryLoader] Registered SQLite DllImportResolver for {name}");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Resolver already set for this assembly, ignore
+                        Log("info", $"[NativeLibraryLoader] DllImportResolver already set for {name}");
+                    }
+                }
+            }
+
+            // Also register for future assembly loads
+            AppDomain.CurrentDomain.AssemblyLoad += OnSqliteAssemblyLoad;
+        }
+
+        private static void OnSqliteAssemblyLoad(object? sender, AssemblyLoadEventArgs args)
+        {
+            var name = args.LoadedAssembly.GetName().Name;
+            if (name != null && name.Contains("SQLitePCLRaw.provider"))
+            {
+                try
+                {
+                    NativeLibrary.SetDllImportResolver(args.LoadedAssembly, SqliteDllImportResolver);
+                    Log("info", $"[NativeLibraryLoader] Registered SQLite DllImportResolver for late-loaded {name}");
+                }
+                catch (InvalidOperationException)
+                {
+                    // Already set
+                }
+            }
+        }
+
+        private static IntPtr SqliteDllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            // Only handle e_sqlite3 requests
+            if (libraryName == "e_sqlite3" && !string.IsNullOrEmpty(_sqliteNativeLibPath))
+            {
+                if (NativeLibrary.TryLoad(_sqliteNativeLibPath, out IntPtr handle))
+                    return handle;
+            }
+            // Fall back to default resolution for other libraries
+            return IntPtr.Zero;
         }
 
         private static void PreloadOnnxRuntimeDlls()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                     return;
 
                 string rid = GetRuntimeIdentifier();
                 var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
 
-                // Load providers_shared first as it is a dependency of onnxruntime.dll
-                string[] dlls = { "onnxruntime_providers_shared.dll", "onnxruntime.dll" };
-                foreach (var dllName in dlls)
+                // Load providers_shared first as it is a dependency of onnxruntime
+                // On macOS, providers_shared may not exist (only onnxruntime itself)
+                string[] baseNames = { "onnxruntime_providers_shared", "onnxruntime" };
+                foreach (var baseName in baseNames)
                 {
-                    var dllPath = Path.Combine(nativeDir, dllName);
-                    if (!File.Exists(dllPath))
+                    var libName = GetNativeLibraryFileName(baseName);
+                    var libPath = Path.Combine(nativeDir, libName);
+                    if (!File.Exists(libPath))
                     {
-                        Log("warning", $"[NativeLibraryLoader] {dllName} not found at: {dllPath}");
+                        Log("info", $"[NativeLibraryLoader] {libName} not found at: {libPath}, skipping");
                         continue;
                     }
 
-                    if (NativeLibrary.TryLoad(dllPath, out _))
-                        Log("info", $"[NativeLibraryLoader] Successfully preloaded {dllName} from {dllPath}");
+                    if (NativeLibrary.TryLoad(libPath, out _))
+                        Log("info", $"[NativeLibraryLoader] Successfully preloaded {libName} from {libPath}");
                     else
-                        Log("warning", $"[NativeLibraryLoader] Failed to preload {dllName} from {dllPath}");
+                        Log("warning", $"[NativeLibraryLoader] Failed to preload {libName} from {libPath}");
                 }
             }
             catch (Exception ex)
             {
-                Log("error", $"[NativeLibraryLoader] Exception preloading OnnxRuntime DLLs: {ex.Message}");
+                Log("error", $"[NativeLibraryLoader] Exception preloading OnnxRuntime native libraries: {ex.Message}");
             }
         }
 
         private static void PreloadTreeSitterDlls()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Log("info", "[NativeLibraryLoader] Not on Windows, skipping DLL preload");
-                return;
-            }
-
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                 {
                     Log("error", "[NativeLibraryLoader] Failed to get AgentCore directory for preload");
@@ -273,42 +429,61 @@ namespace CefDotnetApp.AgentCore.Core
                     return;
                 }
 
-                // Preload tree-sitter.dll first, then all language-specific DLLs found in the directory
-                string[] dllsToPreload = Directory.GetFiles(nativeDir, "tree-sitter*.dll")
+                // Determine the glob pattern and core library name based on platform
+                string globPattern;
+                string coreLibName;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    globPattern = "tree-sitter*.dll";
+                    coreLibName = "tree-sitter.dll";
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    globPattern = "libtree-sitter*.dylib";
+                    coreLibName = "libtree-sitter.dylib";
+                }
+                else
+                {
+                    globPattern = "libtree-sitter*.so";
+                    coreLibName = "libtree-sitter.so";
+                }
+
+                // Preload tree-sitter core library first, then all language-specific libraries
+                string[] libsToPreload = Directory.GetFiles(nativeDir, globPattern)
                     .Select(Path.GetFileName)
-                    .OrderBy(n => n == "tree-sitter.dll" ? 0 : 1) // tree-sitter.dll first
+                    .OrderBy(n => n == coreLibName ? 0 : 1) // core library first
                     .ThenBy(n => n)
                     .ToArray()!;
 
-                foreach (var dllName in dllsToPreload)
+                foreach (var libName in libsToPreload)
                 {
-                    var dllPath = Path.Combine(nativeDir, dllName);
-                    if (!File.Exists(dllPath))
+                    var libPath = Path.Combine(nativeDir, libName);
+                    if (!File.Exists(libPath))
                     {
-                        Log("warning", $"[NativeLibraryLoader] DLL not found for preload: {dllPath}");
+                        Log("warning", $"[NativeLibraryLoader] Native library not found for preload: {libPath}");
                         continue;
                     }
 
                     try
                     {
-                        if (NativeLibrary.TryLoad(dllPath, out IntPtr handle))
+                        if (NativeLibrary.TryLoad(libPath, out IntPtr handle))
                         {
-                            Log("info", $"[NativeLibraryLoader] Successfully preloaded: {dllName} from {dllPath}");
+                            Log("info", $"[NativeLibraryLoader] Successfully preloaded: {libName} from {libPath}");
 
-                            // Cache tree-sitter.dll handle
-                            if (dllName == "tree-sitter.dll")
+                            // Cache tree-sitter core library handle
+                            if (libName == coreLibName)
                             {
                                 _treeSitterHandle = handle;
                             }
                         }
                         else
                         {
-                            Log("warning", $"[NativeLibraryLoader] Failed to preload: {dllName}");
+                            Log("warning", $"[NativeLibraryLoader] Failed to preload: {libName}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log("error", $"[NativeLibraryLoader] Exception preloading {dllName}: {ex.Message}");
+                        Log("error", $"[NativeLibraryLoader] Exception preloading {libName}: {ex.Message}");
                     }
                 }
             }
@@ -339,13 +514,13 @@ namespace CefDotnetApp.AgentCore.Core
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Log("info", "[NativeLibraryLoader] Not on Windows, skipping DLL search path setup");
+                Log("info", "[NativeLibraryLoader] Not on Windows, skipping DLL search path setup (preload handles this)");
                 return;
             }
 
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                 {
                     Log("error", "[NativeLibraryLoader] Failed to get AgentCore directory");
@@ -465,7 +640,7 @@ namespace CefDotnetApp.AgentCore.Core
                 Log("info", $"[NativeLibraryLoader] Resolving '{libraryName}' for assembly '{assembly.GetName().Name}'");
 
                 // Get the directory where AgentCore.dll is located
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                 {
                     Log("error", "[NativeLibraryLoader] Failed to get AgentCore directory");
@@ -478,28 +653,29 @@ namespace CefDotnetApp.AgentCore.Core
 
                 var nativeDir = Path.Combine(agentCoreDir, "runtimes", rid, "native");
 
-                // CRITICAL: If loading a tree-sitter language-specific DLL,
-                // ensure tree-sitter.dll is loaded first as a dependency
+                // CRITICAL: If loading a tree-sitter language-specific library,
+                // ensure the core tree-sitter library is loaded first as a dependency
                 if (libraryName.StartsWith("tree-sitter-", StringComparison.OrdinalIgnoreCase) && _treeSitterHandle == IntPtr.Zero)
                 {
-                    var treeSitterPath = Path.Combine(nativeDir, "tree-sitter.dll");
+                    var coreLibName = GetNativeLibraryFileName("tree-sitter");
+                    var treeSitterPath = Path.Combine(nativeDir, coreLibName);
                     if (File.Exists(treeSitterPath))
                     {
-                        Log("info", $"[NativeLibraryLoader] Preloading tree-sitter.dll dependency from: {treeSitterPath}");
+                        Log("info", $"[NativeLibraryLoader] Preloading {coreLibName} dependency from: {treeSitterPath}");
                         if (NativeLibrary.TryLoad(treeSitterPath, out _treeSitterHandle))
                         {
-                            Log("info", $"[NativeLibraryLoader] Successfully preloaded tree-sitter.dll");
+                            Log("info", $"[NativeLibraryLoader] Successfully preloaded {coreLibName}");
                         }
                         else
                         {
-                            Log("warning", $"[NativeLibraryLoader] WARNING: Failed to preload tree-sitter.dll");
+                            Log("warning", $"[NativeLibraryLoader] WARNING: Failed to preload {coreLibName}");
                         }
                     }
                 }
 
-                // Construct the path to the native DLL
-                // Path format: runtimes/{rid}/native/{libraryName}.dll
-                var nativeDllPath = Path.Combine(nativeDir, $"{libraryName}.dll");
+                // Construct the path to the native library
+                // Path format: runtimes/{rid}/native/{platform-specific-name}
+                var nativeDllPath = Path.Combine(nativeDir, GetNativeLibraryFileName(libraryName));
 
                 if (!File.Exists(nativeDllPath))
                 {
@@ -514,7 +690,7 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     Log("info", $"[NativeLibraryLoader] Successfully loaded '{libraryName}' from {nativeDllPath}");
 
-                    // Cache tree-sitter.dll handle
+                    // Cache tree-sitter core library handle
                     if (libraryName == "tree-sitter")
                     {
                         _treeSitterHandle = handle;
@@ -580,7 +756,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             try
             {
-                var agentCoreDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                     return false;
 
@@ -593,11 +769,11 @@ namespace CefDotnetApp.AgentCore.Core
                     return false;
                 }
 
-                // Check for tree-sitter core DLL (required)
-                var coreDll = Path.Combine(runtimesDir, "tree-sitter.dll");
-                if (!File.Exists(coreDll))
+                // Check for tree-sitter core library (required)
+                var coreLib = Path.Combine(runtimesDir, GetNativeLibraryFileName("tree-sitter"));
+                if (!File.Exists(coreLib))
                 {
-                    Log("warning", $"[NativeLibraryLoader] Required DLL not found: {coreDll}");
+                    Log("warning", $"[NativeLibraryLoader] Required native library not found: {coreLib}");
                     return false;
                 }
 

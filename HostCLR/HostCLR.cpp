@@ -407,6 +407,12 @@ void printf_log(const char* fmt, ...)
     va_start(vl, fmt);
     char buffer[4097];
     int len = vsnprintf(buffer, sizeof(buffer) - 1, fmt, vl);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (len < 0) {
+        len = 0;
+    } else if (len >= static_cast<int>(sizeof(buffer) - 1)) {
+        len = static_cast<int>(sizeof(buffer) - 1);
+    }
     buffer[len] = '\0';
     va_end(vl);
 

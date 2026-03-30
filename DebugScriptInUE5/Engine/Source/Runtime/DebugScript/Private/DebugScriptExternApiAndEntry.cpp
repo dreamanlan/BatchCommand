@@ -171,6 +171,13 @@ int mylog_printf(const char* fmt, ...) {
     va_start(vl, fmt);
     int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
     va_end(vl);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (r < 0) {
+        r = 0;
+    } else if (r >= c_buf_size) {
+        r = c_buf_size - 1;
+    }
+    buf[r] = '\0';
     UE_LOG(LogTemp, Warning, TEXT("%s"), UTF8_TO_TCHAR(buf));
     return r;
 }
@@ -182,6 +189,13 @@ int mylog_printf(const char* fmt, ...) {
     va_start(vl, fmt);
     int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
     va_end(vl);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (r < 0) {
+        r = 0;
+    } else if (r >= c_buf_size) {
+        r = c_buf_size - 1;
+    }
+    buf[r] = '\0';
     std::stringstream ss;
     ss << buf;
     Core::g_MainThreadCaller.SyncLogToView(ss.str());
@@ -197,6 +211,13 @@ int mylog_printf(const char* fmt, ...) {
     va_start(vl, fmt);
     int r = std::vsnprintf(buf, c_buf_size, fmt, vl);
     va_end(vl);
+    // Guard against vsnprintf returning negative (error) or exceeding buffer size
+    if (r < 0) {
+        r = 0;
+    } else if (r >= c_buf_size) {
+        r = c_buf_size - 1;
+    }
+    buf[r] = '\0';
     printf("%s", buf);
     return r;
 }
@@ -2077,6 +2098,12 @@ void LoadDbgScp(const std::string& log_path, const std::string& load_path)
         if (GetLogFilesRef()[i].empty()) {
             char strBuf[c_path_capacity_max];
             int len = snprintf(strBuf, c_path_capacity_max, "%s/dbgscp_log_%d.txt", log_path.c_str(), i);
+            // Guard against vsnprintf returning negative (error) or exceeding buffer size
+            if (len < 0) {
+                len = 0;
+            } else if (len >= c_path_capacity_max - 1) {
+                len = c_path_capacity_max - 1;
+            }
             strBuf[len] = 0;
             GetLogFilesRef()[i] = strBuf;
         }

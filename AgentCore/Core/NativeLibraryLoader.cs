@@ -750,20 +750,6 @@ var agentCoreDir = GetAgentCoreDir();
         }
 
         /// <summary>
-        /// Get the platform-appropriate native library file name.
-        /// Windows: {name}.dll, Linux: lib{name}.so, macOS: lib{name}.dylib
-        /// </summary>
-        private static string GetNativeLibraryFileName(string libraryName)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return $"{libraryName}.dll";
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                return $"lib{libraryName}.dylib";
-            // Linux and others
-            return $"lib{libraryName}.so";
-        }
-
-        /// <summary>
         /// Check if native libraries are available
         /// </summary>
         public static bool CheckNativeLibraries()

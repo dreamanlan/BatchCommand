@@ -2098,7 +2098,7 @@ void LoadDbgScp(const std::string& log_path, const std::string& load_path)
         if (GetLogFilesRef()[i].empty()) {
             char strBuf[c_path_capacity_max];
             int len = snprintf(strBuf, c_path_capacity_max, "%s/dbgscp_log_%d.txt", log_path.c_str(), i);
-            // Guard against vsnprintf returning negative (error) or exceeding buffer size
+            // Guard against snprintf returning negative (error) or exceeding buffer size
             if (len < 0) {
                 len = 0;
             } else if (len >= c_path_capacity_max - 1) {

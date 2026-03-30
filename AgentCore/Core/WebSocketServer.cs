@@ -340,9 +340,8 @@ namespace CefDotnetApp.AgentCore.Core
                                 int maxRounds = AgentCore.Instance.MaxContextRounds;
                                 int rounds = _contextRounds.AddOrUpdate(msg.client, 0, (_, old) => old + 1);
                                 bool appendContext = (maxRounds <= 1) || (rounds % maxRounds == 0);
-                                if (appendContext) {
-                                    AgentCore.Instance.CurContextRounds = 0;
-                                }
+                                // Clearing the User Context Rounds when using MetaDSL code
+                                AgentCore.Instance.CurContextRounds = 0;
 
                                 string result = ExecuteMetaDSLInWorker(msg.message, appendContext);
                                 if (!string.IsNullOrEmpty(result))

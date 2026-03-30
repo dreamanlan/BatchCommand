@@ -153,9 +153,12 @@ namespace CefDotnetApp.AgentCore.Utils
 
         /// <summary>
         /// Check if Everything service is running by finding its IPC window.
+        /// Returns false on non-Windows platforms.
         /// </summary>
         public static bool EverythingExists()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return false;
             var hwnd = FindWindowW(EVERYTHING_IPC_WNDCLASS, null);
             return hwnd != IntPtr.Zero;
         }

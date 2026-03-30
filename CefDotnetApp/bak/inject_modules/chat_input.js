@@ -4,6 +4,7 @@
   class ChatInputPanel {
     static STATE_KEY = 'chat_panel_state';
     static ENV_KEY = 'agent_environments';
+    static DEFAULT_CATEGORIES = ['llm', 'mcp'];
     static MAX_CHAT_LINES = 200;
 
     constructor(bridge) {
@@ -258,6 +259,22 @@
       envBrowseRow.appendChild(this.cfgBrowseCategory);
       envBrowseRow.appendChild(this.cfgBrowseGroup);
       envBrowseRow.appendChild(this.cfgBrowseKey);
+      const delEnvBtn = document.createElement('button');
+      delEnvBtn.textContent = 'Del';
+      delEnvBtn.style.cssText = `
+        padding: 4px 8px;
+        background: #c62828;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        white-space: nowrap;
+      `;
+      delEnvBtn.onmouseenter = () => { delEnvBtn.style.background = '#e53935'; };
+      delEnvBtn.onmouseleave = () => { delEnvBtn.style.background = '#c62828'; };
+      delEnvBtn.onclick = () => this._deleteAgentEnv();
+      envBrowseRow.appendChild(delEnvBtn);
       this.configArea.appendChild(envBrowseRow);
 
       // Input row: 3 inputs (group + key + value) for entering/editing values
@@ -368,7 +385,10 @@
 
     async _refreshBrowseUI() {
       const envs = await this._getEnvData();
-      const categories = Object.keys(envs);
+      const dataCategories = Object.keys(envs);
+      // Merge default categories with data categories (deduplicated, defaults first)
+      const categories = [...ChatInputPanel.DEFAULT_CATEGORIES];
+      dataCategories.forEach(c => { if (!categories.includes(c)) categories.push(c); });
       this._populateSelect(this.cfgBrowseCategory, categories, true);
       await this._onBrowseCategoryChange();
     }
@@ -396,6 +416,39 @@
       // Sync selected key to input row
       const key = this.cfgBrowseKey.value;
       if (key) this.cfgEnvKey.value = key;
+    }
+
+    async _deleteAgentEnv() {
+      const category = this.cfgBrowseCategory.value;
+      const group = this.cfgBrowseGroup.value;
+      const key = this.cfgBrowseKey.value;
+      if (!category || !group || !key) {
+        console.warn('[ChatInputPanel] Delete: need category, group and key selected');
+        return;
+      }
+      try {
+        const raw = await secretStore.getItem('agent_environments');
+        const envs = raw ? JSON.parse(raw) : {};
+        if (envs[category] && envs[category][group]) {
+          delete envs[category][group][key];
+          // Clean up empty group
+          if (Object.keys(envs[category][group]).length === 0) {
+            delete envs[category][group];
+          }
+          // Clean up empty category (data only, defaults still show via DEFAULT_CATEGORIES)
+          if (Object.keys(envs[category]).length === 0) {
+            delete envs[category];
+          }
+          await secretStore.setItem('agent_environments', JSON.stringify(envs));
+          console.log('[ChatInputPanel] Deleted env: ' + category + '/' + group + '/' + key);
+        }
+      } catch (e) {
+        console.warn('[ChatInputPanel] Failed to delete agent env:', e);
+      }
+      await this._refreshBrowseUI();
+      await this._refreshProviderOptions();
+      // Notify DSL that agent configs have been updated
+      this.bridge.sendCommand('update_agent_configs', {}, () => {});
     }
 
     async _saveAgentEnv() {
@@ -449,6 +502,9 @@
         const raw = await secretStore.getItem('agent_environments');
         if (!raw) {
           console.log('[ChatInputPanel] No agent environments in SecretStore');
+          // Still refresh UI to show default categories
+          await this._refreshBrowseUI();
+          await this._refreshProviderOptions();
           return;
         }
         const envs = JSON.parse(raw);

@@ -52,6 +52,7 @@ namespace CefDotnetApp.AgentCore.Core
                     using var stream = File.OpenRead(tokenizerPath);
                     _tokenizer = SentencePieceTokenizer.Create(stream, addBeginningOfSentence: false, addEndOfSentence: false);
                 } else if (tokExt == ".json") {
+                    // HFTokenizer (Tokenizers.DotNet) with cross-platform native runtime
                     _hfTokenizer = new HFTokenizer(vocabPath: tokenizerPath);
                 } else {
                     _tokenizer = BertTokenizer.Create(tokenizerPath);

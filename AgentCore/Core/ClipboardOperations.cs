@@ -9,7 +9,12 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public string GetText()
         {
-            return ClipboardService.GetText() ?? string.Empty;
+            try {
+                return ClipboardService.GetText() ?? string.Empty;
+            }
+            catch (Exception) {
+                return string.Empty;
+            }
         }
 
         public bool SetText(string text)
@@ -17,14 +22,24 @@ namespace CefDotnetApp.AgentCore.Core
             if (text == null)
                 text = string.Empty;
 
-            ClipboardService.SetText(text);
-            return true;
+            try {
+                ClipboardService.SetText(text);
+                return true;
+            }
+            catch (Exception) {
+                return false;
+            }
         }
 
         public bool Clear()
         {
-            ClipboardService.SetText(string.Empty);
-            return true;
+            try {
+                ClipboardService.SetText(string.Empty);
+                return true;
+            }
+            catch (Exception) {
+                return false;
+            }
         }
 
         public bool HasText()

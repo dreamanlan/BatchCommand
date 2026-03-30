@@ -473,6 +473,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         public static void RegisterApis()
         {
+            // Everything SDK is Windows-only; skip registration on other platforms
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                return;
+
             AgentFrameworkService.Instance.DslEngine!.Register("everything_exists",
                 "everything_exists() - check if Everything service is running",
                 new ExpressionFactoryHelper<EverythingExistsExp>());

@@ -39,7 +39,13 @@
       const openClawPanel = new OpenClawPanel();
       // Async restore config (secrets loaded from SecretStore)
       await openClawPanel._restoreConfig();
+      // Set metadslWorker reference for remote mode
+      openClawPanel.metadslWorker = metadslWorker;
       panel.openClawPanel = openClawPanel;
+      // Register LLM response callback for remote forwarding
+      metadslMonitor.onLLMResponse = (resp) => {
+        openClawPanel.forwardToOpenClaw(resp);
+      };
       // Sync button state when openclaw panel visibility changes
       openClawPanel.onVisibilityChange = () => {
         const on = openClawPanel.visible;

@@ -144,6 +144,21 @@
       });
     }
 
+    _idbGetAllKeys(storeName) {
+      return new Promise((resolve, reject) => {
+        const tx = this._db.transaction(storeName, 'readonly');
+        const req = tx.objectStore(storeName).getAllKeys();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    // Get all user data keys (excluding internal keys like _migrated and master_key)
+    async getAllKeys() {
+      const allKeys = await this._idbGetAllKeys(SecretStore.DATA_STORE);
+      return allKeys.filter(k => k !== '_migrated');
+    }
+
     // ---- Migration from localStorage ----
 
     async _migrateLegacy() {

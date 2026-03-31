@@ -128,22 +128,24 @@
       const r1 = this._makeRow();
       this.cfgProjectDir = this._makeInput('text', 'D:/MyProject', '');
       const browseBtn = this._makeBtn('Browse', '#555', () => this._browseDirectory());
-      // Hidden file input for directory picker
+      // Hidden file input for picking a file to extract its directory path
       this._dirInput = document.createElement('input');
       this._dirInput.type = 'file';
-      this._dirInput.setAttribute('webkitdirectory', '');
       this._dirInput.style.display = 'none';
       this._dirInput.addEventListener('change', (e) => {
-        const files = e.target.files;
-        if (files && files.length > 0) {
-          // Extract directory path from the first file's webkitRelativePath
-          const relativePath = files[0].webkitRelativePath;
-          if (relativePath) {
-            const dirName = relativePath.split('/')[0];
-            this.cfgProjectDir.value = dirName;
+        const filePath = e.target.value;
+        if (filePath) {
+          // Extract directory from file path (handle both \ and /)
+          // e.target.value may be "C:\fakepath\file" in browsers or full path in CEF
+          if (filePath.indexOf('fakepath') < 0) {
+            const sep = filePath.lastIndexOf('\\') >= 0 ? '\\' : '/';
+            const dirPath = filePath.substring(0, filePath.lastIndexOf(sep));
+            if (dirPath) {
+              this.cfgProjectDir.value = dirPath;
+            }
           }
         }
-        // Reset so the same directory can be re-selected
+        // Reset so the same file can be re-selected
         this._dirInput.value = '';
       });
       r1.appendChild(this._makeLabel('ProjectDir:'));

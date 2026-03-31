@@ -479,6 +479,44 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// set_inject_js_code(value) - set the inject JavaScript code text
+    /// </summary>
+    sealed class SetInjectJsCodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_inject_js_code requires (value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            CefDotnetApp.AgentCore.Core.AgentCore.Instance.InjectJsCode = operands[0].AsString;
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// get_inject_js_code() - get the inject JavaScript code text
+    /// </summary>
+    sealed class GetInjectJsCodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.AgentCore.Instance.InjectJsCode);
+        }
+    }
+
+    /// <summary>
+    /// get_inject_js_code_size() - get the length of inject JavaScript code
+    /// </summary>
+    sealed class GetInjectJsCodeSizeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(CefDotnetApp.AgentCore.Core.AgentCore.Instance.InjectJsCode.Length);
+        }
+    }
+
+    /// <summary>
     /// Registers all agent state DSL APIs
     /// </summary>
     public static class AgentStateApi
@@ -596,6 +634,19 @@ namespace AgentCore.ScriptApi
                 "get_max_worker_concurrency() - get max concurrent MetaDSL worker tasks",
                 false,
                 new ExpressionFactoryHelper<GetMaxWorkerConcurrencyExp>());
+
+            AgentFrameworkService.Instance.DslEngine!.Register("set_inject_js_code",
+                "set_inject_js_code(value) - set the inject JavaScript code text",
+                false,
+                new ExpressionFactoryHelper<SetInjectJsCodeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_inject_js_code",
+                "get_inject_js_code() - get the inject JavaScript code text",
+                false,
+                new ExpressionFactoryHelper<GetInjectJsCodeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_inject_js_code_size",
+                "get_inject_js_code_size() - get the length of inject JavaScript code",
+                false,
+                new ExpressionFactoryHelper<GetInjectJsCodeSizeExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("set_agent_environment",
                 "set_agent_environment(category, group, key, value) - set agent environment value (three-level dict)",

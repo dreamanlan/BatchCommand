@@ -124,10 +124,10 @@
       closeBtn.onclick = () => this.hide();
       row0.appendChild(closeBtn);
 
-      // Row 1: single-line text input
-      this.textInput = document.createElement('input');
-      this.textInput.type = 'text';
-      this.textInput.placeholder = 'Enter message...';
+      // Row 1: multi-line text input (3 lines height)
+      this.textInput = document.createElement('textarea');
+      this.textInput.placeholder = 'Enter message... (Shift+Enter for newline)';
+      this.textInput.rows = 3;
       this.textInput.style.cssText = `
         width: 100%;
         background: #1e1e1e;
@@ -139,9 +139,11 @@
         font-size: 12px;
         outline: none;
         box-sizing: border-box;
+        resize: vertical;
+        line-height: 1.4;
       `;
       this.textInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); this.sendChat(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendChat(); }
       });
 
       // Row 2: topic + tag + provider_id + send + config
@@ -172,6 +174,22 @@
       `;
       sendBtn.onclick = () => this.sendChat();
 
+      const clearBtn = document.createElement('button');
+      clearBtn.textContent = 'Clear';
+      clearBtn.style.cssText = `
+        padding: 5px 10px;
+        background: #ff9800;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      `;
+      clearBtn.onmouseenter = () => { clearBtn.style.background = '#ffa726'; };
+      clearBtn.onmouseleave = () => { clearBtn.style.background = '#ff9800'; };
+      clearBtn.onclick = () => { this.chatLog.value = ''; };
+
       const configBtn = document.createElement('button');
       configBtn.textContent = 'Config';
       configBtn.style.cssText = `
@@ -190,6 +208,7 @@
       row2.appendChild(this.tagInput);
       row2.appendChild(this.providerIdSelect);
       row2.appendChild(sendBtn);
+      row2.appendChild(clearBtn);
       row2.appendChild(configBtn);
 
       // Config area (hidden by default)

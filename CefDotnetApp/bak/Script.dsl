@@ -22,6 +22,8 @@ script(on_init)
 {
     nativelog("[dsl] on_init finish");
     fileecho(true);
+	//no-sandbox = false
+	return(false);
 };
 script(on_finalize)
 {

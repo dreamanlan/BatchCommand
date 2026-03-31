@@ -52,6 +52,9 @@
       this.stateHistory = [];
       this.maxSendRetries = CONFIG.maxSendRetries;
       this.sendRetryDelay = CONFIG.sendRetryDelay;
+
+      // Callback for LLM response forwarding (set by main.js)
+      this.onLLMResponse = null;
     }
 
     injectStyles() {
@@ -1126,12 +1129,15 @@
         this.error('Error in executeCommand:', error);
       }
     }
-    sendResultToLLM(message) {
+    sendResultToLLM(message, noAgentMarker = false) {
       if (!this.pageAdapter) {
         this.warn('PageAdapter not available');
         return;
       }
-      let messageStr = CONFIG.get('metadsl.agentReplyMarker') + "\n";
+      let messageStr = '';
+      if (!noAgentMarker) {
+        messageStr = CONFIG.get('metadsl.agentReplyMarker') + "\n";
+      }
       if (message === null || message === undefined) {
         messageStr += 'null';
       } else if (typeof message === 'object') {
@@ -1144,7 +1150,7 @@
         messageStr += '\n\n特别注意：当前有' + this.operationQueue.length + '个操作在排队执行，你看到消息后只回复继续即可，不要再发新的metadsl代码块';
       }
 
-      this.info('Sending result to LLM', getStringInLength(messageStr, 100));
+      this.info('Sending result to LLM (noAgentMarker=' + noAgentMarker + ')', getStringInLength(messageStr, 100));
       // Send message through page adapter
       try {
         this.pageAdapter.sendMessage(messageStr);

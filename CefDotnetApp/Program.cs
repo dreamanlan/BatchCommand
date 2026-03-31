@@ -1726,7 +1726,7 @@ namespace DotNetLib
             return 0;
         }
 
-        public delegate void OnInitDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string cmd_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int process_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string app_dir, bool is_mac);
+        public delegate bool OnInitDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string cmd_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int process_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string app_dir, bool is_mac);
         public delegate void OnFinalizeDelegation();
         public delegate void OnBrowserInitDelegation(IntPtr browser);
         public delegate void OnBrowserFinalizeDelegation(IntPtr browser);
@@ -1771,7 +1771,7 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
 
-        internal static void OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
+        internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
             AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
@@ -1820,11 +1820,13 @@ namespace DotNetLib
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
+                    return r.GetBool();
                 }
             }
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            return false;  // default: no_sandbox=false (sandbox enabled)
         }
         internal static void OnFinalize()
         {

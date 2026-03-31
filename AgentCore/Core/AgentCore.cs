@@ -99,6 +99,7 @@ namespace CefDotnetApp.AgentCore.Core
         public string ToDo { get; set; } = string.Empty;
         public string Context { get; set; } = string.Empty;
         public string History { get; set; } = string.Empty;
+        public string InjectJsCode { get; set; } = string.Empty;
 
         public int MaxLinesDeletedByWriteFile { get; set; } = 20;
         public int MaxResultSize { get; set; } = 0;

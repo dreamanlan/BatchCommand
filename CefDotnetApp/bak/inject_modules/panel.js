@@ -174,6 +174,43 @@
       this.stateBar.appendChild(this.stateLabel);
       this.stateBar.appendChild(this.stateInfo);
       this.stateBar.appendChild(logFilterContainer);
+
+      // Export config button
+      const exportBtn = document.createElement('button');
+      exportBtn.textContent = 'Export';
+      exportBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00796b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+      exportBtn.onclick = () => this._exportData();
+      this.stateBar.appendChild(exportBtn);
+
+      // Import config button + hidden file input
+      const importBtn = document.createElement('button');
+      importBtn.textContent = 'Import';
+      importBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00796b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+      const importFile = document.createElement('input');
+      importFile.type = 'file';
+      importFile.accept = '.enc';
+      importFile.style.display = 'none';
+      importBtn.onclick = () => importFile.click();
+      importFile.addEventListener('change', (e) => this._importData(e));
+      this.stateBar.appendChild(importBtn);
+      this.stateBar.appendChild(importFile);
+
       this.panel.appendChild(this.stateBar);
 
       // Create button bar
@@ -1072,5 +1109,109 @@
         this.log('  Stack: ' + e.stack);
       }
     }
+
+    // ---- Data Export / Import (AES-GCM encrypted) ----
+
+    async _deriveKey(password, salt) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+      );
+      return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async _exportData() {
+      const password = prompt('Enter password for encryption:');
+      if (!password) return;
+      try {
+        // Collect localStorage data
+        const lsKeys = ['inject_config', 'chat_panel_state', 'project_panel_configs'];
+        const lsData = {};
+        lsKeys.forEach(k => {
+          const v = localStorage.getItem(k);
+          if (v !== null) lsData[k] = v;
+        });
+        // Collect SecretStore data
+        await secretStore.ready();
+        const ssKeys = await secretStore.getAllKeys();
+        const ssData = {};
+        for (const k of ssKeys) {
+          const v = await secretStore.getItem(k);
+          if (v !== null) ssData[k] = v;
+        }
+        const payload = JSON.stringify({ localStorage: lsData, secretStore: ssData });
+        const enc = new TextEncoder();
+        const plaintext = enc.encode(payload);
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await this._deriveKey(password, salt);
+        const ciphertext = await crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv: iv }, key, plaintext
+        );
+        // Pack: salt(16) + iv(12) + ciphertext
+        const buf = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+        buf.set(salt, 0);
+        buf.set(iv, salt.length);
+        buf.set(new Uint8Array(ciphertext), salt.length + iv.length);
+        const blob = new Blob([buf], { type: 'application/octet-stream' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'inject_config_backup.enc';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        this.log('Export completed successfully.');
+      } catch (e) {
+        this.log('Export failed: ' + e.message);
+        alert('Export failed: ' + e.message);
+      }
+    }
+
+    async _importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      event.target.value = '';
+      const password = prompt('Enter password for decryption:');
+      if (!password) return;
+      try {
+        const arrayBuf = await file.arrayBuffer();
+        const buf = new Uint8Array(arrayBuf);
+        const salt = buf.slice(0, 16);
+        const iv = buf.slice(16, 28);
+        const ciphertext = buf.slice(28);
+        const key = await this._deriveKey(password, salt);
+        const plainBuf = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: iv }, key, ciphertext
+        );
+        const dec = new TextDecoder();
+        const data = JSON.parse(dec.decode(plainBuf));
+        // Restore localStorage
+        if (data.localStorage) {
+          Object.keys(data.localStorage).forEach(k => {
+            localStorage.setItem(k, data.localStorage[k]);
+          });
+        }
+        // Restore SecretStore
+        if (data.secretStore) {
+          await secretStore.ready();
+          for (const k of Object.keys(data.secretStore)) {
+            await secretStore.setItem(k, data.secretStore[k]);
+          }
+        }
+        this.log('Import completed successfully. Page will reload.');
+        alert('Config imported successfully. Page will reload.');
+        location.reload();
+      } catch (e) {
+        this.log('Import failed: ' + e.message);
+        alert('Import failed: wrong password or corrupted file.');
+      }
+    }
   }
+
+
 

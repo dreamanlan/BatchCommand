@@ -144,8 +144,8 @@
     // Handle messages from worker
     handleWorkerMessage(data) {
       if (data.type === 'message') {
-        // Queue message from worker
-        this.fromWorkerQueue.push(data.data);
+      // Queue message from worker (WebSocket messages default to noAgentMarker=false)
+        this.fromWorkerQueue.push({ message: data.data, noAgentMarker: false });
         this.logger.info('Message from worker queued (length: ' + data.data.length + '): ' + data.data.substring(0, 100) + '...');
       } else if (data.type === 'connected') {
         this.isConnected = true;
@@ -180,24 +180,30 @@
       return true;
     }
 
-    queueReply(message) {
+    queueReply(message, noAgentMarker = false) {
       if (!this.isRunning) {
         this.logger.warn('Cannot queue reply: Worker not running');
         return false;
       }
-      this.fromWorkerQueue.push(message);
-      this.logger.info('Reply queued to send (length: ' + message.length + ', queue size: ' + this.fromWorkerQueue.length + ')');
+      this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker });
+      this.logger.info('Reply queued (length: ' + message.length + ', noAgentMarker: ' + noAgentMarker + ', queue size: ' + this.fromWorkerQueue.length + ')');
       return true;
     }
 
-    // Dequeue message received from WebSocket (called by C#)
+    // Dequeue message received from WebSocket
+    // Returns { message: string, noAgentMarker: boolean } or null
     dequeueMessage() {
       if (this.fromWorkerQueue.length > 0) {
-        const msg = this.fromWorkerQueue.shift();
-        this.logger.info('Message dequeued from receive queue (length: ' + msg.length + ', remaining: ' + this.fromWorkerQueue.length + ')');
-        return msg;
+        const item = this.fromWorkerQueue.shift();
+        // Normalize: legacy string entries become { message, noAgentMarker: false }
+        if (typeof item === 'string') {
+          this.logger.info('Message dequeued (legacy string, length: ' + item.length + ', remaining: ' + this.fromWorkerQueue.length + ')');
+          return { message: item, noAgentMarker: false };
+        }
+        this.logger.info('Message dequeued (length: ' + item.message.length + ', noAgentMarker: ' + item.noAgentMarker + ', remaining: ' + this.fromWorkerQueue.length + ')');
+        return item;
       }
-      return '';
+      return null;
     }
     // Get queue counts
     getReceiveQueueCount() {

@@ -18,6 +18,11 @@
       this.cfgApiKey = null;
       this.cfgSession = null;
       this.onVisibilityChange = null;
+      // Remote mode: forward openclaw messages to LLM and LLM responses to openclaw
+      this.remoteEnabled = false;
+      this.echoEnabled = false;
+      // Reference to metadslWorker (set by main.js)
+      this.metadslWorker = null;
       this.createPanel();
       // _restoreConfig is async, called explicitly from main.js after SecretStore is ready
       this._bindWsEvents();
@@ -167,10 +172,32 @@
       this.cfgSession.style.cssText += 'max-width:120px;';
       r4.appendChild(this._makeLabel('Session:'));
       r4.appendChild(this.cfgSession);
-      r4.appendChild(this._makeBtn('Save', '#4caf50', () => this._saveConfig()));
       this.connectBtn = this._makeBtn('Connect', '#2196f3', () => this._toggleConnect());
       r4.appendChild(this.connectBtn);
       r4.appendChild(this._makeBtn('Status', '#555', () => this._testStatus()));
+
+      // Remote checkbox - forward openclaw<->LLM
+      const remoteLabel = document.createElement('label');
+      remoteLabel.style.cssText = 'display:flex;align-items:center;gap:3px;color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;';
+      this.remoteChk = document.createElement('input');
+      this.remoteChk.type = 'checkbox';
+      this.remoteChk.style.cssText = 'margin:0;cursor:pointer;';
+      this.remoteChk.onchange = () => { this.remoteEnabled = this.remoteChk.checked; };
+      remoteLabel.appendChild(this.remoteChk);
+      remoteLabel.appendChild(document.createTextNode('Remote'));
+      r4.appendChild(remoteLabel);
+
+      // Echo checkbox - show forwarded messages in chat log
+      const echoLabel = document.createElement('label');
+      echoLabel.style.cssText = 'display:flex;align-items:center;gap:3px;color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;';
+      this.echoChk = document.createElement('input');
+      this.echoChk.type = 'checkbox';
+      this.echoChk.style.cssText = 'margin:0;cursor:pointer;';
+      this.echoChk.onchange = () => { this.echoEnabled = this.echoChk.checked; };
+      echoLabel.appendChild(this.echoChk);
+      echoLabel.appendChild(document.createTextNode('Echo'));
+      r4.appendChild(echoLabel);
+
       configArea.appendChild(r4);
 
       this.panel.appendChild(configArea);
@@ -195,17 +222,34 @@
 
       // Chat input row
       const chatRow = document.createElement('div');
-      chatRow.style.cssText = 'display:flex;gap:6px;padding:8px 10px;align-items:center;';
-      this.chatInput = document.createElement('input');
-      this.chatInput.type = 'text';
-      this.chatInput.placeholder = 'Type a message to test...';
-      this.chatInput.style.cssText = this._inputStyle();
+      chatRow.style.cssText = 'display:flex;gap:6px;padding:8px 10px;align-items:flex-start;';
+      this.chatInput = document.createElement('textarea');
+      this.chatInput.placeholder = 'Type a message to test... (Shift+Enter for newline)';
+      this.chatInput.rows = 3;
+      this.chatInput.style.cssText = `
+        flex: 1;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 5px 8px;
+        font-size: 12px;
+        outline: none;
+        min-width: 0;
+        resize: vertical;
+        line-height: 1.4;
+        font-family: 'Consolas', 'Monaco', monospace;
+      `;
       this.chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); this._sendChat(); }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._sendChat(); }
       });
       chatRow.appendChild(this.chatInput);
-      chatRow.appendChild(this._makeBtn('Send', '#2196f3', () => this._sendChat()));
-      chatRow.appendChild(this._makeBtn('Clear', '#ff9800', () => { this.chatLog.value = ''; }));
+      const btnCol = document.createElement('div');
+      btnCol.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+      btnCol.appendChild(this._makeBtn('Send', '#2196f3', () => this._sendChat()));
+      btnCol.appendChild(this._makeBtn('Clear', '#ff9800', () => { this.chatLog.value = ''; }));
+      btnCol.appendChild(this._makeBtn('Save', '#4caf50', () => this._saveConfig()));
+      chatRow.appendChild(btnCol);
       this.panel.appendChild(chatRow);
 
       document.body.appendChild(this.panel);
@@ -219,7 +263,9 @@
         httpBase: this.cfgHttpBase.value.trim(),
         wsUrl: this.cfgWsUrl.value.trim(),
         apiKey: this.cfgApiKey.value,
-        session: this.cfgSession.value.trim()
+        session: this.cfgSession.value.trim(),
+        remoteEnabled: this.remoteEnabled,
+        echoEnabled: this.echoEnabled
       };
       // Save sensitive fields (apiKey, session) to SecretStore
       try {
@@ -243,6 +289,9 @@
           this.cfgWsUrl.value = cfg.wsUrl || '';
           this.cfgApiKey.value = cfg.apiKey || '';
           this.cfgSession.value = cfg.session || '';
+          // Restore checkbox states
+          if (cfg.remoteEnabled) { this.remoteEnabled = true; this.remoteChk.checked = true; }
+          if (cfg.echoEnabled) { this.echoEnabled = true; this.echoChk.checked = true; }
           // Push to CONFIG
           if (cfg.httpBase) CONFIG.set('openclaw.httpBase', cfg.httpBase);
           if (cfg.wsUrl) CONFIG.set('openclaw.wsUrl', cfg.wsUrl);
@@ -265,6 +314,13 @@
         const msgText = data.content || data.text;
         if (data.type === 'message' && msgText) {
           this._chatLog('[server] ' + msgText);
+          // Remote mode: forward openclaw message to LLM (no agent marker)
+          if (this.remoteEnabled && this.metadslWorker) {
+            this.metadslWorker.queueReply(msgText, true);
+            if (this.echoEnabled) {
+              this._chatLog('[remote->LLM] ' + msgText);
+            }
+          }
         } else {
           this._chatLog('[server] ' + JSON.stringify(data));
         }
@@ -415,5 +471,19 @@
 
     toggle() {
       if (this.visible) this.hide(); else this.show();
+    }
+
+    // Forward LLM response to OpenClaw via WebSocket
+    forwardToOpenClaw(text) {
+      if (!this.remoteEnabled) return;
+      const ws = window.OpenClaw && window.OpenClaw.ws;
+      if (ws && ws.connected) {
+        ws.sendMessage(text).catch(e => {
+          this._chatLog('[error] Forward to OpenClaw failed: ' + e.message);
+        });
+        if (this.echoEnabled) {
+          this._chatLog('[LLM->remote] ' + text.substring(0, 200) + (text.length > 200 ? '...' : ''));
+        }
+      }
     }
   }

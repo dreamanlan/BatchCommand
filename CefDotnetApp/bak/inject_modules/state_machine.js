@@ -241,6 +241,14 @@
         this.monitor.bridge.sendNotification('save_conversation_history', { conversations: newConvs });
         this.info(`Sent save_conversation_history notification with ${newConvs.length} new conversation(s)`);
       }
+      // Trigger onLLMResponse callback for remote forwarding
+      if (this.monitor.onLLMResponse) {
+        const resp = this.monitor.pageAdapter.getLastScannedResponse();
+        if (resp) {
+          this.info('Triggering onLLMResponse callback');
+          this.monitor.onLLMResponse(resp);
+        }
+      }
     }
 
     async run() {
@@ -322,11 +330,11 @@
 
         // 3. Check MetaDSL Worker receive queue for execution results
         if (this.monitor.metadslWorker && this.monitor.metadslWorker.isRunning) {
-          const message = this.monitor.metadslWorker.dequeueMessage();
-          if (message) {
+          const item = this.monitor.metadslWorker.dequeueMessage();
+          if (item) {
             this.info('Received MetaDSL execution result from C#');
-            // Send result directly to LLM (message is the execution result)
-            this.monitor.sendResultToLLM(message);
+            // Send result directly to LLM, respecting noAgentMarker flag
+            this.monitor.sendResultToLLM(item.message, item.noAgentMarker);
             continue; // Continue processing more results
           }
         }

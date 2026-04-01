@@ -640,6 +640,54 @@
     }
 
     // ========================================================================
+    // DOM Pruning - Remove old conversation messages to prevent page slowdown
+    // ========================================================================
+
+    pruneOldMessages() {
+      const maxRounds = CONFIG.get('panel.maxConversationRounds');
+      if (!maxRounds || maxRounds <= 0) return;
+
+      const allWrappers = Array.from(document.querySelectorAll('.vac-message-wrapper'));
+      if (allWrappers.length === 0) return;
+
+      // Count conversation rounds from the end (a round = user message + LLM reply)
+      // Walk backwards to find the cut-off point
+      let roundCount = 0;
+      let cutoffIndex = 0; // wrappers before this index will be removed
+
+      for (let i = allWrappers.length - 1; i >= 0; i--) {
+        const box = allWrappers[i].querySelector('.vac-message-box');
+        if (!box) continue;
+        const isUser = box.classList.contains('vac-offset-current');
+
+        if (isUser) {
+          roundCount++;
+          if (roundCount > maxRounds) {
+            cutoffIndex = i + 1; // keep from i+1 onwards (this user msg is the (maxRounds+1)th round)
+            break;
+          }
+        }
+      }
+
+      // If we didn't exceed maxRounds, nothing to prune
+      if (roundCount <= maxRounds) return;
+
+      // Also include any leading LLM messages before the cutoff user message
+      // (orphan LLM replies without a preceding user message in the kept range)
+      // cutoffIndex already points to the first wrapper to keep, so remove 0..cutoffIndex-1
+      if (cutoffIndex <= 0) return;
+
+      const toRemove = allWrappers.slice(0, cutoffIndex);
+      this.info(`Pruning ${toRemove.length} old message wrappers (keeping last ${maxRounds} rounds)`);
+
+      for (const wrapper of toRemove) {
+        wrapper.remove();
+      }
+
+      this.info(`DOM pruning complete, removed ${toRemove.length} wrappers`);
+    }
+
+    // ========================================================================
     // Operation Queue Management
     // ========================================================================
 
@@ -750,6 +798,9 @@
       } else {
         this.info('Not in AGENT_EXECUTING state, operations queued for later');
       }
+
+      // Prune old conversation DOM nodes to prevent page slowdown
+      this.pruneOldMessages();
     }
 
     scanForNewCodeBlocks() {

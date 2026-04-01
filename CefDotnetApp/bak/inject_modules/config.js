@@ -18,7 +18,8 @@
           collapseAgentReply: true,
           hideMetaDslBlock: true,
           streamingPage: true,
-          jsHotReload: false
+          jsHotReload: false,
+          maxConversationRounds: 12
         },
 
         // Timing settings
@@ -81,6 +82,7 @@
         'panel.hideMetaDslBlock',
         'panel.streamingPage',
         'panel.jsHotReload',
+        'panel.maxConversationRounds',
         'openclaw.httpBase',
         'openclaw.wsUrl'
       ];

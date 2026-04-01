@@ -478,9 +478,7 @@
       if (!this.remoteEnabled) return;
       const ws = window.OpenClaw && window.OpenClaw.ws;
       if (ws && ws.connected) {
-        ws.sendMessage(text).catch(e => {
-          this._chatLog('[error] Forward to OpenClaw failed: ' + e.message);
-        });
+        ws.pushMessage(text);
         if (this.echoEnabled) {
           this._chatLog('[LLM->remote] ' + text.substring(0, 200) + (text.length > 200 ? '...' : ''));
         }

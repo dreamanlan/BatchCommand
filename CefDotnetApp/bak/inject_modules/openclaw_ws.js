@@ -121,6 +121,16 @@
       });
     }
 
+    // Push a message without waiting for response (fire-and-forget)
+    pushMessage(text, opts) {
+      opts = opts || {};
+      return this._send({
+        type: 'message',
+        content: text,
+        session: opts.session || this._getSession()
+      });
+    }
+
     // Call a tool via WebSocket
     callTool(tool, params, opts) {
       opts = opts || {};

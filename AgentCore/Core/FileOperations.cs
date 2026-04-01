@@ -70,6 +70,23 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
+        public bool WriteFileNoBom(string path, string content, bool createDirectory = true)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+
+            if (createDirectory) {
+                string? directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
+            }
+
+            if (!string.IsNullOrEmpty(content)) {
+                File.WriteAllText(fullPath, content, new UTF8Encoding(false));
+                return true;
+            }
+            return false;
+        }
+
         public bool WriteFileBytes(string path, byte[] content, bool createDirectory = true)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);

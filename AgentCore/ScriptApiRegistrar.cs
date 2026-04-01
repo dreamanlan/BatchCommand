@@ -21,6 +21,13 @@ namespace CefDotnetApp.AgentCore
             // File Operations
             AgentFrameworkService.Instance.DslEngine!.Register("read_file", "read_file(path)", new ExpressionFactoryHelper<ReadFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("write_file", "write_file(path, content)", new ExpressionFactoryHelper<WriteFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("write_file_no_bom", "write_file_no_bom(path, content) - write UTF-8 file without BOM header", new ExpressionFactoryHelper<WriteFileNoBomExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("read_file_bytes", "read_file_bytes(path) - read file as byte array", new ExpressionFactoryHelper<ReadFileBytesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("write_file_bytes", "write_file_bytes(path, bytes) - write byte array to file", new ExpressionFactoryHelper<WriteFileBytesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_to_bytes", "hex_to_bytes(hexString) - convert hex string to byte array", new ExpressionFactoryHelper<HexToBytesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_bytes", "hex_string_to_bytes(hexString) - convert hex string to byte array", new ExpressionFactoryHelper<HexToBytesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bytes_to_hex", "bytes_to_hex(bytes[, bytesPerLine]) - convert byte array to hex string, default 32 bytes per line", new ExpressionFactoryHelper<BytesToHexExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("bytes_to_hex_string", "bytes_to_hex_string(bytes[, bytesPerLine]) - convert byte array to hex string, default 32 bytes per line", new ExpressionFactoryHelper<BytesToHexExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_file", "append_file(path, content)", new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_file", "copy_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<CopyFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("move_file", "move_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<MoveFileExp>());

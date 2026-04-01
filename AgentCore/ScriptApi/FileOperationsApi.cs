@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using AgentPlugin.Abstractions;
 using System.Collections;
 using System.Collections.Generic;
@@ -64,6 +65,159 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"writefile error: {ex.Message}");
                 return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // write_file_no_bom(path, content) - write file content without BOM
+    sealed class WriteFileNoBomExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file_no_bom(path, content)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string content = operands[1].AsString;
+                if (string.IsNullOrEmpty(content)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty content to a file !!!");
+                    return BoxedValue.From(false);
+                }
+                string ext = Path.GetExtension(path).ToLower();
+                if (File.Exists(path) && ext != ".txt" && ext != ".md") {
+                    var lineCount = File.ReadAllLines(path).Length;
+                    var newLineCount = content.Split('\n').Length;
+                    if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file_no_bom' !!! To delete certain lines, use the 'delete_lines' function.");
+                        return BoxedValue.From(false);
+                    }
+                }
+                bool result = Core.AgentCore.Instance.FileOps.WriteFileNoBom(path, content);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"write_file_no_bom error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // read_file_bytes(path) - read file as byte array
+    sealed class ReadFileBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_file_bytes(path)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string path = operands[0].AsString;
+                byte[] content = Core.AgentCore.Instance.FileOps.ReadFileBytes(path);
+                return BoxedValue.FromObject(content);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"read_file_bytes error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // write_file_bytes(path, bytes) - write byte array to file
+    sealed class WriteFileBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file_bytes(path, bytes)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                var obj = operands[1].GetObject();
+                if (obj is not byte[] bytes) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("write_file_bytes: second argument must be a byte array");
+                    return BoxedValue.From(false);
+                }
+                bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, bytes);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"write_file_bytes error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // hex_to_bytes(hexString) - convert hex string to byte array
+    sealed class HexToBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: hex_to_bytes(hexString), aliased as hex_string_to_bytes");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string hex = operands[0].AsString;
+                // Remove all whitespace (spaces, newlines, tabs)
+                hex = hex.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace("\t", "");
+                if (hex.Length % 2 != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("hex_to_bytes: hex string length must be even");
+                    return BoxedValue.NullObject;
+                }
+                byte[] bytes = new byte[hex.Length / 2];
+                for (int i = 0; i < bytes.Length; i++) {
+                    bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+                }
+                return BoxedValue.FromObject(bytes);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"hex_to_bytes error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // bytes_to_hex(bytes[, bytesPerLine]) - convert byte array to formatted hex string
+    sealed class BytesToHexExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: bytes_to_hex(bytes[, bytesPerLine]), aliased as bytes_to_hex_string");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var obj = operands[0].GetObject();
+                if (obj is not byte[] bytes) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("bytes_to_hex: first argument must be a byte array");
+                    return BoxedValue.NullObject;
+                }
+                int bytesPerLine = operands.Count > 1 ? operands[1].GetInt() : 32;
+                if (bytesPerLine <= 0) bytesPerLine = 32;
+                var sb = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++) {
+                    if (i > 0 && i % bytesPerLine == 0) {
+                        sb.AppendLine();
+                    }
+                    if (i % bytesPerLine != 0) {
+                        sb.Append(' ');
+                    }
+                    sb.Append(bytes[i].ToString("X2"));
+                }
+                return BoxedValue.FromString(sb.ToString());
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"bytes_to_hex error: {ex.Message}");
+                return BoxedValue.NullObject;
             }
         }
     }

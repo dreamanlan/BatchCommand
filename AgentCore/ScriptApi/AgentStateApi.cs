@@ -14,7 +14,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_project_dir requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -41,7 +41,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_project_identity requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -68,7 +68,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_system_prompt requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -95,7 +95,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_project_prompt requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -122,7 +122,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_plan requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -149,7 +149,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_emphasize requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -176,7 +176,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_todo requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -203,7 +203,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_context requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -230,7 +230,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_history requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -257,7 +257,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_max_lines_deleted_by_write_file requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -284,7 +284,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1) {
+            if (operands.Count != 1) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_max_result_size requires (value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
@@ -405,7 +405,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 4) {
+            if (operands.Count != 4) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_agent_environment requires (category, group, key, value)");
                 return BoxedValue.FromBool(false);
             }
@@ -447,7 +447,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2) {
+            if (operands.Count != 2) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("apply_agent_environment requires (category, group)");
                 return BoxedValue.FromBool(false);
             }
@@ -467,7 +467,7 @@ namespace AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2) {
+            if (operands.Count != 2) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("clear_agent_environment requires (category, group)");
                 return BoxedValue.FromBool(false);
             }
@@ -513,6 +513,33 @@ namespace AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             return BoxedValue.From(CefDotnetApp.AgentCore.Core.AgentCore.Instance.InjectJsCode.Length);
+        }
+    }
+
+    /// <summary>
+    /// set_soul(value) - set the soul text
+    /// </summary>
+    sealed class SetSoulExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_soul requires (value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            CefDotnetApp.AgentCore.Core.AgentCore.Instance.Soul = operands[0].AsString;
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// get_soul() - get the soul text
+    /// </summary>
+    sealed class GetSoulExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.AgentCore.Instance.Soul);
         }
     }
 
@@ -660,6 +687,14 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("clear_agent_environment",
                 "clear_agent_environment(category, group) - clear process-level env vars set by apply_agent_environment",
                 new ExpressionFactoryHelper<ClearAgentEnvironmentExp>());
+
+            AgentFrameworkService.Instance.DslEngine!.Register("set_soul",
+                "set_soul(value) - set the soul text",
+                false,
+                new ExpressionFactoryHelper<SetSoulExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_soul",
+                "get_soul() - get the soul text",
+                new ExpressionFactoryHelper<GetSoulExp>());
         }
     }
 }

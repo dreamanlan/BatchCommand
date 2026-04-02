@@ -728,18 +728,21 @@ script(handle_agent_notification)params($jsonData)
 		$emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
 		$projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
 		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
+		$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
 
 		$basePrompt = read_file($basePromptFile);
 		$toplevelRules = read_file($toplevelRulesFile);
 		$projectPrompt = read_file($projectPromptFile);
 		$emphasize = read_file($emphasizeFile);
 		$plan = read_file($planFile);
+		$soul = read_file($soulFile);
 
 		nativelog("[dsl] Base prompt length: {0}", $basePrompt.Length);
 		nativelog("[dsl] Toplevel rules length: {0}", $toplevelRules.Length);
 		nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
 		nativelog("[dsl] Emphasize length: {0}", $emphasize.Length);
 		nativelog("[dsl] Plan length: {0}", $plan.Length);
+		nativelog("[dsl] Soul length: {0}", $soul.Length);
 
 		if ($pageType == "local-agent") {
 			$prompt = $projectPrompt + "\n\n" + $emphasize;
@@ -750,6 +753,7 @@ script(handle_agent_notification)params($jsonData)
 		set_project_prompt($projectPrompt);
 		set_emphasize($emphasize);
 		set_plan($plan);
+		set_soul($soul);
 		set_context(read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
 		set_todo(read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
 		set_history(read_file(combine_path(@ProjectDirectory, "docs/history.txt")));
@@ -867,6 +871,9 @@ script(handle_agent_notification)params($jsonData)
 		$pageType = get_message_param($data, "pageType");
 		$count = get_message_param($data, "count");
 		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
+		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
+
+		set_soul(read_file($soulPath));
 
 		nativelog("[dsl] agent_need_to_plan notification: {0}({1}) queued:{2} page:{3} count:{4} {5}", $lastFromLLM, gettypename($lastFromLLM), $queuedCount, $pageType, $count, getstringinlength($lastScannedMessage,100));
 

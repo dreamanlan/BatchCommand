@@ -106,6 +106,8 @@ public struct HostApi
     public IntPtr RequestGetResourceType;
     public IntPtr RequestGetTransitionType;
     public IntPtr RequestGetIdentifier;
+    // Heartbeat control
+    public IntPtr SetHeartbeatInterval;
 }
 
 // delegate for native api
@@ -252,6 +254,9 @@ public delegate int HostRequestGetResourceTypeDelegation(IntPtr request);
 public delegate int HostRequestGetTransitionTypeDelegation(IntPtr request);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate ulong HostRequestGetIdentifierDelegation(IntPtr request);
+// Heartbeat control
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
 
 namespace DotNetLib
 {
@@ -412,6 +417,19 @@ namespace DotNetLib
                 maxFuncCount = operands[3].GetInt();
             }
             Lib.HandleThreadQueue(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
+            return BoxedValue.NullObject;
+        }
+    }
+    sealed class SetHeartbeatIntervalExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: set_heartbeat_interval(interval_ms)");
+                return BoxedValue.NullObject;
+            }
+            int intervalMs = operands[0].GetInt();
+            Lib.SetHeartbeatInterval(intervalMs);
             return BoxedValue.NullObject;
         }
     }
@@ -606,6 +624,8 @@ namespace DotNetLib
             m_RequestGetResourceTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetResourceTypeDelegation>(hostApi.RequestGetResourceType);
             m_RequestGetTransitionTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetTransitionTypeDelegation>(hostApi.RequestGetTransitionType);
             m_RequestGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetIdentifierDelegation>(hostApi.RequestGetIdentifier);
+            // Heartbeat control
+            m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
         }
 
         public void NativeLog(string msg)
@@ -1345,6 +1365,10 @@ namespace DotNetLib
             if (request == IntPtr.Zero || m_RequestGetIdentifierApi == null) return 0;
             return m_RequestGetIdentifierApi(request);
         }
+        public void SetHeartbeatInterval(int intervalMs)
+        {
+            m_SetHeartbeatIntervalApi?.Invoke(intervalMs);
+        }
 
         public void EnqueueCefMessage(string msgName, string[] args)
         {
@@ -1509,6 +1533,7 @@ namespace DotNetLib
         private HostRequestGetResourceTypeDelegation? m_RequestGetResourceTypeApi;
         private HostRequestGetTransitionTypeDelegation? m_RequestGetTransitionTypeApi;
         private HostRequestGetIdentifierDelegation? m_RequestGetIdentifierApi;
+        private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -1770,6 +1795,10 @@ namespace DotNetLib
         public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnHeartBeatDelegation(int process_type, IntPtr browser, IntPtr frame, float delta_time);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
@@ -2430,6 +2459,79 @@ namespace DotNetLib
             return false;
         }
 
+        internal static void OnHeartBeat(int process_type, IntPtr browser, IntPtr frame, float delta_time)
+        {
+            NativeApi.SetLastContext(browser, frame);
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(process_type));
+                    vargs.Add(BoxedValue.From(delta_time));
+                    BatchCommand.BatchScript.Call("on_heart_beat", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnHeartBeat:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static bool OnCallMetaDSL(string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
+        {
+            string[] argArray = new string[argCount];
+            for (int i = 0; i < argCount; i++) {
+                IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
+                argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
+            }
+
+            string result = OnCallMetaDSL(func_name, new List<string>(argArray), browser, frame);
+            if (string.IsNullOrEmpty(result)) {
+                resultSize = 0;
+                return false;
+            }
+
+            byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(result);
+            if (resultSize < resultBytes.Length + 1) {
+                resultSize = resultBytes.Length + 1;
+                return false;
+            }
+
+            Marshal.Copy(resultBytes, 0, resultStr, resultBytes.Length);
+            Marshal.WriteByte(resultStr, resultBytes.Length, 0);
+            resultSize = resultBytes.Length;
+            return true;
+        }
+
+        internal static string OnCallMetaDSL(string func_name, List<string> args, IntPtr browser, IntPtr frame)
+        {
+            lock (s_Lock) {
+                NativeApi.SetLastContext(browser, frame);
+
+                try {
+                    if (null != s_NativeApi) {
+                        TryLoadDSL();
+
+                        var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                        foreach (var arg in args) {
+                            vargs.Add(BoxedValue.FromString(arg));
+                        }
+                        var r = BatchCommand.BatchScript.Call(func_name, vargs);
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                        if (!r.IsNullObject) {
+                            return r.ToString();
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    NativeLogNoLock("[csharp] Exception in OnCallMetaDSL:" + e.Message + "\n" + e.StackTrace);
+                }
+            }
+            return string.Empty;
+        }
+
         internal static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
         {
             string[] argArray = new string[argCount];
@@ -2643,6 +2745,10 @@ namespace DotNetLib
             if (isMainThread && null != s_NativeApi) {
                 s_NativeApi.HandleAllQueues(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
             }
+        }
+        internal static void SetHeartbeatInterval(int intervalMs)
+        {
+            s_NativeApi?.SetHeartbeatInterval(intervalMs);
         }
         internal static void NativeLogNoLock(string msg)
         {
@@ -2903,7 +3009,10 @@ namespace DotNetLib
             // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
 
             // Only valid in MainThread
-            BatchCommand.BatchScript.Register("handlethreadqueue", "handlethreadqueue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", new ExpressionFactoryHelper<HandleThreadQueueExp>());
+            BatchCommand.BatchScript.Register("handlethreadqueue", "handlethreadqueue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
+            BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
+            BatchCommand.BatchScript.Register("setheartbeatinterval", "setheartbeatinterval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartbeatIntervalExp>());
+            BatchCommand.BatchScript.Register("set_heartbeat_interval", "set_heartbeat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartbeatIntervalExp>());
         }
         private static void PrepareBatchScript()
         {

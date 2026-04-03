@@ -47,6 +47,10 @@ script(on_renderer_finalize)
 {
     nativelog("[dsl] on_renderer_finalize finish");
 };
+script(on_heart_beat)params($processType,$deltaTime)
+{
+	handle_thread_queue();
+};
 
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
@@ -391,7 +395,7 @@ script(handle_agent_command)params($jsonData)
 		handle_ping_command($id, $params);
 	}
 	elif ($command == "handle_thread_queue") {
-		handlethreadqueue();
+		handle_thread_queue();
 	}
 	elif ($command == "llm_chat") {
 		handle_llm_chat_command($id, $params);
@@ -585,7 +589,7 @@ script(induction_plan)params()
 		"【以下是最近对话历史】：\n{3}", $planHistory, $todoHistory, $contextHistory, $conversationHistory);
 
 	$prompt = format("{0}\n\n以PM身份重述一下项目概况、开发计划与待办事项" +
-		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在2000字以内）", $prompt);
+		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在1000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);
@@ -619,9 +623,8 @@ script(induction_context)params($count,$queuedCount,$pageType)
 		"【以下是最近的待办事项】：\n{1}\n" +
 		"【以下是最近上下文信息】：\n{2}\n" +
 		"【以下是最近对话历史】：\n{3}{4}{5}{6}{7}", $planHistory, $todoHistory, $contextHistory, $marquisHistory, $chiliarchHistory, $centurionHistory, $decurionHistory, $conversationHistory);
-	$prompt = format("{0}\n\n以上内容结合系统介绍、开发计划与开发进度，以PM身份总结一下清晰详尽的关键内容" +
-		"，基于事实，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成），" +
-		"除总结外，增加一个近期会话章节，总结最近的会话内容（重新整理，去掉json格式与重复信息，控制在3000字以内）", $prompt);
+	$prompt = format("{0}\n\n根据以上内容，以PM身份总结一下清晰明确的项目状态，" +
+		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在2000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);

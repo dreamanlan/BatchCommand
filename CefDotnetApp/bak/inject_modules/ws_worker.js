@@ -1,8 +1,8 @@
-  // ============================================================================
-  // WebSocket Worker Code - Externalized for better maintainability
-  // This code runs in a Web Worker context
-  // ============================================================================
-  const WEBSOCKET_WORKER_CODE = `
+// ============================================================================
+// WebSocket Worker Code - Externalized for better maintainability
+// This code runs in a Web Worker context
+// ============================================================================
+const WEBSOCKET_WORKER_CODE = `
     // Worker internal state
     let ws = null;
     let isConnected = false;

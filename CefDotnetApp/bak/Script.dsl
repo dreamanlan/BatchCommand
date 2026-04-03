@@ -158,7 +158,7 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 {
 	nativelog("[dsl] on_renderer_load_end:{0} {1} {2}", $url, $httpStatusCode, $isMainFrame);
-	if ($isMainFrame == "True" || $isMainFrame == true) {
+	if (string_contains_any($url, "https://evaluation.woa.com/chat", "http://localhost:8080/agent.html") && ($isMainFrame == "True" || $isMainFrame == true)) {
 		$base = combine_path(basepath, "managed/inject_modules/");
 		$sb = new_string_builder();
 		append_line($sb, "(function() {");

@@ -28,10 +28,6 @@ namespace CefDotnetApp.AgentCore.Core
             sb.AppendLine(Content);
             sb.Append(' ');
             sb.Append(Metadata);
-            sb.Append(' ');
-            sb.Append('[');
-            sb.Append(Id);
-            sb.Append("]");
             return sb.ToString();
         }
     }
@@ -848,9 +844,9 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                 if (!first) sb.Append(',');
                 first = false;
                 if (includeScore)
-                    sb.Append($"{{\"id\":{EscapeJson(item.Id)},\"content\":{EscapeJson(item.Content)},\"metadata\":{EscapeJson(item.Metadata)},\"score\":{item.Score:F4}}}");
+                    sb.Append($"{{\"content\":{EscapeJson(item.Content)},\"metadata\":{EscapeJson(item.Metadata)},\"score\":{item.Score:F4}}}");
                 else
-                    sb.Append($"{{\"id\":{EscapeJson(item.Id)},\"content\":{EscapeJson(item.Content)},\"metadata\":{EscapeJson(item.Metadata)}}}");
+                    sb.Append($"{{\"content\":{EscapeJson(item.Content)},\"metadata\":{EscapeJson(item.Metadata)}}}");
             }
             sb.Append(']');
             return sb.ToString();

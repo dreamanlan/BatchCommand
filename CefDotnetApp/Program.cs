@@ -1006,7 +1006,7 @@ namespace DotNetLib
         // IDslEngine explicit interface implementation (delegates to static methods)
         string IDslEngine.LoadDslFunc(string func, string code, IList<string> paramNames, bool update) => LoadDslFunc(func, code, paramNames, update);
         string IDslEngine.CallDslFunc(string func, List<string> args) => CallDslFunc(func, args);
-        string IDslEngine.ExecuteMetaDslScript(string script) => CefDotnetAppApi.ExecuteMetaDslScript(script);
+        string IDslEngine.ExecuteMetaDslScript(string script, out bool hasError) => CefDotnetAppApi.ExecuteMetaDslScript(script, out hasError);
         void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
         void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
 
@@ -3212,9 +3212,10 @@ namespace DotNetLib
     internal static class CefDotnetAppApi
     {
         // Execute MetaDSL script
-        internal static string ExecuteMetaDslScript(string script)
+        internal static string ExecuteMetaDslScript(string script, out bool hasError)
         {
             try {
+                hasError = false;
                 PrepareBatchScript();
                 // Execute the script directly using the DSL interpreter
                 Lib.RefreshGlobalVars();
@@ -3240,16 +3241,19 @@ namespace DotNetLib
                     sb.Append(resultStr);
                 }
                 if (NativeApi.HasApiErrorInfo) {
+                    hasError = true;
                     sb.AppendLine();
                     sb.Append(NativeApi.GetApiErrorInfo());
                 }
                 if (BatchCommand.BatchScript.HasDslErrors) {
+                    hasError = true;
                     sb.AppendLine();
                     sb.Append(BatchCommand.BatchScript.GetDslErrors());
                 }
                 return sb.ToString();
             }
             catch (Exception ex) {
+                hasError = true;
                 Lib.NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
                 return $"Error: {ex.Message}";
             }

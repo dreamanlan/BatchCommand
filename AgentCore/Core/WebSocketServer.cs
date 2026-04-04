@@ -394,7 +394,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             try {
                 AgentCore.Instance.Logger.Debug($"Executing MetaDSL: {message}");
-                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message);
+                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message, out var hasError);
                 AgentCore.Instance.Logger.Debug($"MetaDSL execution completed, result length: {(result?.Length ?? 0)}");
                 var sb = new StringBuilder();
                 sb.AppendLine("MetaDSL {:");
@@ -402,7 +402,13 @@ namespace CefDotnetApp.AgentCore.Core
                 sb.AppendLine(":};");
                 sb.AppendLine("Result {:");
                 sb.AppendLine(result);
-                sb.AppendLine(":};");
+                if (hasError) {
+                    sb.AppendLine(":}");
+                    sb.AppendLine("HasError;");
+                }
+                else {
+                    sb.AppendLine(":};");
+                }
 
                 var record = sb.ToString();
                 var embedding = Core.AgentCore.Instance.EmbeddingService;
@@ -423,13 +429,13 @@ namespace CefDotnetApp.AgentCore.Core
                         sb.AppendLine();
                         sb.AppendLine(AgentCore.Instance.ToDo);
                     }
-                    if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
-                        sb.AppendLine();
-                        sb.AppendLine(AgentCore.Instance.History);
-                    }
                     if (!string.IsNullOrEmpty(AgentCore.Instance.Context)) {
                         sb.AppendLine();
                         sb.AppendLine(AgentCore.Instance.Context);
+                    }
+                    if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
+                        sb.AppendLine();
+                        sb.AppendLine(AgentCore.Instance.History);
                     }
                     if (!string.IsNullOrEmpty(AgentCore.Instance.Emphasize)) {
                         sb.AppendLine();

@@ -12,6 +12,6 @@ namespace AgentPlugin.Abstractions
         void Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory);
         string LoadDslFunc(string func, string code, IList<string> paramNames, bool update);
         string CallDslFunc(string func, List<string> args);
-        string ExecuteMetaDslScript(string script);
+        string ExecuteMetaDslScript(string script, out bool hasError);
     }
 }

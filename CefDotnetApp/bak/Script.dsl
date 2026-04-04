@@ -3,6 +3,7 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
+	@TargetBrowserId = 0;
 	@EnableLlmPM = true;
 	//@LlmProviderId = "ollama_local";
 	@LlmProviderId = "auto_metadsl";
@@ -49,7 +50,22 @@ script(on_renderer_finalize)
 };
 script(on_heart_beat)params($processType,$deltaTime)
 {
-	handle_thread_queue();
+	// Renderer process: ensure context points to the correct browser/frame
+	if ($processType == 1) {
+		if (isnull(@TargetBrowserId) || @TargetBrowserId <= 0) {
+			@TargetBrowserId = find_browser_id_by_url_key("evaluation.woa.com/chat");
+			if (@TargetBrowserId <= 0) {
+				@TargetBrowserId = find_browser_id_by_url_key("localhost:8080");
+			};
+		};
+		if (@TargetBrowserId > 0) {
+			if (!set_context_by_id(@TargetBrowserId)) {
+				// Browser no longer valid, reset cache to re-search next heartbeat
+				@TargetBrowserId = 0;
+			};
+		};
+		handle_thread_queue();
+	};
 };
 
 script(on_before_command_line_processing)params($processType, $cmdLine)

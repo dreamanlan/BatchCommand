@@ -56,10 +56,9 @@ public struct HostApi
     public IntPtr CommandLinePrependWrapper;
     public IntPtr CommandLineGetGlobal;
     // Browser traversal
-    public IntPtr GetAllBrowserIds;
     public IntPtr GetBrowserById;
-    public IntPtr NotifyBrowserCreated;
-    public IntPtr NotifyBrowserDestroyed;
+    public IntPtr BrowserIsValid;
+    public IntPtr GetRendererBrowserFrameById;
     // Browser properties
     public IntPtr BrowserGetId;
     public IntPtr BrowserGetUrl;
@@ -162,13 +161,13 @@ public delegate void HostCommandLinePrependWrapperDelegation(IntPtr command_line
 public delegate IntPtr HostCommandLineGetGlobalDelegation();
 // Browser traversal
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostGetAllBrowserIdsDelegation();
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostGetBrowserByIdDelegation(int browser_id);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void HostNotifyBrowserCreatedDelegation(IntPtr browser);
+[return: MarshalAs(UnmanagedType.U1)]
+public delegate bool HostBrowserIsValidDelegation(IntPtr browser);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void HostNotifyBrowserDestroyedDelegation(IntPtr browser);
+[return: MarshalAs(UnmanagedType.U1)]
+public delegate bool HostGetRendererBrowserFrameByIdDelegation(int browser_id, out IntPtr browser, out IntPtr frame);
 // Browser properties
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int HostBrowserGetIdDelegation(IntPtr browser);
@@ -420,7 +419,7 @@ namespace DotNetLib
             return BoxedValue.NullObject;
         }
     }
-    sealed class SetHeartbeatIntervalExp : SimpleExpressionBase
+    sealed class SetHeartBeatIntervalExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
@@ -431,6 +430,44 @@ namespace DotNetLib
             int intervalMs = operands[0].GetInt();
             Lib.SetHeartbeatInterval(intervalMs);
             return BoxedValue.NullObject;
+        }
+    }
+    sealed class GetBrowserIdsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var ids = Lib.GetAllContextBrowserIds();
+            var list = new List<BoxedValue>(ids.Length);
+            foreach (var id in ids) {
+                list.Add(BoxedValue.From(id));
+            }
+            return BoxedValue.FromObject(list);
+        }
+    }
+    sealed class SetContextByIdExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: set_context_by_id(browser_id)");
+                return BoxedValue.FromBool(false);
+            }
+            int browserId = operands[0].GetInt();
+            bool ok = Lib.SetContextById(browserId);
+            return BoxedValue.FromBool(ok);
+        }
+    }
+    sealed class FindBrowserIdByUrlKeyExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: find_browser_id_by_url_key(url_key)");
+                return BoxedValue.From(-1);
+            }
+            string urlKey = operands[0].AsString;
+            int id = Lib.FindBrowserIdByUrlKey(urlKey);
+            return BoxedValue.From(id);
         }
     }
     sealed class HelpExp : SimpleExpressionBase
@@ -580,10 +617,9 @@ namespace DotNetLib
             m_CommandLineAppendArgumentApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineAppendArgumentDelegation>(hostApi.CommandLineAppendArgument);
             m_CommandLinePrependWrapperApi = Marshal.GetDelegateForFunctionPointer<HostCommandLinePrependWrapperDelegation>(hostApi.CommandLinePrependWrapper);
             m_CommandLineGetGlobalApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetGlobalDelegation>(hostApi.CommandLineGetGlobal);
-            m_GetAllBrowserIdsApi = Marshal.GetDelegateForFunctionPointer<HostGetAllBrowserIdsDelegation>(hostApi.GetAllBrowserIds);
             m_GetBrowserByIdApi = Marshal.GetDelegateForFunctionPointer<HostGetBrowserByIdDelegation>(hostApi.GetBrowserById);
-            m_NotifyBrowserCreatedApi = Marshal.GetDelegateForFunctionPointer<HostNotifyBrowserCreatedDelegation>(hostApi.NotifyBrowserCreated);
-            m_NotifyBrowserDestroyedApi = Marshal.GetDelegateForFunctionPointer<HostNotifyBrowserDestroyedDelegation>(hostApi.NotifyBrowserDestroyed);
+            m_BrowserIsValidApi = Marshal.GetDelegateForFunctionPointer<HostBrowserIsValidDelegation>(hostApi.BrowserIsValid);
+            m_GetRendererBrowserFrameByIdApi = Marshal.GetDelegateForFunctionPointer<HostGetRendererBrowserFrameByIdDelegation>(hostApi.GetRendererBrowserFrameById);
             m_BrowserGetIdApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetIdDelegation>(hostApi.BrowserGetId);
             m_BrowserGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetUrlDelegation>(hostApi.BrowserGetUrl);
             m_BrowserIsLoadingApi = Marshal.GetDelegateForFunctionPointer<HostBrowserIsLoadingDelegation>(hostApi.BrowserIsLoading);
@@ -974,20 +1010,14 @@ namespace DotNetLib
         void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
         void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
 
-        internal static void SetLastContext(IntPtr browser, IntPtr frame)
-        {
-            s_LastBrowser = browser;
-            s_LastFrame = frame;
-        }
-
         internal static nint Browser
         {
-            get => IntPtr.Zero != s_LastBrowser ? s_LastBrowser : s_Browser;
+            get => s_Browser;
             set => s_Browser = value;
         }
         internal static nint Frame
         {
-            get => IntPtr.Zero != s_LastFrame ? s_LastFrame : s_Frame;
+            get => s_Frame;
             set => s_Frame = value;
         }
         internal static int LastSourceProcessId { get => s_LastSourceProcessId; set => s_LastSourceProcessId = value; }
@@ -1125,32 +1155,26 @@ namespace DotNetLib
         }
 
         // --- Browser traversal ---
-        public int[] GetAllBrowserIds()
-        {
-            if (m_GetAllBrowserIdsApi == null) return Array.Empty<int>();
-            string raw = ReadAndFreeNativeString(m_GetAllBrowserIdsApi());
-            if (string.IsNullOrEmpty(raw)) return Array.Empty<int>();
-            var parts = raw.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            var result = new List<int>(parts.Length);
-            foreach (var p in parts) {
-                if (int.TryParse(p.Trim(), out int id)) result.Add(id);
-            }
-            return result.ToArray();
-        }
         public IntPtr GetBrowserById(int browserId)
         {
             if (m_GetBrowserByIdApi == null) return IntPtr.Zero;
             return m_GetBrowserByIdApi(browserId);
         }
-        public void NotifyBrowserCreated(IntPtr browser)
+        public bool BrowserIsValid(IntPtr browser)
         {
-            if (browser == IntPtr.Zero || m_NotifyBrowserCreatedApi == null) return;
-            m_NotifyBrowserCreatedApi(browser);
+            if (browser == IntPtr.Zero || m_BrowserIsValidApi == null) return false;
+            return m_BrowserIsValidApi(browser);
         }
-        public void NotifyBrowserDestroyed(IntPtr browser)
+        /// <summary>
+        /// Get renderer process browser/frame pair by browser ID from C++ ref map.
+        /// Returns (browser, frame) tuple. Both are IntPtr.Zero if not found.
+        /// </summary>
+        public (IntPtr browser, IntPtr frame) GetRendererBrowserFrameById(int browserId)
         {
-            if (browser == IntPtr.Zero || m_NotifyBrowserDestroyedApi == null) return;
-            m_NotifyBrowserDestroyedApi(browser);
+            if (m_GetRendererBrowserFrameByIdApi == null) return (IntPtr.Zero, IntPtr.Zero);
+            bool ok = m_GetRendererBrowserFrameByIdApi(browserId, out IntPtr browser, out IntPtr frame);
+            if (!ok) return (IntPtr.Zero, IntPtr.Zero);
+            return (browser, frame);
         }
 
         // --- Browser properties ---
@@ -1381,6 +1405,10 @@ namespace DotNetLib
             if (!isMainThread) {
                 return;
             }
+            if (s_Browser == IntPtr.Zero || s_Frame == IntPtr.Zero) {
+                Lib.NativeLogNoLock($"[csharp] Error HandleAllQueues, browser:{s_Browser} frame:{s_Frame}");
+                return;
+            }
 
             // Process native log queue
             int nativeCountdown = maxNativeCount;
@@ -1483,10 +1511,9 @@ namespace DotNetLib
         private HostCommandLinePrependWrapperDelegation? m_CommandLinePrependWrapperApi;
         private HostCommandLineGetGlobalDelegation? m_CommandLineGetGlobalApi;
         // Browser traversal
-        private HostGetAllBrowserIdsDelegation? m_GetAllBrowserIdsApi;
         private HostGetBrowserByIdDelegation? m_GetBrowserByIdApi;
-        private HostNotifyBrowserCreatedDelegation? m_NotifyBrowserCreatedApi;
-        private HostNotifyBrowserDestroyedDelegation? m_NotifyBrowserDestroyedApi;
+        private HostBrowserIsValidDelegation? m_BrowserIsValidApi;
+        private HostGetRendererBrowserFrameByIdDelegation? m_GetRendererBrowserFrameByIdApi;
         // Browser properties
         private HostBrowserGetIdDelegation? m_BrowserGetIdApi;
         private HostBrowserGetUrlDelegation? m_BrowserGetUrlApi;
@@ -1540,10 +1567,6 @@ namespace DotNetLib
         [ThreadStatic]
         private static IntPtr s_Frame = IntPtr.Zero;
         [ThreadStatic]
-        private static IntPtr s_LastBrowser = IntPtr.Zero;
-        [ThreadStatic]
-        private static IntPtr s_LastFrame = IntPtr.Zero;
-        [ThreadStatic]
         private static int s_LastSourceProcessId = -1;
         [ThreadStatic]
         private static StringBuilder? s_ApiErrorInfo = null;
@@ -1575,7 +1598,7 @@ namespace DotNetLib
         }
 
         public IntPtr NativePtr => m_Browser;
-        public bool IsValid => m_Browser != IntPtr.Zero;
+        public bool IsValid => m_Browser != IntPtr.Zero && m_Api.BrowserIsValid(m_Browser);
 
         public int Id => m_Api.BrowserGetId(m_Browser);
         public string Url => m_Api.BrowserGetUrl(m_Browser);
@@ -1632,7 +1655,7 @@ namespace DotNetLib
         }
 
         public IntPtr NativePtr => m_Frame;
-        public bool IsValid => m_Api.FrameIsValid(m_Frame);
+        public bool IsValid => m_Frame != IntPtr.Zero && m_Api.FrameIsValid(m_Frame);
         public bool IsMain => m_Api.FrameIsMain(m_Frame);
         public bool IsFocused => m_Api.FrameIsFocused(m_Frame);
         public string Url => m_Api.FrameGetUrl(m_Frame);
@@ -1796,7 +1819,7 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnHeartBeatDelegation(int process_type, IntPtr browser, IntPtr frame, float delta_time);
+        public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
 
@@ -1834,7 +1857,7 @@ namespace DotNetLib
                         }
                     }
 
-                    if(TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
                         s_DslScriptFile = switchValue;
                         s_DslScriptFileChanged = true;
                         NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_DslScriptFile));
@@ -1880,7 +1903,6 @@ namespace DotNetLib
             AgentFrameworkService.Instance.ShutdownPlugin();
 
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.LastSourceProcessId = -1;
         }
 
@@ -1890,7 +1912,15 @@ namespace DotNetLib
             AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, IntPtr.Zero);
             NativeLogNoLock("[csharp] Browser Init");
-            s_NativeApi?.NotifyBrowserCreated(browser);
+
+            // Track browser id in C# side
+            if (s_NativeApi != null) {
+                int browserId = s_NativeApi.BrowserGetId(browser);
+                if (browserId > 0) {
+                    s_BrowserBrowserIds.Add(browserId);
+                    NativeLogNoLock($"[csharp] Browser tracked: id={browserId}");
+                }
+            }
 
             try {
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_init"));
@@ -1930,9 +1960,15 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
 
-            s_NativeApi?.NotifyBrowserDestroyed(browser);
+            // Untrack browser id in C# side
+            if (s_NativeApi != null) {
+                int browserId = s_NativeApi.BrowserGetId(browser);
+                if (browserId > 0) {
+                    s_BrowserBrowserIds.Remove(browserId);
+                    NativeLogNoLock($"[csharp] Browser untracked: id={browserId}");
+                }
+            }
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.LastSourceProcessId = -1;
         }
 
@@ -2011,6 +2047,15 @@ namespace DotNetLib
             NativeApi.SetContext(browser, frame);
             s_StartupUrl = url;
 
+            // Track main frame browser/frame pair for renderer process
+            if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
+                int browserId = s_NativeApi.BrowserGetId(browser);
+                if (browserId > 0) {
+                    s_RendererBrowserFrames[browserId] = (browser, frame);
+                    NativeLogNoLock($"[csharp] Renderer browser tracked: id={browserId}");
+                }
+            }
+
             NativeLogNoLock($"[csharp] Renderer Init, url={url}");
 
             try {
@@ -2035,6 +2080,16 @@ namespace DotNetLib
             NativeApi.SetContext(browser, frame);
             NativeLogNoLock("[csharp] Renderer Finalize");
 
+            // Untrack main frame browser/frame pair for renderer process
+            // Only remove if the frame pointer matches (avoid removing a newer frame after navigation)
+            if (s_NativeApi != null) {
+                int browserId = s_NativeApi.BrowserGetId(browser);
+                if (browserId > 0 && s_RendererBrowserFrames.TryGetValue(browserId, out var existing) && existing.frame == frame) {
+                    s_RendererBrowserFrames.Remove(browserId);
+                    NativeLogNoLock($"[csharp] Renderer browser untracked: id={browserId}");
+                }
+            }
+
             try {
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_renderer_finalize"));
 
@@ -2052,13 +2107,12 @@ namespace DotNetLib
             }
 
             NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.SetLastContext(IntPtr.Zero, IntPtr.Zero);
             NativeApi.LastSourceProcessId = -1;
         }
 
         internal static void OnLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
 
             try {
@@ -2080,7 +2134,7 @@ namespace DotNetLib
 
         internal static bool OnLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             s_LoadedUrl = url;
             NativeLogNoLock($"[csharp] OnLoadEnd: url={url}, http_status_code={http_status_code}, inject_all_frame={inject_all_frame}, is_main={is_main}");
 
@@ -2137,7 +2191,7 @@ namespace DotNetLib
 
         internal static void OnLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
 
             try {
@@ -2160,7 +2214,7 @@ namespace DotNetLib
 
         internal static void OnLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
 
             try {
@@ -2182,7 +2236,7 @@ namespace DotNetLib
 
         internal static void OnRendererLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRendererLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
 
             try {
@@ -2204,7 +2258,7 @@ namespace DotNetLib
 
         internal static bool OnRendererLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool is_main, IntPtr js_code, ref int code_size)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRendererLoadEnd: url={url}, http_status_code={http_status_code}, is_main={is_main}");
 
             try {
@@ -2259,7 +2313,7 @@ namespace DotNetLib
 
         internal static void OnRendererLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRendererLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
 
             try {
@@ -2282,7 +2336,7 @@ namespace DotNetLib
 
         internal static void OnRendererLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRendererLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
 
             try {
@@ -2304,7 +2358,7 @@ namespace DotNetLib
 
         internal static void OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRenderProcessTerminated: startup_url={startup_url}, url={url}, status={status}, error_code={error_code}, error_string={error_string}");
 
             try {
@@ -2393,7 +2447,7 @@ namespace DotNetLib
 
         internal static bool OnBeforeBrowse(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
 
             try {
                 if (null != s_NativeApi) {
@@ -2428,7 +2482,7 @@ namespace DotNetLib
 
         internal static bool OnBeforeResourceLoad(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value)
         {
-            NativeApi.SetLastContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
 
             try {
                 if (null != s_NativeApi) {
@@ -2459,10 +2513,8 @@ namespace DotNetLib
             return false;
         }
 
-        internal static void OnHeartBeat(int process_type, IntPtr browser, IntPtr frame, float delta_time)
+        internal static void OnHeartBeat(int process_type, float delta_time)
         {
-            NativeApi.SetLastContext(browser, frame);
-
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -2508,7 +2560,7 @@ namespace DotNetLib
         internal static string OnCallMetaDSL(string func_name, List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
-                NativeApi.SetLastContext(browser, frame);
+                NativeApi.SetContext(browser, frame);
 
                 try {
                     if (null != s_NativeApi) {
@@ -2581,7 +2633,7 @@ namespace DotNetLib
         internal static string OnExecuteMetaDSL(List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
-                NativeApi.SetLastContext(browser, frame);
+                NativeApi.SetContext(browser, frame);
 
                 try {
                     if (args.Count == 1) {
@@ -2607,7 +2659,7 @@ namespace DotNetLib
         internal static void OnReceiveCefMessage(string msg, List<string> args, IntPtr browser, IntPtr frame, int source_process_id)
         {
             lock (s_Lock) {
-                NativeApi.SetLastContext(browser, frame);
+                NativeApi.SetContext(browser, frame);
                 NativeApi.LastSourceProcessId = source_process_id;
 
                 try {
@@ -2638,7 +2690,7 @@ namespace DotNetLib
         internal static void OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
-                NativeApi.SetLastContext(browser, frame);
+                NativeApi.SetContext(browser, frame);
 
                 try {
                     NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1} process type:{2}", msg, GetStringInLength(args), s_ProcessType));
@@ -2749,6 +2801,112 @@ namespace DotNetLib
         internal static void SetHeartbeatInterval(int intervalMs)
         {
             s_NativeApi?.SetHeartbeatInterval(intervalMs);
+        }
+        /// <summary>
+        /// Get all tracked browser IDs for the current process.
+        /// Browser process: returns IDs from the C#-maintained browser id set.
+        /// Renderer process: returns IDs from the tracked renderer browser/frame dictionary.
+        /// </summary>
+        internal static int[] GetAllContextBrowserIds()
+        {
+            if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                return s_RendererBrowserFrames.Keys.ToArray();
+            }
+            return s_BrowserBrowserIds.ToArray();
+        }
+        /// <summary>
+        /// Set the current context (Browser/Frame) by browser ID.
+        /// Browser process: uses native GetBrowserById + BrowserGetMainFrame.
+        /// Renderer process: uses native GetRendererBrowserFrameById.
+        /// Returns true if the context was set successfully.
+        /// </summary>
+        internal static bool SetContextById(int browserId)
+        {
+            if (s_NativeApi == null) return false;
+            if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
+                if (pair.browser == IntPtr.Zero) {
+                    // Sync: remove stale entry from C# dictionary
+                    s_RendererBrowserFrames.Remove(browserId);
+                    return false;
+                }
+                NativeApi.SetContext(pair.browser, pair.frame);
+                return true;
+            }
+            // Browser process
+            IntPtr browser = s_NativeApi.GetBrowserById(browserId);
+            if (browser == IntPtr.Zero) {
+                // Sync: remove stale entry from C# id set
+                s_BrowserBrowserIds.Remove(browserId);
+                return false;
+            }
+            IntPtr frame = s_NativeApi.BrowserGetMainFrame(browser);
+            NativeApi.SetContext(browser, frame);
+            return true;
+        }
+        /// <summary>
+        /// Get browser pointer by browser ID. Works for both processes.
+        /// Browser process: uses native GetBrowserById (CefBrowserHost::GetBrowserByIdentifier).
+        /// Renderer process: uses native GetRendererBrowserFrameById from C++ ref map.
+        /// Returns IntPtr.Zero if not found (and removes stale entry from C# tracking).
+        /// </summary>
+        internal static IntPtr GetBrowserById(int browserId)
+        {
+            if (s_NativeApi == null) return IntPtr.Zero;
+            if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
+                if (pair.browser == IntPtr.Zero) {
+                    // Sync: remove stale entry from C# dictionary
+                    s_RendererBrowserFrames.Remove(browserId);
+                }
+                return pair.browser;
+            }
+            // Browser process
+            IntPtr browser = s_NativeApi.GetBrowserById(browserId);
+            if (browser == IntPtr.Zero) {
+                // Sync: remove stale entry from C# id set
+                s_BrowserBrowserIds.Remove(browserId);
+            }
+            return browser;
+        }
+        /// <summary>
+        /// Find a browser ID whose URL contains the given key substring.
+        /// Returns the first matching browser ID, or -1 if not found.
+        /// Works for both browser and renderer processes.
+        /// </summary>
+        internal static int FindBrowserIdByUrlKey(string urlKey)
+        {
+            if (s_NativeApi == null || string.IsNullOrEmpty(urlKey)) return -1;
+            var ids = GetAllContextBrowserIds();
+            foreach (var id in ids) {
+                string url = string.Empty;
+                if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                    // In renderer process, use GetRendererBrowserFrameById to get valid pointers
+                    var pair = s_NativeApi.GetRendererBrowserFrameById(id);
+                    if (pair.browser == IntPtr.Zero) {
+                        // Sync: remove stale entry from C# dictionary
+                        s_RendererBrowserFrames.Remove(id);
+                        continue;
+                    }
+                    if (pair.frame != IntPtr.Zero && s_NativeApi.FrameIsValid(pair.frame)) {
+                        url = s_NativeApi.FrameGetUrl(pair.frame);
+                    }
+                }
+                else {
+                    IntPtr browser = s_NativeApi.GetBrowserById(id);
+                    if (browser != IntPtr.Zero) {
+                        url = s_NativeApi.BrowserGetUrl(browser);
+                    }
+                    else {
+                        // Sync: remove stale entry from C# id set
+                        s_BrowserBrowserIds.Remove(id);
+                    }
+                }
+                if (!string.IsNullOrEmpty(url) && url.Contains(urlKey, StringComparison.OrdinalIgnoreCase)) {
+                    return id;
+                }
+            }
+            return -1;
         }
         internal static void NativeLogNoLock(string msg)
         {
@@ -3009,10 +3167,11 @@ namespace DotNetLib
             // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
 
             // Only valid in MainThread
-            BatchCommand.BatchScript.Register("handlethreadqueue", "handlethreadqueue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
-            BatchCommand.BatchScript.Register("setheartbeatinterval", "setheartbeatinterval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartbeatIntervalExp>());
-            BatchCommand.BatchScript.Register("set_heartbeat_interval", "set_heartbeat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartbeatIntervalExp>());
+            BatchCommand.BatchScript.Register("set_heart_beat_interval", "set_heart_beat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
+            BatchCommand.BatchScript.Register("get_browser_ids", "get_browser_ids() - get all browser IDs in current process", false, new ExpressionFactoryHelper<GetBrowserIdsExp>());
+            BatchCommand.BatchScript.Register("set_context_by_id", "set_context_by_id(browser_id) - set current context by browser ID, returns bool", false, new ExpressionFactoryHelper<SetContextByIdExp>());
+            BatchCommand.BatchScript.Register("find_browser_id_by_url_key", "find_browser_id_by_url_key(url_key) - find browser ID by URL substring, returns -1 if not found", false, new ExpressionFactoryHelper<FindBrowserIdByUrlKeyExp>());
         }
         private static void PrepareBatchScript()
         {
@@ -3030,6 +3189,10 @@ namespace DotNetLib
         private static string s_AppDir = string.Empty;
         private static bool s_IsMac = false;
         private static int s_ProcessType = -1;
+        // Renderer process: tracked browser/frame pairs (browserId -> (browser, frame))
+        private static readonly Dictionary<int, (IntPtr browser, IntPtr frame)> s_RendererBrowserFrames = new();
+        // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)
+        private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
         private static string s_LoadedUrl = string.Empty;
         private static string s_DslScriptPath = string.Empty;

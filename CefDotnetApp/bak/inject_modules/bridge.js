@@ -10,21 +10,6 @@ class AgentBridge {
 
     // Initialize CEF native API
     this.initNativeApi();
-
-    // Start queue processing timer (independent of debug panel)
-    this.startQueueProcessingTimer();
-  }
-
-  startQueueProcessingTimer() {
-    // Process queues every second
-    this.queueProcessingTimer = setInterval(() => {
-      try {
-        //this.sendCommand('handle_thread_queue', { });
-      } catch (e) {
-        this.logger.error('Error in queue processing', { error: e.toString() });
-      }
-    }, 1000);
-    this.logger.info('Queue processing timer started');
   }
 
   initNativeApi() {

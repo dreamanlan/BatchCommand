@@ -140,6 +140,31 @@ class AgentPanel {
         align-items: center;
       `;
 
+    // Console output toggle button
+    const consoleBtn = document.createElement('button');
+    consoleBtn.textContent = 'C';
+    consoleBtn.title = 'Toggle console.log output';
+    const consoleBtnColor = '#795548';
+    consoleBtn.style.cssText = `
+        background: ${CONFIG.consoleOutput ? consoleBtnColor : '#555'};
+        border: 1px solid ${consoleBtnColor};
+        color: #fff;
+        cursor: pointer;
+        padding: 3px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+        transition: all 0.2s;
+        opacity: ${CONFIG.consoleOutput ? '1' : '0.4'};
+      `;
+    consoleBtn.onclick = () => {
+      CONFIG.consoleOutput = !CONFIG.consoleOutput;
+      consoleBtn.style.background = CONFIG.consoleOutput ? consoleBtnColor : '#555';
+      consoleBtn.style.opacity = CONFIG.consoleOutput ? '1' : '0.4';
+      this.log(`Console output ${CONFIG.consoleOutput ? 'enabled' : 'disabled'}`);
+    };
+    logFilterContainer.appendChild(consoleBtn);
+
     const logLevels = [
       { key: 'debug', icon: '🔍', color: '#2196f3', title: 'Debug' },
       { key: 'info', icon: '📝', color: '#4caf50', title: 'Info' },

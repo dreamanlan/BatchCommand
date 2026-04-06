@@ -128,9 +128,11 @@ class Logger {
     const truncatedData = this.truncateData(data);
     const fullMessage = truncatedData ? `${prefixStr}${message} ${JSON.stringify(truncatedData)}` : `${prefixStr}${message}`;
 
-    // Log to console (commented out to avoid console.log file growth)
-    // const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
-    // console[consoleMethod](fullMessage);
+    // Log to console (controlled by CONFIG.consoleOutput toggle)
+    if (CONFIG.consoleOutput) {
+      const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
+      console[consoleMethod](fullMessage);
+    }
 
     // Log to panel if available (with size limit)
     if (this.panel) {

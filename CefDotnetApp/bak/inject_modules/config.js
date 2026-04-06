@@ -56,6 +56,7 @@ class ConfigManager {
 
       // Log level settings
       logging: {
+        consoleOutput: false,
         levels: {
           debug: false,
           info: true,
@@ -251,6 +252,8 @@ class ConfigManager {
   get panelMinHeight() { return this.config.panel.minHeight; }
   get panelResizeHandleSize() { return this.config.panel.resizeHandleSize; }
   get logLevels() { return this.config.logging.levels; }
+  get consoleOutput() { return this.config.logging.consoleOutput; }
+  set consoleOutput(val) { this.config.logging.consoleOutput = val; }
   get userInputTimeout() { return this.config.timing.userInputTimeout; }
   get llmContextCountModuloForKeep() { return this.config.metadsl.llmContextCountModuloForKeep; }
   get llmContextCountModuloForAlign() { return this.config.metadsl.llmContextCountModuloForAlign; }

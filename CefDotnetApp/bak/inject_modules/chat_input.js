@@ -372,7 +372,7 @@ class ChatInputPanel {
         });
       }
     } catch (e) {
-      console.warn('[ChatInputPanel] Failed to load provider list from env:', e);
+      logger.warn('[ChatInputPanel] Failed to load provider list from env: ' + e);
     }
     // Restore previous selection if still exists
     const allValues = Array.from(this.providerIdSelect.options).map(o => o.value);
@@ -442,7 +442,7 @@ class ChatInputPanel {
     const group = this.cfgBrowseGroup.value;
     const key = this.cfgBrowseKey.value;
     if (!category || !group || !key) {
-      console.warn('[ChatInputPanel] Delete: need category, group and key selected');
+      logger.warn('[ChatInputPanel] Delete: need category, group and key selected');
       return;
     }
     try {
@@ -459,10 +459,10 @@ class ChatInputPanel {
           delete envs[category];
         }
         await secretStore.setItem('agent_environments', JSON.stringify(envs));
-        console.log('[ChatInputPanel] Deleted env: ' + category + '/' + group + '/' + key);
+        logger.info('[ChatInputPanel] Deleted env: ' + category + '/' + group + '/' + key);
       }
     } catch (e) {
-      console.warn('[ChatInputPanel] Failed to delete agent env:', e);
+      logger.warn('[ChatInputPanel] Failed to delete agent env: ' + e);
     }
     await this._refreshBrowseUI();
     await this._refreshProviderOptions();
@@ -480,11 +480,11 @@ class ChatInputPanel {
     if (!value) {
       await this._refreshBrowseUI();
       await this._refreshProviderOptions();
-      console.log('[ChatInputPanel] No value provided, refreshed UI only');
+      logger.info('[ChatInputPanel] No value provided, refreshed UI only');
       return;
     }
     if (!category || !group || !key) {
-      console.warn('[ChatInputPanel] Agent Env: category, group, key and value are all required');
+      logger.warn('[ChatInputPanel] Agent Env: category, group, key and value are all required');
       return;
     }
     // Save to SecretStore (three-level structure)
@@ -496,14 +496,14 @@ class ChatInputPanel {
       envs[category][group][key] = value;
       await secretStore.setItem('agent_environments', JSON.stringify(envs));
     } catch (e) {
-      console.warn('[ChatInputPanel] Failed to save agent env:', e);
+      logger.warn('[ChatInputPanel] Failed to save agent env: ' + e);
     }
     // Send to backend via bridge
     this.bridge.sendCommand('set_agent_environment', { category, group, key, value }, async (success, data, error) => {
       if (!success) {
-        console.warn('[ChatInputPanel] set_agent_environment failed:', error);
+        logger.warn('[ChatInputPanel] set_agent_environment failed: ' + error);
       } else {
-        console.log('[ChatInputPanel] Agent env saved: ' + category + '/' + group + '/' + key);
+        logger.info('[ChatInputPanel] Agent env saved: ' + category + '/' + group + '/' + key);
         this.cfgEnvValue.value = '';
         // Refresh UI to reflect latest data
         await this._refreshBrowseUI();
@@ -520,7 +520,7 @@ class ChatInputPanel {
     try {
       const raw = await secretStore.getItem('agent_environments');
       if (!raw) {
-        console.log('[ChatInputPanel] No agent environments in SecretStore');
+        logger.info('[ChatInputPanel] No agent environments in SecretStore');
         // Still refresh UI to show default categories
         await this._refreshBrowseUI();
         await this._refreshProviderOptions();
@@ -535,14 +535,14 @@ class ChatInputPanel {
           Object.keys(kvs).forEach(key => {
             this.bridge.sendCommand('set_agent_environment', { category, group, key, value: kvs[key] }, (success, data, error) => {
               if (!success) {
-                console.warn('[ChatInputPanel] set_agent_environment failed for ' + category + '/' + group + '/' + key + ':', error);
+                logger.warn('[ChatInputPanel] set_agent_environment failed for ' + category + '/' + group + '/' + key + ': ' + error);
               }
             });
             total++;
           });
         });
       });
-      console.log('[ChatInputPanel] Loaded ' + total + ' agent env(s) from SecretStore');
+      logger.info('[ChatInputPanel] Loaded ' + total + ' agent env(s) from SecretStore');
       // Refresh UI to reflect latest data
       await this._refreshBrowseUI();
       await this._refreshProviderOptions();
@@ -551,7 +551,7 @@ class ChatInputPanel {
         this.bridge.sendCommand('update_agent_configs', {}, () => { });
       }
     } catch (e) {
-      console.warn('[ChatInputPanel] Failed to load agent environments:', e);
+      logger.warn('[ChatInputPanel] Failed to load agent environments: ' + e);
     }
   }
 
@@ -572,7 +572,7 @@ class ChatInputPanel {
       await this._loadAgentEnv();
       // _loadAgentEnv already sends update_agent_configs after loading
     } catch (e) {
-      console.warn('[ChatInputPanel] Failed to restore config:', e);
+      logger.warn('[ChatInputPanel] Failed to restore config: ' + e);
     }
   }
 
@@ -641,7 +641,7 @@ class ChatInputPanel {
     // Unified: all types go through llm_chat
     this.bridge.sendCommand('llm_chat', { providerId, tag, topic, text }, (success, data, error) => {
       if (!success) {
-        console.warn('[ChatInputPanel] llm_chat failed:', error);
+        logger.warn('[ChatInputPanel] llm_chat failed: ' + error);
         this._chatLog('[error] ' + (error || 'llm_chat failed'));
       }
     });

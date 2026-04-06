@@ -23,7 +23,7 @@ class SecretStore {
       // Migrate legacy localStorage secrets on first run
       await this._migrateLegacy();
     } catch (e) {
-      console.error('[SecretStore] Initialization failed:', e);
+      logger.error('[SecretStore] Initialization failed: ' + e);
       throw e;
     }
   }
@@ -106,7 +106,7 @@ class SecretStore {
     try {
       return await this._decrypt(record);
     } catch (e) {
-      console.warn('[SecretStore] Decrypt failed for key:', key, e);
+      logger.warn('[SecretStore] Decrypt failed for key: ' + key + ' ' + e);
       return null;
     }
   }
@@ -177,7 +177,7 @@ class SecretStore {
         migrated++;
       }
     } catch (e) {
-      console.warn('[SecretStore] Migration of agent_environments failed:', e);
+      logger.warn('[SecretStore] Migration of agent_environments failed: ' + e);
     }
 
     // 2. Migrate openclaw_panel_config (contains apiKey)
@@ -189,7 +189,7 @@ class SecretStore {
         migrated++;
       }
     } catch (e) {
-      console.warn('[SecretStore] Migration of openclaw_panel_config failed:', e);
+      logger.warn('[SecretStore] Migration of openclaw_panel_config failed: ' + e);
     }
 
     // 3. Migrate openclaw secrets from inject_config
@@ -216,13 +216,13 @@ class SecretStore {
         }
       }
     } catch (e) {
-      console.warn('[SecretStore] Migration of inject_config secrets failed:', e);
+      logger.warn('[SecretStore] Migration of inject_config secrets failed: ' + e);
     }
 
     // Mark migration complete
     await this._idbPut(SecretStore.DATA_STORE, { id: '_migrated', iv: [0], data: [1] });
     if (migrated > 0) {
-      console.log('[SecretStore] Migrated', migrated, 'item(s) from localStorage');
+      logger.info('[SecretStore] Migrated ' + migrated + ' item(s) from localStorage');
     }
   }
 }

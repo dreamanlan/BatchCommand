@@ -1822,6 +1822,8 @@ namespace DotNetLib
         public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
@@ -2509,6 +2511,43 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+
+        internal static bool OnConsoleLog(IntPtr browser, int level, string message, string source, int line, ref int maxLogSize)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(level));
+                    vargs.Add(BoxedValue.FromString(message));
+                    vargs.Add(BoxedValue.FromString(source));
+                    vargs.Add(BoxedValue.From(line));
+                    vargs.Add(BoxedValue.From(maxLogSize));
+                    var r = BatchCommand.BatchScript.Call("on_console_log", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    if (!r.IsNullObject) {
+                        var tuple = r.GetTuple2();
+                        if (tuple != null) {
+                            bool handled = tuple.Item1.GetBool();
+                            if (handled) {
+                                return true;
+                            }
+                            int newSize = tuple.Item2.GetInt();
+                            if (newSize > 0) {
+                                maxLogSize = newSize;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnConsoleLog:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }

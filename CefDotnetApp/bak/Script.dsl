@@ -67,6 +67,10 @@ script(on_heart_beat)params($processType,$deltaTime)
 		handle_thread_queue();
 	};
 };
+script(on_console_log)params($level,$message,$source,$line,$maxLogSize)
+{
+	return((false, $maxLogSize));
+};
 
 script(on_before_command_line_processing)params($processType, $cmdLine)
 {
@@ -185,9 +189,9 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, "  let panel = null;");
 		append_line($sb, "  let gameWindow = null;");
 		append_line($sb, read_file(combine_path($base, "config.js")));
+		append_line($sb, read_file(combine_path($base, "logger.js")));
 		append_line($sb, read_file(combine_path($base, "secret_store.js")));
 		append_line($sb, read_file(combine_path($base, "ws_worker.js")));
-		append_line($sb, read_file(combine_path($base, "logger.js")));
 		append_line($sb, read_file(combine_path($base, "bridge.js")));
 		append_line($sb, read_file(combine_path($base, "input_monitor.js")));
 		append_line($sb, read_file(combine_path($base, "state_machine.js")));
@@ -793,9 +797,6 @@ script(handle_agent_notification)params($jsonData)
 	elif ($type == "llm_context_count_down") {
 		nativelog("[dsl] LLM context count down notification received");
 
-		nativelog("[llm] delete {0}/console.log", appdir);
-		delete_file(combine_path(appdir, "console.log"));
-
 		// Read context file
 		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 
@@ -810,9 +811,6 @@ script(handle_agent_notification)params($jsonData)
 	}
 	elif ($type == "llm_align_target") {
 		nativelog("[dsl] LLM align target notification received");
-
-		nativelog("[llm] delete {0}/console.log", appdir);
-		delete_file(combine_path(appdir, "console.log"));
 
 		$data = get_message_param($notif, "data");
 		$pageType = get_message_param($data, "pageType");
@@ -878,9 +876,6 @@ script(handle_agent_notification)params($jsonData)
 	}
 	elif ($type == "agent_need_to_plan") {
 		nativelog("[dsl] agent_need_to_plan notification received");
-
-		nativelog("[llm] delete {0}/console.log", appdir);
-		delete_file(combine_path(appdir, "console.log"));
 
 		$data = get_message_param($notif, "data");
 		$lastFromLLM = get_message_param($data, "lastFromLLM");

@@ -200,7 +200,7 @@ int mylog_printf(const char* fmt, ...) {
     ss << buf;
     Core::g_MainThreadCaller.SyncLogToView(ss.str());
 
-    LOG_INFO(Log, "{}", buf);
+    LOG_DBGSCP(Log, "{}", buf);
     return r;
 }
 #else

@@ -1871,6 +1871,7 @@ namespace DotNetLib
                     }
                     TryLoadDSL();
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -1893,6 +1894,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_finalize");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -1931,6 +1933,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_init");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -1953,6 +1956,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -1984,6 +1988,7 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_copyfiles", url);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         return r.GetBool();
@@ -2008,6 +2013,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_completed", url);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -2030,6 +2036,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_cef_query", query_id, request, persistent);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         return r.GetInt();
@@ -2070,6 +2077,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromString(url));
                     BatchCommand.BatchScript.Call("on_renderer_init", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2099,6 +2107,7 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     BoxedValue r = BatchCommand.BatchScript.Call("on_renderer_finalize");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -2127,6 +2136,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromBool(is_main));
                     BatchCommand.BatchScript.Call("on_load_start", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2151,6 +2161,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromBool(is_main));
                     var r = BatchCommand.BatchScript.Call("on_load_end", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock($"[csharp] on_load_end result type: {r.Type}");
 
@@ -2207,6 +2218,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(can_go_forward));
                     BatchCommand.BatchScript.Call("on_loading_state_change", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2229,6 +2241,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromString(failed_url));
                     BatchCommand.BatchScript.Call("on_load_error", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2251,6 +2264,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromBool(is_main));
                     BatchCommand.BatchScript.Call("on_renderer_load_start", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2273,6 +2287,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromBool(is_main));
                     var r = BatchCommand.BatchScript.Call("on_renderer_load_end", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         NativeLogNoLock($"[csharp] on_renderer_load_end result type: {r.Type}");
 
@@ -2329,6 +2344,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(can_go_forward));
                     BatchCommand.BatchScript.Call("on_renderer_loading_state_change", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2351,6 +2367,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromString(failed_url));
                     BatchCommand.BatchScript.Call("on_renderer_load_error", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2375,6 +2392,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromString(error_string));
                     BatchCommand.BatchScript.Call("on_render_process_terminated", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2396,6 +2414,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(cmdLineProxy));
                     BatchCommand.BatchScript.Call("on_before_command_line_processing", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2417,6 +2436,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(cmdLineProxy));
                     BatchCommand.BatchScript.Call("on_before_child_process_launch", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2438,6 +2458,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.FromString(current_directory ?? ""));
                     var r = BatchCommand.BatchScript.Call("on_already_running_app_relaunch", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     return r.GetBool();
                 }
             }
@@ -2462,6 +2483,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(is_redirect));
                     var r = BatchCommand.BatchScript.Call("on_before_browse", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     // Return value convention: (handled, return_value)
                     // If handled is true, out_return_value is set and we return true
                     if (!r.IsNullObject) {
@@ -2495,6 +2517,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(requestProxy));
                     var r = BatchCommand.BatchScript.Call("on_before_resource_load", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     // Return value convention: (handled, return_value_int)
                     // If handled is true, out_return_value is set and we return true
                     if (!r.IsNullObject) {
@@ -2531,6 +2554,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(maxLogSize));
                     var r = BatchCommand.BatchScript.Call("on_console_log", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         var tuple = r.GetTuple2();
                         if (tuple != null) {
@@ -2563,6 +2587,7 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(delta_time));
                     BatchCommand.BatchScript.Call("on_heart_beat", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                 }
             }
             catch (Exception e) {
@@ -2611,6 +2636,7 @@ namespace DotNetLib
                         }
                         var r = BatchCommand.BatchScript.Call(func_name, vargs);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                        CheckDslError();
                         if (!r.IsNullObject) {
                             return r.ToString();
                         }
@@ -2715,6 +2741,7 @@ namespace DotNetLib
                         }
                         var r = BatchCommand.BatchScript.Call("on_receive_cef_message", vargs);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                        CheckDslError();
                         if (!r.IsNullObject) {
                             NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
@@ -2745,6 +2772,7 @@ namespace DotNetLib
                         }
                         var r = BatchCommand.BatchScript.Call("on_receive_js_message", vargs);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                        CheckDslError();
                         if (!r.IsNullObject) {
                             NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
@@ -3128,6 +3156,7 @@ namespace DotNetLib
                     if (File.Exists(fi.FullName)) {
                         BatchCommand.BatchScript.Load(fi.FullName);
                         BatchCommand.BatchScript.Call("init_global_consts");
+                        CheckDslError();
                         NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
                     }
                     else {
@@ -3220,9 +3249,20 @@ namespace DotNetLib
                 s_BatchScriptInited = true;
             }
         }
+        private static void CheckDslError()
+        {
+            if (BatchCommand.BatchScript.HasDslErrors) {
+                NativeLogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
+            }
+        }
 
         [ThreadStatic]
         private static bool s_BatchScriptInited = false;
+        [ThreadStatic]
+        private static DateTime s_DslScriptTime;
+        [ThreadStatic]
+        private static string? s_DslScriptPath;
+
         private static string s_CmdLine = string.Empty;
         private static string s_BasePath = string.Empty;
         private static string s_AppDir = string.Empty;
@@ -3234,12 +3274,10 @@ namespace DotNetLib
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
         private static string s_LoadedUrl = string.Empty;
-        private static string s_DslScriptPath = string.Empty;
         private static string s_DslScriptFile = "Script.dsl";
         private static bool s_DslScriptFileChanged = false;
         private static string s_InitialProjectIdentity = string.Empty;
         private static bool s_InitialProjectIdentityInited = false;
-        private static DateTime s_DslScriptTime = DateTime.Now;
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
 

@@ -825,6 +825,7 @@ namespace GlslRewriter
                     else {
                         var id = BatchCommand.BatchScript.EvalAsFunc(line, emptyArgs);
                         var r = BatchCommand.BatchScript.Call(id);
+                        CheckDslError();
                         Console.Write("result:");
                         if (r.IsNumber) {
                             if (r.Type == BoxedValue.c_DoubleType) {
@@ -841,6 +842,12 @@ namespace GlslRewriter
                         }
                     }
                 }
+            }
+        }
+        private static void CheckDslError()
+        {
+            if (BatchCommand.BatchScript.HasDslErrors) {
+                Console.WriteLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
             }
         }
         internal static void ResetValueDependsVar(string vname)

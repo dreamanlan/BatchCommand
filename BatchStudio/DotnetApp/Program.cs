@@ -757,6 +757,7 @@ namespace DotNetLib
                     BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                     BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                     BoxedValue r = BatchCommand.BatchScript.Call("init");
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                     }
@@ -784,6 +785,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         var id = BatchCommand.BatchScript.EvalAsFunc(dsl, s_EmptyArgs);
                         var r = BatchCommand.BatchScript.Call(id);
+                        CheckDslError();
                         if (!r.IsNullObject) {
                             LogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
                         }
@@ -809,6 +811,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                         BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadsetting");
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -834,6 +837,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("nativeapi", BoxedValue.FromObject(s_NativeApi));
                         BatchCommand.BatchScript.SetGlobalVariable("basepath", BoxedValue.FromString(s_BasePath));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadschememenu");
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -862,6 +866,7 @@ namespace DotNetLib
                         args.Add(BoxedValue.FromString(path));
                         BoxedValue r = BatchCommand.BatchScript.Call("loadscheme", args);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(args);
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -893,6 +898,7 @@ namespace DotNetLib
                         args.Add(BoxedValue.FromString(cmdArgs));
                         BoxedValue r = BatchCommand.BatchScript.Call("executecommand", args);
                         BatchCommand.BatchScript.RecycleCalculatorValueList(args);
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -920,6 +926,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("runprog");
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -947,6 +954,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("build");
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -974,6 +982,7 @@ namespace DotNetLib
                         BatchCommand.BatchScript.SetGlobalVariable("selInTree", BoxedValue.FromString(selInTree));
                         BatchCommand.BatchScript.SetGlobalVariable("selInList", BoxedValue.FromString(selInList));
                         BoxedValue r = BatchCommand.BatchScript.Call("install");
+                        CheckDslError();
                         if (r.IsInteger) {
                             return r.GetInt();
                         }
@@ -1014,6 +1023,7 @@ namespace DotNetLib
         }
         private static void TryLoadDSL()
         {
+            BatchCommand.BatchScript.ClearDslErrors();
             PrepareBatchScript();
             string? path = s_NativeApi?.GetDslScript();
             if (string.IsNullOrEmpty(path)) {
@@ -1056,11 +1066,21 @@ namespace DotNetLib
                 s_BatchScriptInited = true;
             }
         }
+        private static void CheckDslError()
+        {
+            if (BatchCommand.BatchScript.HasDslErrors) {
+                LogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
+            }
+        }
 
+        [ThreadStatic]
         private static bool s_BatchScriptInited = false;
+        [ThreadStatic]
+        private static string? s_DslScriptPath;
+        [ThreadStatic]
+        private static DateTime s_DslScriptTime;
+
         private static string s_BasePath = string.Empty;
-        private static string s_DslScriptPath = string.Empty;
-        private static DateTime s_DslScriptTime = DateTime.Now;
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
 

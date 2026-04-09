@@ -112,6 +112,7 @@ public static class Program
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     var r = BatchCommand.BatchScript.Call("on_init", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         return r.GetInt();
                     }
@@ -145,6 +146,7 @@ public static class Program
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     var r = BatchCommand.BatchScript.Call("on_tick", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
                     if (!r.IsNullObject) {
                         return r.GetInt();
                     }
@@ -178,6 +180,7 @@ public static class Program
     }
     private static void TryLoadDSL()
     {
+        BatchCommand.BatchScript.ClearDslErrors();
         PrepareBatchScript();
         string path = Path.Combine(s_BasePath, "./managed/Monitor.dsl");
         var fi = new FileInfo(path);
@@ -216,13 +219,24 @@ public static class Program
         }
     }
 
+    private static void CheckDslError()
+    {
+        if (BatchCommand.BatchScript.HasDslErrors) {
+            NativeLogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
+        }
+    }
+
+    [ThreadStatic]
+    private static bool s_BatchScriptInited = false;
+    [ThreadStatic]
+    private static string? s_DslScriptPath;
+    [ThreadStatic]
+    private static DateTime s_DslScriptTime;
+
     private static string s_BasePath = string.Empty;
     private static int s_MainThreadId = 0;
-    private static bool s_BatchScriptInited = false;
     private static string s_CmdLine = string.Empty;
     private static int s_ProcessType = -1;
-    private static string s_DslScriptPath = string.Empty;
-    private static DateTime s_DslScriptTime = DateTime.Now;
     private static object s_Lock = new object();
 
     private static List<string> s_EmptyArgs = new List<string>();

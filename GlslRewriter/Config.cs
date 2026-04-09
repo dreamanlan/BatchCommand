@@ -1166,6 +1166,12 @@ namespace GlslRewriter
             return ret;
         }
 
+        private static void CheckDslError()
+        {
+            if (BatchCommand.BatchScript.HasDslErrors) {
+                Console.WriteLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
+            }
+        }
         private static void ParseCommonConfig(Dsl.FunctionData dslCfg)
         {
             if (s_ShaderConfigs.Count > 0) {
@@ -2432,7 +2438,9 @@ namespace GlslRewriter
                     }
                     string funcId = BatchScript.EvalAsFunc(fd, argNames);
                     info.OnGetValue = (args, resultType, argTypeConversion) => {
-                        return BatchScript.Call(funcId, BoxedValue.FromObject(args), resultType, BoxedValue.FromObject(argTypeConversion));
+                        var r = BatchScript.Call(funcId, BoxedValue.FromObject(args), resultType, BoxedValue.FromObject(argTypeConversion));
+                        CheckDslError();
+                        return r;
                     };
                 }
                 else {
@@ -2769,6 +2777,7 @@ namespace GlslRewriter
             }
             if (!supported) {
                 var r = BatchCommand.BatchScript.EvalAndRun(exp);
+                CheckDslError();
                 return r;
             }
             return BoxedValue.NullObject;

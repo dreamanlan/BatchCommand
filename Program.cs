@@ -110,11 +110,13 @@ namespace BatchCommand
                     }
                     var id = BatchCommand.BatchScript.EvalAsFunc(scpTxt, new List<string>());
                     r = BatchCommand.BatchScript.Call(id);
+                    CheckDslError();
                 }
                 else if (!string.IsNullOrEmpty(scpFile)) {
                     Stopwatch sw = Stopwatch.StartNew();
                     r = BatchScript.Run(scpFile, vargs);
                     sw.Stop();
+                    CheckDslError();
                     long us = sw.ElapsedTicks*1000000 / Stopwatch.Frequency;
                     if (BatchScript.TimeStatisticOn)
                         Console.WriteLine("consume time: {0}us", us);
@@ -162,9 +164,16 @@ namespace BatchCommand
                 else {
                     var id = BatchScript.EvalAsFunc(line, emptyArgs);
                     var r = BatchScript.Call(id);
+                    CheckDslError();
                     Console.Write("result:");
                     Console.WriteLine(r.ToString());
                 }
+            }
+        }
+        private static void CheckDslError()
+        {
+            if (BatchCommand.BatchScript.HasDslErrors) {
+                Console.WriteLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
             }
         }
     }

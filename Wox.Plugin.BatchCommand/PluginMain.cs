@@ -100,6 +100,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
                     //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
                     s_NewResults.Clear();
                     BatchScript.Call("on_query", BoxedValue.FromObject(query));
+                    CheckDslError();
                     FlushLog("Query");
                     //swap
                     var t = s_Results;
@@ -138,6 +139,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
             //Alternatively, we could construct a new list every time, but let's reduce some garbage collection for now.
             s_NewContextMenus.Clear();
             BatchScript.Call("on_context_menus", BoxedValue.FromObject(query), BoxedValue.FromObject(selectedResult));
+            CheckDslError();
             FlushLog("LoadContextMenus");
             //swap
             var t = s_ContextMenus;
@@ -168,6 +170,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         evt.Reset();
         QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, BoxedValue.FromObject(query), BoxedValue.FromObject(result), BoxedValue.FromObject(menu), BoxedValue.FromObject(e));
+            CheckDslError();
             Log("menu action for [{0}|{1}] return {2} from thread {3}", menu.Title, menu.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnMenuAction");
             if (s_NeedReload) {
@@ -212,6 +215,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         evt.Reset();
         QueueScriptAction(evt, funcs, () => {
             var r = BatchScript.Call(action, BoxedValue.FromObject(query), BoxedValue.FromObject(result), BoxedValue.FromObject(e));
+            CheckDslError();
             Log("action for [{0}|{1}] return {2} from thread {3}", result.Title, result.SubTitle, r.IsNullObject ? false : r.GetBool(), Thread.CurrentThread.ManagedThreadId);
             FlushLog("OnAction");
             if (s_NeedReload) {
@@ -274,6 +278,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         vargs.Add(BoxedValue.FromObject(s_Context));
         BatchScript.Run(dslPath, vargs);
         BatchScript.RecycleCalculatorValueList(vargs);
+        CheckDslError();
         Log("Reload Dsl from thread {0}", Thread.CurrentThread.ManagedThreadId);
         FlushLog("ReloadDsl");
     }
@@ -441,6 +446,12 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
         return System.Windows.Application.Current.Dispatcher;
     }
 
+    internal static void CheckDslError()
+    {
+        if (BatchCommand.BatchScript.HasDslErrors) {
+            LogLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
+        }
+    }
     internal static void ShowConsole()
     {
         var handle = GetConsoleWindow();
@@ -1122,6 +1133,7 @@ internal sealed class EvalDslExp : SimpleExpressionBase
                 if (null != id) {
                     Main.ShowConsole();
                     r = BatchScript.Call(id, args);
+                    Main.CheckDslError();
                 }
             }
             BatchScript.RecycleCalculatorValueList(args);

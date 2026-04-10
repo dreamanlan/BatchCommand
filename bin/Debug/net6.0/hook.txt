@@ -1,7 +1,7 @@
 
 @g_dir_chged : int = 0;
 @g_enable_watch_point : int = 0;
-@g_enable_mem_log : int = 1;
+@g_enable_mem_log : int = 0;
 @g_run_startup : int = 0;
 @g_enable_unity_obj_mem_stack_log : int = 0;
 @g_enable_gcalloc_log : int = 0;
@@ -187,6 +187,9 @@ hook(DbgScp_Set)
 		}
 		elif($cmd==3){
 			@g_enable_mem_log = 1;
+		}
+		elif($cmd==4){
+			TriggerFrameCapture();
 		};
 		
 		return 1;

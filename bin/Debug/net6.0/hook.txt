@@ -179,17 +179,24 @@ hook(DbgScp_Set)
 		WriteLog($seg_str);
 		FlushLog();
 		
+		printf("DbgScp_Set check command time:%lld cmd:%d\n",time(),$cmd);
 		if($cmd==1){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
 			@g_enable_unity_obj_mem_stack_log = 1;
 		}
 		elif($cmd==2){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
 			@g_enable_gcalloc_log = 1;
 		}
 		elif($cmd==3){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
 			@g_enable_mem_log = 1;
 		}
 		elif($cmd==4){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
+			assert(0);
 			TriggerFrameCapture();
+			assert(0);
 		};
 		
 		return 1;

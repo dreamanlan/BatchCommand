@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // ProjectPanel - Project configuration panel
 // ============================================================================
 class ProjectPanel {
@@ -12,6 +12,7 @@ class ProjectPanel {
     this.cfgProjectDir = null;
     this.cfgProjectIdentity = null;
     this.projectList = null;
+    this.cfgProjectUrl = null;
     // loaded data: { projects: [ {projectDir, projectIdentity, lastUsed} ], currentIndex: -1 }
     this.data = { projects: [], currentIndex: -1 };
     this.onVisibilityChange = null;
@@ -161,6 +162,13 @@ class ProjectPanel {
     r2.appendChild(this.cfgProjectIdentity);
     configArea.appendChild(r2);
 
+    // ProjectUrl
+    const rUrl = this._makeRow();
+    this.cfgProjectUrl = this._makeInput('text', 'http://localhost:8082', '');
+    rUrl.appendChild(this._makeLabel('ProjectUrl:'));
+    rUrl.appendChild(this.cfgProjectUrl);
+    configArea.appendChild(rUrl);
+
     // Warning banner (shown when no current project is configured)
     this.warningBanner = document.createElement('div');
     this.warningBanner.style.cssText = `
@@ -250,6 +258,7 @@ class ProjectPanel {
       const cur = this.data.projects[this.data.currentIndex];
       this.cfgProjectDir.value = cur.projectDir || '';
       this.cfgProjectIdentity.value = cur.projectIdentity || '';
+      this.cfgProjectUrl.value = cur.projectUrl || '';
     }
     this._renderList();
     this._updateWarning();
@@ -297,6 +306,7 @@ class ProjectPanel {
   _saveCurrentConfig() {
     const projectDir = this.cfgProjectDir.value.trim();
     const projectIdentity = this.cfgProjectIdentity.value.trim();
+    const projectUrl = this.cfgProjectUrl.value.trim();
     if (!projectDir || !projectIdentity) return;
 
     // Check if this project already exists (match by projectIdentity)
@@ -304,13 +314,15 @@ class ProjectPanel {
     if (idx >= 0) {
       // Update existing
       this.data.projects[idx].projectIdentity = projectIdentity;
+      this.data.projects[idx].projectUrl = projectUrl;
       this.data.projects[idx].lastUsed = new Date().toISOString();
     } else {
       // Add new
       this.data.projects.push({
         projectDir: projectDir,
         projectIdentity: projectIdentity,
-        lastUsed: new Date().toISOString()
+        lastUsed: new Date().toISOString(),
+        projectUrl: projectUrl,
       });
       idx = this.data.projects.length - 1;
     }
@@ -327,6 +339,7 @@ class ProjectPanel {
     const proj = this.data.projects[idx];
     this.cfgProjectDir.value = proj.projectDir || '';
     this.cfgProjectIdentity.value = proj.projectIdentity || '';
+    this.cfgProjectUrl.value = proj.projectUrl || '';
     proj.lastUsed = new Date().toISOString();
     this._persistData();
     this._renderList();
@@ -343,11 +356,13 @@ class ProjectPanel {
       this.data.currentIndex = -1;
       this.cfgProjectDir.value = '';
       this.cfgProjectIdentity.value = '';
+      this.cfgProjectUrl.value = '';
     } else {
       this.data.currentIndex = Math.min(idx, this.data.projects.length - 1);
       const cur = this.data.projects[this.data.currentIndex];
       this.cfgProjectDir.value = cur.projectDir || '';
       this.cfgProjectIdentity.value = cur.projectIdentity || '';
+      this.cfgProjectUrl.value = cur.projectUrl || '';
     }
     this._persistData();
     this._renderList();

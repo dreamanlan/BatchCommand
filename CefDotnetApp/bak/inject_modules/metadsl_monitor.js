@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // MetaDSLMonitor - Monitor for MetaDSL commands in messages
 // ============================================================================
 class MetaDSLMonitor {
@@ -271,7 +271,10 @@ class MetaDSLMonitor {
       this.sendResultToLLM("game window refreshed");
     }
     else {
-      gameWindow = window.open('http://localhost:8081', '_blank');
+      const projData = JSON.parse(localStorage.getItem('projectPanelData') || '{}');
+      const proj = (projData.projects || [])[projData.currentIndex || 0];
+      const url = (proj && proj.projectUrl) || 'http://localhost:8082';
+      gameWindow = window.open(url, '_blank');
       this.sendResultToLLM("game window opened");
     }
   }

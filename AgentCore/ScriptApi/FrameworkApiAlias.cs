@@ -3092,7 +3092,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         r = str.Replace(key, val);
                     }
                     else if (exactMatch) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found (exact match)");
+                        if (File.Exists(str.Trim())) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: used for strings, not files.");
+                        }
+                        else {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found (exact match)");
+                        }
                         return BoxedValue.From(str);
                     }
                     else {
@@ -3108,7 +3113,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                             if (normResult.Success) {
                                 return BoxedValue.From(normResult.ResultContent);
                             }
-                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found");
+                            if (File.Exists(str.Trim())) {
+                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: used for strings, not files.");
+                            }
+                            else {
+                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace: substr not found");
+                            }
                             return BoxedValue.From(str);
                         }
                     }
@@ -3134,7 +3144,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var key = operands[1].AsString;
                     var val = operands[2].AsString;
                     if (null != str && !string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(val)) {
-                        r = str.Replace(key[0], val[0]);
+                        if (str.IndexOf(key[0]) >= 0) {
+                            r = str.Replace(key[0], val[0]);
+                        }
+                        else if (File.Exists(str.Trim())) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace_char: used for strings, not files.");
+                        }
+                        else {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("string_replace_char: char not found");
+                        }
                     }
                 }
                 return r;

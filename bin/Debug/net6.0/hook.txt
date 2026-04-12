@@ -195,8 +195,8 @@ hook(DbgScp_Set)
 		elif($cmd==4){
 			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
 			assert(0);
-			//TriggerFrameCapture();
-			StartFrameCapture();
+			TriggerFrameCapture();
+			//StartFrameCapture();
 		};
 		
 		return 1;

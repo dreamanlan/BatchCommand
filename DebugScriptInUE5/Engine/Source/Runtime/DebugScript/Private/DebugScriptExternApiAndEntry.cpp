@@ -1141,12 +1141,20 @@ std::string DumpMemoryFormattedToString(const void* addr,
     return oss.str();
 }
 
+
+static bool s_DbgScpLoaded = false;
 static bool g_bFrameCapturing = false;
 
+bool IsDbgScpLoaded()
+{
+    return s_DbgScpLoaded;
+}
 void InitGpuCaptureManager()
 {
 #if defined(__APPLE__) && __APPLE__
     GpuCaptureManager::Instance().Init(GpuCaptureBackend::MetalXcode);
+#elif defined(__OHOS__)
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::HuaweiSquid);
 #else
     GpuCaptureManager::Instance().Init(GpuCaptureBackend::RenderDoc);
 #endif
@@ -2010,6 +2018,7 @@ extern "C" {
 
 void LoadDbgScp(const core::string& log_path, const core::string& load_path)
 {
+    s_DbgScpLoaded = true;
     for (int i = 0; i < c_max_log_file_num; ++i) {
         if (GetLogFilesRef()[i].empty()) {
             auto&& path = Format("%s/dbgscp_log_%d.txt", log_path.c_str(), i);
@@ -2051,6 +2060,7 @@ int DbgScp_Get_Extern(int cmd, int a, double b, const char* c)
 
 void LoadDbgScp(const FString& log_path, const FString& load_path)
 {
+    s_DbgScpLoaded = true;
     for (int i = 0; i < c_max_log_file_num; ++i) {
         if (GetLogFilesRef()[i].empty()) {
             auto&& path = FPaths::Combine(log_path, FString::Printf(TEXT("dbgscp_log_%d.txt"), i));
@@ -2093,6 +2103,7 @@ int DbgScp_Get_Extern(int cmd, int a, double b, const char* c)
 
 void LoadDbgScp(const std::string& log_path, const std::string& load_path)
 {
+    s_DbgScpLoaded = true;
     const int c_path_capacity_max = 1025;
     for (int i = 0; i < c_max_log_file_num; ++i) {
         if (GetLogFilesRef()[i].empty()) {

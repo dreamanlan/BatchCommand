@@ -3145,6 +3145,7 @@ namespace DotNetLib
         private static void TryLoadDSL()
         {
             PrepareBatchScript();
+            bool loaded = false;
             string path = Path.Combine(s_BasePath, "managed", s_DslScriptFile);
             var fi = new FileInfo(path);
             if (fi.Exists) {
@@ -3154,8 +3155,8 @@ namespace DotNetLib
 
                     string errorMsg = string.Empty;
                     if (File.Exists(fi.FullName)) {
+                        loaded = true;
                         BatchCommand.BatchScript.Load(fi.FullName);
-                        BatchCommand.BatchScript.Call("init_global_consts");
                         CheckDslError();
                         NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
                     }
@@ -3170,6 +3171,10 @@ namespace DotNetLib
             }
             RefreshGlobalVars();
             NativeApi.ClearApiErrorInfo();
+            if (loaded) {
+                BatchCommand.BatchScript.Call("init_global_consts");
+                CheckDslError();
+            }
         }
         // Execute MetaDSL script
         private static string ExecuteMetaDslScript(string script)

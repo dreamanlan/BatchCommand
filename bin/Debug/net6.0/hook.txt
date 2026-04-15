@@ -213,7 +213,7 @@ hook(DbgScp_Get)
 		$b:int = ptrget(argv(3),8);
 		$c:int = ptrget(argv(4),8);
 		printf("DbgScp_Get enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
-		
+
 		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
 		/*
 		loop($i,1,165){
@@ -225,6 +225,20 @@ hook(DbgScp_Get)
 	onexit{
 		printf("DbgScp_Get exit time:%lld\n",time());
 		ptrset(argv(0),4,2);
+	};
+};
+hook("StartFrameCaptureOnDemand")
+{
+	onenter{
+		$frame:int = ptrget(argv(0),4);
+		printf("StartFrameCaptureOnDemand:%lld frame:%u\n",time(),$frame);
+		/*
+		if($frame>=775 && $frame<=795){
+			printf("StartFrameCapture:%lld frame:%u\n",time(),$frame);
+			StartFrameCapture();
+		};
+		*/
+		return 0;
 	};
 };
 

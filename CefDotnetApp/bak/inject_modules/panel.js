@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // AgentPanel - Visual Control Panel
 // ============================================================================
 class AgentPanel {
@@ -565,9 +565,9 @@ class AgentPanel {
     this.toggleChatButton.onclick = () => this.toggleChatPanel();
     optionBar.appendChild(this.toggleChatButton);
 
-    // Toggle OpenClaw Panel button (default hidden)
+    // Toggle Relay Panel button (default hidden)
     this.toggleClawButton = document.createElement('button');
-    this.toggleClawButton.textContent = '\u2717 OpenClaw';
+    this.toggleClawButton.textContent = '\u2717 Relay';
     this.toggleClawButton.style.cssText = `
         padding: 3px 7px;
         background: #666;
@@ -1074,10 +1074,10 @@ class AgentPanel {
   }
 
   toggleClawPanel() {
-    if (this.openClawPanel) {
-      this.openClawPanel.toggle();
-      const on = this.openClawPanel.visible;
-      this.toggleClawButton.textContent = on ? '\u2713 OpenClaw' : '\u2717 OpenClaw';
+    if (this.relayPanel) {
+      this.relayPanel.toggle();
+      const on = this.relayPanel.visible;
+      this.toggleClawButton.textContent = on ? '\u2713 Relay' : '\u2717 Relay';
       this.toggleClawButton.style.background = on ? '#4caf50' : '#666';
     }
   }

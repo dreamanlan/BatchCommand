@@ -255,6 +255,17 @@ class MetaDSLMonitor {
     };
     this.enqueueOperation(operation);
   }
+  triggerReflection() {
+    const operation = {
+      type: 'send_notification',
+      notificationType: 'episodic_reflection',
+      data: {
+        pageType: this.pageAdapter.pageType,
+        queuedCount: this.operationQueue.length
+      }
+    };
+    this.enqueueOperation(operation);
+  }
   updateSystemPrompt() {
     const operation = {
       type: 'send_notification',
@@ -1121,6 +1132,11 @@ class MetaDSLMonitor {
         }
         else if (jsRequest === "close_project_window") {
           this.closeGameWindow();
+          return;
+        }
+        else if (jsRequest === "reflect") {
+          this.triggerReflection();
+          this.sendResultToLLM("Reflection triggered, episodic_reflection notification enqueued.");
           return;
         }
 

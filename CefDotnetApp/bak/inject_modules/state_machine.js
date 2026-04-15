@@ -1,4 +1,4 @@
-  // ============================================================================
+﻿  // ============================================================================
   // State Machine Pattern - State Classes
   // ============================================================================
 
@@ -333,6 +333,7 @@
           const item = this.monitor.metadslWorker.dequeueMessage();
           if (item) {
             this.info('Received MetaDSL execution result from C#');
+            if (item.channelId && window.Relay && window.Relay.ws) { window.Relay.ws._lastChannelId = item.channelId; }
             // Send result directly to LLM, respecting noAgentMarker flag
             this.monitor.sendResultToLLM(item.message, item.noAgentMarker);
             continue; // Continue processing more results

@@ -1,8 +1,8 @@
+﻿// ============================================================================
+// RelayPanel - Floating configuration & chat test panel for Relay
 // ============================================================================
-// OpenClawPanel - Floating configuration & chat test panel for OpenClaw
-// ============================================================================
-class OpenClawPanel {
-  static STORAGE_KEY = 'openclaw_panel_config';
+class RelayPanel {
+  static STORAGE_KEY = 'relay_panel_config';
 
   constructor() {
     this.visible = false;
@@ -13,12 +13,11 @@ class OpenClawPanel {
     this.statusText = null;
     this.connectBtn = null;
     // config fields
-    this.cfgHttpBase = null;
     this.cfgWsUrl = null;
     this.cfgApiKey = null;
     this.cfgSession = null;
     this.onVisibilityChange = null;
-    // Remote mode: forward openclaw messages to LLM and LLM responses to openclaw
+    // Remote mode: forward relay messages to LLM and LLM responses to relay
     this.remoteEnabled = false;
     this.echoEnabled = false;
     // Reference to metadslWorker (set by main.js)
@@ -83,7 +82,7 @@ class OpenClawPanel {
 
   createPanel() {
     this.panel = document.createElement('div');
-    this.panel.id = 'openclaw-panel';
+    this.panel.id = 'relay-panel';
     this.panel.style.cssText = `
         position: fixed;
         right: 20px;
@@ -122,7 +121,7 @@ class OpenClawPanel {
     const titleBox = document.createElement('div');
     titleBox.style.cssText = 'display:flex;align-items:center;gap:8px;';
     const title = document.createElement('span');
-    title.textContent = 'OpenClaw';
+    title.textContent = 'Relay';
     title.style.cssText = 'color:#fff;font-weight:600;font-size:13px;';
     // Status indicator
     this.statusDot = document.createElement('span');
@@ -145,12 +144,6 @@ class OpenClawPanel {
     const configArea = document.createElement('div');
     configArea.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding:8px 10px;border-bottom:1px solid #444;';
 
-    // HTTP Base
-    const r1 = this._makeRow();
-    this.cfgHttpBase = this._makeInput('text', 'http://localhost:3000', '');
-    r1.appendChild(this._makeLabel('HTTP:'));
-    r1.appendChild(this.cfgHttpBase);
-    configArea.appendChild(r1);
 
     // WS URL
     const r2 = this._makeRow();
@@ -176,7 +169,7 @@ class OpenClawPanel {
     r4.appendChild(this.connectBtn);
     r4.appendChild(this._makeBtn('Status', '#555', () => this._testStatus()));
 
-    // Remote checkbox - forward openclaw<->LLM
+    // Remote checkbox - forward relay<->LLM
     const remoteLabel = document.createElement('label');
     remoteLabel.style.cssText = 'display:flex;align-items:center;gap:3px;color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;';
     this.remoteChk = document.createElement('input');
@@ -260,7 +253,6 @@ class OpenClawPanel {
 
   async _saveConfig() {
     const cfg = {
-      httpBase: this.cfgHttpBase.value.trim(),
       wsUrl: this.cfgWsUrl.value.trim(),
       apiKey: this.cfgApiKey.value,
       session: this.cfgSession.value.trim(),
@@ -269,23 +261,21 @@ class OpenClawPanel {
     };
     // Save sensitive fields (apiKey, session) to SecretStore
     try {
-      await secretStore.setItem(OpenClawPanel.STORAGE_KEY, JSON.stringify(cfg));
+      await secretStore.setItem(RelayPanel.STORAGE_KEY, JSON.stringify(cfg));
     } catch (_) { }
-    // Push to CONFIG so OpenClawHttp / OpenClawWs pick it up
-    CONFIG.set('openclaw.httpBase', cfg.httpBase);
-    CONFIG.set('openclaw.wsUrl', cfg.wsUrl);
-    CONFIG.set('openclaw.apiKey', cfg.apiKey);
-    CONFIG.set('openclaw.session', cfg.session);
+    // Push to CONFIG so RelayWs picks it up
+    CONFIG.set('relay.wsUrl', cfg.wsUrl);
+    CONFIG.set('relay.apiKey', cfg.apiKey);
+    CONFIG.set('relay.session', cfg.session);
     this._chatLog('[config] Saved');
   }
 
   async _restoreConfig() {
     // Restore from SecretStore
     try {
-      const raw = await secretStore.getItem(OpenClawPanel.STORAGE_KEY);
+      const raw = await secretStore.getItem(RelayPanel.STORAGE_KEY);
       if (raw) {
         const cfg = JSON.parse(raw);
-        this.cfgHttpBase.value = cfg.httpBase || '';
         this.cfgWsUrl.value = cfg.wsUrl || '';
         this.cfgApiKey.value = cfg.apiKey || '';
         this.cfgSession.value = cfg.session || '';
@@ -293,10 +283,9 @@ class OpenClawPanel {
         if (cfg.remoteEnabled) { this.remoteEnabled = true; this.remoteChk.checked = true; }
         if (cfg.echoEnabled) { this.echoEnabled = true; this.echoChk.checked = true; }
         // Push to CONFIG
-        if (cfg.httpBase) CONFIG.set('openclaw.httpBase', cfg.httpBase);
-        if (cfg.wsUrl) CONFIG.set('openclaw.wsUrl', cfg.wsUrl);
-        if (cfg.apiKey) CONFIG.set('openclaw.apiKey', cfg.apiKey);
-        if (cfg.session) CONFIG.set('openclaw.session', cfg.session);
+        if (cfg.wsUrl) CONFIG.set('relay.wsUrl', cfg.wsUrl);
+        if (cfg.apiKey) CONFIG.set('relay.apiKey', cfg.apiKey);
+        if (cfg.session) CONFIG.set('relay.session', cfg.session);
       }
     } catch (_) { }
   }
@@ -305,7 +294,7 @@ class OpenClawPanel {
   tryAutoConnect() {
     const wsUrl = this.cfgWsUrl.value.trim();
     if (!wsUrl) return;
-    const ws = window.OpenClaw && window.OpenClaw.ws;
+    const ws = window.Relay && window.Relay.ws;
     if (!ws || ws.connected) return;
     this._chatLog('[auto] Config complete, connecting...');
     ws.connect();
@@ -314,7 +303,7 @@ class OpenClawPanel {
   // ---- WebSocket events ----
 
   _bindWsEvents() {
-    const ws = window.OpenClaw && window.OpenClaw.ws;
+    const ws = window.Relay && window.Relay.ws;
     if (!ws) return;
     ws.onStatus((status) => {
       this._updateStatus(status);
@@ -324,9 +313,9 @@ class OpenClawPanel {
       const msgText = data.content || data.text;
       if (data.type === 'message' && msgText) {
         this._chatLog('[server] ' + msgText);
-        // Remote mode: forward openclaw message to LLM (no agent marker)
+        // Remote mode: forward relay message to LLM (no agent marker)
         if (this.remoteEnabled && this.metadslWorker) {
-          this.metadslWorker.queueReply(msgText, true);
+          this.metadslWorker.queueReply(msgText, true, data.channelId);
           if (this.echoEnabled) {
             this._chatLog('[remote->LLM] ' + msgText);
           }
@@ -358,7 +347,7 @@ class OpenClawPanel {
   }
 
   async _toggleConnect() {
-    const ws = window.OpenClaw && window.OpenClaw.ws;
+    const ws = window.Relay && window.Relay.ws;
     if (!ws) return;
     if (ws.connected) {
       ws.disconnect();
@@ -379,7 +368,7 @@ class OpenClawPanel {
     this.chatInput.value = '';
     this._chatLog('[you] ' + text);
 
-    const ws = window.OpenClaw && window.OpenClaw.ws;
+    const ws = window.Relay && window.Relay.ws;
     if (ws && ws.connected) {
       // Use WebSocket
       try {
@@ -394,40 +383,14 @@ class OpenClawPanel {
         this._chatLog('[error] ' + e.message);
       }
     } else {
-      // Fallback to HTTP
-      const http = window.OpenClaw && window.OpenClaw.http;
-      if (!http) {
-        this._chatLog('[error] OpenClaw HTTP not available');
-        return;
-      }
-      try {
-        const resp = await http.chat(text);
-        const httpText = resp && (resp.content || resp.text);
-        if (httpText) {
-          this._chatLog('[claw] ' + httpText);
-        } else {
-          this._chatLog('[claw] ' + JSON.stringify(resp));
-        }
-      } catch (e) {
-        this._chatLog('[error] ' + e.message);
-      }
+      this._chatLog('[error] WebSocket not connected');
     }
   }
-
+    
   async _testStatus() {
-    const http = window.OpenClaw && window.OpenClaw.http;
-    if (!http) {
-      this._chatLog('[error] OpenClaw HTTP not available');
-      return;
-    }
-    await this._saveConfig();
-    this._chatLog('[http] Checking status...');
-    try {
-      const resp = await http.status();
-      this._chatLog('[status] ' + JSON.stringify(resp));
-    } catch (e) {
-      this._chatLog('[error] ' + e.message);
-    }
+    const ws = window.Relay && window.Relay.ws;
+    const connected = ws && ws.isConnected && ws.isConnected();
+    this._chatLog('[status] WebSocket ' + (connected ? 'connected' : 'disconnected'));
   }
 
   _chatLog(msg) {
@@ -483,10 +446,10 @@ class OpenClawPanel {
     if (this.visible) this.hide(); else this.show();
   }
 
-  // Forward LLM response to OpenClaw via WebSocket
-  forwardToOpenClaw(text) {
+  // Forward LLM response to Relay via WebSocket
+  forwardToRelay(text) {
     if (!this.remoteEnabled) return;
-    const ws = window.OpenClaw && window.OpenClaw.ws;
+    const ws = window.Relay && window.Relay.ws;
     if (ws && ws.connected) {
       ws.pushMessage(text);
       if (this.echoEnabled) {

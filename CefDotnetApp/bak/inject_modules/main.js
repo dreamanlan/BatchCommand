@@ -1,4 +1,4 @@
-async function initializeAgent() {
+﻿async function initializeAgent() {
   logger.info('Initializing agent...');
 
   // Wait for SecretStore to be ready before accessing any secrets
@@ -35,21 +35,21 @@ async function initializeAgent() {
     };
     // Default hidden, user can toggle via panel button
     chatInputPanel.hide();
-    // Create and link OpenClaw panel (default hidden)
-    const openClawPanel = new OpenClawPanel();
+    // Create and link Relay panel (default hidden)
+    const relayPanel = new RelayPanel();
     // Async restore config (secrets loaded from SecretStore)
-    await openClawPanel._restoreConfig();
+    await relayPanel._restoreConfig();
     // Set metadslWorker reference for remote mode
-    openClawPanel.metadslWorker = metadslWorker;
-    panel.openClawPanel = openClawPanel;
+    relayPanel.metadslWorker = metadslWorker;
+    panel.relayPanel = relayPanel;
     // Register LLM response callback for remote forwarding
     metadslMonitor.onLLMResponse = (resp) => {
-      openClawPanel.forwardToOpenClaw(resp);
+      relayPanel.forwardToRelay(resp);
     };
-    // Sync button state when openclaw panel visibility changes
-    openClawPanel.onVisibilityChange = () => {
-      const on = openClawPanel.visible;
-      panel.toggleClawButton.textContent = on ? '\u2713 OpenClaw' : '\u2717 OpenClaw';
+    // Sync button state when relay panel visibility changes
+    relayPanel.onVisibilityChange = () => {
+      const on = relayPanel.visible;
+      panel.toggleClawButton.textContent = on ? '\u2713 Relay' : '\u2717 Relay';
       panel.toggleClawButton.style.background = on ? '#4caf50' : '#666';
     };
     // Create and link Project panel (default visible)
@@ -120,9 +120,9 @@ async function initializeAgent() {
     url: window.location.href
   });
 
-  // Auto-connect OpenClaw if config is complete
-  if (panel && panel.openClawPanel) {
-    panel.openClawPanel.tryAutoConnect();
+  // Auto-connect Relay if config is complete
+  if (panel && panel.relayPanel) {
+    panel.relayPanel.tryAutoConnect();
   }
 
   logger.info('Agent initialization complete', {

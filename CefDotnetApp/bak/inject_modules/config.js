@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // Configuration Manager - Centralized configuration with validation and persistence
 // ============================================================================
 class ConfigManager {
@@ -65,8 +65,8 @@ class ConfigManager {
         }
       },
 
-      // OpenClaw settings
-      openclaw: {
+      // Relay settings
+      relay: {
         httpBase: 'https://www.gamexyz.net:8443',
         wsUrl: 'wss://www.gamexyz.net:8443/ws',
         apiKey: '',
@@ -77,42 +77,42 @@ class ConfigManager {
     };
 
     // Keys that need persistence (have UI editing entry)
-    // Note: openclaw.apiKey and openclaw.session are stored in SecretStore, not here
+    // Note: relay.apiKey and relay.session are stored in SecretStore, not here
     this.persistKeys = [
       'panel.collapseAgentReply',
       'panel.hideMetaDslBlock',
       'panel.streamingPage',
       'panel.jsHotReload',
       'panel.maxConversationRounds',
-      'openclaw.httpBase',
-      'openclaw.wsUrl'
+      
+      'relay.wsUrl'
     ];
 
     // Load configuration from localStorage or use defaults
     this.config = this.loadConfig();
   }
 
-  // Load openclaw secrets from SecretStore (async, called after secretStore.ready())
+  // Load relay secrets from SecretStore (async, called after secretStore.ready())
   async loadSecrets() {
     try {
-      const raw = await secretStore.getItem('openclaw_secrets');
+      const raw = await secretStore.getItem('relay_secrets');
       if (raw) {
         const secrets = JSON.parse(raw);
-        if (secrets.apiKey) this.config.openclaw.apiKey = secrets.apiKey;
-        if (secrets.session) this.config.openclaw.session = secrets.session;
+        if (secrets.apiKey) this.config.relay.apiKey = secrets.apiKey;
+        if (secrets.session) this.config.relay.session = secrets.session;
       }
     } catch (e) {
       console.warn('[ConfigManager] Failed to load secrets from SecretStore:', e);
     }
   }
 
-  // Save openclaw secrets to SecretStore (async)
+  // Save relay secrets to SecretStore (async)
   async saveSecrets() {
     try {
       const secrets = {};
-      if (this.config.openclaw.apiKey) secrets.apiKey = this.config.openclaw.apiKey;
-      if (this.config.openclaw.session) secrets.session = this.config.openclaw.session;
-      await secretStore.setItem('openclaw_secrets', JSON.stringify(secrets));
+      if (this.config.relay.apiKey) secrets.apiKey = this.config.relay.apiKey;
+      if (this.config.relay.session) secrets.session = this.config.relay.session;
+      await secretStore.setItem('relay_secrets', JSON.stringify(secrets));
     } catch (e) {
       console.warn('[ConfigManager] Failed to save secrets to SecretStore:', e);
     }
@@ -225,8 +225,8 @@ class ConfigManager {
 
     obj[parts[parts.length - 1]] = value;
     this.saveConfig();
-    // Persist openclaw secrets to SecretStore when changed
-    if (path === 'openclaw.apiKey' || path === 'openclaw.session') {
+    // Persist relay secrets to SecretStore when changed
+    if (path === 'relay.apiKey' || path === 'relay.session') {
       this.saveSecrets();
     }
   }

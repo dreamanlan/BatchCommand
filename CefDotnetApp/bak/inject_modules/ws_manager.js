@@ -1,4 +1,4 @@
-  // ============================================================================
+﻿  // ============================================================================
   // MetaDSLWorkerManager - Dual queue communication with WebSocket for MetaDSL
   // ============================================================================
   class MetaDSLWorkerManager {
@@ -180,12 +180,12 @@
       return true;
     }
 
-    queueReply(message, noAgentMarker = false) {
+    queueReply(message, noAgentMarker = false, channelId = null) {
       if (!this.isRunning) {
         this.logger.warn('Cannot queue reply: Worker not running');
         return false;
       }
-      this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker });
+      this.fromWorkerQueue.push({ message: message, noAgentMarker: noAgentMarker, channelId: channelId });
       this.logger.info('Reply queued (length: ' + message.length + ', noAgentMarker: ' + noAgentMarker + ', queue size: ' + this.fromWorkerQueue.length + ')');
       return true;
     }

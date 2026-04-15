@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // SecretStore - Encrypted storage using IndexedDB + Web Crypto API
 // Uses a non-extractable AES-GCM CryptoKey stored in IndexedDB.
 // Provides async getItem/setItem/removeItem for sensitive data.
@@ -180,35 +180,35 @@ class SecretStore {
       logger.warn('[SecretStore] Migration of agent_environments failed: ' + e);
     }
 
-    // 2. Migrate openclaw_panel_config (contains apiKey)
+    // 2. Migrate relay_panel_config (contains apiKey)
     try {
-      const clawRaw = localStorage.getItem('openclaw_panel_config');
+      const clawRaw = localStorage.getItem('relay_panel_config');
       if (clawRaw) {
-        await this.setItem('openclaw_panel_config', clawRaw);
-        localStorage.removeItem('openclaw_panel_config');
+        await this.setItem('relay_panel_config', clawRaw);
+        localStorage.removeItem('relay_panel_config');
         migrated++;
       }
     } catch (e) {
-      logger.warn('[SecretStore] Migration of openclaw_panel_config failed: ' + e);
+      logger.warn('[SecretStore] Migration of relay_panel_config failed: ' + e);
     }
 
-    // 3. Migrate openclaw secrets from inject_config
+    // 3. Migrate relay secrets from inject_config
     try {
       const cfgRaw = localStorage.getItem('inject_config');
       if (cfgRaw) {
         const cfg = JSON.parse(cfgRaw);
-        if (cfg.openclaw) {
+        if (cfg.relay) {
           const secrets = {};
-          if (cfg.openclaw.apiKey) {
-            secrets.apiKey = cfg.openclaw.apiKey;
-            delete cfg.openclaw.apiKey;
+          if (cfg.relay.apiKey) {
+            secrets.apiKey = cfg.relay.apiKey;
+            delete cfg.relay.apiKey;
           }
-          if (cfg.openclaw.session) {
-            secrets.session = cfg.openclaw.session;
-            delete cfg.openclaw.session;
+          if (cfg.relay.session) {
+            secrets.session = cfg.relay.session;
+            delete cfg.relay.session;
           }
           if (Object.keys(secrets).length > 0) {
-            await this.setItem('openclaw_secrets', JSON.stringify(secrets));
+            await this.setItem('relay_secrets', JSON.stringify(secrets));
             // Write back cleaned config
             localStorage.setItem('inject_config', JSON.stringify(cfg));
             migrated++;

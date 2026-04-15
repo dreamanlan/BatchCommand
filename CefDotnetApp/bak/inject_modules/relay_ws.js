@@ -1,11 +1,12 @@
-// ============================================================================
-// OpenClaw WebSocket - Real-time bidirectional communication with OpenClaw
+﻿// ============================================================================
+// Relay WebSocket - Real-time bidirectional communication
 // Used for chat / streaming
 // ============================================================================
-class OpenClawWs {
+class RelayWs {
   constructor() {
-    this.logger = logger.createLogger('OpenClawWs');
+    this.logger = logger.createLogger('RelayWs');
     this.ws = null;
+    this._lastChannelId = null;
     this.callbacks = {};
     this.reqId = 0;
     this.connected = false;
@@ -17,15 +18,15 @@ class OpenClawWs {
   }
 
   _getUrl() {
-    return CONFIG.get('openclaw.wsUrl') || 'wss://www.gamexyz.net:8443/ws';
+    return CONFIG.get('relay.wsUrl') || 'wss://www.gamexyz.net:8443/ws';
   }
 
   _getApiKey() {
-    return CONFIG.get('openclaw.apiKey') || '';
+    return CONFIG.get('relay.apiKey') || '';
   }
 
   _getSession() {
-    return CONFIG.get('openclaw.session') || '';
+    return CONFIG.get('relay.session') || '';
   }
 
   // ---- public API ----
@@ -116,7 +117,8 @@ class OpenClawWs {
         type: 'message',
         content: text,
         session: opts.session || this._getSession(),
-        requestId: id
+        requestId: id,
+        channelId: this._lastChannelId
       });
     });
   }
@@ -127,7 +129,8 @@ class OpenClawWs {
     return this._send({
       type: 'message',
       content: text,
-      session: opts.session || this._getSession()
+      session: opts.session || this._getSession(),
+      channelId: this._lastChannelId
     });
   }
 
@@ -220,7 +223,7 @@ class OpenClawWs {
 
   _scheduleReconnect() {
     if (this._reconnectTimer) return;
-    const delay = CONFIG.get('openclaw.reconnectDelay') || 5000;
+    const delay = CONFIG.get('relay.reconnectDelay') || 5000;
     this.logger.info('Reconnecting in ' + delay + 'ms');
     this._reconnectTimer = setTimeout(() => {
       this._reconnectTimer = null;
@@ -230,7 +233,7 @@ class OpenClawWs {
 
   _startHeartbeat() {
     this._stopHeartbeat();
-    const interval = CONFIG.get('openclaw.heartbeatInterval') || 30000;
+    const interval = CONFIG.get('relay.heartbeatInterval') || 30000;
     this._heartbeatTimer = setInterval(() => {
       this._send({ type: 'ping' });
     }, interval);
@@ -245,5 +248,5 @@ class OpenClawWs {
 }
 
 // Expose on window
-if (!window.OpenClaw) window.OpenClaw = {};
-window.OpenClaw.ws = new OpenClawWs();
+if (!window.Relay) window.Relay = {};
+window.Relay.ws = new RelayWs();

@@ -9,14 +9,19 @@ script(init_global_consts)
 	@LlmProviderId = "auto_metadsl";
 	@LastHistoryCount = 0;
 
-	@ProjectIdentity = get_project_identity();
-	@ProjectDirectory = get_project_dir();
-	if (!stringisnullorempty(@ProjectIdentity)) {
-		@MarquisHistory = @ProjectIdentity + "_marquis_history";
-		@ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
-		@CenturionHistory = @ProjectIdentity + "_centurion_history";
-		@DecurionHistory = @ProjectIdentity + "_decurion_history";
-		@LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
+	if (processtype == 1) {
+		@ProjectIdentity = get_project_identity();
+		@ProjectDirectory = get_project_dir();
+		if (!isnullorempty(@ProjectIdentity)) {
+			@MarquisHistory = @ProjectIdentity + "_marquis_history";
+			@ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
+			@CenturionHistory = @ProjectIdentity + "_centurion_history";
+			@DecurionHistory = @ProjectIdentity + "_decurion_history";
+			@LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
+			@EpisodicMemory = @ProjectIdentity + "_episodic_memory";
+			@PatternMemory = @ProjectIdentity + "_pattern_memory";
+			@MetaCognitionMemory = @ProjectIdentity + "_meta_cognition_memory";
+		};
 	};
 };
 script(on_init)
@@ -199,9 +204,8 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, read_file(combine_path($base, "metadsl_monitor.js")));
 		append_line($sb, read_file(combine_path($base, "panel.js")));
 		append_line($sb, read_file(combine_path($base, "chat_input.js")));
-		append_line($sb, read_file(combine_path($base, "openclaw_http.js")));
-		append_line($sb, read_file(combine_path($base, "openclaw_ws.js")));
-		append_line($sb, read_file(combine_path($base, "openclaw_panel.js")));
+		append_line($sb, read_file(combine_path($base, "relay_ws.js")));
+		append_line($sb, read_file(combine_path($base, "relay_panel.js")));
 		append_line($sb, read_file(combine_path($base, "project_panel.js")));
 		append_line($sb, read_file(combine_path($base, "spellcheck.js")));
 		append_line($sb, read_file(combine_path($base, "ws_manager.js")));
@@ -327,6 +331,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		set_plan($reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
+		trigger_soul_evolution();
 		send_command_to_inject("send_message", to_json({text: $reply}));
 	}
 	elif ($tag == "llm_pm_context") {
@@ -335,17 +340,33 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		set_context($reply);
 		llm_clear_history(@LlmProviderId, $tag);
 	}
-	elif ($tag == "llm_pm_plan") {
-		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-		write_file($planFile, $reply);
-		set_plan($reply);
-		llm_clear_history(@LlmProviderId, $tag);
-	}
 	elif ($tag == "llm_pm_align") {
 		$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 		write_file($todoFile, $reply);
 		set_todo($reply);
 		llm_clear_history(@LlmProviderId, $tag);
+	}
+	elif ($tag == "reflection") {
+		semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
+		llm_clear_history(@LlmProviderId, "reflection");
+		nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 200, 1));
+	}
+	elif ($tag == "pattern_recognition") {
+		semantic_add(@PatternMemory, $reply, to_json({source: "pattern_recognition", date: date_time_str(), type: "pattern"}));
+		llm_clear_history(@LlmProviderId, "pattern_recognition");
+		nativelog("[dsl] Pattern memory saved: {0}", getstringinlength($reply, 200, 1));
+	}
+	elif ($tag == "meta_cognition") {
+		semantic_add(@MetaCognitionMemory, $reply, to_json({source: "meta_cognition", date: date_time_str(), type: "meta_cognition"}));
+		llm_clear_history(@LlmProviderId, "meta_cognition");
+		nativelog("[dsl] Meta-cognition memory saved: {0}", getstringinlength($reply, 200, 1));
+	}
+	elif ($tag == "soul_evolution") {
+		$soulFile = combine_path(@ProjectDirectory, "docs/Soul.md");
+		write_file($soulFile, $reply);
+		set_soul($reply);
+		llm_clear_history(@LlmProviderId, "soul_evolution");
+		nativelog("[dsl] Soul.md evolved: {0}", getstringinlength($reply, 200, 1));
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -571,6 +592,9 @@ script(handle_update_project_config_command)params($id, $params)
 	semantic_init(@CenturionHistory);
 	semantic_init(@DecurionHistory);
 	semantic_init(@LegionnaireHistory);
+	semantic_init(@EpisodicMemory);
+	semantic_init(@PatternMemory);
+	semantic_init(@MetaCognitionMemory);
 
 	$response = build_agent_response($id, true, "ok", "");
 	send_response_to_inject($response);
@@ -686,6 +710,128 @@ script(induction_todo)params($count,$queuedCount,$pageType)
 	};
 };
 
+script(trigger_reflection)params()
+{
+	nativelog("[dsl] trigger_reflection called");
+
+	// Collect recent conversation history
+	$legionnaireHistory = semantic_get_recent(@LegionnaireHistory, 20);
+	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
+	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
+
+	$prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $todoHistory, $contextHistory);
+
+	// Set reflection system prompt
+	$sysPrompt = "你是一个经验反思助手。根据提供的对话历史，提取结构化的经验记录。" +
+		"输出格式：\n" +
+		"【任务】：简述完成了什么任务\n" +
+		"【方法】：使用了什么方法/工具\n" +
+		"【结果】：成功/失败，关键结果\n" +
+		"【经验】：可复用的经验教训\n" +
+		"【注意】：踩过的坑或需要注意的点\n\n" +
+		"请简洁明了，控制在500字以内，一次回复输出完成。";
+	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
+
+	// Send reflection request
+	$prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录。", $prompt);
+	$prompt = getstringinlength($prompt, 100 * 1024, 1);
+	llm_chat(@LlmProviderId, "reflection", "reflection", $prompt);
+
+	nativelog("[dsl] trigger_reflection: reflection request sent");
+};
+
+script(trigger_pattern_recognition)params($recentCount)
+{
+	nativelog("[dsl] trigger_pattern_recognition called");
+
+	// Collect recent episodic memories
+	$episodicMemories = semantic_get_recent(@EpisodicMemory, iif($recentCount > 0, $recentCount, 20));
+	if(isnullorempty($episodicMemories) || $episodicMemories == "[]"){
+		nativelog("[dsl] trigger_pattern_recognition: no episodic memories, skip");
+		return;
+	};
+
+	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
+
+	// Set pattern recognition system prompt
+	$sysPrompt = "你是一个模式识别助手。根据提供的多条情景记忆，识别其中的重复模式和共性经验。" +
+		"输出格式：\n" +
+		"【模式】：识别到的重复行为模式或工作规律\n" +
+		"【频率】：该模式出现的大致频率（高/中/低）\n" +
+		"【建议】：基于该模式的优化建议或最佳实践\n" +
+		"【风险】：该模式可能带来的风险或需要警惕的点\n\n" +
+		"可以识别多个模式，每个模式独立输出。请简洁明了，控制在800字以内，一次回复输出完成。";
+	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
+
+	// Send pattern recognition request
+	$prompt = format("{0}\n\n请根据以上情景记忆，识别重复模式并提炼经验。", $prompt);
+	$prompt = getstringinlength($prompt, 100 * 1024, 1);
+	llm_chat(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
+
+	nativelog("[dsl] trigger_pattern_recognition: pattern recognition request sent");
+};
+
+script(trigger_meta_cognition)params()
+{
+	nativelog("[dsl] trigger_meta_cognition called");
+
+	// Collect recent pattern memories and episodic memories
+	$patternMemories = semantic_get_recent(@PatternMemory, 20);
+	if(isnullorempty($patternMemories) || $patternMemories == "[]"){
+		nativelog("[dsl] trigger_meta_cognition: no pattern memories, skip");
+		return;
+	};
+
+	$episodicMemories = semantic_get_recent(@EpisodicMemory, 10);
+	$existingMeta = semantic_get_recent(@MetaCognitionMemory, 5);
+
+	$prompt = format("【模式记忆】：\n{0}\n\n【近期情景记忆】：\n{1}", $patternMemories, $episodicMemories);
+	if(!isnullorempty($existingMeta) && $existingMeta != "[]"){
+		$prompt = format("{0}\n\n【已有元认知】：\n{1}", $prompt, $existingMeta);
+	};
+
+	// Set meta-cognition system prompt
+	$sysPrompt = "你是一个元认知反思助手。根据提供的模式记忆和情景记忆，进行更高层次的反思。" +
+		"输出格式：\n" +
+		"【决策原则】：从模式中提炼的通用决策原则\n" +
+		"【认知偏差】：发现的认知偏差或思维盲区\n" +
+		"【改进策略】：具体的改进策略和行动建议\n" +
+		"【自我评估】：对当前工作方式的整体评估\n" +
+		"请简洁明了，控制在600字以内，一次回复输出完成。";
+	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
+
+	// Send meta-cognition request
+	$prompt = format("{0}\n\n请根据以上记忆进行元认知反思，提炼决策原则和改进策略。", $prompt);
+	$prompt = getstringinlength($prompt, 100 * 1024, 1);
+	llm_chat(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
+
+	nativelog("[dsl] trigger_meta_cognition: meta-cognition request sent");
+};
+script(trigger_soul_evolution)params()
+{
+	$metaCogCount = semantic_count(@MetaCognitionMemory);
+	if ($metaCogCount <= 0) {
+		nativelog("[dsl] trigger_soul_evolution: no meta-cognition memories, skip");
+		return;
+	};
+
+	$currentSoul = read_file(combine_path(@ProjectDirectory, "docs/Soul.md"));
+	$recentMetaCog = semantic_get_recent(@MetaCognitionMemory, 5);
+
+	$prompt = new_string_builder();
+	append_line($prompt, "You are a Soul evolution specialist. Based on the following meta-cognition insights, improve and evolve the current Soul profile.");
+	append_line($prompt, "");
+	append_line($prompt, "== Current Soul ==");
+	append_line($prompt, $currentSoul);
+	append_line($prompt, "");
+	append_line($prompt, "== Recent Meta-Cognition Insights ==");
+	append_line($prompt, to_string($recentMetaCog));
+	append_line($prompt, "");
+	append_line($prompt, "Please output the complete updated Soul.md content. Keep the overall structure but refine personality traits, working principles, and decision patterns based on the meta-cognition insights. Output ONLY the Soul.md content, no extra explanation.");
+
+	llm_chat(@LlmProviderId, "soul_evolution", "soul_evolution", string_builder_to_string($prompt));
+	nativelog("[dsl] trigger_soul_evolution: soul evolution request sent");
+};
 script(SaveHistory)params()
 {
 	$conversationCount = semantic_count(@LegionnaireHistory);
@@ -734,9 +880,9 @@ script(handle_agent_notification)params($jsonData)
 		send_command_to_inject("ws_start", to_json({port: 9527}));
 
 		if (@EnableLlmPM) {
-			llm_clear_history(@LlmProviderId, "llm_pm_plan");
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
 			llm_clear_history(@LlmProviderId, "llm_pm_context");
+			llm_clear_history(@LlmProviderId, "llm_pm_project");
 		};
 	}
 	elif ($type == "llm_update_system_prompt") {
@@ -786,7 +932,6 @@ script(handle_agent_notification)params($jsonData)
 		if (@EnableLlmPM) {
 			$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
 			$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
-			llm_set_system_prompt(@LlmProviderId, "llm_pm_plan", $llm_sys_prompt);
 			llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
 			llm_set_system_prompt(@LlmProviderId, "llm_pm_context", $llm_sys_prompt);
 			llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
@@ -808,6 +953,7 @@ script(handle_agent_notification)params($jsonData)
 		nativelog("[dsl] llm_context_count_down pageType: {0}, queuedCount: {1}, count: {2}", $pageType, $queuedCount, $count);
 
 		induction_context($count, $queuedCount, $pageType);
+		trigger_reflection();
 	}
 	elif ($type == "llm_align_target") {
 		nativelog("[dsl] LLM align target notification received");
@@ -820,6 +966,10 @@ script(handle_agent_notification)params($jsonData)
 		nativelog("[dsl] llm_align_target pageType: {0}, queuedCount: {1}, count: {2}", $pageType, $queuedCount, $count);
 
 		induction_todo($count, $queuedCount, $pageType);
+	}
+	elif ($type == "episodic_reflection") {
+		nativelog("[dsl] episodic_reflection notification received");
+		trigger_reflection();
 	}
 	elif ($type == "save_conversation_history") {
 		nativelog("[dsl] save_conversation_history notification received");
@@ -869,6 +1019,19 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] Saved Induction, LegionnaireBatch: {0}, DecurionBatch: {1}, CenturionBatch: {2}, ChiliarchBatch: {3}", $legionnaireBatch, $decurionBatch, $centurionBatch, $chiliarchBatch);
 
+		// Check episodic memory count and trigger pattern recognition
+		$episodicCount = semantic_count(@EpisodicMemory);
+		$patternCount = semantic_count(@PatternMemory);
+		if ($episodicCount >= ($patternCount + 1) * 5) {
+			$newCount = $episodicCount - $patternCount * 5;
+			nativelog("[dsl] Episodic memory count {0}, pattern count {1}, triggering pattern recognition", $episodicCount, $patternCount);
+			trigger_pattern_recognition($newCount);
+		};
+		$metaCount = semantic_count(@MetaCognitionMemory);
+		if ($patternCount >= ($metaCount + 1) * 3) {
+			nativelog("[dsl] Pattern memory count {0}, meta-cognition count {1}, triggering meta-cognition", $patternCount, $metaCount);
+			trigger_meta_cognition();
+		};
 		if (add_cur_context_rounds() == 0) {
 			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());
 			send_command_to_inject("send_message", to_json({text: $prompt}));
@@ -944,6 +1107,15 @@ script(handle_agent_notification)params($jsonData)
 						nativelog("[dsl] Sending '稍后请阅读context.txt与history.txt了解上下文' to LLM");
 
 						$prompt = format("ref{{:\n{0}\n:}};\n\n已提交上下文更新请求，稍后请阅读context.txt与history.txt了解上下文", $lastScannedMessage);
+						send_command_to_inject("send_message", to_json({text: $prompt}));
+					};
+					return(true);
+				}
+				elif (string_contains($lastScannedMessage, "js_request", "reflect")) {
+					if (@EnableLlmPM) {
+						nativelog("[dsl] Sending '已提交反思请求' to LLM");
+
+						$prompt = format("ref{{:\n{0}\n:}};\n\n已提交反思请求", $lastScannedMessage);
 						send_command_to_inject("send_message", to_json({text: $prompt}));
 					};
 					return(true);

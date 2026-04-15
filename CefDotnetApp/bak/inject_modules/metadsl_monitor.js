@@ -236,6 +236,10 @@ class MetaDSLMonitor {
     this.sendResultToLLM('Agent started');
   }
   stopAgent() {
+    if (this.panel.bridge.lockAgentEnabled) {
+      this.sendResultToLLM('Lock Agent is ON: user has set long-term development mode, agent planning must not be stopped.');
+      return;
+    }
     if (!this.panel.bridge.autoPlanEnabled) {
       this.sendResultToLLM('Agent already stopped');
       return;
@@ -276,25 +280,25 @@ class MetaDSLMonitor {
     };
     this.enqueueOperation(operation);
   }
-  openGameWindow() {
-    if (gameWindow && !gameWindow.closed) {
-      gameWindow.location.reload();
-      this.sendResultToLLM("game window refreshed");
+  openProjectWindow() {
+    if (projectWindow && !projectWindow.closed) {
+      projectWindow.location.reload();
+      this.sendResultToLLM("project window refreshed");
     }
     else {
-      const projData = JSON.parse(localStorage.getItem('projectPanelData') || '{}');
+      const projData = JSON.parse(localStorage.getItem('project_panel_configs') || '{}');
       const proj = (projData.projects || [])[projData.currentIndex || 0];
-      const url = (proj && proj.projectUrl) || 'http://localhost:8082';
-      gameWindow = window.open(url, '_blank');
-      this.sendResultToLLM("game window opened");
+      const url = (proj && proj.projectUrl) || 'http://localhost:8081';
+      projectWindow = window.open(url, '_blank');
+      this.sendResultToLLM("project window opened");
     }
   }
-  closeGameWindow() {
-    if (gameWindow && !gameWindow.closed) {
-      gameWindow.close();
-      gameWindow = null;
+  closeProjectWindow() {
+    if (projectWindow && !projectWindow.closed) {
+      projectWindow.close();
+      projectWindow = null;
     }
-    this.sendResultToLLM("game window closed");
+    this.sendResultToLLM("project window closed");
   }
 
   // ========================================================================
@@ -550,6 +554,7 @@ class MetaDSLMonitor {
         const m0 = relevantMutations[0];
         const t0 = m0.target;
         this.info(`relevantMutations[0]: type=${m0.type}, target=${t0.tagName}.${(t0.className || '').slice(0, 40)}, id=${t0.id || ''}, addedNodes=${m0.addedNodes.length}, removedNodes=${m0.removedNodes.length}`);
+
         // Reset page stable timer
         this.resetPageStableTimer();
 
@@ -980,10 +985,12 @@ class MetaDSLMonitor {
       return this.blockIdCache.get(block);
     }
 
-    // Generate stable ID based on content hash and unique sequence number
+    // Generate stable ID based on content hash only (no sequence number)
+    // This ensures the same content always gets the same ID even after
+    // virtual scroll destroys and recreates DOM elements
     const content = block.textContent.trim();
     const contentHash = this.hashString(content);
-    const blockId = `${this.nextBlockId++}_${contentHash}`;
+    const blockId = `blk_${contentHash}`;
 
     // Cache the ID for this block
     this.blockIdCache.set(block, blockId);
@@ -1127,11 +1134,11 @@ class MetaDSLMonitor {
           return;
         }
         else if (jsRequest === "open_project_window") {
-          this.openGameWindow();
+          this.openProjectWindow();
           return;
         }
         else if (jsRequest === "close_project_window") {
-          this.closeGameWindow();
+          this.closeProjectWindow();
           return;
         }
         else if (jsRequest === "reflect") {
@@ -1146,10 +1153,10 @@ class MetaDSLMonitor {
       else if (trimedCommand.startsWith(js_eval_prefix)) {
         const jsEval = trimedCommand.substring(js_eval_prefix.length).trim();
         this.info('JavaScript eval detected:', jsEval);
-        if (gameWindow) {
-          gameWindow.postMessage({ type: 'js_eval', code: jsEval }, '*');
+        if (projectWindow) {
+          projectWindow.postMessage({ type: 'js_eval', code: jsEval }, '*');
         } else {
-          this.sendResultToLLM("gameWindow not available, use js_request:open_project_window first");
+          this.sendResultToLLM("projectWindow not available, use js_request:open_project_window first");
         }
         return; // Don't send to C#
       }

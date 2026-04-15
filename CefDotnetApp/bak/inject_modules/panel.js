@@ -484,7 +484,22 @@ class AgentPanel {
       `;
     this.autoPlanButton.onclick = () => this.toggleAutoPlan();
 
+    // ChatRoom button - open chat room in new window
+    const chatRoomBtn = document.createElement('button');
+    chatRoomBtn.textContent = 'ChatRoom';
+    chatRoomBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    chatRoomBtn.onclick = () => this.openChatRoom();
+
     buttonBar.appendChild(testBtn);
+    buttonBar.appendChild(chatRoomBtn);
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);
@@ -609,6 +624,21 @@ class AgentPanel {
       `;
     this.jsHotReloadButton.onclick = () => this.toggleJsHotReload();
     optionBar.appendChild(this.jsHotReloadButton);
+
+    // Lock Agent toggle button (default off)
+    this.lockAgentButton = document.createElement('button');
+    this.lockAgentButton.textContent = '\u2717 Lock Agent';
+    this.lockAgentButton.style.cssText = `
+        padding: 3px 7px;
+        background: #666;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    this.lockAgentButton.onclick = () => this.toggleLockAgent();
+    optionBar.appendChild(this.lockAgentButton);
 
     this.panel.appendChild(optionBar);
     this.panel.appendChild(buttonBar);
@@ -1005,6 +1035,16 @@ class AgentPanel {
     this.logArea.value = '';
   }
 
+  openChatRoom() {
+    if (!chatRoomWindow || chatRoomWindow.closed) {
+      this.log('Opening ChatRoom...');
+      chatRoomWindow = window.open('http://localhost:8082', '_blank');
+    } else {
+      this.log('ChatRoom already open, focusing...');
+      chatRoomWindow.focus();
+    }
+  }
+
   testConnection() {
     this.log('Testing connection to C# Agent...');
     this.bridge.sendCommand('ping', {}, (success, data, error) => {
@@ -1043,6 +1083,19 @@ class AgentPanel {
       this.autoPlanButton.textContent = '✗ Auto Plan';
       this.autoPlanButton.style.background = '#666';
       this.log('✗ Auto plan disabled');
+    }
+  }
+
+  toggleLockAgent() {
+    this.bridge.lockAgentEnabled = !this.bridge.lockAgentEnabled;
+    if (this.bridge.lockAgentEnabled) {
+      this.lockAgentButton.textContent = '✓ Lock Agent';
+      this.lockAgentButton.style.background = '#ff5722';
+      this.log('✓ Lock Agent enabled - stop_agent requests will be rejected');
+    } else {
+      this.lockAgentButton.textContent = '✗ Lock Agent';
+      this.lockAgentButton.style.background = '#666';
+      this.log('✗ Lock Agent disabled');
     }
   }
 

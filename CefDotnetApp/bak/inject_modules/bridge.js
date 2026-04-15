@@ -7,6 +7,7 @@ class AgentBridge {
     this.commandId = 0;
     this.callbacks = new Map();
     this.autoPlanEnabled = true; // Auto plan enabled by default
+    this.lockAgentEnabled = false; // Lock agent disabled by default
 
     // Initialize CEF native API
     this.initNativeApi();
@@ -107,7 +108,8 @@ class AgentBridge {
       isLastResponse: pageAdapter ? pageAdapter.isLastResponseCurrent() : false,
       queuedCount: queuedCount,
       pageType: pageAdapter.pageType,
-      count: CONFIG.llmContextCountModuloForAlign
+      count: CONFIG.llmContextCountModuloForAlign,
+      lockAgent: this.lockAgentEnabled
     });
   }
 }

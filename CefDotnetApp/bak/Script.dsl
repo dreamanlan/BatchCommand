@@ -192,7 +192,8 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, "  let pageAdapter = null;");
 		append_line($sb, "  let metadslMonitor = null;");
 		append_line($sb, "  let panel = null;");
-		append_line($sb, "  let gameWindow = null;");
+		append_line($sb, "  let projectWindow = null;");
+		append_line($sb, "  let chatRoomWindow = null;");
 		append_line($sb, read_file(combine_path($base, "config.js")));
 		append_line($sb, read_file(combine_path($base, "logger.js")));
 		append_line($sb, read_file(combine_path($base, "secret_store.js")));
@@ -1047,6 +1048,7 @@ script(handle_agent_notification)params($jsonData)
 		$queuedCount = get_message_param($data, "queuedCount");
 		$pageType = get_message_param($data, "pageType");
 		$count = get_message_param($data, "count");
+		$lockAgent = get_message_param($data, "lockAgent");
 		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
 		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
 
@@ -1071,7 +1073,7 @@ script(handle_agent_notification)params($jsonData)
 				send_command_to_inject("send_message", to_json({text: "继续"}));
 				return(true);
 			}
-			elif (string_contains($lastScannedMessage, "确定吗") || string_contains($lastScannedMessage, "确认吗")) {
+			elif (string_contains($lastScannedMessage, "确定吗") || string_contains($lastScannedMessage, "确认吗") || string_contains($lastScannedMessage, "修改吗")) {
 				nativelog("[dsl] Sending '确定' to LLM");
 
 				send_command_to_inject("send_message", to_json({text: "确定"}));
@@ -1131,6 +1133,14 @@ script(handle_agent_notification)params($jsonData)
 			elif (file_exists($planPath)) {
 				nativelog("[dsl] lastFromLLM=true, queuedCount={0} induction_plan", $queuedCount);
 				induction_plan();
+
+				if ($lockAgent) {
+					$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
+				}
+				else {
+					$prompt = "正在更新计划，请继续";
+				};
+				send_command_to_inject("send_message", to_json({text: $prompt}));
 			}
 			else {
 				nativelog("[dsl] lastFromLLM=true, queuedCount={0} enter else branch", $queuedCount);
@@ -1148,6 +1158,14 @@ script(handle_agent_notification)params($jsonData)
 			elif (file_exists($planPath)) {
 				nativelog("[dsl] lastFromLLM=false, queuedCount={0} induction_plan", $queuedCount);
 				induction_plan();
+
+				if ($lockAgent) {
+					$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
+				}
+				else {
+					$prompt = "正在更新计划，请继续";
+				};
+				send_command_to_inject("send_message", to_json({text: $prompt}));
 			}
 			else {
 				nativelog("[dsl] lastFromLLM=false, queuedCount={0} enter else branch", $queuedCount);

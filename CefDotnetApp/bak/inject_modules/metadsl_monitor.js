@@ -853,6 +853,22 @@ class MetaDSLMonitor {
         return;
       }
 
+      // Check if this is a stable block upgrading from a streaming prefix.
+      // Streaming blocks have ID "blk_<hash>_", stable blocks "blk_<hash>_<tokenHash>".
+      // If a prefix match is found, upgrade: replace the old prefix ID with the full ID.
+      const idParts = blockId.split('_');
+      if (idParts.length === 3 && idParts[2] !== '') {
+        // This is a stable block (has tokenInfoHash), check for streaming prefix
+        const streamingPrefix = `blk_${idParts[1]}_`;
+        if (this.processedBlocks.has(streamingPrefix)) {
+          this.processedBlocks.delete(streamingPrefix);
+          this.processedBlocks.add(blockId);
+          this.lastBlockContent.delete(streamingPrefix);
+          this.debug(`Upgraded streaming block ${streamingPrefix} -> ${blockId}`);
+          return;
+        }
+      }
+
       newBlocksCount++;
 
       const rawCode = block.textContent.trim();
@@ -980,20 +996,47 @@ class MetaDSLMonitor {
   }
 
   getBlockId(block) {
-    // Use cached ID if available
+    // Use cached ID if available, but only if it has tokenInfoHash (stable)
     if (this.blockIdCache.has(block)) {
-      return this.blockIdCache.get(block);
+      const cached = this.blockIdCache.get(block);
+      // Only return cached value if it has tokenInfoHash (not ending with _)
+      const parts = cached.split('_');
+      if (parts.length === 3 && parts[2] !== '') {
+        return cached;
+      }
+      // Cached ID has no tokenInfoHash, re-check if token info is now available
     }
 
-    // Generate stable ID based on content hash only (no sequence number)
-    // This ensures the same content always gets the same ID even after
-    // virtual scroll destroys and recreates DOM elements
+    // Generate stable ID: blk_${contentHash}_${tokenInfoHash}
+    // When token info is absent (streaming), tokenInfoHash is empty,
+    // producing a prefix ID like "blk_abc123_". Once the message completes
+    // and token info appears, the full ID becomes "blk_abc123_tok456".
+    // This prefix relationship is used to upgrade streaming blocks to stable ones.
     const content = block.textContent.trim();
     const contentHash = this.hashString(content);
-    const blockId = `blk_${contentHash}`;
 
-    // Cache the ID for this block
-    this.blockIdCache.set(block, blockId);
+    // Find token info from the parent message container's el-tag
+    let tokenInfoHash = '';
+    let msgContainer = block.parentElement;
+    while (msgContainer && !msgContainer.classList.contains('vac-message-box')) {
+      msgContainer = msgContainer.parentElement;
+    }
+    if (msgContainer) {
+      const tokenTag = msgContainer.querySelector('.el-tag .el-tag__content');
+      if (tokenTag) {
+        const tokenText = tokenTag.textContent.trim();
+        if (tokenText) {
+          tokenInfoHash = this.hashString(tokenText);
+        }
+      }
+    }
+
+    const blockId = `blk_${contentHash}_${tokenInfoHash}`;
+
+    // Only cache when tokenInfoHash is present (stable ID)
+    if (tokenInfoHash) {
+      this.blockIdCache.set(block, blockId);
+    }
 
     return blockId;
   }

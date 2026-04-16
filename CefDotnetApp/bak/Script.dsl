@@ -746,7 +746,7 @@ script(trigger_pattern_recognition)params($recentCount)
 	nativelog("[dsl] trigger_pattern_recognition called");
 
 	// Collect recent episodic memories
-	$episodicMemories = semantic_get_recent(@EpisodicMemory, iif($recentCount > 0, $recentCount, 20));
+	$episodicMemories = semantic_get_recent(@EpisodicMemory, ($recentCount > 0 ? $recentCount : 20));
 	if(isnullorempty($episodicMemories) || $episodicMemories == "[]"){
 		nativelog("[dsl] trigger_pattern_recognition: no episodic memories, skip");
 		return;
@@ -1122,10 +1122,14 @@ script(handle_agent_notification)params($jsonData)
 					};
 					return(true);
 				}
+				elif (string_contains_any($lastScannedMessage, "js_request", "js_eval")) {
+					nativelog("[dsl] 已提交JS执行请求");
+					return(true);
+				}
 				else {
 					nativelog("[dsl] Sending 'metadsl代码要使用markdown代码块语法' to LLM");
 
-					$prompt = format("ref{{:\n{0}\n:}};\n\nmetadsl代码要使用markdown代码块语法", $lastScannedMessage);
+					$prompt = format("ref{{:\n{0}\n:}};\n\n请等待代码结果\n\n或者请检查metadsl代码是否使用了markdown代码块语法，如果没有请重新提交", $lastScannedMessage);
 					send_command_to_inject("send_message", to_json({text: $prompt}));
 					return(true);
 				};

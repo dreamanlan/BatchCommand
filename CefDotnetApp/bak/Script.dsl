@@ -332,8 +332,8 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		set_plan($reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
-		trigger_soul_evolution();
-		send_command_to_inject("send_message", to_json({text: $reply}));
+		$replyWithReminder = format("{0}\n\n[Reminder: Check if Soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
+		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
 	}
 	elif ($tag == "llm_pm_context") {
 		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
@@ -362,13 +362,6 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		llm_clear_history(@LlmProviderId, "meta_cognition");
 		nativelog("[dsl] Meta-cognition memory saved: {0}", getstringinlength($reply, 200, 1));
 	}
-	elif ($tag == "soul_evolution") {
-		$soulFile = combine_path(@ProjectDirectory, "docs/Soul.md");
-		write_file($soulFile, $reply);
-		set_soul($reply);
-		llm_clear_history(@LlmProviderId, "soul_evolution");
-		nativelog("[dsl] Soul.md evolved: {0}", getstringinlength($reply, 200, 1));
-	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
 		llm_clear_history(@LlmProviderId, "llm_pm_marquis");
@@ -389,7 +382,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		if ($queuedCount > 0) {
 			$reply = format("{0}\n**还有{1}个代码要执行，不要再发新代码，回复继续即可**", $reply, $queuedCount);
 		};
-		send_command_to_inject("send_llm_callback", to_json({text: $reply}));
+		send_command_to_inject("send_message", to_json({text: $reply}));
 	};
 };
 
@@ -723,14 +716,15 @@ script(trigger_reflection)params()
 	$prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $todoHistory, $contextHistory);
 
 	// Set reflection system prompt
-	$sysPrompt = "你是一个经验反思助手。根据提供的对话历史，提取结构化的经验记录。" +
+	$sysPrompt = "你是一个经验反思助手。根据对话历史提取结构化经验记录。" +
+		"严格要求：只记录具体事实和操作，禁止抽象总结、口号式描述。" +
+		"每条必须包含具体文件名、函数名、命令或操作步骤。\n" +
 		"输出格式：\n" +
-		"【任务】：简述完成了什么任务\n" +
-		"【方法】：使用了什么方法/工具\n" +
-		"【结果】：成功/失败，关键结果\n" +
-		"【经验】：可复用的经验教训\n" +
-		"【注意】：踩过的坑或需要注意的点\n\n" +
-		"请简洁明了，控制在500字以内，一次回复输出完成。";
+		"【任务】：具体做了什么（含文件/函数）\n" +
+		"【方法】：用了什么工具和具体命令\n" +
+		"【结果】：成功/失败及具体表现\n" +
+		"【教训】：踩过的坑（附具体场景）\n\n" +
+		"控制在300字以内，一次回复输出完成。";
 	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
 
 	// Send reflection request
@@ -755,13 +749,14 @@ script(trigger_pattern_recognition)params($recentCount)
 	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
 
 	// Set pattern recognition system prompt
-	$sysPrompt = "你是一个模式识别助手。根据提供的多条情景记忆，识别其中的重复模式和共性经验。" +
+	$sysPrompt = "你是一个模式识别助手。根据多条情景记忆，识别重复模式和共性经验。" +
+		"严格要求：每个模式必须引用至少2条具体情景记忆作为证据，禁止空洞归纳。" +
+		"禁止出现'建立xxx机制'、'深化xxx认知'等口号式描述。\n" +
 		"输出格式：\n" +
-		"【模式】：识别到的重复行为模式或工作规律\n" +
-		"【频率】：该模式出现的大致频率（高/中/低）\n" +
-		"【建议】：基于该模式的优化建议或最佳实践\n" +
-		"【风险】：该模式可能带来的风险或需要警惕的点\n\n" +
-		"可以识别多个模式，每个模式独立输出。请简洁明了，控制在800字以内，一次回复输出完成。";
+		"【模式】：识别到的具体行为模式（附情景记忆编号）\n" +
+		"【证据】：支撑该模式的具体事例\n" +
+		"【建议】：基于该模式的具体操作建议\n\n" +
+		"控制在300字以内，一次回复输出完成。";
 	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
 
 	// Send pattern recognition request
@@ -792,13 +787,14 @@ script(trigger_meta_cognition)params()
 	};
 
 	// Set meta-cognition system prompt
-	$sysPrompt = "你是一个元认知反思助手。根据提供的模式记忆和情景记忆，进行更高层次的反思。" +
+	$sysPrompt = "你是一个元认知反思助手。根据模式记忆和情景记忆，进行高层反思。" +
+		"严格要求：每条原则必须附带具体案例，禁止空洞口号。" +
+		"禁止出现'建立xxx机制'、'深化xxx认知'、'强化xxx能力'等虚无描述。\n" +
 		"输出格式：\n" +
-		"【决策原则】：从模式中提炼的通用决策原则\n" +
-		"【认知偏差】：发现的认知偏差或思维盲区\n" +
-		"【改进策略】：具体的改进策略和行动建议\n" +
-		"【自我评估】：对当前工作方式的整体评估\n" +
-		"请简洁明了，控制在600字以内，一次回复输出完成。";
+		"【决策原则】：从模式中提炼的原则（附具体案例）\n" +
+		"【认知偏差】：发现的思维盲区（附触发场景）\n" +
+		"【改进建议】：具体可执行的操作建议\n\n" +
+		"控制在300字以内，一次回复输出完成。";
 	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
 
 	// Send meta-cognition request
@@ -807,31 +803,6 @@ script(trigger_meta_cognition)params()
 	llm_chat(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
 
 	nativelog("[dsl] trigger_meta_cognition: meta-cognition request sent");
-};
-script(trigger_soul_evolution)params()
-{
-	$metaCogCount = semantic_count(@MetaCognitionMemory);
-	if ($metaCogCount <= 0) {
-		nativelog("[dsl] trigger_soul_evolution: no meta-cognition memories, skip");
-		return;
-	};
-
-	$currentSoul = read_file(combine_path(@ProjectDirectory, "docs/Soul.md"));
-	$recentMetaCog = semantic_get_recent(@MetaCognitionMemory, 5);
-
-	$prompt = new_string_builder();
-	append_line($prompt, "You are a Soul evolution specialist. Based on the following meta-cognition insights, improve and evolve the current Soul profile.");
-	append_line($prompt, "");
-	append_line($prompt, "== Current Soul ==");
-	append_line($prompt, $currentSoul);
-	append_line($prompt, "");
-	append_line($prompt, "== Recent Meta-Cognition Insights ==");
-	append_line($prompt, to_string($recentMetaCog));
-	append_line($prompt, "");
-	append_line($prompt, "Please output the complete updated Soul.md content. Keep the overall structure but refine personality traits, working principles, and decision patterns based on the meta-cognition insights. Output ONLY the Soul.md content, no extra explanation.");
-
-	llm_chat(@LlmProviderId, "soul_evolution", "soul_evolution", string_builder_to_string($prompt));
-	nativelog("[dsl] trigger_soul_evolution: soul evolution request sent");
 };
 script(SaveHistory)params()
 {

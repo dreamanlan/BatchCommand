@@ -1266,7 +1266,7 @@ class MetaDSLMonitor {
       messageStr += String(message).trim();
     }
 
-    if (messageStr.indexOf("MetaDSL") >= 0 && this.operationQueue.length > 0) {
+    if (this.operationQueue.length > 0) {
       messageStr += '\n\n特别注意：当前有' + this.operationQueue.length + '个操作在排队执行，你看到消息后只回复继续即可，不要再发新的metadsl代码块';
     }
 

@@ -304,10 +304,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     // Execute script asynchronously with callback via command_callback CEF message
-    sealed class ExecuteScriptAsyncExp : ProcessCommandExpBase
+    sealed class ExecuteScriptCallbackExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script_async(callbackTag[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script_callback(callbackMsg[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
@@ -317,7 +317,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
 
             try {
-                string callbackTag = operands[0].AsString;
+                string callbackMsg = operands[0].AsString;
                 string language = operands.Count > 1 ? operands[1].ToString().Trim().ToLower() : "python";
                 string? workingDir = operands.Count > 2 ? operands[2].AsString : null;
                 int timeout = operands.Count > 3 ? operands[3].GetInt() : 30000;
@@ -333,7 +333,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 File.WriteAllText(file, script);
 
                 var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
-                Core.AgentCore.Instance.ProcessOps.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackTag, file);
+                Core.AgentCore.Instance.ProcessOps.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg, file);
                 return BoxedValue.FromString($"ok, async exec '{file}', result via command_callback");
             }
             catch (Exception ex) {
@@ -385,9 +385,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     // Execute command asynchronously with callback via command_callback CEF message
-    sealed class ExecuteCommandAsyncExp : ProcessCommandExpBase
+    sealed class ExecuteCommandCallbackExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command_async(callbackTag, command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command_callback(callbackMsg, command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
@@ -397,7 +397,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
 
             try {
-                string callbackTag = operands[0].AsString;
+                string callbackMsg = operands[0].AsString;
                 string command = operands[1].AsString;
                 string? arguments = operands.Count > 2 ? operands[2].AsString : null;
                 string? workingDir = operands.Count > 3 ? operands[3].AsString : null;
@@ -407,7 +407,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 if (arguments != null)
                     arguments = ApplyTemplate(arguments, bindingVals);
 
-                Core.AgentCore.Instance.ProcessOps.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackTag);
+                Core.AgentCore.Instance.ProcessOps.ExecuteCommandWithCallback(command, arguments, workingDir, timeout, callbackMsg);
                 return BoxedValue.FromString("ok, async exec, result via command_callback");
             }
             catch (Exception ex) {

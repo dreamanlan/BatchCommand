@@ -19,6 +19,64 @@ using DotnetStoryScript.DslExpression;
 #pragma warning disable 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416
 namespace BatchCommand
 {
+    internal sealed class StartAsyncTaskExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1)
+                throw new Exception("Expected: startasynctask(func_name, args...) api");
+            string funcName = operands[0].AsString;
+            var args = BatchScript.NewCalculatorValueList();
+            for (int i = 1; i < operands.Count; i++) {
+                args.Add(operands[i]);
+            }
+            int handle = BatchScript.StartAsyncTask(funcName, args);
+            BatchScript.RecycleCalculatorValueList(args);
+            return BoxedValue.From(handle);
+        }
+    }
+    internal sealed class TickAsyncTasksExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count > 0)
+                throw new Exception("Expected: tickasynctasks() api");
+            int activeCount = BatchScript.TickAsyncTasks();
+            return BoxedValue.From(activeCount);
+        }
+    }
+    internal sealed class StopAsyncTaskExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1)
+                throw new Exception("Expected: stopasynctask(handle) api");
+            int handle = operands[0].GetInt();
+            bool removed = BatchScript.StopAsyncTask(handle);
+            return BoxedValue.FromBool(removed);
+        }
+    }
+    internal sealed class StopCompletedAsyncTasksExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count > 0)
+                throw new Exception("Expected: stopcompletedasynctasks() api");
+            int removedCount = BatchScript.StopCompletedAsyncTasks();
+            return BoxedValue.From(removedCount);
+        }
+    }
+    internal sealed class GetAsyncTaskResultExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1)
+                throw new Exception("Expected: getasynctaskresult(handle) api");
+            int handle = operands[0].GetInt();
+            bool res = BatchScript.TryGetAsyncTaskResult(handle, out bool isCompleted, out BoxedValue value);
+            return Tuple.Create(BoxedValue.FromBool(res), BoxedValue.FromBool(isCompleted), value);
+        }
+    }
     internal sealed class DebuggerLaunchExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1392,6 +1450,14 @@ namespace BatchCommand
                 return s_Calculator;
             }
         }
+        public static Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>> AsyncTasks
+        {
+            get {
+                if (s_AsyncTasks == null)
+                    s_AsyncTasks = new Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>>();
+                return s_AsyncTasks;
+            }
+        }
         public static List<string> EmptyStringList
         {
             get {
@@ -1463,6 +1529,11 @@ namespace BatchCommand
             Calculator.Init();
 
             //register Gm Command
+            Calculator.Register("startasynctask", "startasynctask(func_name,arg1,arg2,...) api, start an async script function and return a handle", new ExpressionFactoryHelper<StartAsyncTaskExp>());
+            Calculator.Register("tickasynctasks", "tickasynctasks() api, tick all async tasks, return active task count", new ExpressionFactoryHelper<TickAsyncTasksExp>());
+            Calculator.Register("stopasynctask", "stopasynctask(handle) api, stop and remove an async task by handle", new ExpressionFactoryHelper<StopAsyncTaskExp>());
+            Calculator.Register("stopcompletedasynctasks", "stopcompletedasynctasks() api, remove all completed async tasks and return removed count", new ExpressionFactoryHelper<StopCompletedAsyncTasksExp>());
+            Calculator.Register("getasynctaskresult", "getasynctaskresult(handle) api, get the result of a completed async task, tuple (success, completed, result)", new ExpressionFactoryHelper<GetAsyncTaskResultExp>());
             Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
             Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
             Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin_end_or_beginend])", new ExpressionFactoryHelper<GetStringInLengthExp>());
@@ -1627,7 +1698,7 @@ namespace BatchCommand
                     }
                     else {
                         vargs.Clear();
-                        foreach(var o in list) {
+                        foreach (var o in list) {
                             vargs.Add(BoxedValue.FromObject(o));
                         }
                         scpFile = Environment.ExpandEnvironmentVariables(vargs[0].AsString);
@@ -1784,7 +1855,96 @@ namespace BatchCommand
                 return Encoding.UTF8;
             }
         }
-
+        public static int StartAsyncTask(string func, List<BoxedValue> args)
+        {
+            var asyncResult = new AsyncCalcResult();
+            var enumerator = Calculator.CalcAsync(func, args, asyncResult);
+            if (enumerator == null) {
+                return -1;
+            }
+            var tasks = AsyncTasks;
+            int handle = NextAsyncTaskId();
+            tasks[handle] = new Tuple<IEnumerator, AsyncCalcResult>(enumerator, asyncResult);
+            return handle;
+        }
+        public static int TickAsyncTasks()
+        {
+            var tasks = AsyncTasks;
+            if (tasks.Count == 0)
+                return 0;
+            var keys = AsyncTaskTickKeys;
+            keys.Clear();
+            foreach (var key in tasks.Keys) {
+                keys.Add(key);
+            }
+            int activeCount = 0;
+            for (int i = 0; i < keys.Count; i++) {
+                int key = keys[i];
+                if (tasks.TryGetValue(key, out var task)) {
+                    if (task.Item2.IsCompleted) {
+                        continue;
+                    }
+                    bool hasMore = task.Item1.MoveNext();
+                    if (!hasMore) {
+                        task.Item2.IsCompleted = true;
+                    }
+                    else {
+                        activeCount++;
+                    }
+                }
+            }
+            return activeCount;
+        }
+        public static bool StopAsyncTask(int handle)
+        {
+            var tasks = AsyncTasks;
+            bool removed = tasks.Remove(handle);
+            return removed;
+        }
+        public static int StopCompletedAsyncTasks()
+        {
+            var tasks = BatchScript.AsyncTasks;
+            var keys = BatchScript.AsyncTaskTickKeys;
+            keys.Clear();
+            foreach (var key in tasks.Keys) {
+                keys.Add(key);
+            }
+            int removedCount = 0;
+            for (int i = 0; i < keys.Count; i++) {
+                int key = keys[i];
+                if (tasks.TryGetValue(key, out var task)) {
+                    if (task.Item2.IsCompleted) {
+                        tasks.Remove(key);
+                        removedCount++;
+                    }
+                }
+            }
+            return removedCount;
+        }
+        public static bool TryGetAsyncTaskResult(int handle, out bool isCompleted, out BoxedValue result)
+        {
+            var tasks = BatchScript.AsyncTasks;
+            if (tasks.TryGetValue(handle, out var task)) {
+                isCompleted = task.Item2.IsCompleted;
+                result = task.Item2.Value;
+                return true;
+            }
+            isCompleted = false;
+            result = BoxedValue.NullObject;
+            return false;
+        }
+        internal static List<int> AsyncTaskTickKeys
+        {
+            get {
+                if (s_AsyncTaskTickKeys == null)
+                    s_AsyncTaskTickKeys = new List<int>();
+                return s_AsyncTaskTickKeys;
+            }
+        }
+        internal static int NextAsyncTaskId()
+        {
+            return ++s_AsyncTaskIdSeed;
+        }
         private static void LoadDslHelper(string file)
         {
             DslFile dslFile = new DslFile();
@@ -1820,6 +1980,13 @@ namespace BatchCommand
         private static StringBuilder s_DslErrorInfo;
         [ThreadStatic]
         private static SortedList<string, string> s_UserApiDocs;
+        [ThreadStatic]
+        private static Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>> s_AsyncTasks;
+        [ThreadStatic]
+        private static int s_AsyncTaskIdSeed;
+        [ThreadStatic]
+        private static List<int> s_AsyncTaskTickKeys;
+
     }
 }
 #pragma warning restore 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416

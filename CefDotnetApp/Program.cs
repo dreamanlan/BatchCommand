@@ -392,6 +392,21 @@ namespace DotNetLib
             return sb.ToString();
         }
     }
+    sealed class EnqueueCefMessageExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1)
+                throw new Exception("Expected: startasynctask(func_name, args...) api");
+            string funcName = operands[0].AsString;
+            var args = new string[operands.Count - 1];
+            for (int i = 1; i < operands.Count; i++) {
+                args[i-1] = operands[i].AsString;
+            }
+            bool r = Lib.EnqueueCefMessage(funcName, args);
+            return BoxedValue.FromBool(r);
+        }
+    }
     sealed class HandleThreadQueueExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -415,8 +430,8 @@ namespace DotNetLib
             if (operands.Count >= 4) {
                 maxFuncCount = operands[3].GetInt();
             }
-            Lib.HandleThreadQueue(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
-            return BoxedValue.NullObject;
+            bool r = Lib.HandleThreadQueue(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
+            return BoxedValue.FromBool(r);
         }
     }
     sealed class SetHeartBeatIntervalExp : SimpleExpressionBase
@@ -425,11 +440,11 @@ namespace DotNetLib
         {
             if (operands.Count != 1) {
                 NativeApi.AppendApiErrorInfoLine("Expected: set_heartbeat_interval(interval_ms)");
-                return BoxedValue.NullObject;
+                return BoxedValue.FromBool(false);
             }
             int intervalMs = operands[0].GetInt();
-            Lib.SetHeartbeatInterval(intervalMs);
-            return BoxedValue.NullObject;
+            bool r = Lib.SetHeartbeatInterval(intervalMs);
+            return BoxedValue.FromBool(r);
         }
     }
     sealed class GetBrowserIdsExp : SimpleExpressionBase
@@ -2858,16 +2873,27 @@ namespace DotNetLib
                 JsLogNoLock(msg);
             }
         }
-        internal static void HandleThreadQueue(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
+        internal static bool EnqueueCefMessage(string msg, params string[] args)
+        {
+            if (null != s_NativeApi) {
+                s_NativeApi.EnqueueCefMessage(msg, args);
+                return true;
+            }
+            return false;
+        }
+        internal static bool HandleThreadQueue(int maxNativeCount, int maxJsCount, int maxCodeCount, int maxFuncCount)
         {
             bool isMainThread = Thread.CurrentThread.ManagedThreadId == s_MainThreadId;
             if (isMainThread && null != s_NativeApi) {
                 s_NativeApi.HandleAllQueues(maxNativeCount, maxJsCount, maxCodeCount, maxFuncCount);
+                return true;
             }
+            return false;
         }
-        internal static void SetHeartbeatInterval(int intervalMs)
+        internal static bool SetHeartbeatInterval(int intervalMs)
         {
             s_NativeApi?.SetHeartbeatInterval(intervalMs);
+            return null != s_NativeApi;
         }
         /// <summary>
         /// Get all tracked browser IDs for the current process.
@@ -3234,6 +3260,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
+            BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 
@@ -3372,6 +3399,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("try_get_raw_switch", "try_get_raw_switch(str)", new ExpressionFactoryHelper<TryGetRawCommandLineSwitchExp>());
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
+            BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 

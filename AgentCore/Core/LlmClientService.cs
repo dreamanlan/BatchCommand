@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AgentPlugin.Abstractions;
 using System.Collections.Concurrent;
 using System.Text;
@@ -146,7 +146,7 @@ namespace CefDotnetApp.AgentCore.Core
         /// Sends a chat message asynchronously.
         /// Returns "ok" immediately; result arrives via llm_callback(providerId, tag, topic, reply).
         /// </summary>
-        public string Chat(string providerId, string tag, string topic, string message)
+        public string ChatCallback(string providerId, string tag, string topic, string message)
         {
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
@@ -181,13 +181,46 @@ namespace CefDotnetApp.AgentCore.Core
 
             return "ok";
         }
+        /// <summary>
+        /// Sends a chat message and returns the reply directly via Task.
+        /// Used by async script expressions (llm_chat_async).
+        /// </summary>
+        public Task<string> ChatAsync(string providerId, string tag, string topic, string message)
+        {
+            if (!_providers.TryGetValue(providerId, out var provider))
+                return Task.FromResult($"error: provider '{providerId}' not configured");
+
+            string sessionKey = $"{providerId}:{tag}";
+            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
+                return Task.FromResult("error: busy");
+
+            _busySessions[sessionKey] = true;
+
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    return await provider.ChatAsync(tag, topic, message);
+                }
+                catch (Exception ex)
+                {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatForScriptAsync error for '{providerId}/{tag}': {ex.Message}");
+                    return $"[error] {ex.Message}";
+                }
+                finally
+                {
+                    _busySessions[sessionKey] = false;
+                }
+            });
+        }
+
 
         /// <summary>
         /// Sends a chat message with attached image URLs asynchronously.
         /// Returns "ok" immediately; result arrives via llm_callback.
         /// Only auto_metadsl actually sends images; other providers ignore them.
         /// </summary>
-        public string ChatWithImages(string providerId, string tag, string topic, string message, string[] imageUrls)
+        public string ChatWithImagesCallback(string providerId, string tag, string topic, string message, string[] imageUrls)
         {
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
@@ -221,6 +254,39 @@ namespace CefDotnetApp.AgentCore.Core
             });
 
             return "ok";
+        }
+
+        /// <summary>
+        /// Sends a chat message with images and returns the reply directly via Task.
+        /// Used by async script expressions (llm_chat_with_images_async).
+        /// </summary>
+        public Task<string> ChatWithImagesAsync(string providerId, string tag, string topic, string message, string[] imageUrls)
+        {
+            if (!_providers.TryGetValue(providerId, out var provider))
+                return Task.FromResult($"error: provider '{providerId}' not configured");
+
+            string sessionKey = $"{providerId}:{tag}";
+            if (_busySessions.TryGetValue(sessionKey, out var busy) && busy)
+                return Task.FromResult("error: busy");
+
+            _busySessions[sessionKey] = true;
+
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    return await provider.ChatWithImagesAsync(tag, topic, message, imageUrls);
+                }
+                catch (Exception ex)
+                {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImagesForScriptAsync error for '{providerId}/{tag}': {ex.Message}");
+                    return $"[error] {ex.Message}";
+                }
+                finally
+                {
+                    _busySessions[sessionKey] = false;
+                }
+            });
         }
 
         /// <summary>Clears conversation history for the given provider+tag session.</summary>

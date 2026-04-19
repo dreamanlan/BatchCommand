@@ -77,25 +77,25 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// mcp_call_tool(serverId, toolName, argsJson, callbackTag)
+    /// mcp_call_tool_callback(serverId, toolName, argsJson, tag)
     /// Calls an MCP tool asynchronously.
     /// argsJson: JSON object of tool arguments, e.g. {"path":"/tmp/foo.txt"}
-    /// Result arrives via mcp_callback CEF message: (serverId, callbackTag, resultText)
+    /// Result arrives via mcp_callback CEF message: (serverId, tag, resultText)
     /// Returns "ok" or an error string.
     /// </summary>
-    sealed class McpCallToolExp : SimpleExpressionBase
+    sealed class McpCallToolCallbackExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson, callbackTag)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_call_tool_callback requires (serverId, toolName, argsJson, tag)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string serverId = operands[0].AsString;
             string toolName = operands[1].AsString;
             string argsJson = operands[2].AsString;
-            string callbackTag = operands[3].AsString;
-            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson, callbackTag));
+            string tag = operands[3].AsString;
+            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.CallToolCallback(serverId, toolName, argsJson, tag));
         }
     }
 
@@ -140,6 +140,33 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// mcp_call_tool(serverId, toolName, argsJson)
+    /// Synchronously calls an MCP tool and blocks until the result is received.
+    /// Returns the result string directly.
+    /// </summary>
+    sealed class McpCallToolExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_call_tool requires (serverId, toolName, argsJson)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string toolName = operands[1].AsString;
+            string argsJson = operands[2].AsString;
+            try {
+                string result = CefDotnetApp.AgentCore.Core.McpClientService.Instance.CallTool(serverId, toolName, argsJson).GetAwaiter().GetResult();
+                return BoxedValue.FromString(result);
+            }
+            catch (System.Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"mcp_call_tool error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
     /// Registers all MCP DSL APIs
     /// </summary>
     public static class McpApi
@@ -158,15 +185,19 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_list_tools",
                 "mcp_list_tools(serverId) - list available tools on MCP server (LLM-friendly format)",
                 new ExpressionFactoryHelper<McpListToolsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool",
-                "mcp_call_tool(serverId, toolName, argsJson, callbackTag) - call MCP tool async, result via mcp_callback CEF message",
-                new ExpressionFactoryHelper<McpCallToolExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool_callback",
+                "mcp_call_tool_callback(serverId, toolName, argsJson, tag) - call MCP tool async, result via mcp_callback CEF message",
+                new ExpressionFactoryHelper<McpCallToolCallbackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_set_option",
                 "mcp_set_option(serverId, key, value) - set connection option before mcp_connect, key='timeout'(ms) or 'header'(Name:Value)",
                 new ExpressionFactoryHelper<McpSetOptionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_clear_options",
                 "mcp_clear_options(serverId) - clear all pending connection options for a server",
                 new ExpressionFactoryHelper<McpClearOptionsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool",
+                "mcp_call_tool(serverId, toolName, argsJson) - synchronous tool call, blocks until result is received and returns it directly",
+                new ExpressionFactoryHelper<McpCallToolExp>());
+
         }
     }
 }

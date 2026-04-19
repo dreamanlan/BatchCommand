@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Threading.Tasks;
+
+using System.Collections.Generic;
 using AgentPlugin.Abstractions;
 using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
@@ -54,40 +57,40 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// llm_chat(provider_id, tag, topic, message)
+    /// llm_chat_callback(provider_id, tag, topic, message)
     /// Sends a message to the specified provider+session.
     /// Returns "ok", "busy", or an error string.
     /// Full reply arrives via llm_callback(provider_id, tag, topic, reply) CEF message.
     /// </summary>
-    sealed class LlmChatExp : SimpleExpressionBase
+    sealed class LlmChatCallbackExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_callback requires (provider_id, tag, topic, message)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
             string tag = operands[1].AsString;
             string topic = operands[2].AsString;
             string message = operands[3].AsString;
-            return BoxedValue.FromString(Core.LlmClientService.Instance.Chat(providerId, tag, topic, message));
+            return BoxedValue.FromString(Core.LlmClientService.Instance.ChatCallback(providerId, tag, topic, message));
         }
     }
 
     /// <summary>
-    /// llm_chat_with_images(provider_id, tag, topic, message [, image_url1, image_url2, ...])
+    /// llm_chat_with_images_callback(provider_id, tag, topic, message [, image_url1, image_url2, ...])
     /// Sends a message with attached image URLs to the specified provider+session.
     /// Images must be COS URLs (starting with http:// or https://).
     /// Returns "ok", "busy", or an error string.
     /// Full reply arrives via llm_callback(provider_id, tag, topic, reply) CEF message.
     /// </summary>
-    sealed class LlmChatWithImagesExp : SimpleExpressionBase
+    sealed class LlmChatWithImagesCallbackExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_with_images_callback requires (provider_id, tag, topic, message [, image_url1, image_url2, ...])");
                 return BoxedValue.FromString("error: missing parameters");
             }
             string providerId = operands[0].AsString;
@@ -104,7 +107,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 imageUrls.Add(url);
             }
-            return BoxedValue.FromString(Core.LlmClientService.Instance.ChatWithImages(providerId, tag, topic, message, imageUrls.ToArray()));
+            return BoxedValue.FromString(Core.LlmClientService.Instance.ChatWithImagesCallback(providerId, tag, topic, message, imageUrls.ToArray()));
         }
     }
 
@@ -227,6 +230,135 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// llm_chat_async(provider_id, tag, topic, message) - async version that waits for LLM reply.
+    /// Returns the LLM reply string directly (no CEF callback).
+    /// Must be used inside an async script context (startasync/tickasync).
+    /// </summary>
+    internal sealed class LlmChatAsyncExp : SimpleAsyncExpressionBase
+    {
+        protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+        {
+            if (operands.Count < 4)
+            {
+                result.Value = BoxedValue.FromString("error: llm_chat_async requires 4 args: provider_id, tag, topic, message");
+                yield break;
+            }
+            string providerId = operands[0].GetString();
+            string tag = operands[1].GetString();
+            string topic = operands[2].GetString();
+            string message = operands[3].GetString();
+
+            var task = Core.LlmClientService.Instance.ChatAsync(providerId, tag, topic, message);
+            while (!task.IsCompleted)
+                yield return null;
+
+            if (task.IsFaulted)
+                result.Value = BoxedValue.FromString($"[error] {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+            else
+                result.Value = BoxedValue.FromString(task.Result);
+        }
+    }
+
+    /// <summary>
+    /// llm_chat_with_images_async(provider_id, tag, topic, message, img1, img2, ...) - async version with images.
+    /// Returns the LLM reply string directly (no CEF callback).
+    /// Must be used inside an async script context (startasync/tickasync).
+    /// </summary>
+    internal sealed class LlmChatWithImagesAsyncExp : SimpleAsyncExpressionBase
+    {
+        protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+        {
+            if (operands.Count < 5)
+            {
+                result.Value = BoxedValue.FromString("error: llm_chat_with_images_async requires at least 5 args: provider_id, tag, topic, message, image_url...");
+                yield break;
+            }
+            string providerId = operands[0].GetString();
+            string tag = operands[1].GetString();
+            string topic = operands[2].GetString();
+            string message = operands[3].GetString();
+            var imageUrls = new string[operands.Count - 4];
+            for (int i = 4; i < operands.Count; i++)
+                imageUrls[i - 4] = operands[i].GetString();
+
+            var task = Core.LlmClientService.Instance.ChatWithImagesAsync(providerId, tag, topic, message, imageUrls);
+            while (!task.IsCompleted)
+                yield return null;
+
+            if (task.IsFaulted)
+                result.Value = BoxedValue.FromString($"[error] {task.Exception?.InnerException?.Message ?? task.Exception?.Message}");
+            else
+                result.Value = BoxedValue.FromString(task.Result);
+        }
+    }
+
+    /// <summary>
+    /// llm_chat(provider_id, tag, topic, message)
+    /// Synchronously sends a message and blocks until the LLM reply is received.
+    /// Returns the reply string directly.
+    /// </summary>
+    sealed class LlmChatExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat requires (provider_id, tag, topic, message)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string providerId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            string topic = operands[2].AsString;
+            string message = operands[3].AsString;
+            try {
+                string result = Core.LlmClientService.Instance.ChatAsync(providerId, tag, topic, message).GetAwaiter().GetResult();
+                return BoxedValue.FromString(result);
+            }
+            catch (System.Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"llm_chat error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// llm_chat_with_images(provider_id, tag, topic, message [, image_url1, image_url2, ...])
+    /// Synchronously sends a message with images and blocks until the LLM reply is received.
+    /// Returns the reply string directly.
+    /// </summary>
+    sealed class LlmChatWithImagesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_chat_with_images requires (provider_id, tag, topic, message [, image_url1, ...])");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string providerId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            string topic = operands[2].AsString;
+            string message = operands[3].AsString;
+            var imageUrls = new List<string>();
+            for (int i = 4; i < operands.Count; i++) {
+                string url = operands[i].AsString;
+                if (string.IsNullOrWhiteSpace(url)) continue;
+                if (!url.StartsWith("http://") && !url.StartsWith("https://")) {
+                    return BoxedValue.FromString($"error: image must be a URL (http/https), got: {url}");
+                }
+                imageUrls.Add(url);
+            }
+            try {
+                string result = Core.LlmClientService.Instance.ChatWithImagesAsync(providerId, tag, topic, message, imageUrls.ToArray()).GetAwaiter().GetResult();
+                return BoxedValue.FromString(result);
+            }
+            catch (System.Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"llm_chat_with_images error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
+
+    /// <summary>
     /// Registers all LLM DSL APIs.
     /// </summary>
     public static class LlmApi
@@ -239,12 +371,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("llm_set_provider_option",
                 "llm_set_provider_option(provider_id, key, value) - set provider option (e.g. max_tokens for claude)",
                 new ExpressionFactoryHelper<LlmSetProviderOptionExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat",
-                "llm_chat(provider_id, tag, topic, message) - send message to LLM, full reply via llm_callback CEF message",
-                new ExpressionFactoryHelper<LlmChatExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images",
-                "llm_chat_with_images(provider_id, tag, topic, message [, image_url1, ...]) - send message with images (COS URLs) to LLM",
-                new ExpressionFactoryHelper<LlmChatWithImagesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_callback",
+                "llm_chat_callback(provider_id, tag, topic, message) - send message to LLM, full reply via llm_callback CEF message",
+                new ExpressionFactoryHelper<LlmChatCallbackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images_callback",
+                "llm_chat_with_images_callback(provider_id, tag, topic, message [, image_url1, ...]) - send message with images (COS URLs) to LLM, full reply via llm_callback CEF message",
+                new ExpressionFactoryHelper<LlmChatWithImagesCallbackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("llm_clear_history",
                 "llm_clear_history(provider_id, tag) - clear conversation history for session",
                 new ExpressionFactoryHelper<LlmClearHistoryExp>());
@@ -263,6 +395,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("llm_set_system_prompt",
                 "llm_set_system_prompt(provider_id, tag, prompt) - set system prompt for session (auto_metadsl: injected every context_rounds sends)",
                 new ExpressionFactoryHelper<LlmSetSystemPromptExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_async",
+                "llm_chat_async(provider_id, tag, topic, message) - async chat, returns LLM reply directly (use inside startasync/tickasync)",
+                new ExpressionFactoryHelper<LlmChatAsyncExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images_async",
+                "llm_chat_with_images_async(provider_id, tag, topic, message, img1, ...) - async chat with images, returns LLM reply directly (use inside startasync/tickasync)",
+                new ExpressionFactoryHelper<LlmChatWithImagesAsyncExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat",
+                "llm_chat(provider_id, tag, topic, message) - synchronous chat, blocks until LLM reply is received and returns it directly",
+                new ExpressionFactoryHelper<LlmChatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_chat_with_images",
+                "llm_chat_with_images(provider_id, tag, topic, message [, image_url1, ...]) - synchronous chat with images, blocks until LLM reply is received and returns it directly",
+                new ExpressionFactoryHelper<LlmChatWithImagesExp>());
+
+
         }
     }
 }

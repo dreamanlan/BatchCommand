@@ -173,10 +173,10 @@ namespace CefDotnetApp.AgentCore.Core
 
         /// <summary>
         /// Executes a command asynchronously and sends the result via EnqueueCefMessage.
-        /// callbackTag is used as the CEF message name, resultJson as the argument.
-        /// Returns immediately; result arrives via on_receive_cef_message with msg=callbackTag.
+        /// callbackMsg is used as the CEF message name, resultJson as the argument.
+        /// Returns immediately; result arrives via on_receive_cef_message with msg=callbackMsg.
         /// </summary>
-        public void ExecuteCommandWithCallback(string command, string? arguments, string? workingDirectory, int timeoutMs, string callbackTag, string? cleanupFile = null)
+        public void ExecuteCommandWithCallback(string command, string? arguments, string? workingDirectory, int timeoutMs, string callbackMsg, string? cleanupFile = null)
         {
             var nativeApi = Core.AgentCore.Instance.GetNativeApi();
             if (nativeApi == null) return;
@@ -194,7 +194,7 @@ namespace CefDotnetApp.AgentCore.Core
                         error = result.Error,
                         executionTime = result.ExecutionTime.TotalMilliseconds
                     });
-                    nativeApi.EnqueueCefMessage(callbackTag, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, resultJson });
+                    nativeApi.EnqueueCefMessage(callbackMsg, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, resultJson });
                 }
                 catch (Exception ex)
                 {
@@ -206,7 +206,7 @@ namespace CefDotnetApp.AgentCore.Core
                         error = $"Exception: {ex.Message}",
                         executionTime = 0.0
                     });
-                    nativeApi.EnqueueCefMessage(callbackTag, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, errorJson });
+                    nativeApi.EnqueueCefMessage(callbackMsg, new string[] { command, arguments ?? string.Empty, workingDirectory ?? string.Empty, errorJson });
                 }
                 finally
                 {

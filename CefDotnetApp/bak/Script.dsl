@@ -496,7 +496,7 @@ script(handle_llm_chat_command)params($id, $params)
 		return("error");
 	};
 
-	$result = llm_chat($providerId, $tag, $topic, $text);
+	$result = llm_chat_callback($providerId, $tag, $topic, $text);
 
 	$response = build_agent_response($id, true, $result, "");
 	send_response_to_inject($response);
@@ -608,7 +608,7 @@ script(induction_info)params($batch, $infos, $session)
 			append_line($induction, $infos[$j]);
 		};
 
-		llm_chat(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，在不丢失关键信息的前提下，总结成一段话（一次回复输出完成）", string_builder_to_string($induction)));
+		llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，在不丢失关键信息的前提下，总结成一段话（一次回复输出完成）", string_builder_to_string($induction)));
 	};
 };
 
@@ -631,7 +631,7 @@ script(induction_plan)params()
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);
-		llm_chat(@LlmProviderId, "llm_pm_project", "project_history", $prompt);
+		llm_chat_callback(@LlmProviderId, "llm_pm_project", "project_history", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
@@ -666,7 +666,7 @@ script(induction_context)params($count,$queuedCount,$pageType)
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);
-		llm_chat(@LlmProviderId, "llm_pm_context", "context_summary", $prompt);
+		llm_chat_callback(@LlmProviderId, "llm_pm_context", "context_summary", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
@@ -694,7 +694,7 @@ script(induction_todo)params($count,$queuedCount,$pageType)
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);
-		llm_chat(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
+		llm_chat_callback(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
@@ -730,7 +730,7 @@ script(trigger_reflection)params()
 	// Send reflection request
 	$prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat(@LlmProviderId, "reflection", "reflection", $prompt);
+	llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
 
 	nativelog("[dsl] trigger_reflection: reflection request sent");
 };
@@ -762,7 +762,7 @@ script(trigger_pattern_recognition)params($recentCount)
 	// Send pattern recognition request
 	$prompt = format("{0}\n\n请根据以上情景记忆，识别重复模式并提炼经验。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
+	llm_chat_callback(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
 
 	nativelog("[dsl] trigger_pattern_recognition: pattern recognition request sent");
 };
@@ -800,7 +800,7 @@ script(trigger_meta_cognition)params()
 	// Send meta-cognition request
 	$prompt = format("{0}\n\n请根据以上记忆进行元认知反思，提炼决策原则和改进策略。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
+	llm_chat_callback(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
 
 	nativelog("[dsl] trigger_meta_cognition: meta-cognition request sent");
 };

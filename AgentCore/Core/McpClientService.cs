@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AgentPlugin.Abstractions;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -278,10 +278,10 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Calls an MCP tool asynchronously.
         /// argsJson: JSON object string of tool arguments, e.g. {"path":"/tmp/foo.txt"}
-        /// callbackTag: identifier forwarded to the mcp_callback CEF message
-        /// Returns "ok" immediately; result arrives via mcp_callback(serverId, callbackTag, resultText)
+        /// tag: identifier forwarded to the mcp_callback CEF message
+        /// Returns "ok" immediately; result arrives via mcp_callback(serverId, tag, resultText)
         /// </summary>
-        public string CallTool(string serverId, string toolName, string argsJson, string callbackTag)
+        public string CallToolCallback(string serverId, string toolName, string argsJson, string tag)
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return $"error: server '{serverId}' not connected";
@@ -319,12 +319,12 @@ namespace CefDotnetApp.AgentCore.Core
                                 string reconnResult = Connect(serverId, conn.Type, conn.Target);
                                 if (!reconnResult.StartsWith("ok"))
                                 {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, $"[error] reconnect failed: {reconnResult}" });
+                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, $"[error] reconnect failed: {reconnResult}" });
                                 return;
                                 }
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                 {
-                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, "[error] server not found after reconnect" });
+                                nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, "[error] server not found after reconnect" });
                                 return;
                                 }
                                 req = JsonRpcHelper.BuildRequest("tools/call", new
@@ -342,16 +342,80 @@ namespace CefDotnetApp.AgentCore.Core
 
                     string resp = await conn.Transport.SendRequestAsync(req);
                     string result = ExtractToolResult(resp);
-                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, result });
+                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, result });
                 }
                 catch (Exception ex)
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
-                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, callbackTag, $"[error] {ex.Message}" });
+                    nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, $"[error] {ex.Message}" });
                 }
             });
 
             return "ok";
+        }
+
+        /// <summary>
+        /// Calls an MCP tool and returns the result directly via Task.
+        /// Used by synchronous script expressions (mcp_call_tool).
+        /// </summary>
+        public Task<string> CallTool(string serverId, string toolName, string argsJson)
+        {
+            if (!_servers.TryGetValue(serverId, out var conn))
+                return Task.FromResult($"error: server '{serverId}' not connected");
+
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    object? args = null;
+                    if (!string.IsNullOrWhiteSpace(argsJson) && argsJson != "{}")
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(argsJson);
+                        args = doc.RootElement.Clone();
+                    }
+
+                    string req = JsonRpcHelper.BuildRequest("tools/call", new
+                    {
+                        name = toolName,
+                        arguments = args ?? new { }
+                    }, conn.NextId());
+
+                    // Auto-reconnect if transport is no longer connected
+                    if (!conn.Transport.IsConnected)
+                    {
+                        await conn.ReconnectLock.WaitAsync();
+                        try
+                        {
+                            if (!conn.Transport.IsConnected)
+                            {
+                                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
+                                string reconnResult = Connect(serverId, conn.Type, conn.Target);
+                                if (!reconnResult.StartsWith("ok"))
+                                    return $"[error] reconnect failed: {reconnResult}";
+                                if (!_servers.TryGetValue(serverId, out conn!))
+                                    return "[error] server not found after reconnect";
+                                req = JsonRpcHelper.BuildRequest("tools/call", new
+                                {
+                                    name = toolName,
+                                    arguments = args ?? new { }
+                                }, conn.NextId());
+                            }
+                        }
+                        finally
+                        {
+                            conn.ReconnectLock.Release();
+                        }
+                    }
+
+                    string resp = await conn.Transport.SendRequestAsync(req);
+                    return ExtractToolResult(resp);
+                }
+                catch (Exception ex)
+                {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallToolForScript error for '{serverId}/{toolName}': {ex.Message}");
+                    return $"[error] {ex.Message}";
+                }
+            });
         }
 
         // --- private helpers ---

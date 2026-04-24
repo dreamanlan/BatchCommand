@@ -223,6 +223,7 @@ public static class Program
     {
         if (BatchCommand.BatchScript.HasDslErrors) {
             NativeLogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
+            BatchCommand.BatchScript.ClearDslErrors();
         }
     }
 

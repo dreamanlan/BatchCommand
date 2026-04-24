@@ -11,6 +11,7 @@ using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 
+#pragma warning disable 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
     using TupleValue1 = Tuple<BoxedValue>;
@@ -40,6 +41,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("copy_queue", "copy_queue(v)", new ExpressionFactoryHelper<CloneExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_stack", "copy_stack(v)", new ExpressionFactoryHelper<CloneExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_tuple", "copy_tuple(v)", new ExpressionFactoryHelper<CloneExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("inc", "inc(a,b)", new ExpressionFactoryHelper<IncExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("dec", "dec(a,b)", new ExpressionFactoryHelper<DecExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("add", "add(a,b)", new ExpressionFactoryHelper<AddExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sub", "sub(a,b)", new ExpressionFactoryHelper<SubExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mul", "mul(a,b)", new ExpressionFactoryHelper<MulExp>());
@@ -401,75 +404,213 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return val;
             }
         }
-        internal sealed class AddExp : AbstractExpression
+        internal sealed class IncExp : AbstractExpression
         {
             protected override BoxedValue DoCalc()
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
-                BoxedValue v;
-                if (v1.IsString || v2.IsString) {
-                    v = v1.ToString() + v2.ToString();
-                }
-                else if (v1.IsInteger && v2.IsInteger) {
-                    if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
-                        v = v1.GetULong() + v2.GetULong();
+                if (m_OpNum == 1) {
+                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                        if (v.IsUnsignedInteger) {
+                            v = v.GetULong() + 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsSignedInteger) {
+                            v = v.GetLong() + 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsNumber) {
+                            v = v.GetDouble() + 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
                     }
-                    else {
-                        v = v1.GetLong() + v2.GetLong();
+                    return v;
+                }
+                else if (m_OpNum == 2) {
+                    var vv = m_Op.Calc();
+                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                        if (v.IsUnsignedInteger) {
+                            v = v.GetULong() + vv.GetULong();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsSignedInteger) {
+                            v = v.GetLong() + vv.GetLong();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsNumber) {
+                            v = v.GetDouble() + vv.GetDouble();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
                     }
+                    return v;
                 }
-                else {
-                    v = v1.GetDouble() + v2.GetDouble();
-                }
-                return v;
+                return BoxedValue.NullObject;
             }
-            protected override bool Load(IList<IExpression> exps)
+            protected override bool Load(Dsl.FunctionData callData)
             {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
+                m_OpNum = callData.GetParamNum();
+                if (m_OpNum > 0) {
+                    Dsl.ISyntaxComponent param = callData.GetParam(0);
+                    m_VarId = param.GetId();
+                }
+                if (m_OpNum > 1) {
+                    Dsl.ISyntaxComponent param = callData.GetParam(1);
+                    m_Op = Calculator.Load(param);
+                }
                 return true;
             }
 
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
+            private int m_OpNum;
+            private string m_VarId;
+            private IExpression m_Op;
         }
-        internal sealed class SubExp : AbstractExpression
+        internal sealed class DecExp : AbstractExpression
         {
             protected override BoxedValue DoCalc()
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
-                BoxedValue v;
-                if (v1.IsInteger && v2.IsInteger) {
-                    if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
-                        v = v1.GetULong() - v2.GetULong();
+                if (m_OpNum == 1) {
+                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                        if (v.IsUnsignedInteger) {
+                            v = v.GetULong() - 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsSignedInteger) {
+                            v = v.GetLong() - 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsNumber) {
+                            v = v.GetDouble() - 1;
+                            Calculator.SetVariable(m_VarId, v);
+                        }
                     }
-                    else {
-                        v = v1.GetLong() - v2.GetLong();
+                    return v;
+                }
+                else if (m_OpNum == 2) {
+                    var vv = m_Op.Calc();
+                    if (Calculator.TryGetVariable(m_VarId, out var v)) {
+                        if (v.IsUnsignedInteger) {
+                            v = v.GetULong() - vv.GetULong();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsSignedInteger) {
+                            v = v.GetLong() - vv.GetLong();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
+                        else if (v.IsNumber) {
+                            v = v.GetDouble() - vv.GetDouble();
+                            Calculator.SetVariable(m_VarId, v);
+                        }
                     }
+                    return v;
                 }
-                else {
-                    v = v1.GetDouble() - v2.GetDouble();
-                }
-                return v;
+                return BoxedValue.NullObject;
             }
-            protected override bool Load(IList<IExpression> exps)
+            protected override bool Load(Dsl.FunctionData callData)
             {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
+                m_OpNum = callData.GetParamNum();
+                if (m_OpNum > 0) {
+                    Dsl.ISyntaxComponent param = callData.GetParam(0);
+                    m_VarId = param.GetId();
+                }
+                if (m_OpNum > 1) {
+                    Dsl.ISyntaxComponent param = callData.GetParam(1);
+                    m_Op = Calculator.Load(param);
+                }
                 return true;
             }
 
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
+            private int m_OpNum;
+            private string m_VarId;
+            private IExpression m_Op;
         }
-        internal sealed class MulExp : AbstractExpression
+        internal sealed class AddExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                if (operands.Count == 1) {
+                    var v1 = operands[0];
+                    BoxedValue v;
+                    if (v1.IsInteger) {
+                        if (v1.IsUnsignedInteger) {
+                            v = v1.GetULong();
+                        }
+                        else {
+                            v = v1.GetLong();
+                        }
+                    }
+                    else {
+                        v = v1.GetDouble();
+                    }
+                    return v;
+                }
+                else if (operands.Count == 2) {
+                    var v1 = operands[0];
+                    var v2 = operands[1];
+                    BoxedValue v;
+                    if (v1.IsString || v2.IsString) {
+                        v = v1.ToString() + v2.ToString();
+                    }
+                    else if (v1.IsInteger && v2.IsInteger) {
+                        if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
+                            v = v1.GetULong() + v2.GetULong();
+                        }
+                        else {
+                            v = v1.GetLong() + v2.GetLong();
+                        }
+                    }
+                    else {
+                        v = v1.GetDouble() + v2.GetDouble();
+                    }
+                    return v;
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+        internal sealed class SubExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count == 1) {
+                    var v1 = operands[0];
+                    BoxedValue v;
+                    if (v1.IsInteger) {
+                        if (v1.IsUnsignedInteger) {
+                            v = (ulong)(0 - v1.GetULong());
+                        }
+                        else {
+                            v = -v1.GetLong();
+                        }
+                    }
+                    else {
+                        v = -v1.GetDouble();
+                    }
+                    return v;
+                }
+                else if (operands.Count == 2) {
+                    var v1 = operands[0];
+                    var v2 = operands[1];
+                    BoxedValue v;
+                    if (v1.IsInteger && v2.IsInteger) {
+                        if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
+                            v = v1.GetULong() - v2.GetULong();
+                        }
+                        else {
+                            v = v1.GetLong() - v2.GetLong();
+                        }
+                    }
+                    else {
+                        v = v1.GetDouble() - v2.GetDouble();
+                    }
+                    return v;
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+        internal sealed class MulExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsInteger && v2.IsInteger) {
                     if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
@@ -484,22 +625,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class DivExp : AbstractExpression
+        internal sealed class DivExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsInteger && v2.IsInteger) {
                     if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
@@ -514,22 +646,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class ModExp : AbstractExpression
+        internal sealed class ModExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsInteger && v2.IsInteger) {
                     if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
@@ -544,22 +667,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class BitAndExp : AbstractExpression
+        internal sealed class BitAndExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
                     v = v1.GetULong() & v2.GetULong();
@@ -569,22 +683,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class BitOrExp : AbstractExpression
+        internal sealed class BitOrExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
                     v = v1.GetULong() | v2.GetULong();
@@ -594,22 +699,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class BitXorExp : AbstractExpression
+        internal sealed class BitXorExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger && v2.IsUnsignedInteger) {
                     v = v1.GetULong() ^ v2.GetULong();
@@ -619,21 +715,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class BitNotExp : AbstractExpression
+        internal sealed class BitNotExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
+                var v1 = operands[0];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger) {
                     v = ~v1.GetULong();
@@ -643,20 +730,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class LShiftExp : AbstractExpression
+        internal sealed class LShiftExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger) {
                     v = v1.GetULong() << v2.GetInt();
@@ -666,22 +746,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class RShiftExp : AbstractExpression
+        internal sealed class RShiftExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v;
                 if (v1.IsUnsignedInteger) {
                     v = v1.GetULong() >> v2.GetInt();
@@ -691,22 +762,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class MaxExp : AbstractExpression
+        internal sealed class MaxExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var opd1 = m_Op1.Calc();
-                var opd2 = m_Op2.Calc();
+                var opd1 = operands[0];
+                var opd2 = operands[1];
                 BoxedValue v;
                 if (opd1.IsInteger && opd2.IsInteger) {
                     if (opd1.IsUnsignedInteger && opd2.IsUnsignedInteger) {
@@ -727,22 +789,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class MinExp : AbstractExpression
+        internal sealed class MinExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var opd1 = m_Op1.Calc();
-                var opd2 = m_Op2.Calc();
+                var opd1 = operands[0];
+                var opd2 = operands[1];
                 BoxedValue v;
                 if (opd1.IsInteger && opd2.IsInteger) {
                     if (opd1.IsUnsignedInteger && opd2.IsUnsignedInteger) {
@@ -763,21 +816,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class AbsExp : AbstractExpression
+        internal sealed class AbsExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var opd = m_Op.Calc();
+                var opd = operands[0];
                 BoxedValue v;
                 if (opd.IsInteger) {
                     long v1 = opd.GetLong();
@@ -789,656 +833,369 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class SinExp : AbstractExpression
+        internal sealed class SinExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sin(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class CosExp : AbstractExpression
+        internal sealed class CosExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Cos(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class TanExp : AbstractExpression
+        internal sealed class TanExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Tan(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class AsinExp : AbstractExpression
+        internal sealed class AsinExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Asin(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class AcosExp : AbstractExpression
+        internal sealed class AcosExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Acos(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class AtanExp : AbstractExpression
+        internal sealed class AtanExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Atan(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class Atan2Exp : AbstractExpression
+        internal sealed class Atan2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = Math.Atan2(v1, v2);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class SinhExp : AbstractExpression
+        internal sealed class SinhExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sinh(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class CoshExp : AbstractExpression
+        internal sealed class CoshExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Cosh(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class TanhExp : AbstractExpression
+        internal sealed class TanhExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Tanh(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class RndIntExp : AbstractExpression
+        internal sealed class RndIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                long v1 = m_Op1.Calc().GetLong();
-                long v2 = m_Op2.Calc().GetLong();
-                BoxedValue v = (long)s_Random.Next((int)v1, (int)v2);
+                int v1 = operands[0].GetInt();
+                int v2 = operands[1].GetInt();
+                BoxedValue v = s_Random.Next(v1, v2);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
 
             private static Random s_Random = new Random();
         }
-        internal sealed class RndFloatExp : AbstractExpression
+        internal sealed class RndFloatExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
-                BoxedValue v = s_Random.NextDouble() * (v2 - v1) + v1;
+                float v1 = operands[0].GetFloat();
+                float v2 = operands[1].GetFloat();
+                BoxedValue v = (float)(s_Random.NextDouble() * (v2 - v1) + v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
 
             private static Random s_Random = new Random();
         }
-        internal sealed class PowExp : AbstractExpression
+        internal sealed class PowExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = Math.Pow(v1, v2);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class SqrtExp : AbstractExpression
+        internal sealed class SqrtExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Sqrt(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class ExpExp : AbstractExpression
+        internal sealed class ExpExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Exp(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class Exp2Exp : AbstractExpression
+        internal sealed class Exp2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Pow(2, v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class LogExp : AbstractExpression
+        internal sealed class LogExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                if (m_ArgNum == 1) {
+                double v1 = operands[0].GetDouble();
+                if (operands.Count == 1) {
                     BoxedValue v = Math.Log(v1);
                     return v;
                 }
                 else {
-                    double v2 = m_Op2.Calc().GetDouble();
+                    double v2 = operands[1].GetDouble();
                     BoxedValue v = Math.Log(v1, v2);
                     return v;
                 }
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_ArgNum = exps.Count;
-                m_Op1 = exps[0];
-                if (m_ArgNum > 1) {
-                    m_Op2 = exps[1];
-                }
-                return true;
-            }
-
-            private int m_ArgNum;
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class Log2Exp : AbstractExpression
+        internal sealed class Log2Exp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Log(v1) / Math.Log(2);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class Log10Exp : AbstractExpression
+        internal sealed class Log10Exp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Log10(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class FloorExp : AbstractExpression
+        internal sealed class FloorExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Floor(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class CeilingExp : AbstractExpression
+        internal sealed class CeilingExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Ceiling(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class RoundExp : AbstractExpression
+        internal sealed class RoundExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = Math.Round(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class FloorToIntExp : AbstractExpression
+        internal sealed class FloorToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Floor(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class CeilingToIntExp : AbstractExpression
+        internal sealed class CeilingToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Ceiling(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class RoundToIntExp : AbstractExpression
+        internal sealed class RoundToIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = (int)Math.Round(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class BoolExp : AbstractExpression
+        internal sealed class BoolExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                bool v1 = m_Op1.Calc().GetBool();
+                bool v1 = operands[0].GetBool();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class SByteExp : AbstractExpression
+        internal sealed class SByteExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                sbyte v1 = m_Op1.Calc().GetSByte();
+                sbyte v1 = operands[0].GetSByte();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class ByteExp : AbstractExpression
+        internal sealed class ByteExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                byte v1 = m_Op1.Calc().GetByte();
+                byte v1 = operands[0].GetByte();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class CharExp : AbstractExpression
+        internal sealed class CharExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                char v1 = m_Op1.Calc().GetChar();
+                char v1 = operands[0].GetChar();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class ShortExp : AbstractExpression
+        internal sealed class ShortExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                short v1 = m_Op1.Calc().GetShort();
+                short v1 = operands[0].GetShort();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class UShortExp : AbstractExpression
+        internal sealed class UShortExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                ushort v1 = m_Op1.Calc().GetUShort();
+                ushort v1 = operands[0].GetUShort();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class IntExp : AbstractExpression
+        internal sealed class IntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                int v1 = m_Op1.Calc().GetInt();
+                int v1 = operands[0].GetInt();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class UIntExp : AbstractExpression
+        internal sealed class UIntExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                uint v1 = m_Op1.Calc().GetUInt();
+                uint v1 = operands[0].GetUInt();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class LongExp : AbstractExpression
+        internal sealed class LongExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                long v1 = m_Op1.Calc().GetLong();
+                long v1 = operands[0].GetLong();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class ULongExp : AbstractExpression
+        internal sealed class ULongExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                ulong v1 = m_Op1.Calc().GetULong();
+                ulong v1 = operands[0].GetULong();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class FloatExp : AbstractExpression
+        internal sealed class FloatExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float v1 = m_Op1.Calc().GetFloat();
+                float v1 = operands[0].GetFloat();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class DoubleExp : AbstractExpression
+        internal sealed class DoubleExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class DecimalExp : AbstractExpression
+        internal sealed class DecimalExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                decimal v1 = m_Op1.Calc().GetDecimal();
+                decimal v1 = operands[0].GetDecimal();
                 BoxedValue v = v1;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class ItofExp : AbstractExpression
+        internal sealed class ItofExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                int v1 = m_Op1.Calc().GetInt();
+                int v1 = operands[0].GetInt();
                 float v2 = 0;
                 unsafe {
                     v2 = *(float*)&v1;
@@ -1446,19 +1203,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class FtoiExp : AbstractExpression
+        internal sealed class FtoiExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float v1 = m_Op1.Calc().GetFloat();
+                float v1 = operands[0].GetFloat();
                 int v2 = 0;
                 unsafe {
                     v2 = *(int*)&v1;
@@ -1466,19 +1216,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class UtofExp : AbstractExpression
+        internal sealed class UtofExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                uint v1 = m_Op1.Calc().GetUInt();
+                uint v1 = operands[0].GetUInt();
                 float v2 = 0;
                 unsafe {
                     v2 = *(float*)&v1;
@@ -1486,19 +1229,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class FtouExp : AbstractExpression
+        internal sealed class FtouExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float v1 = m_Op1.Calc().GetFloat();
+                float v1 = operands[0].GetFloat();
                 uint v2 = 0;
                 unsafe {
                     v2 = *(uint*)&v1;
@@ -1506,19 +1242,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class LtodExp : AbstractExpression
+        internal sealed class LtodExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                long v1 = m_Op1.Calc().GetLong();
+                long v1 = operands[0].GetLong();
                 double v2 = 0;
                 unsafe {
                     v2 = *(double*)&v1;
@@ -1526,19 +1255,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class DtolExp : AbstractExpression
+        internal sealed class DtolExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 long v2 = 0;
                 unsafe {
                     v2 = *(long*)&v1;
@@ -1546,19 +1268,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class UtodExp : AbstractExpression
+        internal sealed class UtodExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                ulong v1 = m_Op1.Calc().GetULong();
+                ulong v1 = operands[0].GetULong();
                 double v2 = 0;
                 unsafe {
                     v2 = *(double*)&v1;
@@ -1566,19 +1281,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class DtouExp : AbstractExpression
+        internal sealed class DtouExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 ulong v2 = 0;
                 unsafe {
                     v2 = *(ulong*)&v1;
@@ -1586,66 +1294,37 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = v2;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
         }
-        internal sealed class LerpExp : AbstractExpression
+        internal sealed class LerpExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double a = m_Op1.Calc().GetDouble();
-                double b = m_Op2.Calc().GetDouble();
-                double t = m_Op3.Calc().GetDouble();
+                double a = operands[0].GetDouble();
+                double b = operands[1].GetDouble();
+                double t = operands[2].GetDouble();
                 BoxedValue v;
                 v = a + (b - a) * ClampExp.Clamp01(t);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
         }
-        internal sealed class LerpUnclampedExp : AbstractExpression
+        internal sealed class LerpUnclampedExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double a = m_Op1.Calc().GetDouble();
-                double b = m_Op2.Calc().GetDouble();
-                double t = m_Op3.Calc().GetDouble();
+                double a = operands[0].GetDouble();
+                double b = operands[1].GetDouble();
+                double t = operands[2].GetDouble();
                 BoxedValue v = a + (b - a) * t;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
         }
-        internal sealed class LerpAngleExp : AbstractExpression
+        internal sealed class LerpAngleExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double a = m_Op1.Calc().GetDouble();
-                double b = m_Op2.Calc().GetDouble();
-                double t = m_Op3.Calc().GetDouble();
+                double a = operands[0].GetDouble();
+                double b = operands[1].GetDouble();
+                double t = operands[2].GetDouble();
                 double num = Repeat(b - a, 360.0);
                 if (num > 180f) {
                     num -= 360f;
@@ -1653,70 +1332,41 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v = a + num * ClampExp.Clamp01(t);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
 
             public static double Repeat(double t, double length)
             {
                 return ClampExp.Clamp(t - Math.Floor(t / length) * length, 0f, length);
             }
         }
-        internal sealed class SmoothStepExp : AbstractExpression
+        internal sealed class SmoothStepExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double from = m_Op1.Calc().GetDouble();
-                double to = m_Op2.Calc().GetDouble();
-                double t = m_Op3.Calc().GetDouble();
+                double from = operands[0].GetDouble();
+                double to = operands[1].GetDouble();
+                double t = operands[2].GetDouble();
                 t = ClampExp.Clamp01(t);
                 t = -2.0 * t * t * t + 3.0 * t * t;
                 BoxedValue v = to * t + from * (1.0 - t);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
         }
-        internal sealed class Clamp01Exp : AbstractExpression
+        internal sealed class Clamp01Exp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
                 BoxedValue v = ClampExp.Clamp01(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
-        internal sealed class ClampExp : AbstractExpression
+        internal sealed class ClampExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
-                double v3 = m_Op3.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
+                double v3 = operands[2].GetDouble();
                 BoxedValue v;
                 if (v2 <= v3) {
                     if (v1 < v2)
@@ -1736,17 +1386,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
 
             public static double Clamp(double value, double min, double max)
             {
@@ -1769,45 +1408,29 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return value;
             }
         }
-        internal sealed class ApproximatelyExp : AbstractExpression
+        internal sealed class ApproximatelyExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float v1 = m_Op1.Calc().GetFloat();
-                float v2 = m_Op2.Calc().GetFloat();
+                float v1 = operands[0].GetFloat();
+                float v2 = operands[1].GetFloat();
                 BoxedValue v = Approximately(v1, v2) ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
 
             public static bool Approximately(double a, double b)
             {
                 return Math.Abs(b - a) < Math.Max(1E-06 * Math.Max(Math.Abs(a), Math.Abs(b)), double.Epsilon * 8.0);
             }
         }
-        internal sealed class IsPowerOfTwoExp : AbstractExpression
+        internal sealed class IsPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                int v1 = m_Op1.Calc().GetInt();
+                int v1 = operands[0].GetInt();
                 int v = IsPowerOfTwo(v1) ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
 
             public bool IsPowerOfTwo(int v)
             {
@@ -1815,21 +1438,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return (int)Math.Round(Math.Pow(2, n)) == v;
             }
         }
-        internal sealed class ClosestPowerOfTwoExp : AbstractExpression
+        internal sealed class ClosestPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                int v1 = m_Op1.Calc().GetInt();
+                int v1 = operands[0].GetInt();
                 int v = ClosestPowerOfTwo(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
 
             public int ClosestPowerOfTwo(int v)
             {
@@ -1837,21 +1453,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return (int)Math.Round(Math.Pow(2, n));
             }
         }
-        internal sealed class NextPowerOfTwoExp : AbstractExpression
+        internal sealed class NextPowerOfTwoExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                int v1 = m_Op1.Calc().GetInt();
+                int v1 = operands[0].GetInt();
                 int v = NextPowerOfTwo(v1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
 
             public int NextPowerOfTwo(int v)
             {
@@ -1859,169 +1468,89 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return (int)Math.Round(Math.Pow(2, n + 1));
             }
         }
-        internal sealed class DistExp : AbstractExpression
+        internal sealed class DistExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float x1 = (float)m_Op1.Calc().GetDouble();
-                float y1 = (float)m_Op2.Calc().GetDouble();
-                float x2 = (float)m_Op3.Calc().GetDouble();
-                float y2 = (float)m_Op4.Calc().GetDouble();
+                float x1 = (float)operands[0].GetDouble();
+                float y1 = (float)operands[1].GetDouble();
+                float x2 = (float)operands[2].GetDouble();
+                float y2 = (float)operands[3].GetDouble();
                 BoxedValue v = Math.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                m_Op4 = exps[3];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
-            private IExpression m_Op4 = null!;
         }
-        internal sealed class DistSqrExp : AbstractExpression
+        internal sealed class DistSqrExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                float x1 = (float)m_Op1.Calc().GetDouble();
-                float y1 = (float)m_Op2.Calc().GetDouble();
-                float x2 = (float)m_Op3.Calc().GetDouble();
-                float y2 = (float)m_Op4.Calc().GetDouble();
+                float x1 = (float)operands[0].GetDouble();
+                float y1 = (float)operands[1].GetDouble();
+                float x2 = (float)operands[2].GetDouble();
+                float y2 = (float)operands[3].GetDouble();
                 BoxedValue v = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                m_Op3 = exps[2];
-                m_Op4 = exps[3];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
-            private IExpression m_Op4 = null!;
         }
-        internal sealed class GreatExp : AbstractExpression
+        internal sealed class GreatExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = v1 > v2 ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class GreatEqualExp : AbstractExpression
+        internal sealed class GreatEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = v1 >= v2 ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class LessExp : AbstractExpression
+        internal sealed class LessExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = v1 < v2 ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class LessEqualExp : AbstractExpression
+        internal sealed class LessEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                double v1 = m_Op1.Calc().GetDouble();
-                double v2 = m_Op2.Calc().GetDouble();
+                double v1 = operands[0].GetDouble();
+                double v2 = operands[1].GetDouble();
                 BoxedValue v = v1 <= v2 ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class EqualExp : AbstractExpression
+        internal sealed class EqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v = v1.ToString() == v2.ToString() ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
-        internal sealed class NotEqualExp : AbstractExpression
+        internal sealed class NotEqualExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                var v1 = m_Op1.Calc();
-                var v2 = m_Op2.Calc();
+                var v1 = operands[0];
+                var v2 = operands[1];
                 BoxedValue v = v1.ToString() != v2.ToString() ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op1 = exps[0];
-                m_Op2 = exps[1];
-                return true;
-            }
-
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
         }
         internal sealed class AndExp : AbstractExpression
         {
@@ -2039,8 +1568,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
+            private IExpression m_Op1;
+            private IExpression m_Op2;
         }
         internal sealed class OrExp : AbstractExpression
         {
@@ -2058,24 +1587,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
+            private IExpression m_Op1;
+            private IExpression m_Op2;
         }
-        internal sealed class NotExp : AbstractExpression
+        internal sealed class NotExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                long val = m_Op.Calc().GetLong();
+                long val = operands[0].GetLong();
                 BoxedValue v = val == 0 ? 1 : 0;
                 return v;
             }
-            protected override bool Load(IList<IExpression> exps)
-            {
-                m_Op = exps[0];
-                return true;
-            }
-
-            private IExpression m_Op = null!;
         }
         internal sealed class CondExp : AbstractExpression
         {
@@ -2106,9 +1628,792 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return true;
             }
 
-            private IExpression m_Op1 = null!;
-            private IExpression m_Op2 = null!;
-            private IExpression m_Op3 = null!;
+            private IExpression m_Op1 = null;
+            private IExpression m_Op2 = null;
+            private IExpression m_Op3 = null;
+        }
+        internal sealed class IfExp : AbstractExpression
+        {
+            public override bool IsAsync { get { return m_IsAsync; } }
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                for (int ix = 0; ix < m_Clauses.Count; ++ix) {
+                    var clause = m_Clauses[ix];
+                    if (null != clause.Condition) {
+                        var condVal = clause.Condition.Calc();
+                        if (condVal.GetLong() != 0) {
+                            for (int index = 0; index < clause.Expressions.Count; ++index) {
+                                v = clause.Expressions[index].Calc();
+                                if (Calculator.RunState != RunStateEnum.Normal) {
+                                    return v;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    else if (ix == m_Clauses.Count - 1) {
+                        for (int index = 0; index < clause.Expressions.Count; ++index) {
+                            v = clause.Expressions[index].Calc();
+                            if (Calculator.RunState != RunStateEnum.Normal) {
+                                return v;
+                            }
+                        }
+                        break;
+                    }
+                }
+                return v;
+            }
+            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            {
+                BoxedValue v = 0;
+                for (int ix = 0; ix < m_Clauses.Count; ++ix) {
+                    var clause = m_Clauses[ix];
+                    if (null != clause.Condition) {
+                        BoxedValue condVal;
+                        if (clause.Condition.IsAsync) {
+                            var _ei1 = clause.Condition.Calc(result);
+                            while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                            condVal = result.Value;
+                        }
+                        else {
+                            condVal = clause.Condition.Calc();
+                        }
+                        if (condVal.GetLong() != 0) {
+                            for (int index = 0; index < clause.Expressions.Count; ++index) {
+                                var exp = clause.Expressions[index];
+                                if (exp.IsAsync) {
+                                    var _ei2 = exp.Calc(result);
+                                    while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                    v = result.Value;
+                                }
+                                else {
+                                    v = exp.Calc();
+                                }
+                                if (Calculator.RunState != RunStateEnum.Normal) {
+                                    result.Value = v;
+                                    yield break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    else if (ix == m_Clauses.Count - 1) {
+                        for (int index = 0; index < clause.Expressions.Count; ++index) {
+                            var exp = clause.Expressions[index];
+                            if (exp.IsAsync) {
+                                var _ei3 = exp.Calc(result);
+                                while (_ei3.MoveNext()) { yield return _ei3.Current; }
+                                v = result.Value;
+                            }
+                            else {
+                                v = exp.Calc();
+                            }
+                            if (Calculator.RunState != RunStateEnum.Normal) {
+                                result.Value = v;
+                                yield break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                result.Value = v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.IsHighOrder) {
+                    Dsl.ISyntaxComponent cond = funcData.LowerOrderFunction.GetParam(0);
+                    IfExp.Clause item = new IfExp.Clause();
+                    item.Condition = Calculator.Load(cond);
+                    for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
+                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        item.Expressions.Add(subExp);
+                    }
+                    m_Clauses.Add(item);
+                }
+                else {
+                    //error
+                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                }
+                UpdateIsAsync();
+                return true;
+            }
+            protected override bool Load(Dsl.StatementData statementData)
+            {
+                //the handling of the simple syntax 'if(exp) func(args);'.
+                int funcNum = statementData.GetFunctionNum();
+                if (funcNum == 2) {
+                    var first = statementData.First.AsFunction;
+                    var secondV = statementData.Second.AsValue;
+                    var secondF = statementData.Second.AsFunction;
+                    var firstId = first.GetId();
+                    var secondId = statementData.Second.GetId();
+                    if (firstId == "if" && !first.HaveStatement() && !first.HaveExternScript() &&
+                            !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
+                        IfExp.Clause item = new IfExp.Clause();
+                        if (first.GetParamNum() > 0) {
+                            Dsl.ISyntaxComponent cond = first.GetParam(0);
+                            item.Condition = Calculator.Load(cond);
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                        }
+                        IExpression subExp = Calculator.Load(statementData.Second);
+                        item.Expressions.Add(subExp);
+                        m_Clauses.Add(item);
+                        UpdateIsAsync();
+                        return true;
+                    }
+                }
+                //the handling of the standard if syntax
+                foreach (var fd in statementData.Functions) {
+                    var fData = fd.AsFunction;
+                    if (fData.GetId() == "if" || fData.GetId() == "elseif" || fData.GetId() == "elif") {
+                        IfExp.Clause item = new IfExp.Clause();
+                        if (fData.IsHighOrder && fData.LowerOrderFunction.GetParamNum() > 0) {
+                            Dsl.ISyntaxComponent cond = fData.LowerOrderFunction.GetParam(0);
+                            item.Condition = Calculator.Load(cond);
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                        }
+                        for (int ix = 0; ix < fData.GetParamNum(); ++ix) {
+                            IExpression subExp = Calculator.Load(fData.GetParam(ix));
+                            item.Expressions.Add(subExp);
+                        }
+                        m_Clauses.Add(item);
+                    }
+                    else if (fData.GetId() == "else") {
+                        if (fData != statementData.Last) {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                        }
+                        else {
+                            IfExp.Clause item = new IfExp.Clause();
+                            for (int ix = 0; ix < fData.GetParamNum(); ++ix) {
+                                IExpression subExp = Calculator.Load(fData.GetParam(ix));
+                                item.Expressions.Add(subExp);
+                            }
+                            m_Clauses.Add(item);
+                        }
+                    }
+                    else {
+                        //error
+                        Calculator.Log("DslCalculator error, {0} line {1}", fData.ToScriptString(false, Dsl.DelimiterInfo.Default), fData.GetLine());
+                    }
+                }
+                UpdateIsAsync();
+                return true;
+            }
+
+            private void UpdateIsAsync()
+            {
+                for (int i = 0; i < m_Clauses.Count; ++i) {
+                    var clause = m_Clauses[i];
+                    if (null != clause.Condition && clause.Condition.IsAsync) { m_IsAsync = true; return; }
+                    for (int j = 0; j < clause.Expressions.Count; ++j) {
+                        if (clause.Expressions[j].IsAsync) { m_IsAsync = true; return; }
+                    }
+                }
+            }
+
+            private sealed class Clause
+            {
+                internal IExpression Condition;
+                internal List<IExpression> Expressions = new List<IExpression>();
+            }
+
+            private List<Clause> m_Clauses = new List<Clause>();
+            private bool m_IsAsync = false;
+        }
+        internal sealed class WhileExp : AbstractExpression
+        {
+            public override bool IsAsync { get { return m_IsAsync; } }
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                for (; ; ) {
+                    var condVal = m_Condition.Calc();
+                    if (condVal.GetLong() != 0) {
+                        for (int index = 0; index < m_Expressions.Count; ++index) {
+                            v = m_Expressions[index].Calc();
+                            if (Calculator.RunState == RunStateEnum.Continue) {
+                                Calculator.RunState = RunStateEnum.Normal;
+                                break;
+                            }
+                            else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Break)
+                                    Calculator.RunState = RunStateEnum.Normal;
+                                return v;
+                            }
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                return v;
+            }
+            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            {
+                BoxedValue v = 0;
+                for (; ; ) {
+                    BoxedValue condVal;
+                    if (m_Condition.IsAsync) {
+                        var _ei1 = m_Condition.Calc(result);
+                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                        condVal = result.Value;
+                    }
+                    else {
+                        condVal = m_Condition.Calc();
+                    }
+                    if (condVal.GetLong() != 0) {
+                        for (int index = 0; index < m_Expressions.Count; ++index) {
+                            var exp = m_Expressions[index];
+                            if (exp.IsAsync) {
+                                var _ei2 = exp.Calc(result);
+                                while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                                v = result.Value;
+                            }
+                            else {
+                                v = exp.Calc();
+                            }
+                            if (Calculator.RunState == RunStateEnum.Continue) {
+                                Calculator.RunState = RunStateEnum.Normal;
+                                break;
+                            }
+                            else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Break)
+                                    Calculator.RunState = RunStateEnum.Normal;
+                                result.Value = v;
+                                yield break;
+                            }
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                result.Value = v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.IsHighOrder) {
+                    Dsl.ISyntaxComponent cond = funcData.LowerOrderFunction.GetParam(0);
+                    m_Condition = Calculator.Load(cond);
+                    for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
+                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        m_Expressions.Add(subExp);
+                    }
+                }
+                else {
+                    //error
+                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                }
+                UpdateIsAsync();
+                return true;
+            }
+            protected override bool Load(Dsl.StatementData statementData)
+            {
+                //the handling of the simple syntax 'while(exp) func(args);'
+                if (statementData.GetFunctionNum() == 2) {
+                    var first = statementData.First.AsFunction;
+                    var secondV = statementData.Second.AsValue;
+                    var secondF = statementData.Second.AsFunction;
+                    var firstId = first.GetId();
+                    var secondId = statementData.Second.GetId();
+                    if (firstId == "while" && !first.HaveStatement() && !first.HaveExternScript() &&
+                            !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
+                        if (first.GetParamNum() > 0) {
+                            Dsl.ISyntaxComponent cond = first.GetParam(0);
+                            m_Condition = Calculator.Load(cond);
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                        }
+                        IExpression subExp = Calculator.Load(statementData.Second);
+                        m_Expressions.Add(subExp);
+                        UpdateIsAsync();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private void UpdateIsAsync()
+            {
+                m_IsAsync = false;
+                if (null != m_Condition && m_Condition.IsAsync)
+                    m_IsAsync = true;
+                if (!m_IsAsync) {
+                    foreach (var exp in m_Expressions) {
+                        if (exp.IsAsync) {
+                            m_IsAsync = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private IExpression m_Condition;
+            private bool m_IsAsync = false;
+            private List<IExpression> m_Expressions = new List<IExpression>();
+        }
+        internal sealed class LoopExp : AbstractExpression
+        {
+            public override bool IsAsync { get { return m_IsAsync; } }
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                var count = m_Count.Calc();
+                long ct = count.GetLong();
+                for (int i = 0; i < ct; ++i) {
+                    Calculator.SetVariable("$$", i);
+                    for (int index = 0; index < m_Expressions.Count; ++index) {
+                        v = m_Expressions[index].Calc();
+                        if (Calculator.RunState == RunStateEnum.Continue) {
+                            Calculator.RunState = RunStateEnum.Normal;
+                            break;
+                        }
+                        else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Break)
+                                Calculator.RunState = RunStateEnum.Normal;
+                            return v;
+                        }
+                    }
+                }
+                return v;
+            }
+            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            {
+                BoxedValue v = 0;
+                BoxedValue countVal;
+                if (m_Count.IsAsync) {
+                    var _ei1 = m_Count.Calc(result);
+                    while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                    countVal = result.Value;
+                }
+                else {
+                    countVal = m_Count.Calc();
+                }
+                long ct = countVal.GetLong();
+                for (int i = 0; i < ct; ++i) {
+                    Calculator.SetVariable("$$", i);
+                    for (int index = 0; index < m_Expressions.Count; ++index) {
+                        var exp = m_Expressions[index];
+                        if (exp.IsAsync) {
+                            var _ei2 = exp.Calc(result);
+                            while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                            v = result.Value;
+                        }
+                        else {
+                            v = exp.Calc();
+                        }
+                        if (Calculator.RunState == RunStateEnum.Continue) {
+                            Calculator.RunState = RunStateEnum.Normal;
+                            break;
+                        }
+                        else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Break)
+                                Calculator.RunState = RunStateEnum.Normal;
+                            result.Value = v;
+                            yield break;
+                        }
+                    }
+                }
+                result.Value = v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.IsHighOrder) {
+                    Dsl.ISyntaxComponent count = funcData.LowerOrderFunction.GetParam(0);
+                    m_Count = Calculator.Load(count);
+                    for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
+                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        m_Expressions.Add(subExp);
+                    }
+                }
+                else {
+                    //error
+                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                }
+                UpdateIsAsync();
+                return true;
+            }
+            protected override bool Load(Dsl.StatementData statementData)
+            {
+                //the handling of the simple syntax 'loop(exp) func(args);'
+                if (statementData.GetFunctionNum() == 2) {
+                    var first = statementData.First.AsFunction;
+                    var secondV = statementData.Second.AsValue;
+                    var secondF = statementData.Second.AsFunction;
+                    var firstId = first.GetId();
+                    var secondId = statementData.Second.GetId();
+                    if (firstId == "loop" && !first.HaveStatement() && !first.HaveExternScript() &&
+                            !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
+                        if (first.GetParamNum() > 0) {
+                            Dsl.ISyntaxComponent exp = first.GetParam(0);
+                            m_Count = Calculator.Load(exp);
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                        }
+                        IExpression subExp = Calculator.Load(statementData.Second);
+                        m_Expressions.Add(subExp);
+                        UpdateIsAsync();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private void UpdateIsAsync()
+            {
+                m_IsAsync = false;
+                if (null != m_Count && m_Count.IsAsync)
+                    m_IsAsync = true;
+                if (!m_IsAsync) {
+                    foreach (var exp in m_Expressions) {
+                        if (exp.IsAsync) {
+                            m_IsAsync = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private IExpression m_Count;
+            private List<IExpression> m_Expressions = new List<IExpression>();
+            private bool m_IsAsync = false;
+        }
+        internal sealed class LoopListExp : AbstractExpression
+        {
+            public override bool IsAsync { get { return m_IsAsync; } }
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                var list = m_List.Calc();
+                IEnumerable obj = list.As<IEnumerable>();
+                if (null != obj && obj is IEnumerable<BoxedValue> bvEnumer) {
+                    var enumer = bvEnumer.GetEnumerator();
+                    while (enumer.MoveNext()) {
+                        var val = enumer.Current;
+                        if (LoopOnce(val, ref v))
+                            return v;
+                    }
+                }
+                else if (null != obj) {
+                    var enumer = obj.GetEnumerator();
+                    while (enumer.MoveNext()) {
+                        var val = BoxedValue.FromObject(enumer.Current);
+                        if (LoopOnce(val, ref v))
+                            return v;
+                    }
+                }
+                return v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.IsHighOrder) {
+                    Dsl.ISyntaxComponent list = funcData.LowerOrderFunction.GetParam(0);
+                    m_List = Calculator.Load(list);
+                    for (int ix = 0; ix < funcData.GetParamNum(); ++ix) {
+                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        m_Expressions.Add(subExp);
+                    }
+                }
+                else {
+                    //error
+                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                }
+                UpdateIsAsync();
+                return true;
+            }
+            protected override bool Load(Dsl.StatementData statementData)
+            {
+                //the handling of the simple syntax 'looplist(exp) func(args);'
+                if (statementData.GetFunctionNum() == 2) {
+                    var first = statementData.First.AsFunction;
+                    var secondV = statementData.Second.AsValue;
+                    var secondF = statementData.Second.AsFunction;
+                    var firstId = first.GetId();
+                    var secondId = statementData.Second.GetId();
+                    if (firstId == "looplist" && !first.HaveStatement() && !first.HaveExternScript() &&
+                            !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
+                        if (first.GetParamNum() > 0) {
+                            Dsl.ISyntaxComponent exp = first.GetParam(0);
+                            m_List = Calculator.Load(exp);
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                        }
+                        IExpression subExp = Calculator.Load(statementData.Second);
+                        m_Expressions.Add(subExp);
+                        UpdateIsAsync();
+                        return true;
+                    }
+                }
+                return false;
+            }
+            private bool LoopOnce(in BoxedValue val, ref BoxedValue ret)
+            {
+                Calculator.SetVariable("$$", val);
+                for (int index = 0; index < m_Expressions.Count; ++index) {
+                    BoxedValue v = m_Expressions[index].Calc();
+                    if (Calculator.RunState == RunStateEnum.Continue) {
+                        Calculator.RunState = RunStateEnum.Normal;
+                        break;
+                    }
+                    else if (Calculator.RunState != RunStateEnum.Normal) {
+                        if (Calculator.RunState == RunStateEnum.Break)
+                            Calculator.RunState = RunStateEnum.Normal;
+                        ret = v;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            {
+                BoxedValue v = 0;
+                var listResult = new AsyncCalcResult();
+                if (m_List.IsAsync) {
+                    var _ei1 = m_List.Calc(listResult);
+                    while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                }
+                else {
+                    listResult.Value = m_List.Calc();
+                }
+                var list = listResult.Value;
+                IEnumerable obj = list.As<IEnumerable>();
+                if (null != obj && obj is IEnumerable<BoxedValue> bvEnumer) {
+                    var enumer = bvEnumer.GetEnumerator();
+                    while (enumer.MoveNext()) {
+                        var val = enumer.Current;
+                        var loopResult = new AsyncCalcResult();
+                        var _ei2 = LoopOnceAsync(val, loopResult);
+                        while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                        if (loopResult.IsBreak) {
+                            v = loopResult.Value;
+                            break;
+                        }
+                    }
+                }
+                else if (null != obj) {
+                    var enumer = obj.GetEnumerator();
+                    while (enumer.MoveNext()) {
+                        var val = BoxedValue.FromObject(enumer.Current);
+                        var loopResult = new AsyncCalcResult();
+                        var _ei3 = LoopOnceAsync(val, loopResult);
+                        while (_ei3.MoveNext()) { yield return _ei3.Current; }
+                        if (loopResult.IsBreak) {
+                            v = loopResult.Value;
+                            break;
+                        }
+                    }
+                }
+                result.Value = v;
+            }
+            private IEnumerator LoopOnceAsync(BoxedValue val, AsyncCalcResult loopResult)
+            {
+                Calculator.SetVariable("$$", val);
+                for (int index = 0; index < m_Expressions.Count; ++index) {
+                    var exp = m_Expressions[index];
+                    BoxedValue v;
+                    if (exp.IsAsync) {
+                        var subResult = new AsyncCalcResult();
+                        var _ei = exp.Calc(subResult);
+                        while (_ei.MoveNext()) { yield return _ei.Current; }
+                        v = subResult.Value;
+                    }
+                    else {
+                        v = exp.Calc();
+                    }
+                    if (Calculator.RunState == RunStateEnum.Continue) {
+                        Calculator.RunState = RunStateEnum.Normal;
+                        break;
+                    }
+                    else if (Calculator.RunState != RunStateEnum.Normal) {
+                        if (Calculator.RunState == RunStateEnum.Break)
+                            Calculator.RunState = RunStateEnum.Normal;
+                        loopResult.Value = v;
+                        loopResult.IsBreak = true;
+                        yield break;
+                    }
+                }
+            }
+
+            private void UpdateIsAsync()
+            {
+                m_IsAsync = false;
+                if (null != m_List && m_List.IsAsync)
+                    m_IsAsync = true;
+                if (!m_IsAsync) {
+                    foreach (var exp in m_Expressions) {
+                        if (exp.IsAsync) {
+                            m_IsAsync = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private IExpression m_List;
+            private bool m_IsAsync = false;
+            private List<IExpression> m_Expressions = new List<IExpression>();
+        }
+        internal sealed class ForeachExp : AbstractExpression
+        {
+            public override bool IsAsync { get { return m_IsAsync; } }
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                List<BoxedValue> list = new List<BoxedValue>();
+                for (int ix = 0; ix < m_Elements.Count; ++ix) {
+                    var val = m_Elements[ix].Calc();
+                    list.Add(val);
+                }
+                var enumer = list.GetEnumerator();
+                while (enumer.MoveNext()) {
+                    var val = enumer.Current;
+                    Calculator.SetVariable("$$", val);
+                    for (int index = 0; index < m_Expressions.Count; ++index) {
+                        v = m_Expressions[index].Calc();
+                        if (Calculator.RunState == RunStateEnum.Continue) {
+                            Calculator.RunState = RunStateEnum.Normal;
+                            break;
+                        }
+                        else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Break)
+                                Calculator.RunState = RunStateEnum.Normal;
+                            return v;
+                        }
+                    }
+                }
+                return v;
+            }
+            protected override IEnumerator DoCalc(AsyncCalcResult result)
+            {
+                BoxedValue v = 0;
+                List<BoxedValue> list = new List<BoxedValue>();
+                for (int ix = 0; ix < m_Elements.Count; ++ix) {
+                    var exp = m_Elements[ix];
+                    if (exp.IsAsync) {
+                        var subResult = new AsyncCalcResult();
+                        var _ei1 = exp.Calc(subResult);
+                        while (_ei1.MoveNext()) { yield return _ei1.Current; }
+                        list.Add(subResult.Value);
+                    }
+                    else {
+                        list.Add(exp.Calc());
+                    }
+                }
+                var enumer = list.GetEnumerator();
+                while (enumer.MoveNext()) {
+                    var val = enumer.Current;
+                    Calculator.SetVariable("$$", val);
+                    for (int index = 0; index < m_Expressions.Count; ++index) {
+                        var exp = m_Expressions[index];
+                        if (exp.IsAsync) {
+                            var subResult = new AsyncCalcResult();
+                            var _ei2 = exp.Calc(subResult);
+                            while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                            v = subResult.Value;
+                        }
+                        else {
+                            v = exp.Calc();
+                        }
+                        if (Calculator.RunState == RunStateEnum.Continue) {
+                            Calculator.RunState = RunStateEnum.Normal;
+                            break;
+                        }
+                        else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Break)
+                                Calculator.RunState = RunStateEnum.Normal;
+                            result.Value = v;
+                            yield break;
+                        }
+                    }
+                }
+                result.Value = v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.IsHighOrder) {
+                    Dsl.FunctionData callData = funcData.LowerOrderFunction;
+                    int num = callData.GetParamNum();
+                    for (int ix = 0; ix < num; ++ix) {
+                        Dsl.ISyntaxComponent exp = callData.GetParam(ix);
+                        m_Elements.Add(Calculator.Load(exp));
+                    }
+                }
+                if (funcData.HaveStatement()) {
+                    int fnum = funcData.GetParamNum();
+                    for (int ix = 0; ix < fnum; ++ix) {
+                        IExpression subExp = Calculator.Load(funcData.GetParam(ix));
+                        m_Expressions.Add(subExp);
+                    }
+                }
+                UpdateIsAsync();
+                return true;
+            }
+            protected override bool Load(Dsl.StatementData statementData)
+            {
+                //the handling of the simple syntax 'foreach(exp1,exp2,...) func(args);'
+                if (statementData.GetFunctionNum() == 2) {
+                    var first = statementData.First.AsFunction;
+                    var secondV = statementData.Second.AsValue;
+                    var secondF = statementData.Second.AsFunction;
+                    var firstId = first.GetId();
+                    var secondId = statementData.Second.GetId();
+                    if (firstId == "foreach" && !first.HaveStatement() && !first.HaveExternScript() &&
+                            !string.IsNullOrEmpty(secondId) && (null != secondV || !secondF.HaveStatement() && !secondF.HaveExternScript())) {
+                        int num = first.GetParamNum();
+                        if (num > 0) {
+                            for (int ix = 0; ix < num; ++ix) {
+                                Dsl.ISyntaxComponent exp = first.GetParam(ix);
+                                m_Elements.Add(Calculator.Load(exp));
+                            }
+                        }
+                        else {
+                            //error
+                            Calculator.Log("DslCalculator error, {0} line {1}", first.ToScriptString(false, Dsl.DelimiterInfo.Default), first.GetLine());
+                        }
+                        IExpression subExp = Calculator.Load(statementData.Second);
+                        m_Expressions.Add(subExp);
+                        UpdateIsAsync();
+                        return true;
+                    }
+                }
+                return false;
+            }
+            private void UpdateIsAsync()
+            {
+                m_IsAsync = false;
+                foreach (var exp in m_Elements) {
+                    if (exp.IsAsync) {
+                        m_IsAsync = true;
+                        break;
+                    }
+                }
+                if (!m_IsAsync) {
+                    foreach (var exp in m_Expressions) {
+                        if (exp.IsAsync) {
+                            m_IsAsync = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private List<IExpression> m_Elements = new List<IExpression>();
+            private List<IExpression> m_Expressions = new List<IExpression>();
+            private bool m_IsAsync = false;
         }
         internal sealed class TupleExp : AbstractExpression
         {
@@ -2376,18 +2681,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             private List<ValueTuple<string, int>> m_VarIds = new List<ValueTuple<string, int>>();
             private List<List<ValueTuple<string, int>>> m_EmbeddedVars = new List<List<ValueTuple<string, int>>>();
-            private IExpression m_Op = null!;
+            private IExpression m_Op = null;
         }
-        internal sealed class FormatExp : AbstractExpression
+        internal sealed class FormatExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 BoxedValue v = 0;
                 string fmt = string.Empty;
                 ArrayList al = new ArrayList();
-                for (int ix = 0; ix < m_Expressions.Count; ++ix) {
-                    var exp = m_Expressions[ix];
-                    v = exp.Calc();
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    v = operands[ix];
                     if (ix == 0)
                         fmt = v.AsString;
                     else
@@ -2396,24 +2700,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 v = string.Format(fmt, al.ToArray());
                 return v;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class GetTypeAssemblyNameExp : AbstractExpression
+        internal sealed class GetTypeAssemblyNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc().GetObject();
+                if (operands.Count >= 1) {
+                    var obj = operands[0].GetObject();
                     try {
                         if (null != obj) {
                             ret = obj.GetType().AssemblyQualifiedName;
@@ -2428,24 +2722,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class GetTypeFullNameExp : AbstractExpression
+        internal sealed class GetTypeFullNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc().GetObject();
+                if (operands.Count >= 1) {
+                    var obj = operands[0].GetObject();
                     try {
                         if (null != obj) {
                             ret = obj.GetType().FullName;
@@ -2460,24 +2744,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class GetTypeNameExp : AbstractExpression
+        internal sealed class GetTypeNameExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc().GetObject();
+                if (operands.Count >= 1) {
+                    var obj = operands[0].GetObject();
                     try {
                         if (null != obj) {
                             ret = obj.GetType().Name;
@@ -2492,26 +2766,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class GetTypeExp : AbstractExpression
+        internal sealed class GetTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    string type = m_Expressions[0].Calc().AsString;
+                if (operands.Count >= 1) {
+                    var type = operands[0];
                     try {
-                        var r = Type.GetType(type);
+                        var r = Resolve(type);
                         if (null == r) {
                             Calculator.Log("null == Type.GetType({0})", type);
                         }
@@ -2525,25 +2789,54 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
 
-            private List<IExpression> m_Expressions = new List<IExpression>();
+            internal static Type Resolve(string type)
+            {
+                if (string.IsNullOrEmpty(type))
+                    return null;
+                var r = Type.GetType("UnityEngine." + type + ", UnityEngine");
+                if (null == r) {
+                    r = Type.GetType("UnityEngine.UI." + type + ", UnityEngine.UI");
+                }
+                if (null == r) {
+                    r = Type.GetType("UnityEditor." + type + ", UnityEditor");
+                }
+                if (null == r) {
+                    r = Type.GetType(type + ", UnityEngine");
+                }
+                if (null == r) {
+                    r = Type.GetType(type + ", UnityEngine.UI");
+                }
+                if (null == r) {
+                    r = Type.GetType(type + ", UnityEditor");
+                }
+                if (null == r) {
+                    r = Type.GetType(type + ", Assembly-CSharp");
+                }
+                if (null == r) {
+                    r = Type.GetType(type);
+                }
+                return r;
+            }
+            internal static Type Resolve(BoxedValue typeVal)
+            {
+                var type = typeVal.AsString;
+                if (string.IsNullOrEmpty(type)) {
+                    return typeVal.As<Type>();
+                }
+                else {
+                    return Resolve(type);
+                }
+            }
         }
-        internal sealed class ChangeTypeExp : AbstractExpression
+        internal sealed class ChangeTypeExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 2) {
-                    var obj = m_Expressions[0].Calc();
-                    string type = m_Expressions[1].Calc().AsString;
+                if (operands.Count >= 2) {
+                    var obj = operands[0];
+                    string type = operands[1].AsString;
                     try {
                         string str = obj.AsString;
                         if (obj.IsString) {
@@ -2584,7 +2877,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                 ret = CastTo<bool>(str);
                             }
                             else {
-                                Type? t = Type.GetType(type);
+                                Type t = GetTypeExp.Resolve(type);
                                 if (null != t) {
                                     ret = BoxedValue.FromObject(CastTo(t, str));
                                 }
@@ -2631,7 +2924,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                                 ret = obj.GetBool();
                             }
                             else {
-                                Type? t = Type.GetType(type);
+                                Type t = GetTypeExp.Resolve(type);
                                 if (null != t) {
                                     ret = BoxedValue.FromObject(obj.CastTo(t));
                                 }
@@ -2647,27 +2940,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class ParseEnumExp : AbstractExpression
+        internal sealed class ParseEnumExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 2) {
-                    string type = m_Expressions[0].Calc().AsString;
-                    string val = m_Expressions[1].Calc().AsString;
+                if (operands.Count >= 2) {
+                    string type = operands[0].AsString;
+                    string val = operands[1].AsString;
                     try {
-                        Type? t = Type.GetType(type);
+                        Type t = GetTypeExp.Resolve(type);
                         if (null != t) {
                             ret = BoxedValue.FromObject(Enum.Parse(t, val, true));
                         }
@@ -2681,81 +2964,562 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 return ret;
             }
+        }
+        internal sealed class DotnetCallExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                string method = null;
+                List<BoxedValue> args = null;
+                ArrayList arglist = null;
+                IObjectDispatch disp = null;
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                        disp = obj as IObjectDispatch;
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        method = v.AsString;
+                    }
+                    else if (null != disp) {
+                        if (null == args)
+                            args = Calculator.NewCalculatorValueList();
+                        args.Add(v);
+                    }
+                    else {
+                        if (null == arglist)
+                            arglist = new ArrayList();
+                        arglist.Add(v.GetObject());
+                    }
+                }
+                if (null != obj && null != method) {
+                    if (null != disp) {
+                        if (m_DispId < 0) {
+                            m_DispId = disp.GetDispatchId(method);
+                        }
+                        if (m_DispId >= 0) {
+                            ret = disp.InvokeMethod(m_DispId, args);
+                        }
+                        Calculator.RecycleCalculatorValueList(args);
+                    }
+                    else {
+                        if (null == arglist)
+                            arglist = new ArrayList();
+                        object[] _args = arglist.ToArray();
+                        IDictionary dict = obj as IDictionary;
+                        if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val) && val.IsObject && val.ObjectVal is Delegate) {
+                            var d = val.ObjectVal as Delegate;
+                            if (null != d) {
+                                ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                            }
+                        }
+                        else if (null != dict && dict.Contains(method) && dict[method] is Delegate) {
+                            var d = dict[method] as Delegate;
+                            if (null != d) {
+                                ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                            }
+                        }
+                        else {
+                            Type t = obj as Type;
+                            if (null != t) {
+                                try {
+                                    BindingFlags flags = BindingFlags.Static | BindingFlags.InvokeMethod | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                    CastArgsForCall(t, method, flags, _args);
+                                    ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
+                                }
+                                catch (Exception ex) {
+                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                }
+                            }
+                            else {
+                                t = obj.GetType();
+                                if (null != t) {
+                                    try {
+                                        BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.InvokeMethod | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                        CastArgsForCall(t, method, flags, _args);
+                                        ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
+                                    }
+                                    catch (Exception ex) {
+                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+            private int m_DispId = -1;
+        }
+        internal sealed class DotnetSetExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                string method = null;
+                BoxedValue argv = BoxedValue.NullObject;
+                ArrayList arglist = null;
+                IObjectDispatch disp = null;
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                        disp = obj as IObjectDispatch;
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        method = v.AsString;
+                    }
+                    else if (null != disp) {
+                        argv = v;
+                        break;
+                    }
+                    else {
+                        if (null == arglist)
+                            arglist = new ArrayList();
+                        arglist.Add(v.GetObject());
+                    }
+                }
+                if (null != obj && null != method) {
+                    if (null != disp) {
+                        if (m_DispId < 0) {
+                            m_DispId = disp.GetDispatchId(method);
+                        }
+                        if (m_DispId >= 0) {
+                            disp.SetProperty(m_DispId, argv);
+                        }
+                    }
+                    else {
+                        object[] _args = arglist.ToArray();
+                        IDictionary dict = obj as IDictionary;
+                        if (null != dict && null == obj.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.Static | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic)) {
+                            if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict) {
+                                bvDict[bvMethod] = BoxedValue.FromObject(_args[0]);
+                            }
+                            else {
+                                dict[method] = _args[0];
+                            }
+                        }
+                        else {
+                            Type t = obj as Type;
+                            if (null != t) {
+                                try {
+                                    BindingFlags flags = BindingFlags.Static | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                    CastArgsForSet(t, method, flags, _args);
+                                    ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
+                                }
+                                catch (Exception ex) {
+                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                }
+                            }
+                            else {
+                                t = obj.GetType();
+                                if (null != t) {
+                                    try {
+                                        BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.SetField | BindingFlags.SetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                        CastArgsForSet(t, method, flags, _args);
+                                        ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
+                                    }
+                                    catch (Exception ex) {
+                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+            private int m_DispId = -1;
+        }
+        internal sealed class DotnetGetExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                string method = null;
+                ArrayList arglist = null;
+                IObjectDispatch disp = null;
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                        disp = obj as IObjectDispatch;
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        method = v.AsString;
+                    }
+                    else if (null != disp) {
+                        break;
+                    }
+                    else {
+                        if (null == arglist)
+                            arglist = new ArrayList();
+                        arglist.Add(v.GetObject());
+                    }
+                }
+                if (null != obj && null != method) {
+                    if (null != disp) {
+                        if (m_DispId < 0) {
+                            m_DispId = disp.GetDispatchId(method);
+                        }
+                        if (m_DispId >= 0) {
+                            ret = disp.GetProperty(m_DispId);
+                        }
+                    }
+                    else {
+                        if (null == arglist)
+                            arglist = new ArrayList();
+                        object[] _args = arglist.ToArray();
+                        IDictionary dict = obj as IDictionary;
+                        if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val)) {
+                            ret = val;
+                        }
+                        else if (null != dict && dict.Contains(method)) {
+                            ret = BoxedValue.FromObject(dict[method]);
+                        }
+                        else {
+                            Type t = obj as Type;
+                            if (null != t) {
+                                try {
+                                    BindingFlags flags = BindingFlags.Static | BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                    CastArgsForGet(t, method, flags, _args);
+                                    ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, null, _args));
+                                }
+                                catch (Exception ex) {
+                                    Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                }
+                            }
+                            else {
+                                t = obj.GetType();
+                                if (null != t) {
+                                    try {
+                                        BindingFlags flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.GetField | BindingFlags.GetProperty | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic;
+                                        CastArgsForGet(t, method, flags, _args);
+                                        ret = BoxedValue.FromObject(t.InvokeMember(method, flags, null, obj, _args));
+                                    }
+                                    catch (Exception ex) {
+                                        Calculator.Log("InvokeMember {0} Exception:{1}\n{2}", method, ex.Message, ex.StackTrace);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+            private int m_DispId = -1;
+        }
+        internal sealed class CollectionCallExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                object methodObj = null;
+                ArrayList arglist = new ArrayList();
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        methodObj = v.GetObject();
+                    }
+                    else {
+                        arglist.Add(v.GetObject());
+                    }
+                }
+                object[] _args = arglist.ToArray();
+                if (null != obj && null != methodObj) {
+                    IDictionary dict = obj as IDictionary;
+                    if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val)) {
+                        var d = val.As<Delegate>();
+                        if (null != d) {
+                            ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                        }
+                    }
+                    else if (null != dict && dict.Contains(methodObj)) {
+                        var d = dict[methodObj] as Delegate;
+                        if (null != d) {
+                            ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                        }
+                    }
+                    else {
+                        IList list = obj as IList;
+                        if (null != list && bvMethod.IsInteger) {
+                            int index = bvMethod.GetInt();
+                            if (index >= 0 && index < list.Count) {
+                                var d = list[index] as Delegate;
+                                if (null != d) {
+                                    ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                }
+                            }
+                        }
+                        else {
+                            IEnumerable enumer = obj as IEnumerable;
+                            if (null != enumer && bvMethod.IsInteger) {
+                                int index = bvMethod.GetInt();
+                                var e = enumer.GetEnumerator();
+                                for (int i = 0; i <= index; ++i) {
+                                    e.MoveNext();
+                                }
+                                var d = e.Current as Delegate;
+                                if (null != d) {
+                                    ret = BoxedValue.FromObject(d.DynamicInvoke(_args));
+                                }
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+        }
+        internal sealed class CollectionSetExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                object methodObj = null;
+                object arg = null;
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        methodObj = v.GetObject();
+                    }
+                    else {
+                        arg = v.GetObject();
+                        break;
+                    }
+                }
+                if (null != obj && null != methodObj) {
+                    IDictionary dict = obj as IDictionary;
+                    if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict) {
+                        bvDict[bvMethod] = BoxedValue.FromObject(arg);
+                    }
+                    else if (null != dict) {
+                        dict[methodObj] = arg;
+                    }
+                    else {
+                        IList list = obj as IList;
+                        if (null != list && bvMethod.IsInteger) {
+                            int index = bvMethod.GetInt();
+                            if (index >= 0 && index < list.Count) {
+                                list[index] = arg;
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+        }
+        internal sealed class CollectionGetExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                var ret = BoxedValue.NullObject;
+                object obj = null;
+                BoxedValue bvMethod = BoxedValue.NullObject;
+                object methodObj = null;
+                for (int ix = 0; ix < operands.Count; ++ix) {
+                    var v = operands[ix];
+                    if (ix == 0) {
+                        obj = v.GetObject();
+                    }
+                    else if (ix == 1) {
+                        bvMethod = v;
+                        methodObj = v.GetObject();
+                    }
+                    else {
+                        break;
+                    }
+                }
+                if (null != obj && null != methodObj) {
+                    IDictionary dict = obj as IDictionary;
+                    if (null != dict && dict is Dictionary<BoxedValue, BoxedValue> bvDict && bvDict.TryGetValue(bvMethod, out var val)) {
+                        ret = val;
+                    }
+                    else if (null != dict && dict.Contains(methodObj)) {
+                        ret = BoxedValue.FromObject(dict[methodObj]);
+                    }
+                    else {
+                        IList list = obj as IList;
+                        if (null != list && bvMethod.IsInteger) {
+                            int index = bvMethod.GetInt();
+                            if (index >= 0 && index < list.Count) {
+                                var d = list[index];
+                                ret = BoxedValue.FromObject(d);
+                            }
+                        }
+                        else {
+                            IEnumerable enumer = obj as IEnumerable;
+                            if (null != enumer && bvMethod.IsInteger) {
+                                int index = bvMethod.GetInt();
+                                var e = enumer.GetEnumerator();
+                                for (int i = 0; i <= index; ++i) {
+                                    e.MoveNext();
+                                }
+                                ret = BoxedValue.FromObject(e.Current);
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+        }
+        internal sealed class LinqExp : AbstractExpression
+        {
+            protected override BoxedValue DoCalc()
+            {
+                BoxedValue v = 0;
+                var list = m_List.Calc().GetObject();
+                var method = m_Method.Calc().GetString();
+                IEnumerable obj = list as IEnumerable;
+                if (null != obj && !string.IsNullOrEmpty(method)) {
+                    if (method == "orderby" || method == "orderbydesc") {
+                        bool desc = method == "orderbydesc";
+                        List<BoxedValue> results = new List<BoxedValue>();
+                        var enumer = obj.GetEnumerator();
+                        while (enumer.MoveNext()) {
+                            var val = BoxedValue.FromObject(enumer.Current);
+                            results.Add(val);
+                        }
+                        results.Sort((BoxedValue o1, BoxedValue o2) => {
+                            Calculator.SetVariable("$$", o1);
+                            var r1 = BoxedValue.NullObject;
+                            for (int index = 0; index < m_Expressions.Count; ++index) {
+                                r1 = m_Expressions[index].Calc();
+                            }
+                            Calculator.SetVariable("$$", o2);
+                            var r2 = BoxedValue.NullObject;
+                            for (int index = 0; index < m_Expressions.Count; ++index) {
+                                r2 = m_Expressions[index].Calc();
+                            }
+                            int r = 0;
+                            if (r1.IsString && r2.IsString) {
+                                r = r1.GetString().CompareTo(r2.GetString());
+                            }
+                            else {
+                                double rd1 = r1.GetDouble();
+                                double rd2 = r2.GetDouble();
+                                r = rd1.CompareTo(rd2);
+                            }
+                            if (desc)
+                                r = -r;
+                            return r;
+                        });
+                        v = BoxedValue.FromObject(results);
+                    }
+                    else if (method == "where") {
+                        List<BoxedValue> results = new List<BoxedValue>();
+                        IEnumerator enumer = obj.GetEnumerator();
+                        while (enumer.MoveNext()) {
+                            var val = BoxedValue.FromObject(enumer.Current);
+
+                            Calculator.SetVariable("$$", val);
+                            BoxedValue r = BoxedValue.NullObject;
+                            for (int index = 0; index < m_Expressions.Count; ++index) {
+                                r = m_Expressions[index].Calc();
+                            }
+                            if (r.GetLong() != 0) {
+                                results.Add(val);
+                            }
+                        }
+                        v = BoxedValue.FromObject(results);
+                    }
+                    else if (method == "top") {
+                        BoxedValue r = BoxedValue.NullObject;
+                        for (int index = 0; index < m_Expressions.Count; ++index) {
+                            r = m_Expressions[index].Calc();
+                        }
+                        long ct = r.GetLong();
+                        List<BoxedValue> results = new List<BoxedValue>();
+                        IEnumerator enumer = obj.GetEnumerator();
+                        while (enumer.MoveNext()) {
+                            var val = BoxedValue.FromObject(enumer.Current);
+                            if (ct > 0) {
+                                results.Add(val);
+                                --ct;
+                            }
+                        }
+                        v = BoxedValue.FromObject(results);
+                    }
+                }
+                return v;
+            }
             protected override bool Load(Dsl.FunctionData callData)
             {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
+                Dsl.ISyntaxComponent list = callData.GetParam(0);
+                m_List = Calculator.Load(list);
+                Dsl.ISyntaxComponent method = callData.GetParam(1);
+                m_Method = Calculator.Load(method);
+                for (int i = 2; i < callData.GetParamNum(); ++i) {
                     Dsl.ISyntaxComponent param = callData.GetParam(i);
                     m_Expressions.Add(Calculator.Load(param));
                 }
                 return true;
             }
 
+            private IExpression m_List;
+            private IExpression m_Method;
             private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class IsNullExp : AbstractExpression
+        internal sealed class IsNullExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc();
+                if (operands.Count >= 1) {
+                    var obj = operands[0];
                     ret = obj.IsNullObject;
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
-        internal sealed class NullExp : AbstractExpression
+        internal sealed class NullExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                return true;
-            }
         }
-        internal sealed class EqualsNullExp : AbstractExpression
+        internal sealed class EqualsNullExp : SimpleExpressionBase
         {
-            protected override BoxedValue DoCalc()
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
                 var ret = BoxedValue.NullObject;
-                if (m_Expressions.Count >= 1) {
-                    var obj = m_Expressions[0].Calc();
+                if (operands.Count >= 1) {
+                    var obj = operands[0];
                     ret = object.Equals(null, obj.ObjectVal);
                 }
                 return ret;
             }
-            protected override bool Load(Dsl.FunctionData callData)
-            {
-                for (int i = 0; i < callData.GetParamNum(); ++i) {
-                    Dsl.ISyntaxComponent param = callData.GetParam(i);
-                    m_Expressions.Add(Calculator.Load(param));
-                }
-                return true;
-            }
-
-            private List<IExpression> m_Expressions = new List<IExpression>();
         }
         internal sealed class DotnetLoadExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count != 1) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dotnet_load(dll_path)");
-                    return BoxedValue.NullObject;
-                }
+                if (operands.Count != 1)
+                    throw new Exception("Expected: dotnetload(dll_path) api");
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     string path = operands[0].AsString;
@@ -2770,10 +3534,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dotnet_new(assembly,type_name,arg1,arg2,...)");
-                    return BoxedValue.NullObject;
-                }
+                if (operands.Count < 2)
+                    throw new Exception("Expected: dotnetnew(assembly,type_name,arg1,arg2,...) api");
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var assem = operands[0].As<Assembly>();
@@ -2783,20 +3545,157 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         for (int i = 2; i < operands.Count; ++i) {
                             al.Add(operands[i].GetObject());
                         }
-                        r = BoxedValue.FromObject(assem.CreateInstance(typeName, false, BindingFlags.CreateInstance, null, al.ToArray()!, System.Globalization.CultureInfo.CurrentCulture, null));
+                        r = BoxedValue.FromObject(assem.CreateInstance(typeName, false, BindingFlags.CreateInstance, null, al.ToArray(), System.Globalization.CultureInfo.CurrentCulture, null));
                     }
                 }
                 return r;
+            }
+        }
+        internal sealed class CallStackExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: call_stack()");
+                    return BoxedValue.NullObject;
+                }
+                var r = System.Environment.StackTrace;
+                return BoxedValue.FromObject(r);
+            }
+        }
+        internal sealed class CallExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: call(func_name,arg1,arg2,...) api");
+                BoxedValue r = BoxedValue.NullObject;
+                if (operands.Count >= 1) {
+                    var func = operands[0].AsString;
+                    if (null != func) {
+                        var args = Calculator.NewCalculatorValueList();
+                        for (int i = 1; i < operands.Count; ++i) {
+                            args.Add(operands[i]);
+                        }
+                        r = Calculator.Calc(func, args);
+                        Calculator.RecycleCalculatorValueList(args);
+                    }
+                }
+                return r;
+            }
+        }
+        internal sealed class ReturnExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count > 1)
+                    throw new Exception("Expected: return([val]) api");
+                Calculator.RunState = RunStateEnum.Return;
+                BoxedValue r = BoxedValue.NullObject;
+                if (operands.Count >= 1) {
+                    r = operands[0];
+                }
+                return r;
+            }
+        }
+        internal sealed class RedirectExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: redirect(arg1,arg2,...) api");
+                Calculator.RunState = RunStateEnum.Redirect;
+                if (operands.Count >= 1) {
+                    List<string> args = new List<string>();
+                    for (int i = 0; i < operands.Count; ++i) {
+                        var arg = operands[i].ToString();
+                        args.Add(arg);
+                    }
+                    return BoxedValue.FromObject(args);
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+        internal sealed class AwaitExp : SimpleAsyncExpressionBase
+        {
+            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: await(\"func_name\", arg1, arg2, ...) api");
+                var funcName = operands[0].AsString;
+                var args = Calculator.NewCalculatorValueList();
+                for (int i = 1; i < operands.Count; ++i) {
+                    args.Add(operands[i]);
+                }
+                var asyncResult = new AsyncCalcResult();
+                var enumerator = Calculator.CalcAsync(funcName, args, asyncResult);
+                Calculator.RecycleCalculatorValueList(args);
+                var _ei = enumerator;
+                while (_ei.MoveNext()) { yield return _ei.Current; }
+                result.Value = asyncResult.Value;
+            }
+        }
+        internal sealed class AwaitWhileExp : SimpleAsyncExpressionBase
+        {
+            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: awaitwhile(\"func_name\", arg1, arg2, ...) api, loop call sync function while result is true");
+                var funcName = operands[0].AsString;
+                var args = Calculator.NewCalculatorValueList();
+                for (int i = 1; i < operands.Count; ++i) {
+                    args.Add(operands[i]);
+                }
+                BoxedValue v = Calculator.Calc(funcName, args);
+                while (v.GetBool()) {
+                    yield return null;
+                    v = Calculator.Calc(funcName, args);
+                }
+                Calculator.RecycleCalculatorValueList(args);
+                result.Value = v;
+            }
+        }
+        internal sealed class AwaitUntilExp : SimpleAsyncExpressionBase
+        {
+            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: awaituntil(\"func_name\", arg1, arg2, ...) api, loop call sync function until result is true");
+                var funcName = operands[0].AsString;
+                var args = Calculator.NewCalculatorValueList();
+                for (int i = 1; i < operands.Count; ++i) {
+                    args.Add(operands[i]);
+                }
+                BoxedValue v = Calculator.Calc(funcName, args);
+                while (!v.GetBool()) {
+                    yield return null;
+                    v = Calculator.Calc(funcName, args);
+                }
+                Calculator.RecycleCalculatorValueList(args);
+                result.Value = v;
+            }
+        }
+        internal sealed class AwaitTimeExp : SimpleAsyncExpressionBase
+        {
+            protected override IEnumerator OnCalc(IList<BoxedValue> operands, AsyncCalcResult result)
+            {
+                if (operands.Count < 1)
+                    throw new Exception("Expected: awaittime(milliseconds) api, async wait specified time");
+                int ms = operands[0].GetInt();
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < ms) {
+                    yield return null;
+                }
+                sw.Stop();
+                result.Value = BoxedValue.FromObject((int)sw.ElapsedMilliseconds);
             }
         }
         internal sealed class SubstringExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 1 || operands.Count > 3) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: string_substring(str[,start,len]) function, aliased as string_substr|substr");
-                    return BoxedValue.NullObject;
-                }
+                if (operands.Count < 1 || operands.Count > 3)
+                    throw new Exception("Expected: substring(str[,start,len]) function");
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 1) {
                     string str = operands[0].GetString();
@@ -2820,10 +3719,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count != 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: new_string_builder()");
-                    return BoxedValue.NullObject;
-                }
+                if (operands.Count != 0)
+                    throw new Exception("Expected: newstringbuilder() api");
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 0) {
                     r = BoxedValue.FromObject(new StringBuilder());
@@ -2835,10 +3732,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
-                if (operands.Count < 2) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_format(sb,fmt,arg1,arg2,...)");
-                    return BoxedValue.NullObject;
-                }
+                if (operands.Count < 2)
+                    throw new Exception("Expected: appendformat(sb,fmt,arg1,arg2,...) api");
                 BoxedValue r = BoxedValue.NullObject;
                 if (operands.Count >= 2) {
                     var sb = operands[0].As<StringBuilder>();
@@ -4940,18 +5835,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return r;
             }
         }
-        internal sealed class CallStackExp : SimpleExpressionBase
-        {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-            {
-                if (operands.Count != 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: call_stack()");
-                    return BoxedValue.NullObject;
-                }
-                var r = System.Environment.StackTrace;
-                return BoxedValue.FromObject(r);
-            }
-        }
         internal sealed class FileEchoExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -5820,3 +6703,4 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 }
+#pragma warning restore 8600,8601,8602,8603,8604,8618,8619,8620,8625,CA1416

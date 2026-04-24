@@ -1450,11 +1450,11 @@ namespace BatchCommand
                 return s_Calculator;
             }
         }
-        public static Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>> AsyncTasks
+        public static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> AsyncTasks
         {
             get {
                 if (s_AsyncTasks == null)
-                    s_AsyncTasks = new Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>>();
+                    s_AsyncTasks = new Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>>();
                 return s_AsyncTasks;
             }
         }
@@ -1526,7 +1526,7 @@ namespace BatchCommand
 #endif
             DslErrorInfo.Clear();
             Calculator.OnLog = msg => { OnDslError(msg); };
-            Calculator.Init();
+            Calculator.NewApiRegistry();
 
             //register Gm Command
             Calculator.Register("startasynctask", "startasynctask(func_name,arg1,arg2,...) api, start an async script function and return a handle", new ExpressionFactoryHelper<StartAsyncTaskExp>());
@@ -1864,7 +1864,10 @@ namespace BatchCommand
             }
             var tasks = AsyncTasks;
             int handle = NextAsyncTaskId();
-            tasks[handle] = new Tuple<IEnumerator, AsyncCalcResult>(enumerator, asyncResult);
+            var runtimeCtx = Calculator.CreateAsyncContext();
+            var stack = new Stack<IEnumerator>();
+                stack.Push(enumerator);
+                tasks[handle] = new Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>(stack, asyncResult, runtimeCtx);
             return handle;
         }
         public static int TickAsyncTasks()
@@ -1884,8 +1887,24 @@ namespace BatchCommand
                     if (task.Item2.IsCompleted) {
                         continue;
                     }
-                    bool hasMore = task.Item1.MoveNext();
-                    if (!hasMore) {
+                    Calculator.SetAsyncContext(task.Item3);
+                    var stack = task.Item1;
+                    while (stack.Count > 0) {
+                        var top = stack.Peek();
+                        bool hasMore = top.MoveNext();
+                        if (hasMore) {
+                            if (top.Current is IEnumerator subEnum) {
+                                stack.Push(subEnum);
+                                continue;
+                            }
+                            break;
+                        }
+                        else {
+                            stack.Pop();
+                        }
+                    }
+                    Calculator.SaveAsyncContext(task.Item3);
+                    if (stack.Count == 0) {
                         task.Item2.IsCompleted = true;
                     }
                     else {
@@ -1981,7 +2000,7 @@ namespace BatchCommand
         [ThreadStatic]
         private static SortedList<string, string> s_UserApiDocs;
         [ThreadStatic]
-        private static Dictionary<int, Tuple<IEnumerator, AsyncCalcResult>> s_AsyncTasks;
+        private static Dictionary<int, Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>> s_AsyncTasks;
         [ThreadStatic]
         private static int s_AsyncTaskIdSeed;
         [ThreadStatic]

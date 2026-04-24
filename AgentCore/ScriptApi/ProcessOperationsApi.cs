@@ -253,7 +253,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
@@ -307,7 +307,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptCallbackExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script_callback(callbackMsg[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script_callback(callbackMsg[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {

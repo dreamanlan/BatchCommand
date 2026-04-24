@@ -848,6 +848,7 @@ namespace GlslRewriter
         {
             if (BatchCommand.BatchScript.HasDslErrors) {
                 Console.WriteLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
+                BatchCommand.BatchScript.ClearDslErrors();
             }
         }
         internal static void ResetValueDependsVar(string vname)

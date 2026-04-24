@@ -332,7 +332,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		set_plan($reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
-		$replyWithReminder = format("{0}\n\n[Reminder: Check if Soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
+		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
 		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
 	}
 	elif ($tag == "llm_pm_context") {
@@ -659,10 +659,10 @@ script(induction_context)params($count,$queuedCount,$pageType)
 
 	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
 		"【以下是最近的待办事项】：\n{1}\n" +
-		"【以下是最近上下文信息】：\n{2}\n" +
+		"【以下是最近项目状态信息】：\n{2}\n" +
 		"【以下是最近对话历史】：\n{3}{4}{5}{6}{7}", $planHistory, $todoHistory, $contextHistory, $marquisHistory, $chiliarchHistory, $centurionHistory, $decurionHistory, $conversationHistory);
-	$prompt = format("{0}\n\n根据以上内容，以PM身份总结一下清晰明确的项目状态，" +
-		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在2000字以内）", $prompt);
+	$prompt = format("{0}\n\n根据以上内容，以PM身份总结更新项目状态，" +
+		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在1500字以内）", $prompt);
 
 	if (@EnableLlmPM) {
 		$prompt = getstringinlength($prompt, 100 * 1024, 1);
@@ -716,7 +716,7 @@ script(trigger_reflection)params()
 	$prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $todoHistory, $contextHistory);
 
 	// Set reflection system prompt
-	$sysPrompt = "你是一个经验反思助手。根据对话历史提取结构化经验记录。" +
+	$sysPrompt = "根据对话历史提取结构化经验记录。" +
 		"严格要求：只记录具体事实和操作，禁止抽象总结、口号式描述。" +
 		"每条必须包含具体文件名、函数名、命令或操作步骤。\n" +
 		"输出格式：\n" +
@@ -724,7 +724,7 @@ script(trigger_reflection)params()
 		"【方法】：用了什么工具和具体命令\n" +
 		"【结果】：成功/失败及具体表现\n" +
 		"【教训】：踩过的坑（附具体场景）\n\n" +
-		"控制在300字以内，一次回复输出完成。";
+		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
 	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
 
 	// Send reflection request
@@ -749,14 +749,14 @@ script(trigger_pattern_recognition)params($recentCount)
 	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
 
 	// Set pattern recognition system prompt
-	$sysPrompt = "你是一个模式识别助手。根据多条情景记忆，识别重复模式和共性经验。" +
+	$sysPrompt = "根据多条情景记忆，识别重复模式和共性经验。" +
 		"严格要求：每个模式必须引用至少2条具体情景记忆作为证据，禁止空洞归纳。" +
 		"禁止出现'建立xxx机制'、'深化xxx认知'等口号式描述。\n" +
 		"输出格式：\n" +
-		"【模式】：识别到的具体行为模式（附情景记忆编号）\n" +
+		"【模式】：识别到的具体行为模式（附情景记忆关键字）\n" +
 		"【证据】：支撑该模式的具体事例\n" +
 		"【建议】：基于该模式的具体操作建议\n\n" +
-		"控制在300字以内，一次回复输出完成。";
+		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
 	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
 
 	// Send pattern recognition request
@@ -787,14 +787,14 @@ script(trigger_meta_cognition)params()
 	};
 
 	// Set meta-cognition system prompt
-	$sysPrompt = "你是一个元认知反思助手。根据模式记忆和情景记忆，进行高层反思。" +
+	$sysPrompt = "根据模式记忆和情景记忆，进行高层反思。" +
 		"严格要求：每条原则必须附带具体案例，禁止空洞口号。" +
 		"禁止出现'建立xxx机制'、'深化xxx认知'、'强化xxx能力'等虚无描述。\n" +
 		"输出格式：\n" +
 		"【决策原则】：从模式中提炼的原则（附具体案例）\n" +
 		"【认知偏差】：发现的思维盲区（附触发场景）\n" +
 		"【改进建议】：具体可执行的操作建议\n\n" +
-		"控制在300字以内，一次回复输出完成。";
+		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
 	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
 
 	// Send meta-cognition request

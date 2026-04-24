@@ -174,6 +174,7 @@ namespace BatchCommand
         {
             if (BatchCommand.BatchScript.HasDslErrors) {
                 Console.WriteLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
+                BatchCommand.BatchScript.ClearDslErrors();
             }
         }
     }

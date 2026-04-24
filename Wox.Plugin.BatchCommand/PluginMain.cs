@@ -450,6 +450,7 @@ public sealed class Main : IPlugin, IContextMenu, IReloadable, IPluginI18n, ISav
     {
         if (BatchCommand.BatchScript.HasDslErrors) {
             LogLine("[csharp] Dsl error: {0}", BatchCommand.BatchScript.GetDslErrors());
+            BatchCommand.BatchScript.ClearDslErrors();
         }
     }
     internal static void ShowConsole()

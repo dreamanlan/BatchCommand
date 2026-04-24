@@ -44,7 +44,7 @@ class ConfigManager {
         markers: ['// @execute', '# @execute'],
         maxProcessedBlocks: 1000,
         maxSendRetries: 5,
-        llmContextCountModuloForKeep: 32,
+        llmContextCountModuloForKeep: 16,
         llmContextCountModuloForAlign: 8
       },
 

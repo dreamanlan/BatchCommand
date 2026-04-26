@@ -122,7 +122,10 @@ execute_command("cmd", "/c cd /d d:/AiWebGame && python tools/gen_tiles.py", "d:
 同步：`execute_script([language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
 异步：`execute_script_async("callback"[, language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
 
-代码块默认用`{: :}`，冲突时用`@@delimiter(script, "begin", "end")`自定义。
+外部脚本默认用`{: :}`，冲突时用`@@delimiter(script, "begin", "end")`自定义。
+
+*注意*
+外部脚本括号分隔符专用于外部脚本，只有特定api支持，不像字符串引号分隔符可用在所有字符串能用的地方。
 
 **网络访问与搜索**
 有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search

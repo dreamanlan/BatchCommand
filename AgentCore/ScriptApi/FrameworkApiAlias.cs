@@ -1644,9 +1644,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         var condVal = clause.Condition.Calc();
                         if (condVal.GetLong() != 0) {
                             for (int index = 0; index < clause.Expressions.Count; ++index) {
-                                v = clause.Expressions[index].Calc();
+                                BoxedValue tv = clause.Expressions[index].Calc();
                                 if (Calculator.RunState != RunStateEnum.Normal) {
+                                    if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                        v = tv;
+                                    }
                                     return v;
+                                }
+                                else {
+                                    v = tv;
                                 }
                             }
                             break;
@@ -1654,9 +1660,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     }
                     else if (ix == m_Clauses.Count - 1) {
                         for (int index = 0; index < clause.Expressions.Count; ++index) {
-                            v = clause.Expressions[index].Calc();
+                            BoxedValue tv = clause.Expressions[index].Calc();
                             if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
                                 return v;
+                            }
+                            else {
+                                v = tv;
                             }
                         }
                         break;
@@ -1682,17 +1694,24 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         if (condVal.GetLong() != 0) {
                             for (int index = 0; index < clause.Expressions.Count; ++index) {
                                 var exp = clause.Expressions[index];
+                                BoxedValue tv;
                                 if (exp.IsAsync) {
                                     var _ei2 = exp.Calc(result);
                                     while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                                    v = result.Value;
+                                    tv = result.Value;
                                 }
                                 else {
-                                    v = exp.Calc();
+                                    tv = exp.Calc();
                                 }
                                 if (Calculator.RunState != RunStateEnum.Normal) {
+                                    if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                        v = tv;
+                                    }
                                     result.Value = v;
                                     yield break;
+                                }
+                                else {
+                                    v = tv;
                                 }
                             }
                             break;
@@ -1701,17 +1720,24 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     else if (ix == m_Clauses.Count - 1) {
                         for (int index = 0; index < clause.Expressions.Count; ++index) {
                             var exp = clause.Expressions[index];
+                            BoxedValue tv;
                             if (exp.IsAsync) {
                                 var _ei3 = exp.Calc(result);
                                 while (_ei3.MoveNext()) { yield return _ei3.Current; }
-                                v = result.Value;
+                                tv = result.Value;
                             }
                             else {
-                                v = exp.Calc();
+                                tv = exp.Calc();
                             }
                             if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
                                 result.Value = v;
                                 yield break;
+                            }
+                            else {
+                                v = tv;
                             }
                         }
                         break;
@@ -1838,15 +1864,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var condVal = m_Condition.Calc();
                     if (condVal.GetLong() != 0) {
                         for (int index = 0; index < m_Expressions.Count; ++index) {
-                            v = m_Expressions[index].Calc();
+                            BoxedValue tv = m_Expressions[index].Calc();
                             if (Calculator.RunState == RunStateEnum.Continue) {
                                 Calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
                             else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
                                 if (Calculator.RunState == RunStateEnum.Break)
                                     Calculator.RunState = RunStateEnum.Normal;
                                 return v;
+                            }
+                            else {
+                                v = tv;
                             }
                         }
                     }
@@ -1872,23 +1904,30 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     if (condVal.GetLong() != 0) {
                         for (int index = 0; index < m_Expressions.Count; ++index) {
                             var exp = m_Expressions[index];
+                            BoxedValue tv;
                             if (exp.IsAsync) {
                                 var _ei2 = exp.Calc(result);
                                 while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                                v = result.Value;
+                                tv = result.Value;
                             }
                             else {
-                                v = exp.Calc();
+                                tv = exp.Calc();
                             }
                             if (Calculator.RunState == RunStateEnum.Continue) {
                                 Calculator.RunState = RunStateEnum.Normal;
                                 break;
                             }
                             else if (Calculator.RunState != RunStateEnum.Normal) {
+                                if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                    v = tv;
+                                }
                                 if (Calculator.RunState == RunStateEnum.Break)
                                     Calculator.RunState = RunStateEnum.Normal;
                                 result.Value = v;
                                 yield break;
+                            }
+                            else {
+                                v = tv;
                             }
                         }
                     }
@@ -1973,15 +2012,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 for (int i = 0; i < ct; ++i) {
                     Calculator.SetVariable("$$", i);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
-                        v = m_Expressions[index].Calc();
+                        BoxedValue tv = m_Expressions[index].Calc();
                         if (Calculator.RunState == RunStateEnum.Continue) {
                             Calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
                         else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                v = tv;
+                            }
                             if (Calculator.RunState == RunStateEnum.Break)
                                 Calculator.RunState = RunStateEnum.Normal;
                             return v;
+                        }
+                        else {
+                            v = tv;
                         }
                     }
                 }
@@ -2004,23 +2049,30 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     Calculator.SetVariable("$$", i);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
                         var exp = m_Expressions[index];
+                        BoxedValue tv;
                         if (exp.IsAsync) {
                             var _ei2 = exp.Calc(result);
                             while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                            v = result.Value;
+                            tv = result.Value;
                         }
                         else {
-                            v = exp.Calc();
+                            tv = exp.Calc();
                         }
                         if (Calculator.RunState == RunStateEnum.Continue) {
                             Calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
                         else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                v = tv;
+                            }
                             if (Calculator.RunState == RunStateEnum.Break)
                                 Calculator.RunState = RunStateEnum.Normal;
                             result.Value = v;
                             yield break;
+                        }
+                        else {
+                            v = tv;
                         }
                     }
                 }
@@ -2170,10 +2222,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         break;
                     }
                     else if (Calculator.RunState != RunStateEnum.Normal) {
+                        if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            ret = v;
+                        }
                         if (Calculator.RunState == RunStateEnum.Break)
                             Calculator.RunState = RunStateEnum.Normal;
-                        ret = v;
                         return true;
+                    }
+                    else {
+                        ret = v;
                     }
                 }
                 return false;
@@ -2198,8 +2255,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         var loopResult = new AsyncCalcResult();
                         var _ei2 = LoopOnceAsync(val, loopResult);
                         while (_ei2.MoveNext()) { yield return _ei2.Current; }
+                        v = loopResult.Value;
                         if (loopResult.IsBreak) {
-                            v = loopResult.Value;
                             break;
                         }
                     }
@@ -2211,8 +2268,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         var loopResult = new AsyncCalcResult();
                         var _ei3 = LoopOnceAsync(val, loopResult);
                         while (_ei3.MoveNext()) { yield return _ei3.Current; }
+                        v = loopResult.Value;
                         if (loopResult.IsBreak) {
-                            v = loopResult.Value;
                             break;
                         }
                     }
@@ -2239,11 +2296,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         break;
                     }
                     else if (Calculator.RunState != RunStateEnum.Normal) {
+                        if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                            loopResult.Value = v;
+                        }
                         if (Calculator.RunState == RunStateEnum.Break)
                             Calculator.RunState = RunStateEnum.Normal;
-                        loopResult.Value = v;
                         loopResult.IsBreak = true;
                         yield break;
+                    }
+                    else {
+                        loopResult.Value = v;
                     }
                 }
             }
@@ -2283,15 +2345,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var val = enumer.Current;
                     Calculator.SetVariable("$$", val);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
-                        v = m_Expressions[index].Calc();
+                        BoxedValue tv = m_Expressions[index].Calc();
                         if (Calculator.RunState == RunStateEnum.Continue) {
                             Calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
                         else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                v = tv;
+                            }
                             if (Calculator.RunState == RunStateEnum.Break)
                                 Calculator.RunState = RunStateEnum.Normal;
                             return v;
+                        }
+                        else {
+                            v = tv;
                         }
                     }
                 }
@@ -2319,24 +2387,31 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     Calculator.SetVariable("$$", val);
                     for (int index = 0; index < m_Expressions.Count; ++index) {
                         var exp = m_Expressions[index];
+                        BoxedValue tv;
                         if (exp.IsAsync) {
                             var subResult = new AsyncCalcResult();
                             var _ei2 = exp.Calc(subResult);
                             while (_ei2.MoveNext()) { yield return _ei2.Current; }
-                            v = subResult.Value;
+                            tv = subResult.Value;
                         }
                         else {
-                            v = exp.Calc();
+                            tv = exp.Calc();
                         }
                         if (Calculator.RunState == RunStateEnum.Continue) {
                             Calculator.RunState = RunStateEnum.Normal;
                             break;
                         }
                         else if (Calculator.RunState != RunStateEnum.Normal) {
+                            if (Calculator.RunState == RunStateEnum.Return || Calculator.RunState == RunStateEnum.Redirect) {
+                                v = tv;
+                            }
                             if (Calculator.RunState == RunStateEnum.Break)
                                 Calculator.RunState = RunStateEnum.Normal;
                             result.Value = v;
                             yield break;
+                        }
+                        else {
+                            v = tv;
                         }
                     }
                 }

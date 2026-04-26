@@ -341,7 +341,8 @@ namespace CppDebugScript
                 if (tok == "return") {
                     var oldCurTok = dslToken.getCurToken();
                     var oldLastTok = dslToken.getLastToken();
-                    if (dslToken.PeekNextValidChar(0) == ';')
+                    char nextChar = dslToken.PeekNextValidChar(0);
+                    if (nextChar == ',' || nextChar == ';')
                         return false;
                     //insert backtick char
                     dslToken.setCurToken("`");

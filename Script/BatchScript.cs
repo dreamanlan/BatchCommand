@@ -1640,15 +1640,17 @@ namespace BatchCommand
             sdir = Path.Combine(Environment.CurrentDirectory, sdir);
             s_ScriptDirectory = sdir;
             Calculator.Clear();
+            DslErrorInfo.Clear();
             LoadDslHelper(scpFile);
             Environment.SetEnvironmentVariable("scriptdir", ScriptDirectory);
         }
-        public static void LoadIncludes(params string[] scpFiles)
+        public static void LoadImportFiles(params string[] scpFiles)
         {
-            LoadIncludes((IList<string>)scpFiles);
+            LoadImportFiles((IList<string>)scpFiles);
         }
-        public static void LoadIncludes(IList<string> scpFiles)
+        public static void LoadImportFiles(IList<string> scpFiles)
         {
+            DslErrorInfo.Clear();
             foreach (var scpFile in scpFiles) {
                 LoadDslHelper(scpFile);
             }
@@ -1687,7 +1689,7 @@ namespace BatchCommand
             vargs.AddRange(args);
             while (redirect) {
                 Load(scpFile);
-                LoadIncludes(includes);
+                LoadImportFiles(includes);
                 r = Calculator.Calc("main", vargs);
                 if (Calculator.RunState == RunStateEnum.Redirect) {
                     Calculator.RunState = RunStateEnum.Normal;
@@ -1969,7 +1971,6 @@ namespace BatchCommand
             DslFile dslFile = new DslFile();
             dslFile.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(dslFile);
-            DslErrorInfo.Clear();
             if (!dslFile.Load(file, OnDslError)) {
                 return;
             }

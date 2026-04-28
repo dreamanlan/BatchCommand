@@ -264,7 +264,7 @@ namespace DotNetLib
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             var files = new List<string>();
-            for (int ix = 1; ix < operands.Count; ix++) {
+            for (int ix = 0; ix < operands.Count; ix++) {
                 var str = operands[ix].AsString;
                 if (!string.IsNullOrEmpty(str)) {
                     string path;
@@ -277,10 +277,29 @@ namespace DotNetLib
                     files.Add(path);
                 }
             }
-            BatchScript.LoadIncludes(files);
+            BatchScript.LoadImportFiles(files);
             if (BatchScript.HasDslErrors)
                 return BoxedValue.FromBool(false);
+            foreach (var file in files) {
+                Lib.NativeLog($"Import: {file}");
+            }
             return BoxedValue.FromBool(true);
+        }
+    }
+    sealed class SetDslFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: setdslfile(dsl_file)");
+                return BoxedValue.EmptyString;
+            }
+            string file = operands[0].AsString;
+            if (!string.IsNullOrEmpty(file)) {
+                Lib.DslScriptFile = file;
+                BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(Lib.DslScriptFile));
+            }
+            return BoxedValue.FromString(Lib.DslScriptFile);
         }
     }
     sealed class NativeLogExp : SimpleExpressionBase
@@ -1826,7 +1845,7 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnReceiveJsMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
+        public delegate bool OnReceiveJsMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1875,15 +1894,16 @@ namespace DotNetLib
                     }
 
                     if (TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
-                        s_DslScriptFile = switchValue;
-                        s_DslScriptFileChanged = true;
-                        NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_DslScriptFile));
+                        s_InitialDslScriptFile = switchValue;
+                        s_InitialDslScriptFileChanged = true;
+                        NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_InitialDslScriptFile));
                     }
                     if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjIdentity)) {
                         s_InitialProjectIdentity = prjIdentity;
                         s_InitialProjectIdentityInited = true;
                         NativeLogNoLock(string.Format("[csharp] parse --projectidentity:{0}, set InitialProjectIdentity", s_InitialProjectIdentity));
                     }
+                    s_DslScriptFile = s_InitialDslScriptFile;
                     TryLoadDSL();
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
                     CheckDslError();
@@ -2674,14 +2694,30 @@ namespace DotNetLib
             OnReceiveCefMessage(msg, new List<string>(argArray), browser, frame, source_process_id);
         }
 
-        internal static void OnReceiveJsMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame)
+        internal static bool OnReceiveJsMessage(string msg, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
         {
             string[] argArray = new string[argCount];
             for (int i = 0; i < argCount; i++) {
                 IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
                 argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
             }
-            OnReceiveJsMessage(msg, new List<string>(argArray), browser, frame);
+
+            string result = OnReceiveJsMessage(msg, new List<string>(argArray), browser, frame);
+            if (string.IsNullOrEmpty(result)) {
+                resultSize = 0;
+                return false;
+            }
+
+            byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(result);
+            if (resultSize < resultBytes.Length + 1) {
+                resultSize = resultBytes.Length + 1;
+                return false;
+            }
+
+            Marshal.Copy(resultBytes, 0, resultStr, resultBytes.Length);
+            Marshal.WriteByte(resultStr, resultBytes.Length, 0);
+            resultSize = resultBytes.Length;
+            return true;
         }
 
         internal static bool OnExecuteMetaDSL(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
@@ -2768,7 +2804,7 @@ namespace DotNetLib
             }
         }
 
-        internal static void OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
+        internal static string OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
         {
             lock (s_Lock) {
                 NativeApi.SetContext(browser, frame);
@@ -2789,14 +2825,15 @@ namespace DotNetLib
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                         CheckDslError();
                         if (!r.IsNullObject) {
-                            NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                            return r.ToString();
                         }
                     }
                 }
                 catch (Exception e) {
-                    NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                    NativeLogNoLock("[csharp] Exception in OnReceiveJsMessage:" + e.Message + "\n" + e.StackTrace);
                 }
             }
+            return string.Empty;
         }
 
         internal static string CmdLine
@@ -2838,6 +2875,16 @@ namespace DotNetLib
         {
             get {
                 return s_MainThreadId;
+            }
+        }
+
+        internal static string DslScriptFile
+        {
+            get {
+                return s_DslScriptFile;
+            }
+            set {
+                s_DslScriptFile = value;
             }
         }
 
@@ -3042,7 +3089,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.SetGlobalVariable("loadedurl", BoxedValue.FromString(s_LoadedUrl));
             BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
             BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
-            BatchCommand.BatchScript.SetGlobalVariable("dslfilechanged", BoxedValue.FromBool(s_DslScriptFileChanged));
+            BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
+            BatchCommand.BatchScript.SetGlobalVariable("initialdslfilechanged", BoxedValue.FromBool(s_InitialDslScriptFileChanged));
             BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
             BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentityinited", BoxedValue.FromBool(s_InitialProjectIdentityInited));
             BatchCommand.BatchScript.ClearDslErrors();
@@ -3250,6 +3298,7 @@ namespace DotNetLib
             AddCommonApiDocs();
             // Basic framework APIs (defined in Program.cs)
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
+            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
@@ -3295,6 +3344,8 @@ namespace DotNetLib
         [ThreadStatic]
         private static string? s_DslScriptPath;
 
+        private static string s_DslScriptFile = string.Empty;
+
         private static string s_CmdLine = string.Empty;
         private static string s_BasePath = string.Empty;
         private static string s_AppDir = string.Empty;
@@ -3306,8 +3357,8 @@ namespace DotNetLib
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
         private static string s_LoadedUrl = string.Empty;
-        private static string s_DslScriptFile = "Script.dsl";
-        private static bool s_DslScriptFileChanged = false;
+        private static string s_InitialDslScriptFile = "Script.dsl";
+        private static bool s_InitialDslScriptFileChanged = false;
         private static string s_InitialProjectIdentity = string.Empty;
         private static bool s_InitialProjectIdentityInited = false;
         private static int s_MainThreadId = 0;
@@ -3389,6 +3440,7 @@ namespace DotNetLib
 
             // Basic framework APIs (defined in Program.cs)
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
+            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());

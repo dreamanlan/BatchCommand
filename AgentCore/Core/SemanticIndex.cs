@@ -248,6 +248,11 @@ namespace CefDotnetApp.AgentCore.Core
             return SemanticSearchCoreInternal(collection, queryVector, query, topN, timeoutMs, startTime, endTime);
         }
 
+        // Incremental recall parameters for between-time search
+        private const int BetweenRecallStart = 1000;
+        private const int BetweenRecallStep = 1000;
+        private const int BetweenRecallCap = 100_000;
+
         private List<SearchResultItem> SemanticSearchCoreInternal(string collection, float[] queryVector, string query, int topN, int timeoutMs, long startTime, long endTime)
         {
             var col = GetOrCreateCollection(collection);
@@ -261,6 +266,11 @@ namespace CefDotnetApp.AgentCore.Core
             bool hasReranker = _rerankService != null && _rerankService.IsReady && !string.IsNullOrWhiteSpace(query);
             int hnswRecallN = topN * _hnswRecallMultiplier;
             int finalRecallN = hasReranker ? topN * 10 : topN;
+
+            bool hasTimeFilter = startTime > 0 && endTime > 0;
+            if (hasTimeFilter) {
+                return SemanticSearchBetweenInternal(col, collection, queryVector, query, topN, finalRecallN, hasReranker, startTime, endTime);
+            }
 
             IEnumerable<VectorResult> hits;
             col.Lock.EnterReadLock();
@@ -332,7 +342,6 @@ namespace CefDotnetApp.AgentCore.Core
                 .ToList();
 
             // fetch content for reranker or final output
-            bool hasTimeFilter = startTime > 0 && endTime > 0;
             var idContentMap = new Dictionary<string, (string content, string meta, long createdAt)>(StringComparer.Ordinal);
             foreach (var item in hybridRanked) {
                 using var cmd = conn.CreateCommand();
@@ -341,8 +350,6 @@ namespace CefDotnetApp.AgentCore.Core
                 using var reader = cmd.ExecuteReader();
                 if (reader.Read()) {
                     long ts = reader.GetInt64(2);
-                    if (hasTimeFilter && (ts < startTime || ts > endTime))
-                        continue;
                     idContentMap[item.Id] = (reader.GetString(0), reader.IsDBNull(1) ? "" : reader.GetString(1), ts);
                 }
             }
@@ -779,11 +786,118 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return KeywordSearchCoreInternal(collection, query, topN, startTime, endTime);
         }
 
+        // ---- sqlite_* direct LIKE-based search on semantic_records (no FTS, no scoring) ----
+
+        /// <summary>
+        /// Direct LIKE-based search on semantic_records table.
+        /// Tokens are AND'd; token order has no semantic meaning.
+        /// Result order: created_at DESC, take first topN.
+        /// </summary>
+        public List<SearchResultItem> SqliteSearchCore(string collection, string query, int topN)
+        {
+            return SqliteLikeSearchInternal(collection, query, topN, 0, 0);
+        }
+
+        /// <summary>
+        /// Direct LIKE-based search on semantic_records within a time range.
+        /// endTime=0 means now. Result order: created_at DESC, take first topN.
+        /// </summary>
+        public List<SearchResultItem> SqliteSearchBetweenCore(string collection, string query, int topN, long startTime, long endTime)
+        {
+            if (endTime <= 0) endTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            return SqliteLikeSearchInternal(collection, query, topN, startTime, endTime);
+        }
+
+        /// <summary>Tokenize query using same segmenter logic as BuildFtsQuery, cap at 64 tokens.</summary>
+        private List<string> TokenizeForLike(string rawQuery)
+        {
+            if (string.IsNullOrWhiteSpace(rawQuery))
+                return new List<string>();
+            // Split by any Unicode whitespace (no segmenter, no punctuation splitting).
+            var tokens = rawQuery.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            var list = tokens.Where(t => !string.IsNullOrEmpty(t)).Take(64).ToList();
+            return list;
+        }
+
+        /// <summary>Escape LIKE special chars (\, %, _) using backslash as ESCAPE char, wrap with % % for contains match.</summary>
+        private static string EscapeLikePattern(string token)
+        {
+            string escaped = token.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+            return "%" + escaped + "%";
+        }
+
+        private List<SearchResultItem> SqliteLikeSearchInternal(string collection, string query, int topN, long startTime, long endTime)
+        {
+            var tokens = TokenizeForLike(query);
+            if (tokens.Count == 0)
+                return new List<SearchResultItem>();
+
+            bool hasTimeFilter = startTime > 0 && endTime > 0;
+            // Determine columns to match based on current _searchScope.
+            // V1 schema has no metadata column in semantic_records? Actually metadata is in semantic_records always; _searchScope is an FTS concept.
+            // For sqlite_* we honor _searchScope: content -> only content; metadata -> only metadata; all -> (content OR metadata).
+            string scope = _searchScope;
+            if (scope != "content" && scope != "metadata")
+                scope = "all";
+
+            var sb = new StringBuilder();
+            sb.Append("SELECT id, content, metadata, created_at FROM semantic_records WHERE collection=@col");
+            if (hasTimeFilter) {
+                sb.Append(" AND created_at BETWEEN @s AND @e");
+            }
+            for (int i = 0; i < tokens.Count; i++) {
+                sb.Append(" AND (");
+                if (scope == "content") {
+                    sb.Append("content LIKE @t").Append(i).Append(" ESCAPE '\\'");
+                }
+                else if (scope == "metadata") {
+                    sb.Append("metadata LIKE @t").Append(i).Append(" ESCAPE '\\'");
+                }
+                else {
+                    sb.Append("content LIKE @t").Append(i).Append(" ESCAPE '\\'");
+                    sb.Append(" OR metadata LIKE @t").Append(i).Append(" ESCAPE '\\'");
+                }
+                sb.Append(")");
+            }
+            sb.Append(" ORDER BY created_at DESC LIMIT @n");
+
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sb.ToString();
+            cmd.Parameters.AddWithValue("@col", collection);
+            if (hasTimeFilter) {
+                cmd.Parameters.AddWithValue("@s", startTime);
+                cmd.Parameters.AddWithValue("@e", endTime);
+            }
+            for (int i = 0; i < tokens.Count; i++) {
+                cmd.Parameters.AddWithValue("@t" + i, EscapeLikePattern(tokens[i]));
+            }
+            cmd.Parameters.AddWithValue("@n", topN);
+
+            var results = new List<SearchResultItem>();
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                results.Add(new SearchResultItem {
+                    Id = reader.GetString(0),
+                    Content = reader.GetString(1),
+                    Metadata = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                    Score = 0,
+                    CreatedAt = reader.GetInt64(3)
+                });
+            }
+            return results;
+        }
+
         private List<SearchResultItem> KeywordSearchCoreInternal(string collection, string query, int topN, long startTime, long endTime)
         {
             string ftsQuery = BuildFtsQuery(query, useScope: true);
             if (string.IsNullOrEmpty(ftsQuery))
                 return new List<SearchResultItem>();
+
+            bool hasTimeFilter = startTime > 0 && endTime > 0;
+            if (hasTimeFilter) {
+                return KeywordSearchBetweenInternal(collection, ftsQuery, topN, startTime, endTime);
+            }
 
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
@@ -792,7 +906,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             cmd.Parameters.AddWithValue("@q", ftsQuery);
             cmd.Parameters.AddWithValue("@n", topN);
 
-            bool hasTimeFilter = startTime > 0 && endTime > 0;
             var idScores = new List<(string id, double score)>();
             using (var reader = cmd.ExecuteReader()) {
                 while (reader.Read()) {
@@ -814,8 +927,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                 using var recReader = recCmd.ExecuteReader();
                 if (recReader.Read()) {
                     long ts = recReader.GetInt64(2);
-                    if (hasTimeFilter && (ts < startTime || ts > endTime))
-                        continue;
                     results.Add(new SearchResultItem {
                         Id = id,
                         Content = recReader.GetString(0),
@@ -826,6 +937,407 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                 }
             }
             return results;
+        }
+
+        // ---- Between-time search helpers ----
+
+        /// <summary>
+        /// Semantic+BM25 hybrid search within a time range.
+        /// Strategy: fetch candidate id set by time range first, then do incremental HNSW+BM25 recall
+        /// until the intersection with the candidate set exceeds topN, or the recall cap is reached
+        /// (in which case fall back to table-scan on candidates).
+        /// </summary>
+        private List<SearchResultItem> SemanticSearchBetweenInternal(CollectionIndex col, string collection, float[] queryVector, string query, int topN, int finalRecallN, bool hasReranker, long startTime, long endTime)
+        {
+            // 1. Load candidate ids filtered by time range
+            HashSet<string> candIds = LoadCandidateIdsByTime(collection, startTime, endTime);
+            if (candIds.Count == 0)
+                return new List<SearchResultItem>();
+
+            string ftsQuery = BuildFtsQuery(query);
+
+            // 2. Incremental recall loop: grow recallN until intersection exceeds topN, or cap is hit
+            List<(string id, double hybridScore)>? orderedHits = null;
+            int recallN = BetweenRecallStart;
+            while (orderedHits == null) {
+                if (recallN > BetweenRecallCap) {
+                    orderedHits = ScanHybridOnCandidates(col, collection, candIds, queryVector, ftsQuery);
+                    break;
+                }
+                var hybridOrdered = RecallHybridOnce(col, collection, queryVector, ftsQuery, recallN);
+                if (hybridOrdered == null)
+                    return new List<SearchResultItem>();
+                int hit = 0;
+                foreach (var h in hybridOrdered) {
+                    if (candIds.Contains(h.id)) hit++;
+                }
+                if (hit > topN || hybridOrdered.Count < recallN) {
+                    // Either enough hits, or the recall is already exhausted (no more results available)
+                    orderedHits = hybridOrdered;
+                    break;
+                }
+                recallN += BetweenRecallStep;
+            }
+
+            // 3. Intersect with candidate set, preserve hybrid score order, take finalRecallN
+            var intersected = new List<(string id, double score)>();
+            foreach (var h in orderedHits) {
+                if (candIds.Contains(h.id)) {
+                    intersected.Add(h);
+                    if (intersected.Count >= finalRecallN)
+                        break;
+                }
+            }
+            if (intersected.Count == 0)
+                return new List<SearchResultItem>();
+
+            // 4. Load content for the intersected ids
+            var idContentMap = LoadContentsByIds(intersected.Select(x => x.id));
+
+            // 5. Rerank or use hybrid score directly
+            IList<(string id, double score)> finalRanked;
+            if (hasReranker) {
+                var rerankCandidates = intersected
+                    .Where(c => idContentMap.ContainsKey(c.id))
+                    .Select(c => (c.id, idContentMap[c.id].content))
+                    .ToList();
+                var rerankResults = _rerankService!.Rerank(query, rerankCandidates, topN);
+                finalRanked = rerankResults.Select(r => (r.key, (double)r.score)).ToList();
+            } else {
+                finalRanked = intersected
+                    .Where(c => idContentMap.ContainsKey(c.id))
+                    .Take(topN)
+                    .Select(c => (c.id, c.score))
+                    .ToList();
+            }
+
+            var results = new List<SearchResultItem>();
+            foreach (var (id, score) in finalRanked) {
+                if (!idContentMap.TryGetValue(id, out var rec)) continue;
+                results.Add(new SearchResultItem {
+                    Id = id,
+                    Content = rec.content,
+                    Metadata = rec.meta,
+                    Score = score,
+                    CreatedAt = rec.createdAt
+                });
+            }
+            return results;
+        }
+
+        /// <summary>
+        /// Keyword-only (BM25) search within a time range using the same incremental strategy.
+        /// </summary>
+        private List<SearchResultItem> KeywordSearchBetweenInternal(string collection, string ftsQuery, int topN, long startTime, long endTime)
+        {
+            HashSet<string> candIds = LoadCandidateIdsByTime(collection, startTime, endTime);
+            if (candIds.Count == 0)
+                return new List<SearchResultItem>();
+
+            List<(string id, double score)>? orderedHits = null;
+            int recallN = BetweenRecallStart;
+            while (orderedHits == null) {
+                if (recallN > BetweenRecallCap) {
+                    orderedHits = ScanBm25OnCandidates(collection, candIds, ftsQuery);
+                    break;
+                }
+                var bm25Ordered = RecallBm25Once(collection, ftsQuery, recallN);
+                int hit = 0;
+                foreach (var h in bm25Ordered) {
+                    if (candIds.Contains(h.id)) hit++;
+                }
+                if (hit > topN || bm25Ordered.Count < recallN) {
+                    orderedHits = bm25Ordered;
+                    break;
+                }
+                recallN += BetweenRecallStep;
+            }
+
+            var intersected = new List<(string id, double score)>();
+            foreach (var h in orderedHits) {
+                if (candIds.Contains(h.id)) {
+                    intersected.Add(h);
+                    if (intersected.Count >= topN)
+                        break;
+                }
+            }
+            if (intersected.Count == 0)
+                return new List<SearchResultItem>();
+
+            var idContentMap = LoadContentsByIds(intersected.Select(x => x.id));
+            var results = new List<SearchResultItem>();
+            foreach (var (id, score) in intersected) {
+                if (!idContentMap.TryGetValue(id, out var rec)) continue;
+                results.Add(new SearchResultItem {
+                    Id = id,
+                    Content = rec.content,
+                    Metadata = rec.meta,
+                    Score = score,
+                    CreatedAt = rec.createdAt
+                });
+            }
+            return results;
+        }
+
+        /// <summary>Load all record ids in a collection whose created_at falls in [startTime, endTime].</summary>
+        private HashSet<string> LoadCandidateIdsByTime(string collection, long startTime, long endTime)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id FROM semantic_records WHERE collection=@col AND created_at BETWEEN @s AND @e";
+            cmd.Parameters.AddWithValue("@col", collection);
+            cmd.Parameters.AddWithValue("@s", startTime);
+            cmd.Parameters.AddWithValue("@e", endTime);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                set.Add(reader.GetString(0));
+            return set;
+        }
+
+        /// <summary>Load content/metadata/created_at for the given ids.</summary>
+        private Dictionary<string, (string content, string meta, long createdAt)> LoadContentsByIds(IEnumerable<string> ids)
+        {
+            var map = new Dictionary<string, (string content, string meta, long createdAt)>(StringComparer.Ordinal);
+            using var conn = OpenConnection();
+            foreach (var id in ids) {
+                if (map.ContainsKey(id)) continue;
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT content,metadata,created_at FROM semantic_records WHERE id=@id";
+                cmd.Parameters.AddWithValue("@id", id);
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read()) {
+                    map[id] = (reader.GetString(0), reader.IsDBNull(1) ? "" : reader.GetString(1), reader.GetInt64(2));
+                }
+            }
+            return map;
+        }
+
+        /// <summary>
+        /// Single HNSW+BM25 hybrid recall pass returning up to recallN ordered candidates.
+        /// Returns null if the graph is not ready.
+        /// </summary>
+        private List<(string id, double hybridScore)>? RecallHybridOnce(CollectionIndex col, string collection, float[] queryVector, string ftsQuery, int recallN)
+        {
+            IEnumerable<VectorResult> hits;
+            col.Lock.EnterReadLock();
+            try {
+                if (col.Graph == null)
+                    return null;
+                hits = col.Graph.GetTopKAsync(queryVector.ToList(), recallN).GetAwaiter().GetResult();
+            }
+            finally {
+                col.Lock.ExitReadLock();
+            }
+
+            var candidateMap = new Dictionary<string, double>(StringComparer.Ordinal);
+            foreach (var h in hits) {
+                string hid = h.GUID.ToString("N");
+                candidateMap[hid] = 1.0 - (double)h.Distance;
+            }
+
+            var bm25Map = new Dictionary<string, double>(StringComparer.Ordinal);
+            if (!string.IsNullOrEmpty(ftsQuery)) {
+                using var conn = OpenConnection();
+                if (candidateMap.Count > 0) {
+                    var idList = string.Join(",", candidateMap.Keys.Select(id => $"'{id}'"));
+                    using var ftsCmd = conn.CreateCommand();
+                    ftsCmd.CommandText = $"SELECT id, {GetBm25Expression()} FROM semantic_fts WHERE collection=@col AND semantic_fts MATCH @q AND id IN ({idList})";
+                    ftsCmd.Parameters.AddWithValue("@col", collection);
+                    ftsCmd.Parameters.AddWithValue("@q", ftsQuery);
+                    using var ftsReader = ftsCmd.ExecuteReader();
+                    while (ftsReader.Read()) {
+                        string fid = ftsReader.GetString(0);
+                        double raw = ftsReader.GetDouble(1);
+                        bm25Map[fid] = 1.0 / (1.0 + Math.Abs(raw));
+                    }
+                }
+                using var bm25RecallCmd = conn.CreateCommand();
+                bm25RecallCmd.CommandText = $"SELECT id, {GetBm25Expression()} AS score\nFROM semantic_fts\nWHERE collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
+                bm25RecallCmd.Parameters.AddWithValue("@col", collection);
+                bm25RecallCmd.Parameters.AddWithValue("@q", ftsQuery);
+                bm25RecallCmd.Parameters.AddWithValue("@n", recallN);
+                using var bm25Reader = bm25RecallCmd.ExecuteReader();
+                while (bm25Reader.Read()) {
+                    string bid = bm25Reader.GetString(0);
+                    double raw = bm25Reader.GetDouble(1);
+                    double normalized = 1.0 / (1.0 + Math.Abs(raw));
+                    if (!bm25Map.ContainsKey(bid))
+                        bm25Map[bid] = normalized;
+                    if (!candidateMap.ContainsKey(bid))
+                        candidateMap[bid] = 0.0;
+                }
+            }
+
+            return candidateMap
+                .Select(c => (c.Key, _vectorWeight * c.Value + _bm25Weight * (bm25Map.TryGetValue(c.Key, out var b) ? b : 0.0)))
+                .OrderByDescending(x => x.Item2)
+                .ToList();
+        }
+
+        /// <summary>Single BM25 recall pass returning up to recallN ordered candidates.</summary>
+        private List<(string id, double score)> RecallBm25Once(string collection, string ftsQuery, int recallN)
+        {
+            var result = new List<(string id, double score)>();
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score\nFROM semantic_fts f\nWHERE f.collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
+            cmd.Parameters.AddWithValue("@col", collection);
+            cmd.Parameters.AddWithValue("@q", ftsQuery);
+            cmd.Parameters.AddWithValue("@n", recallN);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read()) {
+                string id = reader.GetString(0);
+                double raw = reader.GetDouble(1);
+                double normalized = 1.0 / (1.0 + Math.Abs(raw));
+                result.Add((id, normalized));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Fallback: table-scan hybrid scoring over candidate ids.
+        /// Used when incremental recall fails to collect enough hits within the cap.
+        /// </summary>
+        private List<(string id, double hybridScore)> ScanHybridOnCandidates(CollectionIndex col, string collection, HashSet<string> candIds, float[] queryVector, string ftsQuery)
+        {
+            using var conn = OpenConnection();
+
+            // 1. Populate a connection-scoped temp table with candidate ids
+            using (var ddlCmd = conn.CreateCommand()) {
+                ddlCmd.CommandText = "CREATE TEMP TABLE IF NOT EXISTS tmp_cand_ids(id TEXT PRIMARY KEY); DELETE FROM tmp_cand_ids;";
+                ddlCmd.ExecuteNonQuery();
+            }
+            using (var txn = conn.BeginTransaction()) {
+                using var insCmd = conn.CreateCommand();
+                insCmd.Transaction = txn;
+                insCmd.CommandText = "INSERT INTO tmp_cand_ids(id) VALUES(@id)";
+                var p = insCmd.CreateParameter();
+                p.ParameterName = "@id";
+                insCmd.Parameters.Add(p);
+                foreach (var id in candIds) {
+                    p.Value = id;
+                    insCmd.ExecuteNonQuery();
+                }
+                txn.Commit();
+            }
+
+            // 2. Vector similarity: read (id, vector) for candidate rows, compute cosine in parallel
+            var records = new List<(string id, byte[] vec)>(candIds.Count);
+            using (var vecCmd = conn.CreateCommand()) {
+                vecCmd.CommandText = "SELECT r.id, r.vector FROM semantic_records r JOIN tmp_cand_ids t ON r.id = t.id WHERE r.collection=@col";
+                vecCmd.Parameters.AddWithValue("@col", collection);
+                using var reader = vecCmd.ExecuteReader();
+                while (reader.Read()) {
+                    records.Add((reader.GetString(0), (byte[])reader[1]));
+                }
+            }
+
+            var vectorScores = new System.Collections.Concurrent.ConcurrentDictionary<string, double>(StringComparer.Ordinal);
+            double qNorm = VectorNorm(queryVector);
+            Parallel.ForEach(records, r => {
+                var v = BytesToVector(r.vec);
+                double sim = CosineSimilarity(queryVector, v, qNorm);
+                vectorScores[r.id] = sim;
+            });
+
+            // 3. BM25 scan on candidates
+            var bm25Map = new Dictionary<string, double>(StringComparer.Ordinal);
+            if (!string.IsNullOrEmpty(ftsQuery)) {
+                using var bm25Cmd = conn.CreateCommand();
+                bm25Cmd.CommandText = $"SELECT f.id, {GetBm25Expression()} FROM semantic_fts f JOIN tmp_cand_ids t ON f.id = t.id WHERE f.collection=@col AND semantic_fts MATCH @q";
+                bm25Cmd.Parameters.AddWithValue("@col", collection);
+                bm25Cmd.Parameters.AddWithValue("@q", ftsQuery);
+                using var reader = bm25Cmd.ExecuteReader();
+                while (reader.Read()) {
+                    string bid = reader.GetString(0);
+                    double raw = reader.GetDouble(1);
+                    bm25Map[bid] = 1.0 / (1.0 + Math.Abs(raw));
+                }
+            }
+
+            // 4. Cleanup temp table
+            using (var dropCmd = conn.CreateCommand()) {
+                dropCmd.CommandText = "DROP TABLE IF EXISTS tmp_cand_ids";
+                dropCmd.ExecuteNonQuery();
+            }
+
+            // 5. Merge and rank
+            var allIds = new HashSet<string>(vectorScores.Keys, StringComparer.Ordinal);
+            foreach (var k in bm25Map.Keys) allIds.Add(k);
+            return allIds
+                .Select(id => (id, _vectorWeight * (vectorScores.TryGetValue(id, out var v) ? v : 0.0)
+                                 + _bm25Weight * (bm25Map.TryGetValue(id, out var b) ? b : 0.0)))
+                .OrderByDescending(x => x.Item2)
+                .ToList();
+        }
+
+        /// <summary>Fallback: table-scan BM25 scoring over candidate ids.</summary>
+        private List<(string id, double score)> ScanBm25OnCandidates(string collection, HashSet<string> candIds, string ftsQuery)
+        {
+            var result = new List<(string id, double score)>();
+            if (string.IsNullOrEmpty(ftsQuery))
+                return result;
+            using var conn = OpenConnection();
+            using (var ddlCmd = conn.CreateCommand()) {
+                ddlCmd.CommandText = "CREATE TEMP TABLE IF NOT EXISTS tmp_cand_ids(id TEXT PRIMARY KEY); DELETE FROM tmp_cand_ids;";
+                ddlCmd.ExecuteNonQuery();
+            }
+            using (var txn = conn.BeginTransaction()) {
+                using var insCmd = conn.CreateCommand();
+                insCmd.Transaction = txn;
+                insCmd.CommandText = "INSERT INTO tmp_cand_ids(id) VALUES(@id)";
+                var p = insCmd.CreateParameter();
+                p.ParameterName = "@id";
+                insCmd.Parameters.Add(p);
+                foreach (var id in candIds) {
+                    p.Value = id;
+                    insCmd.ExecuteNonQuery();
+                }
+                txn.Commit();
+            }
+            using (var bm25Cmd = conn.CreateCommand()) {
+                bm25Cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score FROM semantic_fts f JOIN tmp_cand_ids t ON f.id = t.id WHERE f.collection=@col AND semantic_fts MATCH @q ORDER BY score";
+                bm25Cmd.Parameters.AddWithValue("@col", collection);
+                bm25Cmd.Parameters.AddWithValue("@q", ftsQuery);
+                using var reader = bm25Cmd.ExecuteReader();
+                while (reader.Read()) {
+                    string id = reader.GetString(0);
+                    double raw = reader.GetDouble(1);
+                    double normalized = 1.0 / (1.0 + Math.Abs(raw));
+                    result.Add((id, normalized));
+                }
+            }
+            using (var dropCmd = conn.CreateCommand()) {
+                dropCmd.CommandText = "DROP TABLE IF EXISTS tmp_cand_ids";
+                dropCmd.ExecuteNonQuery();
+            }
+            return result;
+        }
+
+        /// <summary>Compute L2 norm of a vector.</summary>
+        private static double VectorNorm(float[] v)
+        {
+            double sum = 0.0;
+            for (int i = 0; i < v.Length; i++) sum += (double)v[i] * v[i];
+            return Math.Sqrt(sum);
+        }
+
+        /// <summary>Cosine similarity in range [-1, 1]. Returns 0 if either vector is zero.</summary>
+        private static double CosineSimilarity(float[] a, float[] b, double aNorm)
+        {
+            if (a.Length != b.Length) return 0.0;
+            double dot = 0.0;
+            double bSum = 0.0;
+            for (int i = 0; i < a.Length; i++) {
+                double x = a[i];
+                double y = b[i];
+                dot += x * y;
+                bSum += y * y;
+            }
+            double bNorm = Math.Sqrt(bSum);
+            if (aNorm <= 0.0 || bNorm <= 0.0) return 0.0;
+            return dot / (aNorm * bNorm);
         }
 
         private static string EscapeJson(string s)
@@ -858,11 +1370,22 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         public static long ParseTimeToUnix(string timeStr)
         {
             timeStr = timeStr.Trim();
+            DateTime tmp;
             DateTime dt;
-            if (timeStr.Length <= 8)
-                dt = DateTime.ParseExact(timeStr, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture);
+            if (timeStr.Length <= 8 && DateTime.TryParseExact(timeStr, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out tmp))
+                dt = tmp;
+            else if (timeStr.Length <= 10 && DateTime.TryParseExact(timeStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out tmp))
+                dt = tmp;
+            else if (timeStr.Length <= 15 && DateTime.TryParseExact(timeStr, "yyyyMMdd HHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out tmp))
+                dt = tmp;
+            else if (timeStr.Length <= 19 && DateTime.TryParseExact(timeStr, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out tmp))
+                dt = tmp;
+            else if (DateTime.TryParseExact(timeStr, "yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AllowWhiteSpaces, out tmp))
+                dt = tmp;
+            else if (DateTime.TryParse(timeStr, out tmp))
+                dt = tmp;
             else
-                dt = DateTime.ParseExact(timeStr, "yyyyMMdd HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                dt = DateTime.Now;
             return new DateTimeOffset(dt, TimeSpan.Zero).ToUnixTimeSeconds();
         }
 

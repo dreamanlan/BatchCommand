@@ -498,8 +498,23 @@ class AgentPanel {
       `;
     chatRoomBtn.onclick = () => this.openChatRoom();
 
+    // hyarena button - open hyarena chat in new window
+    const hyarenaBtn = document.createElement('button');
+    hyarenaBtn.textContent = 'hyarena';
+    hyarenaBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    hyarenaBtn.onclick = () => window.open('https://hyarena.woa.com/chat');
+
     buttonBar.appendChild(testBtn);
     buttonBar.appendChild(chatRoomBtn);
+    buttonBar.appendChild(hyarenaBtn);
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);

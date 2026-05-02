@@ -1833,7 +1833,7 @@ namespace BatchCommand
             RecycleCalculatorValueList(args);
             return r;
         }
-        public static BoxedValue Call(string func, List<BoxedValue> args)
+        public static BoxedValue Call(string func, IList<BoxedValue> args)
         {
             var r = Calculator.Calc(func, args);
             return r;

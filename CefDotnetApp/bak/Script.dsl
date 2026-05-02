@@ -3,11 +3,9 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
-	@TargetBrowserId = 0;
 	@EnableLlmPM = true;
 	//@LlmProviderId = "ollama_local";
 	@LlmProviderId = "auto_metadsl";
-	@LastHistoryCount = 0;
 
 	if (processtype == 1) {
 		@ProjectIdentity = get_project_identity();
@@ -57,16 +55,20 @@ script(on_heart_beat)params($processType,$deltaTime)
 {
 	// Renderer process: ensure context points to the correct browser/frame
 	if ($processType == 1) {
-		if (isnull(@TargetBrowserId) || @TargetBrowserId <= 0) {
-			@TargetBrowserId = find_browser_id_by_url_key("evaluation.woa.com/chat");
-			if (@TargetBrowserId <= 0) {
-				@TargetBrowserId = find_browser_id_by_url_key("localhost:8080");
+		$targetBrowserId = get_context_var("TargetBrowserId", "session");
+		if (isnull($targetBrowserId) || $targetBrowserId <= 0) {
+			$targetBrowserId = find_browser_id_by_url_key("evaluation.woa.com/chat");
+			if ($targetBrowserId <= 0) {
+				$targetBrowserId = find_browser_id_by_url_key("localhost:8080");
+			};
+			if ($targetBrowserId > 0) {
+				set_context_var("TargetBrowserId", $targetBrowserId, "session");
 			};
 		};
-		if (@TargetBrowserId > 0) {
-			if (!set_context_by_id(@TargetBrowserId)) {
+		if ($targetBrowserId > 0) {
+			if (!set_context_by_id($targetBrowserId)) {
 				// Browser no longer valid, reset cache to re-search next heartbeat
-				@TargetBrowserId = 0;
+				set_context_var("TargetBrowserId", 0, "session");
 			};
 		};
 		handle_thread_queue();
@@ -135,9 +137,9 @@ script(on_before_child_process_launch)params($processType, $cmdLine)
 		$cmdLine.AppendSwitchWithValue("projectidentity", initialprojectidentity);
 		nativelog("[dsl] on_before_child_process_launch: copied --initialprojectidentity={0} to child process", initialprojectidentity);
 	};
-	if (dslfilechanged) {
-		$cmdLine.AppendSwitchWithValue("metadsl", dslfile);
-		nativelog("[dsl] on_before_child_process_launch: copied --metadsl={0} to child process", dslfile);
+	if (initialdslfilechanged) {
+		$cmdLine.AppendSwitchWithValue("metadsl", initialdslfile);
+		nativelog("[dsl] on_before_child_process_launch: copied --metadsl={0} to child process", initialdslfile);
 	};
 };
 
@@ -199,6 +201,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, read_file(combine_path($base, "secret_store.js")));
 		append_line($sb, read_file(combine_path($base, "ws_worker.js")));
 		append_line($sb, read_file(combine_path($base, "bridge.js")));
+		append_line($sb, read_file(combine_path($base, "plan_decider.js")));
 		append_line($sb, read_file(combine_path($base, "input_monitor.js")));
 		append_line($sb, read_file(combine_path($base, "state_machine.js")));
 		append_line($sb, read_file(combine_path($base, "page_adapter.js")));
@@ -212,6 +215,14 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, read_file(combine_path($base, "ws_manager.js")));
 		append_line($sb, read_file(combine_path($base, "main.js")));
 		append_line($sb, "})();");
+		$code = string_builder_to_string($sb);
+		nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+		return((true, $code));
+	}
+	elif (string_contains_any($url, "https://hyarena.woa.com/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
+		$base = combine_path(basepath, "managed/inject_modules/");
+		$sb = new_string_builder();
+		append_line($sb, read_file(combine_path($base, "hyarena_opus.js")));
 		$code = string_builder_to_string($sb);
 		nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
 		return((true, $code));
@@ -231,30 +242,18 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
 	nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
 };
 
-script(on_receive_cef_message)params($srcProcId,$msg,$arg1,$arg2,$arg3,$arg4)
+script(on_receive_cef_message)params($msg,$args,$srcProcId)
 {
-	nativelog("[dsl] on_receive_cef_message:{0} argnum:{1} from:{2} processtype:{3}",$msg,argnum(),$srcProcId,processtype);
+	nativelog("[dsl] on_receive_cef_message:{0} argnum:{1} from:{2} processtype:{3}",$msg,listsize($args),$srcProcId,processtype);
 	if (processtype == 0) {
 		//Browser: forward all cef messages back to renderer
 		//Note: The API in AgentCore.dll cannot be used.
-		$targs = clone(args());
-		listremoveat($targs, 0);
-		listremoveat($targs, 0);
-		nativeapi.SendCefMessageForDSL($msg,$targs,$srcProcId);
+		nativeapi.SendCefMessageForDSL($msg,$args,$srcProcId);
 	}
 	elif (processtype == 1) {
 		//Renderer
-		if ($msg == "llm_callback") {
-			handle_llm_callback($arg1, $arg2, $arg3, $arg4);
-		}
-		elif ($msg == "mcp_callback") {
-			handle_mcp_callback($arg1, $arg2, $arg3);
-		}
-		elif ($msg == "skill_callback") {
-			handle_skill_callback($arg1, $arg2, $arg3, $arg4);
-		}
-		elif ($msg == "command_callback") {
-			handle_command_callback($arg1, $arg2, $arg3, $arg4);
+		if (funcexists($msg)) {
+			redirectcall("handle_" + $msg, $args);
 		}
 		else {
 			//nativeapi.SendJavascriptCallForDSL("alert", [$msg]);
@@ -262,28 +261,15 @@ script(on_receive_cef_message)params($srcProcId,$msg,$arg1,$arg2,$arg3,$arg4)
 	};
 };
 
-script(on_receive_js_message)params($srcProcId,$msg,$arg1)
+script(on_call_metadsl)params($func,$args)
 {
-	nativelog("[dsl] on_receive_js_message:{0} arg_num:{1} processtype:{2}",$msg,argnum(),processtype);
+	nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
+};
 
-	// Handle debug log from inject.js
-	if ($msg == "debug_log") {
-		nativelog("[inject.js] {0}", getstringinlength($arg1,100));
-	}
-	elif ($msg == "debug_log_batch") {
-		handle_nativelog_batch($arg1);
-	}
-	// Handle agent commands from inject.js
-	elif ($msg == "agent_command") {
-		handle_agent_command($arg1);
-	}
-	elif ($msg == "agent_notification") {
-		handle_agent_notification($arg1);
-	}
-	else {
-		// Default: transfer to browser process
-		nativeapi.SendCefMessage1($msg,$arg1,0);
-	};
+// Return system prompt text loaded from docs/system_prompt.txt (zero-arg, sync)
+script(get_system_prompt)params()
+{
+	return(read_file(combine_path(basepath, "docs/system_prompt.txt")));
 };
 
 // Handle nativelog batch
@@ -350,17 +336,27 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	elif ($tag == "reflection") {
 		semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
 		llm_clear_history(@LlmProviderId, "reflection");
-		nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 200, 1));
+		nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 500, 0));
 	}
 	elif ($tag == "pattern_recognition") {
-		semantic_add(@PatternMemory, $reply, to_json({source: "pattern_recognition", date: date_time_str(), type: "pattern"}));
+		parse_and_save_pattern_md($reply);
+		$summary = getstringinlength($reply, 500, 0);
+		semantic_add(@PatternMemory, $summary, to_json({source: "pattern_recognition", date: date_time_str(), type: "pattern", storage: "md_files"}));
 		llm_clear_history(@LlmProviderId, "pattern_recognition");
-		nativelog("[dsl] Pattern memory saved: {0}", getstringinlength($reply, 200, 1));
+		nativelog("[dsl] Pattern memory saved to MD files, summary: {0}", $summary);
 	}
 	elif ($tag == "meta_cognition") {
-		semantic_add(@MetaCognitionMemory, $reply, to_json({source: "meta_cognition", date: date_time_str(), type: "meta_cognition"}));
+		$commonDir = combine_path(basepath, "docs/memory");
+		if(!dir_exists($commonDir)){
+			create_dir($commonDir);
+		};
+		$metaPath = combine_path($commonDir, "meta_cognition.md");
+		write_file($metaPath, $reply);
+		nativelog("[dsl] Meta-cognition MD saved: {0} chars", stringlength($reply));
+		$summary = getstringinlength($reply, 500, 0);
+		semantic_add(@MetaCognitionMemory, $summary, to_json({source: "meta_cognition", date: date_time_str(), type: "meta_cognition", storage: "md_file"}));
 		llm_clear_history(@LlmProviderId, "meta_cognition");
-		nativelog("[dsl] Meta-cognition memory saved: {0}", getstringinlength($reply, 200, 1));
+		nativelog("[dsl] Meta-cognition summary saved: {0}", $summary);
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -651,7 +647,7 @@ script(induction_context)params($count,$queuedCount,$pageType)
 	$decurionHistory = semantic_get_recent(@DecurionHistory, 5);
 	$conversationHistory = semantic_get_recent(@LegionnaireHistory, $count);
 
-	@LastHistoryCount = semantic_count(@LegionnaireHistory);
+	set_context_var("LastHistoryCount", semantic_count(@LegionnaireHistory), "session");
 
 	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
 	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
@@ -735,6 +731,96 @@ script(trigger_reflection)params()
 	nativelog("[dsl] trigger_reflection: reflection request sent");
 };
 
+script(read_all_pattern_md)params()
+{
+	$commonDir = combine_path(basepath, "docs/memory");
+	$projectDir = combine_path(get_project_dir(), "docs/memory");
+	$categories = "tool_usage,code_refactor,architecture,project_mgmt,debugging,general";
+	$catList = string_split($categories, ",");
+	$result = new_string_builder();
+	looplist($catList){
+		$cat = $$;
+		$filePath = combine_path($commonDir, format("{0}.md", $cat));
+		if(file_exists($filePath)){
+			$content = read_file($filePath);
+			if(!isnullorempty($content)){
+				append_format_line($result, "[CATEGORY:{0}]", $cat);
+				append_line($result, $content);
+				append_format_line($result, "[/CATEGORY]");
+			};
+		};
+	};
+	// Read project-specific memory
+	$projFile = combine_path($projectDir, "project_specific.md");
+	if(file_exists($projFile)){
+		$projContent = read_file($projFile);
+		if(!isnullorempty($projContent)){
+			append_format_line($result, "[CATEGORY:project_specific]");
+			append_line($result, $projContent);
+			append_format_line($result, "[/CATEGORY]");
+		};
+	};
+	return(string_builder_to_string($result));
+};
+
+script(parse_and_save_pattern_md)params($reply)
+{
+	$commonDir = combine_path(basepath, "docs/memory");
+	$projectDir = combine_path(get_project_dir(), "docs/memory");
+	if(!dir_exists($commonDir)){
+		create_dir($commonDir);
+	};
+	if(!dir_exists($projectDir)){
+		create_dir($projectDir);
+	};
+	$categories = "tool_usage,code_refactor,architecture,project_mgmt,debugging,general";
+	$catList = string_split($categories, ",");
+	$savedCount = 0;
+	looplist($catList){
+		$cat = $$;
+		$beginTag = format("[CATEGORY:{0}]", $cat);
+		$endTag = "[/CATEGORY]";
+		$startIdx = string_index_of($reply, $beginTag);
+		if($startIdx >= 0){
+			$contentStart = $startIdx + stringlength($beginTag);
+			$endIdx = string_index_of($reply, $endTag, $contentStart);
+			if($endIdx > $contentStart){
+				$content = string_trim(string_substring($reply, $contentStart, $endIdx - $contentStart));
+				if(!isnullorempty($content)){
+					$filePath = combine_path($commonDir, format("{0}.md", $cat));
+					write_file($filePath, $content);
+					$savedCount = $savedCount + 1;
+					nativelog("[dsl] Pattern MD saved: {0} ({1} chars)", $cat, stringlength($content));
+				};
+			};
+		};
+	};
+	// Handle project_specific category separately (save to project dir)
+	$psBeginTag = "[CATEGORY:project_specific]";
+	$psEndTag = "[/CATEGORY]";
+	$psStartIdx = string_index_of($reply, $psBeginTag);
+	if($psStartIdx >= 0){
+		$psContentStart = $psStartIdx + stringlength($psBeginTag);
+		$psEndIdx = string_index_of($reply, $psEndTag, $psContentStart);
+		if($psEndIdx > $psContentStart){
+			$psContent = string_trim(string_substring($reply, $psContentStart, $psEndIdx - $psContentStart));
+			if(!isnullorempty($psContent)){
+				$psFilePath = combine_path($projectDir, "project_specific.md");
+				write_file($psFilePath, $psContent);
+				$savedCount = $savedCount + 1;
+				nativelog("[dsl] Pattern MD saved: project_specific ({0} chars)", stringlength($psContent));
+			};
+		};
+	};
+	// If no category tags found, save entire reply to general.md
+	if($savedCount == 0 && !isnullorempty($reply)){
+		$filePath = combine_path($commonDir, "general.md");
+		write_file($filePath, $reply);
+		nativelog("[dsl] Pattern MD saved to general.md (no tags found)");
+	};
+	return($savedCount);
+};
+
 script(trigger_pattern_recognition)params($recentCount)
 {
 	nativelog("[dsl] trigger_pattern_recognition called");
@@ -746,21 +832,35 @@ script(trigger_pattern_recognition)params($recentCount)
 		return;
 	};
 
-	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
+	// Read existing pattern MD files
+	$existingPatterns = read_all_pattern_md();
 
-	// Set pattern recognition system prompt
-	$sysPrompt = "根据多条情景记忆，识别重复模式和共性经验。" +
-		"严格要求：每个模式必须引用至少2条具体情景记忆作为证据，禁止空洞归纳。" +
+	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
+	if(!isnullorempty($existingPatterns)){
+		$prompt = format("{0}\n\n【已有模式记忆（需合并去重）】：\n{1}", $prompt, $existingPatterns);
+	};
+
+	// Set pattern recognition system prompt with category output requirement
+	$sysPrompt = "根据情景记忆识别重复模式，与已有模式记忆合并去重。" +
+		"严格要求：每个模式必须引用具体情景记忆作为证据，禁止空洞归纳。" +
 		"禁止出现'建立xxx机制'、'深化xxx认知'等口号式描述。\n" +
-		"输出格式：\n" +
-		"【模式】：识别到的具体行为模式（附情景记忆关键字）\n" +
-		"【证据】：支撑该模式的具体事例\n" +
-		"【建议】：基于该模式的具体操作建议\n\n" +
-		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
+		"必须按以下类别分类输出，每个类别用标签包裹：\n" +
+		"[CATEGORY:tool_usage] 工具使用经验 [/CATEGORY]\n" +
+		"[CATEGORY:code_refactor] 代码改造经验 [/CATEGORY]\n" +
+		"[CATEGORY:architecture] 架构设计经验 [/CATEGORY]\n" +
+		"[CATEGORY:project_mgmt] 项目管理经验 [/CATEGORY]\n" +
+		"[CATEGORY:debugging] 调试排错经验 [/CATEGORY]\n" +
+		"[CATEGORY:general] 通用经验 [/CATEGORY]\n\n" +
+		"每个类别内容格式：\n" +
+		"- 模式：具体行为模式描述\n" +
+		"  证据：支撑的具体事例\n" +
+		"  建议：具体操作建议\n\n" +
+		"如果某类别无内容则省略该标签。与已有内容合并时去除重复，保留最精炼版本。" +
+		"每个类别控制在200字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
 	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
 
 	// Send pattern recognition request
-	$prompt = format("{0}\n\n请根据以上情景记忆，识别重复模式并提炼经验。", $prompt);
+	$prompt = format("{0}\n\n请识别模式并按类别输出，与已有内容合并去重。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
 	llm_chat_callback(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
 
@@ -771,7 +871,7 @@ script(trigger_meta_cognition)params()
 {
 	nativelog("[dsl] trigger_meta_cognition called");
 
-	// Collect recent pattern memories and episodic memories
+	// Collect recent pattern memories
 	$patternMemories = semantic_get_recent(@PatternMemory, 20);
 	if(isnullorempty($patternMemories) || $patternMemories == "[]"){
 		nativelog("[dsl] trigger_meta_cognition: no pattern memories, skip");
@@ -779,26 +879,37 @@ script(trigger_meta_cognition)params()
 	};
 
 	$episodicMemories = semantic_get_recent(@EpisodicMemory, 10);
-	$existingMeta = semantic_get_recent(@MetaCognitionMemory, 5);
+
+	// Read existing meta_cognition.md
+	$commonDir = combine_path(basepath, "docs/memory");
+	$metaPath = combine_path($commonDir, "meta_cognition.md");
+	$existingMeta = "";
+	if(file_exists($metaPath)){
+		$existingMeta = read_file($metaPath);
+	};
 
 	$prompt = format("【模式记忆】：\n{0}\n\n【近期情景记忆】：\n{1}", $patternMemories, $episodicMemories);
-	if(!isnullorempty($existingMeta) && $existingMeta != "[]"){
-		$prompt = format("{0}\n\n【已有元认知】：\n{1}", $prompt, $existingMeta);
+	if(!isnullorempty($existingMeta)){
+		$prompt = format("{0}\n\n【已有元认知（需合并去重）】：\n{1}", $prompt, $existingMeta);
 	};
 
 	// Set meta-cognition system prompt
-	$sysPrompt = "根据模式记忆和情景记忆，进行高层反思。" +
+	$sysPrompt = "根据模式记忆和情景记忆，进行高层反思，与已有元认知合并去重。" +
 		"严格要求：每条原则必须附带具体案例，禁止空洞口号。" +
 		"禁止出现'建立xxx机制'、'深化xxx认知'、'强化xxx能力'等虚无描述。\n" +
 		"输出格式：\n" +
-		"【决策原则】：从模式中提炼的原则（附具体案例）\n" +
-		"【认知偏差】：发现的思维盲区（附触发场景）\n" +
-		"【改进建议】：具体可执行的操作建议\n\n" +
-		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
+		"## 决策原则\n" +
+		"- 原则描述（附具体案例）\n\n" +
+		"## 认知偏差\n" +
+		"- 偏差描述（附触发场景）\n\n" +
+		"## 改进建议\n" +
+		"- 具体可执行的操作建议\n\n" +
+		"与已有内容合并时去除重复，保留最精炼版本。" +
+		"控制在500字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
 	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
 
 	// Send meta-cognition request
-	$prompt = format("{0}\n\n请根据以上记忆进行元认知反思，提炼决策原则和改进策略。", $prompt);
+	$prompt = format("{0}\n\n请进行元认知反思，与已有内容合并去重。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
 	llm_chat_callback(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
 
@@ -807,11 +918,12 @@ script(trigger_meta_cognition)params()
 script(SaveHistory)params()
 {
 	$conversationCount = semantic_count(@LegionnaireHistory);
-	if (@LastHistoryCount == 0) {
-		@LastHistoryCount = $conversationCount;
+	$lastHistoryCount = get_context_var("LastHistoryCount", "session");
+	if (isnull($lastHistoryCount) || $lastHistoryCount == 0) {
+		set_context_var("LastHistoryCount", $conversationCount, "session");
 		return;
 	};
-	$historyCount = $conversationCount - @LastHistoryCount;
+	$historyCount = $conversationCount - $lastHistoryCount;
 	$histories = semantic_get_recent_as_list(@LegionnaireHistory, $historyCount);
 	$history = new_string_builder();
 	looplist($histories) {
@@ -875,6 +987,7 @@ script(handle_agent_notification)params($jsonData)
 		$toplevelRules = read_file($toplevelRulesFile);
 		$projectPrompt = read_file($projectPromptFile);
 		$emphasize = read_file($emphasizeFile);
+		$emphasize = format("{0}\n\n## 当前日期\n{1}\n（请对照 soul.md 的"回顾节奏"小节，如已到或逾期"下次回顾"日期，请在本轮回复开头主动提醒用户进行回顾）", $emphasize, date_time_str("yyyy-MM-dd"));
 		$plan = read_file($planFile);
 		$soul = read_file($soulFile);
 
@@ -1010,12 +1123,11 @@ script(handle_agent_notification)params($jsonData)
 		};
 	}
 	elif ($type == "agent_need_to_plan") {
-		nativelog("[dsl] agent_need_to_plan notification received");
+		// Planning heuristics have been moved to JS (plan_decider.js).
+		// JS now only sends this notification when it decides planning is needed.
+		nativelog("[dsl] agent_need_to_plan notification received (trigger_plan)");
 
 		$data = get_message_param($notif, "data");
-		$lastFromLLM = get_message_param($data, "lastFromLLM");
-		$lastScannedMessage = get_message_param($data, "lastScannedMessage");
-		$isLastResponse = get_message_param($data, "isLastResponse");
 		$queuedCount = get_message_param($data, "queuedCount");
 		$pageType = get_message_param($data, "pageType");
 		$count = get_message_param($data, "count");
@@ -1025,126 +1137,22 @@ script(handle_agent_notification)params($jsonData)
 
 		set_soul(read_file($soulPath));
 
-		nativelog("[dsl] agent_need_to_plan notification: {0}({1}) queued:{2} page:{3} count:{4} {5}", $lastFromLLM, gettypename($lastFromLLM), $queuedCount, $pageType, $count, getstringinlength($lastScannedMessage,100));
+		nativelog("[dsl] agent_need_to_plan: queued:{0} page:{1} count:{2}", $queuedCount, $pageType, $count);
 
-		if ($isLastResponse != true) {
-			nativelog("[dsl] skip the planning, isLastResponse={0} lastScannedMessage={1}", $isLastResponse, $lastScannedMessage);
-			return(true);
-		}
-		elif ($queuedCount > 0) {
-			send_command_to_inject("send_message", to_json({text: format("还有{0}个代码要执行，不要再发新代码，回复继续即可", $queuedCount)}));
-			return(true);
-		}
-		elif ($lastFromLLM == "True" || $lastFromLLM == true) {
-			nativelog("[dsl] lastFromLLM=true, queuedCount={0}", $queuedCount);
+		if (file_exists($planPath)) {
+			nativelog("[dsl] induction_plan triggered");
+			induction_plan();
 
-			if (string_contains($lastScannedMessage, "需要", "继续", "吗") && string_length($lastScannedMessage) > 16) {
-				nativelog("[dsl] Sending '继续' to LLM");
-
-				send_command_to_inject("send_message", to_json({text: "继续"}));
-				return(true);
-			}
-			elif (string_contains($lastScannedMessage, "确定吗") || string_contains($lastScannedMessage, "确认吗") || string_contains($lastScannedMessage, "修改吗")) {
-				nativelog("[dsl] Sending '确定' to LLM");
-
-				send_command_to_inject("send_message", to_json({text: "确定"}));
-				return(true);
-			}
-			elif (string_contains($lastScannedMessage, "Error", "Occur")) {
-				nativelog("[dsl] Sending '继续' to LLM");
-
-				send_command_to_inject("send_message", to_json({text: "继续"}));
-				return(true);
-			}
-			elif (string_contains_any($lastScannedMessage, "继续", "等待") && string_length($lastScannedMessage) <= 32) {
-				nativelog("[dsl] Sending '没有代码要执行了' to LLM");
-
-				send_command_to_inject("send_message", to_json({text: "没有代码要执行了"}));
-				return(true);
-			}
-			elif (string_contains($lastScannedMessage, "启动Agent") && string_length($lastScannedMessage) <= 32) {
-				nativelog("[dsl] Sending '启动Agent' to inject");
-
-				send_command_to_inject("start_agent", to_json({}));
-				return(true);
-			}
-			elif (string_contains($lastScannedMessage, "停止Agent") && string_length($lastScannedMessage) <= 32) {
-				nativelog("[dsl] Sending '停止Agent' to inject");
-
-				send_command_to_inject("stop_agent", to_json({}));
-				return(true);
-			}
-			elif (string_contains($lastScannedMessage, "//", "@execute") || string_contains($lastScannedMessage, "MetaDSL", "{:", ":}")  || string_contains($lastScannedMessage, "MetaDsl", "{:", ":}") || string_contains($lastScannedMessage, "metadsl", "{:", ":}")) {
-				if (string_contains($lastScannedMessage, "js_request", "keep_llm_context")) {
-					if (@EnableLlmPM) {
-						nativelog("[dsl] Sending '稍后请阅读context.txt与history.txt了解上下文' to LLM");
-
-						$prompt = format("ref{{:\n{0}\n:}};\n\n已提交上下文更新请求，稍后请阅读context.txt与history.txt了解上下文", $lastScannedMessage);
-						send_command_to_inject("send_message", to_json({text: $prompt}));
-					};
-					return(true);
-				}
-				elif (string_contains($lastScannedMessage, "js_request", "reflect")) {
-					if (@EnableLlmPM) {
-						nativelog("[dsl] Sending '已提交反思请求' to LLM");
-
-						$prompt = format("ref{{:\n{0}\n:}};\n\n已提交反思请求", $lastScannedMessage);
-						send_command_to_inject("send_message", to_json({text: $prompt}));
-					};
-					return(true);
-				}
-				elif (string_contains_any($lastScannedMessage, "js_request", "js_eval")) {
-					nativelog("[dsl] 已提交JS执行请求");
-					return(true);
-				}
-				else {
-					nativelog("[dsl] Sending 'metadsl代码要使用markdown代码块语法' to LLM");
-
-					$prompt = format("ref{{:\n{0}\n:}};\n\n请等待代码结果\n\n或者请检查metadsl代码是否使用了markdown代码块语法，如果没有请重新提交", $lastScannedMessage);
-					send_command_to_inject("send_message", to_json({text: $prompt}));
-					return(true);
-				};
-			}
-			elif (file_exists($planPath)) {
-				nativelog("[dsl] lastFromLLM=true, queuedCount={0} induction_plan", $queuedCount);
-				induction_plan();
-
-				if ($lockAgent) {
-					$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
-				}
-				else {
-					$prompt = "正在更新计划，请继续";
-				};
-				send_command_to_inject("send_message", to_json({text: $prompt}));
+			if ($lockAgent) {
+				$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
 			}
 			else {
-				nativelog("[dsl] lastFromLLM=true, queuedCount={0} enter else branch", $queuedCount);
+				$prompt = "正在更新计划，请继续";
 			};
+			send_command_to_inject("send_message", to_json({text: $prompt}));
 		}
 		else {
-			nativelog("[dsl] lastFromLLM=false, queuedCount={0}", $queuedCount);
-
-			if (string_contains($lastScannedMessage, "MetaDSL", "hot_reload")) {
-				nativelog("[dsl] Sending '热更完成，继续' to LLM");
-
-				send_command_to_inject("send_message", to_json({text: "热更完成，继续"}));
-				return(true);
-			}
-			elif (file_exists($planPath)) {
-				nativelog("[dsl] lastFromLLM=false, queuedCount={0} induction_plan", $queuedCount);
-				induction_plan();
-
-				if ($lockAgent) {
-					$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
-				}
-				else {
-					$prompt = "正在更新计划，请继续";
-				};
-				send_command_to_inject("send_message", to_json({text: $prompt}));
-			}
-			else {
-				nativelog("[dsl] lastFromLLM=false, queuedCount={0} enter else branch", $queuedCount);
-			};
+			nativelog("[dsl] agent_need_to_plan: plan file not found, skip induction_plan");
 		};
 	}
 	else {

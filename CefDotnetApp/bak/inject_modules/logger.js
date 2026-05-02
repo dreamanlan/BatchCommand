@@ -76,11 +76,11 @@ class Logger {
   flushLogBuffer() {
     if (this.logBuffer.length === 0) return;
 
-    if (typeof sendMessage !== 'undefined') {
+    if (typeof callMetaDSL !== 'undefined') {
       try {
         // Send all buffered logs in one batch
         /*
-        sendMessage('debug_log_batch', JSON.stringify({
+        callMetaDSL('handle_nativelog_batch', JSON.stringify({
           logs: this.logBuffer,
           timestamp: Date.now()
         }));
@@ -140,7 +140,7 @@ class Logger {
     }
 
     // Buffer log for C# (batch send)
-    if (typeof sendMessage !== 'undefined') {
+    if (typeof callMetaDSL !== 'undefined') {
       this.logBuffer.push({
         level: level,
         message: fullMessage,

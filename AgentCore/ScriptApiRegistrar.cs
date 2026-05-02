@@ -97,6 +97,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("from_json", "from_json(json)", new ExpressionFactoryHelper<FromJsonExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_object", "new_object(key1, value1, key2, value2, ...)", new ExpressionFactoryHelper<NewObjectExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("to_string", "to_string(val)", new ExpressionFactoryHelper<ToStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("to_pretty_string", "to_pretty_string(val) - convert to a more readable form by unescaping escape sequences (\\n \\r \\t \\\" \\\\ \\uXXXX \\xH...) into their actual characters", new ExpressionFactoryHelper<ToPrettyStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_length", "string_length(str)", new ExpressionFactoryHelper<StringLengthExp>());
 
             // Process Operations

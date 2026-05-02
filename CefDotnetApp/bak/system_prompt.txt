@@ -15,6 +15,8 @@
 11. 控制流：`if`/`elif`(或`elseif`)/`else`、`while` 类C写法（`else if`写作`elif`，非嵌套）。迭代器`$$`是普通变量，循环开始应赋给局部变量防内层覆盖。`loop($ct){...};` 按次数；`looplist($list){...};` 遍历列表；`looplist($ht){$$.Key,$$.Value};` 遍历哈希；`foreach($a,$b,$c){...};` 指定元素。
 12. 函数定义：`script(name)params($p1,$p2){stmts;};`。返回：`return($r);`；单值非表达式可写`return $r;`；操作表达式必须用函数调用样式。
 13. `help("关键字");` 获取API帮助。
+14. MetaDSL脚本不支持异常处理，没有try-catch-finally这样的语法结构。
+15. agent执行的MetaDSL代码整体会包装成一个函数执行，代码里不能再包含函数定义（script只用于框架脚本）。
 
 **MetaDSL使用注意**
 
@@ -157,3 +159,10 @@ semantic_search(get_project_identity()+"_episodic_memory", "问题描述", 50);
 ```
 
 将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
+
+sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
+```
+// @execute
+$query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
+to_pretty_string($query_result);
+```

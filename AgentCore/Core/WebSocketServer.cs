@@ -346,8 +346,8 @@ namespace CefDotnetApp.AgentCore.Core
                                 string result = ExecuteMetaDSLInWorker(msg.message, appendContext);
                                 if (!string.IsNullOrEmpty(result))
                                 {
-                                    AgentCore.Instance.Logger.Info($"Broadcasting result (length: {result.Length}) to {GetClientCount()} client(s), appendContext={appendContext}");
-                                    _ = BroadcastMessageAsync(result);
+                                    AgentCore.Instance.Logger.Info($"Sending result (length: {result.Length}) to originator client, appendContext={appendContext}");
+                                    _ = SendToClientAsync(msg.client, result);
                                 }
                                 else
                                 {
@@ -448,6 +448,48 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 AgentCore.Instance.Logger.Error($"Error executing MetaDSL: {ex.Message}\nStack: {ex.StackTrace}");
                 return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Sends a message to a specific client (the originator of a request).
+        /// Supports large messages by sending in chunks if needed.
+        /// </summary>
+        private async Task SendToClientAsync(WebSocket client, string message)
+        {
+            if (client == null || string.IsNullOrEmpty(message))
+                return;
+
+            var buffer = Encoding.UTF8.GetBytes(message);
+            const int chunkSize = 4 * 1024 * 1024; // 4MB chunks
+
+            try
+            {
+                if (client.State == WebSocketState.Open)
+                {
+                    int offset = 0;
+                    while (offset < buffer.Length)
+                    {
+                        int count = Math.Min(chunkSize, buffer.Length - offset);
+                        bool endOfMessage = (offset + count) >= buffer.Length;
+
+                        var segment = new ArraySegment<byte>(buffer, offset, count);
+                        await client.SendAsync(segment, WebSocketMessageType.Text,
+                            endOfMessage, CancellationToken.None);
+
+                        offset += count;
+                    }
+
+                    AgentCore.Instance.Logger.Debug($"Message sent to originator client successfully (length: {buffer.Length})");
+                }
+                else
+                {
+                    AgentCore.Instance.Logger.Debug($"Skipped originator client with state: {client.State}");
+                }
+            }
+            catch (Exception ex)
+            {
+                AgentCore.Instance.Logger.Debug($"Failed to send to originator client: {ex.Message}");
             }
         }
 

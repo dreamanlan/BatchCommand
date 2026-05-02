@@ -259,6 +259,22 @@ public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
 
 namespace DotNetLib
 {
+    sealed class SetDslFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: setdslfile(dsl_file)");
+                return BoxedValue.EmptyString;
+            }
+            string file = operands[0].AsString;
+            if (!string.IsNullOrEmpty(file)) {
+                Lib.DslScriptFile = file;
+                BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(Lib.DslScriptFile));
+            }
+            return BoxedValue.FromString(Lib.DslScriptFile);
+        }
+    }
     sealed class ImportExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -286,20 +302,39 @@ namespace DotNetLib
             return BoxedValue.FromBool(true);
         }
     }
-    sealed class SetDslFileExp : SimpleExpressionBase
+    sealed class RedirectCallExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                NativeApi.AppendApiErrorInfoLine("Expected: setdslfile(dsl_file)");
+            int num = operands.Count;
+            if (num < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: redirectcall(func_name) or redirectcall(func_name, args) or redirectcall(func_name, args, ...)");
                 return BoxedValue.EmptyString;
             }
-            string file = operands[0].AsString;
-            if (!string.IsNullOrEmpty(file)) {
-                Lib.DslScriptFile = file;
-                BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(Lib.DslScriptFile));
+            else {
+                string func_name = operands[0].AsString;
+                if (num == 1) {
+                    return BatchScript.Call(func_name);
+                }
+                else if (num == 2) {
+                    // expand original args
+                    var args = operands[1].As<IList<BoxedValue>>();
+                    return BatchScript.Call(func_name, args);
+                }
+                else {
+                    // expand original args
+                    var args = operands[1].As<IList<BoxedValue>>();
+                    // add other args
+                    var newArgs = BatchScript.NewCalculatorValueList();
+                    newArgs.AddRange(args);
+                    for (int ix = 2; ix < num; ix++) {
+                        newArgs.Add(operands[ix]);
+                    }
+                    BoxedValue r = BatchScript.Call(func_name, newArgs);
+                    BatchScript.RecycleCalculatorValueList(newArgs);
+                    return r;
+                }
             }
-            return BoxedValue.FromString(Lib.DslScriptFile);
         }
     }
     sealed class NativeLogExp : SimpleExpressionBase
@@ -1845,8 +1880,6 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool OnReceiveJsMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value);
@@ -2665,11 +2698,18 @@ namespace DotNetLib
                     if (null != s_NativeApi) {
                         TryLoadDSL();
 
+                        bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
                         var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                         foreach (var arg in args) {
                             vargs.Add(BoxedValue.FromString(arg));
                         }
-                        var r = BatchCommand.BatchScript.Call(func_name, vargs);
+                        BoxedValue r;
+                        if (funcExists) {
+                            r = BatchCommand.BatchScript.Call(func_name, vargs);
+                        }
+                        else {
+                            r = BatchCommand.BatchScript.Call("on_call_metadsl", BoxedValue.FromString(func_name), BoxedValue.FromObject(vargs));
+                        }
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                         CheckDslError();
                         if (!r.IsNullObject) {
@@ -2692,32 +2732,6 @@ namespace DotNetLib
                 argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
             }
             OnReceiveCefMessage(msg, new List<string>(argArray), browser, frame, source_process_id);
-        }
-
-        internal static bool OnReceiveJsMessage(string msg, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
-        {
-            string[] argArray = new string[argCount];
-            for (int i = 0; i < argCount; i++) {
-                IntPtr strPtr = Marshal.ReadIntPtr(args, i * IntPtr.Size);
-                argArray[i] = Marshal.PtrToStringUTF8(strPtr) ?? string.Empty;
-            }
-
-            string result = OnReceiveJsMessage(msg, new List<string>(argArray), browser, frame);
-            if (string.IsNullOrEmpty(result)) {
-                resultSize = 0;
-                return false;
-            }
-
-            byte[] resultBytes = System.Text.Encoding.UTF8.GetBytes(result);
-            if (resultSize < resultBytes.Length + 1) {
-                resultSize = resultBytes.Length + 1;
-                return false;
-            }
-
-            Marshal.Copy(resultBytes, 0, resultStr, resultBytes.Length);
-            Marshal.WriteByte(resultStr, resultBytes.Length, 0);
-            resultSize = resultBytes.Length;
-            return true;
         }
 
         internal static bool OnExecuteMetaDSL(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame)
@@ -2785,12 +2799,14 @@ namespace DotNetLib
                         TryLoadDSL();
 
                         var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                        vargs.Add(BoxedValue.From(source_process_id));
-                        vargs.Add(BoxedValue.FromString(msg));
                         foreach (var arg in args) {
                             vargs.Add(BoxedValue.FromString(arg));
                         }
-                        var r = BatchCommand.BatchScript.Call("on_receive_cef_message", vargs);
+                        // In C#, we do not directly invoke `msg` as a function, because `cef_message` may be received
+                        // in either the browser process or the renderer process—and is typically forwarded internally
+                        // within the browser process. Instead, we can utilize the `redirectcall` directive within the
+                        // DSL to invoke `msg` as a function.
+                        BoxedValue r = BatchCommand.BatchScript.Call("on_receive_cef_message", BoxedValue.FromString(msg), BoxedValue.FromObject(vargs), BoxedValue.From(source_process_id));
                         BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                         CheckDslError();
                         if (!r.IsNullObject) {
@@ -2802,38 +2818,6 @@ namespace DotNetLib
                     NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
                 }
             }
-        }
-
-        internal static string OnReceiveJsMessage(string msg, List<string> args, IntPtr browser, IntPtr frame)
-        {
-            lock (s_Lock) {
-                NativeApi.SetContext(browser, frame);
-
-                try {
-                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveJsMessage, msg:{0} arg:{1} process type:{2}", msg, GetStringInLength(args), s_ProcessType));
-
-                    if (null != s_NativeApi) {
-                        TryLoadDSL();
-
-                        var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                        vargs.Add(BoxedValue.From(NativeApi.LastSourceProcessId));
-                        vargs.Add(BoxedValue.FromString(msg));
-                        foreach (var arg in args) {
-                            vargs.Add(BoxedValue.FromString(arg));
-                        }
-                        var r = BatchCommand.BatchScript.Call("on_receive_js_message", vargs);
-                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                        CheckDslError();
-                        if (!r.IsNullObject) {
-                            return r.ToString();
-                        }
-                    }
-                }
-                catch (Exception e) {
-                    NativeLogNoLock("[csharp] Exception in OnReceiveJsMessage:" + e.Message + "\n" + e.StackTrace);
-                }
-            }
-            return string.Empty;
         }
 
         internal static string CmdLine
@@ -3297,8 +3281,9 @@ namespace DotNetLib
         {
             AddCommonApiDocs();
             // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
+            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
+            BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name,args,...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
@@ -3439,8 +3424,9 @@ namespace DotNetLib
             Lib.AddCommonApiDocs();
 
             // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
+            BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
+            BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());

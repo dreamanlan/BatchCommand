@@ -342,4 +342,130 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             return -1;
         }
     }
+
+    sealed class ToPrettyStringExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: to_pretty_string(val)");
+                return (BoxedValue)string.Empty;
+            }
+
+            try {
+                string? input = null;
+                var obj = operands[0].GetObject();
+                if (null == obj) {
+                    return BoxedValue.FromString(string.Empty);
+                }
+                if (obj is string s) {
+                    input = s;
+                }
+                else {
+                    var sb0 = new StringBuilder();
+                    DslHelper.ConvertToString(operands[0], sb0, 0, true);
+                    input = sb0.ToString();
+                }
+                if (string.IsNullOrEmpty(input)) {
+                    return BoxedValue.FromString(string.Empty);
+                }
+                return BoxedValue.FromString(UnescapeLiteral(input));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"to_pretty_string error: {ex.Message}");
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+
+        private static string UnescapeLiteral(string input)
+        {
+            var sb = new StringBuilder(input.Length);
+            int i = 0;
+            int n = input.Length;
+            while (i < n) {
+                char c = input[i];
+                if (c != '\\') {
+                    sb.Append(c);
+                    i++;
+                    continue;
+                }
+                if (i + 1 >= n) {
+                    // trailing backslash, keep as-is
+                    sb.Append(c);
+                    i++;
+                    continue;
+                }
+                char next = input[i + 1];
+                switch (next) {
+                    case '\\': sb.Append('\\'); i += 2; break;
+                    case '"': sb.Append('"'); i += 2; break;
+                    case '\'': sb.Append('\''); i += 2; break;
+                    case 'n': sb.Append('\n'); i += 2; break;
+                    case 'r': sb.Append('\r'); i += 2; break;
+                    case 't': sb.Append('\t'); i += 2; break;
+                    case 'b': sb.Append('\b'); i += 2; break;
+                    case 'f': sb.Append('\f'); i += 2; break;
+                    case 'v': sb.Append('\v'); i += 2; break;
+                    case 'a': sb.Append('\a'); i += 2; break;
+                    case '0': sb.Append('\0'); i += 2; break;
+                    case 'u': {
+                        // \uXXXX - require exactly 4 hex digits
+                        if (i + 5 < n && IsHex(input[i + 2]) && IsHex(input[i + 3]) && IsHex(input[i + 4]) && IsHex(input[i + 5])) {
+                            int code = (HexVal(input[i + 2]) << 12) | (HexVal(input[i + 3]) << 8) | (HexVal(input[i + 4]) << 4) | HexVal(input[i + 5]);
+                            sb.Append((char)code);
+                            i += 6;
+                        }
+                        else {
+                            // invalid, keep literal
+                            sb.Append(c);
+                            sb.Append(next);
+                            i += 2;
+                        }
+                        break;
+                    }
+                    case 'x': {
+                        // \xH{1..4} - greedy 1 to 4 hex digits
+                        int j = i + 2;
+                        int hexCount = 0;
+                        int code = 0;
+                        while (j < n && hexCount < 4 && IsHex(input[j])) {
+                            code = (code << 4) | HexVal(input[j]);
+                            j++;
+                            hexCount++;
+                        }
+                        if (hexCount > 0) {
+                            sb.Append((char)code);
+                            i = j;
+                        }
+                        else {
+                            // no hex digit, keep literal
+                            sb.Append(c);
+                            sb.Append(next);
+                            i += 2;
+                        }
+                        break;
+                    }
+                    default:
+                        // unknown escape, keep literal
+                        sb.Append(c);
+                        sb.Append(next);
+                        i += 2;
+                        break;
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static bool IsHex(char c)
+        {
+            return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+        }
+
+        private static int HexVal(char c)
+        {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            return c - 'A' + 10;
+        }
+    }
 }

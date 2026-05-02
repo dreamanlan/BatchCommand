@@ -326,7 +326,7 @@ namespace DotNetLib
         public IntPtr Worker { get => m_Worker; set => m_Worker = value; }
         public IntPtr Result { get => m_Result; set => m_Result = value; }
         public string CurrentScheme { get => m_CurrentScheme; }
-        public List<string> Includes { get => m_Includes; }
+        public List<string> Imports { get => m_Includes; }
 
         public void OutputLog(string msg)
         {
@@ -1038,9 +1038,9 @@ namespace DotNetLib
                     s_DslScriptTime = fi.LastWriteTime;
                     s_DslScriptPath = path;
                     BatchCommand.BatchScript.Load(fi.FullName);
-                    var includes = s_NativeApi?.Includes;
-                    if (null != includes) {
-                        BatchCommand.BatchScript.LoadIncludes(includes);
+                    var imports = s_NativeApi?.Imports;
+                    if (null != imports) {
+                        BatchCommand.BatchScript.LoadImportFiles(imports);
                     }
 
                     LogNoLock("[csharp] Load dsl script: " + fi.FullName);

@@ -1,5 +1,6 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -30,7 +34,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .header h1 {
@@ -93,7 +97,7 @@
             width: 100%;
             margin: 0 auto;
             background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .messages-area {
@@ -150,9 +154,17 @@
             font-weight: 600;
         }
 
-        .message-content h1 { font-size: 1.8em; }
-        .message-content h2 { font-size: 1.5em; }
-        .message-content h3 { font-size: 1.3em; }
+        .message-content h1 {
+            font-size: 1.8em;
+        }
+
+        .message-content h2 {
+            font-size: 1.5em;
+        }
+
+        .message-content h3 {
+            font-size: 1.3em;
+        }
 
         .message-content p {
             margin-bottom: 12px;
@@ -285,9 +297,13 @@
         }
 
         @keyframes bounce {
-            0%, 80%, 100% {
+
+            0%,
+            80%,
+            100% {
                 transform: scale(0);
             }
+
             40% {
                 transform: scale(1);
             }
@@ -383,7 +399,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -482,6 +498,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>🤖 Agent LLM Interface</h1>
@@ -513,11 +530,8 @@
         <div id="room-footer">
             <div class="input-container">
                 <div class="vac-textarea">
-                    <div id="editable-content"
-                         class="editable-content"
-                         contenteditable="true"
-                         data-placeholder="Type your message here..."
-                         spellcheck="false"></div>
+                    <div id="editable-content" class="editable-content" contenteditable="true"
+                        data-placeholder="Type your message here..." spellcheck="false"></div>
                 </div>
                 <div class="vac-icon-textarea">
                     <button class="vac-svg-button stop-disabled" id="stop-btn">Stop</button>
@@ -547,7 +561,8 @@
                     <option value="personal">Personal Token (x-knot-api-token)</option>
                     <option value="agent">Agent Token (x-knot-token)</option>
                 </select>
-                <small style="color: #7f8c8d; font-size: 12px;">Personal token: your personal API token. Agent token: the agent's API key.</small>
+                <small style="color: #7f8c8d; font-size: 12px;">Personal token: your personal API token. Agent token:
+                    the agent's API key.</small>
             </div>
 
             <div class="config-group">
@@ -558,7 +573,8 @@
             <div class="config-group" id="username-group" style="display: none;">
                 <label for="username">Username:</label>
                 <input type="text" id="username" placeholder="Enter your username">
-                <small style="color: #7f8c8d; font-size: 12px;">Required for agent token mode, optional for personal token mode.</small>
+                <small style="color: #7f8c8d; font-size: 12px;">Required for agent token mode, optional for personal
+                    token mode.</small>
             </div>
 
             <div class="config-group" id="stream-group" style="display: none;">
@@ -584,13 +600,16 @@
             <div class="config-group">
                 <label for="context-rounds">Context Rounds:</label>
                 <input type="number" id="context-rounds" min="1" max="50" value="12" placeholder="12">
-                <small style="color: #7f8c8d; font-size: 12px;">Number of conversation rounds to include in auto context (default: 12)</small>
+                <small style="color: #7f8c8d; font-size: 12px;">Number of conversation rounds to include in auto context
+                    (default: 12)</small>
             </div>
 
             <div class="config-group">
                 <label for="max-context-chars">Max Context Characters:</label>
-                <input type="number" id="max-context-chars" min="1024" max="1048576" value="131072" placeholder="131072">
-                <small style="color: #7f8c8d; font-size: 12px;">Maximum characters for auto context in bytes (default: 131072 = 128KB)</small>
+                <input type="number" id="max-context-chars" min="1024" max="1048576" value="131072"
+                    placeholder="131072">
+                <small style="color: #7f8c8d; font-size: 12px;">Maximum characters for auto context in bytes (default:
+                    131072 = 128KB)</small>
             </div>
 
             <div class="config-actions">
@@ -606,4 +625,5 @@
     <script src="javascript/ui-controller.js"></script>
     <script src="javascript/main.js"></script>
 </body>
+
 </html>

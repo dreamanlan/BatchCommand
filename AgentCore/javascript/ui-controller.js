@@ -1,4 +1,4 @@
-/**
+﻿/**
  * UI Controller Module
  * Manages UI interactions and updates
  */
@@ -50,18 +50,65 @@ class UIController {
         // Configure marked.js
         if (typeof marked !== 'undefined') {
             marked.setOptions({
-                highlight: function(code, lang) {
+                highlight: function (code, lang) {
                     if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(code, { language: lang }).value;
-                    } catch (e) {
-                        if (uiLogger) uiLogger.error('Highlight error:', e);
-                    }
+                        try {
+                            return hljs.highlight(code, { language: lang }).value;
+                        } catch (e) {
+                            if (uiLogger) uiLogger.error('Highlight error:', e);
+                        }
                     }
                     return code;
                 },
                 breaks: true,
                 gfm: true
+            });
+        }
+        // Initialize mermaid (figures rendered after streaming completes)
+        if (typeof mermaid !== 'undefined') {
+            try {
+                mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+            } catch (e) {
+                if (uiLogger) uiLogger.error('Mermaid init error:', e);
+            }
+        }
+
+    }
+
+
+    processCodeBlocks(container) {
+        if (!container) return;
+        if (typeof mermaid !== 'undefined') {
+            const mermaidBlocks = container.querySelectorAll('pre code.language-mermaid');
+            mermaidBlocks.forEach((codeEl, idx) => {
+                const code = codeEl.textContent;
+                const host = document.createElement('div');
+                host.className = 'mermaid-rendered';
+                const id = 'mmd-' + Date.now() + '-' + idx + '-' + Math.floor(Math.random() * 10000);
+                mermaid.render(id, code).then(function (result) {
+                    host.innerHTML = result.svg;
+                }).catch(function (e) {
+                    if (uiLogger) uiLogger.error('Mermaid render error:', e);
+                    host.textContent = 'Mermaid render error: ' + (e && e.message ? e.message : String(e));
+                });
+                const pre = codeEl.closest('pre');
+                if (pre && pre.parentNode) {
+                    pre.parentNode.replaceChild(host, pre);
+                }
+            });
+        }
+        if (typeof DOMPurify !== 'undefined') {
+            const svgBlocks = container.querySelectorAll('pre code.language-svg');
+            svgBlocks.forEach(function (codeEl) {
+                const raw = codeEl.textContent;
+                const clean = DOMPurify.sanitize(raw, { USE_PROFILES: { svg: true, svgFilters: true } });
+                const host = document.createElement('div');
+                host.className = 'svg-rendered';
+                host.innerHTML = clean;
+                const pre = codeEl.closest('pre');
+                if (pre && pre.parentNode) {
+                    pre.parentNode.replaceChild(host, pre);
+                }
             });
         }
     }
@@ -253,6 +300,18 @@ class UIController {
                 this.updateAssistantMessage(assistantMessageId, accumulated);
             }, contextRounds);
 
+            // Finalize: render mermaid/svg code blocks in the assistant message
+            try {
+                const wrapper = this.elements.messagesArea.querySelector('[data-message-id="' + assistantMessageId + '"]');
+                if (wrapper) {
+                    const contentEl = wrapper.querySelector('.message-content');
+                    if (contentEl) this.processCodeBlocks(contentEl);
+                }
+            } catch (e) {
+                if (uiLogger) uiLogger.error('Finalize codeblocks error:', e);
+            }
+
+
             // Save assistant response
             this.messageHandler.addMessage('assistant', fullResponse);
 
@@ -267,6 +326,16 @@ class UIController {
                     this.messageHandler.addMessage('assistant', fullResponse);
                     this.addMessageTag(assistantMessageId, new Date().toLocaleTimeString());
                 }
+                try {
+                    const wrapper = this.elements.messagesArea.querySelector('[data-message-id="' + assistantMessageId + '"]');
+                    if (wrapper) {
+                        const contentEl = wrapper.querySelector('.message-content');
+                        if (contentEl) this.processCodeBlocks(contentEl);
+                    }
+                } catch (e) {
+                    if (uiLogger) uiLogger.error('Finalize codeblocks error (stop):', e);
+                }
+
             } else {
                 if (uiLogger) uiLogger.error('Error sending message:', error);
                 this.showError(error.message);
@@ -314,259 +383,267 @@ class UIController {
         this.elements.messagesArea.appendChild(wrapper);
         this.scrollToBottom();
 
+        if (role === 'assistant') {
+            try {
+                this.processCodeBlocks(messageContent);
+            } catch (e) {
+                if (uiLogger) uiLogger.error('Finalize codeblocks error (displayMessage):', e);
+            }
+        }
+
         return wrapper;
     }
 
     createAssistantMessagePlaceholder() {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'vac-message-wrapper';
-        wrapper.dataset.messageId = 'assistant-' + Date.now();
+    const wrapper = document.createElement('div');
+    wrapper.className = 'vac-message-wrapper';
+    wrapper.dataset.messageId = 'assistant-' + Date.now();
 
-        const box = document.createElement('div');
-        box.className = 'vac-message-box';
+    const box = document.createElement('div');
+    box.className = 'vac-message-box';
 
-        const messageContent = document.createElement('div');
-        messageContent.className = 'message-content';
-        messageContent.textContent = '';
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = '';
 
-        const messageTime = document.createElement('div');
-        messageTime.className = 'message-time';
-        messageTime.textContent = new Date().toLocaleTimeString();
+    const messageTime = document.createElement('div');
+    messageTime.className = 'message-time';
+    messageTime.textContent = new Date().toLocaleTimeString();
 
-        box.appendChild(messageContent);
-        box.appendChild(messageTime);
-        wrapper.appendChild(box);
+    box.appendChild(messageContent);
+    box.appendChild(messageTime);
+    wrapper.appendChild(box);
 
-        this.elements.messagesArea.appendChild(wrapper);
-        this.scrollToBottom();
+    this.elements.messagesArea.appendChild(wrapper);
+    this.scrollToBottom();
 
-        return wrapper.dataset.messageId;
-    }
+    return wrapper.dataset.messageId;
+}
 
-    updateAssistantMessage(messageId, content) {
-        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-        if (wrapper) {
-            const messageContent = wrapper.querySelector('.message-content');
-            if (messageContent) {
-                // Render Markdown for assistant messages
-                messageContent.innerHTML = this.renderMarkdown(content);
-                this.scrollToBottom();
-            }
+updateAssistantMessage(messageId, content) {
+    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+    if (wrapper) {
+        const messageContent = wrapper.querySelector('.message-content');
+        if (messageContent) {
+            // Render Markdown for assistant messages
+            messageContent.innerHTML = this.renderMarkdown(content);
+            this.scrollToBottom();
         }
     }
+}
 
-    addMessageTag(messageId, timeText) {
-        // Add el-tag element to assistant message for block ID stability
-        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-        if (wrapper) {
-            this.addMessageTagToWrapper(wrapper, timeText);
+addMessageTag(messageId, timeText) {
+    // Add el-tag element to assistant message for block ID stability
+    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+    if (wrapper) {
+        this.addMessageTagToWrapper(wrapper, timeText);
+    }
+}
+
+addMessageTagToWrapper(wrapper, timeText) {
+    // Add el-tag element (same structure as custom-llm) for block ID computation
+    const box = wrapper.querySelector('.vac-message-box');
+    if (box && !box.querySelector('.el-tag')) {
+        const tag = document.createElement('span');
+        tag.className = 'el-tag';
+        const tagContent = document.createElement('span');
+        tagContent.className = 'el-tag__content';
+        tagContent.textContent = timeText;
+        tag.appendChild(tagContent);
+        tag.style.display = 'none'; // Hidden, only used for block ID
+        box.appendChild(tag);
+    }
+}
+
+showLoading() {
+    this.elements.loadingIndicator.classList.add('active');
+}
+
+hideLoading() {
+    this.elements.loadingIndicator.classList.remove('active');
+}
+
+scrollToBottom() {
+    this.elements.messagesArea.scrollTop = this.elements.messagesArea.scrollHeight;
+}
+
+loadExistingMessages() {
+    const messages = this.messageHandler.messages;
+    messages.forEach(msg => {
+        const wrapper = this.displayMessage(msg.role, msg.content);
+        // Add el-tag for assistant messages (history messages are already complete)
+        if (msg.role === 'assistant' && wrapper) {
+            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
+            this.addMessageTagToWrapper(wrapper, time);
         }
+    });
+}
+
+showConfigModal() {
+    const config = this.apiClient.getConfig();
+    this.elements.configApiType.value = config.apiType;
+    this.elements.apiKeyInput.value = config.apiKey || '';
+    this.elements.authModeSelect.value = config.authMode || 'personal';
+    this.elements.usernameInput.value = config.username || '';
+    this.elements.streamCheckbox.checked = !!config.stream;
+    this.elements.apiEndpointInput.value = config.apiEndpoint || '';
+
+    // Load context configuration
+    const contextConfig = this.messageHandler.getContextConfig();
+    this.elements.contextRoundsInput.value = contextConfig.contextRounds;
+    this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
+
+    this.updateModelOptions(config.apiType);
+    this.updateAutoMetaDSLFields(config.apiType);
+    this.updateUsernameFieldVisibility(config.authMode || 'personal');
+    this.elements.modelSelect.value = config.model || '';
+
+    this.elements.configModal.classList.add('active');
+    this.hideError();
+}
+
+hideConfigModal() {
+    this.elements.configModal.classList.remove('active');
+}
+
+handleClearHistory() {
+    // Confirm before clearing
+    if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
+        // Clear history from MessageHandler
+        this.messageHandler.clearHistory();
+
+        // Reset API client conversation state
+        this.apiClient.resetConversation();
+
+        // Clear displayed messages
+        this.elements.messagesArea.innerHTML = '';
+
+        if (uiLogger) uiLogger.info('Conversation history cleared');
+    }
+}
+
+updateModelOptions(apiType) {
+    const models = this.apiClient.getAvailableModels(apiType);
+    this.elements.modelSelect.innerHTML = '';
+
+    models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.value;
+        option.textContent = model.label;
+        this.elements.modelSelect.appendChild(option);
+    });
+
+    // Set default model
+    const config = this.apiClient.getConfig();
+    if (config.model && models.find(m => m.value === config.model)) {
+        this.elements.modelSelect.value = config.model;
+    } else if (models.length > 0) {
+        this.elements.modelSelect.value = models[0].value;
+    }
+}
+
+updateAutoMetaDSLFields(apiType) {
+    // Show auth mode and username fields only for auto_metadsl
+    if (apiType === 'auto_metadsl') {
+        this.elements.authModeGroup.style.display = 'block';
+        this.elements.usernameGroup.style.display = 'block';
+        this.elements.streamGroup.style.display = 'block';
+    } else {
+        this.elements.authModeGroup.style.display = 'none';
+        this.elements.usernameGroup.style.display = 'none';
+        this.elements.streamGroup.style.display = 'none';
+    }
+}
+
+updateUsernameFieldVisibility(authMode) {
+    // Update username field label and requirement based on auth mode
+    const usernameLabel = this.elements.usernameGroup.querySelector('label');
+    const usernameHint = this.elements.usernameGroup.querySelector('small');
+
+    if (authMode === 'agent') {
+        usernameLabel.textContent = 'Username (Required):';
+        usernameHint.textContent = 'Required for agent token mode.';
+    } else {
+        usernameLabel.textContent = 'Username (Optional):';
+        usernameHint.textContent = 'Optional for personal token mode.';
+    }
+}
+
+saveConfiguration() {
+    const apiType = this.elements.configApiType.value;
+    const apiKey = this.elements.apiKeyInput.value.trim();
+    const authMode = this.elements.authModeSelect.value;
+    const username = this.elements.usernameInput.value.trim();
+    const apiEndpoint = this.elements.apiEndpointInput.value.trim();
+    const model = this.elements.modelSelect.value;
+    const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
+    const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
+
+    // API key is optional for auto_metadsl
+    if (apiType !== 'auto_metadsl' && !apiKey) {
+        this.showError('API key is required');
+        return;
     }
 
-    addMessageTagToWrapper(wrapper, timeText) {
-        // Add el-tag element (same structure as custom-llm) for block ID computation
-        const box = wrapper.querySelector('.vac-message-box');
-        if (box && !box.querySelector('.el-tag')) {
-            const tag = document.createElement('span');
-            tag.className = 'el-tag';
-            const tagContent = document.createElement('span');
-            tagContent.className = 'el-tag__content';
-            tagContent.textContent = timeText;
-            tag.appendChild(tagContent);
-            tag.style.display = 'none'; // Hidden, only used for block ID
-            box.appendChild(tag);
-        }
+    // Username is required for agent token mode
+    if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {
+        this.showError('Username is required for agent token mode');
+        return;
     }
 
-    showLoading() {
-        this.elements.loadingIndicator.classList.add('active');
+    // Validate context configuration
+    if (isNaN(contextRounds) || contextRounds < 1 || contextRounds > 50) {
+        this.showError('Context rounds must be between 1 and 50');
+        return;
     }
 
-    hideLoading() {
-        this.elements.loadingIndicator.classList.remove('active');
+    if (isNaN(maxContextChars) || maxContextChars < 1024 || maxContextChars > 1048576) {
+        this.showError('Max context characters must be between 1024 and 1048576');
+        return;
     }
 
-    scrollToBottom() {
-        this.elements.messagesArea.scrollTop = this.elements.messagesArea.scrollHeight;
-    }
+    const stream = this.elements.streamCheckbox.checked;
+    const config = {
+        apiType: apiType,
+        apiKey: apiKey,
+        authMode: authMode,
+        username: username,
+        stream: stream,
+        apiEndpoint: apiEndpoint,
+        model: model
+    };
 
-    loadExistingMessages() {
-        const messages = this.messageHandler.messages;
-        messages.forEach(msg => {
-            const wrapper = this.displayMessage(msg.role, msg.content);
-            // Add el-tag for assistant messages (history messages are already complete)
-            if (msg.role === 'assistant' && wrapper) {
-                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-                this.addMessageTagToWrapper(wrapper, time);
-            }
-        });
-    }
+    this.apiClient.saveConfig(config);
+    this.elements.apiTypeSelect.value = apiType;
 
-    showConfigModal() {
-        const config = this.apiClient.getConfig();
-        this.elements.configApiType.value = config.apiType;
-        this.elements.apiKeyInput.value = config.apiKey || '';
-        this.elements.authModeSelect.value = config.authMode || 'personal';
-        this.elements.usernameInput.value = config.username || '';
-        this.elements.streamCheckbox.checked = !!config.stream;
-        this.elements.apiEndpointInput.value = config.apiEndpoint || '';
+    // Save context configuration
+    this.messageHandler.setContextConfig({
+        contextRounds: contextRounds,
+        maxContextChars: maxContextChars
+    });
 
-        // Load context configuration
-        const contextConfig = this.messageHandler.getContextConfig();
-        this.elements.contextRoundsInput.value = contextConfig.contextRounds;
-        this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
+    if (uiLogger) uiLogger.info('Configuration saved:', {
+        api: config,
+        context: { contextRounds, maxContextChars }
+    });
 
-        this.updateModelOptions(config.apiType);
-        this.updateAutoMetaDSLFields(config.apiType);
-        this.updateUsernameFieldVisibility(config.authMode || 'personal');
-        this.elements.modelSelect.value = config.model || '';
+    this.hideConfigModal();
+    this.showSuccess('Configuration saved successfully');
+}
 
-        this.elements.configModal.classList.add('active');
-        this.hideError();
-    }
+showError(message) {
+    this.elements.errorMessage.textContent = message;
+    this.elements.errorMessage.classList.add('active');
+}
 
-    hideConfigModal() {
-        this.elements.configModal.classList.remove('active');
-    }
+hideError() {
+    this.elements.errorMessage.classList.remove('active');
+}
 
-    handleClearHistory() {
-        // Confirm before clearing
-        if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
-            // Clear history from MessageHandler
-            this.messageHandler.clearHistory();
-
-            // Reset API client conversation state
-            this.apiClient.resetConversation();
-
-            // Clear displayed messages
-            this.elements.messagesArea.innerHTML = '';
-
-            if (uiLogger) uiLogger.info('Conversation history cleared');
-        }
-    }
-
-    updateModelOptions(apiType) {
-        const models = this.apiClient.getAvailableModels(apiType);
-        this.elements.modelSelect.innerHTML = '';
-
-        models.forEach(model => {
-            const option = document.createElement('option');
-            option.value = model.value;
-            option.textContent = model.label;
-            this.elements.modelSelect.appendChild(option);
-        });
-
-        // Set default model
-        const config = this.apiClient.getConfig();
-        if (config.model && models.find(m => m.value === config.model)) {
-            this.elements.modelSelect.value = config.model;
-        } else if (models.length > 0) {
-            this.elements.modelSelect.value = models[0].value;
-        }
-    }
-
-    updateAutoMetaDSLFields(apiType) {
-        // Show auth mode and username fields only for auto_metadsl
-        if (apiType === 'auto_metadsl') {
-            this.elements.authModeGroup.style.display = 'block';
-            this.elements.usernameGroup.style.display = 'block';
-            this.elements.streamGroup.style.display = 'block';
-        } else {
-            this.elements.authModeGroup.style.display = 'none';
-            this.elements.usernameGroup.style.display = 'none';
-            this.elements.streamGroup.style.display = 'none';
-        }
-    }
-
-    updateUsernameFieldVisibility(authMode) {
-        // Update username field label and requirement based on auth mode
-        const usernameLabel = this.elements.usernameGroup.querySelector('label');
-        const usernameHint = this.elements.usernameGroup.querySelector('small');
-
-        if (authMode === 'agent') {
-            usernameLabel.textContent = 'Username (Required):';
-            usernameHint.textContent = 'Required for agent token mode.';
-        } else {
-            usernameLabel.textContent = 'Username (Optional):';
-            usernameHint.textContent = 'Optional for personal token mode.';
-        }
-    }
-
-    saveConfiguration() {
-        const apiType = this.elements.configApiType.value;
-        const apiKey = this.elements.apiKeyInput.value.trim();
-        const authMode = this.elements.authModeSelect.value;
-        const username = this.elements.usernameInput.value.trim();
-        const apiEndpoint = this.elements.apiEndpointInput.value.trim();
-        const model = this.elements.modelSelect.value;
-        const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
-        const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
-
-        // API key is optional for auto_metadsl
-        if (apiType !== 'auto_metadsl' && !apiKey) {
-            this.showError('API key is required');
-            return;
-        }
-
-        // Username is required for agent token mode
-        if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {
-            this.showError('Username is required for agent token mode');
-            return;
-        }
-
-        // Validate context configuration
-        if (isNaN(contextRounds) || contextRounds < 1 || contextRounds > 50) {
-            this.showError('Context rounds must be between 1 and 50');
-            return;
-        }
-
-        if (isNaN(maxContextChars) || maxContextChars < 1024 || maxContextChars > 1048576) {
-            this.showError('Max context characters must be between 1024 and 1048576');
-            return;
-        }
-
-        const stream = this.elements.streamCheckbox.checked;
-        const config = {
-            apiType: apiType,
-            apiKey: apiKey,
-            authMode: authMode,
-            username: username,
-            stream: stream,
-            apiEndpoint: apiEndpoint,
-            model: model
-        };
-
-        this.apiClient.saveConfig(config);
-        this.elements.apiTypeSelect.value = apiType;
-
-        // Save context configuration
-        this.messageHandler.setContextConfig({
-            contextRounds: contextRounds,
-            maxContextChars: maxContextChars
-        });
-
-        if (uiLogger) uiLogger.info('Configuration saved:', {
-            api: config,
-            context: { contextRounds, maxContextChars }
-        });
-
-        this.hideConfigModal();
-        this.showSuccess('Configuration saved successfully');
-    }
-
-    showError(message) {
-        this.elements.errorMessage.textContent = message;
-        this.elements.errorMessage.classList.add('active');
-    }
-
-    hideError() {
-        this.elements.errorMessage.classList.remove('active');
-    }
-
-    showSuccess(message) {
-        // Could implement a success toast notification here
-        if (uiLogger) uiLogger.info('Success:', { message });
-    }
+showSuccess(message) {
+    // Could implement a success toast notification here
+    if (uiLogger) uiLogger.info('Success:', { message });
+}
 }
 
 // Export for use in other modules

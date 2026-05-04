@@ -390,33 +390,30 @@ class APIClient {
     getAvailableModels(apiType) {
         if (apiType === 'openai') {
             return [
-                { value: 'o3', label: 'o3' },
-                { value: 'o3-mini', label: 'o3-mini' },
-                { value: 'o4-mini', label: 'o4-mini' },
-                { value: 'gpt-4.1', label: 'GPT-4.1' },
-                { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
-                { value: 'gpt-4.1-nano', label: 'GPT-4.1 Nano' },
-                { value: 'gpt-4o', label: 'GPT-4o' },
-                { value: 'gpt-4o-mini', label: 'GPT-4o Mini' }
+                { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'gpt-5', label: 'GPT-5' },
+                { value: 'gpt-4o', label: 'GPT-4o' }
             ];
         } else if (apiType === 'claude') {
             return [
-                { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-                { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' },
-                { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' },
-                { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-                { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
+                { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
+                { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
+                { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
+                { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' }
             ];
         } else if (apiType === 'auto_metadsl') {
             return [
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
                 { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
+                { value: 'glm-5.1', label: 'GLM-5.1' },
+                { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
                 { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
-                { value: 'kimi-k2.5', label: 'Kimi-K2.5' },
-                { value: 'glm-4.7', label: 'GLM-4.7' },
-                { value: 'glm-5', label: 'GLM-5' },
-                { value: 'hunyuan-2.0-thinking', label: 'HY-2.0-Think' },
-                { value: 'hunyuan-2.0-instruct', label: 'HY-2.0-Instruct' }
+                { value: 'claude-4.6-sonnet-1m-context', label: 'Claude-4.6-Sonnet-1M' },
+                { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
+                { value: 'claude-4.6-opus-1m-context', label: 'Claude-4.6-Opus-1M' },
+                { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'hy3-preview', label: 'HY3-Preview' },
+                { value: 'kimi-k2.6', label: 'Kimi-K2.6' }
             ];
         }
         return [];

@@ -57,6 +57,15 @@ class MetaDSLMonitor {
     this.onLLMResponse = null;
   }
 
+  // Safely extract className as a string, compatible with SVG elements
+  // (SVGElement.className is an SVGAnimatedString, not a string) and non-Element nodes.
+  _getClassStr(node) {
+    const c = node && node.className;
+    if (typeof c === 'string') return c;
+    if (c && typeof c.baseVal === 'string') return c.baseVal;
+    return '';
+  }
+
   injectStyles() {
     // Check if styles already injected
     if (document.getElementById('metadsl-monitor-styles')) {
@@ -513,7 +522,7 @@ class MetaDSLMonitor {
     const specificContainer = document.querySelector('.chat-container') ||
       document.querySelector('.message-container') ||
       document.querySelector('[role="main"]');
-    this.info(`startCodeBlockObserver: using body, specificContainer=${specificContainer ? specificContainer.tagName + '.' + specificContainer.className.slice(0, 40) : 'none'}`);
+    this.info(`startCodeBlockObserver: using body, specificContainer=${specificContainer ? specificContainer.tagName + '.' + this._getClassStr(specificContainer).slice(0, 40) : 'none'}`);
 
     this.observer = new MutationObserver((mutations) => {
       if (!this.started) {
@@ -553,7 +562,7 @@ class MetaDSLMonitor {
         // Log first mutation details for diagnostics
         const m0 = relevantMutations[0];
         const t0 = m0.target;
-        this.info(`relevantMutations[0]: type=${m0.type}, target=${t0.tagName}.${(t0.className || '').slice(0, 40)}, id=${t0.id || ''}, addedNodes=${m0.addedNodes.length}, removedNodes=${m0.removedNodes.length}`);
+        this.info(`relevantMutations[0]: type=${m0.type}, target=${(t0.tagName || t0.nodeName || '')}.${this._getClassStr(t0).slice(0, 40)}, id=${t0.id || ''}, addedNodes=${m0.addedNodes.length}, removedNodes=${m0.removedNodes.length}`);
 
         // Reset page stable timer
         this.resetPageStableTimer();
@@ -1044,7 +1053,7 @@ class MetaDSLMonitor {
   scheduleHideContainer(block) {
     if (!CONFIG.get('panel.hideMetaDslBlock')) return;
     const container = block.closest('pre') || block.closest('div.code-block') || block.parentElement || block;
-    this.info(`scheduleHideContainer: block=${block.tagName}.${block.className.slice(0, 30)}, container=${container.tagName}.${container.className.slice(0, 30)}`);
+    this.info(`scheduleHideContainer: block=${block.tagName}.${this._getClassStr(block).slice(0, 30)}, container=${container.tagName}.${this._getClassStr(container).slice(0, 30)}`);
     setTimeout(() => {
       container.style.display = 'none';
       this.info(`scheduleHideContainer: hidden container=${container.tagName}, display=${container.style.display}`);

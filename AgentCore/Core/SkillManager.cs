@@ -125,10 +125,10 @@ namespace CefDotnetApp.AgentCore.Core
                 return;
 
             foreach (var dir in Directory.GetDirectories(skillsDir)) {
-                var dslFile = Path.Combine(dir, "Skill.dsl");
+                var dslFile = Path.Combine(dir, "skill.dsl");
                 if (!File.Exists(dslFile)) {
-                    // No Skill.dsl, check if Skill.md exists for document-only skill
-                    var mdFile = Path.Combine(dir, "Skill.md");
+                    // No skill.dsl, check if Skill.md exists for document-only skill
+                    var mdFile = Path.Combine(dir, "skill.md");
                     if (File.Exists(mdFile)) {
                         try {
                             ParseSkillMdOnly(mdFile, dir);

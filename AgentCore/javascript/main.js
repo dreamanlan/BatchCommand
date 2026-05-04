@@ -6,7 +6,7 @@
 // Create logger instance for this module
 const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
 
-(function() {
+(function () {
     'use strict';
 
     // Wait for DOM to be ready
@@ -31,7 +31,7 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             uiController: uiController,
 
             // PageAdapter compatible methods
-            sendMessage: function(text) {
+            sendMessage: function (text) {
                 const editableContent = document.getElementById('editable-content');
                 if (editableContent) {
                     editableContent.textContent = text;
@@ -42,21 +42,21 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
                 }
             },
 
-            getLastResponse: function() {
+            getLastResponse: function () {
                 const lastMsg = messageHandler.getLastMessage();
                 return lastMsg && lastMsg.role === 'assistant' ? lastMsg.content : null;
             },
 
-            getHistory: function(count) {
+            getHistory: function (count) {
                 const messages = messageHandler.getConversationContext(count || 10);
                 return messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
             },
 
-            isLastMessageFromLLM: function() {
+            isLastMessageFromLLM: function () {
                 return messageHandler.isLastMessageFromAssistant();
             },
 
-            clearHistory: function() {
+            clearHistory: function () {
                 messageHandler.clearHistory();
                 apiClient.resetConversation();
                 const messagesArea = document.getElementById('messages-area');
@@ -66,33 +66,33 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             },
 
             // Context configuration methods
-            setContextConfig: function(config) {
+            setContextConfig: function (config) {
                 messageHandler.setContextConfig(config);
             },
 
-            getContextConfig: function() {
+            getContextConfig: function () {
                 return messageHandler.getContextConfig();
             },
 
             // System prompt management methods
-            setDialogPrompt: function(prompt) {
+            setDialogPrompt: function (prompt) {
                 messageHandler.setDialogPrompt(prompt);
                 apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
                 if (mainLogger) mainLogger.info('Set dialog prompt via window API');
             },
 
-            getDialogPrompt: function() {
+            getDialogPrompt: function () {
                 return messageHandler.getDialogPrompt();
             },
 
-            clearDialogPrompt: function() {
+            clearDialogPrompt: function () {
                 messageHandler.clearDialogPrompt();
                 if (mainLogger) mainLogger.info('Cleared dialog prompt via window API');
             }
         };
 
         // Also expose setDialogPrompt directly on window for inject.js compatibility
-        window.setDialogPrompt = function(prompt) {
+        window.setDialogPrompt = function (prompt) {
             messageHandler.setDialogPrompt(prompt);
             apiClient.autoMetaDSLRoundCount = 0; // Reset so next message injects system context
             if (mainLogger) mainLogger.info('Set dialog prompt via window.setDialogPrompt');

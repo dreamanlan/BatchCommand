@@ -331,7 +331,7 @@ namespace AgentPlugin.Abstractions
             try {
                 switch (fileType) {
                     case "DSL Script":
-                        Log("[csharp] Script.dsl will be reloaded on next message");
+                        Log("[csharp] script.dsl will be reloaded on next message");
                         break;
 
                     case "AgentCore DLL":

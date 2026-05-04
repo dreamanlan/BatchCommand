@@ -136,14 +136,14 @@
             <p>Test the hot reload functionality for different components.</p>
 
             <button onclick="testHotReloadAgentCore()">� Reload AgentCore.dll (Full Reload)</button>
-            <button onclick="testHotReloadScript()">📜 Reload Script.dsl (Auto)</button>
+            <button onclick="testHotReloadScript()">📜 Reload script.dsl (Auto)</button>
             <button onclick="testHotReloadInject()">🌐 Reload inject.js (Page Refresh)</button>
 
             <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; font-size: 14px;">
                 <strong>Note:</strong>
                 <ul style="margin: 5px 0; padding-left: 20px;">
                     <li><strong>AgentCore.dll:</strong> Closes browser, updates DLL, reopens browser (full hot reload)</li>
-                    <li><strong>Script.dsl:</strong> Auto-reloaded on every execution (no action needed)</li>
+                    <li><strong>script.dsl:</strong> Auto-reloaded on every execution (no action needed)</li>
                     <li><strong>inject.js:</strong> Refresh page to reload (F5 or Ctrl+R)</li>
                 </ul>
             </div>
@@ -266,7 +266,7 @@
         function testHotReloadScript() {
             if (!checkAgentStatus()) return;
 
-            log('[Test 1] Script.dsl is auto-reloaded on every execution', 'info');
+            log('[Test 1] script.dsl is auto-reloaded on every execution', 'info');
             log('[Test 1] No manual reload needed - just modify the file', 'success');
         }
 

@@ -182,7 +182,7 @@ public static class Program
     {
         BatchCommand.BatchScript.ClearDslErrors();
         PrepareBatchScript();
-        string path = Path.Combine(s_BasePath, "./managed/Monitor.dsl");
+        string path = Path.Combine(s_BasePath, "./managed/monitor.dsl");
         var fi = new FileInfo(path);
         if (fi.Exists) {
             if (fi.LastWriteTime != s_DslScriptTime || s_DslScriptPath != path) {

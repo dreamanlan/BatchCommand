@@ -17,6 +17,7 @@
 13. `help("关键字");` 获取API帮助。
 14. MetaDSL脚本不支持异常处理，没有try-catch-finally这样的语法结构。
 15. agent执行的MetaDSL代码整体会包装成一个函数执行，代码里不能再包含函数定义（script只用于框架脚本）。
+16. 再次强调：metadsl脚本每个语句都要以分号结尾，复合语句也如此。
 
 **MetaDSL使用注意**
 

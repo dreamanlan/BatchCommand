@@ -1027,7 +1027,7 @@ namespace DotNetLib
             PrepareBatchScript();
             string? path = s_NativeApi?.GetDslScript();
             if (string.IsNullOrEmpty(path)) {
-                path = Path.Combine(s_BasePath, "../managed/Script.dsl");
+                path = Path.Combine(s_BasePath, "../managed/script.dsl");
             }
             else if (!Path.IsPathRooted(path)) {
                 path = Path.Combine(s_BasePath, path);

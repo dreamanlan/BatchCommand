@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // Base Page Adapter
 // ============================================================================
 class PageAdapter {
@@ -525,8 +525,14 @@ class LLMPageAdapter extends PageAdapter {
       // Get text from .message-content to avoid including timestamps
       const content = msg.querySelector('.message-content');
       if (content) {
-        const text = content.textContent.trim();
-        if (text) return text;
+       try {
+        const md = this._domToMarkdown(content);
+        if (md && md.trim()) return md.trim();
+       } catch (e) {
+        this.logger && this.logger.warn && this.logger.warn('[domToMarkdown] failed, fallback to textContent', { error: e.toString() });
+       }
+       const text = content.textContent.trim();
+       if (text) return text;
       }
     }
     return null;
@@ -544,12 +550,121 @@ class LLMPageAdapter extends PageAdapter {
         // Skip user messages (usually have specific classes)
         if (!msg.classList.contains('user-message') &&
           !msg.classList.contains('vac-message-current')) {
+          // Dump raw innerHTML for sampling (truncated)
+          try {
+            const raw = (msg.innerHTML || '').slice(0, 2000);
+            this.logger && this.logger.debug && this.logger.debug('[domDump] msg.innerHTML', { raw: raw });
+          } catch (e) { }
+          // Try DOM->Markdown conversion, fallback to textContent
+          try {
+            const md = this._domToMarkdown(msg);
+            if (md && md.trim()) return md.trim();
+          } catch (e) {
+            this.logger && this.logger.warn && this.logger.warn('[domToMarkdown] failed, fallback to textContent', { error: e.toString() });
+          }
           return msg.textContent;
         }
       }
     }
 
     return null;
+  }
+
+  _domToMarkdown(node) {
+    if (!node) return '';
+    const NL = '\n';
+    const walk = (n) => {
+      if (!n) return '';
+      if (n.nodeType === 3) return n.nodeValue || '';
+      if (n.nodeType !== 1) return '';
+      const tag = n.tagName ? n.tagName.toLowerCase() : '';
+      const inner = () => Array.from(n.childNodes).map(walk).join('');
+      switch (tag) {
+        case 'br': return NL;
+        case 'hr': return NL + '---' + NL;
+        case 'strong': case 'b': return '**' + inner() + '**';
+        case 'em': case 'i': return '*' + inner() + '*';
+        case 'del': case 's': case 'strike': return '~~' + inner() + '~~';
+        case 'code':
+          if (n.parentNode && n.parentNode.tagName && n.parentNode.tagName.toLowerCase() === 'pre') return inner();
+          return '`' + (n.textContent || '') + '`';
+        case 'pre': {
+          let lang = '';
+          const codeEl = n.querySelector && n.querySelector('code');
+          if (codeEl && codeEl.className) {
+            const cls = codeEl.className || '';
+            let m = cls.match(/language-([\w-]+)/i);
+            if (m) {
+              lang = m[1];
+            } else {
+              // hljs/ChatGPT style: "hljs code-block-body <lang>" — pick non-generic class
+              const generic = new Set(['hljs', 'code-block-body', 'highlight', 'highlighted']);
+              const tokens = cls.split(/\s+/).filter(t => t && !generic.has(t));
+              if (tokens.length) lang = tokens[tokens.length - 1];
+            }
+          }
+          const text = (codeEl ? codeEl.textContent : n.textContent) || '';
+          // Heuristic fallback: when lang is still empty, sniff first line for mermaid keywords.
+          if (!lang) {
+            const firstLine = (text || '').trim().split('\n')[0].trim();
+            if (/^(graph|flowchart|sequenceDiagram|classDiagram|erDiagram|stateDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|sankey|xychart|block-beta)\b/i.test(firstLine)) {
+              lang = 'mermaid';
+            }
+          }
+          return NL + '```' + lang + NL + text.replace(/\n+$/, '') + NL + '```' + NL;
+        }
+        case 'svg':
+          return NL + '```svg' + NL + (n.outerHTML || '') + NL + '```' + NL;
+        case 'a': {
+          const href = n.getAttribute('href') || '';
+          const txt = inner() || href;
+          return href ? '[' + txt + '](' + href + ')' : txt;
+        }
+        case 'img': {
+          const src = n.getAttribute('src') || '';
+          const alt = n.getAttribute('alt') || '';
+          return src ? '![' + alt + '](' + src + ')' : '';
+        }
+        case 'h1': return NL + '# ' + inner() + NL;
+        case 'h2': return NL + '## ' + inner() + NL;
+        case 'h3': return NL + '### ' + inner() + NL;
+        case 'h4': return NL + '#### ' + inner() + NL;
+        case 'h5': return NL + '##### ' + inner() + NL;
+        case 'h6': return NL + '###### ' + inner() + NL;
+        case 'p': case 'div': case 'section': case 'article':
+          return NL + inner() + NL;
+        case 'blockquote': {
+          const t = inner().trim().split(/\n/).map(l => '> ' + l).join(NL);
+          return NL + t + NL;
+        }
+        case 'ul': case 'ol': {
+          const ordered = tag === 'ol';
+          let idx = 0;
+          const items = Array.from(n.children).filter(c => c.tagName && c.tagName.toLowerCase() === 'li').map(li => {
+            idx++;
+            const prefix = ordered ? (idx + '. ') : '- ';
+            return prefix + walk(li).trim().replace(/\n/g, NL + '  ');
+          });
+          return NL + items.join(NL) + NL;
+        }
+        case 'li': return inner();
+        case 'table': {
+          const rows = Array.from(n.querySelectorAll('tr'));
+          if (!rows.length) return inner();
+          const cellsOf = (tr) => Array.from(tr.children).map(c => walk(c).trim().replace(/\|/g, '\\|'));
+          const head = cellsOf(rows[0]);
+          const sep = head.map(() => '---');
+          const body = rows.slice(1).map(cellsOf);
+          const fmt = r => '| ' + r.join(' | ') + ' |';
+          return NL + [fmt(head), fmt(sep)].concat(body.map(fmt)).join(NL) + NL;
+        }
+        default:
+          return inner();
+      }
+    };
+    let out = walk(node);
+    out = out.replace(/\n{3,}/g, '\n\n');
+    return out;
   }
 
   notifyResponseChange(response) {

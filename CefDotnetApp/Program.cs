@@ -1926,15 +1926,36 @@ namespace DotNetLib
                         }
                     }
 
-                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
-                        s_InitialDslScriptFile = switchValue;
-                        s_InitialDslScriptFileChanged = true;
-                        NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}, set DslScriptFile", s_InitialDslScriptFile));
+                    if ((int)CefProcessType.RendererProcess == process_type) {
+                        s_InitialDslScriptFile = "script_renderer.dsl";
                     }
-                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjIdentity)) {
-                        s_InitialProjectIdentity = prjIdentity;
-                        s_InitialProjectIdentityInited = true;
-                        NativeLogNoLock(string.Format("[csharp] parse --projectidentity:{0}, set InitialProjectIdentity", s_InitialProjectIdentity));
+                    else {
+                        s_InitialDslScriptFile = "script.dsl";
+                    }
+                    s_InitialProjectIdentity = string.Empty;
+
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "metadsl", out string switchValue)) {
+                        var vals = switchValue.Split(",", StringSplitOptions.RemoveEmptyEntries);
+                        if (vals.Length == 2) {
+                            s_MetaDslSwitch = switchValue;
+                            NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}", s_MetaDslSwitch));
+
+                            if ((int)CefProcessType.RendererProcess == process_type) {
+                                s_InitialDslScriptFile = vals[1];
+                            }
+                            else {
+                                s_InitialDslScriptFile = vals[0];
+                            }
+                        }
+                        else {
+                            NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0} error, the value must adhere to the format 'xxx.dsl,xxx_renderer.dsl'", switchValue));
+                        }
+                    }
+                    if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjSwitchValue)) {
+                        s_ProjectSwitch = prjSwitchValue;
+                        NativeLogNoLock(string.Format("[csharp] parse --projectidentity:{0}", s_ProjectSwitch));
+
+                        s_InitialProjectIdentity = s_ProjectSwitch;
                     }
                     s_DslScriptFile = s_InitialDslScriptFile;
                     TryLoadDSL();
@@ -2499,6 +2520,15 @@ namespace DotNetLib
                     TryLoadDSL();
 
                     var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
+                    if (!string.IsNullOrEmpty(s_MetaDslSwitch)) {
+                        cmdLineProxy.AppendSwitchWithValue("metadsl", s_MetaDslSwitch);
+                        NativeLogNoLock($"[dsl] on_before_child_process_launch: copied --metadsl={s_MetaDslSwitch} to child process");
+                    }
+                    if (!string.IsNullOrEmpty(s_ProjectSwitch)) {
+                        cmdLineProxy.AppendSwitchWithValue("projectidentity", s_ProjectSwitch);
+                        NativeLogNoLock($"[dsl] on_before_child_process_launch: copied --projectidentity={s_ProjectSwitch} to child process");
+                    }
+
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(process_type));
                     vargs.Add(BoxedValue.From(cmdLineProxy));
@@ -3074,9 +3104,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
             BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
             BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
-            BatchCommand.BatchScript.SetGlobalVariable("initialdslfilechanged", BoxedValue.FromBool(s_InitialDslScriptFileChanged));
             BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentity", BoxedValue.FromString(s_InitialProjectIdentity));
-            BatchCommand.BatchScript.SetGlobalVariable("initialprojectidentityinited", BoxedValue.FromBool(s_InitialProjectIdentityInited));
             BatchCommand.BatchScript.ClearDslErrors();
         }
         internal static void AddCommonApiDocs()
@@ -3342,13 +3370,13 @@ namespace DotNetLib
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
         private static string s_LoadedUrl = string.Empty;
-        private static string s_InitialDslScriptFile = "Script.dsl";
-        private static bool s_InitialDslScriptFileChanged = false;
+        private static string s_InitialDslScriptFile = string.Empty;
         private static string s_InitialProjectIdentity = string.Empty;
-        private static bool s_InitialProjectIdentityInited = false;
         private static int s_MainThreadId = 0;
         private static object s_Lock = new object();
 
+        private static string s_MetaDslSwitch = string.Empty;
+        private static string s_ProjectSwitch = string.Empty;
         private static List<string> s_EmptyArgs = new List<string>();
         private static StringBuilder s_StringBuilder = new StringBuilder();
         private static StringWriter s_StringWriter = new StringWriter(s_StringBuilder);

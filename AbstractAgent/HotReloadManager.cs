@@ -38,8 +38,9 @@ namespace AgentPlugin.Abstractions
             // Watch AgentCore.dll
             WatchFile("AgentCore.dll", "managed", "AgentCore DLL");
 
-            // Watch Script.dsl
-            WatchFile("Script.dsl", "managed", "DSL Script");
+            // Watch script.dsl
+            WatchFile("script.dsl", "managed", "DSL Script");
+            WatchFile("script_renderer.dsl", "managed", "DSL Script");
 
             // Watch inject.js if it exists
             string injectJsPath = Path.Combine(_basePath, "managed", "inject.js");

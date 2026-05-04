@@ -98,6 +98,12 @@
     deferTimer: null,
     // Throttle for deferred-flush diagnostic log.
     deferLastLogTs: 0,
+
+    // Executor slot selector: only code blocks from this slot are actually
+    // sent over WebSocket for execution. Blocks from other slots are still
+    // recognized and visually marked (in red), but dropped before wsSend.
+    // Default is set in init() based on actual slotCount.
+    executorSlot: 'slot1',
   };
 
   /* ===========================================
@@ -518,10 +524,19 @@
     const stateText = (ST.armed ? 'armed' : 'idle') + ' / ' + (ST.breakerOn ? 'broken' : 'running');
 
     const blind = isBlindMode();
+    const execOptions = slots.map(id => {
+      const sel = id === ST.executorSlot ? ' selected' : '';
+      const nm = displayName(id).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<option value="${id}"${sel}>${nm}</option>`;
+    }).join('');
     body.innerHTML = `
       <div style="margin-bottom:6px;">state: ${stateText}</div>
       <div style="margin-bottom:6px;">rounds: ${roundText}</div>
       <div style="margin-bottom:8px; opacity:0.8; white-space:nowrap;">queue: ${queueText}</div>
+      <div style="margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <span style="opacity:0.8;">executor:</span>
+        <select class="metadsl-exec-select" style="flex:1; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px;">${execOptions}</select>
+      </div>
       <div style="display:flex; gap:4px; margin-bottom:4px;">
         <button data-act="arm"    style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.armed ? '#ef6c00' : '#455a64'}; color:#fff; border:none; border-radius:3px;">${ST.armed ? 'disarm' : 'arm'}</button>
         <button data-act="break"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#d32f2f; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? 'disabled' : ''}>break</button>
@@ -537,6 +552,18 @@
       b.style.opacity = '0.4';
       b.style.cursor = 'not-allowed';
     });
+    const execSel = body.querySelector('.metadsl-exec-select');
+    if (execSel) {
+      execSel.onchange = (ev) => {
+        ev.stopPropagation();
+        const v = execSel.value;
+        if (/^slot\d+$/.test(v)) {
+          ST.executorSlot = v;
+          log(`[executor] switched to ${v} (${displayName(v)})`);
+          updatePanel();
+        }
+      };
+    }
     body.querySelectorAll('button').forEach(b => {
       b.onclick = (ev) => {
         ev.stopPropagation();
@@ -791,19 +818,24 @@
   /* ===========================================
      Section 7  Visual Marking
      =========================================== */
-  function markVisual(block) {
+  function markVisual(block, dropped) {
     ST.processedCodes.add(block.el);
 
     const pre = block.el.closest('pre') || block.el;
     const idx = slotIndexOf(block.slotId);
-    const color = slotColor(idx >= 0 ? idx : 0);
+    // Dropped (non-executor) slot blocks use red to indicate 'recognized
+    // but discarded before WS send'. Executor slot blocks use slot color.
+    const color = dropped ? '#f44336' : slotColor(idx >= 0 ? idx : 0);
 
     pre.style.borderLeft = `4px solid ${color}`;
     pre.style.position = 'relative';
     pre.dataset.metadslId = block.id;
 
+    const label = dropped
+      ? `${block.id} [${block.lang}] (drop)`
+      : `${block.id} [${block.lang}]`;
     const badge = document.createElement('span');
-    badge.textContent = `${block.id} [${block.lang}]`;
+    badge.textContent = label;
     badge.style.cssText = `
       position:absolute; top:2px; right:8px; z-index:10;
       font-size:10px; line-height:1.4; padding:1px 6px; border-radius:3px;
@@ -902,7 +934,12 @@
       log('[msg] new blocks:', summary, 'total=' + all.length);
 
       all.forEach(b => {
-        markVisual(b);
+        const dropped = b.slotId !== ST.executorSlot;
+        markVisual(b, dropped);
+        if (dropped) {
+          log(`[drop] [${b.slotId}] ${b.id} (${b.lang}, ${b.code.length}B) - not executor (${ST.executorSlot})`);
+          return;
+        }
         const ok = wsSend(b.slotId, b.code);
         log(ok
           ? `[send] [${b.slotId}] ${b.id} (${b.lang}, ${b.code.length}B)`
@@ -1082,6 +1119,11 @@
     const initCount = probeInitialSlotCount();
     ensureSlots(initCount);
     log(`[slots] initial count=${initCount}`);
+
+    // Default executor slot: prefer slot1 when at least 2 slots exist,
+    // otherwise fall back to slot0. User may switch via the panel later.
+    ST.executorSlot = ST.slotCount >= 2 ? 'slot1' : 'slot0';
+    log(`[executor] default=${ST.executorSlot}`);
 
     startObserver();
     createPanel();

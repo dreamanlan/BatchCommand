@@ -152,22 +152,26 @@ class APIClient {
     async sendAutoMetaDSLMessage(messages, onChunk, contextRounds) {
         const endpoint = this.getEndpoint();
 
-        // Get the last user message
+        // Get the last user message (should be the only user message after optimization)
         const lastUserMessage = messages.filter(m => m.role === 'user').pop();
         if (!lastUserMessage) {
             throw new Error('No user message found');
         }
 
-        // Periodically prepend system context (dialogPrompt)
+        // Build final message content
         let messageContent = lastUserMessage.content;
+        const systemMessages = messages.filter(m => m.role === 'system');
+        
+        // Periodically prepend system context (dialogPrompt/project info)
+        // This ensures the server stays updated with the latest project information
         if (contextRounds && contextRounds > 0 && this.autoMetaDSLRoundCount % contextRounds === 0) {
-            const systemMessages = messages.filter(m => m.role === 'system');
             if (systemMessages.length > 0) {
                 const systemContext = systemMessages.map(m => m.content).join('\n\n');
                 messageContent = systemContext + '\n\n' + messageContent;
-                if (apiLogger) apiLogger.info('Injected system context at round:', { round: this.autoMetaDSLRoundCount });
+                if (apiLogger) apiLogger.info('Injected system context (project info) at round:', { round: this.autoMetaDSLRoundCount });
             }
         }
+        
         this.autoMetaDSLRoundCount++;
 
         // Build request body in auto_metadsl format

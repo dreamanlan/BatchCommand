@@ -17,8 +17,6 @@ script(init_global_consts)
 			@DecurionHistory = @ProjectIdentity + "_decurion_history";
 			@LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
 			@EpisodicMemory = @ProjectIdentity + "_episodic_memory";
-			@PatternMemory = @ProjectIdentity + "_pattern_memory";
-			@MetaCognitionMemory = @ProjectIdentity + "_meta_cognition_memory";
 		};
 	};
 };
@@ -275,23 +273,8 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	}
 	elif ($tag == "pattern_recognition") {
 		parse_and_save_pattern_md($reply);
-		$summary = getstringinlength($reply, 500, 0);
-		semantic_add(@PatternMemory, $summary, to_json({source: "pattern_recognition", date: date_time_str(), type: "pattern", storage: "md_files"}));
 		llm_clear_history(@LlmProviderId, "pattern_recognition");
-		nativelog("[dsl] Pattern memory saved to MD files, summary: {0}", $summary);
-	}
-	elif ($tag == "meta_cognition") {
-		$commonDir = combine_path(basepath, "docs/memory");
-		if(!dir_exists($commonDir)){
-			create_dir($commonDir);
-		};
-		$metaPath = combine_path($commonDir, "meta_cognition.md");
-		write_file($metaPath, $reply);
-		nativelog("[dsl] Meta-cognition MD saved: {0} chars", stringlength($reply));
-		$summary = getstringinlength($reply, 500, 0);
-		semantic_add(@MetaCognitionMemory, $summary, to_json({source: "meta_cognition", date: date_time_str(), type: "meta_cognition", storage: "md_file"}));
-		llm_clear_history(@LlmProviderId, "meta_cognition");
-		nativelog("[dsl] Meta-cognition summary saved: {0}", $summary);
+		nativelog("[dsl] Pattern memory saved to MD file, length: {0}", stringlength($reply));
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -518,8 +501,6 @@ script(handle_update_project_config_command)params($id, $params)
 	semantic_init(@DecurionHistory);
 	semantic_init(@LegionnaireHistory);
 	semantic_init(@EpisodicMemory);
-	semantic_init(@PatternMemory);
-	semantic_init(@MetaCognitionMemory);
 
 	$response = build_agent_response($id, true, "ok", "");
 	send_response_to_inject($response);
@@ -655,7 +636,7 @@ script(trigger_reflection)params()
 		"【方法】：用了什么工具和具体命令\n" +
 		"【结果】：成功/失败及具体表现\n" +
 		"【教训】：踩过的坑（附具体场景）\n\n" +
-		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
+		"控制在300字以内（超出会被截断丢弃），一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
 	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
 
 	// Send reflection request
@@ -668,92 +649,32 @@ script(trigger_reflection)params()
 
 script(read_all_pattern_md)params()
 {
-	$commonDir = combine_path(basepath, "docs/memory");
-	$projectDir = combine_path(get_project_dir(), "docs/memory");
-	$categories = "tool_usage,code_refactor,architecture,project_mgmt,debugging,general";
-	$catList = string_split($categories, ",");
-	$result = new_string_builder();
-	looplist($catList){
-		$cat = $$;
-		$filePath = combine_path($commonDir, format("{0}.md", $cat));
-		if(file_exists($filePath)){
-			$content = read_file($filePath);
-			if(!isnullorempty($content)){
-				append_format_line($result, "[CATEGORY:{0}]", $cat);
-				append_line($result, $content);
-				append_format_line($result, "[/CATEGORY]");
-			};
-		};
+	$patternsFile = combine_path(basepath, "docs/memory/patterns.md");
+	if(file_exists($patternsFile)){
+		return(read_file($patternsFile));
 	};
-	// Read project-specific memory
-	$projFile = combine_path($projectDir, "project_specific.md");
-	if(file_exists($projFile)){
-		$projContent = read_file($projFile);
-		if(!isnullorempty($projContent)){
-			append_format_line($result, "[CATEGORY:project_specific]");
-			append_line($result, $projContent);
-			append_format_line($result, "[/CATEGORY]");
-		};
-	};
-	return(string_builder_to_string($result));
+	return("");
 };
 
 script(parse_and_save_pattern_md)params($reply)
 {
-	$commonDir = combine_path(basepath, "docs/memory");
-	$projectDir = combine_path(get_project_dir(), "docs/memory");
-	if(!dir_exists($commonDir)){
-		create_dir($commonDir);
+	if(trim($reply) == "NO_CHANGE"){
+		nativelog("[dsl] Pattern MD unchanged (NO_CHANGE), skip write");
+		return(0);
 	};
-	if(!dir_exists($projectDir)){
-		create_dir($projectDir);
+	$memoryDir = combine_path(basepath, "docs/memory");
+	if(!dir_exists($memoryDir)){
+		create_dir($memoryDir);
 	};
-	$categories = "tool_usage,code_refactor,architecture,project_mgmt,debugging,general";
-	$catList = string_split($categories, ",");
-	$savedCount = 0;
-	looplist($catList){
-		$cat = $$;
-		$beginTag = format("[CATEGORY:{0}]", $cat);
-		$endTag = "[/CATEGORY]";
-		$startIdx = string_index_of($reply, $beginTag);
-		if($startIdx >= 0){
-			$contentStart = $startIdx + stringlength($beginTag);
-			$endIdx = string_index_of($reply, $endTag, $contentStart);
-			if($endIdx > $contentStart){
-				$content = string_trim(string_substring($reply, $contentStart, $endIdx - $contentStart));
-				if(!isnullorempty($content)){
-					$filePath = combine_path($commonDir, format("{0}.md", $cat));
-					write_file($filePath, $content);
-					$savedCount = $savedCount + 1;
-					nativelog("[dsl] Pattern MD saved: {0} ({1} chars)", $cat, stringlength($content));
-				};
-			};
-		};
+	$patternsFile = combine_path($memoryDir, "patterns.md");
+	$bakFile = combine_path($memoryDir, "patterns.md.bak");
+	if(file_exists($patternsFile)){
+		$oldContent = read_file($patternsFile);
+		write_file($bakFile, $oldContent);
 	};
-	// Handle project_specific category separately (save to project dir)
-	$psBeginTag = "[CATEGORY:project_specific]";
-	$psEndTag = "[/CATEGORY]";
-	$psStartIdx = string_index_of($reply, $psBeginTag);
-	if($psStartIdx >= 0){
-		$psContentStart = $psStartIdx + stringlength($psBeginTag);
-		$psEndIdx = string_index_of($reply, $psEndTag, $psContentStart);
-		if($psEndIdx > $psContentStart){
-			$psContent = string_trim(string_substring($reply, $psContentStart, $psEndIdx - $psContentStart));
-			if(!isnullorempty($psContent)){
-				$psFilePath = combine_path($projectDir, "project_specific.md");
-				write_file($psFilePath, $psContent);
-				$savedCount = $savedCount + 1;
-				nativelog("[dsl] Pattern MD saved: project_specific ({0} chars)", stringlength($psContent));
-			};
-		};
-	};
-	// If no category tags found, save entire reply to general.md
-	if($savedCount == 0 && !isnullorempty($reply)){
-		$filePath = combine_path($commonDir, "general.md");
-		write_file($filePath, $reply);
-		nativelog("[dsl] Pattern MD saved to general.md (no tags found)");
-	};
-	return($savedCount);
+	write_file($patternsFile, $reply);
+	nativelog("[dsl] Pattern MD saved to patterns.md ({0} chars)", stringlength($reply));
+	return(1);
 };
 
 script(trigger_pattern_recognition)params($recentCount)
@@ -775,81 +696,27 @@ script(trigger_pattern_recognition)params($recentCount)
 		$prompt = format("{0}\n\n【已有模式记忆（需合并去重）】：\n{1}", $prompt, $existingPatterns);
 	};
 
-	// Set pattern recognition system prompt with category output requirement
-	$sysPrompt = "根据情景记忆识别重复模式，与已有模式记忆合并去重。" +
-		"严格要求：每个模式必须引用具体情景记忆作为证据，禁止空洞归纳。" +
-		"禁止出现'建立xxx机制'、'深化xxx认知'等口号式描述。\n" +
-		"必须按以下类别分类输出，每个类别用标签包裹：\n" +
-		"[CATEGORY:tool_usage] 工具使用经验 [/CATEGORY]\n" +
-		"[CATEGORY:code_refactor] 代码改造经验 [/CATEGORY]\n" +
-		"[CATEGORY:architecture] 架构设计经验 [/CATEGORY]\n" +
-		"[CATEGORY:project_mgmt] 项目管理经验 [/CATEGORY]\n" +
-		"[CATEGORY:debugging] 调试排错经验 [/CATEGORY]\n" +
-		"[CATEGORY:general] 通用经验 [/CATEGORY]\n\n" +
-		"每个类别内容格式：\n" +
-		"- 模式：具体行为模式描述\n" +
-		"  证据：支撑的具体事例\n" +
-		"  建议：具体操作建议\n\n" +
-		"如果某类别无内容则省略该标签。与已有内容合并时去除重复，保留最精炼版本。" +
-		"每个类别控制在200字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
+	// Set pattern recognition system prompt (line-based format)
+	$sysPrompt = "你维护一份跨项目的模式记忆，记录反复出现的可操作模式。\n" +
+		"输入：最近情景记忆 + 当前模式记忆全文。\n" +
+		"输出规则：\n" +
+		"1. 每行一条，格式：[YYYY-MM-DD] 陈述（不超过80字）\n" +
+		"2. 只记可操作、可复现的具体模式（例：apply_diff遇含花括号代码块失败时改用insert_after）\n" +
+		"3. 禁止记录：抽象口号、一次性事件、心情态度类\n" +
+		"4. 已有模式本轮再次出现则更新日期；过时错误则删除\n" +
+		"5. 总条目不超过50，超过时删最老且不重要的\n" +
+		"6. 只输出完整md内容，不要解释、标题、表格、emoji、编号\n" +
+		"若无新增或变化，仅输出 NO_CHANGE 四字。";
 	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
 
 	// Send pattern recognition request
-	$prompt = format("{0}\n\n请识别模式并按类别输出，与已有内容合并去重。", $prompt);
+	$prompt = format("{0}\n\n请按上述规则输出完整模式md内容。", $prompt);
 	$prompt = getstringinlength($prompt, 100 * 1024, 1);
 	llm_chat_callback(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
 
 	nativelog("[dsl] trigger_pattern_recognition: pattern recognition request sent");
 };
 
-script(trigger_meta_cognition)params()
-{
-	nativelog("[dsl] trigger_meta_cognition called");
-
-	// Collect recent pattern memories
-	$patternMemories = semantic_get_recent(@PatternMemory, 20);
-	if(isnullorempty($patternMemories) || $patternMemories == "[]"){
-		nativelog("[dsl] trigger_meta_cognition: no pattern memories, skip");
-		return;
-	};
-
-	$episodicMemories = semantic_get_recent(@EpisodicMemory, 10);
-
-	// Read existing meta_cognition.md
-	$commonDir = combine_path(basepath, "docs/memory");
-	$metaPath = combine_path($commonDir, "meta_cognition.md");
-	$existingMeta = "";
-	if(file_exists($metaPath)){
-		$existingMeta = read_file($metaPath);
-	};
-
-	$prompt = format("【模式记忆】：\n{0}\n\n【近期情景记忆】：\n{1}", $patternMemories, $episodicMemories);
-	if(!isnullorempty($existingMeta)){
-		$prompt = format("{0}\n\n【已有元认知（需合并去重）】：\n{1}", $prompt, $existingMeta);
-	};
-
-	// Set meta-cognition system prompt
-	$sysPrompt = "根据模式记忆和情景记忆，进行高层反思，与已有元认知合并去重。" +
-		"严格要求：每条原则必须附带具体案例，禁止空洞口号。" +
-		"禁止出现'建立xxx机制'、'深化xxx认知'、'强化xxx能力'等虚无描述。\n" +
-		"输出格式：\n" +
-		"## 决策原则\n" +
-		"- 原则描述（附具体案例）\n\n" +
-		"## 认知偏差\n" +
-		"- 偏差描述（附触发场景）\n\n" +
-		"## 改进建议\n" +
-		"- 具体可执行的操作建议\n\n" +
-		"与已有内容合并时去除重复，保留最精炼版本。" +
-		"控制在500字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
-	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
-
-	// Send meta-cognition request
-	$prompt = format("{0}\n\n请进行元认知反思，与已有内容合并去重。", $prompt);
-	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat_callback(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
-
-	nativelog("[dsl] trigger_meta_cognition: meta-cognition request sent");
-};
 script(SaveHistory)params()
 {
 	$conversationCount = semantic_count(@LegionnaireHistory);
@@ -1041,16 +908,14 @@ script(handle_agent_notification)params($jsonData)
 
 		// Check episodic memory count and trigger pattern recognition
 		$episodicCount = semantic_count(@EpisodicMemory);
-		$patternCount = semantic_count(@PatternMemory);
-		if ($episodicCount >= ($patternCount + 1) * 5) {
-			$newCount = $episodicCount - $patternCount * 5;
-			nativelog("[dsl] Episodic memory count {0}, pattern count {1}, triggering pattern recognition", $episodicCount, $patternCount);
-			trigger_pattern_recognition($newCount);
+		$lastPatternEpisodicCount = get_context_var("LastPatternEpisodicCount", "session");
+		if (isnull($lastPatternEpisodicCount)) {
+			$lastPatternEpisodicCount = 0;
 		};
-		$metaCount = semantic_count(@MetaCognitionMemory);
-		if ($patternCount >= ($metaCount + 1) * 3) {
-			nativelog("[dsl] Pattern memory count {0}, meta-cognition count {1}, triggering meta-cognition", $patternCount, $metaCount);
-			trigger_meta_cognition();
+		if ($episodicCount - $lastPatternEpisodicCount >= 30) {
+			set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
+			nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
+			trigger_pattern_recognition(30);
 		};
 		if (add_cur_context_rounds() == 0) {
 			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());

@@ -337,6 +337,26 @@ namespace DotNetLib
             }
         }
     }
+    sealed class ExecuteMetaDslExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: execute_metadsl(dsl_code), aliased as executemetadsl");
+                return BoxedValue.From(-1);
+            }
+            string dslCode = operands[0].AsString;
+            bool hasError;
+            string res;
+            if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
+                res = Lib.ExecuteMetaDslScript(dslCode, out hasError);
+            }
+            else {
+                res = CefDotnetAppApi.ExecuteMetaDslScript(dslCode, out hasError);
+            }
+            return BoxedValue.From(Tuple.Create(BoxedValue.FromBool(hasError), BoxedValue.FromString(res)));
+        }
+    }
     sealed class NativeLogExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -3265,7 +3285,12 @@ namespace DotNetLib
         // Execute MetaDSL script
         private static string ExecuteMetaDslScript(string script)
         {
+            return ExecuteMetaDslScript(script, out var hasError);
+        }
+        internal static string ExecuteMetaDslScript(string script, out bool hasError)
+        {
             try {
+                hasError = false;
                 // Execute the script directly using the DSL interpreter
                 RefreshGlobalVars();
                 NativeApi.ClearApiErrorInfo();
@@ -3290,16 +3315,19 @@ namespace DotNetLib
                     sb.AppendLine(resultStr);
                 }
                 if (NativeApi.HasApiErrorInfo) {
+                    hasError = true;
                     sb.AppendLine();
                     sb.Append(NativeApi.GetApiErrorInfo());
                 }
                 if (BatchCommand.BatchScript.HasDslErrors) {
+                    hasError = true;
                     sb.AppendLine();
                     sb.Append(BatchCommand.BatchScript.GetDslErrors());
                 }
                 return sb.ToString();
             }
             catch (Exception ex) {
+                hasError = true;
                 NativeLogNoLock($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
                 return $"Error: {ex.Message}";
             }
@@ -3312,6 +3340,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name,args,...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
+            BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
+            BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
@@ -3455,6 +3485,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
+            BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
+            BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());

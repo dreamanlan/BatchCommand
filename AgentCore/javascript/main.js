@@ -48,7 +48,9 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             },
 
             getHistory: function (count) {
-                const messages = messageHandler.getConversationContext(count || 10);
+                // Always return full history for external API consumers
+                // Pass 'openai' as apiType to ensure full history (not optimized for auto_metadsl)
+                const messages = messageHandler.getConversationContext(count || 10, 'openai');
                 return messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
             },
 

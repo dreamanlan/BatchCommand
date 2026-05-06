@@ -80,8 +80,46 @@ class MessageHandler {
         };
     }
 
-    getConversationContext(maxMessages) {
-        // Default to contextRounds * 2 (each round = user + assistant pair)
+    getConversationContext(maxMessages, apiType) {
+        // Build context array starting with system prompt if available
+        const contextMessages = [];
+
+        // Add dialog prompt as first message if set
+        if (this.dialogPrompt) {
+            contextMessages.push({
+                role: 'system',
+                content: this.dialogPrompt
+            });
+        }
+
+        // For auto_metadsl, only send system prompt + last user message
+        // (server maintains history via conversation_id)
+        if (apiType === 'auto_metadsl') {
+            // Find the last user message (could be anywhere in history)
+            let lastUserMsg = null;
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                if (this.messages[i].role === 'user') {
+                    lastUserMsg = this.messages[i];
+                    break;
+                }
+            }
+            
+            if (lastUserMsg) {
+                contextMessages.push({
+                    role: lastUserMsg.role,
+                    content: lastUserMsg.content
+                });
+            }
+            
+            if (msgLogger) msgLogger.debug('Auto MetaDSL context:', { 
+                messageCount: contextMessages.length,
+                hasSystem: !!this.dialogPrompt,
+                hasLastUserMsg: !!lastUserMsg
+            });
+            return contextMessages;
+        }
+
+        // For OpenAI/Claude, build full conversation history (original logic)
         const limit = maxMessages || this.config.contextRounds * 2;
         const maxChars = this.config.maxContextChars;
 
@@ -106,17 +144,6 @@ class MessageHandler {
             }
         }
         const trimmedMessages = messages.slice(startIdx);
-
-        // Build context array starting with system prompt if available
-        const contextMessages = [];
-
-        // Add dialog prompt as first message if set
-        if (this.dialogPrompt) {
-            contextMessages.push({
-                role: 'system',
-                content: this.dialogPrompt
-            });
-        }
 
         // Add conversation messages
         contextMessages.push(...trimmedMessages);

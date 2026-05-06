@@ -18,7 +18,6 @@ script(init_global_consts)
 			@LegionnaireHistory = @ProjectIdentity + "_legionnaire_history";
 			@EpisodicMemory = @ProjectIdentity + "_episodic_memory";
 			@PatternMemory = @ProjectIdentity + "_pattern_memory";
-			@MetaCognitionMemory = @ProjectIdentity + "_meta_cognition_memory";
 		};
 	};
 };
@@ -271,23 +270,10 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	}
 	elif ($tag == "pattern_recognition") {
 		parse_and_save_pattern_md($reply);
-		$summary = getstringinlength($reply, 500, 0);
+		$summary = getstringinlength($reply, 600, 0);
 		semantic_add(@PatternMemory, $summary, to_json({source: "pattern_recognition", date: date_time_str(), type: "pattern", storage: "md_files"}));
 		llm_clear_history(@LlmProviderId, "pattern_recognition");
 		nativelog("[dsl] Pattern memory saved to MD files, summary: {0}", $summary);
-	}
-	elif ($tag == "meta_cognition") {
-		$commonDir = combine_path(basepath, "docs/memory");
-		if(!dir_exists($commonDir)){
-			create_dir($commonDir);
-		};
-		$metaPath = combine_path($commonDir, "meta_cognition.md");
-		write_file($metaPath, $reply);
-		nativelog("[dsl] Meta-cognition MD saved: {0} chars", stringlength($reply));
-		$summary = getstringinlength($reply, 500, 0);
-		semantic_add(@MetaCognitionMemory, $summary, to_json({source: "meta_cognition", date: date_time_str(), type: "meta_cognition", storage: "md_file"}));
-		llm_clear_history(@LlmProviderId, "meta_cognition");
-		nativelog("[dsl] Meta-cognition summary saved: {0}", $summary);
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -515,7 +501,6 @@ script(handle_update_project_config_command)params($id, $params)
 	semantic_init(@LegionnaireHistory);
 	semantic_init(@EpisodicMemory);
 	semantic_init(@PatternMemory);
-	semantic_init(@MetaCognitionMemory);
 
 	$response = build_agent_response($id, true, "ok", "");
 	send_response_to_inject($response);
@@ -651,7 +636,7 @@ script(trigger_reflection)params()
 		"【方法】：用了什么工具和具体命令\n" +
 		"【结果】：成功/失败及具体表现\n" +
 		"【教训】：踩过的坑（附具体场景）\n\n" +
-		"控制在300字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
+		"控制在500字以内（超出会被截断丢弃），一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
 	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
 
 	// Send reflection request
@@ -787,7 +772,7 @@ script(trigger_pattern_recognition)params($recentCount)
 		"  证据：支撑的具体事例\n" +
 		"  建议：具体操作建议\n\n" +
 		"如果某类别无内容则省略该标签。与已有内容合并时去除重复，保留最精炼版本。" +
-		"每个类别控制在200字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
+		"每个类别控制在100字以内，总字数不超过600字（超出会被截断丢弃），一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
 	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
 
 	// Send pattern recognition request
@@ -798,54 +783,6 @@ script(trigger_pattern_recognition)params($recentCount)
 	nativelog("[dsl] trigger_pattern_recognition: pattern recognition request sent");
 };
 
-script(trigger_meta_cognition)params()
-{
-	nativelog("[dsl] trigger_meta_cognition called");
-
-	// Collect recent pattern memories
-	$patternMemories = semantic_get_recent(@PatternMemory, 20);
-	if(isnullorempty($patternMemories) || $patternMemories == "[]"){
-		nativelog("[dsl] trigger_meta_cognition: no pattern memories, skip");
-		return;
-	};
-
-	$episodicMemories = semantic_get_recent(@EpisodicMemory, 10);
-
-	// Read existing meta_cognition.md
-	$commonDir = combine_path(basepath, "docs/memory");
-	$metaPath = combine_path($commonDir, "meta_cognition.md");
-	$existingMeta = "";
-	if(file_exists($metaPath)){
-		$existingMeta = read_file($metaPath);
-	};
-
-	$prompt = format("【模式记忆】：\n{0}\n\n【近期情景记忆】：\n{1}", $patternMemories, $episodicMemories);
-	if(!isnullorempty($existingMeta)){
-		$prompt = format("{0}\n\n【已有元认知（需合并去重）】：\n{1}", $prompt, $existingMeta);
-	};
-
-	// Set meta-cognition system prompt
-	$sysPrompt = "根据模式记忆和情景记忆，进行高层反思，与已有元认知合并去重。" +
-		"严格要求：每条原则必须附带具体案例，禁止空洞口号。" +
-		"禁止出现'建立xxx机制'、'深化xxx认知'、'强化xxx能力'等虚无描述。\n" +
-		"输出格式：\n" +
-		"## 决策原则\n" +
-		"- 原则描述（附具体案例）\n\n" +
-		"## 认知偏差\n" +
-		"- 偏差描述（附触发场景）\n\n" +
-		"## 改进建议\n" +
-		"- 具体可执行的操作建议\n\n" +
-		"与已有内容合并时去除重复，保留最精炼版本。" +
-		"控制在500字以内，一次回复输出完成（不要使用记忆tool，结果数据持续入库）";
-	llm_set_system_prompt(@LlmProviderId, "meta_cognition", "meta_cognition", $sysPrompt);
-
-	// Send meta-cognition request
-	$prompt = format("{0}\n\n请进行元认知反思，与已有内容合并去重。", $prompt);
-	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat_callback(@LlmProviderId, "meta_cognition", "meta_cognition", $prompt);
-
-	nativelog("[dsl] trigger_meta_cognition: meta-cognition request sent");
-};
 script(SaveHistory)params()
 {
 	$conversationCount = semantic_count(@LegionnaireHistory);
@@ -1041,12 +978,7 @@ script(handle_agent_notification)params($jsonData)
 		if ($episodicCount >= ($patternCount + 1) * 5) {
 			$newCount = $episodicCount - $patternCount * 5;
 			nativelog("[dsl] Episodic memory count {0}, pattern count {1}, triggering pattern recognition", $episodicCount, $patternCount);
-			trigger_pattern_recognition($newCount);
-		};
-		$metaCount = semantic_count(@MetaCognitionMemory);
-		if ($patternCount >= ($metaCount + 1) * 3) {
-			nativelog("[dsl] Pattern memory count {0}, meta-cognition count {1}, triggering meta-cognition", $patternCount, $metaCount);
-			trigger_meta_cognition();
+			//trigger_pattern_recognition($newCount);
 		};
 		if (add_cur_context_rounds() == 0) {
 			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());

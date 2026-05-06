@@ -284,13 +284,17 @@ class UIController {
         this.showLoading();
 
         let fullResponse = '';
+        let assistantMessageId = null;
 
         try {
-            // Get conversation context (auto context is built-in)
-            const messages = this.messageHandler.getConversationContext();
+            // Get API type for context optimization
+            const config = this.apiClient.getConfig();
+            
+            // Get conversation context (optimized for auto_metadsl)
+            const messages = this.messageHandler.getConversationContext(undefined, config.apiType);
 
             // Create assistant message placeholder
-            const assistantMessageId = this.createAssistantMessagePlaceholder();
+            assistantMessageId = this.createAssistantMessagePlaceholder();
 
             // Send to API with streaming
             fullResponse = '';
@@ -350,6 +354,19 @@ class UIController {
     }
 
     displayMessage(role, content) {
+        // Check if we need to remove old messages to maintain display limit
+        const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2; // 12 * 2 = 24
+        const currentVisibleMessages = this.elements.messagesArea.querySelectorAll('.vac-message-wrapper').length;
+        
+        // Remove oldest message if we exceed the display limit
+        if (currentVisibleMessages >= displayLimit) {
+            const oldestMessage = this.elements.messagesArea.querySelector('.vac-message-wrapper');
+            if (oldestMessage) {
+                oldestMessage.remove();
+                if (uiLogger) uiLogger.debug('Removed oldest message from display (limit: ' + displayLimit + ')');
+            }
+        }
+        
         const wrapper = document.createElement('div');
         wrapper.className = 'vac-message-wrapper';
         if (role === 'user') {
@@ -469,7 +486,16 @@ scrollToBottom() {
 
 loadExistingMessages() {
     const messages = this.messageHandler.messages;
-    messages.forEach(msg => {
+    // Only display the last 12 rounds (24 messages) on the page
+    // Older messages are still stored in localStorage but not displayed
+    const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2; // 12 * 2 = 24
+    const messagesToDisplay = messages.slice(-displayLimit);
+    
+    if (messagesToDisplay.length < messages.length) {
+        if (uiLogger) uiLogger.info('Displaying last ' + messagesToDisplay.length + ' of ' + messages.length + ' messages');
+    }
+    
+    messagesToDisplay.forEach(msg => {
         const wrapper = this.displayMessage(msg.role, msg.content);
         // Add el-tag for assistant messages (history messages are already complete)
         if (msg.role === 'assistant' && wrapper) {

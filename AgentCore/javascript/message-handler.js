@@ -92,36 +92,9 @@ class MessageHandler {
             });
         }
 
-        // For auto_metadsl, only send system prompt + last user message
-        // (server maintains history via conversation_id)
-        if (apiType === 'auto_metadsl') {
-            // Find the last user message (could be anywhere in history)
-            let lastUserMsg = null;
-            for (let i = this.messages.length - 1; i >= 0; i--) {
-                if (this.messages[i].role === 'user') {
-                    lastUserMsg = this.messages[i];
-                    break;
-                }
-            }
-            
-            if (lastUserMsg) {
-                contextMessages.push({
-                    role: lastUserMsg.role,
-                    content: lastUserMsg.content
-                });
-            }
-            
-            if (msgLogger) msgLogger.debug('Auto MetaDSL context:', { 
-                messageCount: contextMessages.length,
-                hasSystem: !!this.dialogPrompt,
-                hasLastUserMsg: !!lastUserMsg
-            });
-            return contextMessages;
-        }
-
-        // For OpenAI/Claude, build full conversation history (original logic)
+        // For auto_metadsl, manage full conversation context locally (no conversation_id on server)
+        // Frontend controls all context to avoid MetaDSL execution result accumulation
         const limit = maxMessages || this.config.contextRounds * 2;
-        const maxChars = this.config.maxContextChars;
 
         // Get last N messages and clean content for context
         // Skip cleaning for the last message only if it is a user message (current request)
@@ -133,20 +106,13 @@ class MessageHandler {
             content: (skipLastClean && idx === lastIdx) ? m.content : this.cleanContentForContext(m.role, m.content)
         }));
 
-        // Truncate if total chars exceed maxContextChars
-        let totalChars = 0;
-        let startIdx = 0;
-        for (let i = messages.length - 1; i >= 0; i--) {
-            totalChars += messages[i].content.length;
-            if (totalChars > maxChars) {
-                startIdx = i + 1;
-                break;
-            }
-        }
-        const trimmedMessages = messages.slice(startIdx);
-
         // Add conversation messages
-        contextMessages.push(...trimmedMessages);
+        contextMessages.push(...messages);
+
+        if (msgLogger) msgLogger.debug('OpenAI/Claude context:', { 
+            messageCount: contextMessages.length,
+            limit: limit
+        });
 
         return contextMessages;
     }
@@ -155,19 +121,15 @@ class MessageHandler {
         if (!content) return '';
 
         if (role === 'user') {
-            // Replace agent reply content with placeholder
+            // Replace MetaDSL execution results (agent reply) with placeholder to reduce context size
             const agentReplyMarker = '\u3010Agent\u56de\u590d\u3011'; // Agent reply marker
             if (content.startsWith(agentReplyMarker)) {
                 return '...';
             }
         }
 
-        if (role === 'assistant') {
-            // Remove MetaDSL code blocks (markdown fenced blocks starting with // @execute or # @execute)
-            content = content.replace(/```[^\n]*\n\s*(\/\/ @execute|# @execute)[\s\S]*?```/g, '');
-            // Clean up excessive blank lines left after removal
-            content = content.replace(/\n{3,}/g, '\n\n').trim();
-        }
+        // Note: assistant messages (including MetaDSL code blocks) are kept intact
+        // so the model can see what code it previously generated
 
         return content;
     }

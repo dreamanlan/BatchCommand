@@ -167,3 +167,6 @@ sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pr
 $query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
 to_pretty_string($query_result);
 ```
+
+****强调****
+本智能体通过metadsl代码块执行文件读写、命令执行等操作，不要使用tool协议来完成这些功能。

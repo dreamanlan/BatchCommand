@@ -11,12 +11,10 @@ class APIClient {
         this.config = this.loadConfig();
         this.abortController = null;
         this.conversationId = ''; // For auto_metadsl conversation management
-        this.autoMetaDSLRoundCount = 0; // Track rounds for periodic system prompt injection
     }
 
     resetConversation() {
         this.conversationId = '';
-        this.autoMetaDSLRoundCount = 0;
         if (apiLogger) apiLogger.info('Conversation reset');
     }
 
@@ -84,7 +82,7 @@ class APIClient {
         } else if (this.config.apiType === 'claude') {
             return await this.sendClaudeMessage(messages, onChunk);
         } else if (this.config.apiType === 'auto_metadsl') {
-            return await this.sendAutoMetaDSLMessage(messages, onChunk, contextRounds);
+            return await this.sendAutoMetaDSLMessage(messages, onChunk);
         } else {
             throw new Error('Unsupported API type: ' + this.config.apiType);
         }
@@ -149,36 +147,37 @@ class APIClient {
         return await this.handleStreamResponse(response, onChunk, 'claude');
     }
 
-    async sendAutoMetaDSLMessage(messages, onChunk, contextRounds) {
+    async sendAutoMetaDSLMessage(messages, onChunk) {
         const endpoint = this.getEndpoint();
 
-        // Get the last user message (should be the only user message after optimization)
-        const lastUserMessage = messages.filter(m => m.role === 'user').pop();
-        if (!lastUserMessage) {
-            throw new Error('No user message found');
-        }
-
-        // Build final message content
-        let messageContent = lastUserMessage.content;
+        // Build full context message in the same format as C# AutoMetaDslProvider
+        // Format: [role]: content\n for each message
+        let messageContent = '';
+        
+        // Always prepend system prompt (frontend manages context, server is stateless)
         const systemMessages = messages.filter(m => m.role === 'system');
-        
-        // Periodically prepend system context (dialogPrompt/project info)
-        // This ensures the server stays updated with the latest project information
-        if (contextRounds && contextRounds > 0 && this.autoMetaDSLRoundCount % contextRounds === 0) {
-            if (systemMessages.length > 0) {
-                const systemContext = systemMessages.map(m => m.content).join('\n\n');
-                messageContent = systemContext + '\n\n' + messageContent;
-                if (apiLogger) apiLogger.info('Injected system context (project info) at round:', { round: this.autoMetaDSLRoundCount });
-            }
+        if (systemMessages.length > 0) {
+            const systemContext = systemMessages.map(m => m.content).join('\n\n');
+            messageContent += '[system]: ' + systemContext + '\n';
         }
         
-        this.autoMetaDSLRoundCount++;
+        // Append all user/assistant history messages (already cleaned by getConversationContext)
+        const conversationMessages = messages.filter(m => m.role !== 'system');
+        for (const m of conversationMessages) {
+            messageContent += '[' + m.role + ']: ' + m.content + '\n';
+        }
+        
+        if (!messageContent.trim()) {
+            throw new Error('No message content to send');
+        }
 
         // Build request body in auto_metadsl format
+        // Note: conversation_id is intentionally not used to avoid server-side context accumulation
+        // Frontend manages all conversation context to prevent MetaDSL execution result bloat
         const requestBody = {
             input: {
                 message: messageContent,
-                conversation_id: this.conversationId || '',
+                conversation_id: '', // Always empty - frontend manages context
                 model: this.config.model || 'deepseek-v3.1',
                 stream: !!this.config.stream,
                 enable_web_search: false,
@@ -351,11 +350,7 @@ class APIClient {
                                 if (data.type === 'TEXT_MESSAGE_CONTENT') {
                                     content = data.rawEvent?.content || '';
                                     if (apiLogger) apiLogger.debug('Text content:', { content });
-                                    // Save conversation_id for next request
-                                    if (data.rawEvent?.conversation_id) {
-                                        this.conversationId = data.rawEvent.conversation_id;
-                                        if (apiLogger) apiLogger.info('Conversation ID:', { conversationId: this.conversationId });
-                                    }
+                                    // conversation_id not saved - frontend manages context independently
                                 } else {
                                     if (apiLogger) apiLogger.debug('Non-text message type:', { type: data.type });
                                 }

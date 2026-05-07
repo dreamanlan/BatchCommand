@@ -22,15 +22,15 @@ namespace CefDotnetApp.AgentCore.Core
         private string _authMode = "personal";
         private string _username = "";
         private bool _stream = true;
-        private bool _keepSession = true;
+        private bool _keepSession = false;
         private int _contextRounds = 12;
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         // send count per tag for periodic system prompt injection
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
-        // conversation_id per tag, updated from response to inherit history
+        // conversation_id per tag, updated from response to inherit history (only used when _keepSession=true)
         private readonly ConcurrentDictionary<string, string> _conversationIds = new();
-        // local history per tag for _keepSession=false mode
+        // local history per tag: standard messages list (aligned with OpenAI/Claude providers)
         private readonly ConcurrentDictionary<string, List<(string role, string content)>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         // chat_extra entries per tag: tag -> (key -> values[])
@@ -102,19 +102,32 @@ namespace CefDotnetApp.AgentCore.Core
             string finalMessage;
             if (!_keepSession)
             {
-                // local history mode: always prepend system prompt + history
+                // local history mode: build full context like OpenAI/Claude providers
                 var history = _sessions.GetOrAdd(tag, _ => new List<(string, string)>());
+                lock (history) { history.Add(("user", message)); }
+
                 var sb = new StringBuilder();
+                // Always prepend system prompt
                 if (_systemPrompts.TryGetValue(tag, out var sp) && !string.IsNullOrEmpty(sp))
-                    sb.Append(sp).Append('\n');
+                    sb.Append("[system]: ").Append(sp).Append('\n');
+
+                // Send only the last _contextRounds * 2 messages (aligned with OpenAI/Claude behavior)
+                // Note: the last user message (current round) is NOT cleaned so the model can see execution results
+                int maxMessages = _contextRounds * 2;
                 lock (history)
                 {
-                    foreach (var (role, content) in history)
+                    int start = Math.Max(0, history.Count - maxMessages);
+                    int lastIdx = history.Count - 1;
+                    for (int i = start; i < history.Count; i++)
+                    {
+                        var (role, content) = history[i];
+                        // Clean historical user messages that are execution results (keep current round intact)
+                        if (role == "user" && i < lastIdx && content.StartsWith("\u3010Agent\u56de\u590d\u3011"))
+                            content = "...";
                         sb.Append('[').Append(role).Append("]: ").Append(content).Append('\n');
+                    }
                 }
-                sb.Append("[User]: ").Append(message);
                 finalMessage = sb.ToString();
-                lock (history) { history.Add(("User", message)); }
             }
             else
             {
@@ -208,16 +221,17 @@ namespace CefDotnetApp.AgentCore.Core
             if (_keepSession)
                 _conversationIds[tag] = newConvId;
 
-            // record assistant reply in local history
+            // record assistant reply in local history (kept intact, model needs to see its own code)
             if (!_keepSession)
             {
                 var hist = _sessions.GetOrAdd(tag, _ => new List<(string, string)>());
                 lock (hist)
                 {
-                    hist.Add(("Assistant", reply));
-                    // keep local history bounded
-                    if (hist.Count > 128)
-                        hist.RemoveRange(0, hist.Count - 128);
+                    hist.Add(("assistant", reply));
+                    // keep local history bounded (contextRounds * 2 messages)
+                    int maxMessages = _contextRounds * 2;
+                    if (hist.Count > maxMessages)
+                        hist.RemoveRange(0, hist.Count - maxMessages);
                 }
             }
             return reply;

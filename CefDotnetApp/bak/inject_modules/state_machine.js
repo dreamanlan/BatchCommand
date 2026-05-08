@@ -238,7 +238,7 @@
       this.info('Exiting scanning code blocks state');
       const newConvs = this.monitor.pageAdapter.extractNewConversations();
       if (newConvs.length > 0) {
-        this.monitor.bridge.sendNotification('save_conversation_history', { conversations: newConvs });
+        this.monitor.bridge.sendNotification('save_conversation_history', { conversations: newConvs, pageType:this.monitor.pageAdapter.pageType });
         this.info(`Sent save_conversation_history notification with ${newConvs.length} new conversation(s)`);
       }
       // Trigger onLLMResponse callback for remote forwarding

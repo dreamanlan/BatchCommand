@@ -36,6 +36,7 @@ class UIController {
             streamGroup: document.getElementById('stream-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
             maxContextCharsInput: document.getElementById('max-context-chars'),
+            maxHistoryMessagesInput: document.getElementById('max-history-messages'),
             saveBtn: document.getElementById('save-btn'),
             cancelBtn: document.getElementById('cancel-btn'),
             errorMessage: document.getElementById('error-message')
@@ -355,7 +356,7 @@ class UIController {
 
     displayMessage(role, content) {
         // Check if we need to remove old messages to maintain display limit
-        const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2; // 12 * 2 = 24
+        const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
         const currentVisibleMessages = this.elements.messagesArea.querySelectorAll('.vac-message-wrapper').length;
         
         // Remove oldest message if we exceed the display limit
@@ -486,9 +487,9 @@ scrollToBottom() {
 
 loadExistingMessages() {
     const messages = this.messageHandler.messages;
-    // Only display the last 12 rounds (24 messages) on the page
+    // Only display the last N rounds on the page
     // Older messages are still stored in localStorage but not displayed
-    const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2; // 12 * 2 = 24
+    const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
     const messagesToDisplay = messages.slice(-displayLimit);
     
     if (messagesToDisplay.length < messages.length) {
@@ -518,6 +519,7 @@ showConfigModal() {
     const contextConfig = this.messageHandler.getContextConfig();
     this.elements.contextRoundsInput.value = contextConfig.contextRounds;
     this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
+    this.elements.maxHistoryMessagesInput.value = contextConfig.maxHistoryMessages;
 
     this.updateModelOptions(config.apiType);
     this.updateAutoMetaDSLFields(config.apiType);
@@ -604,6 +606,7 @@ saveConfiguration() {
     const model = this.elements.modelSelect.value;
     const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
     const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
+    const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
 
     // API key is optional for auto_metadsl
     if (apiType !== 'auto_metadsl' && !apiKey) {
@@ -628,6 +631,11 @@ saveConfiguration() {
         return;
     }
 
+    if (isNaN(maxHistoryMessages) || maxHistoryMessages < 10 || maxHistoryMessages > 200) {
+        this.showError('Max history messages must be between 10 and 200');
+        return;
+    }
+
     const stream = this.elements.streamCheckbox.checked;
     const config = {
         apiType: apiType,
@@ -645,12 +653,13 @@ saveConfiguration() {
     // Save context configuration
     this.messageHandler.setContextConfig({
         contextRounds: contextRounds,
-        maxContextChars: maxContextChars
+        maxContextChars: maxContextChars,
+        maxHistoryMessages: maxHistoryMessages
     });
 
     if (uiLogger) uiLogger.info('Configuration saved:', {
         api: config,
-        context: { contextRounds, maxContextChars }
+        context: { contextRounds, maxContextChars, maxHistoryMessages }
     });
 
     this.hideConfigModal();

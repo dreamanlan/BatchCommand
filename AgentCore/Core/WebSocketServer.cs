@@ -339,7 +339,7 @@ namespace CefDotnetApp.AgentCore.Core
                                 // Determine whether to append context for this round
                                 int maxRounds = AgentCore.Instance.MaxContextRounds;
                                 int rounds = _contextRounds.AddOrUpdate(msg.client, 0, (_, old) => old + 1);
-                                bool appendContext = (maxRounds <= 1) || (rounds % maxRounds == 0);
+                                bool appendContext = AgentCore.Instance.ContextInjectionEnabled && ((maxRounds <= 1) || (rounds % maxRounds == 0));
                                 // Clearing the User Context Rounds when using MetaDSL code
                                 AgentCore.Instance.CurContextRounds = 0;
 

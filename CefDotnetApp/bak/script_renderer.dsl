@@ -187,6 +187,9 @@ script(on_receive_cef_message)params($msg,$args,$srcProcId)
 		if (funcexists($msg)) {
 			redirectcall($msg, $args);
 		}
+		elif (string_contains($msg, ".")) {
+			//ignore messages with dot in name, which are likely from cef
+		}
 		else {
 			redirectcall("handle_" + $msg, $args);
 			//nativeapi.SendJavascriptCallForDSL("alert", [$msg]);
@@ -738,6 +741,67 @@ script(SaveHistory)params()
 	set_history($historyStr);
 };
 
+script(UpdateSystemPrompt)params($pageType,$isFirst)
+{
+	// Read context file
+	$basePromptFile = combine_path(basepath, "docs/system_prompt.txt");
+	$toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
+	$emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
+	$projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
+	$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
+	$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
+	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
+	$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
+	$historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
+
+	$basePrompt = read_file($basePromptFile);
+	$toplevelRules = read_file($toplevelRulesFile);
+	$emphasize = read_file($emphasizeFile);
+	$projectPrompt = read_file($projectPromptFile);
+	$plan = read_file($planFile);
+	$soul = read_file($soulFile);
+	$context = read_file($contextFile);
+	$todo = read_file($todoFile);
+	$history = read_file($historyFile);
+
+	nativelog("[dsl] Base prompt length: {0}", $basePrompt.Length);
+	nativelog("[dsl] Toplevel rules length: {0}", $toplevelRules.Length);
+	nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
+	nativelog("[dsl] Emphasize length: {0}", $emphasize.Length);
+	nativelog("[dsl] Plan length: {0}", $plan.Length);
+	nativelog("[dsl] Soul length: {0}", $soul.Length);
+	nativelog("[dsl] Context length: {0}", $context.Length);
+	nativelog("[dsl] Todo length: {0}", $todo.Length);
+	nativelog("[dsl] History length: {0}", $history.Length);
+
+	if ($pageType == "local-agent") {
+		$prompt = $projectPrompt + "\n\n" + $context + "\n\n" + $history + "\n\n" + $todo + "\n\n" + $emphasize;
+	} else {
+		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize;
+	};
+	set_system_prompt($prompt);
+	set_project_prompt($projectPrompt);
+
+	if ($isFirst) {
+		set_emphasize($emphasize);
+		set_plan($plan);
+		set_soul($soul);
+		set_context($context);
+		set_todo($todo);
+		set_history($history);
+	};
+
+	send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
+
+	if (@EnableLlmPM) {
+		$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
+		$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
+		llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
+		llm_set_system_prompt(@LlmProviderId, "llm_pm_context", $llm_sys_prompt);
+		llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
+	};
+};
+
 // Handle agent notification
 script(handle_agent_notification)params($jsonData)
 {
@@ -758,6 +822,13 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
+		if ($pageType == "local-agent") {
+			enable_context_injection(false);
+		}
+		else {
+			enable_context_injection(true);
+		};
+
 		// Agent is initialized and ready to receive commands
 		// You can send initial commands here
 		ws_start_server(9527);
@@ -777,52 +848,8 @@ script(handle_agent_notification)params($jsonData)
 		$data = get_message_param($notif, "data");
 		$pageType = get_message_param($data, "pageType");
 
-		// Read context file
-		$basePromptFile = combine_path(basepath, "docs/system_prompt.txt");
-		$toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
-		$emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
-		$projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
-		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-		$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
-
-		$basePrompt = read_file($basePromptFile);
-		$toplevelRules = read_file($toplevelRulesFile);
-		$projectPrompt = read_file($projectPromptFile);
-		$emphasize = read_file($emphasizeFile);
-		$emphasize = format("{0}\n\n## 当前日期\n{1}\n（请对照 soul.md 的‘回顾节奏’小节，如已到或逾期‘下次回顾’日期，请在本轮回复开头主动提醒用户进行回顾）", $emphasize, date_time_str("yyyy-MM-dd"));
-		$plan = read_file($planFile);
-		$soul = read_file($soulFile);
-
-		nativelog("[dsl] Base prompt length: {0}", $basePrompt.Length);
-		nativelog("[dsl] Toplevel rules length: {0}", $toplevelRules.Length);
-		nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
-		nativelog("[dsl] Emphasize length: {0}", $emphasize.Length);
-		nativelog("[dsl] Plan length: {0}", $plan.Length);
-		nativelog("[dsl] Soul length: {0}", $soul.Length);
-
-		if ($pageType == "local-agent") {
-			$prompt = $projectPrompt + "\n\n" + $emphasize;
-		} else {
-			$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize;
-		};
-		set_system_prompt($prompt);
-		set_project_prompt($projectPrompt);
-		set_emphasize($emphasize);
-		set_plan($plan);
-		set_soul($soul);
-		set_context(read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
-		set_todo(read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
-		set_history(read_file(combine_path(@ProjectDirectory, "docs/history.txt")));
-
-		send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
-
-		if (@EnableLlmPM) {
-			$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
-			$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
-			llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
-			llm_set_system_prompt(@LlmProviderId, "llm_pm_context", $llm_sys_prompt);
-			llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
-		};
+		nativelog("[dsl] LLM update system prompt pageType: {0}", $pageType);
+		UpdateSystemPrompt($pageType, true);
 
 		induction_plan();
 	}
@@ -863,6 +890,7 @@ script(handle_agent_notification)params($jsonData)
 
 		$data = get_message_param($notif, "data");
 		$conversations = get_message_param($data, "conversations");
+		$pageType = get_message_param($data, "pageType");
 		$count = size($conversations);
 
 		set_plan(read_file(combine_path(@ProjectDirectory, "docs/plan.txt")));
@@ -917,10 +945,12 @@ script(handle_agent_notification)params($jsonData)
 			nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
 			trigger_pattern_recognition(30);
 		};
-		if (add_cur_context_rounds() == 0) {
+		if (is_context_injection_enabled() && add_cur_context_rounds() == 0) {
 			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());
 			send_command_to_inject("send_message", to_json({text: $prompt}));
 		};
+
+		UpdateSystemPrompt($pageType, false);
 	}
 	elif ($type == "agent_need_to_plan") {
 		// Planning heuristics have been moved to JS (plan_decider.js).

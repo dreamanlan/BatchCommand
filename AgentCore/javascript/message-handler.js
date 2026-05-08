@@ -11,8 +11,9 @@ class MessageHandler {
         this.messages = [];
         this.dialogPrompt = ''; // Dialog prompt that will be sent as first message
         this.config = {
-            contextRounds: 12, // Number of conversation rounds to include in auto context
-            maxContextChars: 128 * 1024 // Maximum characters for auto context (128KB)
+            contextRounds: 16, // Number of conversation rounds to include in auto context
+            maxContextChars: 128 * 1024, // Maximum characters for auto context (128KB)
+            maxHistoryMessages: 64 // Maximum messages to keep in memory and localStorage
         };
         this.loadHistory();
     }
@@ -31,8 +32,8 @@ class MessageHandler {
 
     saveHistory() {
         try {
-            // Keep only last 50 messages to avoid localStorage limits
-            const toSave = this.messages.slice(-50);
+            const limit = this.config.maxHistoryMessages;
+            const toSave = this.messages.slice(-limit);
             localStorage.setItem('llm_conversation_history', JSON.stringify(toSave));
         } catch (e) {
             if (msgLogger) msgLogger.error('Failed to save conversation history:', e);
@@ -46,6 +47,11 @@ class MessageHandler {
             timestamp: Date.now()
         };
         this.messages.push(message);
+        // Trim memory array to maxHistoryMessages
+        const limit = this.config.maxHistoryMessages;
+        if (this.messages.length > limit) {
+            this.messages = this.messages.slice(-limit);
+        }
         this.saveHistory();
         return message;
     }
@@ -106,10 +112,40 @@ class MessageHandler {
             content: (skipLastClean && idx === lastIdx) ? m.content : this.cleanContentForContext(m.role, m.content)
         }));
 
+        // Apply maxContextChars limit on history messages (exclude the last/current user message)
+        // When total history chars exceed the limit, keep only the most recent messages that fit
+        const maxChars = this.config.maxContextChars;
+        if (maxChars > 0 && messages.length > 1) {
+            // Separate current message (last) from history
+            const hasCurrentMsg = skipLastClean;
+            const historyEnd = hasCurrentMsg ? messages.length - 1 : messages.length;
+            let totalChars = 0;
+            let startFrom = 0;
+            // Walk backwards through history to find how many messages fit within maxChars
+            for (let i = historyEnd - 1; i >= 0; i--) {
+                totalChars += messages[i].content.length;
+                if (totalChars > maxChars) {
+                    startFrom = i + 1;
+                    break;
+                }
+            }
+            if (startFrom > 0) {
+                // Trim older history messages that exceed the char limit
+                const trimmed = messages.slice(startFrom);
+                if (msgLogger) msgLogger.info('Trimmed history by maxContextChars:', {
+                    removed: startFrom,
+                    remaining: trimmed.length,
+                    maxChars: maxChars
+                });
+                messages.length = 0;
+                messages.push(...trimmed);
+            }
+        }
+
         // Add conversation messages
         contextMessages.push(...messages);
 
-        if (msgLogger) msgLogger.debug('OpenAI/Claude context:', { 
+        if (msgLogger) msgLogger.debug('Context built:', { 
             messageCount: contextMessages.length,
             limit: limit
         });
@@ -140,6 +176,9 @@ class MessageHandler {
         }
         if (config.maxContextChars !== undefined) {
             this.config.maxContextChars = config.maxContextChars;
+        }
+        if (config.maxHistoryMessages !== undefined) {
+            this.config.maxHistoryMessages = config.maxHistoryMessages;
         }
         if (msgLogger) msgLogger.info('Updated context config:', this.config);
     }

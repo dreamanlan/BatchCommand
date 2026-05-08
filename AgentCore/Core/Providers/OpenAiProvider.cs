@@ -24,7 +24,8 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
         private bool _keepSession = false;
-        private int _contextRounds = 12;
+        private int _contextRounds = 16;
+        private int _maxContextChars = 128 * 1024; // 128KB default
         // gateway mode: "" = standard OpenAI, "boxai" = boxai gateway variant
         private string _gatewayMode = "";
         private string _anydevHost = "";
@@ -47,6 +48,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             if (key == "keep_session") _keepSession = value == "true" || value == "1";
             else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
+            else if (key == "max_context_chars" && int.TryParse(value, out var mcc) && mcc > 0) _maxContextChars = mcc;
             else if (key == "gateway_mode") _gatewayMode = value ?? "";
             else if (key == "anydev_host") _anydevHost = value ?? "";
             else if (key == "session_mode") _sessionMode = value ?? "";
@@ -92,6 +94,24 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     // local history mode: send full history + always prepend system prompt
                     snapshot = new List<object>(messages);
+                    // Apply maxContextChars limit on history (keep most recent messages that fit)
+                    if (_maxContextChars > 0 && snapshot.Count > 1)
+                    {
+                        int totalChars = 0;
+                        int startFrom = 0;
+                        for (int i = snapshot.Count - 2; i >= 0; i--) // skip last (current) message
+                        {
+                            var msgContent = GetMessageContent(snapshot[i]);
+                            totalChars += msgContent.Length;
+                            if (totalChars > _maxContextChars)
+                            {
+                                startFrom = i + 1;
+                                break;
+                            }
+                        }
+                        if (startFrom > 0)
+                            snapshot.RemoveRange(0, startFrom);
+                    }
                     if (_systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2))
                         snapshot.Insert(0, new { role = "system", content = sp2 });
                 }
@@ -152,6 +172,12 @@ namespace CefDotnetApp.AgentCore.Core
             if (root.TryGetProperty("error", out var err))
                 return $"[error] {err.GetRawText()}";
             return "[error] unexpected response format";
+        }
+
+        private static string GetMessageContent(object msg)
+        {
+            var prop = msg.GetType().GetProperty("content");
+            return prop?.GetValue(msg) as string ?? "";
         }
 
         private static HttpClient CreateHttpClient() => new HttpClient(

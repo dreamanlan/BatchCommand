@@ -23,7 +23,8 @@ namespace CefDotnetApp.AgentCore.Core
         private string _username = "";
         private bool _stream = true;
         private bool _keepSession = false;
-        private int _contextRounds = 12;
+        private int _contextRounds = 16;
+        private int _maxContextChars = 128 * 1024; // 128KB default
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         // send count per tag for periodic system prompt injection
@@ -54,6 +55,7 @@ namespace CefDotnetApp.AgentCore.Core
             else if (key == "stream") _stream = value == "true" || value == "1";
             else if (key == "keep_session") _keepSession = value == "true" || value == "1";
             else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
+            else if (key == "max_context_chars" && int.TryParse(value, out var mcc) && mcc > 0) _maxContextChars = mcc;
             else if (key == "timeout" && int.TryParse(value, out var ts) && ts > 0) _timeoutSeconds = ts;
         }
 
@@ -118,6 +120,24 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     int start = Math.Max(0, history.Count - maxMessages);
                     int lastIdx = history.Count - 1;
+
+                    // Apply maxContextChars limit: walk backwards through history (excluding last msg)
+                    // to find the start index where total chars fit within limit
+                    if (_maxContextChars > 0 && start < lastIdx)
+                    {
+                        int totalChars = 0;
+                        for (int i = lastIdx - 1; i >= start; i--)
+                        {
+                            var (_, c) = history[i];
+                            totalChars += c.Length;
+                            if (totalChars > _maxContextChars)
+                            {
+                                start = i + 1;
+                                break;
+                            }
+                        }
+                    }
+
                     for (int i = start; i < history.Count; i++)
                     {
                         var (role, content) = history[i];

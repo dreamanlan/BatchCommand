@@ -21,7 +21,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
-        private int _contextRounds = 12;
+        private int _contextRounds = 16;
         private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler

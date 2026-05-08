@@ -370,6 +370,35 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// enable_context_injection(value) - enable/disable context injection in MetaDSL results
+    /// </summary>
+    sealed class EnableContextInjectionExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("enable_context_injection requires (value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var val = operands[0].GetString();
+            CefDotnetApp.AgentCore.Core.AgentCore.Instance.ContextInjectionEnabled =
+                val == "true" || val == "1" || val == "True";
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// is_context_injection_enabled() - check if context injection is enabled
+    /// </summary>
+    sealed class IsContextInjectionEnabledExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(CefDotnetApp.AgentCore.Core.AgentCore.Instance.ContextInjectionEnabled);
+        }
+    }
+
+    /// <summary>
     /// set_max_worker_concurrency(value)
     /// </summary>
     sealed class SetMaxWorkerConcurrencyExp : SimpleExpressionBase
@@ -652,6 +681,15 @@ namespace AgentCore.ScriptApi
                 "add_cur_context_rounds() - atomically increment CurContextRounds by 1 mod MaxContextRounds, return new value",
                 false,
                 new ExpressionFactoryHelper<AddCurContextRoundsExp>());
+
+            AgentFrameworkService.Instance.DslEngine!.Register("enable_context_injection",
+                "enable_context_injection(value) - enable/disable context injection in MetaDSL results (true/false/1/0)",
+                false,
+                new ExpressionFactoryHelper<EnableContextInjectionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_context_injection_enabled",
+                "is_context_injection_enabled() - check if context injection is enabled, returns true/false",
+                false,
+                new ExpressionFactoryHelper<IsContextInjectionEnabledExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("set_max_worker_concurrency",
                 "set_max_worker_concurrency(value) - set max concurrent MetaDSL worker tasks (min 1, default 16)",

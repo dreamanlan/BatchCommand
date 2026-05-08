@@ -104,6 +104,8 @@ namespace CefDotnetApp.AgentCore.Core
 
         public int MaxLinesDeletedByWriteFile { get; set; } = 20;
         public int MaxResultSize { get; set; } = 0;
+        // Whether to inject context info into MetaDSL results at specified rounds
+        public bool ContextInjectionEnabled { get; set; } = true;
         // How often to append context info in WebSocket responses (0 = every round)
         public int MaxContextRounds { get; set; } = 3;
         // Current context round counter (atomic via Interlocked)

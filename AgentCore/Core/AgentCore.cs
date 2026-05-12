@@ -89,48 +89,28 @@ namespace CefDotnetApp.AgentCore.Core
         }
         public string BasePath => _basePath;
 
-        // Agent state properties - readable/writable by DSL scripts
-        public string ProjectDir { get; set; } = string.Empty;
-        public string ProjectIdentity { get; set; } = string.Empty;
-        public string SystemPrompt { get; set; } = string.Empty;
-        public string ProjectPrompt { get; set; } = string.Empty;
-        public string Plan { get; set; } = string.Empty;
-        public string Emphasize { get; set; } = string.Empty;
-        public string ToDo { get; set; } = string.Empty;
-        public string Context { get; set; } = string.Empty;
-        public string History { get; set; } = string.Empty;
-        public string InjectJsCode { get; set; } = string.Empty;
-        public string Soul { get; set; } = string.Empty;
-
+        // Global settings (not per-instance)
         public int MaxLinesDeletedByWriteFile { get; set; } = 20;
         public int MaxResultSize { get; set; } = 0;
-        // Whether to inject context info into MetaDSL results at specified rounds
-        public bool ContextInjectionEnabled { get; set; } = true;
-        // How often to append context info in WebSocket responses (0 = every round)
-        public int MaxContextRounds { get; set; } = 3;
-        // Current context round counter (atomic via Interlocked)
-        private int _curContextRounds = 0;
-        public int CurContextRounds
-        {
-            get => System.Threading.Interlocked.CompareExchange(ref _curContextRounds, 0, 0);
-            set => System.Threading.Interlocked.Exchange(ref _curContextRounds, value);
-        }
+
+        // Agent instances keyed by port number
+        private readonly ConcurrentDictionary<int, AgentInstance> _agentInstances = new();
+
         /// <summary>
-        /// Atomically increments CurContextRounds by 1, modulo MaxContextRounds.
-        /// When MaxContextRounds is 0, always returns 0.
-        /// Returns the new value after the operation.
+        /// Gets or creates an AgentInstance for the specified port.
         /// </summary>
-        public int AddCurContextRounds()
+        public AgentInstance GetOrCreateInstance(int port)
         {
-            int max = MaxContextRounds;
-            if (max <= 0)
-                return 0;
-            int oldVal, newVal;
-            do {
-                oldVal = _curContextRounds;
-                newVal = (oldVal + 1) % max;
-            } while (System.Threading.Interlocked.CompareExchange(ref _curContextRounds, newVal, oldVal) != oldVal);
-            return newVal;
+            return _agentInstances.GetOrAdd(port, p => new AgentInstance(p));
+        }
+
+        /// <summary>
+        /// Gets an AgentInstance for the specified port, or null if not found.
+        /// </summary>
+        public AgentInstance? GetInstance(int port)
+        {
+            _agentInstances.TryGetValue(port, out var inst);
+            return inst;
         }
 
         /// <summary>

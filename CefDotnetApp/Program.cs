@@ -3227,6 +3227,48 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("os", "os()");
             BatchCommand.BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
         }
+        internal static string GetMetaDslResult(StringBuilder resSb, StringBuilder errSb)
+        {
+            var sb = new StringBuilder();
+            int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
+            if (maxResultSize > 0) {
+                if (resSb.Length > maxResultSize) {
+                    if (errSb.Length > maxResultSize * 1 / 3) {
+                        sb.Append(resSb.ToString(0, maxResultSize * 2 / 3));
+                        sb.AppendLine("...");
+                        sb.Append(errSb.ToString(0, maxResultSize * 1 / 3));
+                        sb.Append("... [truncated, exceeded max result size ");
+                        sb.Append(maxResultSize);
+                        sb.AppendLine("]");
+                    }
+                    else {
+                        sb.Append(resSb.ToString(0, maxResultSize - errSb.Length));
+                        sb.AppendLine("...");
+                        sb.Append(errSb.ToString());
+                        sb.Append("... [truncated, exceeded max result size ");
+                        sb.Append(maxResultSize);
+                        sb.AppendLine("]");
+                    }
+                }
+                else {
+                    sb.Append(resSb.ToString());
+                    if (errSb.Length > maxResultSize - resSb.Length) {
+                        sb.AppendLine(errSb.ToString(0, maxResultSize - resSb.Length));
+                        sb.Append("... [truncated, exceeded max result size ");
+                        sb.Append(maxResultSize);
+                        sb.AppendLine("]");
+                    }
+                    else {
+                        sb.Append(resSb.ToString());
+                    }
+                }
+            }
+            else {
+                sb.Append(resSb.ToString());
+                sb.Append(errSb.ToString());
+            }
+            return sb.ToString();
+        }
 
         private static string GetStringInLength(List<string> args)
         {
@@ -3295,7 +3337,7 @@ namespace DotNetLib
                 RefreshGlobalVars();
                 NativeApi.ClearApiErrorInfo();
                 var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var sb = new StringBuilder();
+                var resSb = new StringBuilder();
                 if (!BatchCommand.BatchScript.HasDslErrors) {
                     var result = BatchCommand.BatchScript.Call(id);
                     string resultStr;
@@ -3308,23 +3350,20 @@ namespace DotNetLib
                     else {
                         resultStr = result.ToString();
                     }
-                    int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
-                    if (maxResultSize > 0 && resultStr.Length > maxResultSize) {
-                        resultStr = resultStr.Substring(0, maxResultSize) + "\n... [truncated, exceeded max result size " + maxResultSize + "]";
-                    }
-                    sb.AppendLine(resultStr);
+                    resSb.AppendLine(resultStr);
                 }
+                var errSb = new StringBuilder();
                 if (NativeApi.HasApiErrorInfo) {
                     hasError = true;
-                    sb.AppendLine();
-                    sb.Append(NativeApi.GetApiErrorInfo());
+                    errSb.AppendLine();
+                    errSb.AppendLine(NativeApi.GetApiErrorInfo());
                 }
                 if (BatchCommand.BatchScript.HasDslErrors) {
                     hasError = true;
-                    sb.AppendLine();
-                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
+                    errSb.AppendLine();
+                    errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
                 }
-                return sb.ToString();
+                return GetMetaDslResult(resSb, errSb);
             }
             catch (Exception ex) {
                 hasError = true;
@@ -3424,7 +3463,7 @@ namespace DotNetLib
                 Lib.RefreshGlobalVars();
                 NativeApi.ClearApiErrorInfo();
                 var id = BatchCommand.BatchScript.EvalAsFunc(script, s_EmptyArgs);
-                var sb = new StringBuilder();
+                var resSb = new StringBuilder();
                 if (!BatchCommand.BatchScript.HasDslErrors) {
                     var result = BatchCommand.BatchScript.Call(id);
                     string resultStr;
@@ -3437,23 +3476,20 @@ namespace DotNetLib
                     else {
                         resultStr = result.ToString();
                     }
-                    int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
-                    if (maxResultSize > 0 && resultStr.Length > maxResultSize) {
-                        resultStr = resultStr.Substring(0, maxResultSize) + "\n... [truncated, exceeded max result size " + maxResultSize + "]";
-                    }
-                    sb.Append(resultStr);
+                    resSb.AppendLine(resultStr);
                 }
+                var errSb = new StringBuilder();
                 if (NativeApi.HasApiErrorInfo) {
                     hasError = true;
-                    sb.AppendLine();
-                    sb.Append(NativeApi.GetApiErrorInfo());
+                    errSb.AppendLine();
+                    errSb.AppendLine(NativeApi.GetApiErrorInfo());
                 }
                 if (BatchCommand.BatchScript.HasDslErrors) {
                     hasError = true;
-                    sb.AppendLine();
-                    sb.Append(BatchCommand.BatchScript.GetDslErrors());
+                    errSb.AppendLine();
+                    errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
                 }
-                return sb.ToString();
+                return Lib.GetMetaDslResult(resSb, errSb);
             }
             catch (Exception ex) {
                 hasError = true;

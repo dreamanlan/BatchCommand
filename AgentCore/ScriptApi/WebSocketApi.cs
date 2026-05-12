@@ -8,45 +8,62 @@ using ScriptableFramework;
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
     /// <summary>
-    /// WebSocket server singleton manager
+    /// WebSocket server manager supporting multiple ports
     /// </summary>
     public static class WebSocketServerManager
     {
-        private static Core.WebSocketServer? _server;
+        private static readonly Dictionary<int, Core.WebSocketServer> _servers = new();
         private static readonly object _lockObj = new object();
 
         /// <summary>
-        /// Gets or creates the WebSocket server instance
+        /// Gets or creates a WebSocket server instance for the specified port
         /// </summary>
-        public static Core.WebSocketServer GetServer()
+        public static Core.WebSocketServer GetServer(int port)
         {
             lock (_lockObj) {
-                if (_server == null) {
-                    _server = new Core.WebSocketServer();
+                if (!_servers.TryGetValue(port, out var server)) {
+                    server = new Core.WebSocketServer();
+                    _servers[port] = server;
                 }
-                return _server;
+                return server;
             }
         }
 
         /// <summary>
-        /// Gets whether server is running
+        /// Gets whether server on specified port is running
         /// </summary>
-        public static bool IsRunning()
+        public static bool IsRunning(int port)
         {
             lock (_lockObj) {
-                return _server?.IsRunning ?? false;
+                return _servers.TryGetValue(port, out var server) && server.IsRunning;
             }
         }
 
         /// <summary>
-        /// Stops and disposes the server
+        /// Stops and disposes the server on specified port
         /// </summary>
-        public static void StopServer()
+        public static void StopServer(int port)
         {
             lock (_lockObj) {
-                _server?.Stop();
-                _server?.Dispose();
-                _server = null;
+                if (_servers.TryGetValue(port, out var server)) {
+                    server.Stop();
+                    server.Dispose();
+                    _servers.Remove(port);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Stops and disposes all servers
+        /// </summary>
+        public static void StopAll()
+        {
+            lock (_lockObj) {
+                foreach (var server in _servers.Values) {
+                    server.Stop();
+                    server.Dispose();
+                }
+                _servers.Clear();
             }
         }
     }
@@ -72,8 +89,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromBool(false);
                 }
 
-                var server = WebSocketServerManager.GetServer();
+                var server = WebSocketServerManager.GetServer(port);
                 bool result = server.Start(port);
+                if (result) {
+                    // Bind the WS server to the AgentInstance for this port
+                    var instance = Core.AgentCore.Instance.GetOrCreateInstance(port);
+                    instance.WsServer = server;
+                }
                 return BoxedValue.FromBool(result);
             }
             catch (Exception ex) {
@@ -85,18 +107,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
     /// <summary>
     /// Stops the WebSocket server
-    /// Usage: ws_stop_server()
+    /// Usage: ws_stop_server(port)
     /// </summary>
     sealed class WsStopServerExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_stop_server()");
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_stop_server(port)");
                 return BoxedValue.FromBool(false);
             }
             try {
-                WebSocketServerManager.StopServer();
+                int port = operands[0].GetInt();
+                WebSocketServerManager.StopServer(port);
                 return BoxedValue.FromBool(true);
             }
             catch (Exception ex) {
@@ -108,23 +131,23 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
     /// <summary>
     /// Gets the number of connected clients
-    /// Usage: ws_get_client_count()
+    /// Usage: ws_get_client_count(port)
     /// Returns: integer count
     /// </summary>
     sealed class WsGetClientCountExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_client_count()");
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_client_count(port)");
                 return BoxedValue.From(0);
             }
             try {
-                var server = WebSocketServerManager.GetServer();
-                if (!server.IsRunning) {
+                int port = operands[0].GetInt();
+                if (!WebSocketServerManager.IsRunning(port)) {
                     return BoxedValue.From(0);
                 }
-
+                var server = WebSocketServerManager.GetServer(port);
                 int count = server.GetClientCount();
                 return BoxedValue.From(count);
             }
@@ -137,23 +160,23 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
     /// <summary>
     /// Gets the count of pending messages in receive queue
-    /// Usage: ws_get_receive_queue_count()
+    /// Usage: ws_get_receive_queue_count(port)
     /// Returns: integer count
     /// </summary>
     sealed class WsGetReceiveQueueCountExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 0) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_receive_queue_count()");
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ws_get_receive_queue_count(port)");
                 return BoxedValue.From(0);
             }
             try {
-                var server = WebSocketServerManager.GetServer();
-                if (!server.IsRunning) {
+                int port = operands[0].GetInt();
+                if (!WebSocketServerManager.IsRunning(port)) {
                     return BoxedValue.From(0);
                 }
-
+                var server = WebSocketServerManager.GetServer(port);
                 int count = server.GetReceiveQueueCount();
                 return BoxedValue.From(count);
             }
@@ -173,11 +196,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             AgentFrameworkService.Instance.DslEngine!.Register("ws_start_server", "ws_start_server(port)",
                 new ExpressionFactoryHelper<WsStartServerExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_stop_server", "ws_stop_server()",
+            AgentFrameworkService.Instance.DslEngine!.Register("ws_stop_server", "ws_stop_server(port)",
                 new ExpressionFactoryHelper<WsStopServerExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_client_count", "ws_get_client_count()",
+            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_client_count", "ws_get_client_count(port)",
                 new ExpressionFactoryHelper<WsGetClientCountExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_receive_queue_count", "ws_get_receive_queue_count()",
+            AgentFrameworkService.Instance.DslEngine!.Register("ws_get_receive_queue_count", "ws_get_receive_queue_count(port)",
                 new ExpressionFactoryHelper<WsGetReceiveQueueCountExp>());
         }
     }

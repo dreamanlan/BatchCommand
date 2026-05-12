@@ -13,7 +13,7 @@
      Section 0  Config
      =========================================== */
   const CFG = {
-    WS_URL: 'ws://localhost:9527',
+    WS_URL: null,         // set by DSL via ws_start command
     RECONNECT_MS: 3000,
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
@@ -49,6 +49,8 @@
     settingsClose: '.model-setting-v2-dialog .t-dialog__close-btn',
     // Top-bar model selector name (used at startup for initial slot count).
     topModelName: '.model-selector-container .model-selector__name',
+    // Model name inside settings card header.
+    cardModelName: '.model-setting-v2__card-name',
     // Blind-compare mode root (present when the page is in anonymous compare mode).
     blindRoot: '.sbs-chat-content-container--blind',
   };
@@ -104,6 +106,17 @@
     // recognized and visually marked (in red), but dropped before wsSend.
     // Default is set in init() based on actual slotCount.
     executorSlot: 'slot1',
+
+    // Long-run mode: when true, auto-break on MAX_ROUNDS is disabled.
+    longRunMode: false,
+
+    // Auto-send mode: periodically check input box and click send if ready.
+    autoSendOn: false,
+    autoSendTimer: null,
+
+    // Track flushed reply text length per contentItem element, so that
+    // only newly appeared model replies are included in the next flush.
+    flushedReplyLen: new WeakMap(),
   };
 
   /* ===========================================
@@ -157,7 +170,7 @@
     return CFG.DEFAULT_SLOT_COUNT;
   }
 
-  /** Ensure internal slot state for at least `count` slots; creates WS lazily. */
+  /** Ensure internal slot state for at least `count` slots. */
   function ensureSlots(count) {
     if (count <= ST.slotCount) return;
     const topNames = document.querySelectorAll(SEL.topModelName);
@@ -176,16 +189,124 @@
           ST.modelNames[id] = nm || id;
         }
       }
-      ST.ws[id] = wsCreate(id);
+      // WS connection deferred until DSL sends ws_start command
+      if (CFG.WS_URL) ST.ws[id] = wsCreate(id);
     }
     ST.slotCount = count;
     log(`[slots] expanded to ${count}`);
   }
 
   /* ===========================================
+     Section 2.8  Bridge (JS <-> DSL via callMetaDSL)
+     =========================================== */
+  const BRIDGE = {
+    commandId: 0,
+    callbacks: new Map(),
+    nativeMode: (typeof callMetaDSL !== 'undefined'),
+  };
+
+  /**
+   * Send a command to DSL (expects async response via onAgentResponse).
+   * @param {string} cmd   - command name (e.g. 'ping')
+   * @param {object} params - command parameters
+   * @param {function} [cb] - callback(success, data, error)
+   * @returns {number} commandId
+   */
+  function bridgeSendCommand(cmd, params, cb) {
+    const id = ++BRIDGE.commandId;
+    if (cb) BRIDGE.callbacks.set(id, cb);
+    const msg = JSON.stringify({ id, command: cmd, params: params || {} });
+    if (BRIDGE.nativeMode) {
+      setTimeout(() => { callMetaDSL('handle_agent_command', msg); }, 0);
+    } else {
+      warn('[bridge] callMetaDSL unavailable, command not sent:', cmd);
+      if (cb) setTimeout(() => cb(false, null, 'native API unavailable'), 0);
+    }
+    return id;
+  }
+
+  /**
+   * Send a notification to DSL (fire-and-forget, no response expected).
+   * @param {string} type - notification type
+   * @param {object} data - notification payload
+   */
+  function bridgeSendNotification(type, data) {
+    const msg = JSON.stringify({ type, data: data || {} });
+    if (BRIDGE.nativeMode) {
+      setTimeout(() => { callMetaDSL('handle_agent_notification', msg); }, 0);
+    } else {
+      log('[bridge] mock notification:', type);
+    }
+  }
+
+  // DSL -> JS: command response callback
+  window.onAgentResponse = function (responseJson) {
+    try {
+      const resp = JSON.parse(responseJson);
+      const cb = BRIDGE.callbacks.get(resp.id);
+      if (cb) {
+        cb(resp.success, resp.data, resp.error);
+        BRIDGE.callbacks.delete(resp.id);
+      }
+    } catch (e) {
+      err('[bridge] response parse error', e);
+    }
+  };
+
+  // DSL -> JS: proactive command (e.g. ws_start, send_message)
+  window.onAgentCommand = function (commandJson) {
+    try {
+      const cmd = JSON.parse(commandJson);
+      log('[bridge] onAgentCommand:', cmd.command);
+
+      if (cmd.command === 'ws_start' && cmd.params && cmd.params.port) {
+        CFG.WS_URL = 'ws://localhost:' + cmd.params.port;
+        log(`[bridge] ws_start -> ${CFG.WS_URL}`);
+        // Connect all existing slots that have no active WS
+        activeSlotIds().forEach(id => {
+          if (!ST.ws[id] || ST.ws[id].readyState > 1) {
+            ST.reconCnt[id] = 0;
+            ST.ws[id] = wsCreate(id);
+          }
+        });
+        return;
+      }
+      if (cmd.command === 'ws_stop') {
+        log('[bridge] ws_stop');
+        activeSlotIds().forEach(id => {
+          if (ST.ws[id]) {
+            try { ST.ws[id].close(); } catch (_) {}
+            ST.ws[id] = null;
+          }
+        });
+        CFG.WS_URL = null;
+        return;
+      }
+      if (cmd.command === 'send_message' && cmd.params && cmd.params.text) {
+        // Route DSL execution results into the pending queue of the
+        // executor slot, then schedule a flush to the chat input.
+        const slotId = ST.executorSlot || 'slot0';
+        if (!ST.pendingResults[slotId]) ST.pendingResults[slotId] = [];
+        ST.pendingResults[slotId].push(cmd.params.text);
+        log(`[bridge] queued send_message to ${slotId} (${cmd.params.text.length}B)`);
+        scheduleFlush();
+        return;
+      }
+      warn('[bridge] unknown command:', cmd.command);
+    } catch (e) {
+      err('[bridge] command parse error', e);
+    }
+  };
+
+
+  /* ===========================================
      Section 3  WebSocket Management
      =========================================== */
   function wsCreate(slotId) {
+    if (!CFG.WS_URL) {
+      warn(`[${slotId}] WS_URL not set, skipping connect`);
+      return null;
+    }
     log(`[${slotId}] connecting -> ${CFG.WS_URL}`);
     let ws;
     try { ws = new WebSocket(CFG.WS_URL); } catch (e) {
@@ -299,6 +420,17 @@
       lines.push('> Note: blind mode, model names (Model A/B) are anonymous placeholders.');
     }
 
+    // Collect new model replies that appeared since last flush.
+    const newReplies = collectNewReplies();
+    const replySlots = slots.filter(id => newReplies[id]);
+    if (replySlots.length > 0) {
+      for (const id of replySlots) {
+        const name = displayName(id);
+        lines.push(`【${name}】：${newReplies[id]}`);
+      }
+      lines.push('');
+    }
+
     // Queued dispatch: when more than one result is pending, only emit the
     // first one and keep the rest queued, so that the model focuses on
     // previous results one at a time instead of being flooded.
@@ -342,7 +474,7 @@
       }
       ST.lastFlushTs = now;
 
-      if (ST.roundCount >= CFG.MAX_ROUNDS) {
+      if (!ST.longRunMode && ST.roundCount >= CFG.MAX_ROUNDS) {
         ST.breakerOn = true;
         warn(`[breaker] reached ${CFG.MAX_ROUNDS} rounds, auto break`);
       }
@@ -494,11 +626,13 @@
     if (!header || !body) return;
 
     const armIcon = ST.armed ? 'ARM' : 'IDLE';
-    const statusIcon = ST.breakerOn ? 'BRK' : 'RUN';
+    const statusIcon = ST.breakerOn ? 'BRK' : (ST.longRunMode ? 'LONG' : 'RUN');
     const arrow = ST.panelCollapsed ? 'v' : '^';
-    const roundText = ST.breakerOn && ST.roundCount >= CFG.MAX_ROUNDS
-      ? `${CFG.MAX_ROUNDS}/${CFG.MAX_ROUNDS}`
-      : `${ST.roundCount}/${CFG.MAX_ROUNDS}`;
+    const roundText = ST.longRunMode
+      ? `${ST.roundCount}/INF`
+      : (ST.breakerOn && ST.roundCount >= CFG.MAX_ROUNDS
+        ? `${CFG.MAX_ROUNDS}/${CFG.MAX_ROUNDS}`
+        : `${ST.roundCount}/${CFG.MAX_ROUNDS}`);
 
     const failBadge = ST.sendFailAt
       ? `<span class="metadsl-fail-badge" title="${(ST.sendFailInfo || '').replace(/"/g, '&quot;')} - click to clear" style="background:#f44336;color:#fff;padding:1px 5px;border-radius:3px;font-size:10px;margin-left:4px;cursor:pointer;">! send</span>`
@@ -546,6 +680,8 @@
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
+        <button data-act="longrun"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.longRunMode ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.longRunMode ? 'long:ON' : 'long:OFF'}</button>
+        <button data-act="autosend" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.autoSendOn ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.autoSendOn ? 'send:ON' : 'send:OFF'}</button>
       </div>
     `;
     body.querySelectorAll('button[disabled]').forEach(b => {
@@ -575,11 +711,49 @@
         else if (act === 'resume') manualResume();
         else if (act === 'identity') sendIdentity();
         else if (act === 'prompt') sendPromptToChat();
+        else if (act === 'longrun') {
+          ST.longRunMode = !ST.longRunMode;
+          log(`[longrun] ${ST.longRunMode ? 'enabled' : 'disabled'}`);
+          updatePanel();
+        }
+        else if (act === 'autosend') {
+          ST.autoSendOn ? stopAutoSend() : startAutoSend();
+        }
       };
     });
   }
 
-  /* ===========================================
+  function startAutoSend() {
+    ST.autoSendOn = true;
+    if (ST.autoSendTimer) clearInterval(ST.autoSendTimer);
+    ST.autoSendTimer = setInterval(autoSendTick, 2000);
+    log('[autoSend] started');
+    updatePanel();
+  }
+
+  function stopAutoSend() {
+    ST.autoSendOn = false;
+    if (ST.autoSendTimer) { clearInterval(ST.autoSendTimer); ST.autoSendTimer = null; }
+    log('[autoSend] stopped');
+    updatePanel();
+  }
+
+  function autoSendTick() {
+    const ta = document.querySelector(SEL.inputTA);
+    if (!ta || !ta.value || !ta.value.trim()) return;
+    const btn = document.querySelector(SEL.sendBtn);
+    if (!btn) return;
+    const hasStopIcon = !!btn.querySelector('rect');
+    const ok = !btn.disabled
+      && btn.getAttribute('aria-disabled') !== 'true'
+      && getComputedStyle(btn).pointerEvents !== 'none'
+      && !hasStopIcon;
+    if (!ok) return;
+    log('[autoSend] input detected, clicking send. len=' + ta.value.length);
+    btn.click();
+  }
+
+  /* =========================================== 
      Section 5  Chat Input (React controlled)
      =========================================== */
   function setReactValue(el, val) {
@@ -730,6 +904,61 @@
       return parts.join('\n');
     }
     return el.textContent || '';
+  }
+
+  /**
+   * Read the prose reply text from a contentItem, excluding code blocks
+   * and deep-thinking sections so that only the model's visible reply
+   * prose is captured.
+   */
+  function readSlotReplyText(contentItem) {
+    // Prefer the top-level .sbs-cherry-markdown which is the actual reply.
+    // Avoid picking .hy-cherry-markdown inside .hy-detail-block.hy-think
+    // (the deep-thinking section) which querySelector would match first.
+    let body = contentItem.querySelector(':scope > div > div > .sbs-cherry-markdown');
+    if (!body) {
+      // Fallback: find any .hy-cherry-markdown that is NOT inside a think block.
+      const candidates = contentItem.querySelectorAll('.sbs-cherry-markdown, .hy-cherry-markdown');
+      for (const c of candidates) {
+        if (!c.closest('.hy-detail-block.hy-think')) { body = c; break; }
+      }
+    }
+    if (!body) return '';
+    const clone = body.cloneNode(true);
+    // Remove code blocks, think sections, and collapse headers from the clone.
+    clone.querySelectorAll('pre, .hy-detail-block.hy-think, .hy-collapse').forEach(el => el.remove());
+    return (clone.textContent || '').trim();
+  }
+
+  /**
+   * Collect new (not yet flushed) model reply text from completed AI
+   * messages. Returns an object like { slot0: 'new text', slot1: '...' }.
+   * Updates flushedReplyLen so the same text is not collected again.
+   */
+  function collectNewReplies() {
+    const result = {};
+    const chatList = document.querySelector(SEL.chatList);
+    if (!chatList) return result;
+    chatList.querySelectorAll(SEL.aiMsg).forEach(aiMsg => {
+      const mc = aiMsg.querySelector(SEL.multiContent);
+      if (!mc) return;
+      const items = Array.from(mc.children);
+      items.forEach((it, i) => {
+        const id = slotIdOf(i);
+        const text = readSlotReplyText(it);
+        const prevLen = ST.flushedReplyLen.get(it) || 0;
+        if (text.length > prevLen) {
+          const delta = text.slice(prevLen).trim();
+          if (delta) {
+            if (!result[id]) result[id] = '';
+            if (result[id]) result[id] += '\n';
+            result[id] += delta;
+          }
+          ST.flushedReplyLen.set(it, text.length);
+        }
+      });
+    });
+    return result;
   }
 
   function hasExecuteMarker(code) {
@@ -1024,10 +1253,14 @@
         warn(`settings card count ${cards.length} <= slot index ${idx}`);
         btn.click(); return;
       }
-      const ta = cards[idx].querySelector('textarea');
+      const card = cards[idx];
+      const ta = card.querySelector('textarea');
       if (ta) {
-        setReactValue(ta, prompt);
-        log(`[${slotId}] page prompt written`);
+        const nameEl = card.querySelector(SEL.cardModelName);
+        const modelName = (nameEl && nameEl.textContent ? nameEl.textContent.trim() : '') || ST.modelNames[slotId] || slotId;
+        const fullPrompt = prompt + '\n\nYou are the ' + modelName + ' model.';
+        setReactValue(ta, fullPrompt);
+        log(`[${slotId}] page prompt written (model=${modelName})`);
       } else {
         warn(`[${slotId}] textarea not found in card`);
       }
@@ -1067,9 +1300,12 @@
         const id = slotIdOf(idx);
         const ta = card.querySelector('textarea');
         if (ta) {
-          setReactValue(ta, prompt);
-          ST.sysPrompt[id] = prompt;
-          log(`[${id}] page prompt written`);
+          const nameEl = card.querySelector(SEL.cardModelName);
+          const modelName = (nameEl && nameEl.textContent ? nameEl.textContent.trim() : '') || ST.modelNames[id] || id;
+          const fullPrompt = prompt + '\n\nYou are the ' + modelName + ' model.';
+          setReactValue(ta, fullPrompt);
+          ST.sysPrompt[id] = fullPrompt;
+          log(`[${id}] page prompt written (model=${modelName})`);
         } else {
           warn(`[${id}] textarea not found in card`);
         }
@@ -1128,6 +1364,13 @@
     startObserver();
     createPanel();
 
+    // Notify DSL that hyarena page is ready; DSL will send back ws_start
+    // command with port number to trigger WS connections for all slots.
+    bridgeSendNotification('hyarena_ready', {
+      url: window.location.href,
+    });
+    log('[init] hyarena_ready notification sent');
+
     setTimeout(loadAndApplySystemPrompt, 1500);
 
     console.groupEnd();
@@ -1161,6 +1404,7 @@
     sendChat: chatSend,
 
     reconnect(key) {
+      if (!CFG.WS_URL) { warn('WS_URL not set, use ws_start first'); return; }
       const id = normalizeSlot(key);
       if (!id) { err('slot key invalid: ' + key); return; }
       const idx = slotIndexOf(id);
@@ -1184,6 +1428,10 @@
     arm: armNow,
     disarm: disarmNow,
 
+    // Bridge API
+    sendCommand: bridgeSendCommand,
+    sendNotification: bridgeSendNotification,
+
     status() {
       const chatList = document.querySelector(SEL.chatList);
       if (!chatList) { warn('chatList missing'); return; }
@@ -1206,6 +1454,7 @@
       }).join(' | ');
       log(`status: armed=${ST.armed} breaker=${ST.breakerOn} rounds=${ST.roundCount}/${CFG.MAX_ROUNDS}`);
       log(`  ${total} msgs, ${pending} pending; ${wsStates}`);
+      log(`  bridge: native=${BRIDGE.nativeMode} ws_url=${CFG.WS_URL || 'null'}`);
     },
   };
 

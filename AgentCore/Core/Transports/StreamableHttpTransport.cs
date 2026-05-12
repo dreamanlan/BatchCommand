@@ -67,6 +67,14 @@ namespace CefDotnetApp.AgentCore.Core
             return await PostAsync(jsonRpcRequest);
         }
 
+        public async Task SendNotificationAsync(string jsonRpcNotification)
+        {
+            if (!_connected)
+                throw new InvalidOperationException("StreamableHttpTransport not connected");
+            // POST is required by HTTP semantics; discard the response body (typically 202 Accepted)
+            await PostAsync(jsonRpcNotification);
+        }
+
         private async Task<string> PostAsync(string jsonBody)
         {
             if (!await _lock.WaitAsync(_lockTimeout))

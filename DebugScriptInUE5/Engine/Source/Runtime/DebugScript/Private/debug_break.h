@@ -6,8 +6,13 @@
 extern "C" {
 #endif
 
-#if defined(_WIN64) && _WIN64
-    __declspec(dllimport) BOOL __stdcall IsDebuggerPresent();
+#if defined(WINBASEAPI) && defined(WINAPI)
+    WINBASEAPI
+        BOOL
+        WINAPI
+        IsDebuggerPresent(
+            VOID
+        );
 #else
     __declspec(dllimport) int __stdcall IsDebuggerPresent();
 #endif

@@ -2065,7 +2065,7 @@ void LoadDbgScp(const FString& log_path, const FString& load_path)
         if (GetLogFilesRef()[i].empty()) {
             auto&& path = FPaths::Combine(log_path, FString::Printf(TEXT("dbgscp_log_%d.txt"), i));
             GetLogFilesRef()[i] = TCHAR_TO_UTF8(*path);
-            UE_LOG(LogTemp, Log, TEXT("LoadDbgScp, LogFile: %d %s\n"), i, TCHAR_TO_UTF8(*path));
+            UE_LOG(LogTemp, Log, TEXT("LoadDbgScp, LogFile: %d %hs\n"), i, TCHAR_TO_UTF8(*path));
         }
     }
 #if PLATFORM_ANDROID
@@ -2078,7 +2078,7 @@ void LoadDbgScp(const FString& log_path, const FString& load_path)
     DebugScriptGlobal::Reset();
     bool r = DebugScriptGlobal::Load(c_data_file);
     DebugScriptGlobal::Start();
-    UE_LOG(LogTemp, Log, TEXT("LoadDbgScp: %s %d\n"), c_data_file, r ? 1 : 0);
+    UE_LOG(LogTemp, Log, TEXT("LoadDbgScp: %hs %d\n"), c_data_file, r ? 1 : 0);
 }
 void PauseDbgScp()
 {

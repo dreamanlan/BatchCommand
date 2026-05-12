@@ -51,7 +51,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             string providerId = operands[0].AsString;
             string key = operands[1].AsString;
-            string value = operands[2].AsString;
+            string value = operands[2].ToString();
             return BoxedValue.FromString(Core.LlmClientService.Instance.SetProviderOption(providerId, key, value));
         }
     }

@@ -93,7 +93,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             try {
                 string key = operands[0].AsString;
-                string value = operands[1].AsString;
+                string value = operands[1].ToString();
                 return BoxedValue.FromBool(Core.AgentCore.Instance.SkillMgr.SetEnv(key, value));
             }
             catch (Exception ex) {
@@ -114,7 +114,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             try {
                 string key = operands[0].AsString;
-                string defval = operands.Count > 1 ? operands[1].AsString : string.Empty;
+                string defval = operands.Count > 1 ? operands[1].ToString() : string.Empty;
                 return BoxedValue.FromString(Core.AgentCore.Instance.SkillMgr.GetEnv(key, defval));
             }
             catch (Exception ex) {

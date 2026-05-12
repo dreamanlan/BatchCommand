@@ -337,11 +337,12 @@ namespace CefDotnetApp.AgentCore.Core
                                 AgentCore.Instance.Logger.Info($"Worker processing message (active: {_activeWorkers}/{_maxWorkerConcurrency}): {msg.message.Substring(0, Math.Min(100, msg.message.Length))}...");
 
                                 // Determine whether to append context for this round
-                                int maxRounds = AgentCore.Instance.MaxContextRounds;
+                                var inst = AgentCore.Instance.GetInstance(_port);
+                                int maxRounds = inst?.MaxContextRounds ?? 3;
                                 int rounds = _contextRounds.AddOrUpdate(msg.client, 0, (_, old) => old + 1);
-                                bool appendContext = AgentCore.Instance.ContextInjectionEnabled && ((maxRounds <= 1) || (rounds % maxRounds == 0));
+                                bool appendContext = (inst?.ContextInjectionEnabled ?? true) && ((maxRounds <= 1) || (rounds % maxRounds == 0));
                                 // Clearing the User Context Rounds when using MetaDSL code
-                                AgentCore.Instance.CurContextRounds = 0;
+                                if (inst != null) inst.CurContextRounds = 0;
 
                                 string result = ExecuteMetaDSLInWorker(msg.message, appendContext);
                                 if (!string.IsNullOrEmpty(result))
@@ -425,21 +426,24 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 if (appendContext) {
-                    if (!string.IsNullOrEmpty(AgentCore.Instance.ToDo)) {
-                        sb.AppendLine();
-                        sb.AppendLine(AgentCore.Instance.ToDo);
-                    }
-                    if (!string.IsNullOrEmpty(AgentCore.Instance.Context)) {
-                        sb.AppendLine();
-                        sb.AppendLine(AgentCore.Instance.Context);
-                    }
-                    if (!string.IsNullOrEmpty(AgentCore.Instance.History)) {
-                        sb.AppendLine();
-                        sb.AppendLine(AgentCore.Instance.History);
-                    }
-                    if (!string.IsNullOrEmpty(AgentCore.Instance.Emphasize)) {
-                        sb.AppendLine();
-                        sb.AppendLine(AgentCore.Instance.Emphasize);
+                    var inst = AgentCore.Instance.GetInstance(_port);
+                    if (inst != null) {
+                        if (!string.IsNullOrEmpty(inst.ToDo)) {
+                            sb.AppendLine();
+                            sb.AppendLine(inst.ToDo);
+                        }
+                        if (!string.IsNullOrEmpty(inst.Context)) {
+                            sb.AppendLine();
+                            sb.AppendLine(inst.Context);
+                        }
+                        if (!string.IsNullOrEmpty(inst.History)) {
+                            sb.AppendLine();
+                            sb.AppendLine(inst.History);
+                        }
+                        if (!string.IsNullOrEmpty(inst.Emphasize)) {
+                            sb.AppendLine();
+                            sb.AppendLine(inst.Emphasize);
+                        }
                     }
                 }
                 return sb.ToString();

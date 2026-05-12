@@ -20,6 +20,11 @@ namespace CefDotnetApp.AgentCore.Core
         /// Sends a JSON-RPC request and returns the raw JSON-RPC response string.
         /// </summary>
         Task<string> SendRequestAsync(string jsonRpcRequest);
+        /// <summary>
+        /// Sends a JSON-RPC notification (no id, no response expected).
+        /// Implementations MUST NOT wait for any response.
+        /// </summary>
+        Task SendNotificationAsync(string jsonRpcNotification);
         void Disconnect();
     }
 
@@ -113,6 +118,19 @@ namespace CefDotnetApp.AgentCore.Core
     }
 
     /// <summary>
+    /// Resolved transport options extracted from pending options.
+    /// </summary>
+    internal struct TransportOptions
+    {
+        public Dictionary<string, string>? Headers;
+        public int TimeoutMs;
+        public bool UseLspFraming;
+        public int StartupDelayMs;
+        public int RetryDelayMs;
+        public int RetryCount;
+    }
+
+    /// <summary>
     /// Manages connections to multiple MCP servers.
     /// Each server is identified by a serverId string.
     /// Tool calls are executed asynchronously; results are forwarded via NativeApi.EnqueueMcpCallback.
@@ -171,8 +189,8 @@ namespace CefDotnetApp.AgentCore.Core
             IMcpTransport transport;
             if (type == "stdio")
             {
-                var (_, stdioTimeoutMs) = ExtractTransportOptions(serverId, 60000);
-                transport = new StdioTransport(target, stdioTimeoutMs);
+                var opts = ExtractTransportOptions(serverId, 60000);
+                transport = new StdioTransport(target, opts.TimeoutMs, opts.UseLspFraming);
             }
             else if (type == "sse")
                 transport = BuildSseTransport(serverId, target);
@@ -198,16 +216,24 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 try
                 {
+                    var stdioOpts = ExtractTransportOptions(serverId, 60000);
+                    Thread.Sleep(stdioOpts.StartupDelayMs);
                     string initReq = JsonRpcHelper.BuildRequest("initialize", new
                     {
                         protocolVersion = "2024-11-05",
                         capabilities = new { },
                         clientInfo = new { name = "AgentCore", version = "1.0" }
                     }, conn.NextId());
-                    string initResp = transport.SendRequestAsync(initReq).GetAwaiter().GetResult();
-                    // Send initialized notification
+                    for (int i = 0; i < stdioOpts.RetryCount; i++) {
+                        string initResp = transport.SendRequestAsync(initReq).GetAwaiter().GetResult();
+                        AgentCore.Instance.Logger.Info($"Initialized handshake received from server '{initResp}'");
+                        if (TryParseRequestId(initReq, out var id) && IsResponseForId(initResp, id))
+                            break;
+                        Thread.Sleep(stdioOpts.RetryDelayMs);
+                    }
+                    // Send initialized notification (no response expected per JSON-RPC 2.0)
                     string notif = System.Text.Json.JsonSerializer.Serialize(new { jsonrpc = "2.0", method = "notifications/initialized" });
-                    transport.SendRequestAsync(notif).GetAwaiter().GetResult();
+                    transport.SendNotificationAsync(notif).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {
@@ -230,6 +256,33 @@ namespace CefDotnetApp.AgentCore.Core
 
             _servers[serverId] = conn;
             return "ok";
+        }
+        private static bool TryParseRequestId(string jsonRpc, out int id)
+        {
+            try {
+                using var doc = System.Text.Json.JsonDocument.Parse(jsonRpc);
+                if (doc.RootElement.TryGetProperty("id", out var idEl) &&
+                    idEl.ValueKind == System.Text.Json.JsonValueKind.Number &&
+                    idEl.TryGetInt32(out id)) {
+                    return true;
+                }
+            }
+            catch { }
+            id = 0;
+            return false;
+        }
+        private static bool IsResponseForId(string jsonRpc, int expectedId)
+        {
+            try {
+                using var doc = System.Text.Json.JsonDocument.Parse(jsonRpc);
+                if (doc.RootElement.TryGetProperty("id", out var idEl) &&
+                    idEl.ValueKind == System.Text.Json.JsonValueKind.Number &&
+                    idEl.TryGetInt32(out int id)) {
+                    return id == expectedId;
+                }
+            }
+            catch { }
+            return false;
         }
 
         /// <summary>
@@ -421,13 +474,18 @@ namespace CefDotnetApp.AgentCore.Core
         // --- private helpers ---
 
         /// <summary>
-        /// Extracts headers and timeout from pending options for a server.
+        /// Extracts headers, timeout, and lsp_framing from pending options for a server.
         /// Header values containing %var% patterns are resolved here at Connect time.
         /// </summary>
-        private (Dictionary<string, string>? headers, int timeoutMs) ExtractTransportOptions(string serverId, int defaultTimeoutMs = 300000)
+        private TransportOptions ExtractTransportOptions(string serverId, int defaultTimeoutMs = 300000)
         {
-            Dictionary<string, string>? headers = null;
-            int timeoutMs = defaultTimeoutMs;
+            var result = new TransportOptions
+            {
+                TimeoutMs = defaultTimeoutMs,
+                StartupDelayMs = 1000,
+                RetryDelayMs = 500,
+                RetryCount = 3
+            };
             if (_pendingOptions.TryGetValue(serverId, out var opts))
             {
                 lock (opts)
@@ -435,36 +493,52 @@ namespace CefDotnetApp.AgentCore.Core
                     if (opts.TryGetValue("timeout", out var timeoutList) && timeoutList.Count > 0)
                     {
                         if (int.TryParse(timeoutList[timeoutList.Count - 1], out int t) && t > 0)
-                            timeoutMs = t;
+                            result.TimeoutMs = t;
                     }
                     if (opts.TryGetValue("header", out var headerList))
                     {
-                        // Collect raw header values, then resolve env vars in batch
                         var rawValues = headerList.ToArray();
                         var resolved = AgentCore.Instance.ResolveEnvironmentValues("mcp", serverId, rawValues);
-                        headers = new Dictionary<string, string>();
+                        result.Headers = new Dictionary<string, string>();
                         for (int i = 0; i < resolved.Length; i++)
                         {
                             int colonIdx = resolved[i].IndexOf(':');
                             if (colonIdx > 0)
-                                headers[resolved[i].Substring(0, colonIdx).Trim()] = resolved[i].Substring(colonIdx + 1).Trim();
+                                result.Headers[resolved[i].Substring(0, colonIdx).Trim()] = resolved[i].Substring(colonIdx + 1).Trim();
                         }
+                    }
+                    if (opts.TryGetValue("lsp_framing", out var lspList) && lspList.Count > 0)
+                        result.UseLspFraming = string.Equals(lspList[0], "true", StringComparison.OrdinalIgnoreCase);
+                    if (opts.TryGetValue("startup_delay", out var sdList) && sdList.Count > 0)
+                    {
+                        if (int.TryParse(sdList[sdList.Count - 1], out int sd) && sd >= 0)
+                            result.StartupDelayMs = sd;
+                    }
+                    if (opts.TryGetValue("retry_delay", out var rdList) && rdList.Count > 0)
+                    {
+                        if (int.TryParse(rdList[rdList.Count - 1], out int rd) && rd >= 0)
+                            result.RetryDelayMs = rd;
+                    }
+                    if (opts.TryGetValue("retry_count", out var rcList) && rcList.Count > 0)
+                    {
+                        if (int.TryParse(rcList[rcList.Count - 1], out int rc) && rc > 0)
+                            result.RetryCount = rc;
                     }
                 }
             }
-            return (headers, timeoutMs);
+            return result;
         }
 
         private SseTransport BuildSseTransport(string serverId, string url)
         {
-            var (headers, timeoutMs) = ExtractTransportOptions(serverId);
-            return new SseTransport(url, headers, timeoutMs);
+            var opts = ExtractTransportOptions(serverId);
+            return new SseTransport(url, opts.Headers, opts.TimeoutMs);
         }
 
         private StreamableHttpTransport BuildStreamableHttpTransport(string serverId, string url)
         {
-            var (headers, timeoutMs) = ExtractTransportOptions(serverId);
-            return new StreamableHttpTransport(url, headers, timeoutMs);
+            var opts = ExtractTransportOptions(serverId);
+            return new StreamableHttpTransport(url, opts.Headers, opts.TimeoutMs);
         }
 
         private static void ParseAndCacheTools(McpServerConnection conn, string listResp)

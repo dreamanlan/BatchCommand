@@ -8,8 +8,8 @@ script(init_global_consts)
 	@LlmProviderId = "auto_metadsl";
 
 	if (processtype == 1) {
-		@ProjectIdentity = get_project_identity();
-		@ProjectDirectory = get_project_dir();
+		@ProjectIdentity = agent_get_project_identity(9527);
+		@ProjectDirectory = agent_get_project_dir(9527);
 		if (!isnullorempty(@ProjectIdentity)) {
 			@MarquisHistory = @ProjectIdentity + "_marquis_history";
 			@ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
@@ -114,9 +114,11 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 {
 	nativelog("[dsl] on_renderer_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
-	if (string_contains_any($url, "https://hyarena.woa.com/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
-		// redirect to hyarena dsl
-		setdslfile("Script_renderer_hyarena.dsl");
+	if (($isMainFrame == "True" || $isMainFrame == true)) {
+		if (string_contains_any($url, "http://localhost:8082/index.html")) {
+			// redirect to hyarena dsl
+			setdslfile("Script_renderer_aiclaw.dsl");
+		};
 	};
 };
 script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
@@ -205,7 +207,9 @@ script(on_call_metadsl)params($func,$args)
 // Return system prompt text loaded from docs/system_prompt.txt (zero-arg, sync)
 script(get_system_prompt)params()
 {
-	return(read_file(combine_path(basepath, "docs/system_prompt.txt")));
+	$sysPrompt = read_file(combine_path(basepath, "docs/system_prompt.txt"));
+	$mergePrompt = read_file("d:/AiClaw/docs/merge_prompt.txt");
+	return(format("{0}\r\n\r\n{1}",$sysPrompt,$mergePrompt));
 };
 
 // Handle nativelog batch
@@ -251,7 +255,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	if ($tag == "llm_pm_project") {
 		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
 		write_file($planFile, $reply);
-		set_plan($reply);
+		agent_set_plan(9527, $reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
 		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
@@ -260,13 +264,13 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	elif ($tag == "llm_pm_context") {
 		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 		write_file($contextFile, $reply);
-		set_context($reply);
+		agent_set_context(9527, $reply);
 		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "llm_pm_align") {
 		$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 		write_file($todoFile, $reply);
-		set_todo($reply);
+		agent_set_todo(9527, $reply);
 		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "reflection") {
@@ -351,15 +355,6 @@ script(handle_agent_command)params($jsonData)
 	}
 	elif ($command == "llm_chat") {
 		handle_llm_chat_command($id, $params);
-	}
-	elif ($command == "llm_set_provider") {
-		handle_llm_set_provider_command($id, $params);
-	}
-	elif ($command == "brave_set_api_key") {
-		handle_brave_set_api_key_command($id, $params);
-	}
-	elif ($command == "searxng_set_url") {
-		handle_searxng_set_url_command($id, $params);
 	}
 	elif ($command == "set_agent_environment") {
 		handle_set_agent_environment_command($id, $params);
@@ -491,8 +486,8 @@ script(handle_update_project_config_command)params($id, $params)
 	};
 
 	// Update C# agent state
-	set_project_dir($projectDir);
-	set_project_identity($projectIdentity);
+	agent_set_project_dir(9527, $projectDir);
+	agent_set_project_identity(9527, $projectIdentity);
 
 	// Update DSL global variables
 	init_global_consts();
@@ -738,7 +733,7 @@ script(SaveHistory)params()
 	$historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
 	$historyStr = string_builder_to_string($history);
 	write_file($historyFile, $historyStr);
-	set_history($historyStr);
+	agent_set_history(9527, $historyStr);
 };
 
 script(UpdateSystemPrompt)params($pageType,$isFirst)
@@ -779,16 +774,16 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	} else {
 		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize;
 	};
-	set_system_prompt($prompt);
-	set_project_prompt($projectPrompt);
+	agent_set_system_prompt(9527, $prompt);
+	agent_set_project_prompt(9527, $projectPrompt);
 
 	if ($isFirst) {
-		set_emphasize($emphasize);
-		set_plan($plan);
-		set_soul($soul);
-		set_context($context);
-		set_todo($todo);
-		set_history($history);
+		agent_set_emphasize(9527, $emphasize);
+		agent_set_plan(9527, $plan);
+		agent_set_soul(9527, $soul);
+		agent_set_context(9527, $context);
+		agent_set_todo(9527, $todo);
+		agent_set_history(9527, $history);
 	};
 
 	send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
@@ -822,13 +817,14 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
+		set_max_result_size(50*1024);
+
 		if ($pageType == "local-agent") {
-			enable_context_injection(false);
+			agent_enable_context_injection(9527, false);
 		}
 		else {
-			enable_context_injection(true);
+			agent_enable_context_injection(9527, true);
 		};
-
 		// Agent is initialized and ready to receive commands
 		// You can send initial commands here
 		ws_start_server(9527);
@@ -841,6 +837,24 @@ script(handle_agent_notification)params($jsonData)
 			llm_clear_history(@LlmProviderId, "llm_pm_context");
 			llm_clear_history(@LlmProviderId, "llm_pm_project");
 		};
+	}
+	elif ($type == "hyarena_ready") {
+		nativelog("[dsl] Hyarena ready notification: {0}", getstringinlength($jsonData,100));
+
+		$data = get_message_param($notif, "data");
+		$url = get_message_param($data, "url");
+		nativelog("[dsl] Hyarena initialized, url: {0}", $url);
+
+		agent_enable_context_injection(9528, false);
+		agent_set_project_dir(9528, "d:/AiClaw");
+		agent_set_project_identity(9528, "hyarena");
+		// Start WebSocket server on port 9528 for hyarena bridge communication
+		ws_start_server(9528);
+
+		// Notify JS to connect multi-slot WS to port 9528
+		send_command_to_inject("ws_start", to_json({port: 9528}));
+
+		nativelog("[dsl] Hyarena bridge WS server started on 9528");
 	}
 	elif ($type == "llm_update_system_prompt") {
 		nativelog("[dsl] LLM update system prompt notification received");
@@ -893,9 +907,9 @@ script(handle_agent_notification)params($jsonData)
 		$pageType = get_message_param($data, "pageType");
 		$count = size($conversations);
 
-		set_plan(read_file(combine_path(@ProjectDirectory, "docs/plan.txt")));
-		set_context(read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
-		set_todo(read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
+		agent_set_plan(9527, read_file(combine_path(@ProjectDirectory, "docs/plan.txt")));
+		agent_set_context(9527, read_file(combine_path(@ProjectDirectory, "docs/context.txt")));
+		agent_set_todo(9527, read_file(combine_path(@ProjectDirectory, "docs/todo.txt")));
 
 		nativelog("[dsl] Saving {0} new conversation(s) to history", $count);
 
@@ -945,8 +959,8 @@ script(handle_agent_notification)params($jsonData)
 			nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
 			trigger_pattern_recognition(30);
 		};
-		if (is_context_injection_enabled() && add_cur_context_rounds() == 0) {
-			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", get_history(), get_todo(), get_context());
+		if (agent_is_context_injection_enabled(9527) && agent_add_cur_context_rounds(9527) == 0) {
+			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", agent_get_history(9527), agent_get_todo(9527), agent_get_context(9527));
 			send_command_to_inject("send_message", to_json({text: $prompt}));
 		};
 
@@ -965,7 +979,7 @@ script(handle_agent_notification)params($jsonData)
 		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
 		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
 
-		set_soul(read_file($soulPath));
+		agent_set_soul(9527, read_file($soulPath));
 
 		nativelog("[dsl] agent_need_to_plan: queued:{0} page:{1} count:{2}", $queuedCount, $pageType, $count);
 

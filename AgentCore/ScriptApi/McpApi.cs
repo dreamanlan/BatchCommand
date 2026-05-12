@@ -115,7 +115,7 @@ namespace AgentCore.ScriptApi
             }
             string serverId = operands[0].AsString;
             string key = operands[1].AsString;
-            string value = operands[2].AsString;
+            string value = operands[2].ToString();
             CefDotnetApp.AgentCore.Core.McpClientService.Instance.SetOption(serverId, key, value);
             return BoxedValue.FromBool(true);
         }

@@ -308,7 +308,7 @@
 
             log('[Test 2 - WebSocket] Stopping WebSocket server...', 'info');
 
-            const script = `ws_stop_server();`;
+            const script = `ws_stop_server(9527);`;
 
             runMetaDSL(script,
                 (result) => {
@@ -326,7 +326,7 @@
 
             log('[Test 2 - WebSocket] Getting WebSocket client status...', 'info');
 
-            const script = `ws_get_client_count();`;
+            const script = `ws_get_client_count(9527);`;
 
             runMetaDSL(script,
                 (result) => {

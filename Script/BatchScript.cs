@@ -1536,7 +1536,7 @@ namespace BatchCommand
             Calculator.Register("getasynctaskresult", "getasynctaskresult(handle) api, get the result of a completed async task, tuple (success, completed, result)", new ExpressionFactoryHelper<GetAsyncTaskResultExp>());
             Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
             Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
-            Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin_end_or_beginend])", new ExpressionFactoryHelper<GetStringInLengthExp>());
+            Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
             Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
             Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());

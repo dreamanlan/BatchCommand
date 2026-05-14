@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "DebugScriptVM.h"
 #include "string.h"
 #include <vector>
@@ -5,6 +6,7 @@
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <algorithm>
 #include <type_traits>
 #include <chrono>
 #include <ctime>

@@ -51,6 +51,7 @@ namespace CefDotnetApp.AgentCore.Core
                 List<string> resultLines = new List<string>(targetLines);
                 List<DiffHunkResult> hunkResults = new List<DiffHunkResult>();
 
+
                 foreach (var hunk in sortedHunks) {
                     var hunkResult = ApplyHunk(resultLines, hunk, exactMatch);
                     hunkResults.Add(hunkResult);
@@ -68,7 +69,9 @@ namespace CefDotnetApp.AgentCore.Core
                 ReportLineNumberCorrections(hunkResults);
 
                 // Write the result
-                File.WriteAllLines(fullTargetPath, resultLines, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                File.WriteAllLines(fullTargetPath, resultLines, writeEncoding);
 
                 return new DiffResult {
                     Success = true,
@@ -128,7 +131,9 @@ namespace CefDotnetApp.AgentCore.Core
                 ReportLineNumberCorrections(hunkResults);
 
                 // Write the result
-                File.WriteAllLines(fullTargetPath, resultLines, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                File.WriteAllLines(fullTargetPath, resultLines, writeEncoding);
 
                 return new DiffResult {
                     Success = true,
@@ -888,7 +893,9 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Write result back to file
-                File.WriteAllText(fullTargetPath, result.ResultContent, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;
             }
@@ -1183,7 +1190,9 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Write result back to file
-                File.WriteAllText(fullTargetPath, result.ResultContent, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;
             }
@@ -1224,7 +1233,9 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Write result back to file
-                File.WriteAllText(fullTargetPath, result.ResultContent, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;
             }

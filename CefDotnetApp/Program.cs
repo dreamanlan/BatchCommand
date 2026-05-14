@@ -3259,7 +3259,7 @@ namespace DotNetLib
                         sb.AppendLine("]");
                     }
                     else {
-                        sb.Append(resSb.ToString());
+                        sb.Append(errSb.ToString());
                     }
                 }
             }
@@ -3392,6 +3392,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
+            BatchCommand.BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 
@@ -3534,6 +3535,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("getdotnetinfo", "getdotnetinfo()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("get_dotnet_info", "get_dotnet_info()", false, new ExpressionFactoryHelper<GetDotnetInfoExp>());
             BatchCommand.BatchScript.Register("enqueue_cef_message", "enqueue_cef_message(msg,arg1,arg2,...), enqueue message to browser", false, new ExpressionFactoryHelper<EnqueueCefMessageExp>());
+            BatchCommand.BatchScript.Register("get_string_in_length", "get_string_in_length(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 

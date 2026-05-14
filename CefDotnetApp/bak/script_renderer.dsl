@@ -207,9 +207,8 @@ script(on_call_metadsl)params($func,$args)
 // Return system prompt text loaded from docs/system_prompt.txt (zero-arg, sync)
 script(get_system_prompt)params()
 {
-	$sysPrompt = read_file(combine_path(basepath, "docs/system_prompt.txt"));
 	$mergePrompt = read_file("d:/AiClaw/docs/merge_prompt.txt");
-	return(format("{0}\r\n\r\n{1}",$sysPrompt,$mergePrompt));
+	return(format("{0}",$mergePrompt));
 };
 
 // Handle nativelog batch

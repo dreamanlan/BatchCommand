@@ -64,7 +64,10 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             if (!string.IsNullOrEmpty(content)) {
-                File.WriteAllText(fullPath, content, Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                // If file does not exist, default to with-BOM (keep legacy behavior).
+                var encoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                File.WriteAllText(fullPath, content, encoding);
                 return true;
             }
             return false;
@@ -108,7 +111,10 @@ namespace CefDotnetApp.AgentCore.Core
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!string.IsNullOrEmpty(content)) {
-                File.AppendAllText(fullPath, content, Encoding.UTF8);
+                // Preserve original BOM state when appending to existing file.
+                // If file does not exist, default to with-BOM (keep legacy behavior).
+                var encoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                File.AppendAllText(fullPath, content, encoding);
                 return true;
             }
             return false;
@@ -169,6 +175,55 @@ namespace CefDotnetApp.AgentCore.Core
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             return Directory.Exists(fullPath);
+        }
+
+        // BOM Operations
+
+        public bool FileHasBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return false;
+            return BomHelper.HasUtf8Bom(fullPath);
+        }
+
+        public bool FileAddBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("file_add_bom: file not found");
+                return false;
+            }
+            if (BomHelper.HasUtf8Bom(fullPath)) {
+                // Already has BOM, no need to process.
+                return true;
+            }
+            byte[] original = File.ReadAllBytes(fullPath);
+            byte[] result = new byte[original.Length + 3];
+            result[0] = 0xEF;
+            result[1] = 0xBB;
+            result[2] = 0xBF;
+            Buffer.BlockCopy(original, 0, result, 3, original.Length);
+            File.WriteAllBytes(fullPath, result);
+            return true;
+        }
+
+        public bool FileRemoveBom(string path)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath)) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("file_remove_bom: file not found");
+                return false;
+            }
+            if (!BomHelper.HasUtf8Bom(fullPath)) {
+                // No BOM, no need to process.
+                return true;
+            }
+            byte[] original = File.ReadAllBytes(fullPath);
+            byte[] result = new byte[original.Length - 3];
+            Buffer.BlockCopy(original, 3, result, 0, result.Length);
+            File.WriteAllBytes(fullPath, result);
+            return true;
         }
 
         public FileInfoModel GetFileInfo(string path)
@@ -240,12 +295,14 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             string content = File.ReadAllText(fullPath, Encoding.UTF8);
+            // Preserve original BOM state when overwriting existing file.
+            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
                 if (content.Contains(oldString)) {
                     content = content.Replace(oldString, newString);
-                    File.WriteAllText(fullPath, content, Encoding.UTF8);
+                    File.WriteAllText(fullPath, content, writeEncoding);
                     return true;
                 }
             }
@@ -253,7 +310,7 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = content.IndexOf(oldString, StringComparison.Ordinal);
                 if (index >= 0) {
                     content = content.Substring(0, index) + newString + content.Substring(index + oldString.Length);
-                    File.WriteAllText(fullPath, content, Encoding.UTF8);
+                    File.WriteAllText(fullPath, content, writeEncoding);
                     return true;
                 }
             }
@@ -267,7 +324,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (allOccurrences) {
                 if (content.Contains(trimedOldString)) {
                     content = content.Replace(trimedOldString, trimedNewString);
-                    File.WriteAllText(fullPath, content, Encoding.UTF8);
+                    File.WriteAllText(fullPath, content, writeEncoding);
                     return true;
                 }
             }
@@ -275,14 +332,14 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = content.IndexOf(trimedOldString, StringComparison.Ordinal);
                 if (index >= 0) {
                     content = content.Substring(0, index) + trimedNewString + content.Substring(index + trimedOldString.Length);
-                    File.WriteAllText(fullPath, content, Encoding.UTF8);
+                    File.WriteAllText(fullPath, content, writeEncoding);
                     return true;
                 }
             }
             // Level 3: Normalized whitespace matching (DiffOps fallback)
             var result = DiffOperations.ReplaceFullLinesText(content, oldString, newString, allOccurrences);
             if (result.Success) {
-                File.WriteAllText(fullPath, result.ResultContent, Encoding.UTF8);
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file: old string not found");
@@ -318,7 +375,9 @@ namespace CefDotnetApp.AgentCore.Core
                 result[index++] = lines[i];
             }
 
-            File.WriteAllLines(fullPath, result, Encoding.UTF8);
+            // Preserve original BOM state when overwriting existing file.
+            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }
 
@@ -331,12 +390,14 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             string fileContent = File.ReadAllText(fullPath, Encoding.UTF8);
+            // Preserve original BOM state when overwriting existing file.
+            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
                 if (fileContent.Contains(searchLiteralText)) {
                     fileContent = fileContent.Replace(searchLiteralText, searchLiteralText + content);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -344,7 +405,7 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = fileContent.IndexOf(searchLiteralText, StringComparison.Ordinal);
                 if (index >= 0) {
                     fileContent = fileContent.Substring(0, index + searchLiteralText.Length) + content + fileContent.Substring(index + searchLiteralText.Length);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -357,7 +418,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (allOccurrences) {
                 if (fileContent.Contains(trimmedSearch)) {
                     fileContent = fileContent.Replace(trimmedSearch, trimmedSearch + content);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -365,14 +426,14 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = fileContent.IndexOf(trimmedSearch, StringComparison.Ordinal);
                 if (index >= 0) {
                     fileContent = fileContent.Substring(0, index + trimmedSearch.Length) + content + fileContent.Substring(index + trimmedSearch.Length);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
             // Level 3: Normalized whitespace matching (DiffOps fallback)
             var result = DiffOperations.InsertAfterFullLinesText(fileContent, searchLiteralText, content, allOccurrences);
             if (result.Success) {
-                File.WriteAllText(fullPath, result.ResultContent, Encoding.UTF8);
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("insert_after: search literal text not found");
@@ -388,12 +449,14 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             string fileContent = File.ReadAllText(fullPath, Encoding.UTF8);
+            // Preserve original BOM state when overwriting existing file.
+            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
                 if (fileContent.Contains(searchLiteralText)) {
                     fileContent = fileContent.Replace(searchLiteralText, content + searchLiteralText);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -401,7 +464,7 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = fileContent.IndexOf(searchLiteralText, StringComparison.Ordinal);
                 if (index >= 0) {
                     fileContent = fileContent.Substring(0, index) + content + fileContent.Substring(index);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -414,7 +477,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (allOccurrences) {
                 if (fileContent.Contains(trimmedSearch)) {
                     fileContent = fileContent.Replace(trimmedSearch, content + trimmedSearch);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
@@ -422,14 +485,14 @@ namespace CefDotnetApp.AgentCore.Core
                 int index = fileContent.IndexOf(trimmedSearch, StringComparison.Ordinal);
                 if (index >= 0) {
                     fileContent = fileContent.Substring(0, index) + content + fileContent.Substring(index);
-                    File.WriteAllText(fullPath, fileContent, Encoding.UTF8);
+                    File.WriteAllText(fullPath, fileContent, writeEncoding);
                     return true;
                 }
             }
             // Level 3: Normalized whitespace matching (DiffOps fallback)
             var result = DiffOperations.InsertBeforeFullLinesText(fileContent, searchLiteralText, content, allOccurrences);
             if (result.Success) {
-                File.WriteAllText(fullPath, result.ResultContent, Encoding.UTF8);
+                File.WriteAllText(fullPath, result.ResultContent, writeEncoding);
                 return true;
             }
             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("insert_before: search literal text not found");
@@ -459,7 +522,9 @@ namespace CefDotnetApp.AgentCore.Core
                 }
             }
 
-            File.WriteAllLines(fullPath, result, Encoding.UTF8);
+            // Preserve original BOM state when overwriting existing file.
+            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }
 

@@ -130,7 +130,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                System.IO.File.WriteAllText(fullPath, content, System.Text.Encoding.UTF8);
+                System.IO.File.WriteAllText(fullPath, content, CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -563,7 +563,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 // Detect original line ending
                 string originalContent = System.IO.File.ReadAllText(fullPath, System.Text.Encoding.UTF8);
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
-                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), System.Text.Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -607,7 +609,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 // Detect original line ending
                 string originalContent = System.IO.File.ReadAllText(fullPath, System.Text.Encoding.UTF8);
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
-                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), System.Text.Encoding.UTF8);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {

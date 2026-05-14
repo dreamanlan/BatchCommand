@@ -925,9 +925,12 @@
     }
     if (!body) return '';
     const clone = body.cloneNode(true);
-    // Remove code blocks, think sections, and collapse headers from the clone.
-    clone.querySelectorAll('pre, .hy-detail-block.hy-think, .hy-collapse').forEach(el => el.remove());
-    return (clone.textContent || '').trim();
+    // Remove code blocks, think sections, collapse headers, and stats from the clone.
+    clone.querySelectorAll(
+      'div[data-type="codeBlock"], pre, .hy-detail-block.hy-think, .hy-collapse, .time-consuming'
+    ).forEach(el => el.remove());
+    const text = (clone.textContent || '').trim();
+    return text.replace(/\n\s*\n/g, '\n');
   }
 
   /**

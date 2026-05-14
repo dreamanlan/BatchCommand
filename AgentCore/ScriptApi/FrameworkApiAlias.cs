@@ -127,8 +127,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("cond_expr", "cond_expr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_assembly_name", "get_type_assembly_name(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("assemblyname", "assemblyname(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_full_name", "get_type_full_name(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("fullname", "fullname(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_name", "get_type_name(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("typename", "typename(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type", "get_type(type_str)", new ExpressionFactoryHelper<GetTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("change_type", "change_type(obj,type_str)", new ExpressionFactoryHelper<ChangeTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("parse_enum", "parse_enum(type_str,val_str)", new ExpressionFactoryHelper<ParseEnumExp>());
@@ -144,6 +147,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("append_format", "append_format(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_format_line", "append_format_line(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatLineExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_builder_to_string", "string_builder_to_string(sb)", new ExpressionFactoryHelper<StringBuilderToStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stringbuildertostring", "stringbuildertostring(sb)", false, new ExpressionFactoryHelper<StringBuilderToStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_join", "string_join(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("join_string", "join_string(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_split", "string_split(str, sep) or string_split(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
@@ -285,9 +289,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("has_extension", "has_extension(path)", new ExpressionFactoryHelper<HasExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_path_rooted", "is_path_rooted(path)", new ExpressionFactoryHelper<IsPathRootedExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_name", "get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_file_name", "path_get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_filename", "path_get_filename(path)", false, new ExpressionFactoryHelper<GetFileNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_name_without_extension", "get_file_name_without_extension(path)", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_file_name_without_extension", "path_get_file_name_without_extension(path)", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_filename_without_extension", "path_get_filename_without_extension(path)", false, new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_extension", "get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_extension", "path_get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_directory_name", "get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_directory_name", "path_get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("path_get_directory", "path_get_directory(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("combine_path", "combine_path(path1,path2,...)", new ExpressionFactoryHelper<CombinePathExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("change_extension", "change_extension(path,ext)", new ExpressionFactoryHelper<ChangeExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("quote_path", "quote_path(path[,only_needed,single_quote])", new ExpressionFactoryHelper<QuotePathExp>());
@@ -320,6 +331,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("get_drives_info", "get_drives_info()", new ExpressionFactoryHelper<GetDrivesInfoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("read_all_lines", "read_all_lines(file[,encoding])", new ExpressionFactoryHelper<ReadAllLinesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("write_all_lines", "write_all_lines(file,lines[,encoding])", new ExpressionFactoryHelper<WriteAllLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("write_lines", "write_lines(file,lines[,encoding])", false, new ExpressionFactoryHelper<WriteAllLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("writelines", "writelines(file,lines[,encoding])", false, new ExpressionFactoryHelper<WriteAllLinesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("read_all_text", "read_all_text(file[,encoding])", new ExpressionFactoryHelper<ReadAllTextExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("write_all_text", "write_all_text(file,txt[,encoding])", new ExpressionFactoryHelper<WriteAllTextExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("calc_md5", "calc_md5(file)", new ExpressionFactoryHelper<CalcMd5Exp>());
@@ -6649,7 +6662,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var lines = operands[1].As<IList>();
                     if (!string.IsNullOrEmpty(path) && null != lines) {
                         path = Environment.ExpandEnvironmentVariables(path);
-                        Encoding encoding = Encoding.UTF8;
+                        // When encoding parameter is omitted, preserve original BOM state
+                        // for existing files (default to with-BOM for new files to keep legacy behavior).
+                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
                             encoding = GetEncoding(v);
@@ -6714,7 +6729,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var text = operands[1].AsString;
                     if (!string.IsNullOrEmpty(path) && null != text) {
                         path = Environment.ExpandEnvironmentVariables(path);
-                        Encoding encoding = Encoding.UTF8;
+                        // When encoding parameter is omitted, preserve original BOM state
+                        // for existing files (default to with-BOM for new files to keep legacy behavior).
+                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
                             encoding = GetEncoding(v);

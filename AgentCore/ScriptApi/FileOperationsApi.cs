@@ -27,7 +27,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(content ?? string.Empty);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"readfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"read_file error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }
@@ -39,7 +39,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_file(path, content)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file(path, content)");
                 return BoxedValue.From(false);
             }
 
@@ -47,7 +47,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
                 if (string.IsNullOrEmpty(content)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
                 }
                 string ext = Path.GetExtension(path).ToLower();
@@ -63,7 +63,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"writefile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"write_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -140,12 +140,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string path = operands[0].AsString;
                 var obj = operands[1].GetObject();
-                if (obj is not byte[] bytes) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("write_file_bytes: second argument must be a byte array");
+                if (obj is byte[] bytes) {
+                    bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, bytes);
+                    return BoxedValue.From(result);
+                }
+                else if(obj is IList<byte> list) {
+                    bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, list.ToArray());
+                    return BoxedValue.From(result);
+                }
+                else {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("write_file_bytes: second argument must be a byte array or a byte list");
                     return BoxedValue.From(false);
                 }
-                bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, bytes);
-                return BoxedValue.From(result);
             }
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"write_file_bytes error: {ex.Message}");
@@ -228,7 +234,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file(path, content)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_file(path, content)");
                 return BoxedValue.From(false);
             }
 
@@ -243,7 +249,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"appendfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"append_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -267,7 +273,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"copyfile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"copy_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -291,7 +297,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"movefile error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"move_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -313,7 +319,73 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"fileexists error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_exists error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // file_has_bom(path) - check if file has UTF-8 BOM
+    sealed class FileHasBomExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_has_bom(path)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                bool result = Core.AgentCore.Instance.FileOps.FileHasBom(path);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_has_bom error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // file_add_bom(path) - add UTF-8 BOM to file (skip if already has BOM)
+    sealed class FileAddBomExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_add_bom(path)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                bool result = Core.AgentCore.Instance.FileOps.FileAddBom(path);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_add_bom error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // file_remove_bom(path) - remove UTF-8 BOM from file (skip if no BOM)
+    sealed class FileRemoveBomExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_remove_bom(path)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                bool result = Core.AgentCore.Instance.FileOps.FileRemoveBom(path);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_remove_bom error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -335,7 +407,28 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"direxists error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"dir_exists error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // path_exists(path) - check if file or directory exists
+    sealed class PathExistsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: path_exists(path), aliased as path_exist");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                return BoxedValue.FromBool(Core.AgentCore.Instance.FileOps.DirectoryExists(path) || Core.AgentCore.Instance.FileOps.FileExists(path));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"path_exists error: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }
@@ -366,7 +459,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromObject(result);
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"listdir error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"list_dir_info error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
         }

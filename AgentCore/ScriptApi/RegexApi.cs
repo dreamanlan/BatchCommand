@@ -160,7 +160,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
                 string newContent = StringHelper.ReplacePattern(content, pattern, replacement, ignoreCase);
-                System.IO.File.WriteAllText(path, newContent);
+                // Preserve original BOM state when overwriting existing file.
+                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: false);
+                System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {

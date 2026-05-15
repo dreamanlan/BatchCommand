@@ -149,6 +149,15 @@ void FDebugScriptModule::StartupModule()
     		InitGpuCaptureManager();
             UE_LOG(LogTemp, Log, TEXT("DebugScript module OnFEngineLoopInitComplete, SavedDir=%s"), *SavedDir);
         });
+
+    // Register RHI thread end-of-frame hook for precise single-frame GPU capture.
+    FCoreDelegates::OnEndFrameRHI.AddLambda([](uint64 FrameNo)
+        {
+			extern void EndFrameCaptureIfCapturing();
+			extern void StartFrameCaptureOnDemand(uint64_t);
+            EndFrameCaptureIfCapturing();
+            StartFrameCaptureOnDemand(FrameNo);
+        });
 }
 
 void FDebugScriptModule::ShutdownModule()

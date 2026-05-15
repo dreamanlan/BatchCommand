@@ -1,4 +1,3 @@
-#define NOMINMAX
 #include "DebugScriptVM.h"
 #include "string.h"
 #include <vector>
@@ -3027,7 +3026,7 @@ PRAGMA_DIAG_POP_IGNORE_RETURN_LOCAL_ADDR()
         int64_t addr = 0;
         int64_t args[c_max_count - 1];
 
-        int num = std::min(argNum, c_max_count);
+        int num = (std::min)(argNum, c_max_count);
 
         for (int i = 0; i < argNum; i += 2) {
             int32_t operand = codes[++pos];
@@ -3162,8 +3161,8 @@ PRAGMA_DIAG_POP_IGNORE_RETURN_LOCAL_ADDR()
         float fargs[c_max_count];
         int64_t stacks[c_max_count * 4];
 
-        int inum = std::min(intNum + 1, c_max_count + 1);
-        int fnum = std::min(fltNum, c_max_count);
+        int inum = (std::min)(intNum + 1, c_max_count + 1);
+        int fnum = (std::min)(fltNum, c_max_count);
 
         for (int i = 0; i < argNum; i += 2) {
             int32_t operand = codes[++pos];
@@ -3299,8 +3298,8 @@ PRAGMA_DIAG_POP_IGNORE_RETURN_LOCAL_ADDR()
         float fargs[c_max_count];
         int64_t stacks[c_max_count * 4];
 
-        int inum = std::min(intNum + 1, c_max_count + 1);
-        int fnum = std::min(fltNum, c_max_count);
+        int inum = (std::min)(intNum + 1, c_max_count + 1);
+        int fnum = (std::min)(fltNum, c_max_count);
 
         for (int i = 0; i < argNum; i += 2) {
             int32_t operand = codes[++pos];
@@ -3436,8 +3435,8 @@ PRAGMA_DIAG_POP_IGNORE_RETURN_LOCAL_ADDR()
         double fargs[c_max_count];
         int64_t stacks[c_max_count * 4];
 
-        int inum = std::min(intNum + 1, c_max_count + 1);
-        int fnum = std::min(fltNum, c_max_count);
+        int inum = (std::min)(intNum + 1, c_max_count + 1);
+        int fnum = (std::min)(fltNum, c_max_count);
 
         for (int i = 0; i < argNum; i += 2) {
             int32_t operand = codes[++pos];
@@ -3573,8 +3572,8 @@ PRAGMA_DIAG_POP_IGNORE_RETURN_LOCAL_ADDR()
         double fargs[c_max_count];
         int64_t stacks[c_max_count * 4];
 
-        int inum = std::min(intNum + 1, c_max_count + 1);
-        int fnum = std::min(fltNum, c_max_count);
+        int inum = (std::min)(intNum + 1, c_max_count + 1);
+        int fnum = (std::min)(fltNum, c_max_count);
 
         for (int i = 0; i < argNum; i += 2) {
             int32_t operand = codes[++pos];

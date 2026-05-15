@@ -7,12 +7,6 @@
 #include <string>
 #include <array>
 
-extern void EndFrameCaptureIfCapturing();
-void FDbgScpHookHelper::EndFrameCaptureIfCapturing()
-{
-	::EndFrameCaptureIfCapturing();
-}
-
 bool FDbgScpHookHelper::DbgScpBreakpoint(const char* file, int line, const char* func, const char* tag)
 {
 	DBGSCP_HOOK("DbgScpBreakpoint", bool, tag, file, line, func);

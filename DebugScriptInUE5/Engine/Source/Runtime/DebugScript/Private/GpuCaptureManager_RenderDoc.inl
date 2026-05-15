@@ -145,7 +145,8 @@ bool GpuCaptureManager::Init(GpuCaptureBackend backend, const std::string& modul
             return false;
         }
 
-        int ret = GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&m_rd->api);
+        // Use older API version supported by RenderDoc 1.13
+        int ret = GetAPI(eRENDERDOC_API_Version_1_4_1, (void**)&m_rd->api);
         if (ret != 1 || !m_rd->api)
         {
             if (own)

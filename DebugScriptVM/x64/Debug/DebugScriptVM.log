@@ -1,6 +1,2 @@
-﻿  DebugScriptVM.cpp
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(508,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(530,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(552,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
-D:\GitHub\BatchCommand\DebugScriptVM\DebugScriptVM.cpp(2731,6): warning C5051: 属性 [[maybe_unused]] 至少需要“/std:c++17”；已忽略
+﻿    正在创建库 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.lib 和对象 D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.exp
   DebugScriptVM.vcxproj -> D:\GitHub\BatchCommand\x64\Debug\DebugScriptVM.dll

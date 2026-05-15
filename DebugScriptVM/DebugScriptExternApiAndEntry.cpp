@@ -1165,6 +1165,10 @@ void ShutdownGpuCaptureManager()
     GpuCaptureManager::Instance().Shutdown();
     g_bFrameCapturing = false;
 }
+void StartFrameCaptureOnDemand(uint64_t frameNo)
+{
+    DBGSCP_HOOK_VOID("StartFrameCaptureOnDemand", frameNo);
+}
 void EndFrameCaptureIfCapturing()
 {
     if (g_bFrameCapturing) {

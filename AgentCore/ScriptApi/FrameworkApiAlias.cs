@@ -95,6 +95,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_object", "is_object(v)", new ExpressionFactoryHelper<IsObjectExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_string", "is_string(v)", new ExpressionFactoryHelper<IsStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_boolean", "is_boolean(v)", new ExpressionFactoryHelper<IsBooleanExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_char", "is_char(v)", new ExpressionFactoryHelper<IsCharExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_integer", "is_integer(v)", new ExpressionFactoryHelper<IsIntegerExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_signed_integer", "is_signed_integer(v)", new ExpressionFactoryHelper<IsSignedIntegerExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_unsigned_integer", "is_unsigned_integer(v)", new ExpressionFactoryHelper<IsUnsignedIntegerExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_number", "is_number(v)", new ExpressionFactoryHelper<IsNumberExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_tuple", "is_tuple(v)", new ExpressionFactoryHelper<IsTupleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("boxed_value_type", "boxed_value_type(v)", new ExpressionFactoryHelper<BoxedValueTypeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("boxed_value_type_name", "boxed_value_type_name(v)", new ExpressionFactoryHelper<BoxedValueTypeNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("f_to_i", "f_to_i(v)", new ExpressionFactoryHelper<FtoiExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("i_to_f", "i_to_f(v)", new ExpressionFactoryHelper<ItofExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("f_to_u", "f_to_u(v)", new ExpressionFactoryHelper<FtouExp>());
@@ -1202,6 +1213,127 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 decimal v1 = operands[0].GetDecimal();
                 BoxedValue v = v1;
                 return v;
+            }
+        }
+        internal sealed class IsObjectExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_object(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsObject);
+            }
+        }
+        internal sealed class IsStringExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_string(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsString);
+            }
+        }
+        internal sealed class IsBooleanExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_boolean(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsBoolean);
+            }
+        }
+        internal sealed class IsCharExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_char(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsChar);
+            }
+        }
+        internal sealed class IsIntegerExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_integer(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsInteger);
+            }
+        }
+        internal sealed class IsSignedIntegerExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_signed_integer(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsSignedInteger);
+            }
+        }
+        internal sealed class IsUnsignedIntegerExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_unsigned_integer(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsUnsignedInteger);
+            }
+        }
+        internal sealed class IsNumberExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_number(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsNumber);
+            }
+        }
+        internal sealed class IsTupleExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_tuple(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsTuple);
+            }
+        }
+        internal sealed class BoxedValueTypeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: boxed_value_type(v)");
+                    return BoxedValue.From(-1);
+                }
+                return BoxedValue.From(operands[0].Type);
+            }
+        }
+        internal sealed class BoxedValueTypeNameExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: boxed_value_type_name(v)");
+                    return BoxedValue.EmptyString;
+                }
+                return BoxedValue.FromString(operands[0].GetTypeName());
             }
         }
         internal sealed class ItofExp : SimpleExpressionBase

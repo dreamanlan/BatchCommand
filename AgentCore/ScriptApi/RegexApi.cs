@@ -30,6 +30,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             // File-based regex operations
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
+
+            // Regex escape / unescape
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_escape", "regex_escape(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", new ExpressionFactoryHelper<RegexEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_unescape", "regex_unescape(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", new ExpressionFactoryHelper<RegexUnescapeExp>());
         }
     }
 
@@ -201,6 +205,54 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_search_file: {ex.Message}");
                 return BoxedValue.FromObject(new List<string>());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Escape regex metacharacters in a string
+    /// </summary>
+    sealed class RegexEscapeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_escape(str)");
+                return BoxedValue.EmptyString;
+            }
+
+            try {
+                string str = operands[0].AsString;
+                string result = System.Text.RegularExpressions.Regex.Escape(str ?? string.Empty);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_escape: {ex.Message}");
+                return BoxedValue.EmptyString;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unescape regex escape sequences in a string
+    /// </summary>
+    sealed class RegexUnescapeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_unescape(str)");
+                return BoxedValue.EmptyString;
+            }
+
+            try {
+                string str = operands[0].AsString;
+                string result = System.Text.RegularExpressions.Regex.Unescape(str ?? string.Empty);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_unescape: {ex.Message}");
+                return BoxedValue.EmptyString;
             }
         }
     }

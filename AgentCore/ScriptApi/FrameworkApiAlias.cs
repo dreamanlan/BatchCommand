@@ -95,6 +95,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("float", "float(v)", new ExpressionFactoryHelper<FloatExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("double", "double(v)", new ExpressionFactoryHelper<DoubleExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("decimal", "decimal(v)", new ExpressionFactoryHelper<DecimalExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("datetime", "datetime(v) api", new ExpressionFactoryHelper<DateTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_object", "is_object(v)", new ExpressionFactoryHelper<IsObjectExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_string", "is_string(v)", new ExpressionFactoryHelper<IsStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_boolean", "is_boolean(v)", new ExpressionFactoryHelper<IsBooleanExp>());
@@ -103,6 +104,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("is_signed_integer", "is_signed_integer(v)", new ExpressionFactoryHelper<IsSignedIntegerExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_unsigned_integer", "is_unsigned_integer(v)", new ExpressionFactoryHelper<IsUnsignedIntegerExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_number", "is_number(v)", new ExpressionFactoryHelper<IsNumberExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_date_time", "is_date_time(v)", new ExpressionFactoryHelper<IsDateTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_tuple", "is_tuple(v)", new ExpressionFactoryHelper<IsTupleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("boxed_value_type", "boxed_value_type(v)", new ExpressionFactoryHelper<BoxedValueTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("boxed_value_type_name", "boxed_value_type_name(v)", new ExpressionFactoryHelper<BoxedValueTypeNameExp>());
@@ -219,6 +221,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("short_date_str", "short_date_str()", new ExpressionFactoryHelper<ShortDateStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("short_time_string", "short_time_string()", new ExpressionFactoryHelper<ShortTimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("short_time_str", "short_time_str()", new ExpressionFactoryHelper<ShortTimeStrExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("now", "now() api", new ExpressionFactoryHelper<NowExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_date_time", "parse_date_time(str) api", new ExpressionFactoryHelper<ParseDateTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("format_date_time", "format_date_time(fmt,datetime) api", new ExpressionFactoryHelper<FormatDateTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_tuple", "(v1,v2,...) or new_tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
@@ -282,9 +287,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_env", "set_env(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("set_environment", "set_environment(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_env", "get_env(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_environment", "get_environment(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("environment", "environment(k)", false, new ExpressionFactoryHelper<GetEnvironmentExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("environments", "environments()", new ExpressionFactoryHelper<EnvironmentsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("pwd", "pwd()", new ExpressionFactoryHelper<GetCurrentDirectoryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("cmd_line", "cmd_line()", new ExpressionFactoryHelper<CommandLineExp>());
@@ -300,6 +309,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("has_extension", "has_extension(path)", new ExpressionFactoryHelper<HasExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_path_rooted", "is_path_rooted(path)", new ExpressionFactoryHelper<IsPathRootedExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_name", "get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("file_name", "file_name(path)", false, new ExpressionFactoryHelper<GetFileNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("filename", "filename(path)", false, new ExpressionFactoryHelper<GetFileNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_get_file_name", "path_get_file_name(path)", new ExpressionFactoryHelper<GetFileNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_get_filename", "path_get_filename(path)", false, new ExpressionFactoryHelper<GetFileNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_name_without_extension", "get_file_name_without_extension(path)", new ExpressionFactoryHelper<GetFileNameWithoutExtensionExp>());
@@ -308,6 +319,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("get_extension", "get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_get_extension", "path_get_extension(path)", new ExpressionFactoryHelper<GetExtensionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_directory_name", "get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("directory_name", "directory_name(path)", false, new ExpressionFactoryHelper<GetDirectoryNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_directory", "get_directory(path)", false, new ExpressionFactoryHelper<GetDirectoryNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_get_directory_name", "path_get_directory_name(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_get_directory", "path_get_directory(path)", new ExpressionFactoryHelper<GetDirectoryNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("combine_path", "combine_path(path1,path2,...)", new ExpressionFactoryHelper<CombinePathExp>());
@@ -317,19 +330,24 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("call_stack", "call_stack()", new ExpressionFactoryHelper<CallStackExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("file_echo", "file_echo(bool) or file_echo()", new ExpressionFactoryHelper<FileEchoExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("dir_exists", "dir_exists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("directory_exists", "directory_exists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", false, new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("file_exists", "file_exists(file)", new ExpressionFactoryHelper<FileExistExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", false, new ExpressionFactoryHelper<FileExistExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_all_files", "list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("create_dir", "create_dir(dir)", new ExpressionFactoryHelper<CreateDirectoryExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("make_dir", "make_dir(path)", new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("create_directory", "create_directory(dir)", new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("make_dir", "make_dir(path)", false, new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("makedir", "makedir(path)", false, new ExpressionFactoryHelper<CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("make_directory", "make_directory(path)", false, new ExpressionFactoryHelper<CreateDirectoryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_dir", "copy_dir(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<CopyDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("copy_directory", "copy_directory(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<CopyDirectoryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("move_dir", "move_dir(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("move_directory", "move_directory(dir1,dir2)", new ExpressionFactoryHelper<MoveDirectoryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("delete_dir", "delete_dir(dir)", new ExpressionFactoryHelper<DeleteDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("delete_directory", "delete_directory(dir)", false, new ExpressionFactoryHelper<DeleteDirectoryExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("copy_file", "copy_file(file1,file2)", new ExpressionFactoryHelper<CopyFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_files", "copy_files(dir1,dir2,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<CopyFilesExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("move_file", "move_file(file1,file2)", new ExpressionFactoryHelper<MoveFileExp>());
@@ -337,6 +355,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("delete_files", "delete_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, dont include subdir", new ExpressionFactoryHelper<DeleteFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("delete_all_files", "delete_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...) api, include subdir", new ExpressionFactoryHelper<DeleteAllFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_info", "get_file_info(file)", new ExpressionFactoryHelper<GetFileInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("file_info", "file_info(file)", false, new ExpressionFactoryHelper<GetFileInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("fileinfo", "fileinfo(file)", false, new ExpressionFactoryHelper<GetFileInfoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_dir_info", "get_dir_info(dir)", new ExpressionFactoryHelper<GetDirectoryInfoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_drive_info", "get_drive_info(drive)", new ExpressionFactoryHelper<GetDriveInfoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_drives_info", "get_drives_info()", new ExpressionFactoryHelper<GetDrivesInfoExp>());
@@ -1215,6 +1235,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return v;
             }
         }
+	    internal sealed class DateTimeExp : SimpleExpressionBase
+	    {
+	        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+	        {
+	            DateTime v1 = operands[0].GetDateTime();
+	            BoxedValue v = v1;
+	            return v;
+	        }
+	    }
         internal sealed class IsObjectExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1301,8 +1330,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsNumber);
-            }
-        }
+	        }
+	    }
+	    internal sealed class IsDateTimeExp : SimpleExpressionBase
+	    {
+	        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+	        {
+	            if (operands.Count != 1) {
+	            	AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_date_time(v)");
+	                return BoxedValue.FromBool(false);
+	            }
+	            return BoxedValue.FromBool(operands[0].IsDateTime);
+	        }
+	    }
         internal sealed class IsTupleExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -4732,6 +4772,45 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.NullObject;
                 }
                 var r = BoxedValue.FromObject(DateTime.Now.ToShortTimeString());
+                return r;
+            }
+        }
+        internal sealed class NowExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: now()");
+                    return BoxedValue.NullObject;
+                }
+                var r = BoxedValue.FromDateTime(DateTime.Now);
+                return r;
+            }
+        }
+        internal sealed class ParseDateTimeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: parse_date_time(str)");
+                    return BoxedValue.NullObject;
+                }
+                DateTime.TryParse(operands[0].ToString(), out var dt);
+                var r = BoxedValue.FromDateTime(dt);
+                return r;
+            }
+        }
+        internal sealed class FormatDateTimeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 2) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: format_date_time(str,datetime)");
+                    return BoxedValue.NullObject;
+                }
+                string fmt = operands[0].ToString();
+                DateTime dt = operands[1].GetDateTime();
+                var r = BoxedValue.FromString(dt.ToString(fmt));
                 return r;
             }
         }

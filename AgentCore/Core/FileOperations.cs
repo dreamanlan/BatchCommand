@@ -254,7 +254,7 @@ namespace CefDotnetApp.AgentCore.Core
             return result;
         }
 
-        public bool CreateDirectory(string path)
+        public bool EnsureDirectory(string path)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!Directory.Exists(fullPath)) {
@@ -264,7 +264,7 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool DeleteDirectory(string path, bool recursive = false)
+        public bool RemoveDirectory(string path, bool recursive = false)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (Directory.Exists(fullPath)) {

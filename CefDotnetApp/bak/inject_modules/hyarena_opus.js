@@ -21,6 +21,7 @@
     POLL_MS: 3000,
     LANG_FILTER: [],
     MAX_ROUNDS: 8,
+    KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
     DEBUG: true,
     // Minimum slot count when page selectors are not yet available.
@@ -408,7 +409,7 @@
     }
 
     const now = Date.now();
-    if (ST.lastFlushTs && now - ST.lastFlushTs > CFG.RESET_TIMEOUT_MS) {
+    if (!ST.longRunMode && ST.lastFlushTs && now - ST.lastFlushTs > CFG.RESET_TIMEOUT_MS) {
       ST.roundCount = 0;
       log('[rounds] idle timeout, reset to 0');
     }
@@ -420,15 +421,6 @@
     }
 
     const lines = [];
-    // Drop-notice: warn non-executor slots that produced executable code
-    // (which was dropped) to stop writing code. Inserted at the very top
-    // so it precedes any other content.
-    if (ST.pendingDropNotice.size > 0) {
-      for (const id of ST.pendingDropNotice) {
-        lines.push(`【${displayName(id)}】，不要写任何代码`);
-      }
-      ST.pendingDropNotice.clear();
-    }
     const blind = isBlindMode();
     if (blind) {
       lines.push('> Note: blind mode, model names (Model A/B) are anonymous placeholders.');
@@ -475,6 +467,17 @@
       }
     }
 
+    // Drop-notice: warn non-executor slots that produced executable code
+    // (which was dropped) to stop writing code. Appended at the end
+    // so it follows other content.
+    if (ST.pendingDropNotice.size > 0) {
+      for (const id of ST.pendingDropNotice) {
+        lines.push(``);
+        lines.push(`** ${displayName(id)}，你不要写任何代码！！！ **`);
+      }
+      ST.pendingDropNotice.clear();
+    }
+
     if (lines.length) {
       // Round counting: merge mode (after resume) or queued single-result
       // emit counts +1; otherwise per-non-empty-slot.
@@ -498,6 +501,7 @@
       ST.lastAutoSentText = text;
       chatSend(text);
     }
+    trimHistory(CFG.KEEP_ROUNDS);
     updatePanel();
   }
 
@@ -686,6 +690,12 @@
         <span style="opacity:0.8;">executor:</span>
         <select class="metadsl-exec-select" style="flex:1; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px;">${execOptions}</select>
       </div>
+      <div style="margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+        <span style="opacity:0.8;">keep:</span>
+        <input class="metadsl-keep-input" type="number" min="1" max="99" value="${CFG.KEEP_ROUNDS}" style="width:44px; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px; text-align:center;">
+        <span style="opacity:0.8;">rounds</span>
+        <button data-act="trim" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">trim</button>
+      </div>
       <div style="display:flex; gap:4px; margin-bottom:4px;">
         <button data-act="arm"    style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.armed ? '#ef6c00' : '#455a64'}; color:#fff; border:none; border-radius:3px;">${ST.armed ? 'disarm' : 'arm'}</button>
         <button data-act="break"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#d32f2f; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? 'disabled' : ''}>break</button>
@@ -734,8 +744,54 @@
         else if (act === 'autosend') {
           ST.autoSendOn ? stopAutoSend() : startAutoSend();
         }
+        else if (act === 'trim') {
+          trimHistory(CFG.KEEP_ROUNDS);
+        }
       };
     });
+    const keepInput = body.querySelector('.metadsl-keep-input');
+    if (keepInput) {
+      keepInput.onchange = (ev) => {
+        ev.stopPropagation();
+        const v = parseInt(keepInput.value, 10);
+        if (v > 0) {
+          CFG.KEEP_ROUNDS = v;
+          log('[trim] keep rounds set to ' + v);
+        }
+      };
+      keepInput.onclick = (ev) => ev.stopPropagation();
+    }
+  }
+
+  /**
+   * Remove old conversation rounds from the DOM, keeping only the last
+   * `keepRounds` rounds. A round is one userMsg + one aiMsg pair.
+   * Works for both explicit-compare and blind-compare page layouts.
+   */
+  function trimHistory(keepRounds) {
+    const chatList = document.querySelector(SEL.chatList);
+    if (!chatList) return;
+    // Collect paired rounds: each round = [userMsgEl, aiMsgEl]
+    const rounds = [];
+    let pendingUser = null;
+    for (const child of Array.from(chatList.children)) {
+      if (child.matches(SEL.userMsg)) {
+        pendingUser = child;
+      } else if (child.matches(SEL.aiMsg) && pendingUser) {
+        rounds.push([pendingUser, child]);
+        pendingUser = null;
+      }
+    }
+    const toRemove = rounds.length - keepRounds;
+    if (toRemove <= 0) return;
+    log(`[trim] removing ${toRemove} old round(s), keeping ${keepRounds}`);
+    for (let i = 0; i < toRemove; i++) {
+      const [uEl, aEl] = rounds[i];
+      // Clean up emptyAt map entry to avoid memory leak.
+      ST.emptyAt.delete(aEl);
+      uEl.remove();
+      aEl.remove();
+    }
   }
 
   function startAutoSend() {

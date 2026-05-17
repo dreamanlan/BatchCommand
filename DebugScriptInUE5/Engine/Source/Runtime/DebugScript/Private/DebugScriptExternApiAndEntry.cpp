@@ -30,10 +30,13 @@
 
 #if defined(_MSC_VER)
 #include "windows.h"
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(__OHOS__)
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
 #include <dlfcn.h>
 #elif defined(__APPLE__)
 #include <mach/mach.h>
@@ -290,7 +293,7 @@ static inline int64_t GetProcessId()
 {
 #if defined(_MSC_VER)
     return static_cast<int64_t>(GetCurrentProcessId());
-#elif defined(__APPLE__) || defined(__ANDROID__)
+#elif defined(__APPLE__) || defined(__ANDROID__) || defined(__OHOS__)
     return static_cast<int64_t>(getpid());
 #else
     return 0;
@@ -302,6 +305,8 @@ static inline int64_t GetThreadId()
     return static_cast<int64_t>(GetCurrentThreadId());
 #elif defined(__ANDROID__)
     return static_cast<int64_t>(gettid());
+#elif defined(__OHOS__)
+    return static_cast<int64_t>(syscall(SYS_gettid));
 #elif defined(__APPLE__)
     //thread_t mach_tid = mach_thread_self(); // returns a send right (thread_t)
     //int64_t tid = static_cast<int64_t>(mach_tid);
@@ -440,6 +445,7 @@ static const std::streamsize c_log_buffer_size = 8 * 1024 * 1024;
 static int g_LogIndex = 0;
 static bool g_FirstLog = true;
 static uint64_t g_LogSize = 0;
+static int g_MaxLogFileNum = c_max_log_file_num / 2;
 
 static inline std::vector<char>& GetSwapBufferRef()
 {
@@ -479,7 +485,10 @@ static inline std::string* GetLogFilesRef()
 
 static int DbgScp_FlushLog_NoLock(const char* pstr, size_t len) {
     int err = -1;
-    if (g_LogIndex < c_max_log_file_num) {
+    if (g_MaxLogFileNum > c_max_log_file_num) {
+        g_MaxLogFileNum = c_max_log_file_num;
+    }
+    if (g_LogIndex < g_MaxLogFileNum) {
         char errmsg[256];
         FILE* fp = open_file_with_error(GetLogFilesRef()[g_LogIndex].c_str(), g_FirstLog ? "wt" : "at", err, errmsg, sizeof(errmsg));
         if (fp) {
@@ -508,7 +517,7 @@ static int DbgScp_FlushLog_NoLock(const char* pstr, size_t len) {
 
             if (g_LogSize >= c_max_log_file_size) {
                 g_FirstLog = true;
-                g_LogIndex = (g_LogIndex + 1) % c_max_log_file_num;
+                g_LogIndex = (g_LogIndex + 1) % g_MaxLogFileNum;
                 g_LogSize = 0;
             }
         }
@@ -962,7 +971,7 @@ static inline size_t GetPagetSize()
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
     return static_cast<size_t>(sysInfo.dwPageSize);
-#elif defined(__APPLE__) || defined(__ANDROID__)
+#elif defined(__APPLE__) || defined(__ANDROID__) || defined(__OHOS__)
     return static_cast<size_t>(getpagesize());
 #else
     return 4096;
@@ -1022,7 +1031,7 @@ static inline void SetMemoryProtect(int64_t addr, size_t size, size_t pageSize, 
     }
     DWORD oldProtect;
     VirtualProtect(reinterpret_cast<void*>(addr), size, flag, &oldProtect);
-#elif defined(__ANDROID__) || defined(__APPLE__)
+#elif defined(__ANDROID__) || defined(__APPLE__) || defined(__OHOS__)
     int flag = rawflag;
     if (quickflag >= 0) {
         switch (quickflag) {

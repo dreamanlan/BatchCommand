@@ -33,14 +33,19 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("move_file", "move_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<MoveFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_exists", "file_exists(path)", new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_exist", "file_exist(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("exist_file", "exist_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_has_bom", "file_has_bom(path) - check whether file has UTF-8 BOM", new ExpressionFactoryHelper<FileHasBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_add_bom", "file_add_bom(path) - add UTF-8 BOM to file (skip if already has BOM)", new ExpressionFactoryHelper<FileAddBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_remove_bom", "file_remove_bom(path) - remove UTF-8 BOM from file (skip if no BOM)", new ExpressionFactoryHelper<FileRemoveBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_exists", "dir_exists(path)", new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_exist", "dir_exist(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("exist_dir", "exist_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_exists", "path_exists(path)", new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_exist", "path_exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("list_dir_info", "list_dir_info(path, glob_pattern, recursive) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<ListDirInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("exist_path", "exist_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_dir_info", "list_dir_info(path[, glob_pattern, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<ListDirInfoExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_files", "find_files(path, glob_pattern[, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFilesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("search_files", "search_files(glob_pattern, path) return List, use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<SearchFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_size", "get_file_size(path)", new ExpressionFactoryHelper<GetFileSizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_size", "file_size(path)", false, new ExpressionFactoryHelper<GetFileSizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_length", "get_file_length(path)", false, new ExpressionFactoryHelper<GetFileSizeExp>());
@@ -51,6 +56,8 @@ namespace CefDotnetApp.AgentCore
 
             // Code Editing Operations
             AgentFrameworkService.Instance.DslEngine!.Register("replace_in_file", "replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", new ExpressionFactoryHelper<ReplaceInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_replace_in_file", "string_replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_replace_file", "string_replace_file(path, oldString, newString[, replaceAll[, exactMatch]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("multi_replace", "multi_replace(path, editsJson) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...]", new ExpressionFactoryHelper<MultiReplaceExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("replace_range", "replace_range(path, startLine, endLine, newContent)", new ExpressionFactoryHelper<ReplaceRangeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("insert_after_text", "insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch]])", new ExpressionFactoryHelper<InsertAfterTextExp>());
@@ -76,6 +83,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("grep_files", "grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", new ExpressionFactoryHelper<SearchInFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grepfiles", "grepfiles(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", false, new ExpressionFactoryHelper<SearchInFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("count_lines", "count_lines(path[, startLine, endLine]) - display lines with line number, indent info, and content", new ExpressionFactoryHelper<CountLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("count_file_lines", "count_file_lines(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountLinesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("countlines", "countlines(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountLinesExp>());
 
             // Diff Operations
@@ -185,10 +193,17 @@ namespace CefDotnetApp.AgentCore
             // alias for LLM Imaginary
             AgentFrameworkService.Instance.DslEngine!.Register("string_find", "string_find(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("stringfind", "stringfind(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_string", "find_string(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("findstring", "findstring(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_in_string", "find_in_string(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("index_of", "index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_index_of", "find_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("last_index_of", "last_index_of(str, substr[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_last_index_of", "find_last_index_of(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("index_of_any", "index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringIndexOfAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_index_of_any", "find_index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringIndexOfAnyExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("last_index_of_any", "last_index_of_any(str, char_list[, start, count])", new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("find_last_index_of_any", "find_last_index_of_any(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfAnyExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("indexof", "indexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("lastindexof", "lastindexof(str, substr[, start, count])", false, new ExpressionFactoryHelper<StringLastIndexOfExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("indexofany", "indexofany(str, char_list[, start, count])", false, new ExpressionFactoryHelper<StringIndexOfAnyExp>());
@@ -206,6 +221,9 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("len", "len(str) or len(list) or len(dict)", new ExpressionFactoryHelper<SizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("size", "size(str) or size(list) or size(dict)", new ExpressionFactoryHelper<SizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("count", "count(str) or count(list) or count(dict)", new ExpressionFactoryHelper<SizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_count", "get_count(str) or get_count(list) or get_count(dict)", false, new ExpressionFactoryHelper<SizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_size", "get_size(str) or get_size(list) or get_size(dict)", false, new ExpressionFactoryHelper<SizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_length", "get_length(str) or get_length(list) or get_length(dict)", false, new ExpressionFactoryHelper<SizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("array_size", "array_size(list)", false, new ExpressionFactoryHelper<SizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("array_length", "array_length(list)", false, new ExpressionFactoryHelper<SizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_contains", "list_contains(list,val)", new ExpressionFactoryHelper<ListContainsExp>());
@@ -227,13 +245,20 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("strlen", "strlen(val)", new ExpressionFactoryHelper<StringLengthExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("starts_with", "starts_with(str, substr)", new ExpressionFactoryHelper<StringStartsWithExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("ends_with", "ends_with(str, substr)", new ExpressionFactoryHelper<StringEndsWithExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("create_directory", "create_directory(dir)", new ExpressionFactoryHelper<FrameworkApiAlias.CreateDirectoryExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("mkdir", "mkdir(path)", new ExpressionFactoryHelper<FrameworkApiAlias.CreateDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ensure_dir", "ensure_dir(path)", new ExpressionFactoryHelper<EnsureDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ensure_directory", "ensure_directory(path)", new ExpressionFactoryHelper<EnsureDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("remove_dir", "remove_dir(path)", new ExpressionFactoryHelper<RemoveDirectoryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("remove_directory", "remove_directory(path)", new ExpressionFactoryHelper<RemoveDirectoryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hotreload", "hotreload()", false, new ExpressionFactoryHelper<HotReloadExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("callskill", "callskill(skill_name, arg1, arg2, ...)", false, new ExpressionFactoryHelper<CallSkillExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("refreshskills", "refreshskills()", false, new ExpressionFactoryHelper<RefreshSkillsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("refreshembedding", "refreshembedding()", false, new ExpressionFactoryHelper<RefreshEmbeddingExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("refreshreranker", "refreshreranker()", false, new ExpressionFactoryHelper<RefreshRerankExp>());
+
+            AgentFrameworkService.Instance.DslEngine!.Register("name_contains", "name_contains(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<FrameworkApiAlias.StringContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("name_not_contains", "name_not_contains(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<FrameworkApiAlias.StringNotContainsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("name_contains_any", "name_contains_any(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<FrameworkApiAlias.StringContainsAnyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("name_not_contains_any", "name_not_contains_any(str,str_or_list_1,str_or_list_2,...)", false, new ExpressionFactoryHelper<FrameworkApiAlias.StringNotContainsAnyExp>());
 
             // Unified Multi-Language Code Analysis Operations
             UnifiedCodeAnalysisScriptApi.RegisterApis();

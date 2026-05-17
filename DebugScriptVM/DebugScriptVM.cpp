@@ -642,8 +642,10 @@ namespace
             return 1; //android
 #elif defined(__APPLE__)
             return 2; //apple
+#elif defined(__OHOS__)
+            return 3; //ohos
 #else
-            return 3; //other
+            return 9999; //other
 #endif
         }
         static inline int64_t ScriptAssert(int argNum, const std::vector<int32_t>& codes, int32_t& pos, int32_t stackBase, IntLocals& intLocals, FloatLocals& fltLocals, StringLocals& strLocals, IntGlobals& intGlobals, FloatGlobals& fltGlobals, StringGlobals& strGlobals)

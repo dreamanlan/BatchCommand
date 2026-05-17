@@ -18,6 +18,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             // Regex matching APIs
             AgentFrameworkService.Instance.DslEngine!.Register("regex_match", "regex_match(str, regex_pattern, [ignoreCase])", new ExpressionFactoryHelper<RegexMatchExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_is_match", "regex_is_match(str, regex_pattern, [ignoreCase])", new ExpressionFactoryHelper<RegexMatchExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_find", "regex_find(str, regex_pattern, [ignoreCase])", false, new ExpressionFactoryHelper<RegexMatchExp>());
 
             // Regex replacement APIs
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace", "regex_replace(str, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceExp>());
@@ -45,14 +46,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_match(str, regex_pattern, [ignoreCase]), aliased as regex_is_match");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_match(str, regex_pattern, [ignoreCase or 'i']), aliased as regex_is_match or regex_find");
                 return BoxedValue.From(false);
             }
 
             try {
                 string str = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() : true;
+                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
 
                 bool result = StringHelper.MatchesPattern(str, pattern, ignoreCase);
                 if (!result && File.Exists(str)) {
@@ -83,7 +84,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string pattern = operands[1].AsString;
                 string replacement = operands[2].AsString;
-                bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() : true;
+                bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
 
                 if (!StringHelper.MatchesPattern(str, pattern, ignoreCase)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: pattern not found: {pattern}");
@@ -120,7 +121,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string str = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() : true;
+                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
 
                 var matches = StringHelper.FindAllMatches(str, pattern, ignoreCase);
                 if (matches.Count == 0 && File.Exists(str)) {
@@ -151,7 +152,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 string replacement = operands[2].AsString;
-                bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() : true;
+                bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
@@ -191,7 +192,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             try {
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
-                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() : true;
+                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");

@@ -434,13 +434,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // list_dir_info(path, glob_pattern, recursive) - list directory contents
+    // list_dir_info(path[, glob_pattern, recursive]) - list directory contents
     sealed class ListDirInfoExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_dir_info(path, glob_pattern, recursive)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: list_dir_info(path[, glob_pattern, recursive])");
                 return BoxedValue.NullObject;
             }
 
@@ -462,6 +462,70 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"list_dir_info error: {ex.Message}");
                 return BoxedValue.NullObject;
             }
+        }
+    }
+
+    sealed class EnsureDirectoryExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: ensure_directory(dir), aliased as ensure_dir");
+                return BoxedValue.NullObject;
+            }
+            bool ret = false;
+            if (operands.Count >= 1) {
+                var dir = operands[0].AsString;
+                dir = Environment.ExpandEnvironmentVariables(dir);
+                AgentCore.Core.AgentCore.Instance.FileOps.EnsureDirectory(dir);
+            }
+            return ret;
+        }
+    }
+    sealed class RemoveDirectoryExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: remove_directory(dir), aliased as remove_dir");
+                return BoxedValue.NullObject;
+            }
+            bool ret = false;
+            if (operands.Count >= 1) {
+                var dir = operands[0].AsString;
+                dir = Environment.ExpandEnvironmentVariables(dir);
+                AgentCore.Core.AgentCore.Instance.FileOps.RemoveDirectory(dir);
+            }
+            return ret;
+        }
+    }
+
+    sealed class FindFilesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: find_files(path,glob_pattern[,recursive])");
+                return BoxedValue.NullObject;
+            }
+            string dir = operands[0].AsString;
+            string globPattern = operands[1].AsString;
+            bool recursive = operands.Count > 2 ? operands[2].GetBool() : true;
+            return BoxedValue.FromObject(Core.AgentCore.Instance.FileOps.FindFiles(dir, globPattern, recursive));
+        }
+    }
+
+    sealed class SearchFilesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_files(glob_pattern,path)");
+                return BoxedValue.NullObject;
+            }
+            string globPattern = operands[0].AsString;
+            string dir = operands[1].AsString;
+            return BoxedValue.FromObject(Core.AgentCore.Instance.FileOps.FindFiles(dir, globPattern));
         }
     }
 

@@ -27,6 +27,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             // Regex find all matches
             AgentFrameworkService.Instance.DslEngine!.Register("regex_find_all", "regex_find_all(str, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_matches", "regex_matches(str, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_find_first", "regex_find_first(str, regex_pattern, [ignoreCase]) return first match string or null", new ExpressionFactoryHelper<RegexFindFirstExp>());
 
             // File-based regex operations
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
@@ -132,6 +133,35 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_find_all: {ex.Message}");
                 return BoxedValue.FromObject(new List<string>());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Find first match of regex pattern in string
+    /// </summary>
+    sealed class RegexFindFirstExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_find_first(str, regex_pattern, [ignoreCase]) returns first match string or null");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string str = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
+
+                string? first = StringHelper.FindFirstMatch(str, pattern, ignoreCase);
+                if (first == null)
+                    return BoxedValue.NullObject;
+                return BoxedValue.FromString(first);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_find_first: {ex.Message}");
+                return BoxedValue.NullObject;
             }
         }
     }

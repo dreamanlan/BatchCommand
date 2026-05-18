@@ -1526,6 +1526,41 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return sb.ToString();
         }
 
+        public List<string> QuerySqlCore(string sql)
+        {
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = sql;
+            using var reader = cmd.ExecuteReader();
+            var rows = new List<string>();
+            while (reader.Read()) {
+                var sb = new StringBuilder("{");
+                bool firstCol = true;
+                for (int i = 0; i < reader.FieldCount; i++) {
+                    if (!firstCol) sb.Append(',');
+                    firstCol = false;
+                    string colName = reader.GetName(i);
+                    sb.Append(EscapeJson(colName));
+                    sb.Append(':');
+                    if (reader.IsDBNull(i)) {
+                        sb.Append("null");
+                    } else {
+                        var fieldType = reader.GetFieldType(i);
+                        if (fieldType == typeof(long) || fieldType == typeof(int)) {
+                            sb.Append(reader.GetValue(i).ToString());
+                        } else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+                            sb.Append(Convert.ToDouble(reader.GetValue(i)).ToString("G"));
+                        } else {
+                            sb.Append(EscapeJson(reader.GetValue(i).ToString() ?? ""));
+                        }
+                    }
+                }
+                sb.Append('}');
+                rows.Add(sb.ToString());
+            }
+            return rows;
+        }
+
         private void MigrateV1ToV2()
         {
             using var conn = OpenConnection();

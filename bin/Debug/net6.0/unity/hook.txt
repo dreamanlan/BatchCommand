@@ -172,14 +172,14 @@ hook(DbgScp_Set)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("DbgScp_Set enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
-		
+
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
 		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		printf("%s",$seg_str);
 		WriteLog($seg_str);
 		FlushLog();
-		
+
 		if($cmd==1){
 			@g_enable_unity_obj_mem_stack_log = 1;
 		}
@@ -189,7 +189,7 @@ hook(DbgScp_Set)
 		elif($cmd==3){
 			@g_enable_mem_log = 1;
 		};
-		
+
 		return 1;
 	};
 	onexit{
@@ -204,7 +204,7 @@ hook(DbgScp_Get)
 		$b:int = ptrget(argv(3),8);
 		$c:int = ptrget(argv(4),8);
 		printf("DbgScp_Get enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
-		
+
 		printf("Model:%s gpu:%s ver:%s\n",GetDeviceModel(),GetGpu(),GetGpuVer());
 		/*
 		loop($i,1,165){
@@ -226,14 +226,14 @@ hook("MonoBehaviour::CallAwake")
 		$className:string = ptrget(argv(1),8);
 		$fullClassName:string = ptrget(argv(2),8);
 		$name:string = ptrget(argv(3),8);
-		
+
 		$str:string = format("MonoBehaviour::CallAwake enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 			dumpstack("#MonoBehaviour::CallAwake");
 			LogStack("#MonoBehaviour::CallAwake");
-			
+
 			if (@g_run_startup == 0) {
 				@g_run_startup = 1;
 				CallCSharp("Assembly-CSharp", "", "MoreFunTechStartup", "RunStartup", 0);
@@ -245,7 +245,7 @@ hook("MonoBehaviour::CallAwake")
 		$className:string = ptrget(argv(1),8);
 		$fullClassName:string = ptrget(argv(2),8);
 		$name:string = ptrget(argv(3),8);
-		
+
 		$str:string = format("MonoBehaviour::CallAwake exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
@@ -260,14 +260,14 @@ hook("MonoBehaviour::Start")
 		$className:string = ptrget(argv(1),8);
 		$fullClassName:string = ptrget(argv(2),8);
 		$name:string = ptrget(argv(3),8);
-		
+
 		$str:string = format("MonoBehaviour::Start enter time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
 			WriteLog($str);
 			dumpstack("#MonoBehaviour::Start");
 			LogStack("#MonoBehaviour::Start");
-			
+
 			if (@g_run_startup == 0) {
 				@g_run_startup = 1;
 				CallCSharp("Assembly-CSharp", "", "MoreFunTechStartup", "RunStartup", 0);
@@ -279,7 +279,7 @@ hook("MonoBehaviour::Start")
 		$className:string = ptrget(argv(1),8);
 		$fullClassName:string = ptrget(argv(2),8);
 		$name:string = ptrget(argv(3),8);
-		
+
 		$str:string = format("MonoBehaviour::Start exit time:%lld thread:%d class:%s name:%s\n",time(),GetTID(),$className,$name);
 		//printf("%s",$str);
 		if($className=="MainCameraTag"){
@@ -303,7 +303,7 @@ hook("GfxDeviceWorker::RunCommand")
 		$status:int = ptrget(argv(1),4);
 		$cmd:int = ptrget(argv(2),4);
 		$cmdName:string = ptrget(argv(3),8);
-		
+
 		//printf("GfxDeviceWorker::RunCommand:%d %s\n", $cmd, $cmdName);
 		//dumpstack("#GfxDeviceWorker::RunCommand");
 	};
@@ -315,7 +315,7 @@ hook("TaskExecutor::HandleCommandStream")
 		$cmdBuf:int = ptrget(argv(1),8);
 		$cmdType:int = ptrget(argv(2),4);
 		$cmdName:string = ptrget(argv(3),8);
-		
+
 		//printf("TaskExecutor::HandleCommandStream cmd:%d %s\n", $cmdType, $cmdName);
 		//dumpstack("#TaskExecutor::HandleCommandStream");
 	};
@@ -354,13 +354,13 @@ hook("GfxDeviceClient::CreateGpuProgram")
 		$c:int = ptrget(argv(2),8);
 		$d:int = ptrget(argv(3),8);
 		$e:string = ptrget(argv(4),8);
-		
+
 		//$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
 		//printf("%s",$str);
 		//WriteLog($str);
 		//dumpstack("#GfxDeviceClient::CreateGpuProgram");
 		//LogStack("#GfxDeviceClient::CreateGpuProgram");
-		
+
 		return 0;
 	};
 	onexit{
@@ -376,13 +376,13 @@ hook("GfxDeviceClient::CreateComputeProgram")
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
-		
+
 		//$str:string = format("GfxDeviceClient::CreateComputeProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
 		//printf("%s",$str);
 		//WriteLog($str);
 		//dumpstack("#GfxDeviceClient::CreateComputeProgram");
 		//LogStack("#GfxDeviceClient::CreateComputeProgram");
-		
+
 		return 0;
 	};
 	onexit{
@@ -399,15 +399,15 @@ hook("VKGpuProgram::Create")
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		$d:string = ptrget(argv(3),8);
-		
+
 		//$str:string = format("VKGpuProgram::Create enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$d);
 		//printf("%s",$str);
 		//WriteLog($str);
-				
+
 		//assert(0);
 		//SetTimeScale(0.0001);
 		//printf("TimeScale:%f time:%f float:%f", GetTimeScale(), floattime(), 0.12345);
-		
+
 		return 0;
 	};
 	onexit{

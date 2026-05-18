@@ -931,6 +931,53 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // sqlite_query_as_list(sql) - execute a query SQL statement, returns list of row JSON strings
+    sealed class SqliteQueryAsListExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_query_as_list(sql)");
+                return BoxedValue.NullObject;
+            }
+            try {
+                string sql = operands[0].AsString;
+                var rows = Core.AgentCore.Instance.SemanticIndex.QuerySqlCore(sql);
+                var list = new List<BoxedValue>(rows.Count);
+                foreach (var row in rows)
+                    list.Add(BoxedValue.FromString(row));
+                return BoxedValue.FromObject(list);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_query_as_list error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // sqlite_search_as_list(collection, query[, topN]) - direct LIKE search, returns list of result strings
+    sealed class SqliteSearchAsListExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: sqlite_search_as_list(collection, query[, topN])");
+                return BoxedValue.NullObject;
+            }
+            try {
+                string collection = operands[0].AsString;
+                string query = operands[1].AsString;
+                int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
+                var items = Core.AgentCore.Instance.SemanticIndex.SqliteSearchCore(collection, query, topN);
+                return SearchResultHelper.ToBoxedList(items);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_search_as_list error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
     // semantic_migrate_fts() - migrate FTS schema to latest version
     sealed class SemanticMigrateFtsExp : SimpleExpressionBase
     {
@@ -984,11 +1031,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             // SQLite direct execution APIs
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_execute", "sqlite_execute(sql) - execute non-query SQL (INSERT/UPDATE/DELETE/DDL), returns affected rows", new ExpressionFactoryHelper<SqliteExecuteExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query_as_list", "sqlite_query_as_list(sql) - execute query SQL (SELECT), returns list of row JSON strings", new ExpressionFactoryHelper<SqliteQueryAsListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_backup", "sqlite_backup([path]) - backup database using VACUUM INTO, returns backup file path", new ExpressionFactoryHelper<SqliteBackupExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_restore", "sqlite_restore(backupPath) - restore database from backup file, clears in-memory indexes", new ExpressionFactoryHelper<SqliteRestoreExp>());
             // sqlite_* direct LIKE search APIs (no FTS/BM25, tokens AND'd, wildcards: %=any seq, _=single char, escape with \)
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search", "sqlite_search(collection, query[, topN]) - direct LIKE search on semantic_records, tokens AND'd, returns JSON", new ExpressionFactoryHelper<SqliteSearchExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between", "sqlite_search_between(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SqliteSearchBetweenExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_as_list", "sqlite_search_as_list(collection, query[, topN]) - direct LIKE search on semantic_records, returns list of result strings", new ExpressionFactoryHelper<SqliteSearchAsListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_as_list", "sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SqliteSearchBetweenAsListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_order_by_time", "sqlite_search_order_by_time(collection, query[, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchOrderByTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_order_by_time", "sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenOrderByTimeExp>());

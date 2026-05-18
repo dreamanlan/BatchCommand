@@ -132,6 +132,16 @@ namespace CefDotnetApp.AgentCore.Utils
             return JoinLines(lines);
         }
 
+        public static string? FindFirstMatch(string str, string pattern, bool ignoreCase = false)
+        {
+            if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
+                return null;
+
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            Match match = Regex.Match(str, pattern, options);
+            return match.Success ? match.Value : null;
+        }
+
         public static System.Collections.Generic.List<string> FindAllMatches(string str, string pattern, bool ignoreCase = false)
         {
             var matches = new System.Collections.Generic.List<string>();

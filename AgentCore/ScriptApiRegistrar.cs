@@ -34,15 +34,18 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("file_exists", "file_exists(path)", new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_exist", "file_exist(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exist_file", "exist_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_file", "is_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_has_bom", "file_has_bom(path) - check whether file has UTF-8 BOM", new ExpressionFactoryHelper<FileHasBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_add_bom", "file_add_bom(path) - add UTF-8 BOM to file (skip if already has BOM)", new ExpressionFactoryHelper<FileAddBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_remove_bom", "file_remove_bom(path) - remove UTF-8 BOM from file (skip if no BOM)", new ExpressionFactoryHelper<FileRemoveBomExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_exists", "dir_exists(path)", new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_exist", "dir_exist(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exist_dir", "exist_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_dir", "is_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_exists", "path_exists(path)", new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_exist", "path_exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exist_path", "exist_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_path", "is_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_dir_info", "list_dir_info(path[, glob_pattern, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<ListDirInfoExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("find_files", "find_files(path, glob_pattern[, recursive]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<FindFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("search_files", "search_files(glob_pattern, path) return List, use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<SearchFilesExp>());
@@ -56,6 +59,7 @@ namespace CefDotnetApp.AgentCore
 
             // Code Editing Operations
             AgentFrameworkService.Instance.DslEngine!.Register("replace_in_file", "replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", new ExpressionFactoryHelper<ReplaceInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("replaceinfile", "replaceinfile(path, oldString, newString[, replaceAll[, exactMatch]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_replace_in_file", "string_replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_replace_file", "string_replace_file(path, oldString, newString[, replaceAll[, exactMatch]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("multi_replace", "multi_replace(path, editsJson) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...]", new ExpressionFactoryHelper<MultiReplaceExp>());

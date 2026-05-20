@@ -33,6 +33,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
 
+            // Regex capture group APIs
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_group", "regex_group(str, regex_pattern, group_index, [ignoreCase]) return the specified capture group (1-based) of the first match, or null", new ExpressionFactoryHelper<RegexGroupExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_group_all", "regex_group_all(str, regex_pattern, [ignoreCase]) return List<List<string>> of all matches with capture groups, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexGroupAllExp>());
+
             // Regex escape / unescape
             AgentFrameworkService.Instance.DslEngine!.Register("regex_escape", "regex_escape(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", new ExpressionFactoryHelper<RegexEscapeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_unescape", "regex_unescape(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", new ExpressionFactoryHelper<RegexUnescapeExp>());
@@ -284,6 +288,64 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_unescape: {ex.Message}");
                 return BoxedValue.EmptyString;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Return the specified capture group (1-based) of the first match, or null.
+    /// group_index 0 = full match, 1+ = capture groups.
+    /// </summary>
+    sealed class RegexGroupExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_group(str, regex_pattern, group_index, [ignoreCase]) group_index: 0=full match, 1+=capture groups");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string str = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                int groupIndex = (int)operands[2].GetLong();
+                bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
+
+                string? result = StringHelper.FindGroup(str, pattern, groupIndex, ignoreCase);
+                if (result == null)
+                    return BoxedValue.NullObject;
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_group: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Return all matches; each entry is [fullMatch, group1, group2, ...].
+    /// </summary>
+    sealed class RegexGroupAllExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_group_all(str, regex_pattern, [ignoreCase]) returns List<List<string>>, use 'to_string' to convert to a string");
+                return BoxedValue.FromObject(new List<List<string>>());
+            }
+
+            try {
+                string str = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
+
+                var result = StringHelper.FindAllGroups(str, pattern, ignoreCase);
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_group_all: {ex.Message}");
+                return BoxedValue.FromObject(new List<List<string>>());
             }
         }
     }

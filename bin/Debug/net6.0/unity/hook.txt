@@ -1,7 +1,7 @@
 
 @g_dir_chged : int = 0;
 @g_enable_watch_point : int = 0;
-@g_enable_mem_log : int = 1;
+@g_enable_mem_log : int = 0;
 @g_run_startup : int = 0;
 @g_enable_unity_obj_mem_stack_log : int = 0;
 @g_enable_gcalloc_log : int = 0;
@@ -66,7 +66,7 @@ hook(TestMacro1)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		SetTimeScale(0.0001);
 		printf("TimeScale:%f time:%f\n",GetTimeScale(), floattime());
 		WriteLog("test test test");
@@ -75,7 +75,7 @@ hook(TestMacro1)
 		$addr = malloc(1024);
 		printf("memory:%s\n",FormatMemory($addr,32));
 		free($addr);
-		
+
 		ptrset(argv(0),4,1);
 		return 1;
 	};
@@ -90,7 +90,7 @@ hook(TestMacro2)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("TestMacro2 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		return 0;
 	};
 	onexit{
@@ -105,14 +105,14 @@ hook(TestMacro3)
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		printf("TestMacro3 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		if(platform()==0){
 			//test code on windows
 			dumpcascadeptr(argv(2),0);
 			if($a==123){
 				ptrset(argv(0),4,1);
 			}
-			else{ 
+			else{
 				ptrset(argv(0),4,0);
 			};
 			$i:int = 0;
@@ -154,7 +154,7 @@ hook(TestMacro4)
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		printf("TestMacro4 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		return 0;
 	};
 	onexit{
@@ -188,6 +188,12 @@ hook(DbgScp_Set)
 		}
 		elif($cmd==3){
 			@g_enable_mem_log = 1;
+		}
+		elif($cmd==4){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
+			//assert(0);
+			TriggerFrameCapture();
+			//StartFrameCapture();
 		};
 
 		return 1;
@@ -216,6 +222,20 @@ hook(DbgScp_Get)
 	onexit{
 		printf("DbgScp_Get exit time:%lld\n",time());
 		ptrset(argv(0),4,2);
+	};
+};
+hook("StartFrameCaptureOnDemand")
+{
+	onenter{
+		$frame:int = ptrget(argv(0),4);
+		printf("StartFrameCaptureOnDemand:%lld frame:%u\n",time(),$frame);
+		///*
+		if($frame>=10 && $frame<=30){
+			printf("StartFrameCapture:%lld frame:%u\n",time(),$frame);
+			StartFrameCapture();
+		};
+		//*/
+		return 0;
 	};
 };
 
@@ -1037,12 +1057,30 @@ hook("CommandBuffer::DispatchIndirect")
 hook("GfxDeviceClient::Clear")
 {
 	onenter{
+		$clearFlags:int = ptrget(argv(0),4);
+		$colorPtr:int = argv(1);
+		$depth:float = ptrget(argv(2),4);
+		$stencil:int = ptrget(argv(3),4);
+
+		$r:float = ptrget($colorPtr,4);
+		$g:float = ptrget($colorPtr+4,4);
+		$b:float = ptrget($colorPtr+8,4);
+		$a:float = ptrget($colorPtr+12,4);
+		printf("GfxDeviceClient::Clear flags:%d color:(%f %f %f %f) depth:%f stencil:%d\n", $clearFlags, $r,$g,$b,$a, $depth, $stencil);
 		//assert(0);
 	};
 };
 hook("GfxDeviceClient::ClearMRT")
 {
 	onenter{
+		$clearFlags:int = ptrget(argv(0),4);
+		$colorPtr:int = ptrget(argv(1),8);
+		$colorCount:int = ptrget(argv(2),4);
+		$rtMask:int = ptrget(argv(3),4);
+		$depth:float = ptrget(argv(4),4);
+		$stencil:int = ptrget(argv(5),4);
+
+		printf("GfxDeviceClient::ClearMRT flags:%d color_ptr:%llx count:%d rtMask:%d depth:%f stencil:%d\n", $clearFlags, $colorPtr, $colorCount, $rtMask, $depth, $stencil);
 		//assert(0);
 	};
 };
@@ -1066,12 +1104,12 @@ hook("CommandBuffer::ClearColor")
 		$color4:int = ptrget(argv(3)+12,4);
 		$rangeCount:int = ptrget(argv(4),4);
 		$ranges:int = ptrget(argv(5),8);
-				
+
 		printf("CommandBuffer::ClearColor this:%llx img:%llx layout:%u colors:%llx color:%f %f %f %f rangeCount:%u ranges:%llx\n", $this, $image, $imageLayout, $colors, $color1, $color2, $color3, $color4, $rangeCount, $ranges);
-		
+
 		//dumpstack("#CommandBuffer::ClearColor");
 		//assert(0);
-		
+
 		//ptrset(argv(3),8,0);
 		//ptrset(argv(3)+8,8,0);
 	};
@@ -1285,9 +1323,12 @@ hook("delete_object_internal_step1")
 		$instId:int = ptrget(argv(3),4);
 		$name:string = ptrget(argv(4),8);
 		$typeName:string = ptrget(argv(5),8);
-		$file:string = ptrget(argv(6),8);
-		$line:int = ptrget(argv(7),4);
-		$func:string = ptrget(argv(8),8);
+		$isPersist:int = ptrget(argv(6),1);
+		$isGoPersist:int = ptrget(argv(7),1);
+		$go:int = ptrget(argv(8),8);
+		$file:string = ptrget(argv(9),8);
+		$line:int = ptrget(argv(10),4);
+		$func:string = ptrget(argv(11),8);
 		
 		$vtbl:int = ptrget($object,8);
 		if ($vtbl <= 0x100000000) {

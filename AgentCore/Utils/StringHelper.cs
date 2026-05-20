@@ -156,6 +156,41 @@ namespace CefDotnetApp.AgentCore.Utils
 
             return matches;
         }
+
+        // Returns the specified capture group (1-based) of the first match, or null if not found.
+        // groupIndex 0 = full match, 1+ = capture groups.
+        public static string? FindGroup(string str, string pattern, int groupIndex, bool ignoreCase = false)
+        {
+            if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
+                return null;
+
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            Match match = Regex.Match(str, pattern, options);
+            if (!match.Success || groupIndex < 0 || groupIndex >= match.Groups.Count)
+                return null;
+
+            return match.Groups[groupIndex].Value;
+        }
+
+        // Returns all matches; each entry is [fullMatch, group1, group2, ...].
+        public static System.Collections.Generic.List<System.Collections.Generic.List<string>> FindAllGroups(string str, string pattern, bool ignoreCase = false)
+        {
+            var result = new System.Collections.Generic.List<System.Collections.Generic.List<string>>();
+            if (string.IsNullOrEmpty(str) || string.IsNullOrEmpty(pattern))
+                return result;
+
+            RegexOptions options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
+            MatchCollection matchCollection = Regex.Matches(str, pattern, options);
+            foreach (Match match in matchCollection) {
+                var row = new System.Collections.Generic.List<string>();
+                foreach (Group g in match.Groups) {
+                    row.Add(g.Value);
+                }
+                result.Add(row);
+            }
+
+            return result;
+        }
     }
 }
 

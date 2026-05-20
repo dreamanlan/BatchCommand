@@ -325,6 +325,28 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // file_not_exists(path) - check if file not exists
+    sealed class FileNotExistsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_not_exists(path), aliased as file_not_exist");
+                return BoxedValue.From(true);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                bool result = !Core.AgentCore.Instance.FileOps.FileExists(path);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_not_exists error: {ex.Message}");
+                return BoxedValue.From(true);
+            }
+        }
+    }
+
     // file_has_bom(path) - check if file has UTF-8 BOM
     sealed class FileHasBomExp : SimpleExpressionBase
     {
@@ -413,6 +435,28 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // dir_not_exists(path) - check if directory exists
+    sealed class DirNotExistsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: dir_not_exists(path), aliased as dir_not_exist");
+                return BoxedValue.From(true);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                bool result = !Core.AgentCore.Instance.FileOps.DirectoryExists(path);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"dir_not_exists error: {ex.Message}");
+                return BoxedValue.From(true);
+            }
+        }
+    }
+
     // path_exists(path) - check if file or directory exists
     sealed class PathExistsExp : SimpleExpressionBase
     {
@@ -430,6 +474,27 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"path_exists error: {ex.Message}");
                 return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // path_not_exists(path) - check if file or directory exists
+    sealed class PathNotExistsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: path_not_exists(path), aliased as path_not_exist");
+                return BoxedValue.From(true);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                return BoxedValue.FromBool(!(Core.AgentCore.Instance.FileOps.DirectoryExists(path) || Core.AgentCore.Instance.FileOps.FileExists(path)));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"path_not_exists error: {ex.Message}");
+                return BoxedValue.From(true);
             }
         }
     }

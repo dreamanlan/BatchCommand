@@ -278,6 +278,54 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    sealed class JsonEscapeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: json_escape(str[, bool_add_quotes])");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            {
+                try {
+                    string s = operands[0].AsString ?? string.Empty;
+                    bool addQuotes = operands.Count > 1 ? operands[1].GetBool() : false;
+                    string esc = JsonHelper.EscapeJsonString(s, addQuotes);
+                    return BoxedValue.FromString(esc);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"json_escape error: {ex.Message}");
+                }
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
+    sealed class JsonUnescapeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: json_unescape(str)");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            {
+                try {
+                    string s = operands[0].AsString ?? string.Empty;
+                    string un = JsonHelper.UnescapeJsonString(s);
+                    return BoxedValue.FromString(un);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"json_unescape error: {ex.Message}");
+                }
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
+
     sealed class NewObjectExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)

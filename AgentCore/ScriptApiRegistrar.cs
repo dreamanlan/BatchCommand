@@ -139,6 +139,9 @@ namespace CefDotnetApp.AgentCore
             // JSON Operations
             AgentFrameworkService.Instance.DslEngine!.Register("to_json", "to_json(obj, prettyPrint)", new ExpressionFactoryHelper<ToJsonExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("from_json", "from_json(json)", new ExpressionFactoryHelper<FromJsonExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("json_escape", "json_escape(str[, bool_add_quotes])", new ExpressionFactoryHelper<JsonEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("json_unescape", "json_unescape(str)", new ExpressionFactoryHelper<JsonUnescapeExp>());
+
             AgentFrameworkService.Instance.DslEngine!.Register("new_object", "new_object(key1, value1, key2, value2, ...)", new ExpressionFactoryHelper<NewObjectExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("to_string", "to_string(val)", new ExpressionFactoryHelper<ToStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("tostring", "tostring(val)", new ExpressionFactoryHelper<ToStringExp>());

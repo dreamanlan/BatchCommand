@@ -77,6 +77,9 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("search_log_file", "search_log_file(log_file, search_regex[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchLogFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grep_log_file", "grep_log_file(log_file, search_regex[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchLogFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("tail_log_file", "tail_log_file(log_file, lines)", new ExpressionFactoryHelper<TailLogFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("head_log_file", "head_log_file(log_file, lines)", new ExpressionFactoryHelper<HeadLogFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("tail_file", "tail_file(file, lines)", new ExpressionFactoryHelper<TailFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("head_file", "head_file(file, lines)", new ExpressionFactoryHelper<HeadFileExp>());
 
             // Code Editing Operations
             AgentFrameworkService.Instance.DslEngine!.Register("replace_in_file", "replace_in_file(path, oldString, newString[, replaceAll[, exactMatch]])", new ExpressionFactoryHelper<ReplaceInFileExp>());

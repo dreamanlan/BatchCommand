@@ -228,14 +228,56 @@ hook("StartFrameCaptureOnDemand")
 {
 	onenter{
 		$frame:int = ptrget(argv(0),4);
-		printf("StartFrameCaptureOnDemand:%lld frame:%u\n",time(),$frame);
-		///*
+		$str:string = format("StartFrameCaptureOnDemand:%lld frame:%u\n",time(),$frame);
+		printf("%s",$str);
+		WriteLog($str);
+		/*
 		if($frame>=10 && $frame<=30){
 			printf("StartFrameCapture:%lld frame:%u\n",time(),$frame);
 			StartFrameCapture();
 		};
-		//*/
+		*/
 		return 0;
+	};
+};
+hook("RenderTexture::SetActive")
+{
+	onexit{
+		$ret:int = ptrget(argv(0),1);
+		$setupPtr:int = argv(1);
+		$flags:int = ptrget(argv(2),4);
+		$this:int = ptrget(argv(3),8);
+		$texName:string = ptrget(argv(4),8);
+		$typeName:string = ptrget(argv(5),8);
+		$typeStr:string = ptrget(argv(6),8);
+		$descPtr:int = argv(7);
+		$color:int = ptrget(argv(8),4);
+		$depth:int = ptrget(argv(9),4);
+
+		$str:string = format("RenderTexture::SetActive enter time:%lld ret:%d setupPtr:%llx flags:%d this:%llx texName:%s typeName:%s typeStr:%s descPtr:%llx color:%d depth:%d\n",time(),$ret,$setupPtr,$flags,$this,$texName,$typeName,$typeStr,$descPtr,$color,$depth);
+		printf("%s",$str);
+		//dumpstack("#RenderTexture::SetActive");
+		WriteLog($str);
+		//LogStack("#RenderTexture::SetActive");
+	};
+};
+hook("RenderTexture::Release")
+{
+	onenter{
+		$active:int = ptrget(argv(0),1);
+		$this:int = ptrget(argv(1),8);
+		$texName:string = ptrget(argv(2),8);
+		$typeName:string = ptrget(argv(3),8);
+		$typeStr:string = ptrget(argv(4),8);
+		$descPtr:int = argv(5);
+		$color:int = ptrget(argv(6),4);
+		$depth:int = ptrget(argv(7),4);
+
+		$str:string = format("RenderTexture::Release enter time:%lld active:%d this:%llx texName:%s typeName:%s typeStr:%s descPtr:%llx color:%d depth:%d\n",time(),$active,$this,$texName,$typeName,$typeStr,$descPtr,$color,$depth);
+		printf("%s",$str);
+		dumpstack("#RenderTexture::Release");
+		WriteLog($str);
+		LogStack("#RenderTexture::Release");
 	};
 };
 

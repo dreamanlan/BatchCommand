@@ -50,6 +50,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         public Task ConnectAsync()
         {
+            // Note: StandardInputEncoding = Encoding.UTF8 (which has emitBOM=true)
             var psi = new ProcessStartInfo
             {
                 FileName = _command,
@@ -60,8 +61,8 @@ namespace CefDotnetApp.AgentCore.Core
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true,
-                StandardInputEncoding = Encoding.UTF8,
-                StandardOutputEncoding = Encoding.UTF8,
+                StandardInputEncoding = new UTF8Encoding(false),
+                StandardOutputEncoding = new UTF8Encoding(false),
             };
             _process = Process.Start(psi)
                 ?? throw new InvalidOperationException($"Failed to start MCP process: {_command} {_arguments}");
@@ -122,8 +123,7 @@ namespace CefDotnetApp.AgentCore.Core
         private async Task WriteFramedAsync(string payload)
         {
             // Write raw bytes directly to BaseStream to avoid:
-            // 1) BOM emitted by StreamWriter when StandardInputEncoding = Encoding.UTF8 (which has emitBOM=true)
-            // 2) Newline normalization by StreamWriter
+            // 1) Newline normalization by StreamWriter
             var stream = _stdin!.BaseStream;
             if (_useLspFraming)
             {

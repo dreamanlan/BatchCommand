@@ -641,4 +641,73 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
     }
+
+    // head_log_file(log_file, lines) - get first N lines from log file
+    sealed class HeadLogFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_log_file(log_file, lines)");
+                return BoxedValue.FromString("Expected: head_log_file(log_file, lines)");
+            }
+
+            try {
+                string logFile = operands[0].AsString;
+                int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
+                string result = Core.AgentCore.Instance.FileOps.HeadLogFile(logFile, lines);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"head_log_file error: {ex.Message}");
+                return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // tail_file(file, lines) - get last N lines from file
+    sealed class TailFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_file(file, lines)");
+                return BoxedValue.FromString("Expected: tail_file(file, lines)");
+            }
+
+            try {
+                string file = operands[0].AsString;
+                int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
+                string result = Core.AgentCore.Instance.FileOps.TailFile(file, lines);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"tail_file error: {ex.Message}");
+                return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // head_file(file, lines) - get first N lines from file
+    sealed class HeadFileExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_file(file, lines)");
+                return BoxedValue.FromString("Expected: head_file(file, lines)");
+            }
+
+            try {
+                string file = operands[0].AsString;
+                int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
+                string result = Core.AgentCore.Instance.FileOps.HeadFile(file, lines);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"head_file error: {ex.Message}");
+                return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
 }

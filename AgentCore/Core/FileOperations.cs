@@ -603,56 +603,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return $"File not found: {path}";
-
-            var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
-            var matchedLineIndices = new HashSet<int>();
-            var result = new StringBuilder();
-
-            try {
-                var regex = new Regex(searchRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                for (int i = 0; i < lines.Length; i++) {
-                    if (regex.IsMatch(lines[i])) {
-                        matchedLineIndices.Add(i);
-                    }
-                }
-            }
-            catch (ArgumentException) {
-                // If regex is invalid, fall back to simple string search
-                for (int i = 0; i < lines.Length; i++) {
-                    if (lines[i].IndexOf(searchRegex, StringComparison.OrdinalIgnoreCase) >= 0) {
-                        matchedLineIndices.Add(i);
-                    }
-                }
-            }
-
-            if (matchedLineIndices.Count == 0) {
-                return $"No matches found for pattern: {searchRegex}";
-            }
-
-            // Build output with context lines
-            var outputLines = new HashSet<int>();
-            foreach (var matchIndex in matchedLineIndices) {
-                int startLine = Math.Max(0, matchIndex - contextLinesBefore);
-                int endLine = Math.Min(lines.Length - 1, matchIndex + contextLinesAfter);
-                for (int i = startLine; i <= endLine; i++) {
-                    outputLines.Add(i);
-                }
-            }
-
-            var sortedLines = outputLines.OrderBy(x => x).ToList();
-            int lastLine = -2;
-            foreach (var lineIndex in sortedLines) {
-                if (lineIndex > lastLine + 1) {
-                    if (lastLine >= 0) {
-                        result.AppendLine("--");
-                    }
-                }
-                string prefix = matchedLineIndices.Contains(lineIndex) ? "* " : "  ";
-                result.AppendLine($"{prefix}{lineIndex + 1}: {lines[lineIndex]}");
-                lastLine = lineIndex;
-            }
-
-            return result.ToString();
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
         }
 
         public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
@@ -692,7 +643,45 @@ namespace CefDotnetApp.AgentCore.Core
             string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
             if (!File.Exists(fullPath))
                 return $"Log file not found: {logFile}";
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+        }
 
+        public string HeadFile(string file, int lines)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return HeadInternal(fullPath, lines);
+        }
+
+        public string TailFile(string file, int lines)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return TailInternal(fullPath, lines);
+        }
+
+        public string HeadLogFile(string file, int lines)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return HeadInternal(fullPath, lines);
+        }
+
+        public string TailLogFile(string file, int lines)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
+            if (!File.Exists(fullPath))
+                return $"File not found: {file}";
+            return TailInternal(fullPath, lines);
+        }
+
+        // Private helpers
+
+        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore)
+        {
             var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
             var matchedLineIndices = new HashSet<int>();
             var result = new StringBuilder();
@@ -744,17 +733,20 @@ namespace CefDotnetApp.AgentCore.Core
             return result.ToString();
         }
 
-        public string TailLogFile(string logFile, int lines)
+        private string HeadInternal(string fullPath, int lines)
         {
-            string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
-            if (!File.Exists(fullPath))
-                return $"Log file not found: {logFile}";
-
             var allLines = File.ReadAllLines(fullPath, Encoding.UTF8);
             var lineCount = Math.Min(lines, allLines.Length);
-            var recentLines = allLines.Skip(Math.Max(0, allLines.Length - lineCount)).ToArray();
+            var headLines = allLines.SkipLast(Math.Max(0, allLines.Length - lineCount)).ToArray();
+            return string.Join("\n", headLines);
+        }
 
-            return string.Join("\n", recentLines);
+        private string TailInternal(string fullPath, int lines)
+        {
+            var allLines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            var lineCount = Math.Min(lines, allLines.Length);
+            var tailLines = allLines.Skip(Math.Max(0, allLines.Length - lineCount)).ToArray();
+            return string.Join("\n", tailLines);
         }
     }
 }

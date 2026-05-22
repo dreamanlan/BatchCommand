@@ -603,7 +603,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return $"File not found: {path}";
-            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _);
         }
 
         public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
@@ -630,10 +630,16 @@ namespace CefDotnetApp.AgentCore.Core
                 string filter = filterAndNewExts[i];
                 string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
                 foreach (string file in files) {
+                    var result = SearchFileInternal(file, searchRegex, contextLinesAfter, contextLinesBefore, out bool hasMatch);
+                    if (!hasMatch) {
+                        continue;
+                    }
                     sb.AppendLine($"====== {file} ======");
-                    var result = SearchFile(file, searchRegex, contextLinesAfter, contextLinesBefore);
                     sb.AppendLine(result);
                 }
+            }
+            if (sb.Length == 0) {
+                return $"No matches found for pattern: {searchRegex}";
             }
             return sb.ToString();
         }
@@ -643,7 +649,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
             if (!File.Exists(fullPath))
                 return $"Log file not found: {logFile}";
-            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _);
         }
 
         public string HeadFile(string file, int lines)
@@ -680,8 +686,9 @@ namespace CefDotnetApp.AgentCore.Core
 
         // Private helpers
 
-        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore)
+        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch)
         {
+            hasMatch = false;
             var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
             var matchedLineIndices = new HashSet<int>();
             var result = new StringBuilder();
@@ -706,6 +713,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (matchedLineIndices.Count == 0) {
                 return $"No matches found for pattern: {searchRegex}";
             }
+            hasMatch = true;
 
             // Build output with context lines
             var outputLines = new HashSet<int>();

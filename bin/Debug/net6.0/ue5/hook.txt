@@ -66,12 +66,16 @@ hook(TestMacro1)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("TestMacro1 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		SetTimeScale(0.0001);
-		printf("TimeScale:%f time:%f",GetTimeScale(), floattime());
+		printf("TimeScale:%f time:%f\n",GetTimeScale(), floattime());
 		WriteLog("test test test");
 		FlushLog();
-		
+
+		$addr = malloc(1024);
+		printf("memory:%s\n",FormatMemory($addr,32));
+		free($addr);
+
 		ptrset(argv(0),4,1);
 		return 1;
 	};
@@ -86,7 +90,7 @@ hook(TestMacro2)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("TestMacro2 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		return 0;
 	};
 	onexit{
@@ -101,14 +105,14 @@ hook(TestMacro3)
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		printf("TestMacro3 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		if(platform()==0){
 			//test code on windows
 			dumpcascadeptr(argv(2),0);
 			if($a==123){
 				ptrset(argv(0),4,1);
 			}
-			else{ 
+			else{
 				ptrset(argv(0),4,0);
 			};
 			$i:int = 0;
@@ -150,7 +154,7 @@ hook(TestMacro4)
 		$b:int = ptrget(argv(1),8);
 		$c:int = ptrget(argv(2),8);
 		printf("TestMacro4 enter time:%lld a:%d b:%f c:%s\n",time(),$a,$b,$c);
-		
+
 		return 0;
 	};
 	onexit{
@@ -168,21 +172,30 @@ hook(DbgScp_Set)
 		$b:int = ptrget(argv(2),8);
 		$c:int = ptrget(argv(3),8);
 		printf("DbgScp_Set enter time:%lld cmd:%d a:%d b:%f c:%s\n",time(),$cmd,$a,$b,$c);
-		
+
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"libunity.so","r-xp",1,$fields);
 		$seg_str:string = format("pid:%d tid:%d unity seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		printf("%s",$seg_str);
 		WriteLog($seg_str);
 		FlushLog();
-		
+
 		if($cmd==1){
 			@g_enable_unity_obj_mem_stack_log = 1;
 		}
 		elif($cmd==2){
 			@g_enable_gcalloc_log = 1;
+		}
+		elif($cmd==3){
+			@g_enable_mem_log = 1;
+		}
+		elif($cmd==4){
+			printf("DbgScp_Set do command time:%lld cmd:%d\n",time(),$cmd);
+			//assert(0);
+			TriggerFrameCapture();
+			//StartFrameCapture();
 		};
-		
+
 		return 1;
 	};
 	onexit{
@@ -339,6 +352,124 @@ hook("DbgScpAssert")
 		//assert(0);
 		ptrset(argv(0),1,0);
 		return 1;
+	};
+};
+
+hook("StartFrameCaptureOnDemand")
+{
+	onenter{
+		$frame:int = ptrget(argv(0),4);
+		$str:string = format("StartFrameCaptureOnDemand:%lld frame:%u\n",time(),$frame);
+		printf("%s",$str);
+		WriteLog($str);
+		/*
+		if($frame>=10 && $frame<=30){
+			printf("StartFrameCapture:%lld frame:%u\n",time(),$frame);
+			StartFrameCapture();
+		};
+		*/
+		return 0;
+	};
+};
+hook("DbgScpSetShaderParameterGLES")
+{
+	onenter{
+		//const char* shaderHash, int32_t shaderFreq, int32_t bindSlot, int64_t bufferId, int32_t offset, int32_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$shaderFreq:int = ptrget(argv(1),4);
+		$bindSlot:int = ptrget(argv(2),4);
+		$bufferId:int = ptrget(argv(3),8);
+		$offset:int = ptrget(argv(4),4);
+		$size:int = ptrget(argv(5),4);
+		$bufferType:string = ptrget(argv(6),8);
+
+		$str = format("DbgScpSetShaderParameterGLES shaderHash:%s shaderFraq:%d bindSlot:%d bufferId:%lld offset:%x size:%d bufferType:%s\n", $shaderHash, $shaderFreq, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		printf("%s",$str);
+		WriteLog($str);
+
+		if (stringcontains($shaderHash, "71B7B99DEDDA8CB2A026CD49DCC9E41DDF51951F")){
+			assert(0);
+		};
+	};
+};
+hook("DbgScpBindShaderBufferGLES")
+{
+	onenter{
+		//const char* shaderHash, int32_t bindSlot, int64_t bufferId, int64_t offset, int64_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$bindSlot:int = ptrget(argv(1),4);
+		$bufferId:int = ptrget(argv(2),8);
+		$offset:int = ptrget(argv(3),8);
+		$size:int = ptrget(argv(4),8);
+		$bufferType:string = ptrget(argv(5),8);
+
+		$str = format("DbgScpBindShaderBufferGLES shaderHash:%s bindSlot:%d bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("DbgScpBindShaderBufferVulkan")
+{
+	onenter{
+		//const char* shaderHash, int64_t bindSlot, int64_t bufferId, int64_t offset, int64_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$bindSlot:int = ptrget(argv(1),8);
+		$bufferId:int = ptrget(argv(2),8);
+		$offset:int = ptrget(argv(3),8);
+		$size:int = ptrget(argv(4),8);
+		$bufferType:string = ptrget(argv(5),8);
+
+		$str = format("DbgScpBindShaderBufferVulkan shaderHash:%s bindSlot:%lld bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		//printf("%s",$str);
+		//WriteLog($str);
+	};
+};
+hook("DbgScpBindShaderBufferD3D12")
+{
+	onenter{
+		//const char* shaderHash, int64_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$bindSlot:int = ptrget(argv(1),8);
+		$bufferId:int = ptrget(argv(2),8);
+		$offset:int = ptrget(argv(3),8);
+		$size:int = ptrget(argv(4),8);
+		$bufferType:string = ptrget(argv(5),8);
+
+		$str = format("DbgScpBindShaderBufferD3D12 shaderHash:%s bindSlot:%lld bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		//printf("%s",$str);
+		//WriteLog($str);
+	};
+};
+hook("DbgScpBindShaderBufferD3D11")
+{
+	onenter{
+		//const char* shaderHash, int32_t bindSlot, int64_t bufferId, int64_t offset, int64_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$bindSlot:int = ptrget(argv(1),4);
+		$bufferId:int = ptrget(argv(2),8);
+		$offset:int = ptrget(argv(3),8);
+		$size:int = ptrget(argv(4),8);
+		$bufferType:string = ptrget(argv(5),8);
+
+		$str = format("DbgScpBindShaderBufferD3D11 shaderHash:%s bindSlot:%d bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		//printf("%s",$str);
+		//WriteLog($str);
+	};
+};
+hook("DbgScpBindShaderBufferMetal")
+{
+	onenter{
+		//const char* shaderHash, int64_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType
+		$shaderHash:string = ptrget(argv(0),8);
+		$bindSlot:int = ptrget(argv(1),8);
+		$bufferId:int = ptrget(argv(2),8);
+		$offset:int = ptrget(argv(3),8);
+		$size:int = ptrget(argv(4),8);
+		$bufferType:string = ptrget(argv(5),8);
+
+		$str = format("DbgScpBindShaderBufferMetal shaderHash:%s bindSlot:%lld bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };
 

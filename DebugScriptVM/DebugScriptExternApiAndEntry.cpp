@@ -464,6 +464,7 @@ static inline std::recursive_mutex& GetLogBufferMutexRef()
 }
 static inline std::string* GetLogFilesRef()
 {
+#if defined(DBGSCP_COMPILER_TEST)
     static std::string s_LogFile[c_max_log_file_num] = { "dbgscp_log_0.txt",
                                                     "dbgscp_log_1.txt",
                                                     "dbgscp_log_2.txt",
@@ -480,6 +481,9 @@ static inline std::string* GetLogFilesRef()
                                                     "dbgscp_log_13.txt",
                                                     "dbgscp_log_14.txt",
                                                     "dbgscp_log_15.txt" };
+#else
+	static std::string s_LogFile[c_max_log_file_num];
+#endif
     return s_LogFile;
 }
 

@@ -80,7 +80,7 @@ namespace CefDotnetApp.AgentCore.Core
             try
             {
                 using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                using var response = await _httpClient.PostAsync($"{_baseUrl}/message", content);
+                using var response = await _httpClient.PostAsync($"{_baseUrl}", content);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
                 return await response.Content.ReadAsStringAsync();
             }

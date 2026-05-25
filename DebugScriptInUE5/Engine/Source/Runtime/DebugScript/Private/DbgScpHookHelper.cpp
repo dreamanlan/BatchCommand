@@ -180,3 +180,78 @@ bool FDbgScpHookHelper::DbgScpAssertWithStrKeyInfo(const char* file, int line, c
 	DBGSCP_HOOK("DbgScpAssertWithStrKeyInfo", bool, tag, key, info, file, line, func);
 	return true;
 }
+
+void FDbgScpHookHelper::DbgScpBindShaderBufferGLES(const char* shaderHash, int32_t bindSlot, int64_t bufferId, int64_t offset, int64_t size, const char* bufferType)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderBufferGLES", shaderHash, bindSlot, bufferId, offset, size, bufferType);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderBufferVulkan(const char* shaderHash, int64_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderBufferVulkan", shaderHash, bindSlot, bufferAddr, offset, size, bufferType);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderBufferD3D12(const char* shaderHash, int64_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderBufferD3D12", shaderHash, bindSlot, bufferAddr, offset, size, bufferType);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderBufferD3D11(const char* shaderHash, int32_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderBufferD3D11", shaderHash, bindSlot, bufferAddr, offset, size, bufferType);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderBufferMetal(const char* shaderHash, int64_t bindSlot, int64_t bufferAddr, int64_t offset, int64_t size, const char* bufferType)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderBufferMetal", shaderHash, bindSlot, bufferAddr, offset, size, bufferType);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderTextureGLES(const char* shaderHash, int32_t bindSlot, int64_t textureAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderTextureGLES", shaderHash, bindSlot, textureAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderTextureVulkan(const char* shaderHash, int64_t bindSlot, int64_t textureAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderTextureVulkan", shaderHash, bindSlot, textureAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderTextureD3D12(const char* shaderHash, int64_t bindSlot, int64_t textureAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderTextureD3D12", shaderHash, bindSlot, textureAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderTextureD3D11(const char* shaderHash, int32_t bindSlot, int64_t textureAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderTextureD3D11", shaderHash, bindSlot, textureAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderTextureMetal(const char* shaderHash, int64_t bindSlot, int64_t textureAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderTextureMetal", shaderHash, bindSlot, textureAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderSamplerGLES(const char* shaderHash, int32_t bindSlot, int64_t samplerAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderSamplerGLES", shaderHash, bindSlot, samplerAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderSamplerVulkan(const char* shaderHash, int64_t bindSlot, int64_t samplerAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderSamplerVulkan", shaderHash, bindSlot, samplerAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderSamplerD3D12(const char* shaderHash, int64_t bindSlot, int64_t samplerAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderSamplerD3D12", shaderHash, bindSlot, samplerAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderSamplerD3D11(const char* shaderHash, int32_t bindSlot, int64_t samplerAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderSamplerD3D11", shaderHash, bindSlot, samplerAddr);
+}
+
+void FDbgScpHookHelper::DbgScpBindShaderSamplerMetal(const char* shaderHash, int64_t bindSlot, int64_t samplerAddr)
+{
+	DBGSCP_HOOK_VOID("DbgScpBindShaderSamplerMetal", shaderHash, bindSlot, samplerAddr);
+}

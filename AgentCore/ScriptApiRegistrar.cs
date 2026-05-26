@@ -140,7 +140,13 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("to_json", "to_json(obj, prettyPrint)", new ExpressionFactoryHelper<ToJsonExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("from_json", "from_json(json)", new ExpressionFactoryHelper<FromJsonExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("json_escape", "json_escape(str[, bool_add_quotes])", new ExpressionFactoryHelper<JsonEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_json", "escape_json(str[, bool_add_quotes])", false, new ExpressionFactoryHelper<JsonEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_json_string", "escape_json_string(str[, bool_add_quotes])", false, new ExpressionFactoryHelper<JsonEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_json_str", "escape_json_str(str[, bool_add_quotes])", false, new ExpressionFactoryHelper<JsonEscapeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("json_unescape", "json_unescape(str)", new ExpressionFactoryHelper<JsonUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_json", "unescape_json(str)", false, new ExpressionFactoryHelper<JsonUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_json_string", "unescape_json_string(str)", false, new ExpressionFactoryHelper<JsonUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_json_str", "unescape_json_str(str)", false, new ExpressionFactoryHelper<JsonUnescapeExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("new_object", "new_object(key1, value1, key2, value2, ...)", new ExpressionFactoryHelper<NewObjectExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("to_string", "to_string(val)", new ExpressionFactoryHelper<ToStringExp>());

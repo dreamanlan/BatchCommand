@@ -371,6 +371,41 @@ hook("StartFrameCaptureOnDemand")
 		return 0;
 	};
 };
+hook("DbgScpRegisterShaderName")
+{
+	onenter{
+		$shaderHash:string = ptrget(argv(0),8);
+		$shaderName:string = ptrget(argv(1),8);
+
+		$str = format("DbgScpRegisterShaderName shaderHash:%s shaderName:%s\n", $shaderHash, $shaderName);
+		WriteLog($str);
+		//assert(0);
+	};
+};
+hook("DbgScpSetupDrawGLES")
+{
+	onenter{
+		$hash:string = ptrget(argv(0),8);
+		$frame:int = ptrget(argv(1),8);
+		$idx:int = ptrget(argv(2),8);
+
+		$str = format("DbgScpSetupDrawGLES hash:%s frame:%d idx:%d\n", $hash, $frame, $idx);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("DbgScpSetupDispatchGLES")
+{
+	onenter{
+		$hash:string = ptrget(argv(0),8);
+		$frame:int = ptrget(argv(1),8);
+		$idx:int = ptrget(argv(2),8);
+
+		$str = format("DbgScpSetupDispatchGLES hash:%s frame:%d idx:%d\n", $hash, $frame, $idx);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
 hook("DbgScpSetShaderParameterGLES")
 {
 	onenter{

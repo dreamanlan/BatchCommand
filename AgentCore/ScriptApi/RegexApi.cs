@@ -39,7 +39,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             // Regex escape / unescape
             AgentFrameworkService.Instance.DslEngine!.Register("regex_escape", "regex_escape(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", new ExpressionFactoryHelper<RegexEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_regex", "escape_regex(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", false, new ExpressionFactoryHelper<RegexEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_regex_string", "escape_regex_string(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", false, new ExpressionFactoryHelper<RegexEscapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("escape_regex_str", "escape_regex_str(str) escape regex metacharacters, same as System.Text.RegularExpressions.Regex.Escape", false, new ExpressionFactoryHelper<RegexEscapeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_unescape", "regex_unescape(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", new ExpressionFactoryHelper<RegexUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_regex", "unescape_regex(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", false, new ExpressionFactoryHelper<RegexUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_regex_string", "unescape_regex_string(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", false, new ExpressionFactoryHelper<RegexUnescapeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("unescape_regex_str", "unescape_regex_str(str) unescape regex escape sequences, same as System.Text.RegularExpressions.Regex.Unescape", false, new ExpressionFactoryHelper<RegexUnescapeExp>());
         }
     }
 

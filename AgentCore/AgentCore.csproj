@@ -50,8 +50,6 @@
     <!-- SQLite for persistent storage -->
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
 
-    <!-- HnswLite for approximate nearest neighbor search -->
-
     <!-- Lucene.Net for BM25 bag-of-words search -->
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />

@@ -10,7 +10,7 @@ using CefDotnetApp.AgentCore.Core;
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
     /// <summary>
-    /// DSL Script API for semantic index operations (SQLite + HNSW).
+    /// DSL Script API for semantic index operations (SQLite + FTS5 + cosine similarity).
     /// All APIs use a 'collection' parameter as namespace.
     /// </summary>
 
@@ -119,13 +119,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // semantic_search(collection, query[, topN]) - search, returns JSON array
+    // semantic_search(collection, query[, keywords, topN]) - search, returns JSON array
     sealed class SemanticSearchExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, topN])");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search(collection, query[, keywords, topN])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -133,7 +133,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
-                    int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
+                    string keywords = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                    int topN = operands.Count > 3 ? (int)operands[3].GetLong() : 5;
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady)
@@ -143,7 +144,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     if (vector == null)
                         return BoxedValue.FromString("[error] encode failed");
 
-                    string result = Core.AgentCore.Instance.SemanticIndex.SemanticSearch(collection, vector, query, topN);
+                    string result = Core.AgentCore.Instance.SemanticIndex.SemanticSearch(collection, vector, query, keywords, topN);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
@@ -154,13 +155,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // semantic_search_between(collection, query, startTime[, endTime[, topN]]) - search within time range, returns JSON
+    // semantic_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - search within time range, returns JSON
     sealed class SemanticSearchBetweenExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -170,7 +171,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady)
@@ -180,7 +182,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     if (vector == null)
                         return BoxedValue.FromString("[error] encode failed");
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, keywords, topN, startTime, endTime);
                     return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
                 }
                 catch (Exception ex) {
@@ -191,13 +193,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search_between(collection, query, startTime[, endTime[, topN]]) - keyword search within time range, returns JSON
+    // keyword_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - keyword search within time range, returns JSON
     sealed class KeywordSearchBetweenExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -207,9 +209,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, keywords, topN, startTime, endTime);
                     return BoxedValue.FromString(SemanticIndex.ResultsToJson(items));
                 }
                 catch (Exception ex) {
@@ -268,13 +271,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search(collection, query[, topN]) - BM25-based keyword search, returns JSON array
+    // keyword_search(collection, query[, keywords, topN]) - BM25-based keyword search, returns JSON array
     sealed class KeywordSearchExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, topN])");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search(collection, query[, keywords, topN])");
                 return BoxedValue.FromString("[error] missing arguments");
             }
 
@@ -282,8 +285,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
-                    int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
-                    string result = Core.AgentCore.Instance.SemanticIndex.KeywordSearch(collection, query, topN);
+                    string keywords = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                    int topN = operands.Count > 3 ? (int)operands[3].GetLong() : 5;
+                    string result = Core.AgentCore.Instance.SemanticIndex.KeywordSearch(collection, query, keywords, topN);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
@@ -346,13 +350,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
     // ---- as_list variants: return List<BoxedValue> of content strings ----
 
-    // semantic_search_as_list(collection, query[, topN])
+    // semantic_search_as_list(collection, query[, keywords, topN])
     sealed class SemanticSearchAsListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_as_list(collection, query[, topN])");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_as_list(collection, query[, keywords, topN])");
                 return BoxedValue.NullObject;
             }
 
@@ -360,7 +364,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
-                    int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
+                    string keywords = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                    int topN = operands.Count > 3 ? (int)operands[3].GetLong() : 5;
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
@@ -374,7 +379,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         return BoxedValue.NullObject;
                     }
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchCore(collection, vector, query, topN);
+                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchCore(collection, vector, query, keywords, topN);
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
@@ -385,13 +390,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search_as_list(collection, query[, topN])
+    // keyword_search_as_list(collection, query[, keywords, topN])
     sealed class KeywordSearchAsListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_as_list(collection, query[, topN])");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_as_list(collection, query[, keywords, topN])");
                 return BoxedValue.NullObject;
             }
 
@@ -399,9 +404,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
-                    int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
+                    string keywords = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                    int topN = operands.Count > 3 ? (int)operands[3].GetLong() : 5;
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchCore(collection, query, topN);
+                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchCore(collection, query, keywords, topN);
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
@@ -412,13 +418,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // semantic_search_between_as_list(collection, query, startTime[, endTime[, topN]])
+    // semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]])
     sealed class SemanticSearchBetweenAsListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_as_list(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -428,7 +434,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
@@ -442,7 +449,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         return BoxedValue.NullObject;
                     }
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, keywords, topN, startTime, endTime);
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
@@ -453,13 +460,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search_between_as_list(collection, query, startTime[, endTime[, topN]])
+    // keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]])
     sealed class KeywordSearchBetweenAsListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 5) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_as_list(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -469,9 +476,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, keywords, topN, startTime, endTime);
                     return SearchResultHelper.ToBoxedList(items);
                 }
                 catch (Exception ex) {
@@ -484,13 +492,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
     // ---- order_by_time variants: return List<BoxedValue> sorted by time ----
 
-    // semantic_search_order_by_time(collection, query[, topN[, isAsc]])
+    // semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc]])
     sealed class SemanticSearchOrderByTimeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_order_by_time(collection, query[, topN[, isAsc]])");
+            if (operands.Count < 2 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc]])");
                 return BoxedValue.NullObject;
             }
 
@@ -499,7 +507,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
                     int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
-                    bool isAsc = operands.Count > 3 && operands[3].GetBool();
+                    string keywords = operands.Count > 3 ? operands[3].AsString : string.Empty;
+                    bool isAsc = operands.Count > 4 && operands[4].GetBool();
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
@@ -513,7 +522,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         return BoxedValue.NullObject;
                     }
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchCore(collection, vector, query, topN);
+                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchCore(collection, vector, query, keywords, topN);
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
@@ -524,13 +533,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search_order_by_time(collection, query[, topN[, isAsc]])
+    // keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc]])
     sealed class KeywordSearchOrderByTimeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_order_by_time(collection, query[, topN[, isAsc]])");
+            if (operands.Count < 2 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc]])");
                 return BoxedValue.NullObject;
             }
 
@@ -538,10 +547,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string collection = operands[0].AsString;
                     string query = operands[1].AsString;
-                    int topN = operands.Count > 2 ? (int)operands[2].GetLong() : 5;
-                    bool isAsc = operands.Count > 3 && operands[3].GetBool();
+                    string keywords = operands.Count > 2 ? operands[2].AsString : string.Empty;
+                    int topN = operands.Count > 3 ? (int)operands[3].GetLong() : 5;
+                    bool isAsc = operands.Count > 4 && operands[4].GetBool();
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchCore(collection, query, topN);
+                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchCore(collection, query, keywords, topN);
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
@@ -552,13 +562,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // semantic_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]])
+    // semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]])
     sealed class SemanticSearchBetweenOrderByTimeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 7) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -568,8 +578,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
-                    bool isAsc = operands.Count > 5 && operands[5].GetBool();
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
+                    bool isAsc = operands.Count > 6 && operands[6].GetBool();
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
@@ -583,7 +594,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         return BoxedValue.NullObject;
                     }
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.SemanticSearchBetweenCore(collection, vector, query, keywords, topN, startTime, endTime);
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
@@ -594,13 +605,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // keyword_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]])
+    // keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]])
     sealed class KeywordSearchBetweenOrderByTimeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
+            if (operands.Count < 3 || operands.Count > 7) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss");
                 return BoxedValue.NullObject;
             }
 
@@ -610,10 +621,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string query = operands[1].AsString;
                     long startTime = SemanticIndex.ParseTimeToUnix(operands[2].AsString);
                     long endTime = operands.Count > 3 ? SemanticIndex.ParseTimeToUnix(operands[3].AsString) : 0;
-                    int topN = operands.Count > 4 ? (int)operands[4].GetLong() : 5;
-                    bool isAsc = operands.Count > 5 && operands[5].GetBool();
+                    string keywords = operands.Count > 4 ? operands[4].AsString : string.Empty;
+                    int topN = operands.Count > 5 ? (int)operands[5].GetLong() : 5;
+                    bool isAsc = operands.Count > 6 && operands[6].GetBool();
 
-                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, topN, startTime, endTime);
+                    var items = Core.AgentCore.Instance.SemanticIndex.KeywordSearchBetweenCore(collection, query, keywords, topN, startTime, endTime);
                     return SearchResultHelper.ToBoxedListOrderByTime(items, isAsc);
                 }
                 catch (Exception ex) {
@@ -980,26 +992,26 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_init", "semantic_init(collection)", new ExpressionFactoryHelper<SemanticInitExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_is_ready", "semantic_is_ready(collection)", new ExpressionFactoryHelper<SemanticIsReadyExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_add", "semantic_add(collection, content[, metadata])", new ExpressionFactoryHelper<SemanticAddExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search", "semantic_search(collection, query[, topN])", new ExpressionFactoryHelper<SemanticSearchExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search", "semantic_search(collection, query[, keywords, topN])", new ExpressionFactoryHelper<SemanticSearchExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_delete", "semantic_delete(collection)", new ExpressionFactoryHelper<SemanticDeleteExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_count", "semantic_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_count", "semantic_get_count(collection)", new ExpressionFactoryHelper<SemanticCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_recent", "semantic_get_recent(collection[, topN])", new ExpressionFactoryHelper<SemanticGetRecentExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search", "keyword_search(collection, query[, topN])", new ExpressionFactoryHelper<KeywordSearchExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search", "keyword_search(collection, query[, keywords, topN])", new ExpressionFactoryHelper<KeywordSearchExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_get_recent_as_list", "semantic_get_recent_as_list(collection[, topN])", new ExpressionFactoryHelper<SemanticGetRecentAsListExp>());
             // between variants (JSON)
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between", "semantic_search_between(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between", "keyword_search_between(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between", "semantic_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between", "keyword_search_between(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenExp>());
             // as_list variants
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_as_list", "semantic_search_as_list(collection, query[, topN])", new ExpressionFactoryHelper<SemanticSearchAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_as_list", "keyword_search_as_list(collection, query[, topN])", new ExpressionFactoryHelper<KeywordSearchAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_as_list", "semantic_search_between_as_list(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenAsListExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_as_list", "keyword_search_between_as_list(collection, query, startTime[, endTime[, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenAsListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_as_list", "semantic_search_as_list(collection, query[, keywords, topN])", new ExpressionFactoryHelper<SemanticSearchAsListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_as_list", "keyword_search_as_list(collection, query[, keywords, topN])", new ExpressionFactoryHelper<KeywordSearchAsListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_as_list", "semantic_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<SemanticSearchBetweenAsListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_as_list", "keyword_search_between_as_list(collection, query, startTime[, endTime[, keywords, topN]]) - time format:yyyyMMdd or yyyyMMdd hhmmss", new ExpressionFactoryHelper<KeywordSearchBetweenAsListExp>());
             // order_by_time variants
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_order_by_time", "semantic_search_order_by_time(collection, query[, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_order_by_time", "keyword_search_order_by_time(collection, query[, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_order_by_time", "semantic_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenOrderByTimeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_order_by_time", "semantic_search_order_by_time(collection, query[, keywords, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchOrderByTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_order_by_time", "keyword_search_order_by_time(collection, query[, keywords, topN[, isAsc]]), return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchOrderByTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("semantic_search_between_order_by_time", "semantic_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<SemanticSearchBetweenOrderByTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, keywords, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
             // search config APIs
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_weights", "semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights, default 0.6/0.4", new ExpressionFactoryHelper<SemanticSetWeightsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_rebuild_fts", "semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter, returns count", new ExpressionFactoryHelper<SemanticRebuildFtsExp>());

@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <PackageReference Include="Esprima" Version="3.0.5" />
-    <PackageReference Include="HnswLite.RamStorage" Version="1.0.6" />
     <PackageReference Include="TextCopy" Version="6.2.1" />
 
     <!-- Roslyn for C# code analysis and refactoring -->
@@ -52,7 +51,6 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.0" />
 
     <!-- HnswLite for approximate nearest neighbor search -->
-    <PackageReference Include="HnswLite" Version="1.0.6" />
 
     <!-- Lucene.Net for BM25 bag-of-words search -->
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />

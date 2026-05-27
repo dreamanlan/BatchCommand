@@ -5,8 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Hnsw;
-using Hnsw.RamStorage;
+
 using Microsoft.Data.Sqlite;
 
 namespace CefDotnetApp.AgentCore.Core
@@ -38,24 +37,10 @@ namespace CefDotnetApp.AgentCore.Core
     /// </summary>
     public class SemanticIndex : IDisposable
     {
-        private enum CollectionState { NotLoaded, Loading, Ready, Failed }
-
-        private class PendingAdd
-        {
-            public Guid Guid;
-            public List<float> Vector = new List<float>();
-        }
-
         private class CollectionIndex
         {
             public string Name = string.Empty;
-            public HnswIndex? Graph;
-            // HNSW Guid -> record id (same value, Guid.ToString("N"))
             public ReaderWriterLockSlim Lock = new ReaderWriterLockSlim();
-            public TaskCompletionSource<bool> ReadyTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            public CollectionState State = CollectionState.NotLoaded;
-            public List<PendingAdd> PendingAdds = new List<PendingAdd>();
-            public readonly object PendingLock = new object();
         }
 
         private readonly string _dbPath;
@@ -68,8 +53,6 @@ namespace CefDotnetApp.AgentCore.Core
         // Configurable hybrid scoring weights (vector vs bm25)
         private double _vectorWeight = 0.6;
         private double _bm25Weight = 0.4;
-        // HNSW recall multiplier: actual recall = topN * multiplier
-        private int _hnswRecallMultiplier = 5;
         // FTS search scope: "all" (default), "content", "metadata"
         private string _searchScope = "content";
         // Detected FTS schema version at runtime
@@ -95,11 +78,6 @@ namespace CefDotnetApp.AgentCore.Core
             _bm25Weight = bm25Weight / sum;
         }
 
-        /// <summary>Set HNSW recall multiplier. Actual HNSW recall = topN * multiplier. Default: 5.</summary>
-        public void SetHnswRecallMultiplier(int multiplier)
-        {
-            _hnswRecallMultiplier = Math.Max(1, multiplier);
-        }
 
         /// <summary>Set FTS search scope: "all" (default), "content", or "metadata".</summary>
         public void SetSearchScope(string scope)
@@ -133,37 +111,18 @@ namespace CefDotnetApp.AgentCore.Core
         /// </summary>
         public void InitCollection(string collection)
         {
-            var col = GetOrCreateCollection(collection);
-            lock (col.PendingLock) {
-                if (col.State != CollectionState.NotLoaded)
-                    return;
-                col.State = CollectionState.Loading;
-            }
-            Task.Run(() => LoadCollectionAsync(col));
-        }
-
-        /// <summary>
-        /// Wait until the collection is ready (background load complete).
-        /// </summary>
-        public Task WaitReadyAsync(string collection, CancellationToken ct = default)
-        {
-            var col = GetOrCreateCollection(collection);
-            if (col.State == CollectionState.Ready)
-                return Task.CompletedTask;
-            return col.ReadyTcs.Task.WaitAsync(ct);
+            GetOrCreateCollection(collection);
         }
 
         public bool IsReady(string collection)
         {
             lock (_collectionsLock) {
-                return _collections.TryGetValue(collection, out var col) && col.State == CollectionState.Ready;
+                return _collections.ContainsKey(collection);
             }
         }
 
         /// <summary>
-        /// Add a record. Always writes to SQLite immediately.
-        /// If the HNSW graph is ready, also inserts into the graph; otherwise queues for later.
-        /// Returns the new record id.
+        /// Add a record to SQLite. Returns the new record id.
         /// </summary>
         public string Add(string collection, string content, float[] vector, string? metadata = null)
         {
@@ -189,7 +148,8 @@ namespace CefDotnetApp.AgentCore.Core
             if (_schemaVersion >= 2) {
                 ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
                 ftsCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata ?? ""));
-            } else {
+            }
+            else {
                 ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
             }
             ftsCmd.Parameters.AddWithValue("@id", id);
@@ -200,24 +160,6 @@ namespace CefDotnetApp.AgentCore.Core
             ftsCmd.ExecuteNonQuery();
             txn.Commit();
 
-            // 2. insert into HNSW graph or queue
-            var col = GetOrCreateCollection(collection);
-            bool queued = false;
-            lock (col.PendingLock) {
-                if (col.State != CollectionState.Ready) {
-                    col.PendingAdds.Add(new PendingAdd { Guid = guid, Vector = vector.ToList() });
-                    queued = true;
-                }
-            }
-            if (!queued) {
-                col.Lock.EnterWriteLock();
-                try {
-                    col.Graph!.AddAsync(guid, vector.ToList()).GetAwaiter().GetResult();
-                }
-                finally {
-                    col.Lock.ExitWriteLock();
-                }
-            }
             return id;
         }
 
@@ -225,27 +167,27 @@ namespace CefDotnetApp.AgentCore.Core
         /// Search the collection. Waits (synchronously) up to timeoutMs for the collection to be ready.
         /// Returns JSON array of {id, content, metadata, score}.
         /// </summary>
-        public string SemanticSearch(string collection, float[] queryVector, string query = "", int topN = 5, int timeoutMs = 5000)
+        public string SemanticSearch(string collection, float[] queryVector, string query = "", int topN = 5)
         {
-            var items = SemanticSearchCore(collection, queryVector, query, topN, timeoutMs);
+            var items = SemanticSearchCore(collection, queryVector, query, topN);
             return ResultsToJson(items);
         }
 
         /// <summary>
         /// Core semantic search returning structured results.
         /// </summary>
-        public List<SearchResultItem> SemanticSearchCore(string collection, float[] queryVector, string query = "", int topN = 5, int timeoutMs = 5000)
+        public List<SearchResultItem> SemanticSearchCore(string collection, float[] queryVector, string query = "", int topN = 5)
         {
-            return SemanticSearchCoreInternal(collection, queryVector, query, topN, timeoutMs, 0, 0);
+            return SemanticSearchCoreInternal(collection, queryVector, query, topN, 0, 0);
         }
 
         /// <summary>
         /// Semantic search within a time range. startTime/endTime are unix timestamps. endTime=0 means now.
         /// </summary>
-        public List<SearchResultItem> SemanticSearchBetweenCore(string collection, float[] queryVector, string query, int topN, long startTime, long endTime, int timeoutMs = 5000)
+        public List<SearchResultItem> SemanticSearchBetweenCore(string collection, float[] queryVector, string query, int topN, long startTime, long endTime)
         {
             if (endTime <= 0) endTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            return SemanticSearchCoreInternal(collection, queryVector, query, topN, timeoutMs, startTime, endTime);
+            return SemanticSearchCoreInternal(collection, queryVector, query, topN, startTime, endTime);
         }
 
         // Incremental recall parameters for between-time search
@@ -253,120 +195,52 @@ namespace CefDotnetApp.AgentCore.Core
         private const int BetweenRecallStep = 1000;
         private const int BetweenRecallCap = 100_000;
 
-        private List<SearchResultItem> SemanticSearchCoreInternal(string collection, float[] queryVector, string query, int topN, int timeoutMs, long startTime, long endTime)
+        private List<SearchResultItem> SemanticSearchCoreInternal(string collection, float[] queryVector, string query, int topN, long startTime, long endTime)
         {
             var col = GetOrCreateCollection(collection);
-            if (col.State != CollectionState.Ready) {
-                col.ReadyTcs.Task.Wait(timeoutMs);
-                if (col.State != CollectionState.Ready)
-                    return new List<SearchResultItem>();
-            }
 
-            // Expand HNSW recall pool for better coverage
             bool hasReranker = _rerankService != null && _rerankService.IsReady && !string.IsNullOrWhiteSpace(query);
-            int hnswRecallN = topN * _hnswRecallMultiplier;
             int finalRecallN = hasReranker ? topN * 10 : topN;
 
+            // 1. SQL query to get candidate ids (with optional time filter)
             bool hasTimeFilter = startTime > 0 && endTime > 0;
+            HashSet<string> candIds;
             if (hasTimeFilter) {
-                return SemanticSearchBetweenInternal(col, collection, queryVector, query, topN, finalRecallN, hasReranker, startTime, endTime);
+                candIds = LoadCandidateIdsByTime(collection, startTime, endTime);
             }
-
-            IEnumerable<VectorResult> hits;
-            col.Lock.EnterReadLock();
-            try {
-                if (col.Graph == null)
-                    return new List<SearchResultItem>();
-                hits = col.Graph.GetTopKAsync(queryVector.ToList(), hnswRecallN).GetAwaiter().GetResult();
+            else {
+                candIds = LoadAllCandidateIds(collection);
             }
-            finally {
-                col.Lock.ExitReadLock();
-            }
-
-            // build candidate map from HNSW results
-            var candidateMap = new Dictionary<string, double>(StringComparer.Ordinal);
-            foreach (var h in hits) {
-                string hid = h.GUID.ToString("N");
-                candidateMap[hid] = 1.0 - (double)h.Distance; // cosine distance -> similarity
-            }
-
-            // fetch BM25 scores from FTS5 + independent BM25 recall channel
-            var bm25Map = new Dictionary<string, double>(StringComparer.Ordinal);
-            using var conn = OpenConnection();
-            string ftsQuery = BuildFtsQuery(query);
-            if (!string.IsNullOrEmpty(ftsQuery)) {
-                // Score BM25 within HNSW candidates
-                if (candidateMap.Count > 0) {
-                    var idList = string.Join(",", candidateMap.Keys.Select(id => $"'{id}'"));
-                    using var ftsCmd = conn.CreateCommand();
-                    ftsCmd.CommandText = $"SELECT id, {GetBm25Expression()} FROM semantic_fts WHERE collection=@col AND semantic_fts MATCH @q AND id IN ({idList})";
-                    ftsCmd.Parameters.AddWithValue("@col", collection);
-                    ftsCmd.Parameters.AddWithValue("@q", ftsQuery);
-                    using var ftsReader = ftsCmd.ExecuteReader();
-                    while (ftsReader.Read()) {
-                        string fid = ftsReader.GetString(0);
-                        double raw = ftsReader.GetDouble(1); // negative in SQLite FTS5
-                        bm25Map[fid] = 1.0 / (1.0 + Math.Abs(raw)); // normalize to (0,1]
-                    }
-                }
-                // Independent BM25 recall: find additional candidates not in HNSW results
-                using var bm25RecallCmd = conn.CreateCommand();
-                bm25RecallCmd.CommandText = $"SELECT id, {GetBm25Expression()} AS score\nFROM semantic_fts\nWHERE collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
-                bm25RecallCmd.Parameters.AddWithValue("@col", collection);
-                bm25RecallCmd.Parameters.AddWithValue("@q", ftsQuery);
-                bm25RecallCmd.Parameters.AddWithValue("@n", hnswRecallN);
-                using var bm25Reader = bm25RecallCmd.ExecuteReader();
-                while (bm25Reader.Read()) {
-                    string bid = bm25Reader.GetString(0);
-                    double raw = bm25Reader.GetDouble(1);
-                    double normalized = 1.0 / (1.0 + Math.Abs(raw));
-                    if (!bm25Map.ContainsKey(bid))
-                        bm25Map[bid] = normalized;
-                    // Add BM25-only candidates to the candidate map (no vector score)
-                    if (!candidateMap.ContainsKey(bid))
-                        candidateMap[bid] = 0.0;
-                }
-            }
-
-            if (candidateMap.Count == 0)
+            if (candIds.Count == 0)
                 return new List<SearchResultItem>();
 
-            // hybrid scoring with configurable weights
-            var hybridRanked = candidateMap
-                .Select(c => new {
-                    Id = c.Key,
-                    HybridScore = _vectorWeight * c.Value + _bm25Weight * (bm25Map.TryGetValue(c.Key, out var b) ? b : 0.0)
-                })
-                .OrderByDescending(c => c.HybridScore)
-                .Take(finalRecallN)
-                .ToList();
+            // 2. Brute-force cosine + BM25 hybrid scoring via ScanHybridOnCandidates
+            string ftsQuery = BuildFtsQuery(query);
+            var orderedHits = ScanHybridOnCandidates(col, collection, candIds, queryVector, ftsQuery);
+            if (orderedHits.Count == 0)
+                return new List<SearchResultItem>();
 
-            // fetch content for reranker or final output
-            var idContentMap = new Dictionary<string, (string content, string meta, long createdAt)>(StringComparer.Ordinal);
-            foreach (var item in hybridRanked) {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT content,metadata,created_at FROM semantic_records WHERE id=@id";
-                cmd.Parameters.AddWithValue("@id", item.Id);
-                using var reader = cmd.ExecuteReader();
-                if (reader.Read()) {
-                    long ts = reader.GetInt64(2);
-                    idContentMap[item.Id] = (reader.GetString(0), reader.IsDBNull(1) ? "" : reader.GetString(1), ts);
-                }
-            }
+            // 3. Take top candidates
+            var topHits = orderedHits.Take(finalRecallN).ToList();
 
-            // rerank if available
+            // 4. Load content for reranker or final output
+            var idContentMap = LoadContentsByIds(topHits.Select(x => x.id));
+
+            // 5. Rerank if available
             IList<(string id, double score)> finalRanked;
             if (hasReranker) {
-                var rerankCandidates = hybridRanked
-                    .Where(c => idContentMap.ContainsKey(c.Id))
-                    .Select(c => (c.Id, idContentMap[c.Id].content))
+                var rerankCandidates = topHits
+                    .Where(c => idContentMap.ContainsKey(c.id))
+                    .Select(c => (c.id, idContentMap[c.id].content))
                     .ToList();
                 var rerankResults = _rerankService!.Rerank(query, rerankCandidates, topN);
                 finalRanked = rerankResults.Select(r => (r.key, (double)r.score)).ToList();
-            } else {
-                finalRanked = hybridRanked
-                    .Where(c => idContentMap.ContainsKey(c.Id))
-                    .Select(c => (c.Id, c.HybridScore))
+            }
+            else {
+                finalRanked = topHits
+                    .Where(c => idContentMap.ContainsKey(c.id))
+                    .Take(topN)
+                    .Select(c => (c.id, c.hybridScore))
                     .ToList();
             }
 
@@ -402,17 +276,7 @@ namespace CefDotnetApp.AgentCore.Core
             txn.Commit();
 
             lock (_collectionsLock) {
-                if (_collections.TryGetValue(collection, out var col)) {
-                    col.Lock.EnterWriteLock();
-                    try {
-                        col.Graph = null;
-                        col.State = CollectionState.NotLoaded;
-                        col.ReadyTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    }
-                    finally {
-                        col.Lock.ExitWriteLock();
-                    }
-                }
+                _collections.Remove(collection);
             }
         }
 
@@ -470,80 +334,6 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         // ---- Private helpers ----
-
-        private async Task LoadCollectionAsync(CollectionIndex col)
-        {
-            try {
-                int dim = 0;
-                var ids = new List<Guid>();
-                var vectors = new List<List<float>>();
-
-                using (var conn = OpenConnection()) {
-                    using var cmd = conn.CreateCommand();
-                    cmd.CommandText = "SELECT id,vector FROM semantic_records WHERE collection=@col ORDER BY created_at";
-                    cmd.Parameters.AddWithValue("@col", col.Name);
-                    using var reader = cmd.ExecuteReader();
-                    while (reader.Read()) {
-                        var v = BytesToVector((byte[])reader[1]);
-                        if (dim == 0) dim = v.Length;
-                        ids.Add(Guid.Parse(reader.GetString(0)));
-                        vectors.Add(v.ToList());
-                    }
-                }
-
-                if (dim == 0) dim = 768; // default embedding dimension
-
-                var graph = new HnswIndex(dim, new RamHnswStorage(), new RamHnswLayerStorage());
-                graph.DistanceFunction = new CosineDistance();
-                graph.M = 16;
-                graph.EfConstruction = 200;
-
-                if (ids.Count > 0) {
-                    var batch = new Dictionary<Guid, List<float>>();
-                    for (int i = 0; i < ids.Count; i++)
-                        batch[ids[i]] = vectors[i];
-                    await graph.AddNodesAsync(batch);
-                }
-
-                col.Lock.EnterWriteLock();
-                try {
-                    col.Graph = graph;
-                }
-                finally {
-                    col.Lock.ExitWriteLock();
-                }
-
-                // apply pending adds
-                List<PendingAdd> pending;
-                lock (col.PendingLock) {
-                    col.State = CollectionState.Ready;
-                    pending = new List<PendingAdd>(col.PendingAdds);
-                    col.PendingAdds.Clear();
-                }
-
-                if (pending.Count > 0) {
-                    col.Lock.EnterWriteLock();
-                    try {
-                        var batch = new Dictionary<Guid, List<float>>();
-                        foreach (var p in pending)
-                            batch[p.Guid] = p.Vector;
-                        await graph.AddNodesAsync(batch);
-                    }
-                    finally {
-                        col.Lock.ExitWriteLock();
-                    }
-                }
-
-                col.ReadyTcs.TrySetResult(true);
-                OnCollectionReady?.Invoke(col.Name);
-            }
-            catch (Exception ex) {
-                lock (col.PendingLock) {
-                    col.State = CollectionState.Failed;
-                }
-                col.ReadyTcs.TrySetException(ex);
-            }
-        }
 
         private CollectionIndex GetOrCreateCollection(string collection)
         {
@@ -616,8 +406,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         {
             var conn = new SqliteConnection($"Data Source={_dbPath}");
             conn.Open();
-            using (var cmd = conn.CreateCommand())
-            {
+            using (var cmd = conn.CreateCommand()) {
                 // WAL mode allows concurrent reads while writing; busy_timeout avoids immediate SQLITE_BUSY errors
                 cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
                 cmd.ExecuteNonQuery();
@@ -746,7 +535,8 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                 if (_schemaVersion >= 2) {
                     insCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
                     insCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata));
-                } else {
+                }
+                else {
                     insCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
                 }
                 insCmd.Parameters.AddWithValue("@id", id);
@@ -942,90 +732,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         // ---- Between-time search helpers ----
 
         /// <summary>
-        /// Semantic+BM25 hybrid search within a time range.
-        /// Strategy: fetch candidate id set by time range first, then do incremental HNSW+BM25 recall
-        /// until the intersection with the candidate set exceeds topN, or the recall cap is reached
-        /// (in which case fall back to table-scan on candidates).
-        /// </summary>
-        private List<SearchResultItem> SemanticSearchBetweenInternal(CollectionIndex col, string collection, float[] queryVector, string query, int topN, int finalRecallN, bool hasReranker, long startTime, long endTime)
-        {
-            // 1. Load candidate ids filtered by time range
-            HashSet<string> candIds = LoadCandidateIdsByTime(collection, startTime, endTime);
-            if (candIds.Count == 0)
-                return new List<SearchResultItem>();
-
-            string ftsQuery = BuildFtsQuery(query);
-
-            // 2. Incremental recall loop: grow recallN until intersection exceeds topN, or cap is hit
-            List<(string id, double hybridScore)>? orderedHits = null;
-            int recallN = BetweenRecallStart;
-            while (orderedHits == null) {
-                if (recallN > BetweenRecallCap) {
-                    orderedHits = ScanHybridOnCandidates(col, collection, candIds, queryVector, ftsQuery);
-                    break;
-                }
-                var hybridOrdered = RecallHybridOnce(col, collection, queryVector, ftsQuery, recallN);
-                if (hybridOrdered == null)
-                    return new List<SearchResultItem>();
-                int hit = 0;
-                foreach (var h in hybridOrdered) {
-                    if (candIds.Contains(h.id)) hit++;
-                }
-                if (hit > topN || hybridOrdered.Count < recallN) {
-                    // Either enough hits, or the recall is already exhausted (no more results available)
-                    orderedHits = hybridOrdered;
-                    break;
-                }
-                recallN += BetweenRecallStep;
-            }
-
-            // 3. Intersect with candidate set, preserve hybrid score order, take finalRecallN
-            var intersected = new List<(string id, double score)>();
-            foreach (var h in orderedHits) {
-                if (candIds.Contains(h.id)) {
-                    intersected.Add(h);
-                    if (intersected.Count >= finalRecallN)
-                        break;
-                }
-            }
-            if (intersected.Count == 0)
-                return new List<SearchResultItem>();
-
-            // 4. Load content for the intersected ids
-            var idContentMap = LoadContentsByIds(intersected.Select(x => x.id));
-
-            // 5. Rerank or use hybrid score directly
-            IList<(string id, double score)> finalRanked;
-            if (hasReranker) {
-                var rerankCandidates = intersected
-                    .Where(c => idContentMap.ContainsKey(c.id))
-                    .Select(c => (c.id, idContentMap[c.id].content))
-                    .ToList();
-                var rerankResults = _rerankService!.Rerank(query, rerankCandidates, topN);
-                finalRanked = rerankResults.Select(r => (r.key, (double)r.score)).ToList();
-            } else {
-                finalRanked = intersected
-                    .Where(c => idContentMap.ContainsKey(c.id))
-                    .Take(topN)
-                    .Select(c => (c.id, c.score))
-                    .ToList();
-            }
-
-            var results = new List<SearchResultItem>();
-            foreach (var (id, score) in finalRanked) {
-                if (!idContentMap.TryGetValue(id, out var rec)) continue;
-                results.Add(new SearchResultItem {
-                    Id = id,
-                    Content = rec.content,
-                    Metadata = rec.meta,
-                    Score = score,
-                    CreatedAt = rec.createdAt
-                });
-            }
-            return results;
-        }
-
-        /// <summary>
         /// Keyword-only (BM25) search within a time range using the same incremental strategy.
         /// </summary>
         private List<SearchResultItem> KeywordSearchBetweenInternal(string collection, string ftsQuery, int topN, long startTime, long endTime)
@@ -1095,6 +801,19 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return set;
         }
 
+        private HashSet<string> LoadAllCandidateIds(string collection)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            using var conn = OpenConnection();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id FROM semantic_records WHERE collection=@col";
+            cmd.Parameters.AddWithValue("@col", collection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                set.Add(reader.GetString(0));
+            return set;
+        }
+
         /// <summary>Load content/metadata/created_at for the given ids.</summary>
         private Dictionary<string, (string content, string meta, long createdAt)> LoadContentsByIds(IEnumerable<string> ids)
         {
@@ -1114,66 +833,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         }
 
         /// <summary>
-        /// Single HNSW+BM25 hybrid recall pass returning up to recallN ordered candidates.
-        /// Returns null if the graph is not ready.
-        /// </summary>
-        private List<(string id, double hybridScore)>? RecallHybridOnce(CollectionIndex col, string collection, float[] queryVector, string ftsQuery, int recallN)
-        {
-            IEnumerable<VectorResult> hits;
-            col.Lock.EnterReadLock();
-            try {
-                if (col.Graph == null)
-                    return null;
-                hits = col.Graph.GetTopKAsync(queryVector.ToList(), recallN).GetAwaiter().GetResult();
-            }
-            finally {
-                col.Lock.ExitReadLock();
-            }
-
-            var candidateMap = new Dictionary<string, double>(StringComparer.Ordinal);
-            foreach (var h in hits) {
-                string hid = h.GUID.ToString("N");
-                candidateMap[hid] = 1.0 - (double)h.Distance;
-            }
-
-            var bm25Map = new Dictionary<string, double>(StringComparer.Ordinal);
-            if (!string.IsNullOrEmpty(ftsQuery)) {
-                using var conn = OpenConnection();
-                if (candidateMap.Count > 0) {
-                    var idList = string.Join(",", candidateMap.Keys.Select(id => $"'{id}'"));
-                    using var ftsCmd = conn.CreateCommand();
-                    ftsCmd.CommandText = $"SELECT id, {GetBm25Expression()} FROM semantic_fts WHERE collection=@col AND semantic_fts MATCH @q AND id IN ({idList})";
-                    ftsCmd.Parameters.AddWithValue("@col", collection);
-                    ftsCmd.Parameters.AddWithValue("@q", ftsQuery);
-                    using var ftsReader = ftsCmd.ExecuteReader();
-                    while (ftsReader.Read()) {
-                        string fid = ftsReader.GetString(0);
-                        double raw = ftsReader.GetDouble(1);
-                        bm25Map[fid] = 1.0 / (1.0 + Math.Abs(raw));
-                    }
-                }
-                using var bm25RecallCmd = conn.CreateCommand();
-                bm25RecallCmd.CommandText = $"SELECT id, {GetBm25Expression()} AS score\nFROM semantic_fts\nWHERE collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
-                bm25RecallCmd.Parameters.AddWithValue("@col", collection);
-                bm25RecallCmd.Parameters.AddWithValue("@q", ftsQuery);
-                bm25RecallCmd.Parameters.AddWithValue("@n", recallN);
-                using var bm25Reader = bm25RecallCmd.ExecuteReader();
-                while (bm25Reader.Read()) {
-                    string bid = bm25Reader.GetString(0);
-                    double raw = bm25Reader.GetDouble(1);
-                    double normalized = 1.0 / (1.0 + Math.Abs(raw));
-                    if (!bm25Map.ContainsKey(bid))
-                        bm25Map[bid] = normalized;
-                    if (!candidateMap.ContainsKey(bid))
-                        candidateMap[bid] = 0.0;
-                }
-            }
-
-            return candidateMap
-                .Select(c => (c.Key, _vectorWeight * c.Value + _bm25Weight * (bm25Map.TryGetValue(c.Key, out var b) ? b : 0.0)))
-                .OrderByDescending(x => x.Item2)
-                .ToList();
-        }
 
         /// <summary>Single BM25 recall pass returning up to recallN ordered candidates.</summary>
         private List<(string id, double score)> RecallBm25Once(string collection, string ftsQuery, int recallN)
@@ -1445,17 +1104,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             var sb = new StringBuilder();
             // 1. Reset all in-memory collection states
             lock (_collectionsLock) {
-                foreach (var col in _collections.Values) {
-                    col.Lock.EnterWriteLock();
-                    try {
-                        col.Graph = null;
-                        col.State = CollectionState.NotLoaded;
-                        col.ReadyTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    }
-                    finally {
-                        col.Lock.ExitWriteLock();
-                    }
-                }
                 _collections.Clear();
             }
             sb.AppendLine("In-memory indexes cleared.");
@@ -1509,13 +1157,16 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                     sb.Append(':');
                     if (reader.IsDBNull(i)) {
                         sb.Append("null");
-                    } else {
+                    }
+                    else {
                         var fieldType = reader.GetFieldType(i);
                         if (fieldType == typeof(long) || fieldType == typeof(int)) {
                             sb.Append(reader.GetValue(i).ToString());
-                        } else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+                        }
+                        else if (fieldType == typeof(double) || fieldType == typeof(float)) {
                             sb.Append(Convert.ToDouble(reader.GetValue(i)).ToString("G"));
-                        } else {
+                        }
+                        else {
                             sb.Append(EscapeJson(reader.GetValue(i).ToString() ?? ""));
                         }
                     }
@@ -1544,13 +1195,16 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                     sb.Append(':');
                     if (reader.IsDBNull(i)) {
                         sb.Append("null");
-                    } else {
+                    }
+                    else {
                         var fieldType = reader.GetFieldType(i);
                         if (fieldType == typeof(long) || fieldType == typeof(int)) {
                             sb.Append(reader.GetValue(i).ToString());
-                        } else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+                        }
+                        else if (fieldType == typeof(double) || fieldType == typeof(float)) {
                             sb.Append(Convert.ToDouble(reader.GetValue(i)).ToString("G"));
-                        } else {
+                        }
+                        else {
                             sb.Append(EscapeJson(reader.GetValue(i).ToString() ?? ""));
                         }
                     }
@@ -1621,8 +1275,6 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             if (!_disposed) {
                 _disposed = true;
                 lock (_collectionsLock) {
-                    foreach (var col in _collections.Values)
-                        col.Lock.Dispose();
                     _collections.Clear();
                 }
             }

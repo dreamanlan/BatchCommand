@@ -646,27 +646,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // semantic_set_recall_multiplier(multiplier) - set HNSW recall multiplier
-    sealed class SemanticSetRecallMultiplierExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: semantic_set_recall_multiplier(multiplier)");
-                return BoxedValue.From(false);
-            }
-            try {
-                int multiplier = (int)operands[0].GetLong();
-                Core.AgentCore.Instance.SemanticIndex.SetHnswRecallMultiplier(multiplier);
-                return BoxedValue.From(true);
-            }
-            catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"semantic_set_recall_multiplier error: {ex.Message}");
-            }
-            return BoxedValue.From(false);
-        }
-    }
-
     // semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter
     sealed class SemanticRebuildFtsExp : SimpleExpressionBase
     {
@@ -1023,7 +1002,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("keyword_search_between_order_by_time", "keyword_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<KeywordSearchBetweenOrderByTimeExp>());
             // search config APIs
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_weights", "semantic_set_weights(vectorWeight, bm25Weight) - set hybrid scoring weights, default 0.6/0.4", new ExpressionFactoryHelper<SemanticSetWeightsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("semantic_set_recall_multiplier", "semantic_set_recall_multiplier(multiplier) - set HNSW recall multiplier, default 5", new ExpressionFactoryHelper<SemanticSetRecallMultiplierExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_rebuild_fts", "semantic_rebuild_fts(collection) - rebuild FTS5 index with current segmenter, returns count", new ExpressionFactoryHelper<SemanticRebuildFtsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("keyword_set_search_scope", "keyword_set_search_scope(scope) - set keyword search FTS scope: 'all'(default),'content','metadata'. Only affects keyword_search series.", new ExpressionFactoryHelper<KeywordSetSearchScopeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("keyword_get_search_scope", "keyword_get_search_scope() - get current keyword search FTS scope", new ExpressionFactoryHelper<KeywordGetSearchScopeExp>());

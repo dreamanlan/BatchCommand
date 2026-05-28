@@ -416,21 +416,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // count_lines(path[, startLine, endLine]) - display file lines with line number, indent info, and left-aligned content
-    sealed class CountLinesExp : SimpleExpressionBase
+    // count_file_indentations(path[, startLine, endLine]) - display file lines with line number, indent info, and left-aligned content
+    sealed class CountFileIndentationsExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: count_lines(path[, startLine, endLine])");
-                return BoxedValue.FromString("Expected: count_lines(path[, startLine, endLine])");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: count_file_indentations(path[, startLine, endLine])");
+                return BoxedValue.FromString("Expected: count_file_indentations(path[, startLine, endLine])");
             }
 
             try {
                 string path = operands[0].AsString;
                 string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_lines: file not found: {path}");
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_file_indentations: file not found: {path}");
                     return BoxedValue.FromString($"Error: file not found: {path}");
                 }
 
@@ -489,7 +489,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.FromString(sb.ToString());
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_lines error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"count_file_indentations error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
             }
         }

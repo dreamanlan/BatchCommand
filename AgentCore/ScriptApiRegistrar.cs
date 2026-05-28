@@ -104,15 +104,16 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("get_file_line_count", "get_file_line_count(path)", false, new ExpressionFactoryHelper<GetLineCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("line_count", "line_count(path)", new ExpressionFactoryHelper<GetLineCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_line_count", "file_line_count(path)", false, new ExpressionFactoryHelper<GetLineCountExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("count_lines", "count_lines(path)", false, new ExpressionFactoryHelper<GetLineCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("search_in_file", "search_in_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grep_file", "grep_file(path, regex_pattern[, context_lines_after, context_lines_before])", new ExpressionFactoryHelper<SearchInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grepfile", "grepfile(path, regex_pattern[, context_lines_after, context_lines_before])", false, new ExpressionFactoryHelper<SearchInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("search_in_files", "search_in_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", new ExpressionFactoryHelper<SearchInFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grep_files", "grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", new ExpressionFactoryHelper<SearchInFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("grepfiles", "grepfiles(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])", false, new ExpressionFactoryHelper<SearchInFilesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("count_lines", "count_lines(path[, startLine, endLine]) - display lines with line number, indent info, and content", new ExpressionFactoryHelper<CountLinesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("count_file_lines", "count_file_lines(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountLinesExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("countlines", "countlines(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("count_file_indentations", "count_file_indentations(path[, startLine, endLine]) - display lines with line number, indent info, and content", new ExpressionFactoryHelper<CountFileIndentationsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("count_indentations", "count_indentations(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountFileIndentationsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("countindentations", "countindentations(path[, startLine, endLine]) - display lines with line number, indent info, and content", false, new ExpressionFactoryHelper<CountFileIndentationsExp>());
 
             // Diff Operations
             AgentFrameworkService.Instance.DslEngine!.Register("apply_unified_diff", "apply_unified_diff(targetPath, diffPathOrContent[, isContent[, exactMatch]]) return Object(success/error/linesAdded/linesRemoved), use 'to_string' to convert to a string", false, new ExpressionFactoryHelper<ApplyDiffExp>());

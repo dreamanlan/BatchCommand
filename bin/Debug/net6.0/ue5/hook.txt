@@ -371,6 +371,36 @@ hook("StartFrameCaptureOnDemand")
 		return 0;
 	};
 };
+hook("DbgScpBeforeGLSLToDeviceCompatibleGLSL")
+{
+	onenter{
+		$glsl:string = ptrget(argv(0),8);
+		$shaderName:string = ptrget(argv(1),8);
+		$typeEnum:int = ptrget(argv(2),4);
+		$capabilitiesAddr:int = ptrget(argv(3),8);
+
+		$str = format("DbgScpBeforeGLSLToDeviceCompatibleGLSL shaderName:%s type:%u\n", $shaderName, $typeEnum);
+		printf("%s",$str);
+		WriteLog($str);
+		//assert(0);
+	};
+};
+hook("DbgScpAfterGLSLToDeviceCompatibleGLSL")
+{
+	onenter{
+		$glsl:string = ptrget(argv(0),8);
+		$shaderName:string = ptrget(argv(1),8);
+		$typeEnum:int = ptrget(argv(2),4);
+		$capabilitiesAddr:int = ptrget(argv(3),8);
+		$newGlsl:string = ptrget(argv(4),8);
+		$isPlatformExtension:int = ptrget(argv(5),1);
+
+		$str = format("DbgScpAfterGLSLToDeviceCompatibleGLSL shaderName:%s type:%u isPlatformExtension:%d\n", $shaderName, $typeEnum, $isPlatformExtension);
+		printf("%s",$str);
+		WriteLog($str);
+		//assert(0);
+	};
+};
 hook("DbgScpRegisterShaderName")
 {
 	onenter{

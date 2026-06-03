@@ -53,8 +53,6 @@ namespace CefDotnetApp.AgentCore.Core
         // Configurable hybrid scoring weights (vector vs bm25)
         private double _vectorWeight = 0.6;
         private double _bm25Weight = 0.4;
-        // FTS search scope: "all" (default), "content", "metadata"
-        private string _searchScope = "content";
         // Detected FTS schema version at runtime
         private int _schemaVersion = 1;
         // Current schema version for new databases
@@ -77,21 +75,6 @@ namespace CefDotnetApp.AgentCore.Core
             _vectorWeight = vectorWeight / sum;
             _bm25Weight = bm25Weight / sum;
         }
-
-        /// <summary>Set FTS search scope: "all" (default), "content", or "metadata".</summary>
-        public void SetSearchScope(string scope)
-        {
-            scope = (scope ?? "all").Trim().ToLowerInvariant();
-            if (scope != "content" && scope != "metadata" && scope != "all")
-                scope = "all";
-            // If schema is V1 (no metadata column), metadata scope falls back to all
-            if (_schemaVersion < 2 && scope == "metadata")
-                scope = "all";
-            _searchScope = scope;
-        }
-
-        /// <summary>Get current FTS search scope.</summary>
-        public string GetSearchScope() => _searchScope;
 
         /// <summary>Get detected FTS schema version.</summary>
         public int GetSchemaVersion() => _schemaVersion;
@@ -166,32 +149,32 @@ namespace CefDotnetApp.AgentCore.Core
         /// Search the collection. Waits (synchronously) up to timeoutMs for the collection to be ready.
         /// Returns JSON array of {id, content, metadata, score}.
         /// </summary>
-        public string SemanticSearch(string collection, float[] queryVector, string query, string keywords, int topN = 5)
+        public string SemanticSearch(string collection, float[] queryVector, string query, string keywords, int topN = 5, string metaKeywords = "")
         {
-            var items = SemanticSearchCore(collection, queryVector, query, keywords, topN);
+            var items = SemanticSearchCore(collection, queryVector, query, keywords, topN, metaKeywords);
             return ResultsToJson(items);
         }
 
         /// <summary>
         /// Core semantic search returning structured results.
         /// </summary>
-        public List<SearchResultItem> SemanticSearchCore(string collection, float[] queryVector, string query, string keywords, int topN = 5)
+        public List<SearchResultItem> SemanticSearchCore(string collection, float[] queryVector, string query, string keywords, int topN = 5, string metaKeywords = "")
         {
-            return SemanticSearchCoreInternal(collection, queryVector, query, keywords, topN, 0, 0);
+            return SemanticSearchCoreInternal(collection, queryVector, query, keywords, topN, 0, 0, metaKeywords);
         }
 
         /// <summary>
         /// Semantic search within a time range. startTime/endTime are unix timestamps. endTime=0 means now.
         /// </summary>
-        public List<SearchResultItem> SemanticSearchBetweenCore(string collection, float[] queryVector, string query, string keywords, int topN, long startTime, long endTime)
+        public List<SearchResultItem> SemanticSearchBetweenCore(string collection, float[] queryVector, string query, string keywords, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             if (endTime <= 0) endTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            return SemanticSearchCoreInternal(collection, queryVector, query, keywords, topN, startTime, endTime);
+            return SemanticSearchCoreInternal(collection, queryVector, query, keywords, topN, startTime, endTime, metaKeywords);
         }
 
         // Incremental recall parameters for between-time search
 
-        private List<SearchResultItem> SemanticSearchCoreInternal(string collection, float[] queryVector, string query, string keywords, int topN, long startTime, long endTime)
+        private List<SearchResultItem> SemanticSearchCoreInternal(string collection, float[] queryVector, string query, string keywords, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             var col = GetOrCreateCollection(collection);
 
@@ -201,12 +184,12 @@ namespace CefDotnetApp.AgentCore.Core
             // 1. Build FTS query early (needed for both fast-path and full-scan)
             string ftsQuery = BuildFtsQuery(query);
 
-            // 2. Get candidate ids (keywords pre-filter takes priority)
+            // 2. Get candidate ids (keywords/metaKeywords pre-filter takes priority)
             bool hasTimeFilter = startTime > 0 && endTime > 0;
             HashSet<string> candIds;
-            if (!string.IsNullOrWhiteSpace(keywords)) {
-                // Keywords pre-filter: match on keywords, with optional time range
-                candIds = LoadCandidateIdsByKeywords(collection, keywords, startTime, endTime);
+            if (!string.IsNullOrWhiteSpace(keywords) || !string.IsNullOrWhiteSpace(metaKeywords)) {
+                // Keywords pre-filter: match on content/metadata keywords, with optional time range
+                candIds = LoadCandidateIdsByKeywords(collection, keywords, startTime, endTime, metaKeywords);
             }
             else if (hasTimeFilter) {
                 candIds = LoadCandidateIdsByTime(collection, startTime, endTime);
@@ -463,7 +446,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         /// Uses MixedSegmenter for Chinese/mixed-language tokenization if available;
         /// otherwise falls back to whitespace/punctuation splitting.
         /// </summary>
-        private string BuildFtsQuery(string rawQuery, bool useScope = false)
+        private string BuildFtsQuery(string rawQuery)
         {
             if (string.IsNullOrWhiteSpace(rawQuery))
                 return string.Empty;
@@ -486,30 +469,17 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             // FTS5: escape double-quotes by doubling them, wrap each token in quotes
             var parts = tokenList.Select(t => '"' + t.Replace("\"", "\"\"") + '"');
             string joined = string.Join(" OR ", parts);
-            // Apply column scope for V2 schema (only when useScope=true, i.e. keyword_search)
-            if (useScope && _schemaVersion >= 2) {
-                if (_searchScope == "content")
-                    return "content : (" + joined + ")";
-                else if (_searchScope == "metadata")
-                    return "metadata : (" + joined + ")";
-            }
             return joined;
         }
 
         /// <summary>
-        /// Get the bm25() SQL expression adjusted for current search scope.
+        /// Get the bm25() SQL expression.
         /// V2 schema has 2 indexed columns: content(0), metadata(1).
         /// </summary>
-        private string GetBm25Expression(bool useScope = false)
+        private string GetBm25Expression()
         {
             if (_schemaVersion < 2)
                 return "bm25(semantic_fts)";
-            if (useScope) {
-                if (_searchScope == "content")
-                    return "bm25(semantic_fts, 1.0, 0.0)";
-                if (_searchScope == "metadata")
-                    return "bm25(semantic_fts, 0.0, 1.0)";
-            }
             return "bm25(semantic_fts, 1.0, 1.0)";
         }
 
@@ -562,27 +532,27 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         /// Pure BM25-based keyword search on FTS5 index. Does not require embedding model.
         /// Returns JSON array of {id, content, metadata, score}.
         /// </summary>
-        public string KeywordSearch(string collection, string query, string keywords = "", int topN = 5)
+        public string KeywordSearch(string collection, string query, string keywords = "", int topN = 5, string metaKeywords = "")
         {
-            var items = KeywordSearchCore(collection, query, keywords, topN);
+            var items = KeywordSearchCore(collection, query, keywords, topN, metaKeywords);
             return ResultsToJson(items);
         }
 
         /// <summary>
         /// Core keyword search returning structured results.
         /// </summary>
-        public List<SearchResultItem> KeywordSearchCore(string collection, string query, string keywords = "", int topN = 5)
+        public List<SearchResultItem> KeywordSearchCore(string collection, string query, string keywords = "", int topN = 5, string metaKeywords = "")
         {
-            return KeywordSearchCoreInternal(collection, query, keywords, topN, 0, 0);
+            return KeywordSearchCoreInternal(collection, query, keywords, topN, 0, 0, metaKeywords);
         }
 
         /// <summary>
         /// Keyword search within a time range. startTime/endTime are unix timestamps. endTime=0 means now.
         /// </summary>
-        public List<SearchResultItem> KeywordSearchBetweenCore(string collection, string query, string keywords, int topN, long startTime, long endTime)
+        public List<SearchResultItem> KeywordSearchBetweenCore(string collection, string query, string keywords, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             if (endTime <= 0) endTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            return KeywordSearchCoreInternal(collection, query, keywords, topN, startTime, endTime);
+            return KeywordSearchCoreInternal(collection, query, keywords, topN, startTime, endTime, metaKeywords);
         }
 
         // ---- sqlite_* direct LIKE-based search on semantic_records (no FTS, no scoring) ----
@@ -592,19 +562,19 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         /// Tokens are AND'd; token order has no semantic meaning.
         /// Result order: created_at DESC, take first topN.
         /// </summary>
-        public List<SearchResultItem> SqliteSearchCore(string collection, string query, int topN)
+        public List<SearchResultItem> SqliteSearchCore(string collection, string query, int topN, string metaKeywords = "")
         {
-            return SqliteLikeSearchInternal(collection, query, topN, 0, 0);
+            return SqliteLikeSearchInternal(collection, query, topN, 0, 0, metaKeywords);
         }
 
         /// <summary>
         /// Direct LIKE-based search on semantic_records within a time range.
         /// endTime=0 means now. Result order: created_at DESC, take first topN.
         /// </summary>
-        public List<SearchResultItem> SqliteSearchBetweenCore(string collection, string query, int topN, long startTime, long endTime)
+        public List<SearchResultItem> SqliteSearchBetweenCore(string collection, string query, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             if (endTime <= 0) endTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            return SqliteLikeSearchInternal(collection, query, topN, startTime, endTime);
+            return SqliteLikeSearchInternal(collection, query, topN, startTime, endTime, metaKeywords);
         }
 
         /// <summary>Tokenize query using same segmenter logic as BuildFtsQuery, cap at 64 tokens.</summary>
@@ -625,38 +595,24 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return "%" + escaped + "%";
         }
 
-        private List<SearchResultItem> SqliteLikeSearchInternal(string collection, string query, int topN, long startTime, long endTime)
+        private List<SearchResultItem> SqliteLikeSearchInternal(string collection, string query, int topN, long startTime, long endTime, string metaKeywords = "")
         {
             var tokens = TokenizeForLike(query);
-            if (tokens.Count == 0)
+            var metaTokens = TokenizeForLike(metaKeywords);
+            if (tokens.Count == 0 && metaTokens.Count == 0)
                 return new List<SearchResultItem>();
 
             bool hasTimeFilter = startTime > 0 && endTime > 0;
-            // Determine columns to match based on current _searchScope.
-            // V1 schema has no metadata column in semantic_records? Actually metadata is in semantic_records always; _searchScope is an FTS concept.
-            // For sqlite_* we honor _searchScope: content -> only content; metadata -> only metadata; all -> (content OR metadata).
-            string scope = _searchScope;
-            if (scope != "content" && scope != "metadata")
-                scope = "all";
-
             var sb = new StringBuilder();
             sb.Append("SELECT id, content, metadata, created_at FROM semantic_records WHERE collection=@col");
             if (hasTimeFilter) {
                 sb.Append(" AND created_at BETWEEN @s AND @e");
             }
             for (int i = 0; i < tokens.Count; i++) {
-                sb.Append(" AND (");
-                if (scope == "content") {
-                    sb.Append("content LIKE @t").Append(i).Append(" ESCAPE '\\'");
-                }
-                else if (scope == "metadata") {
-                    sb.Append("metadata LIKE @t").Append(i).Append(" ESCAPE '\\'");
-                }
-                else {
-                    sb.Append("content LIKE @t").Append(i).Append(" ESCAPE '\\'");
-                    sb.Append(" OR metadata LIKE @t").Append(i).Append(" ESCAPE '\\'");
-                }
-                sb.Append(")");
+                sb.Append(" AND content LIKE @t").Append(i).Append(" ESCAPE '\\'");
+            }
+            for (int i = 0; i < metaTokens.Count; i++) {
+                sb.Append(" AND metadata LIKE @mk").Append(i).Append(" ESCAPE '\\'");
             }
             sb.Append(" ORDER BY created_at DESC LIMIT @n");
 
@@ -670,6 +626,9 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             }
             for (int i = 0; i < tokens.Count; i++) {
                 cmd.Parameters.AddWithValue("@t" + i, EscapeLikePattern(tokens[i]));
+            }
+            for (int i = 0; i < metaTokens.Count; i++) {
+                cmd.Parameters.AddWithValue("@mk" + i, EscapeLikePattern(metaTokens[i]));
             }
             cmd.Parameters.AddWithValue("@n", topN);
 
@@ -687,20 +646,23 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return results;
         }
 
-        private List<SearchResultItem> KeywordSearchCoreInternal(string collection, string query, string keywords, int topN, long startTime, long endTime)
+        private List<SearchResultItem> KeywordSearchCoreInternal(string collection, string query, string keywords, int topN, long startTime, long endTime, string metaKeywords = "")
         {
-            string ftsQuery = BuildFtsQuery(query, useScope: true);
+            string ftsQuery = BuildFtsQuery(query);
             if (string.IsNullOrEmpty(ftsQuery))
                 return new List<SearchResultItem>();
 
-            // Build LIKE conditions from keywords
+            // Build LIKE conditions from keywords (content) and metaKeywords (metadata)
             var likeTokens = string.IsNullOrEmpty(keywords) ? new List<string>() : TokenizeForLike(keywords);
-            bool hasKeywordsFilter = likeTokens.Count > 0;
+            var metaLikeTokens = string.IsNullOrEmpty(metaKeywords) ? new List<string>() : TokenizeForLike(metaKeywords);
+            bool hasKeywordsFilter = likeTokens.Count > 0 || metaLikeTokens.Count > 0;
             string likeClauses = "";
             if (hasKeywordsFilter) {
                 var parts = new List<string>();
                 for (int i = 0; i < likeTokens.Count; i++)
                     parts.Add($"r.content LIKE @kw{i}");
+                for (int i = 0; i < metaLikeTokens.Count; i++)
+                    parts.Add($"r.metadata LIKE @mkw{i}");
                 likeClauses = string.Join(" AND ", parts);
             }
 
@@ -709,7 +671,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
             if (hasTimeFilter) {
-                cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score\n" +
+                cmd.CommandText = $"SELECT f.id, {GetBm25Expression()} AS score\n" +
                  "FROM semantic_fts f\n" +
                  "JOIN semantic_records r ON f.id = r.id\n" +
                  "WHERE f.collection=@col AND semantic_fts MATCH @q\n" +
@@ -720,7 +682,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
                 cmd.Parameters.AddWithValue("@e", endTime);
             }
             else {
-                cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score\n" +
+                cmd.CommandText = $"SELECT f.id, {GetBm25Expression()} AS score\n" +
                  "FROM semantic_fts f\n" +
                  (hasKeywordsFilter ? "JOIN semantic_records r ON f.id = r.id\n" : "") +
                  "WHERE f.collection=@col AND semantic_fts MATCH @q\n" +
@@ -732,6 +694,8 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             cmd.Parameters.AddWithValue("@n", topN);
             for (int i = 0; i < likeTokens.Count; i++)
                 cmd.Parameters.AddWithValue($"@kw{i}", $"%{likeTokens[i]}%");
+            for (int i = 0; i < metaLikeTokens.Count; i++)
+                cmd.Parameters.AddWithValue($"@mkw{i}", $"%{metaLikeTokens[i]}%");
 
             var idScores = new List<(string id, double score)>();
             using (var reader = cmd.ExecuteReader()) {
@@ -768,11 +732,12 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
 
         // ---- Between-time search helpers ----
 
-        /// <summary>Load candidate ids by keywords match, with optional time range filter.</summary>
-        private HashSet<string> LoadCandidateIdsByKeywords(string collection, string keywords, long startTime, long endTime)
+        /// <summary>Load candidate ids by keywords/metaKeywords match, with optional time range filter.</summary>
+        private HashSet<string> LoadCandidateIdsByKeywords(string collection, string keywords, long startTime, long endTime, string metaKeywords = "")
         {
             var tokens = TokenizeForLike(keywords);
-            if (tokens.Count == 0)
+            var metaTokens = TokenizeForLike(metaKeywords);
+            if (tokens.Count == 0 && metaTokens.Count == 0)
                 return new HashSet<string>(StringComparer.Ordinal);
 
             var set = new HashSet<string>(StringComparer.Ordinal);
@@ -782,6 +747,9 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             sb.Append("SELECT id FROM semantic_records WHERE collection=@col");
             for (int i = 0; i < tokens.Count; i++) {
                 sb.Append(" AND content LIKE @t").Append(i).Append(" ESCAPE '\\'");
+            }
+            for (int i = 0; i < metaTokens.Count; i++) {
+                sb.Append(" AND metadata LIKE @m").Append(i).Append(" ESCAPE '\\'");
             }
             if (hasTimeFilter) {
                 sb.Append(" AND created_at BETWEEN @s AND @e");
@@ -793,6 +761,9 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             cmd.Parameters.AddWithValue("@col", collection);
             for (int i = 0; i < tokens.Count; i++) {
                 cmd.Parameters.AddWithValue("@t" + i, EscapeLikePattern(tokens[i]));
+            }
+            for (int i = 0; i < metaTokens.Count; i++) {
+                cmd.Parameters.AddWithValue("@m" + i, EscapeLikePattern(metaTokens[i]));
             }
             if (hasTimeFilter) {
                 cmd.Parameters.AddWithValue("@s", startTime);
@@ -857,7 +828,7 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             var result = new List<(string id, double score)>();
             using var conn = OpenConnection();
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = $"SELECT f.id, {GetBm25Expression(useScope: true)} AS score\nFROM semantic_fts f\nWHERE f.collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
+            cmd.CommandText = $"SELECT f.id, {GetBm25Expression()} AS score\nFROM semantic_fts f\nWHERE f.collection=@col AND semantic_fts MATCH @q\nORDER BY score\nLIMIT @n";
             cmd.Parameters.AddWithValue("@col", collection);
             cmd.Parameters.AddWithValue("@q", ftsQuery);
             cmd.Parameters.AddWithValue("@n", recallN);

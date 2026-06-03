@@ -8,7 +8,7 @@
 #include <string>
 #include <array>
 
-class DEBUGSCRIPT_API DebugScriptVM
+class CORE_API DebugScriptVM
 {
 public:
     static uint32_t GetSerialNum();

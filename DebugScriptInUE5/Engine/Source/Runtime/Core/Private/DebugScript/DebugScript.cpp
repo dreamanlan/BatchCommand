@@ -1,14 +1,12 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "DebugScript.h"
+#include "DebugScript/DebugScript.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/PlatformFilemanager.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/Paths.h"
 #include "DebugScriptEntry.h"
 #include <fstream>
-
-#define LOCTEXT_NAMESPACE "FDebugScriptModule"
 
 static FString SavedDir;
 extern void InitGpuCaptureManager();
@@ -108,7 +106,7 @@ static FAutoConsoleCommandWithArgsAndOutputDevice GDebugScriptGetCommand(
         })
 );
 
-void FDebugScriptModule::StartupModule()
+void DebugScriptModule::Startup()
 {
     UE_LOG(LogTemp, Log, TEXT("DebugScript module starting up"));
     
@@ -160,12 +158,9 @@ void FDebugScriptModule::StartupModule()
         });
 }
 
-void FDebugScriptModule::ShutdownModule()
+void DebugScriptModule::Shutdown()
 {
 	ShutdownGpuCaptureManager();
     UE_LOG(LogTemp, Log, TEXT("DebugScript module shutting down"));
 }
 
-#undef LOCTEXT_NAMESPACE
-
-IMPLEMENT_MODULE(FDebugScriptModule, DebugScript)

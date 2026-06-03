@@ -147,8 +147,8 @@ int CED_Platform_WriteDumpFile(const char* path, const CED_CrashDump* dump) {
     }
 
     if (dump->user_data_size > 0) {
-        ok = WriteFile(hFile, dump->user_data, dump->user_data_size, &bytesWritten, NULL);
-        if (!ok || bytesWritten != dump->user_data_size) {
+        ok = WriteFile(hFile, dump->user_data, static_cast<DWORD>(dump->user_data_size), &bytesWritten, NULL);
+        if (!ok || bytesWritten != static_cast<DWORD>(dump->user_data_size)) {
             CloseHandle(hFile);
             return 0;
         }

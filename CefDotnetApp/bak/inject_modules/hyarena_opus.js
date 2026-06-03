@@ -111,6 +111,9 @@
     // Long-run mode: when true, auto-break on MAX_ROUNDS is disabled.
     longRunMode: false,
 
+    // Discuss mode: when true, model replies are broadcast even without code execution.
+    discussMode: true,
+
     // Auto-send mode: periodically check input box and click send if ready.
     autoSendOn: false,
     autoSendTimer: null,
@@ -695,6 +698,7 @@
         <input class="metadsl-keep-input" type="number" min="1" max="99" value="${CFG.KEEP_ROUNDS}" style="width:44px; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px; text-align:center;">
         <span style="opacity:0.8;">rounds</span>
         <button data-act="trim" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">trim</button>
+        <button data-act="discuss" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.discussMode ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.discussMode ? 'disc:ON' : 'disc:OFF'}</button>
       </div>
       <div style="display:flex; gap:4px; margin-bottom:4px;">
         <button data-act="arm"    style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.armed ? '#ef6c00' : '#455a64'}; color:#fff; border:none; border-radius:3px;">${ST.armed ? 'disarm' : 'arm'}</button>
@@ -743,6 +747,11 @@
         }
         else if (act === 'autosend') {
           ST.autoSendOn ? stopAutoSend() : startAutoSend();
+        }
+        else if (act === 'discuss') {
+          ST.discussMode = !ST.discussMode;
+          log(`[discuss] ${ST.discussMode ? 'enabled' : 'disabled'}`);
+          updatePanel();
         }
         else if (act === 'trim') {
           trimHistory(CFG.KEEP_ROUNDS);
@@ -1221,6 +1230,21 @@
           ST.processedMsgs.add(aiMsg);
           ST.emptyAt.delete(aiMsg);
           log('[msg] confirmed no code, marked. slots=' + items.length + ' textLen=' + curLen);
+          // Discuss mode: broadcast model replies even without code results.
+          if (ST.discussMode) {
+            const discReplies = collectNewReplies();
+            const discSlots = activeSlotIds().filter(id => discReplies[id]);
+            if (discSlots.length > 0) {
+              const discLines = [];
+              for (const id of discSlots) {
+                discLines.push(`\u3010${displayName(id)}\u3011\uFF1A${discReplies[id]}`);
+              }
+              const discText = discLines.join('\n');
+              log('[discuss] broadcast replies:', discText.slice(0, 120));
+              ST.lastAutoSentText = discText;
+              chatSend(discText);
+            }
+          }
           // If there are queued results waiting (e.g. after a "continue"
           // reply from the model), proactively schedule a flush so the
           // next queued result can be delivered.

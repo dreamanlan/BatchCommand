@@ -14,10 +14,10 @@
 #include <iomanip>
 #include <cctype>
 
-#include "DbgScpHook.h"
-#include "DebugScriptVM.h"
-#include "GpuCaptureManager.h"
-#include "ReadableRange/ReadableRange.h"
+#include "DebugScript/DbgScpHook.h"
+#include "DebugScript/DebugScriptVM.h"
+#include "DebugScript/GpuCaptureManager.h"
+#include "DebugScript/ReadableRange/ReadableRange.h"
 
 #if defined(DBGSCP_ON_UNREAL)
 
@@ -742,6 +742,11 @@ extern "C" void FlushDbgScpLog()
     DbgScp_FlushLog();
 }
 
+[[maybe_unused]]
+static inline void DbgScp_Init()
+{
+    DBGSCP_HOOK_VOID("DbgScp_Init")
+}
 [[maybe_unused]]
 static inline void DbgScp_Set(int cmd, int a, double b, const char* c)
 {
@@ -1942,6 +1947,7 @@ extern "C" {
         DebugScriptGlobal::Reset();
         DebugScriptGlobal::Load(file);
         DebugScriptGlobal::Start();
+        DbgScp_Init();
     }
 
     __declspec(dllexport) void DbgScp_Set_Export(int cmd, int a, double b, const char* c) {
@@ -2053,6 +2059,7 @@ void LoadDbgScp(const core::string& log_path, const core::string& load_path)
     bool r = DebugScriptGlobal::Load(c_data_file);
     DebugScriptGlobal::Start();
     printf_console("LoadDbgScp: %s %d\n", c_data_file, r ? 1 : 0);
+    DbgScp_Init();
 }
 void PauseDbgScp()
 {
@@ -2096,6 +2103,7 @@ void LoadDbgScp(const FString& log_path, const FString& load_path)
     bool r = DebugScriptGlobal::Load(c_data_file);
     DebugScriptGlobal::Start();
     UE_LOG(LogTemp, Log, TEXT("LoadDbgScp: %hs %d\n"), c_data_file, r ? 1 : 0);
+    DbgScp_Init();
 }
 void PauseDbgScp()
 {
@@ -2141,6 +2149,7 @@ void LoadDbgScp(const std::string& log_path, const std::string& load_path)
     bool r = DebugScriptGlobal::Load(data_file.c_str());
     DebugScriptGlobal::Start();
     mylog_printf("LoadDbgScp: %s %d\n", data_file.c_str(), r ? 1 : 0);
+    DbgScp_Init();
 }
 void PauseDbgScp()
 {

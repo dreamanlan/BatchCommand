@@ -1,17 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System;
 using System.IO;
 
-public class DebugScript : ModuleRules
+public class Core : ModuleRules
 {
-	public DebugScript(ReadOnlyTargetRules Target) : base(Target)
+	public Core(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PublicDependencyModuleNames.AddRange(
-			new string[] {
-				"Core"
-			}
-		);
 
 		// On Apple platforms, depend on DebugScriptXcode for Metal capture support
 		if (Target.Platform == UnrealTargetPlatform.Mac ||

@@ -22,7 +22,6 @@ public class DebugScriptXcode : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(
 			new string[] {
-				"Core"
 			}
 		);
 

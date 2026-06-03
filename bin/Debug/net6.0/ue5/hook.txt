@@ -224,6 +224,13 @@ hook(DbgScp_Get)
 		ptrset(argv(0),4,2);
 	};
 };
+hook("DbgScp_Init")
+{
+	onenter{
+		printf("DbgScp_Init enter time:%lld\n",time());
+		assert(0);
+	};
+};
 
 hook("DbgScpBreakpoint")
 {
@@ -412,6 +419,42 @@ hook("DbgScpRegisterShaderName")
 		//assert(0);
 	};
 };
+hook("DbgScpShouldUseVulkan")
+{
+	onexit{
+		//bool bVulkanAvailable, bool bVulkanDisabledCVar
+		$bVulkanAvailable:int = ptrget(argv(1),1);
+		$bVulkanDisabledCVar:int = ptrget(argv(2),1);
+
+		$str = format("DbgScpShouldUseVulkan bVulkanAvailable:%d bVulkanDisabledCVar:%d\n", $bVulkanAvailable, $bVulkanDisabledCVar);
+		printf("%s",$str);
+		WriteLog($str);
+		assert(0);
+
+		// retval = 0;
+		ptrset(argv(0),1,0);
+		// retry = 0;
+		return(0);
+	};
+};
+hook("DbgScpShouldUseDesktopVulkan")
+{
+	onexit{
+		//bool bVulkanSM5Enabled, bool bVulkanSM5Disabled
+		$bVulkanSM5Enabled:int = ptrget(argv(1),1);
+		$bVulkanDisabledCVar:int = ptrget(argv(2),1);
+
+		$str = format("DbgScpShouldUseDesktopVulkan bVulkanSM5Enabled:%d bVulkanDisabledCVar:%d\n", $bVulkanSM5Enabled, $bVulkanDisabledCVar);
+		printf("%s",$str);
+		WriteLog($str);
+		assert(0);
+
+		// retval = 1;
+		ptrset(argv(0),1,1);
+		// retry = 0;
+		return(0);
+	};
+};
 hook("DbgScpSetupDrawGLES")
 {
 	onenter{
@@ -473,6 +516,42 @@ hook("DbgScpBindShaderBufferGLES")
 		WriteLog($str);
 	};
 };
+hook("DbgScpSetupDrawVulkan")
+{
+	onenter{
+		$hash:string = ptrget(argv(0),8);
+		$frame:int = ptrget(argv(1),8);
+		$idx:int = ptrget(argv(2),8);
+
+		$str = format("DbgScpSetupDrawVulkan hash:%s frame:%d idx:%d\n", $hash, $frame, $idx);
+		//printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("DbgScpSetupDispatchDrawVulkan")
+{
+	onenter{
+		$hash:string = ptrget(argv(0),8);
+		$frame:int = ptrget(argv(1),8);
+		$idx:int = ptrget(argv(2),8);
+
+		$str = format("DbgScpSetupDispatchDrawVulkan hash:%s frame:%d idx:%d\n", $hash, $frame, $idx);
+		//printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("DbgScpSetupDispatchVulkan")
+{
+	onenter{
+		$hash:string = ptrget(argv(0),8);
+		$frame:int = ptrget(argv(1),8);
+		$idx:int = ptrget(argv(2),8);
+
+		$str = format("DbgScpSetupDispatchVulkan hash:%s frame:%d idx:%d\n", $hash, $frame, $idx);
+		//printf("%s",$str);
+		WriteLog($str);
+	};
+};
 hook("DbgScpBindShaderBufferVulkan")
 {
 	onenter{
@@ -486,7 +565,7 @@ hook("DbgScpBindShaderBufferVulkan")
 
 		$str = format("DbgScpBindShaderBufferVulkan shaderHash:%s bindSlot:%lld bufferId:%lld offset:%llx size:%lld bufferType:%s\n", $shaderHash, $bindSlot, $bufferId, $offset, $size, $bufferType);
 		//printf("%s",$str);
-		//WriteLog($str);
+		WriteLog($str);
 	};
 };
 hook("DbgScpBindShaderBufferD3D12")

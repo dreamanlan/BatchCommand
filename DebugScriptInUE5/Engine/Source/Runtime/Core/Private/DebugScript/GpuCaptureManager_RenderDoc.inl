@@ -14,7 +14,10 @@
 #endif
 
 #if GPUCAP_PLATFORM_WINDOWS
+    //#include "Windows/WindowsPlatform.h"
+    #include "Windows/AllowWindowsPlatformTypes.h"
     #include <windows.h>
+    #include "Windows/HideWindowsPlatformTypes.h"
 #elif GPUCAP_PLATFORM_ANDROID
     #include <dlfcn.h>
 #endif

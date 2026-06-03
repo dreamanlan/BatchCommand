@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <string>
 #include <array>
-#include "DebugScriptExport.h"
-#include "DebugScriptEntry.h"
+#include "DebugScript/DebugScriptExport.h"
+#include "DebugScript/DebugScriptEntry.h"
 
 class DebugScriptGlobal
 {

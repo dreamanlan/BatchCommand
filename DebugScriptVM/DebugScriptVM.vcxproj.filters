@@ -45,6 +45,12 @@
     <ClInclude Include="ReadableRange\ReadableRange.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="WinStackTrace.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="renderdoc_app.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugScriptVM.cpp">
@@ -71,5 +77,14 @@
     <ClCompile Include="ReadableRange\ReadableRangeWin.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="WinStackTrace.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GpuCaptureManager_HuaweiSquid.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GpuCaptureManager_Metal.mm" />
   </ItemGroup>
 </Project>

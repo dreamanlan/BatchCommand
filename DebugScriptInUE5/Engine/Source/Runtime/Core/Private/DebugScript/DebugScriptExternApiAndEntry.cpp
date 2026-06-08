@@ -13,11 +13,47 @@
 #include <cstddef>
 #include <iomanip>
 #include <cctype>
+#include <memory>
 
-#include "DebugScript/DbgScpHook.h"
-#include "DebugScript/DebugScriptVM.h"
-#include "DebugScript/GpuCaptureManager.h"
-#include "DebugScript/ReadableRange/ReadableRange.h"
+// Custom allocator that uses system malloc/free to avoid Unity MemoryManager reentrancy
+template<typename T>
+struct SystemAllocator {
+    using value_type = T;
+    
+    SystemAllocator() noexcept = default;
+    template<typename U>
+    SystemAllocator(const SystemAllocator<U>&) noexcept {}
+    
+    T* allocate(std::size_t n) {
+        if (n > std::size_t(-1) / sizeof(T)) {
+            throw std::bad_alloc();
+        }
+        T* ptr = static_cast<T*>(std::malloc(n * sizeof(T)));
+        if (!ptr) {
+            throw std::bad_alloc();
+        }
+        return ptr;
+    }
+    
+    void deallocate(T* ptr, std::size_t) noexcept {
+        std::free(ptr);
+    }
+};
+
+template<typename T, typename U>
+bool operator==(const SystemAllocator<T>&, const SystemAllocator<U>&) {
+    return true;
+}
+
+template<typename T, typename U>
+bool operator!=(const SystemAllocator<T>&, const SystemAllocator<U>&) {
+    return false;
+}
+
+#include "DbgScpHook.h"
+#include "DebugScriptVM.h"
+#include "GpuCaptureManager.h"
+#include "ReadableRange/ReadableRange.h"
 
 #if defined(DBGSCP_ON_UNREAL)
 
@@ -606,9 +642,9 @@ struct MemoryInfo
     bool is_main_thread;
 };
 
-static inline std::unordered_map<int64_t, MemoryInfo>& GetMemoryInfosRef()
+static inline std::unordered_map<int64_t, MemoryInfo, std::hash<int64_t>, std::equal_to<int64_t>, SystemAllocator<std::pair<const int64_t, MemoryInfo>>>& GetMemoryInfosRef()
 {
-    static std::unordered_map<int64_t, MemoryInfo> s_MemoryInfos;
+    static std::unordered_map<int64_t, MemoryInfo, std::hash<int64_t>, std::equal_to<int64_t>, SystemAllocator<std::pair<const int64_t, MemoryInfo>>> s_MemoryInfos;
     return s_MemoryInfos;
 }
 static inline std::recursive_mutex& GetMemoryInfoMutexRef()
@@ -616,9 +652,9 @@ static inline std::recursive_mutex& GetMemoryInfoMutexRef()
     static std::recursive_mutex s_MemoryInfoMutex;
     return s_MemoryInfoMutex;
 }
-static inline std::unordered_map<int64_t, int64_t>& GetMemoryFlagsRef()
+static inline std::unordered_map<int64_t, int64_t, std::hash<int64_t>, std::equal_to<int64_t>, SystemAllocator<std::pair<const int64_t, int64_t>>>& GetMemoryFlagsRef()
 {
-    static std::unordered_map<int64_t, int64_t> s_MemoryFlags;
+    static std::unordered_map<int64_t, int64_t, std::hash<int64_t>, std::equal_to<int64_t>, SystemAllocator<std::pair<const int64_t, int64_t>>> s_MemoryFlags;
     return s_MemoryFlags;
 }
 static inline std::recursive_mutex& GetMemoryFlagMutexRef()
@@ -629,21 +665,43 @@ static inline std::recursive_mutex& GetMemoryFlagMutexRef()
 
 static inline bool DbgScp_AddMemoryInfo(int64_t addr, size_t size, size_t align, bool locking, bool tlsf, int64_t inst, int64_t pool)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryInfoMutexRef());
 
     MemoryInfo mi{ addr, size, align, locking, tlsf, inst, pool, GetThreadId(), true/*CurrentThread::IsMainThread()*/ };
     auto&& r = GetMemoryInfosRef().insert(std::make_pair(addr, std::move(mi)));
+    
+    s_ReentrancyGuard = false;
     return r.second;
 }
 static inline bool DbgScp_RemoveMemoryInfo(int64_t addr)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryInfoMutexRef());
 
     auto&& r = GetMemoryInfosRef().erase(addr);
+    
+    s_ReentrancyGuard = false;
     return r > 0;
 }
 static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& align, bool& locking, bool& tlsf, int64_t& inst, int64_t& pool, int64_t& tid, bool& is_main_thread, int64_t& cur_tid, bool& cur_is_main_thread, const char*& alloc_name, const char*& second_alloc_name)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryInfoMutexRef());
 
     bool r = false;
@@ -699,24 +757,48 @@ static inline bool DbgScp_GetMemoryInfo(int64_t addr, size_t& size, size_t& alig
 
         r = true;
     }
+    
+    s_ReentrancyGuard = false;
     return r;
 }
 static inline bool DbgScp_AddMemoryFlag(int64_t addr, int64_t flag)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryFlagMutexRef());
 
     auto&& r = GetMemoryFlagsRef().insert(std::make_pair(addr, flag));
+    
+    s_ReentrancyGuard = false;
     return r.second;
 }
 static inline bool DbgScp_RemoveMemoryFlag(int64_t addr)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryFlagMutexRef());
 
     auto&& r = GetMemoryFlagsRef().erase(addr);
+    
+    s_ReentrancyGuard = false;
     return r > 0;
 }
 static inline bool DbgScp_GetMemoryFlag(int64_t addr, int64_t& flag)
 {
+    static thread_local bool s_ReentrancyGuard = false;
+    if (s_ReentrancyGuard) {
+        return false; // Prevent reentrancy
+    }
+    s_ReentrancyGuard = true;
+    
     std::lock_guard<std::recursive_mutex> lock(GetMemoryFlagMutexRef());
 
     bool r = false;
@@ -725,6 +807,8 @@ static inline bool DbgScp_GetMemoryFlag(int64_t addr, int64_t& flag)
         flag = it->second;
         r = true;
     }
+    
+    s_ReentrancyGuard = false;
     return r;
 }
 

@@ -135,18 +135,25 @@
     <ClInclude Include="GpuCaptureManager.h" />
     <ClInclude Include="pragma_diag.h" />
     <ClInclude Include="ReadableRange\ReadableRange.h" />
+    <ClInclude Include="renderdoc_app.h" />
     <ClInclude Include="rwlock.h" />
     <ClInclude Include="sema.h" />
+    <ClInclude Include="WinStackTrace.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugScriptExternApiAndEntry.cpp" />
     <ClCompile Include="DebugScriptVM.cpp" />
     <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="GpuCaptureManager_HuaweiSquid.cpp" />
     <ClCompile Include="GpuCaptureManager_RenderDoc.cpp" />
     <ClCompile Include="ReadableRange\ReadableRange.cpp" />
     <ClCompile Include="ReadableRange\ReadableRangeAndroid.cpp" />
     <ClCompile Include="ReadableRange\ReadableRangeIOS.cpp" />
     <ClCompile Include="ReadableRange\ReadableRangeWin.cpp" />
+    <ClCompile Include="WinStackTrace.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="GpuCaptureManager_Metal.mm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,6 +5,7 @@
 @g_run_startup : int = 0;
 @g_enable_unity_obj_mem_stack_log : int = 0;
 @g_enable_gcalloc_log : int = 0;
+@g_capture_frames : int = 0;
 
 //======test code begin======
 struct(TestStru3)
@@ -555,7 +556,7 @@ hook("CreateGraphicsPipeline")
 		//$str:string = format("CreateGraphicsPipeline enter time:%lld thread:%d this:%llx device:%llx\n",time(),GetTID(),$a,$dev);
 		//printf("%s",$str);
 		//WriteLog($str);
-		
+
 		/*
 		//MI 12 pro
 		//$addr:int = cascadeptr($dev, 8, 0x8, 0x68, 0x1390);
@@ -563,29 +564,29 @@ hook("CreateGraphicsPipeline")
 		//$log:int = ptrget($addr+0x140, 8);
 		//printf("this:%llx device:%llx log:%d\n", $a, $dev, $log);
 		//ptrset($addr+0x140, 8, 1);
-		
+
 		//adreno eng
 		$addr:int = cascadeptr($dev, 8, 0x8, 0x70, 0x1968);
 		printf("this:%llx device:%llx addr:%llx\n", $a, $dev, $addr);
 		$log:int = ptrget($addr+0x630, 4);
 		printf("this:%llx device:%llx log:%d\n", $a, $dev, $log);
 		ptrset($addr+0x630, 4, 1);
-		
+
 		//adreno eng vendor scope
 		$addr2:int = cascadeptr($dev, 8, 0x8, 0x70, 0x1948, 0x88);
 		printf("this:%llx device:%llx addr:%llx\n", $a, $dev, $addr2);
 		$log2:int = ptrget($addr2+0xc78, 4);
 		printf("this:%llx device:%llx scope log:%d\n", $a, $dev, $log2);
 		ptrset($addr2+0xc78, 4, 1);
-		
+
 		$fields:string[3];
 		$seg:int = FindSegment(GetPID(),"vulkan.adreno.so","r--p",1,$fields);
 		printf("pid:%d tid:%d vulkan seg:%llx info:%s %s %s\n",GetPID(),GetTID(),$seg,$fields[0],$fields[1],$fields[2]);
 		if ($seg>0 && @g_dir_chged==0) {
 			//assert(0);
-			
+
 			printf("old dir: %s\n", caststr($seg + 0x04A9D8));
-			
+
 			MemoryProtect($seg + 0x040000, 0x10000, 2);
 			$tstr:int = castint("/sdcard/Download/");
 			$size:int = cstrlen($tstr);
@@ -600,8 +601,8 @@ hook("CreateGraphicsPipeline")
 			memcpy($seg + 0x04CBEA, $tstr, $size);
 			memcpy($seg + 0x04CC19, $tstr, $size);
 			memcpy($seg + 0x04CC2B, $tstr, $size);
-			
-			@g_dir_chged = 1;			
+
+			@g_dir_chged = 1;
 		};
 		*/
 		//dumpstack("CreateGraphicsPipeline");
@@ -618,11 +619,11 @@ hook("PipelineStateCollection::PrecachePSOsProgressively")
 	onenter{
 		$a:int = ptrget(argv(1),8);
 		$b:int = ptrget(argv(2),4);
-		
+
 		//$str:string = format("PipelineStateCollection::PrecachePSOsProgressively enter time:%lld thread:%d batch:%d->256\n",time(),GetTID(),$b);
 		//printf("%s",$str);
 		//WriteLog($str);
-		
+
 		//ptrset(argv(2),4,256);
 		return 0;
 	};
@@ -705,11 +706,11 @@ hook("MemoryManager::GetAllocatorOnNull")
 	onenter{
 		$a:int = ptrget(argv(0),8);
 		$b:int = ptrget(argv(1),8);
-		
+
 		$str:string = format("MemoryManager::GetAllocatorOnNull memlabel:%d return null\n", $b);
 		printf("%s",$str);
 		WriteLog($str);
-		
+
 		//dumpstack("MemoryManager::GetAllocatorOnNull");
 		return 0;
 	};
@@ -722,7 +723,7 @@ hook("MemoryManager::Allocate_Temp")
 		//$ret:int = ptrget(argv(0),8);
 		$size:int = ptrget(argv(3),8);
 		$align:int = ptrget(argv(4),8);
-		
+
 		if($size>=32){
 			ptrset(argv(10),4,0);
 		};
@@ -736,7 +737,7 @@ hook("MemoryManager::Allocate_Temp")
 		//$option:int = ptrget(argv(6),4);
 		//$file:string = ptrget(argv(7),8);
 		//$line:int = ptrget(argv(8),4);
-		
+
 		//$str:string = format("MemoryManager::Allocate_Temp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,GetTID(),$file,$line);
 		//printf("%s",$str);
 		//WriteLog($str);
@@ -758,9 +759,9 @@ hook("MemoryManager::Allocate_NonTemp")
 		$option:int = ptrget(argv(6),4);
 		$file:string = ptrget(argv(7),8);
 		$line:int = ptrget(argv(8),4);
-		
+
 		$tid:int = GetTID();
-		
+
 		if(@g_enable_mem_log>0){
 			if ($size >= 64) {
 				$str:string = format("MemoryManager::Allocate_NonTemp time:%lld size:%lld align:%lld label:%d opt:%d addr:%llx tid:%d file:%s line:%d\n",time(),$size,$align,$label,$option,$addr,$tid,$file,$line);
@@ -768,7 +769,7 @@ hook("MemoryManager::Allocate_NonTemp")
 				WriteLog($str);
 			};
 		};
-		
+
 		if($addr==0){
 		}
 		else{
@@ -794,7 +795,7 @@ hook("MemoryManager::Deallocate_NonTemp")
 		$label:int = ptrget(argv(2),4);
 		$file:string = ptrget(argv(3),8);
 		$line:int = ptrget(argv(4),4);
-		
+
 		if(@g_enable_mem_log>0){
 			$info_size:int;
 			$info_align:int;
@@ -808,7 +809,7 @@ hook("MemoryManager::Deallocate_NonTemp")
 			$cur_main_thread:int;
 			$alloc_name:string;
 			$second_alloc_name:string;
-			
+
 			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
 				if ($info_size>=64) {
 					$str:string = format("MemoryManager::Deallocate_NonTemp time:%lld ptr:%llx size:%lld label:%d tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",time(),$addr,$info_size,$label,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
@@ -816,7 +817,7 @@ hook("MemoryManager::Deallocate_NonTemp")
 					WriteLog($str);
 				};
 			}
-			else{			
+			else{
 				$str:string = format("MemoryManager::Deallocate_NonTemp this:%llx time:%lld addr:%llx label:%lld file:%s line:%lld\n", $this, time(), $addr, $label, $file, $line);
 				printf("%s",$str);
 				WriteLog($str);
@@ -829,13 +830,13 @@ hook("MemoryManager::Deallocate")
 	onenter{
 		//$this:int = ptrget(argv(0),8);
 		$addr:int = ptrget(argv(1),8);
-		$strInt:int = ptrget(argv(2),8);		
+		$strInt:int = ptrget(argv(2),8);
 		$file:string = "";
 		if($strInt){
 			$file = caststr($strInt);
 		};
 		$line:int = ptrget(argv(3),4);
-		
+
 		if(@g_enable_mem_log>0){
 			$info_size:int;
 			$info_align:int;
@@ -849,7 +850,7 @@ hook("MemoryManager::Deallocate")
 			$cur_main_thread:int;
 			$alloc_name:string;
 			$second_alloc_name:string;
-			
+
 			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
 				if ($info_size>=64) {
 					$str:string = format("MemoryManager::Deallocate time:%lld ptr:%llx size:%lld tid:%d main thread:%d alloc name:%s second alloc name:%s file:%s line:%d\n",time(),$addr,$info_size,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name,$file,$line);
@@ -885,7 +886,7 @@ hook("DynamicHeapAllocator::AllocateByBucket")
 		$size:int = ptrget(argv(3),8);
 		$align:int = ptrget(argv(4),4);
 		//$enableBucket:int = ptrget(argv(5),4);
-		
+
 		if($size>=32){
 			ptrset(argv(5),1,0);
 		};
@@ -908,7 +909,7 @@ hook("DynamicHeapAllocator::Allocate")
 		$tlsfPool:int = ptrget(argv(7),8);
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
-		
+
 		//if(@g_enable_mem_log>0){
 		//	if($size>=32){
 		//		$str:string = format("DynamicHeapAllocator::Allocate enter time:%lld align:%d locking:%d size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
@@ -928,7 +929,7 @@ hook("DynamicHeapAllocator::Allocate")
 		$tlsfPool:int = ptrget(argv(7),8);
 		$allocSize:int = ptrget(argv(8),8);
 		$allocAlign:int = ptrget(argv(9),4);
-		
+
 		//if(@g_enable_mem_log>0){
 		//	if($size>=32){
 		//		$str:string = format("DynamicHeapAllocator::Allocate exit time:%lld align:%d locking:%d tlsf:%d addr:%llx size:%lld alloc_size:%lld alloc_align:%d inst:%llx pool:%llx tid:%d\n",time(),$align,$locking,$tlsf,$addr,$size,$allocSize,$allocAlign,$tlsfInst,$tlsfPool,GetTID());
@@ -936,8 +937,10 @@ hook("DynamicHeapAllocator::Allocate")
 		//		WriteLog($str);
 		//	};
 		//};
-		
-		AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
+
+		//if(@g_enable_mem_log>0){
+			AddMemoryInfo($addr,$size,$align,$locking,$tlsf,$tlsfInst,$tlsfPool);
+		//};
 	};
 };
 hook("DynamicHeapAllocator::Deallocate")
@@ -950,9 +953,9 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsf:int = ptrget(argv(4),1);
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
-		
+
 		$tid:int = GetTID();
-		
+
 		/*
 		if(@g_enable_mem_log>0){
 			if($size>=32){
@@ -960,7 +963,7 @@ hook("DynamicHeapAllocator::Deallocate")
 				printf("%s",$str);
 				WriteLog($str);
 			};
-			
+
 			$info_size:int;
 			$info_align:int;
 			$info_locking:int;
@@ -973,10 +976,10 @@ hook("DynamicHeapAllocator::Deallocate")
 			$cur_main_thread:int;
 			$alloc_name:string;
 			$second_alloc_name:string;
-			
+
 			$flag:int;
 			GetMemoryFlag($addr,$flag);
-			
+
 			if(GetMemoryInfo($addr,$info_size,$info_align,$info_locking,$info_tlsf,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name)){
 				$str2:string = format("DynamicHeapAllocator::Deallocate flag==%d locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d main thread:%d cur inst:%llx cur pool:%llx cur tid:%d cur main thread:%d alloc name:%s second alloc name:%s\n",$flag,$info_locking,$info_tlsf,$addr,$info_size,$info_tlsf_inst,$info_tlsf_pool,$info_tid,$info_main_thread,$tlsfInst,$tlsfPool,$cur_tid,$cur_main_thread,$alloc_name,$second_alloc_name);
 				printf("%s",$str2);
@@ -987,7 +990,7 @@ hook("DynamicHeapAllocator::Deallocate")
 				printf("%s",$str2);
 				WriteLog($str2);
 			};
-					
+
 			if($flag==2 && @g_enable_watch_point){
 				$str2:string = format("DynamicHeapAllocator::Deallocate remove watch point time:%lld addr:%llx size:%lld tid:%d\n",time(),$addr,$size,$tid);
 				printf("%s",$str2);
@@ -1009,7 +1012,7 @@ hook("DynamicHeapAllocator::Deallocate")
 		$tlsf:int = ptrget(argv(4),1);
 		$tlsfInst:int = ptrget(argv(5),8);
 		$tlsfPool:int = ptrget(argv(6),8);
-		
+
 		//if(@g_enable_mem_log>0){
 		//	if($size>=32){
 		//		$str:string = format("DynamicHeapAllocator::Deallocate exit time:%lld locking:%d tlsf:%d addr:%llx size:%lld inst:%llx pool:%llx tid:%d\n",time(),$locking,$tlsf,$addr,$size,$tlsfInst,$tlsfPool,GetTID());
@@ -1017,7 +1020,7 @@ hook("DynamicHeapAllocator::Deallocate")
 		//		WriteLog($str);
 		//	};
 		//};
-		
+
 		RemoveMemoryInfo($addr);
 		RemoveMemoryFlag($addr);
 	};
@@ -1164,7 +1167,7 @@ hook("Object::GetRuntimeMemorySize")
 		$labelId:int = ptrget(argv(2),4);
 		$rootIndex:int = ptrget(argv(3),4);
 		$salt:int = ptrget(argv(4),4);
-		
+
 		//$str:string = format("GetRuntimeMemorySize result:%lld objid:%d label:%d root_index:%d salt:%d\n", $result, $objId, $labelId, $rootIndex, $salt);
 		//printf("%s",$str);
 		//WriteLog($str);
@@ -1182,11 +1185,11 @@ hook("AllocationRootReference::AddReference")
 		$labelId:int = ptrget(argv(6),4);
 		$line:int = ptrget(argv(7),4);
 		$file:string = ptrget(argv(8),8);
-		
+
 		//$str:string = format("AllocationRootReference::AddReference area:%s name:%s root_index:%d salt:%d accumulatedSize:%lld size:%lld label:%d line:%d file:%s\n", $areaName, $objName, $rootIndex, $salt, $accumulatedSize, $size, $labelId, $line, $file);
 		//printf("%s",$str);
 		//WriteLog($str);
-		
+
 		if(@g_enable_unity_obj_mem_stack_log){
 			LogStack("#AllocationRootReference::AddReference");
 		};
@@ -1202,7 +1205,7 @@ hook("AllocationRootReference::RemoveReference")
 		$accumulatedSize:int = ptrget(argv(4),8);
 		$size:int = ptrget(argv(5),8);
 		$labelId:int = ptrget(argv(6),4);
-		
+
 		//$str:string = format("AllocationRootReference::RemoveReference area:%s name:%s root_index:%d salt:%d accumulatedSize:%lld size:%lld label:%d\n", $areaName, $objName, $rootIndex, $salt, $accumulatedSize, $size, $labelId);
 		//printf("%s",$str);
 		//WriteLog($str);
@@ -1216,7 +1219,7 @@ hook("sample_allocation")
 		$heapSize:int = ptrget(argv(2),8);
 		$className:string = ptrget(argv(3),8);
 		$objAddr:int = ptrget(argv(4),8);
-		
+
 		if(@g_enable_gcalloc_log){
 			$str:string = format("sample_allocation class:%s obj:%llx obj_size:%d used_heap:%lld heap_size:%lld\n", $className, $objAddr, $objSize, $usedHeap, $heapSize);
 			printf("%s",$str);
@@ -1235,7 +1238,7 @@ hook("gc_resize_event")
 		$newSize:int = ptrget(argv(0),8);
 		$usedHeap:int = ptrget(argv(1),8);
 		$heapSize:int = ptrget(argv(2),8);
-		
+
 		if(@g_enable_gcalloc_log){
 			$str:string = format("gc_resize_event new_size:%lld used_heap:%lld heap_size:%lld\n", $newSize, $usedHeap, $heapSize);
 			printf("%s",$str);
@@ -1257,20 +1260,20 @@ hook("Mesh::UploadMeshData")
 		$markNoLongerReadable:int = ptrget(argv(1),1);
 		$isReadable:int = ptrget(argv(2),1);
 		$name:string = ptrget(argv(3),8);
-		
+
 		//ptrset(argv(0), 1, 0);
-				
+
 		//$str:string = format("Mesh::UploadMeshData markNoLongerReadable:%d isReadable:%d name:%s\n", $markNoLongerReadable, $isReadable, $name);
 		//printf("%s",$str);
 		//$r:int = WriteLog($str);
 		//printf("WriteLog:%d\n",$r);
-		
+
 		if(!$isReadable){
 			//dumpstack("#Mesh::UploadMeshData");
 			//LogStack("#Mesh::UploadMeshData");
 			//FlushLog();
 		};
-		
+
 		if($name=="xxx_9008_low_skin"){
 			//assert(0);
 		};
@@ -1283,7 +1286,7 @@ hook("VertexData::HookHasOrGetData")
 		$cached:int = ptrget(argv(1),1);
 		$dataPtr:int = ptrget(argv(2),8);
 		$dataSize:int = ptrget(argv(3),8);
-		
+
 		if($cached && !$dataPtr){
 			//$str:string = format("VertexData::HookHasOrGetData isGet:%d cached:%d dataPtr:%8.8x dataSize:%lld\n", $isGet, $cached, $dataPtr, $dataSize);
 			//printf("%s",$str);
@@ -1300,13 +1303,13 @@ hook("HookGetBoneWeightsNull")
 	onenter{
 		$retPos:int = ptrget(argv(0),4);
 		$bonesPerVertex:int = ptrget(argv(1),4);
-		
+
 		//$str:string = format("HookGetBoneWeightsNull retPos:%d bonesPerVertex:%d\n", $retPos, $bonesPerVertex);
 		//printf("%s",$str);
 		//WriteLog($str);
 		//$r:int = WriteLog($str);
 		//printf("WriteLog:%d\n",$r);
-		
+
 		//assert(0);
 	};
 };
@@ -1315,7 +1318,7 @@ hook("InitializeIl2CppFromMain")
 	onenter{
 		$monoPath:string = ptrget(argv(1),8);
 		$dataPath:string = ptrget(argv(2),8);
-		
+
 		printf("InitializeIl2CppFromMain mono:%s data:%s\n",$monoPath,$dataPath);
 		assert(0);
 	};
@@ -1325,7 +1328,7 @@ hook("Il2CppMonoMemory_mmap")
 	onenter{
 		$capacity:int = ptrget(argv(0),4);
 		$mlock:int = ptrget(argv(1),1);
-		
+
 		printf("Il2CppMonoMemory_mmap capacity:%d mlock:%d\n",$capacity,$mlock);
 		assert(0);
 	};
@@ -1341,11 +1344,11 @@ hook("GameObject::GetSupportedMessagesRecalculate::component")
 		$componentInstId:int = ptrget(argv(5),4);
 		$componentTypeName:string = ptrget(argv(6),8);
 
-		printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld time:%lld instId:%d objName:%s i:%d component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$instId,$objName,$i,$component,$componentInstId,$componentTypeName);
+		//printf("GameObject::GetSupportedMessagesRecalculate::component thread:%lld time:%lld instId:%d objName:%s i:%d component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$instId,$objName,$i,$component,$componentInstId,$componentTypeName);
 
 		$vtbl:int = ptrget($component,8);
 		if ($vtbl <= 0x100000000) {
-			assert(0);
+			//assert(0);
 		};
 	};
 	onexit{
@@ -1353,7 +1356,7 @@ hook("GameObject::GetSupportedMessagesRecalculate::component")
 		$componentInstId:int = ptrget(argv(5),4);
 		$componentTypeName:string = ptrget(argv(6),8);
 
-		printf("GameObject::GetSupportedMessagesRecalculate::component exit thread:%lld time:%lld component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$component,$componentInstId,$componentTypeName);
+		//printf("GameObject::GetSupportedMessagesRecalculate::component exit thread:%lld time:%lld component:%llx componentInstId:%d componentType:%s\n",GetTID(),time(),$component,$componentInstId,$componentTypeName);
 	};
 };
 hook("delete_object_internal_step1")
@@ -1371,16 +1374,16 @@ hook("delete_object_internal_step1")
 		$file:string = ptrget(argv(9),8);
 		$line:int = ptrget(argv(10),4);
 		$func:string = ptrget(argv(11),8);
-		
+
 		$vtbl:int = ptrget($object,8);
 		if ($vtbl <= 0x100000000) {
-			assert(0);
+			//assert(0);
 		};
 
-		$str = format("delete_object_internal_step1 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
-		printf("%s",$str);
-		WriteLog($str);
-		FlushLog();
+		//$str = format("delete_object_internal_step1 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//FlushLog();
 	};
 	onexit{
 		$object:int = ptrget(argv(2),8);
@@ -1389,21 +1392,23 @@ hook("delete_object_internal_step1")
 		$typeName:string = ptrget(argv(5),8);
 
 		if($nameAddr <= 0x100000000 || $nameAddr >= 0x8000000000) {
-			assert(0);
+			//assert(0);
 		};
 		$name:string = ptrget(argv(2),8);
 
-		$str = format("delete_object_internal_step1 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
-		printf("%s",$str);
-		WriteLog($str);
-		FlushLog();
+		//$str = format("delete_object_internal_step1 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//FlushLog();
 
+		/*
 		if ($typeName=="GameObject" || $typeName=="RectTransform" || $typeName=="CanvasRenderer") {
 			$tag = format("#delete_object_internal_step1(%d,%s,%s)",$instId,$name,$typeName);
 			dumpstack($tag);
 			LogStack($tag);
 			FlushLog();
 		};
+		*/
 	};
 };
 hook("delete_object_internal_step2")
@@ -1418,17 +1423,17 @@ hook("delete_object_internal_step2")
 		$file:string = ptrget(argv(6),8);
 		$line:int = ptrget(argv(7),4);
 		$func:string = ptrget(argv(8),8);
-		
+
 		$vtbl:int = ptrget($object,8);
 		if ($vtbl <= 0x100000000) {
-			FlushLog();
-			assert(0);
+			//FlushLog();
+			//assert(0);
 		};
 
-		$str = format("delete_object_internal_step2 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
-		printf("%s",$str);
-		WriteLog($str);
-		FlushLog();
+		//$str = format("delete_object_internal_step2 thread:%lld time:%lld object:%llx instId:%d name:%s type:%s file:%s line:%d func:%s\n",GetTID(),time(),$object,$instId,$name,$typeName,$file,$line,$func);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//FlushLog();
 
 		//$bGetName
 		//ptrset(argv(0),1,1);
@@ -1438,17 +1443,17 @@ hook("delete_object_internal_step2")
 		$instId:int = ptrget(argv(3),4);
 		$nameAddr:int = ptrget(argv(4),8);
 		$typeName:string = ptrget(argv(5),8);
-		
+
 		if($nameAddr != 0 && ($nameAddr <= 0x100000000 || $nameAddr >= 0x8000000000)) {
-			FlushLog();
-			assert(0);
+			//FlushLog();
+			//assert(0);
 		};
 		$name:string = ptrget(argv(2),8);
 
-		$str = format("delete_object_internal_step2 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
-		printf("%s",$str);
-		WriteLog($str);
-		FlushLog();
+		//$str = format("delete_object_internal_step2 exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+		//printf("%s",$str);
+		//WriteLog($str);
+		//FlushLog();
 	};
 };
 hook("delete_object_internal_incomplete_integration")
@@ -1461,7 +1466,7 @@ hook("delete_object_internal_incomplete_integration")
 		$name:string = ptrget(argv(4),8);
 		$typeName:string = ptrget(argv(5),8);
 
-		printf("delete_object_internal_incomplete_integration thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+		//printf("delete_object_internal_incomplete_integration thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
 	};
 	onexit{
 		$object:int = ptrget(argv(2),8);
@@ -1469,6 +1474,928 @@ hook("delete_object_internal_incomplete_integration")
 		$nameAddr:int = ptrget(argv(4),8);
 		$typeName:string = ptrget(argv(5),8);
 
-		printf("delete_object_internal_incomplete_integration exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+		//printf("delete_object_internal_incomplete_integration exit thread:%lld time:%lld object:%llx instId:%d name:%s type:%s\n",GetTID(),time(),$object,$instId,$name,$typeName);
+	};
+};
+hook("SetRenderTargets_MainThread")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK with bool ret):
+		//   argv(0)  = &hMismatch (int)
+		//   argv(1)  = &hCount
+		//   argv(2)  = &hMipLevel
+		//   argv(3)  = &hFace
+		//   argv(4)  = &hDepthSlice
+		//   argv(5)  = &hDsTexId
+		//   argv(6)  = &hDsFormat
+		//   argv(7)  = &hDsW
+		//   argv(8)  = &hDsH
+		//   argv(9) = &pRtTexId  (int* pointing to int[8])
+		//   argv(10) = &pRtFormat
+		//   argv(11) = &pRtW
+		//   argv(12) = &pRtH
+		$mismatch:int   = ptrget(argv(0),4);
+		$count:int      = ptrget(argv(1),4);
+		$mipLevel:int   = ptrget(argv(2),4);
+		$face:int       = ptrget(argv(3),4);
+		$depthSlice:int = ptrget(argv(4),4);
+		$dsTexId:int    = ptrget(argv(5),4);
+		$dsFormat:int   = ptrget(argv(6),4);
+		$dsW:int        = ptrget(argv(7),4);
+		$dsH:int        = ptrget(argv(8),4);
+		$pRtTexId:int   = ptrget(argv(9),8);
+		$pRtFormat:int  = ptrget(argv(10),8);
+		$pRtW:int       = ptrget(argv(11),8);
+		$pRtH:int       = ptrget(argv(12),8);
+
+		if($mismatch!=0){
+			$str:string = format("SetRenderTargets_MainThread mismatch time:%lld tid:%d count:%d mip:%d face:%d depthSlice:%d ds(tex:%d fmt:%d %dx%d)\n",time(),GetTID(),$count,$mipLevel,$face,$depthSlice,$dsTexId,$dsFormat,$dsW,$dsH);
+			printf("%s",$str);
+			WriteLog($str);
+			$i:int = 0;
+			loop($i,0,$count-1){
+				$rtId:int  = ptrget($pRtTexId  + $i*4, 4);
+				$rtFmt:int = ptrget($pRtFormat + $i*4, 4);
+				$rtW:int   = ptrget($pRtW      + $i*4, 4);
+				$rtH:int   = ptrget($pRtH      + $i*4, 4);
+				$rtStr:string = format("  rt[%d] tex:%d fmt:%d %dx%d\n",$i,$rtId,$rtFmt,$rtW,$rtH);
+				printf("%s",$rtStr);
+				WriteLog($rtStr);
+			};
+			FlushLog();
+			if (@g_capture_frames < 10) {
+				TriggerFrameCapture();
+				@g_capture_frames = @g_capture_frames + 1;
+			};
+			//assert(0);
+		};
+		return 0;
+	};
+};
+hook("D3D11Init")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//	 argv(0) = bool retval from hook
+		//   argv(1) = &hCreateDebug     (int)  1=create D3D11 debug device, 0=normal device
+		//   argv(2) = &hBreakWhenError  (int)  1=enable SetBreakOnSeverity at all, 0=disable
+		//   argv(3) = &hBreakCorruption (int)  1=break on D3D11_MESSAGE_SEVERITY_CORRUPTION
+		//   argv(4) = &hBreakError      (int)  1=break on D3D11_MESSAGE_SEVERITY_ERROR
+		//   argv(5) = &hBreakWarning    (int)  1=break on D3D11_MESSAGE_SEVERITY_WARNING
+		//   argv(6) = &hBreakInfo       (int)  1=break on D3D11_MESSAGE_SEVERITY_INFO
+		// Read current C++ defaults:
+		$createDebug:int     = ptrget(argv(1),4);
+		$breakWhenError:int  = ptrget(argv(2),4);
+		$breakCorruption:int = ptrget(argv(3),4);
+		$breakError:int      = ptrget(argv(4),4);
+		$breakWarning:int    = ptrget(argv(5),4);
+		$breakInfo:int       = ptrget(argv(6),4);
+
+		$str:string = format("D3D11Init enter time:%lld tid:%d createDebug:%d breakWhenError:%d break(C:%d E:%d W:%d I:%d)\n",time(),GetTID(),$createDebug,$breakWhenError,$breakCorruption,$breakError,$breakWarning,$breakInfo);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		// To force-enable the D3D11 debug device + break-on-error from script, uncomment:
+		ptrset(argv(1),4,1); // hCreateDebug    = 1
+		ptrset(argv(2),4,1); // hBreakWhenError = 1
+		ptrset(argv(3),4,1); // hBreakCorruption
+		ptrset(argv(4),4,0); // hBreakError
+		ptrset(argv(5),4,0); // hBreakWarning
+		ptrset(argv(6),4,0); // hBreakInfo
+	};
+};
+hook("D3D11Draw")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hDrawType   (int)  0=Draw 1=DrawIndexed 2=DrawInstanced 3=DrawIndexedInstanced 4=DrawInstancedIndirect 5=DrawIndexedInstancedIndirect
+		//   argv(2) = &hCountA     (int)  index/vertex count for direct draws; bufferOffset for indirect
+		//   argv(3) = &hCountB     (int)  instance count for direct draws; -1 for indirect
+		//   argv(4) = &pVS         (char*)
+		//   argv(5) = &pGS         (char*)
+		//   argv(6) = &pPS         (char*)
+		$frame:int    = ptrget(argv(0),4);
+		$drawType:int = ptrget(argv(1),4);
+		$countA:int   = ptrget(argv(2),4);
+		$countB:int   = ptrget(argv(3),4);
+		$vs:string    = ptrget(argv(4),8);
+		$gs:string    = ptrget(argv(5),8);
+		$ps:string    = ptrget(argv(6),8);
+
+		$kindStr:string = "Draw";
+		if($drawType==1){ $kindStr = "DrawIndexed"; }
+		elif($drawType==2){ $kindStr = "DrawInstanced"; }
+		elif($drawType==3){ $kindStr = "DrawIndexedInstanced"; }
+		elif($drawType==4){ $kindStr = "DrawInstancedIndirect"; }
+		elif($drawType==5){ $kindStr = "DrawIndexedInstancedIndirect"; };
+
+		$str:string = format("D3D11Draw frame:%d tid:%d %s cA:%d cB:%d vs:%s gs:%s ps:%s\n",$frame,GetTID(),$kindStr,$countA,$countB,$vs,$gs,$ps);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DrawBindings")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame   (int)
+		//   argv(1) = &pVS      (char*) vertex   shader debug name ("" if not bound)
+		//   argv(2) = &pGS      (char*) geometry shader debug name ("" if not bound)
+		//   argv(3) = &pPS      (char*) pixel    shader debug name ("" if not bound)
+		//   argv(4) = &pBindings(char*) compact one-line snapshot of graphics-pipeline bindings:
+		//                                "vs_srvs: t<slot>=<viewDim>/<format>/<size>/<name>
+		//                                 [| gs_srvs: ...]
+		//                                 | ps_srvs: ...
+		//                                 | rts: r<slot>=<viewDim>/<format>/<size>/<name>
+		//                                 [| dsv=<viewDim>/<format>/<size>/<name>]
+		//                                 | vs_cbs: b<slot>=Buf/B=<byteWidth>/<name>
+		//                                 [| gs_cbs: ...]
+		//                                 | ps_cbs: ..."
+		//                                gs_srvs/gs_cbs are omitted entirely when the GS stage has
+		//                                no bindings; empty slots are skipped within each segment.
+		//                                Slot ranges: VS SRV/CB 0..7, GS SRV/CB 0..7, PS SRV 0..15,
+		//                                PS CB 0..7, RT 0..7, DSV single slot.
+		$frame:int = ptrget(argv(0),4);
+		$vs:string = ptrget(argv(1),8);
+		$gs:string = ptrget(argv(2),8);
+		$ps:string = ptrget(argv(3),8);
+		$bindings:string = ptrget(argv(4),8);
+
+		$str:string = format("D3D11DrawBindings frame:%d tid:%d vs:%s gs:%s ps:%s %s\n",$frame,GetTID(),$vs,$gs,$ps,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11Dispatch")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame (int)
+		//   argv(1) = &pShaderName (char*)
+		//   argv(2) = &hKind  (int)  0=Dispatch 1=DispatchIndirect
+		//   argv(3) = &hGx    (int)  -1 if DispatchIndirect
+		//   argv(4) = &hGy    (int)  -1 if DispatchIndirect
+		//   argv(5) = &hGz    (int)  -1 if DispatchIndirect
+		$frame:int = ptrget(argv(0),4);
+		$shaderName:string = ptrget(argv(1),8);
+		$kind:int  = ptrget(argv(2),4);
+		$gx:int    = ptrget(argv(3),4);
+		$gy:int    = ptrget(argv(4),4);
+		$gz:int    = ptrget(argv(5),4);
+
+		$kindStr:string = "Dispatch";
+		if($kind==1){ $kindStr = "DispatchIndirect"; };
+
+		$str:string = format("D3D11Dispatch frame:%d tid:%d %s shader:%s groups:(%d,%d,%d)\n",$frame,GetTID(),$kindStr,$shaderName,$gx,$gy,$gz);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DispatchBindings")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &pShaderName (char*) name of the compute shader that is about to dispatch
+		//   argv(2) = &pBindings   (char*) compact one-line snapshot of CS bindings:
+		//                                  "srvs: t<slot>=<viewDim>/<format>/<size>/<debugName> ...
+		//                                   | uavs: u<slot>=...
+		//                                   | cbs:  b<slot>=Buf/B=<byteWidth>/<debugName>"
+		//                                  empty SRV/UAV/CB slots are skipped; SRV scanned 0..15,
+		//                                  UAV 0..7, CB 0..7; size is "WxH" for textures and
+		//                                  "N=<elemCount>" for buffers; debugName is the resource
+		//                                  debug name (empty if unset).
+		$frame:int = ptrget(argv(0),4);
+		$shaderName:string = ptrget(argv(1),8);
+		$bindings:string = ptrget(argv(2),8);
+
+		$str:string = format("D3D11DispatchBindings frame:%d tid:%d shader:%s %s\n",$frame,GetTID(),$shaderName,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DebugMsg")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hSeverity   (int)  0=CORRUPTION 1=ERROR 2=WARNING 3=INFO 4=MESSAGE
+		//   argv(2) = &hMsgId      (int)
+		//   argv(3) = &hCategory   (int)
+		//   argv(4) = &pText       (char*) the InfoQueue message description; this is the
+		//                                  ONLY shader/resource info available, since the
+		//                                  D3D11 InfoQueue API does not expose any
+		//                                  per-message shader binding. Use the surrounding
+		//                                  D3D11Dispatch / D3D11Draw / D3D11ExternalDispatch
+		//                                  log lines to identify the responsible call.
+		//   argv(5) = &hSwitchPtr  (unsigned long long) address of g_D3D11DbgRecordingEnabled in the C++ side; write 0 via ptrset to close the recording window
+		$frame:int    = ptrget(argv(0),4);
+		$severity:int = ptrget(argv(1),4);
+		$msgId:int    = ptrget(argv(2),4);
+		$category:int = ptrget(argv(3),4);
+		$text:string  = ptrget(argv(4),8);
+		$pSwitch:int  = ptrget(argv(5),8);
+
+		$sevStr:string = "MESSAGE";
+		if($severity==0){ $sevStr = "CORRUPTION"; }
+		elif($severity==1){ $sevStr = "ERROR"; }
+		elif($severity==2){ $sevStr = "WARNING"; }
+		elif($severity==3){ $sevStr = "INFO"; };
+
+		$str:string = format("D3D11DebugMsg frame:%d tid:%d sev:%s id:%d cat:%d msg:%s\n",$frame,GetTID(),$sevStr,$msgId,$category,$text);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		// Stop the recording window opened by an unexpected external/deferred
+		// Dispatch as soon as a D3D11 ERROR or CORRUPTION debug message is
+		// observed: the offending Dispatch has been pinpointed by the debug
+		// layer, no further CSSet* tracing needed. Write 0 to the C++-side
+		// recording switch via ptrset; the CSSet* native fast-path will then
+		// resume zero-overhead pass-through.
+		if($severity<=1){
+			$stopStr:string = format("RECORD STOP by debug msg frame:%d\n",$frame);
+			printf("%s",$stopStr);
+			WriteLog($stopStr);
+			FlushLog();
+			ptrset($pSwitch,4,0);
+		};
+	};
+};
+hook("D3D11CSSetShader")
+{
+	onenter{
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hCs         (unsigned long long) ID3D11ComputeShader* actually being set
+		//   argv(3) = &hExp        (unsigned long long) ID3D11ComputeShader* the engine main path expects (g_ExpectedComputeShader)
+		//   argv(4) = &pShaderName (char*) debug name of hCs (may be empty)
+		//   argv(5) = &hRet        (unsigned long long) return address of the CSSetShader caller
+		//   argv(6) = &hSwitchPtr  (unsigned long long) address of g_D3D11DbgRecordingEnabled
+		//                                  in the C++ side; write 1 via ptrset to open the
+		//                                  recording window. The window is then closed by
+		//                                  the next D3D11 ERROR/CORRUPTION debug message
+		//                                  (D3D11DebugMsg writes 0 back).
+		// Logged only when hCs != hExp, i.e. an unexpected (third-party / external) caller
+		// invoked CSSetShader without the engine updating g_ExpectedComputeShader first.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$cs:int    = ptrget(argv(2),8);
+		$exp:int   = ptrget(argv(3),8);
+		$shaderName:string = ptrget(argv(4),8);
+		$ret:int   = ptrget(argv(5),8);
+
+		$str:string = format("D3D11CSSetShader UNEXPECTED frame:%d tid:%d ctx:%llx cs:%llx exp:%llx shader:%s retAddr:%llx\n",$frame,GetTID(),$ctx,$cs,$exp,$shaderName,$ret);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11CSSetShader");
+		LogStack("#D3D11CSSetShader");
+
+		// Open the recording window: subsequent CSSet*/Set* calls will be
+		// reported via DBGSCP and logged here in detail until a D3D11
+		// ERROR/CORRUPTION debug message is observed (D3D11DebugMsg writes 0
+		// back) or a 5-frame timeout elapses (the C++ trampolines self-clear).
+		ptrset(argv(6),4,1);
+		//assert(0);
+	};
+};
+hook("D3D11VSSetShader")
+{
+	onenter{
+		// Native fast-path: only invoked when the actually-set VS does not match
+		// g_ExpectedVertexShader (i.e. unexpected / external caller). The native
+		// trampoline already filtered out engine-legitimate sets, so every entry
+		// here is by definition suspicious.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hVs         (unsigned long long) ID3D11VertexShader* actually being set
+		//   argv(3) = &hExp        (unsigned long long) ID3D11VertexShader* the engine main path expects (g_ExpectedVertexShader)
+		//   argv(4) = &pShaderName (char*) debug name of hVs (may be empty)
+		//   argv(5) = &hRet        (unsigned long long) return address of the VSSetShader caller
+		//   argv(6) = &hSwitchPtr  (unsigned long long) address of g_D3D11DbgRecordingEnabled. See D3D11CSSetShader.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$vs:int    = ptrget(argv(2),8);
+		$exp:int   = ptrget(argv(3),8);
+		$shaderName:string = ptrget(argv(4),8);
+		$ret:int   = ptrget(argv(5),8);
+
+		$str:string = format("D3D11VSSetShader UNEXPECTED frame:%d tid:%d ctx:%llx vs:%llx exp:%llx shader:%s retAddr:%llx\n",$frame,GetTID(),$ctx,$vs,$exp,$shaderName,$ret);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11VSSetShader");
+		LogStack("#D3D11VSSetShader");
+
+		// Open the recording window. See D3D11CSSetShader.
+		ptrset(argv(6),4,1);
+	};
+};
+hook("D3D11GSSetShader")
+{
+	onenter{
+		// Native fast-path: only invoked when the actually-set GS does not match
+		// g_ExpectedGeometryShader (i.e. unexpected / external caller).
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hGs         (unsigned long long) ID3D11GeometryShader* actually being set
+		//   argv(3) = &hExp        (unsigned long long) ID3D11GeometryShader* the engine main path expects (g_ExpectedGeometryShader)
+		//   argv(4) = &pShaderName (char*) debug name of hGs (may be empty)
+		//   argv(5) = &hRet        (unsigned long long) return address of the GSSetShader caller
+		//   argv(6) = &hSwitchPtr  (unsigned long long) address of g_D3D11DbgRecordingEnabled. See D3D11CSSetShader.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$gs:int    = ptrget(argv(2),8);
+		$exp:int   = ptrget(argv(3),8);
+		$shaderName:string = ptrget(argv(4),8);
+		$ret:int   = ptrget(argv(5),8);
+
+		$str:string = format("D3D11GSSetShader UNEXPECTED frame:%d tid:%d ctx:%llx gs:%llx exp:%llx shader:%s retAddr:%llx\n",$frame,GetTID(),$ctx,$gs,$exp,$shaderName,$ret);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11GSSetShader");
+		LogStack("#D3D11GSSetShader");
+
+		// Open the recording window. See D3D11CSSetShader.
+		ptrset(argv(6),4,1);
+	};
+};
+hook("D3D11PSSetShader")
+{
+	onenter{
+		// Native fast-path: only invoked when the actually-set PS does not match
+		// g_ExpectedPixelShader (i.e. unexpected / external caller).
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hPs         (unsigned long long) ID3D11PixelShader* actually being set
+		//   argv(3) = &hExp        (unsigned long long) ID3D11PixelShader* the engine main path expects (g_ExpectedPixelShader)
+		//   argv(4) = &pShaderName (char*) debug name of hPs (may be empty)
+		//   argv(5) = &hRet        (unsigned long long) return address of the PSSetShader caller
+		//   argv(6) = &hSwitchPtr  (unsigned long long) address of g_D3D11DbgRecordingEnabled. See D3D11CSSetShader.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$ps:int    = ptrget(argv(2),8);
+		$exp:int   = ptrget(argv(3),8);
+		$shaderName:string = ptrget(argv(4),8);
+		$ret:int   = ptrget(argv(5),8);
+
+		$str:string = format("D3D11PSSetShader UNEXPECTED frame:%d tid:%d ctx:%llx ps:%llx exp:%llx shader:%s retAddr:%llx\n",$frame,GetTID(),$ctx,$ps,$exp,$shaderName,$ret);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11PSSetShader");
+		LogStack("#D3D11PSSetShader");
+
+		// Open the recording window. See D3D11CSSetShader.
+		ptrset(argv(6),4,1);
+	};
+};
+hook("D3D11ExternalDispatch")
+{
+	onenter{
+		// Native fast-path: only invoked for Dispatch / DispatchIndirect calls that
+		// did NOT originate from the engine's own dispatch path (g_InEngineDispatch
+		// guard). i.e. third-party / external Dispatch issued through the immediate
+		// context vtable.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hKind       (int)  0=Dispatch, 1=DispatchIndirect
+		//   argv(3) = &hA          (int)  Dispatch: groupsX; DispatchIndirect: bufferOffset
+		//   argv(4) = &hB          (int)  Dispatch: groupsY; DispatchIndirect: -1
+		//   argv(5) = &hC          (int)  Dispatch: groupsZ; DispatchIndirect: -1
+		//   argv(6) = &hRet        (unsigned long long) return address of the Dispatch caller
+		//   argv(7) = &pBindings   (char*) compact one-line snapshot of CS bindings, same
+		//                                  format as D3D11DispatchBindings (shaders + srvs +
+		//                                  uavs + cbs); empty slots are skipped.
+		// The recording window is opened by the SetShader trampolines
+		// (D3D11CSSetShader / D3D11VSSetShader / D3D11GSSetShader /
+		// D3D11PSSetShader), not here; this hook only logs the unexpected
+		// Dispatch event for diagnostics.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$kind:int  = ptrget(argv(2),4);
+		$a:int     = ptrget(argv(3),4);
+		$b:int     = ptrget(argv(4),4);
+		$c:int     = ptrget(argv(5),4);
+		$ret:int   = ptrget(argv(6),8);
+		$bindings:string = ptrget(argv(7),8);
+
+		$kindStr:string = "Dispatch";
+		if($kind==1){ $kindStr = "DispatchIndirect"; };
+
+		$str:string = format("D3D11ExternalDispatch UNEXPECTED frame:%d tid:%d ctx:%llx %s a:%d b:%d c:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$kindStr,$a,$b,$c,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11ExternalDispatch");
+		LogStack("#D3D11ExternalDispatch");
+	};
+};
+hook("D3D11ExternalDraw")
+{
+	onenter{
+		// Native fast-path: only invoked for Draw* calls that did NOT originate from
+		// the engine's own draw path (g_InEngineDraw guard). i.e. third-party /
+		// external Draw issued through the immediate context vtable.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame    (int)
+		//   argv(1) = &hCtx      (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hKind     (int)  0=Draw 1=DrawIndexed 2=DrawInstanced 3=DrawIndexedInstanced
+		//                                4=DrawInstancedIndirect 5=DrawIndexedInstancedIndirect 6=DrawAuto
+		//   argv(3) = &hA        (int)  count/offset depending on kind
+		//   argv(4) = &hB        (int)  instance count or -1
+		//   argv(5) = &hRet      (unsigned long long) return address of the Draw caller
+		//   argv(6) = &pVS       (char*) currently bound vertex   shader debug name ("" if none)
+		//   argv(7) = &pGS       (char*) currently bound geometry shader debug name ("" if none)
+		//   argv(8) = &pPS       (char*) currently bound pixel    shader debug name ("" if none)
+		//   argv(9) = &pBindings (char*) compact one-line snapshot of graphics-pipeline
+		//                                bindings, same format as D3D11DrawBindings
+		//                                (shaders + vs_srvs + gs_srvs? + ps_srvs + rts +
+		//                                 dsv? + vs_cbs + gs_cbs? + ps_cbs); gs_* are
+		//                                omitted when GS stage has no bindings.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$kind:int  = ptrget(argv(2),4);
+		$a:int     = ptrget(argv(3),4);
+		$b:int     = ptrget(argv(4),4);
+		$ret:int   = ptrget(argv(5),8);
+		$vs:string = ptrget(argv(6),8);
+		$gs:string = ptrget(argv(7),8);
+		$ps:string = ptrget(argv(8),8);
+		$bindings:string = ptrget(argv(9),8);
+
+		$kindStr:string = "Draw";
+		if($kind==1){ $kindStr = "DrawIndexed"; }
+		elif($kind==2){ $kindStr = "DrawInstanced"; }
+		elif($kind==3){ $kindStr = "DrawIndexedInstanced"; }
+		elif($kind==4){ $kindStr = "DrawInstancedIndirect"; }
+		elif($kind==5){ $kindStr = "DrawIndexedInstancedIndirect"; }
+		elif($kind==6){ $kindStr = "DrawAuto"; };
+
+		$str:string = format("D3D11ExternalDraw UNEXPECTED frame:%d tid:%d ctx:%llx %s a:%d b:%d retAddr:%llx vs:%s gs:%s ps:%s %s\n",$frame,GetTID(),$ctx,$kindStr,$a,$b,$ret,$vs,$gs,$ps,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11ExternalDraw");
+		LogStack("#D3D11ExternalDraw");
+	};
+};
+hook("D3D11DeferredDispatch")
+{
+	onenter{
+		// Native fast-path: invoked for Dispatch / DispatchIndirect issued through
+		// a deferred ID3D11DeviceContext (i.e. recorded into a command list and
+		// later replayed via ExecuteCommandList). The g_InEngineDispatch guard is
+		// not consulted on deferred contexts: the engine never records its main
+		// dispatch path through a deferred context, so every entry here is by
+		// definition third-party / external.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext* (deferred)
+		//   argv(2) = &hKind       (int)  0=Dispatch, 1=DispatchIndirect
+		//   argv(3) = &hA          (int)  Dispatch: groupsX; DispatchIndirect: bufferOffset
+		//   argv(4) = &hB          (int)  Dispatch: groupsY; DispatchIndirect: -1
+		//   argv(5) = &hC          (int)  Dispatch: groupsZ; DispatchIndirect: -1
+		//   argv(6) = &hRet        (unsigned long long) return address of the Dispatch caller
+		//   argv(7) = &pBindings   (char*) compact one-line snapshot of CS bindings, same
+		//                                  format as D3D11DispatchBindings.
+		// The recording window is opened by the SetShader trampolines, not here.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$kind:int  = ptrget(argv(2),4);
+		$a:int     = ptrget(argv(3),4);
+		$b:int     = ptrget(argv(4),4);
+		$c:int     = ptrget(argv(5),4);
+		$ret:int   = ptrget(argv(6),8);
+		$bindings:string = ptrget(argv(7),8);
+
+		$kindStr:string = "Dispatch";
+		if($kind==1){ $kindStr = "DispatchIndirect"; };
+
+		$str:string = format("D3D11DeferredDispatch UNEXPECTED frame:%d tid:%d ctx:%llx %s a:%d b:%d c:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$kindStr,$a,$b,$c,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11DeferredDispatch");
+		LogStack("#D3D11DeferredDispatch");
+	};
+};
+hook("D3D11DeferredDraw")
+{
+	onenter{
+		// Native fast-path: invoked for Draw* calls issued through a deferred
+		// ID3D11DeviceContext (recorded into a command list and later replayed
+		// via ExecuteCommandList). The g_InEngineDraw guard is not consulted on
+		// deferred contexts: the engine never records its main draw path
+		// through a deferred context, so every entry here is by definition
+		// third-party / external.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame    (int)
+		//   argv(1) = &hCtx      (unsigned long long) ID3D11DeviceContext* (deferred)
+		//   argv(2) = &hKind     (int)  0=Draw 1=DrawIndexed 2=DrawInstanced 3=DrawIndexedInstanced
+		//                                4=DrawInstancedIndirect 5=DrawIndexedInstancedIndirect 6=DrawAuto
+		//   argv(3) = &hA        (int)  count/offset depending on kind
+		//   argv(4) = &hB        (int)  instance count or -1
+		//   argv(5) = &hRet      (unsigned long long) return address of the Draw caller
+		//   argv(6) = &pVS       (char*) currently bound vertex   shader debug name ("" if none)
+		//   argv(7) = &pGS       (char*) currently bound geometry shader debug name ("" if none)
+		//   argv(8) = &pPS       (char*) currently bound pixel    shader debug name ("" if none)
+		//   argv(9) = &pBindings (char*) compact one-line snapshot of graphics-pipeline bindings,
+		//                                same format as D3D11DrawBindings.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$kind:int  = ptrget(argv(2),4);
+		$a:int     = ptrget(argv(3),4);
+		$b:int     = ptrget(argv(4),4);
+		$ret:int   = ptrget(argv(5),8);
+		$vs:string = ptrget(argv(6),8);
+		$gs:string = ptrget(argv(7),8);
+		$ps:string = ptrget(argv(8),8);
+		$bindings:string = ptrget(argv(9),8);
+
+		$kindStr:string = "Draw";
+		if($kind==1){ $kindStr = "DrawIndexed"; }
+		elif($kind==2){ $kindStr = "DrawInstanced"; }
+		elif($kind==3){ $kindStr = "DrawIndexedInstanced"; }
+		elif($kind==4){ $kindStr = "DrawInstancedIndirect"; }
+		elif($kind==5){ $kindStr = "DrawIndexedInstancedIndirect"; }
+		elif($kind==6){ $kindStr = "DrawAuto"; };
+
+		$str:string = format("D3D11DeferredDraw UNEXPECTED frame:%d tid:%d ctx:%llx %s a:%d b:%d retAddr:%llx vs:%s gs:%s ps:%s %s\n",$frame,GetTID(),$ctx,$kindStr,$a,$b,$ret,$vs,$gs,$ps,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11DeferredDraw");
+		LogStack("#D3D11DeferredDraw");
+	};
+};
+hook("D3D11CSSetShaderResources")
+{
+	onenter{
+		// Native fast-path: gated in the C++ trampoline by g_D3D11DbgRecordingEnabled
+		// (only forwards into DBGSCP while the recording window is open) plus a
+		// 5-frame self-clear timeout. Recording is opened by the
+		// D3D11ExternalDispatch / D3D11DeferredDispatch hook on an UNEXPECTED
+		// dispatch (writes 1 to the C++ switch via ptrset) and closed by the
+		// D3D11DebugMsg hook on the next ERROR/CORRUPTION message (writes 0).
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame     (int)
+		//   argv(1) = &hCtx       (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hStartSlot (int)
+		//   argv(3) = &hNumViews  (int)
+		//   argv(4) = &hRet       (unsigned long long) return address of the caller
+		//   argv(5) = &pBindings  (char*) "srvs(start=%u,n=%u): t<absSlot>=NULL|<viewDim>/<format>/<size>/<name> ..."
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11CSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11CSSetUnorderedAccessViews")
+{
+	onenter{
+		// See D3D11CSSetShaderResources for the recording-window contract.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame     (int)
+		//   argv(1) = &hCtx       (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hStartSlot (int)
+		//   argv(3) = &hNumUAVs   (int)
+		//   argv(4) = &hRet       (unsigned long long) return address of the caller
+		//   argv(5) = &pBindings  (char*) "uavs(start=%u,n=%u): u<absSlot>=NULL|<viewDim>/<format>/<size>/<name>(ic=<initialCount>) ..."
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numUAVs:int    = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11CSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11CSSetConstantBuffers")
+{
+	onenter{
+		// See D3D11CSSetShaderResources for the recording-window contract.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame      (int)
+		//   argv(1) = &hCtx        (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hStartSlot  (int)
+		//   argv(3) = &hNumBuffers (int)
+		//   argv(4) = &hRet        (unsigned long long) return address of the caller
+		//   argv(5) = &pBindings   (char*) "cbs(start=%u,n=%u): b<absSlot>=NULL|Buf/B=<byteWidth>/<name> ..."
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11CSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredCSSetShaderResources")
+{
+	onenter{
+		// Same payload as D3D11CSSetShaderResources but invoked on a deferred
+		// ID3D11DeviceContext (commands are recorded into a command list and
+		// later replayed via ExecuteCommandList). See D3D11CSSetShaderResources
+		// for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredCSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredCSSetUnorderedAccessViews")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11CSSetUnorderedAccessViews. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numUAVs:int    = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredCSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredCSSetConstantBuffers")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11CSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredCSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11VSSetShaderResources")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame     (int)
+		//   argv(1) = &hCtx       (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hStartSlot (int)
+		//   argv(3) = &hNumViews  (int)
+		//   argv(4) = &hRet       (unsigned long long) return address of the caller
+		//   argv(5) = &pBindings  (char*) "srvs(start=%u,n=%u): t<absSlot>=NULL|<viewDim>/<format>/<size>/<name> ..."
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11VSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11VSSetConstantBuffers")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11VSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11GSSetShaderResources")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11GSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11GSSetConstantBuffers")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11GSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11PSSetShaderResources")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11PSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11PSSetConstantBuffers")
+{
+	onenter{
+		// Graphics-stage counterpart of D3D11CSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11PSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredVSSetShaderResources")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11VSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredVSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredVSSetConstantBuffers")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11VSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredVSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredGSSetShaderResources")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11GSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredGSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredGSSetConstantBuffers")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11GSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredGSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredPSSetShaderResources")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11PSSetShaderResources. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numViews:int   = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredPSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredPSSetConstantBuffers")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11PSSetConstantBuffers. See
+		// D3D11CSSetShaderResources for the recording-window contract.
+		$frame:int      = ptrget(argv(0),4);
+		$ctx:int        = ptrget(argv(1),8);
+		$startSlot:int  = ptrget(argv(2),4);
+		$numBuffers:int = ptrget(argv(3),4);
+		$ret:int        = ptrget(argv(4),8);
+		$bindings:string= ptrget(argv(5),8);
+		$str:string = format("D3D11DeferredPSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11ClearState")
+{
+	onenter{
+		// Native fast-path: gated in the C++ trampoline by g_D3D11DbgRecordingEnabled
+		// (only forwards into DBGSCP while the recording window is open) plus a
+		// 5-frame self-clear timeout. See D3D11CSSetShaderResources for the
+		// recording-window contract. ClearState wipes every stage's binding in
+		// a single call, so the payload is intentionally minimal.
+		// argv layout (DBGSCP_HOOK_VOID, no ret slot):
+		//   argv(0) = &hFrame (int)
+		//   argv(1) = &hCtx   (unsigned long long) ID3D11DeviceContext*
+		//   argv(2) = &hRet   (unsigned long long) return address of the caller
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$ret:int   = ptrget(argv(2),8);
+		$str:string = format("D3D11ClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
+		printf("%s",$str);
+		WriteLog($str);
+	};
+};
+hook("D3D11DeferredClearState")
+{
+	onenter{
+		// Deferred-ctx counterpart of D3D11ClearState. See D3D11ClearState
+		// for the recording-window contract and payload layout.
+		$frame:int = ptrget(argv(0),4);
+		$ctx:int   = ptrget(argv(1),8);
+		$ret:int   = ptrget(argv(2),8);
+		$str:string = format("D3D11DeferredClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
+		printf("%s",$str);
+		WriteLog($str);
 	};
 };

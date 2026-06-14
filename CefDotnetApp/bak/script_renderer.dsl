@@ -204,10 +204,9 @@ script(on_call_metadsl)params($func,$args)
 	nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
-// Return system prompt text loaded from docs/system_prompt.txt (zero-arg, sync)
 script(get_system_prompt)params()
 {
-	$mergePrompt = read_file("d:/AiClaw/docs/merge_prompt.txt");
+	$mergePrompt = read_file("d:/AiClaw/docs/arena_prompt.txt");
 	return(format("{0}",$mergePrompt));
 };
 
@@ -260,12 +259,6 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
 		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
 	}
-	elif ($tag == "llm_pm_context") {
-		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
-		write_file($contextFile, $reply);
-		agent_set_context(9527, $reply);
-		llm_clear_history(@LlmProviderId, $tag);
-	}
 	elif ($tag == "llm_pm_align") {
 		$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 		write_file($todoFile, $reply);
@@ -276,11 +269,6 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
 		llm_clear_history(@LlmProviderId, "reflection");
 		nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 500, 0));
-	}
-	elif ($tag == "pattern_recognition") {
-		parse_and_save_pattern_md($reply);
-		llm_clear_history(@LlmProviderId, "pattern_recognition");
-		nativelog("[dsl] Pattern memory saved to MD file, length: {0}", stringlength($reply));
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -550,46 +538,11 @@ script(induction_plan)params()
 	};
 };
 
-script(induction_context)params($count,$queuedCount,$pageType)
-{
-	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
-	// Load recent conversation history from semantic index
-	$marquisHistory = semantic_get_recent(@MarquisHistory, 1);
-	$chiliarchHistory = semantic_get_recent(@ChiliarchHistory, 1);
-	$centurionHistory = semantic_get_recent(@CenturionHistory, 1);
-	$decurionHistory = semantic_get_recent(@DecurionHistory, 5);
-	$conversationHistory = semantic_get_recent(@LegionnaireHistory, $count);
-
-	set_context_var("LastHistoryCount", semantic_count(@LegionnaireHistory), "session");
-
-	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
-	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
-	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
-
-	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
-		"【以下是最近的待办事项】：\n{1}\n" +
-		"【以下是最近项目状态信息】：\n{2}\n" +
-		"【以下是最近对话历史】：\n{3}{4}{5}{6}{7}", $planHistory, $todoHistory, $contextHistory, $marquisHistory, $chiliarchHistory, $centurionHistory, $decurionHistory, $conversationHistory);
-	$prompt = format("{0}\n\n根据以上内容，以PM身份总结更新项目状态，" +
-		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在1500字以内）", $prompt);
-
-	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
-		llm_chat_callback(@LlmProviderId, "llm_pm_context", "context_summary", $prompt);
-	}
-	else {
-		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
-			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $contextFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
-		send_command_to_inject("send_message", to_json({text: $prompt}));
-	};
-};
-
 script(induction_todo)params($count,$queuedCount,$pageType)
 {
 	$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 	// Load recent conversation history from semantic index
-	$conversationHistory = semantic_get_recent(@LegionnaireHistory, $count);
+	$conversationHistory = to_pretty_string(semantic_get_recent(@LegionnaireHistory, $count));
 
 	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
 	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
@@ -618,7 +571,7 @@ script(trigger_reflection)params()
 	nativelog("[dsl] trigger_reflection called");
 
 	// Collect recent conversation history
-	$legionnaireHistory = semantic_get_recent(@LegionnaireHistory, 20);
+	$legionnaireHistory = to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20));
 	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
 	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
@@ -644,74 +597,40 @@ script(trigger_reflection)params()
 	nativelog("[dsl] trigger_reflection: reflection request sent");
 };
 
-script(read_all_pattern_md)params()
+script(SaveContext)params($count,$queuedCount,$pageType)
 {
-	$patternsFile = combine_path(basepath, "docs/memory/patterns.md");
-	if(file_exists($patternsFile)){
-		return(read_file($patternsFile));
+	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
+	// Load recent conversation history from semantic index
+	$marquisHistory = semantic_get_recent_as_list(@MarquisHistory, 1);
+	$chiliarchHistory = semantic_get_recent_as_list(@ChiliarchHistory, 1);
+	$centurionHistory = semantic_get_recent_as_list(@CenturionHistory, 3);
+	$decurionHistory = semantic_get_recent_as_list(@DecurionHistory, 5);
+	$conversationHistory = semantic_get_recent_as_list(@LegionnaireHistory, $count);
+
+	set_context_var("LastHistoryCount", semantic_count(@LegionnaireHistory), "session");
+
+	$context = new_string_builder();
+	looplist($marquisHistory) {
+		$rec = $$;
+		append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
 	};
-	return("");
-};
-
-script(parse_and_save_pattern_md)params($reply)
-{
-	if(trim($reply) == "NO_CHANGE"){
-		nativelog("[dsl] Pattern MD unchanged (NO_CHANGE), skip write");
-		return(0);
+	looplist($chiliarchHistory) {
+		$rec = $$;
+		append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
 	};
-	$memoryDir = combine_path(basepath, "docs/memory");
-	if(!dir_exists($memoryDir)){
-		create_dir($memoryDir);
+	looplist($centurionHistory) {
+		$rec = $$;
+		append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
 	};
-	$patternsFile = combine_path($memoryDir, "patterns.md");
-	$bakFile = combine_path($memoryDir, "patterns.md.bak");
-	if(file_exists($patternsFile)){
-		$oldContent = read_file($patternsFile);
-		write_file($bakFile, $oldContent);
+	looplist($decurionHistory) {
+		$rec = $$;
+		append_format_line($context, "{0} {1}", $rec.Content, $rec.Metadata);
 	};
-	write_file($patternsFile, $reply);
-	nativelog("[dsl] Pattern MD saved to patterns.md ({0} chars)", stringlength($reply));
-	return(1);
-};
+	$contextStr = string_builder_to_string($context);
 
-script(trigger_pattern_recognition)params($recentCount)
-{
-	nativelog("[dsl] trigger_pattern_recognition called");
-
-	// Collect recent episodic memories
-	$episodicMemories = semantic_get_recent(@EpisodicMemory, ($recentCount > 0 ? $recentCount : 20));
-	if(isnullorempty($episodicMemories) || $episodicMemories == "[]"){
-		nativelog("[dsl] trigger_pattern_recognition: no episodic memories, skip");
-		return;
-	};
-
-	// Read existing pattern MD files
-	$existingPatterns = read_all_pattern_md();
-
-	$prompt = format("【情景记忆列表】：\n{0}", $episodicMemories);
-	if(!isnullorempty($existingPatterns)){
-		$prompt = format("{0}\n\n【已有模式记忆（需合并去重）】：\n{1}", $prompt, $existingPatterns);
-	};
-
-	// Set pattern recognition system prompt (line-based format)
-	$sysPrompt = "你维护一份跨项目的模式记忆，记录反复出现的可操作模式。\n" +
-		"输入：最近情景记忆 + 当前模式记忆全文。\n" +
-		"输出规则：\n" +
-		"1. 每行一条，格式：[YYYY-MM-DD] 陈述（不超过80字）\n" +
-		"2. 只记可操作、可复现的具体模式（例：apply_diff遇含花括号代码块失败时改用insert_after）\n" +
-		"3. 禁止记录：抽象口号、一次性事件、心情态度类\n" +
-		"4. 已有模式本轮再次出现则更新日期；过时错误则删除\n" +
-		"5. 总条目不超过50，超过时删最老且不重要的\n" +
-		"6. 只输出完整md内容，不要解释、标题、表格、emoji、编号\n" +
-		"若无新增或变化，仅输出 NO_CHANGE 四字。";
-	llm_set_system_prompt(@LlmProviderId, "pattern_recognition", "pattern_recognition", $sysPrompt);
-
-	// Send pattern recognition request
-	$prompt = format("{0}\n\n请按上述规则输出完整模式md内容。", $prompt);
-	$prompt = getstringinlength($prompt, 100 * 1024, 1);
-	llm_chat_callback(@LlmProviderId, "pattern_recognition", "pattern_recognition", $prompt);
-
-	nativelog("[dsl] trigger_pattern_recognition: pattern recognition request sent");
+	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
+	write_file($contextFile, $contextStr);
+	agent_set_context(9527, $contextStr);
 };
 
 script(SaveHistory)params()
@@ -769,8 +688,13 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	nativelog("[dsl] History length: {0}", $history.Length);
 
 	if ($pageType == "local-agent") {
-		$prompt = $projectPrompt + "\n\n" + $context + "\n\n" + $history + "\n\n" + $todo + "\n\n" + $emphasize;
+		//dynamic system prompts
+		$prompt = $projectPrompt + "\n\n" + $emphasize + "\n\n" + $todo + "\n\n" + $context;
+		if ($isFirst) {
+			$prompt = $prompt + "\n\n" + $history;
+		};
 	} else {
+		//static system prompts
 		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize;
 	};
 	agent_set_system_prompt(9527, $prompt);
@@ -787,11 +711,19 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 
 	send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
 
+	if ($pageType == "local-agent") {
+	} else {
+		$additionalPrompt = format("系统提示词已发起更新，todo与额外上下文如下：\n\n{0}\n\n{1}", $todo, $context);
+		if ($isFirst) {
+			$additionalPrompt = $additionalPrompt + "\n\n" + $history;
+		};
+		send_command_to_inject("send_message", to_json({text: $additionalPrompt}));
+	};
+
 	if (@EnableLlmPM) {
 		$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
 		$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
-		llm_set_system_prompt(@LlmProviderId, "llm_pm_context", $llm_sys_prompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
 	};
 };
@@ -833,7 +765,6 @@ script(handle_agent_notification)params($jsonData)
 
 		if (@EnableLlmPM) {
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
-			llm_clear_history(@LlmProviderId, "llm_pm_context");
 			llm_clear_history(@LlmProviderId, "llm_pm_project");
 		};
 	}
@@ -869,9 +800,6 @@ script(handle_agent_notification)params($jsonData)
 	elif ($type == "llm_context_count_down") {
 		nativelog("[dsl] LLM context count down notification received");
 
-		// Read context file
-		$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
-
 		$data = get_message_param($notif, "data");
 		$pageType = get_message_param($data, "pageType");
 		$queuedCount = get_message_param($data, "queuedCount");
@@ -879,8 +807,8 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] llm_context_count_down pageType: {0}, queuedCount: {1}, count: {2}", $pageType, $queuedCount, $count);
 
-		induction_context($count, $queuedCount, $pageType);
 		trigger_reflection();
+		SaveContext($count, $queuedCount, $pageType);
 	}
 	elif ($type == "llm_align_target") {
 		nativelog("[dsl] LLM align target notification received");
@@ -950,13 +878,15 @@ script(handle_agent_notification)params($jsonData)
 		// Check episodic memory count and trigger pattern recognition
 		$episodicCount = semantic_count(@EpisodicMemory);
 		$lastPatternEpisodicCount = get_context_var("LastPatternEpisodicCount", "session");
-		if (isnull($lastPatternEpisodicCount)) {
-			$lastPatternEpisodicCount = 0;
+		if (isnull($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
+			$lastPatternEpisodicCount = $episodicCount;
+			set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
 		};
 		if ($episodicCount - $lastPatternEpisodicCount >= 30) {
 			set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
 			nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
-			trigger_pattern_recognition(30);
+			$prompt = "最近反思记录已超过30条，可以考虑基于反思数据总结新模式了。";
+			send_command_to_inject("send_message", to_json({text: $prompt}));
 		};
 		if (agent_is_context_injection_enabled(9527) && agent_add_cur_context_rounds(9527) == 0) {
 			$prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", agent_get_history(9527), agent_get_todo(9527), agent_get_context(9527));

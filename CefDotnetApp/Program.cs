@@ -3129,7 +3129,7 @@ namespace DotNetLib
         }
         internal static void AddCommonApiDocs()
         {
-            BatchCommand.BatchScript.AddUserApiDoc("clone", "clone(list_or_dict) api");
+            BatchCommand.BatchScript.AddUserApiDoc("clone", "clone(list_or_hashtable) api");
             BatchCommand.BatchScript.AddUserApiDoc("args", "args() api");
             BatchCommand.BatchScript.AddUserApiDoc("arg", "arg(ix) api");
             BatchCommand.BatchScript.AddUserApiDoc("argnum", "argnum() api");

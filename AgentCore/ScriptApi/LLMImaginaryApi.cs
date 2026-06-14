@@ -226,7 +226,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: length(str_or_list_or_dict), aliased as len|size|count");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: length(str_or_list_or_hashtable), aliased as len|size|count");
                 return (BoxedValue)(-1);
             }
 

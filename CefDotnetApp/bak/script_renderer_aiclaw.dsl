@@ -156,11 +156,10 @@ script(on_call_metadsl)params($func,$args)
 	nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
-// Return system prompt text loaded from docs/system_prompt.txt (zero-arg, sync)
 script(get_system_prompt)params()
 {
-	$mergePrompt = read_file("d:/AiClaw/docs/merge_prompt.txt");
-	return(format("{0}",$mergePrompt));
+	$arenaPrompt = read_file("d:/AiClaw/docs/arena_prompt.txt");
+	return(format("{0}",$arenaPrompt));
 };
 
 // Handle nativelog batch

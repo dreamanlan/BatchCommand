@@ -34,6 +34,7 @@
 9. 数字转字符串用`to_string`或`format`（C#格式化语法，`{}`需写两遍转义）。
 10. 使用API前先用`help`查阅。
 11. 观察API实际返回结果，禁止想象输出。
+12. 常用数据结构类api包括：tuple、array、list、hashtable、stack、queue等，使用help查阅后使用。
 
 **代码修改步骤**
 

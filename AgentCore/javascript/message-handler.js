@@ -11,7 +11,7 @@ class MessageHandler {
         this.messages = [];
         this.dialogPrompt = ''; // Dialog prompt that will be sent as first message
         this.config = {
-            contextRounds: 16, // Number of conversation rounds to include in auto context
+            contextRounds: 6, // Number of conversation rounds to include in auto context
             maxContextChars: 128 * 1024, // Maximum characters for auto context (128KB)
             maxHistoryMessages: 64 // Maximum messages to keep in memory and localStorage
         };
@@ -145,7 +145,7 @@ class MessageHandler {
         // Add conversation messages
         contextMessages.push(...messages);
 
-        if (msgLogger) msgLogger.debug('Context built:', { 
+        if (msgLogger) msgLogger.debug('Context built:', {
             messageCount: contextMessages.length,
             limit: limit
         });

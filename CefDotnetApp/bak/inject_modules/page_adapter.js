@@ -525,14 +525,14 @@ class LLMPageAdapter extends PageAdapter {
       // Get text from .message-content to avoid including timestamps
       const content = msg.querySelector('.message-content');
       if (content) {
-       try {
-        const md = this._domToMarkdown(content);
-        if (md && md.trim()) return md.trim();
-       } catch (e) {
-        this.logger && this.logger.warn && this.logger.warn('[domToMarkdown] failed, fallback to textContent', { error: e.toString() });
-       }
-       const text = content.textContent.trim();
-       if (text) return text;
+        try {
+          const md = this._domToMarkdown(content);
+          if (md && md.trim()) return md.trim();
+        } catch (e) {
+          this.logger && this.logger.warn && this.logger.warn('[domToMarkdown] failed, fallback to textContent', { error: e.toString() });
+        }
+        const text = content.textContent.trim();
+        if (text) return text;
       }
     }
     return null;

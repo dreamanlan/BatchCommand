@@ -87,7 +87,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 		$cmdLine.AppendSwitch("disable-web-security");
 		$cmdLine.AppendSwitch("allow-file-access-from-files");
 	}
-	elif (stringcontainsany($url, "https://evaluation.woa.com/chat")) {
+	elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://ai.woa.com/#/chat", "https://www.google.com")) {
 		$cmdLine.AppendSwitch("disable-web-security");
 	};
 	//$cmdLine.AppendSwitch("disable-web-security");
@@ -115,8 +115,8 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 {
 	nativelog("[dsl] on_renderer_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
 	if (($isMainFrame == "True" || $isMainFrame == true)) {
-		if (string_contains_any($url, "http://localhost:8082/index.html")) {
-			// redirect to hyarena dsl
+		if (string_contains_any($url, "http://localhost:8082/index.html", "https://www.google.com/ai", "https://www.google.com/search")) {
+			// redirect to aiclaw dsl
 			setdslfile("Script_renderer_aiclaw.dsl");
 		};
 	};
@@ -165,6 +165,14 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		$code = string_builder_to_string($sb);
 		nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
 		return((true, $code));
+	}
+	elif (string_contains_any($url, "https://ai.woa.com/#/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
+		$base = combine_path(basepath, "managed/inject_modules/");
+		$sb = new_string_builder();
+		append_line($sb, read_file(combine_path($base, "venus_llm.js")));
+		$code = string_builder_to_string($sb);
+		nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+		return((true, $code));
 	};
 	return((false, ""));
 };
@@ -204,9 +212,14 @@ script(on_call_metadsl)params($func,$args)
 	nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
-script(get_system_prompt)params()
+script(get_arena_system_prompt)params()
 {
 	$mergePrompt = read_file("d:/AiClaw/docs/arena_prompt.txt");
+	return(format("{0}",$mergePrompt));
+};
+script(get_venus_system_prompt)params()
+{
+	$mergePrompt = read_file("d:/AiClaw/docs/venus_prompt.txt");
 	return(format("{0}",$mergePrompt));
 };
 
@@ -687,15 +700,14 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	nativelog("[dsl] Todo length: {0}", $todo.Length);
 	nativelog("[dsl] History length: {0}", $history.Length);
 
+	//now we use dynamic system prompts
 	if ($pageType == "local-agent") {
-		//dynamic system prompts
 		$prompt = $projectPrompt + "\n\n" + $emphasize + "\n\n" + $todo + "\n\n" + $context;
 		if ($isFirst) {
 			$prompt = $prompt + "\n\n" + $history;
 		};
 	} else {
-		//static system prompts
-		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize;
+		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize + "\n\n" + $todo + "\n\n" + $context + "\n\n" + $history;
 	};
 	agent_set_system_prompt(9527, $prompt);
 	agent_set_project_prompt(9527, $projectPrompt);
@@ -710,15 +722,6 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	};
 
 	send_command_to_inject("update_system_prompt", to_json({prompt: $prompt}));
-
-	if ($pageType == "local-agent") {
-	} else {
-		$additionalPrompt = format("系统提示词已发起更新，todo与额外上下文如下：\n\n{0}\n\n{1}", $todo, $context);
-		if ($isFirst) {
-			$additionalPrompt = $additionalPrompt + "\n\n" + $history;
-		};
-		send_command_to_inject("send_message", to_json({text: $additionalPrompt}));
-	};
 
 	if (@EnableLlmPM) {
 		$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
@@ -748,13 +751,13 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] Agent initialized on page type: {0}, url: {1}", $pageType, $url);
 
-		set_max_result_size(50*1024);
+		agent_set_max_result_size(9527, 50*1024);
 
 		if ($pageType == "local-agent") {
 			agent_enable_context_injection(9527, false);
 		}
 		else {
-			agent_enable_context_injection(9527, true);
+			agent_enable_context_injection(9527, false);
 		};
 		// Agent is initialized and ready to receive commands
 		// You can send initial commands here
@@ -785,6 +788,24 @@ script(handle_agent_notification)params($jsonData)
 		send_command_to_inject("ws_start", to_json({port: 9528}));
 
 		nativelog("[dsl] Hyarena bridge WS server started on 9528");
+	}
+	elif ($type == "venus_ready") {
+		nativelog("[dsl] Venus ready notification: {0}", getstringinlength($jsonData,100));
+
+		$data = get_message_param($notif, "data");
+		$url = get_message_param($data, "url");
+		nativelog("[dsl] Hyarena initialized, url: {0}", $url);
+
+		agent_enable_context_injection(9529, false);
+		agent_set_project_dir(9529, "d:/AiClaw");
+		agent_set_project_identity(9529, "venus");
+		// Start WebSocket server on port 9529 for venus bridge communication
+		ws_start_server(9529);
+
+		// Notify JS to connect multi-slot WS to port 9529
+		send_command_to_inject("ws_start", to_json({port: 9529}));
+
+		nativelog("[dsl] Hyarena bridge WS server started on 9529");
 	}
 	elif ($type == "llm_update_system_prompt") {
 		nativelog("[dsl] LLM update system prompt notification received");

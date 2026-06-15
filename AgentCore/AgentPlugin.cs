@@ -98,11 +98,6 @@ namespace CefDotnetApp.AgentCore
             return Core.AgentCore.Instance.SemanticSearch(queries, candidates, topN);
         }
 
-        public int GetMaxResultSize()
-        {
-            return Core.AgentCore.Instance.MaxResultSize;
-        }
-
         public string RefreshSkills()
         {
             var skillsDir = System.IO.Path.Combine(_basePath, "skills");

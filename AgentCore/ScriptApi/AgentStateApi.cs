@@ -332,29 +332,35 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// set_max_result_size(value) - global setting
+    /// agent_set_max_result_size(port, value) - global setting
     /// </summary>
-    sealed class SetMaxResultSizeExp : SimpleExpressionBase
+    sealed class AgentSetMaxResultSizeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("set_max_result_size requires (value)");
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_max_result_size requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
-            CefDotnetApp.AgentCore.Core.AgentCore.Instance.MaxResultSize = operands[0].GetInt();
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            inst.MaxResultSize = operands[1].GetInt();
             return BoxedValue.FromString("ok");
         }
     }
 
     /// <summary>
-    /// get_max_result_size() - global setting
+    /// agent_get_max_result_size(port) - global setting
     /// </summary>
-    sealed class GetMaxResultSizeExp : SimpleExpressionBase
+    sealed class AgentGetMaxResultSizeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            return BoxedValue.From(CefDotnetApp.AgentCore.Core.AgentCore.Instance.MaxResultSize);
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_max_result_size requires (port)");
+                return BoxedValue.From(0);
+            }
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            return BoxedValue.From(inst.MaxResultSize);
         }
     }
 
@@ -789,6 +795,14 @@ namespace AgentCore.ScriptApi
                 "agent_get_max_worker_concurrency(port) - get max concurrent MetaDSL worker tasks",
                 false,
                 new ExpressionFactoryHelper<AgentGetMaxWorkerConcurrencyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_max_result_size",
+                "agent_set_max_result_size(port, value) - set the MaxResultSize (0=unlimited)",
+                false,
+                new ExpressionFactoryHelper<AgentSetMaxResultSizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_max_result_size",
+                "agent_get_max_result_size(port) - get the MaxResultSize",
+                false,
+                new ExpressionFactoryHelper<AgentGetMaxResultSizeExp>());
 
             // Global APIs (no agent_ prefix, no port parameter)
             AgentFrameworkService.Instance.DslEngine!.Register("set_max_lines_deleted_by_write_file",
@@ -799,14 +813,6 @@ namespace AgentCore.ScriptApi
                 "get_max_lines_deleted_by_write_file() - get the MaxLinesDeletedByWriteFile",
                 false,
                 new ExpressionFactoryHelper<GetMaxLinesDeletedByWriteFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("set_max_result_size",
-                "set_max_result_size(value) - set the MaxResultSize (0=unlimited)",
-                false,
-                new ExpressionFactoryHelper<SetMaxResultSizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("get_max_result_size",
-                "get_max_result_size() - get the MaxResultSize",
-                false,
-                new ExpressionFactoryHelper<GetMaxResultSizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_agent_environment",
                 "set_agent_environment(category, group, key, value) - set agent environment value (three-level dict)",
                 new ExpressionFactoryHelper<SetAgentEnvironmentExp>());

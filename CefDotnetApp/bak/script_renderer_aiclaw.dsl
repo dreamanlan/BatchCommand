@@ -8,8 +8,8 @@ script(init_global_consts)
 	@LlmProviderId = "auto_metadsl";
 
 	if (processtype == 1) {
-		@ProjectIdentity = agent_get_project_identity(9527);
-		@ProjectDirectory = agent_get_project_dir(9527);
+		@ProjectIdentity = agent_get_project_identity(9530);
+		@ProjectDirectory = agent_get_project_dir(9530);
 		if (!isnullorempty(@ProjectIdentity)) {
 			@MarquisHistory = @ProjectIdentity + "_marquis_history";
 			@ChiliarchHistory = @ProjectIdentity + "_chiliarch_history";
@@ -87,7 +87,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 		$cmdLine.AppendSwitch("disable-web-security");
 		$cmdLine.AppendSwitch("allow-file-access-from-files");
 	}
-	elif (stringcontainsany($url, "https://evaluation.woa.com/chat")) {
+	elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com")) {
 		$cmdLine.AppendSwitch("disable-web-security");
 	};
 	//$cmdLine.AppendSwitch("disable-web-security");
@@ -118,6 +118,15 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 {
 	nativelog("[dsl] on_renderer_load_end:{0} {1} {2}", $url, $httpStatusCode, $isMainFrame);
+	if (string_contains_any($url, "https://www.google.com/ai", "https://www.google.com/search") && ($isMainFrame == "True" || $isMainFrame == true)) {
+		$base = combine_path(basepath, "managed/inject_modules/");
+		$sb = new_string_builder();
+		append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
+		$code = string_builder_to_string($sb);
+		nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+		agent_set_max_result_size(9530, 7168);
+		return((true, $code));
+	};
 	return((false, ""));
 };
 script(on_renderer_loading_state_change)params($url,$isLoading,$canGoBack,$canGoForward)
@@ -156,10 +165,30 @@ script(on_call_metadsl)params($func,$args)
 	nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
-script(get_system_prompt)params()
+script(get_arena_system_prompt)params()
 {
 	$arenaPrompt = read_file("d:/AiClaw/docs/arena_prompt.txt");
 	return(format("{0}",$arenaPrompt));
+};
+script(get_venus_system_prompt)params()
+{
+	$mergePrompt = read_file("d:/AiClaw/docs/venus_prompt.txt");
+	return(format("{0}",$mergePrompt));
+};
+script(get_system_prompt_1)params()
+{
+	$googlePrompt = read_file("d:/AiClaw/docs/google_prompt_1.txt");
+	return(format("{0}",$googlePrompt));
+};
+script(get_system_prompt_2)params()
+{
+	$googlePrompt = read_file("d:/AiClaw/docs/google_prompt_2.txt");
+	return(format("{0}",$googlePrompt));
+};
+script(get_system_prompt_3)params()
+{
+	$googlePrompt = read_file("d:/AiClaw/docs/google_prompt_3.txt");
+	return(format("{0}",$googlePrompt));
 };
 
 // Handle nativelog batch
@@ -356,22 +385,22 @@ script(handle_agent_notification)params($jsonData)
 	nativelog("[dsl] Notification type: {0}", $type);
 
 	if ($type == "aiclaw_ready") {
-		nativelog("[dsl] Hyarena ready notification: {0}", getstringinlength($jsonData,100));
+		nativelog("[dsl] AiClaw ready notification: {0}", getstringinlength($jsonData,100));
 
 		$data = get_message_param($notif, "data");
 		$url = get_message_param($data, "url");
-		nativelog("[dsl] Hyarena initialized, url: {0}", $url);
+		nativelog("[dsl] AiClaw initialized, url: {0}", $url);
 
-		agent_enable_context_injection(9529, false);
-		agent_set_project_dir(9529, "d:/AiClaw");
-		agent_set_project_identity(9529, "aiclaw");
-		// Start WebSocket server on port 9529 for aiclaw bridge communication
-		ws_start_server(9529);
+		agent_enable_context_injection(9530, false);
+		agent_set_project_dir(9530, "d:/AiClaw");
+		agent_set_project_identity(9530, "aiclaw");
+		// Start WebSocket server on port 9530 for aiclaw bridge communication
+		ws_start_server(9530);
 
-		// Notify JS to connect multi-slot WS to port 9529
-		send_command_to_inject("ws_start", to_json({port: 9529}));
+		// Notify JS to connect multi-slot WS to port 9530
+		send_command_to_inject("ws_start", to_json({port: 9530}));
 
-		nativelog("[dsl] Hyarena bridge WS server started on 9529");
+		nativelog("[dsl] AiClaw bridge WS server started on 9530");
 	}
 	else {
 		nativelog("[dsl] Unknown notification type: {0}", $type);

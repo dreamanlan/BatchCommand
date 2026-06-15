@@ -344,7 +344,7 @@ namespace CefDotnetApp.AgentCore.Core
                                 // Clearing the User Context Rounds when using MetaDSL code
                                 if (inst != null) inst.CurContextRounds = 0;
 
-                                string result = ExecuteMetaDSLInWorker(msg.message, appendContext);
+                                string result = ExecuteMetaDSLInWorker(msg.message, appendContext, inst);
                                 if (!string.IsNullOrEmpty(result))
                                 {
                                     AgentCore.Instance.Logger.Info($"Sending result (length: {result.Length}) to originator client, appendContext={appendContext}");
@@ -391,11 +391,11 @@ namespace CefDotnetApp.AgentCore.Core
         /// Executes MetaDSL code in worker thread (called by Tick thread)
         /// This is where the agent logic processes incoming messages
         /// </summary>
-        private string ExecuteMetaDSLInWorker(string message, bool appendContext)
+        private string ExecuteMetaDSLInWorker(string message, bool appendContext, AgentInstance? inst)
         {
             try {
                 AgentCore.Instance.Logger.Debug($"Executing MetaDSL: {message}");
-                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message, out var hasError);
+                string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message, (null != inst ? inst.MaxResultSize : 0), out var hasError);
                 AgentCore.Instance.Logger.Debug($"MetaDSL execution completed, result length: {(result?.Length ?? 0)}");
                 var sb = new StringBuilder();
                 sb.AppendLine("MetaDSL {:");
@@ -426,7 +426,6 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 if (appendContext) {
-                    var inst = AgentCore.Instance.GetInstance(_port);
                     if (inst != null) {
                         if (!string.IsNullOrEmpty(inst.ToDo)) {
                             sb.AppendLine();

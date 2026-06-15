@@ -552,13 +552,13 @@
     }
     let text = '';
     try {
-      text = callMetaDSL('get_system_prompt', '');
+      text = callMetaDSL('get_arena_system_prompt', '');
     } catch (e) {
-      err('[prompt] call get_system_prompt failed', e);
+      err('[prompt] call get_arena_system_prompt failed', e);
       return;
     }
     if (!text || typeof text !== 'string') {
-      warn('[prompt] get_system_prompt returned empty, skip');
+      warn('[prompt] get_arena_system_prompt returned empty, skip');
       return;
     }
     log(`[prompt] send (${text.length} chars)`);
@@ -833,7 +833,7 @@
     btn.click();
   }
 
-  /* =========================================== 
+  /* ===========================================
      Section 5  Chat Input (React controlled)
      =========================================== */
   function setReactValue(el, val) {
@@ -1429,13 +1429,13 @@
     }
     let text = '';
     try {
-      text = callMetaDSL('get_system_prompt', '');
+      text = callMetaDSL('get_arena_system_prompt', '');
     } catch (e) {
-      err('call get_system_prompt failed', e);
+      err('call get_arena_system_prompt failed', e);
       return;
     }
     if (!text || typeof text !== 'string') {
-      warn('get_system_prompt returned empty');
+      warn('get_arena_system_prompt returned empty');
       return;
     }
     log(`[prompt] loaded (${text.length} chars)`);

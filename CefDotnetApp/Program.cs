@@ -35,6 +35,7 @@ public struct HostApi
     public IntPtr SendJavascriptCode;
     public IntPtr SendJavascriptCall;
     public IntPtr CallJavascriptFuncInRenderer;
+    public IntPtr ExecuteJavascriptInRenderer;
     public IntPtr FreeNativeString;
     public IntPtr CommandLineHasSwitch;
     public IntPtr CommandLineGetSwitchValue;
@@ -120,6 +121,8 @@ public delegate bool HostSendJavascriptCodeDelegation([MarshalAs(UnmanagedType.L
 public delegate bool HostSendJavascriptCallDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostCallJavascriptFuncInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostExecuteJavascriptInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostFreeNativeStringDelegation(IntPtr str);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -349,10 +352,10 @@ namespace DotNetLib
             bool hasError;
             string res;
             if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
-                res = Lib.ExecuteMetaDslScript(dslCode, out hasError);
+                res = Lib.ExecuteMetaDslScript(dslCode, 0, out hasError);
             }
             else {
-                res = CefDotnetAppApi.ExecuteMetaDslScript(dslCode, out hasError);
+                res = CefDotnetAppApi.ExecuteMetaDslScript(dslCode, 0, out hasError);
             }
             return BoxedValue.From(Tuple.Create(BoxedValue.FromBool(hasError), BoxedValue.FromString(res)));
         }
@@ -686,6 +689,7 @@ namespace DotNetLib
             m_SendJavascriptCodeApi = Marshal.GetDelegateForFunctionPointer<HostSendJavascriptCodeDelegation>(hostApi.SendJavascriptCode);
             m_SendJavascriptCallApi = Marshal.GetDelegateForFunctionPointer<HostSendJavascriptCallDelegation>(hostApi.SendJavascriptCall);
             m_CallJavascriptFuncInRendererApi = Marshal.GetDelegateForFunctionPointer<HostCallJavascriptFuncInRendererDelegation>(hostApi.CallJavascriptFuncInRenderer);
+            m_ExecuteJavascriptInRendererApi = Marshal.GetDelegateForFunctionPointer<HostExecuteJavascriptInRendererDelegation>(hostApi.ExecuteJavascriptInRenderer);
             m_FreeNativeStringApi = Marshal.GetDelegateForFunctionPointer<HostFreeNativeStringDelegation>(hostApi.FreeNativeString);
             m_CommandLineHasSwitchApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineHasSwitchDelegation>(hostApi.CommandLineHasSwitch);
             m_CommandLineGetSwitchValueApi = Marshal.GetDelegateForFunctionPointer<HostCommandLineGetSwitchValueDelegation>(hostApi.CommandLineGetSwitchValue);
@@ -920,6 +924,26 @@ namespace DotNetLib
             }
             return CallJavascriptFuncInRenderer(func, strArgs);
         }
+        public string ExecuteJavascriptInRenderer(string code)
+        {
+            if (m_ExecuteJavascriptInRendererApi == null) {
+                return "";
+            }
+            IntPtr resultPtr = m_ExecuteJavascriptInRendererApi.Invoke(code, Browser, Frame);
+            if (resultPtr == IntPtr.Zero) {
+                return "";
+            }
+            try {
+                string result = Marshal.PtrToStringUTF8(resultPtr) ?? "";
+                return result;
+            }
+            finally {
+                // Free the native string
+                if (m_FreeNativeStringApi != null) {
+                    m_FreeNativeStringApi.Invoke(resultPtr);
+                }
+            }
+        }
 
         public void ClearApiErrorInfoForDSL()
         {
@@ -1095,7 +1119,7 @@ namespace DotNetLib
         // IDslEngine explicit interface implementation (delegates to static methods)
         string IDslEngine.LoadDslFunc(string func, string code, IList<string> paramNames, bool update) => LoadDslFunc(func, code, paramNames, update);
         string IDslEngine.CallDslFunc(string func, List<string> args) => CallDslFunc(func, args);
-        string IDslEngine.ExecuteMetaDslScript(string script, out bool hasError) => CefDotnetAppApi.ExecuteMetaDslScript(script, out hasError);
+        string IDslEngine.ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError) => CefDotnetAppApi.ExecuteMetaDslScript(script, maxResultSize, out hasError);
         void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
         void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
 
@@ -1579,6 +1603,7 @@ namespace DotNetLib
         private HostSendJavascriptCodeDelegation? m_SendJavascriptCodeApi;
         private HostSendJavascriptCallDelegation? m_SendJavascriptCallApi;
         private HostCallJavascriptFuncInRendererDelegation? m_CallJavascriptFuncInRendererApi;
+        private HostExecuteJavascriptInRendererDelegation? m_ExecuteJavascriptInRendererApi;
         private HostFreeNativeStringDelegation? m_FreeNativeStringApi;
         private HostCommandLineHasSwitchDelegation? m_CommandLineHasSwitchApi;
         private HostCommandLineGetSwitchValueDelegation? m_CommandLineGetSwitchValueApi;
@@ -3227,10 +3252,9 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("os", "os()");
             BatchCommand.BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
         }
-        internal static string GetMetaDslResult(StringBuilder resSb, StringBuilder errSb)
+        internal static string GetMetaDslResult(int maxResultSize, StringBuilder resSb, StringBuilder errSb)
         {
             var sb = new StringBuilder();
-            int maxResultSize = Lib.AgentPlugin?.GetMaxResultSize() ?? 0;
             if (maxResultSize > 0) {
                 if (resSb.Length > maxResultSize) {
                     if (errSb.Length > maxResultSize * 1 / 3) {
@@ -3327,9 +3351,9 @@ namespace DotNetLib
         // Execute MetaDSL script
         private static string ExecuteMetaDslScript(string script)
         {
-            return ExecuteMetaDslScript(script, out var hasError);
+            return ExecuteMetaDslScript(script, 0, out var hasError);
         }
-        internal static string ExecuteMetaDslScript(string script, out bool hasError)
+        internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
         {
             try {
                 hasError = false;
@@ -3363,7 +3387,7 @@ namespace DotNetLib
                     errSb.AppendLine();
                     errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
                 }
-                return GetMetaDslResult(resSb, errSb);
+                return GetMetaDslResult(maxResultSize, resSb, errSb);
             }
             catch (Exception ex) {
                 hasError = true;
@@ -3455,7 +3479,7 @@ namespace DotNetLib
     internal static class CefDotnetAppApi
     {
         // Execute MetaDSL script
-        internal static string ExecuteMetaDslScript(string script, out bool hasError)
+        internal static string ExecuteMetaDslScript(string script, int maxResultSize, out bool hasError)
         {
             try {
                 hasError = false;
@@ -3490,7 +3514,7 @@ namespace DotNetLib
                     errSb.AppendLine();
                     errSb.AppendLine(BatchCommand.BatchScript.GetDslErrors());
                 }
-                return Lib.GetMetaDslResult(resSb, errSb);
+                return Lib.GetMetaDslResult(maxResultSize, resSb, errSb);
             }
             catch (Exception ex) {
                 hasError = true;

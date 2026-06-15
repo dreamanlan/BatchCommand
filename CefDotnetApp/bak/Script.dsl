@@ -58,7 +58,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 		$cmdLine.AppendSwitch("disable-web-security");
 		$cmdLine.AppendSwitch("allow-file-access-from-files");
 	}
-	elif (stringcontainsany($url, "https://evaluation.woa.com/chat")) {
+	elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com")) {
 		$cmdLine.AppendSwitch("disable-web-security");
 	};
 	//$cmdLine.AppendSwitch("disable-web-security");

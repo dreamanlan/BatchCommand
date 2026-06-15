@@ -41,11 +41,6 @@ namespace AgentPlugin.Abstractions
         IList<(string key, string text, float score)>? SemanticSearch(IList<string> queries, IEnumerable<(string key, string text)> candidates, int topN);
 
         /// <summary>
-        /// Get the MaxResultSize setting (0=unlimited)
-        /// </summary>
-        int GetMaxResultSize();
-
-        /// <summary>
         /// Shutdown the agent
         /// </summary>
         void Shutdown();

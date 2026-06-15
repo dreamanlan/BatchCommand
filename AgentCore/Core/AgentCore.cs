@@ -91,7 +91,6 @@ namespace CefDotnetApp.AgentCore.Core
 
         // Global settings (not per-instance)
         public int MaxLinesDeletedByWriteFile { get; set; } = 20;
-        public int MaxResultSize { get; set; } = 0;
 
         // Agent instances keyed by port number
         private readonly ConcurrentDictionary<int, AgentInstance> _agentInstances = new();

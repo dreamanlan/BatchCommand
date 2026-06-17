@@ -11,7 +11,7 @@ using CefDotnetApp.AgentCore.Models;
 namespace AgentCore.CodeAnalysis
 {
     // Unified code analysis API (language-agnostic)
-    public class UnifiedCodeAnalysisApi
+    public partial class UnifiedCodeAnalysisApi
     {
         private readonly Dictionary<ProgrammingLanguage, ICodeParser> _parsers;
         private readonly ParseCache _cache;
@@ -35,10 +35,8 @@ namespace AgentCore.CodeAnalysis
 
             public bool TryGetFile(string filePath, DateTime lastModified, out CacheEntry? entry)
             {
-                if (_fileCache.TryGetValue(filePath, out entry))
-                {
-                    if (entry.LastModified == lastModified)
-                    {
+                if (_fileCache.TryGetValue(filePath, out entry)) {
+                    if (entry.LastModified == lastModified) {
                         return true;
                     }
                     // File modified, remove old cache
@@ -50,8 +48,7 @@ namespace AgentCore.CodeAnalysis
 
             public void SetFile(string filePath, DateTime lastModified, ParsedCodeFile parsedFile, bool hasErrors, List<string> errors)
             {
-                _fileCache[filePath] = new CacheEntry
-                {
+                _fileCache[filePath] = new CacheEntry {
                     ParsedFile = parsedFile,
                     LastModified = lastModified,
                     HasSyntaxErrors = hasErrors,
@@ -67,15 +64,13 @@ namespace AgentCore.CodeAnalysis
             public void SetCode(string codeHash, ParsedCodeFile parsedFile, bool hasErrors, List<string> errors)
             {
                 // Limit cache size
-                if (_codeCache.Count >= MaxCodeCacheSize)
-                {
+                if (_codeCache.Count >= MaxCodeCacheSize) {
                     // Remove oldest entry (simple FIFO)
                     var firstKey = _codeCache.Keys.First();
                     _codeCache.Remove(firstKey);
                 }
 
-                _codeCache[codeHash] = new CacheEntry
-                {
+                _codeCache[codeHash] = new CacheEntry {
                     ParsedFile = parsedFile,
                     CodeHash = codeHash,
                     HasSyntaxErrors = hasErrors,
@@ -93,8 +88,7 @@ namespace AgentCore.CodeAnalysis
         // Compute hash for code string
         private static string ComputeCodeHash(string code)
         {
-            using (var sha256 = System.Security.Cryptography.SHA256.Create())
-            {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create()) {
                 byte[] bytes = System.Text.Encoding.UTF8.GetBytes(code);
                 byte[] hash = sha256.ComputeHash(bytes);
                 return Convert.ToBase64String(hash);
@@ -124,8 +118,7 @@ namespace AgentCore.CodeAnalysis
         // Check if parsed file has syntax errors and return error message if any
         private static string? CheckParsedFileSyntaxErrors(ParsedCodeFile parsed)
         {
-            if (parsed.HasSyntaxErrors && parsed.SyntaxErrors != null && parsed.SyntaxErrors.Count > 0)
-            {
+            if (parsed.HasSyntaxErrors && parsed.SyntaxErrors != null && parsed.SyntaxErrors.Count > 0) {
                 return $"Syntax errors found:\n{string.Join("\n", parsed.SyntaxErrors)}";
             }
             return null;
@@ -236,16 +229,12 @@ namespace AgentCore.CodeAnalysis
             _parsers[ProgrammingLanguage.JavaScript] = new JintCodeParser();
 
             // Register GenericTreeSitterParser for all languages with profiles
-            foreach (var kvp in LanguageProfile.Profiles)
-            {
-                if (!_parsers.ContainsKey(kvp.Key))
-                {
-                    try
-                    {
+            foreach (var kvp in LanguageProfile.Profiles) {
+                if (!_parsers.ContainsKey(kvp.Key)) {
+                    try {
                         _parsers[kvp.Key] = new GenericTreeSitterParser(kvp.Value);
                     }
-                    catch (Exception ex)
-                    {
+                    catch (Exception ex) {
                         System.Diagnostics.Debug.WriteLine(
                             $"[CodeAnalysis] Warning: Failed to load parser for {kvp.Key}: {ex.Message}");
                     }
@@ -261,15 +250,13 @@ namespace AgentCore.CodeAnalysis
 
         public ParsedCodeFile ParseFile(string filePath, ProgrammingLanguage language)
         {
-            if (!File.Exists(filePath))
-            {
+            if (!File.Exists(filePath)) {
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
 
             // Check cache first (for all languages)
             var lastModified = File.GetLastWriteTime(filePath);
-            if (_cache.TryGetFile(filePath, lastModified, out var cacheEntry))
-            {
+            if (_cache.TryGetFile(filePath, lastModified, out var cacheEntry)) {
                 return cacheEntry!.ParsedFile;
             }
 
@@ -277,8 +264,7 @@ namespace AgentCore.CodeAnalysis
             bool hasErrors = false;
             List<string> errors = new List<string>();
 
-            if (language == ProgrammingLanguage.CSharp)
-            {
+            if (language == ProgrammingLanguage.CSharp) {
                 result = ParseCSharpFile(filePath);
 
                 // Check for syntax errors
@@ -291,15 +277,13 @@ namespace AgentCore.CodeAnalysis
                 result.HasSyntaxErrors = hasErrors;
                 result.SyntaxErrors = errors;
             }
-            else if (_parsers.TryGetValue(language, out var parser))
-            {
+            else if (_parsers.TryGetValue(language, out var parser)) {
                 result = parser.Parse(filePath);
                 // For other languages, check if result has syntax errors
                 hasErrors = result.HasSyntaxErrors;
                 errors = result.SyntaxErrors ?? new List<string>();
             }
-            else
-            {
+            else {
                 throw new NotSupportedException($"Language {language} is not supported");
             }
 
@@ -313,8 +297,7 @@ namespace AgentCore.CodeAnalysis
         {
             // Check cache first (for all languages)
             var cacheKey = GenerateCodeCacheKey(code);
-            if (_cache.TryGetCode(cacheKey, out var cacheEntry))
-            {
+            if (_cache.TryGetCode(cacheKey, out var cacheEntry)) {
                 return cacheEntry!.ParsedFile;
             }
 
@@ -322,8 +305,7 @@ namespace AgentCore.CodeAnalysis
             bool hasErrors = false;
             List<string> errors = new List<string>();
 
-            if (language == ProgrammingLanguage.CSharp)
-            {
+            if (language == ProgrammingLanguage.CSharp) {
                 result = ParseCSharpText(code, filePath);
 
                 // Check for syntax errors
@@ -336,15 +318,13 @@ namespace AgentCore.CodeAnalysis
                 result.HasSyntaxErrors = hasErrors;
                 result.SyntaxErrors = errors;
             }
-            else if (_parsers.TryGetValue(language, out var parser))
-            {
+            else if (_parsers.TryGetValue(language, out var parser)) {
                 result = parser.ParseText(code, filePath);
                 // For other languages, check if result has syntax errors
                 hasErrors = result.HasSyntaxErrors;
                 errors = result.SyntaxErrors ?? new List<string>();
             }
-            else
-            {
+            else {
                 throw new NotSupportedException($"Language {language} is not supported");
             }
 
@@ -356,13 +336,11 @@ namespace AgentCore.CodeAnalysis
 
         public List<FunctionInfo> FindFunctions(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
-            if (parsed.Language == ProgrammingLanguage.CSharp)
-            {
+            if (parsed.Language == ProgrammingLanguage.CSharp) {
                 return FindCSharpFunctions(parsed, namePattern, ignoreCase);
             }
 
-            if (_parsers.TryGetValue(parsed.Language, out var parser))
-            {
+            if (_parsers.TryGetValue(parsed.Language, out var parser)) {
                 return parser.FindFunctions(parsed, namePattern, ignoreCase);
             }
 
@@ -371,13 +349,11 @@ namespace AgentCore.CodeAnalysis
 
         public List<TypeInfo> FindTypes(ParsedCodeFile parsed, string? namePattern = null, bool ignoreCase = true)
         {
-            if (parsed.Language == ProgrammingLanguage.CSharp)
-            {
+            if (parsed.Language == ProgrammingLanguage.CSharp) {
                 return FindCSharpTypes(parsed, namePattern, ignoreCase);
             }
 
-            if (_parsers.TryGetValue(parsed.Language, out var parser))
-            {
+            if (_parsers.TryGetValue(parsed.Language, out var parser)) {
                 return parser.FindTypes(parsed, namePattern, ignoreCase);
             }
 
@@ -386,42 +362,31 @@ namespace AgentCore.CodeAnalysis
 
         public FunctionInfo? FindFunction(ParsedCodeFile parsed, string functionName, bool ignoreCase = true)
         {
-            if (parsed.Language == ProgrammingLanguage.CSharp)
-            {
+            if (parsed.Language == ProgrammingLanguage.CSharp) {
                 // First, search in global functions
-                foreach (var func in parsed.Functions)
-                {
-                    if (MatchesPattern(func.Name, functionName, ignoreCase))
-                    {
+                foreach (var func in parsed.Functions) {
+                    if (MatchesPattern(func.Name, functionName, ignoreCase)) {
                         return func;
                     }
                 }
 
                 // If not found, search in class methods, properties and constructors
-                if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile)
-                {
-                    foreach (var cls in roslynFile.Classes)
-                    {
-                        foreach (var method in cls.Methods)
-                        {
-                            if (MatchesPattern(method.Name, functionName, ignoreCase))
-                            {
+                if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile) {
+                    foreach (var cls in roslynFile.Classes) {
+                        foreach (var method in cls.Methods) {
+                            if (MatchesPattern(method.Name, functionName, ignoreCase)) {
                                 return ConvertFromRoslynMethod(method);
                             }
                         }
 
-                        foreach (var property in cls.Properties)
-                        {
-                            if (MatchesPattern(property.Name, functionName, ignoreCase))
-                            {
+                        foreach (var property in cls.Properties) {
+                            if (MatchesPattern(property.Name, functionName, ignoreCase)) {
                                 return ConvertRoslynPropertyToFunctionInfo(property);
                             }
                         }
 
-                        foreach (var constructor in cls.Constructors)
-                        {
-                            if (MatchesPattern(constructor.Name, functionName, ignoreCase))
-                            {
+                        foreach (var constructor in cls.Constructors) {
+                            if (MatchesPattern(constructor.Name, functionName, ignoreCase)) {
                                 return ConvertFromRoslynConstructor(constructor);
                             }
                         }
@@ -431,8 +396,7 @@ namespace AgentCore.CodeAnalysis
                 return null;
             }
 
-            if (_parsers.TryGetValue(parsed.Language, out var parser))
-            {
+            if (_parsers.TryGetValue(parsed.Language, out var parser)) {
                 return parser.FindFunction(parsed, functionName, ignoreCase);
             }
 
@@ -441,14 +405,10 @@ namespace AgentCore.CodeAnalysis
 
         public TypeInfo? FindType(ParsedCodeFile parsed, string typeName, bool ignoreCase = true)
         {
-            if (parsed.Language == ProgrammingLanguage.CSharp)
-            {
-                if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile)
-                {
-                    foreach (var cls in roslynFile.Classes)
-                    {
-                        if (MatchesPattern(cls.Name, typeName, ignoreCase))
-                        {
+            if (parsed.Language == ProgrammingLanguage.CSharp) {
+                if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile) {
+                    foreach (var cls in roslynFile.Classes) {
+                        if (MatchesPattern(cls.Name, typeName, ignoreCase)) {
                             return ConvertFromRoslynClass(cls);
                         }
                     }
@@ -456,8 +416,7 @@ namespace AgentCore.CodeAnalysis
                 return null;
             }
 
-            if (_parsers.TryGetValue(parsed.Language, out var parser))
-            {
+            if (_parsers.TryGetValue(parsed.Language, out var parser)) {
                 return parser.FindType(parsed, typeName, ignoreCase);
             }
 
@@ -470,8 +429,7 @@ namespace AgentCore.CodeAnalysis
             var result = ConvertFromRoslyn(roslynParsed);
 
             // Add code metrics analysis
-            if (roslynParsed.SyntaxTree != null)
-            {
+            if (roslynParsed.SyntaxTree != null) {
                 var (totalLines, codeLines, commentLines) = CodeMetricsAnalyzer.AnalyzeFileLines(roslynParsed.SyntaxTree);
                 result.TotalLines = totalLines;
                 result.CodeLines = codeLines;
@@ -518,42 +476,32 @@ namespace AgentCore.CodeAnalysis
         {
             var result = new List<FunctionInfo>();
 
-            if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile)
-            {
+            if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile) {
                 // Include global functions (if any)
-                foreach (var func in parsed.Functions)
-                {
-                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(func.Name, namePattern, ignoreCase))
-                    {
+                foreach (var func in parsed.Functions) {
+                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(func.Name, namePattern, ignoreCase)) {
                         result.Add(func);
                     }
                 }
 
                 // Include all class methods
-                foreach (var cls in roslynFile.Classes)
-                {
-                    foreach (var method in cls.Methods)
-                    {
-                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(method.Name, namePattern, ignoreCase))
-                        {
+                foreach (var cls in roslynFile.Classes) {
+                    foreach (var method in cls.Methods) {
+                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(method.Name, namePattern, ignoreCase)) {
                             result.Add(ConvertFromRoslynMethod(method));
                         }
                     }
 
                     // Include all class properties
-                    foreach (var property in cls.Properties)
-                    {
-                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(property.Name, namePattern, ignoreCase))
-                        {
+                    foreach (var property in cls.Properties) {
+                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(property.Name, namePattern, ignoreCase)) {
                             result.Add(ConvertRoslynPropertyToFunctionInfo(property));
                         }
                     }
 
                     // Include all class constructors
-                    foreach (var constructor in cls.Constructors)
-                    {
-                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(constructor.Name, namePattern, ignoreCase))
-                        {
+                    foreach (var constructor in cls.Constructors) {
+                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(constructor.Name, namePattern, ignoreCase)) {
                             result.Add(ConvertFromRoslynConstructor(constructor));
                         }
                     }
@@ -567,12 +515,9 @@ namespace AgentCore.CodeAnalysis
         {
             var result = new List<TypeInfo>();
 
-            if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile)
-            {
-                foreach (var cls in roslynFile.Classes)
-                {
-                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(cls.Name, namePattern, ignoreCase))
-                    {
+            if (parsed.NativeSyntaxTree is RoslynParsedFile roslynFile) {
+                foreach (var cls in roslynFile.Classes) {
+                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(cls.Name, namePattern, ignoreCase)) {
                         result.Add(ConvertFromRoslynClass(cls));
                     }
                 }
@@ -583,31 +528,26 @@ namespace AgentCore.CodeAnalysis
 
         private ParsedCodeFile ConvertFromRoslyn(RoslynParsedFile roslynFile)
         {
-            var result = new ParsedCodeFile(roslynFile.FilePath, ProgrammingLanguage.CSharp)
-            {
+            var result = new ParsedCodeFile(roslynFile.FilePath, ProgrammingLanguage.CSharp) {
                 Namespace = roslynFile.Namespace,
                 NativeSyntaxTree = roslynFile
             };
 
             result.Imports.AddRange(roslynFile.Usings);
 
-            foreach (var cls in roslynFile.Classes)
-            {
+            foreach (var cls in roslynFile.Classes) {
                 result.Types.Add(ConvertFromRoslynClass(cls));
             }
 
-            foreach (var iface in roslynFile.Interfaces)
-            {
+            foreach (var iface in roslynFile.Interfaces) {
                 result.Interfaces.Add(ConvertFromRoslynInterface(iface));
             }
 
-            foreach (var strct in roslynFile.Structs)
-            {
+            foreach (var strct in roslynFile.Structs) {
                 result.Structs.Add(ConvertFromRoslynStruct(strct));
             }
 
-            foreach (var enm in roslynFile.Enums)
-            {
+            foreach (var enm in roslynFile.Enums) {
                 result.Enums.Add(ConvertFromRoslynEnum(enm));
             }
 
@@ -616,8 +556,7 @@ namespace AgentCore.CodeAnalysis
 
         private TypeInfo ConvertFromRoslynClass(RoslynClassInfo roslynClass)
         {
-            var typeInfo = new TypeInfo
-            {
+            var typeInfo = new TypeInfo {
                 Name = roslynClass.Name,
                 Namespace = roslynClass.Namespace,
                 Type = CodeElementType.Class,
@@ -632,34 +571,28 @@ namespace AgentCore.CodeAnalysis
 
             typeInfo.BaseTypes.AddRange(roslynClass.BaseTypes);
 
-            foreach (var method in roslynClass.Methods)
-            {
+            foreach (var method in roslynClass.Methods) {
                 typeInfo.Methods.Add(ConvertFromRoslynMethod(method));
             }
 
-            foreach (var property in roslynClass.Properties)
-            {
+            foreach (var property in roslynClass.Properties) {
                 typeInfo.Properties.Add(ConvertFromRoslynProperty(property));
             }
 
-            foreach (var field in roslynClass.Fields)
-            {
+            foreach (var field in roslynClass.Fields) {
                 typeInfo.Fields.Add(ConvertFromRoslynField(field));
             }
 
-            foreach (var constructor in roslynClass.Constructors)
-            {
+            foreach (var constructor in roslynClass.Constructors) {
                 typeInfo.Constructors.Add(ConvertFromRoslynConstructor(constructor));
             }
 
-            foreach (var evt in roslynClass.Events)
-            {
+            foreach (var evt in roslynClass.Events) {
                 typeInfo.Events.Add(ConvertFromRoslynEvent(evt));
             }
 
             // Add code metrics if syntax node is available
-            if (roslynClass.SyntaxNode != null)
-            {
+            if (roslynClass.SyntaxNode != null) {
                 typeInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynClass.SyntaxNode);
                 typeInfo.LineCount = CodeMetricsAnalyzer.CalculateLineCount(roslynClass.SyntaxNode);
                 typeInfo.MemberCount = CodeMetricsAnalyzer.CountMembers(roslynClass.SyntaxNode);
@@ -673,8 +606,7 @@ namespace AgentCore.CodeAnalysis
 
         private FunctionInfo ConvertFromRoslynMethod(RoslynMethodInfo roslynMethod)
         {
-            var funcInfo = new FunctionInfo
-            {
+            var funcInfo = new FunctionInfo {
                 Name = roslynMethod.Name,
                 ReturnType = roslynMethod.ReturnType,
                 Location = roslynMethod.Location,
@@ -684,18 +616,15 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynMethod
             };
 
-            foreach (var param in roslynMethod.Parameters)
-            {
-                funcInfo.Parameters.Add(new ParameterInfo
-                {
+            foreach (var param in roslynMethod.Parameters) {
+                funcInfo.Parameters.Add(new ParameterInfo {
                     Name = param.Name,
                     Type = param.Type
                 });
             }
 
             // Add code metrics if syntax node is available
-            if (roslynMethod.SyntaxNode != null)
-            {
+            if (roslynMethod.SyntaxNode != null) {
                 funcInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynMethod.SyntaxNode);
                 funcInfo.LineCount = CodeMetricsAnalyzer.CalculateLineCount(roslynMethod.SyntaxNode);
                 funcInfo.CyclomaticComplexity = CodeMetricsAnalyzer.CalculateCyclomaticComplexity(roslynMethod.SyntaxNode);
@@ -709,8 +638,7 @@ namespace AgentCore.CodeAnalysis
 
         private PropertyInfo ConvertFromRoslynProperty(RoslynPropertyInfo roslynProperty)
         {
-            var propInfo = new PropertyInfo
-            {
+            var propInfo = new PropertyInfo {
                 Name = roslynProperty.Name,
                 Type = roslynProperty.Type,
                 Modifiers = roslynProperty.Modifiers,
@@ -721,8 +649,7 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynProperty
             };
 
-            if (roslynProperty.SyntaxNode != null)
-            {
+            if (roslynProperty.SyntaxNode != null) {
                 propInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynProperty.SyntaxNode);
                 propInfo.IsStatic = CodeMetricsAnalyzer.IsStatic(roslynProperty.SyntaxNode);
                 propInfo.IsPublic = CodeMetricsAnalyzer.IsPublic(roslynProperty.SyntaxNode);
@@ -733,8 +660,7 @@ namespace AgentCore.CodeAnalysis
 
         private FunctionInfo ConvertPropertyToFunctionInfo(PropertyInfo property)
         {
-            var funcInfo = new FunctionInfo
-            {
+            var funcInfo = new FunctionInfo {
                 Name = property.Name,
                 ReturnType = property.Type,
                 Location = property.Location,
@@ -751,8 +677,7 @@ namespace AgentCore.CodeAnalysis
 
         private FunctionInfo ConvertRoslynPropertyToFunctionInfo(RoslynPropertyInfo roslynProperty)
         {
-            var funcInfo = new FunctionInfo
-            {
+            var funcInfo = new FunctionInfo {
                 Name = roslynProperty.Name,
                 ReturnType = roslynProperty.Type,
                 Location = roslynProperty.Location,
@@ -761,8 +686,7 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynProperty
             };
 
-            if (roslynProperty.SyntaxNode != null)
-            {
+            if (roslynProperty.SyntaxNode != null) {
                 funcInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynProperty.SyntaxNode);
                 funcInfo.IsStatic = CodeMetricsAnalyzer.IsStatic(roslynProperty.SyntaxNode);
                 funcInfo.IsPublic = CodeMetricsAnalyzer.IsPublic(roslynProperty.SyntaxNode);
@@ -773,8 +697,7 @@ namespace AgentCore.CodeAnalysis
 
         private FieldInfo ConvertFromRoslynField(RoslynFieldInfo roslynField)
         {
-            var fieldInfo = new FieldInfo
-            {
+            var fieldInfo = new FieldInfo {
                 Name = roslynField.Name,
                 Type = roslynField.Type,
                 Modifiers = roslynField.Modifiers,
@@ -784,8 +707,7 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynField
             };
 
-            if (roslynField.SyntaxNode != null)
-            {
+            if (roslynField.SyntaxNode != null) {
                 fieldInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynField.SyntaxNode);
                 fieldInfo.IsStatic = CodeMetricsAnalyzer.IsStatic(roslynField.SyntaxNode);
                 fieldInfo.IsPublic = CodeMetricsAnalyzer.IsPublic(roslynField.SyntaxNode);
@@ -796,8 +718,7 @@ namespace AgentCore.CodeAnalysis
 
         private FunctionInfo ConvertFromRoslynConstructor(RoslynConstructorInfo roslynConstructor)
         {
-            var funcInfo = new FunctionInfo
-            {
+            var funcInfo = new FunctionInfo {
                 Name = roslynConstructor.Name,
                 ReturnType = "void",
                 Location = roslynConstructor.Location,
@@ -807,17 +728,14 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynConstructor
             };
 
-            foreach (var param in roslynConstructor.Parameters)
-            {
-                funcInfo.Parameters.Add(new ParameterInfo
-                {
+            foreach (var param in roslynConstructor.Parameters) {
+                funcInfo.Parameters.Add(new ParameterInfo {
                     Name = param.Name,
                     Type = param.Type
                 });
             }
 
-            if (roslynConstructor.SyntaxNode != null)
-            {
+            if (roslynConstructor.SyntaxNode != null) {
                 funcInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynConstructor.SyntaxNode);
                 funcInfo.LineCount = CodeMetricsAnalyzer.CalculateLineCount(roslynConstructor.SyntaxNode);
                 funcInfo.IsPublic = CodeMetricsAnalyzer.IsPublic(roslynConstructor.SyntaxNode);
@@ -828,8 +746,7 @@ namespace AgentCore.CodeAnalysis
 
         private EventInfo ConvertFromRoslynEvent(RoslynEventInfo roslynEvent)
         {
-            var eventInfo = new EventInfo
-            {
+            var eventInfo = new EventInfo {
                 Name = roslynEvent.Name,
                 Type = roslynEvent.Type,
                 Modifiers = roslynEvent.Modifiers,
@@ -837,8 +754,7 @@ namespace AgentCore.CodeAnalysis
                 NativeObject = roslynEvent
             };
 
-            if (roslynEvent.SyntaxNode != null)
-            {
+            if (roslynEvent.SyntaxNode != null) {
                 eventInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynEvent.SyntaxNode);
                 eventInfo.IsStatic = CodeMetricsAnalyzer.IsStatic(roslynEvent.SyntaxNode);
                 eventInfo.IsPublic = CodeMetricsAnalyzer.IsPublic(roslynEvent.SyntaxNode);
@@ -849,8 +765,7 @@ namespace AgentCore.CodeAnalysis
 
         private TypeInfo ConvertFromRoslynInterface(RoslynInterfaceInfo roslynInterface)
         {
-            var typeInfo = new TypeInfo
-            {
+            var typeInfo = new TypeInfo {
                 Name = roslynInterface.Name,
                 Namespace = roslynInterface.Namespace,
                 Type = CodeElementType.Interface,
@@ -865,18 +780,15 @@ namespace AgentCore.CodeAnalysis
 
             typeInfo.Interfaces.AddRange(roslynInterface.BaseInterfaces);
 
-            foreach (var method in roslynInterface.Methods)
-            {
+            foreach (var method in roslynInterface.Methods) {
                 typeInfo.Methods.Add(ConvertFromRoslynMethod(method));
             }
 
-            foreach (var property in roslynInterface.Properties)
-            {
+            foreach (var property in roslynInterface.Properties) {
                 typeInfo.Properties.Add(ConvertFromRoslynProperty(property));
             }
 
-            if (roslynInterface.SyntaxNode != null)
-            {
+            if (roslynInterface.SyntaxNode != null) {
                 typeInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynInterface.SyntaxNode);
                 typeInfo.LineCount = CodeMetricsAnalyzer.CalculateLineCount(roslynInterface.SyntaxNode);
                 typeInfo.IsPublic = CodeMetricsAnalyzer.IsPublicType(roslynInterface.SyntaxNode);
@@ -887,8 +799,7 @@ namespace AgentCore.CodeAnalysis
 
         private TypeInfo ConvertFromRoslynStruct(RoslynStructInfo roslynStruct)
         {
-            var typeInfo = new TypeInfo
-            {
+            var typeInfo = new TypeInfo {
                 Name = roslynStruct.Name,
                 Namespace = roslynStruct.Namespace,
                 Type = CodeElementType.Struct,
@@ -901,28 +812,23 @@ namespace AgentCore.CodeAnalysis
                 FullTypeName = roslynStruct.FullTypeName
             };
 
-            foreach (var method in roslynStruct.Methods)
-            {
+            foreach (var method in roslynStruct.Methods) {
                 typeInfo.Methods.Add(ConvertFromRoslynMethod(method));
             }
 
-            foreach (var property in roslynStruct.Properties)
-            {
+            foreach (var property in roslynStruct.Properties) {
                 typeInfo.Properties.Add(ConvertFromRoslynProperty(property));
             }
 
-            foreach (var field in roslynStruct.Fields)
-            {
+            foreach (var field in roslynStruct.Fields) {
                 typeInfo.Fields.Add(ConvertFromRoslynField(field));
             }
 
-            foreach (var constructor in roslynStruct.Constructors)
-            {
+            foreach (var constructor in roslynStruct.Constructors) {
                 typeInfo.Constructors.Add(ConvertFromRoslynConstructor(constructor));
             }
 
-            if (roslynStruct.SyntaxNode != null)
-            {
+            if (roslynStruct.SyntaxNode != null) {
                 typeInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynStruct.SyntaxNode);
                 typeInfo.LineCount = CodeMetricsAnalyzer.CalculateLineCount(roslynStruct.SyntaxNode);
                 typeInfo.IsPublic = CodeMetricsAnalyzer.IsPublicType(roslynStruct.SyntaxNode);
@@ -933,8 +839,7 @@ namespace AgentCore.CodeAnalysis
 
         private EnumInfo ConvertFromRoslynEnum(RoslynEnumInfo roslynEnum)
         {
-            var enumInfo = new EnumInfo
-            {
+            var enumInfo = new EnumInfo {
                 Name = roslynEnum.Name,
                 Namespace = roslynEnum.Namespace,
                 Modifiers = roslynEnum.Modifiers,
@@ -945,17 +850,14 @@ namespace AgentCore.CodeAnalysis
                 FullTypeName = roslynEnum.FullTypeName
             };
 
-            foreach (var member in roslynEnum.Members)
-            {
-                enumInfo.Members.Add(new EnumMemberInfo
-                {
+            foreach (var member in roslynEnum.Members) {
+                enumInfo.Members.Add(new EnumMemberInfo {
                     Name = member.Name,
                     Value = member.Value
                 });
             }
 
-            if (roslynEnum.SyntaxNode != null)
-            {
+            if (roslynEnum.SyntaxNode != null) {
                 enumInfo.DocumentationComment = CodeMetricsAnalyzer.ExtractDocumentationComment(roslynEnum.SyntaxNode);
                 enumInfo.IsPublic = CodeMetricsAnalyzer.IsPublicType(roslynEnum.SyntaxNode);
             }
@@ -967,8 +869,7 @@ namespace AgentCore.CodeAnalysis
         {
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
-            return ext switch
-            {
+            return ext switch {
                 ".cs" => ProgrammingLanguage.CSharp,
                 ".js" => ProgrammingLanguage.JavaScript,
                 ".jsx" => ProgrammingLanguage.JavaScript,
@@ -1208,8 +1109,7 @@ namespace AgentCore.CodeAnalysis
                 return $"No classes matching pattern '{className}' found";
 
             var sb = new StringBuilder();
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 if (matchingTypes.Count > 1)
                     sb.AppendLine($"--- Class: {type.Name} ---").AppendLine();
                 sb.Append(FormatClassMembers(type, filePath));
@@ -1230,8 +1130,7 @@ namespace AgentCore.CodeAnalysis
                 return $"No classes matching pattern '{className}' found";
 
             var sb = new StringBuilder();
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 if (matchingTypes.Count > 1)
                     sb.AppendLine($"--- Class: {type.Name} ---").AppendLine();
                 sb.Append(FormatClassMembers(type, fileName));
@@ -1253,14 +1152,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var fields = string.IsNullOrEmpty(namePattern)
                     ? type.Fields
                     : type.Fields.Where(f => MatchesPattern(f.Name, namePattern)).ToList();
 
-                if (fields.Count > 0)
-                {
+                if (fields.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1285,14 +1182,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var fields = string.IsNullOrEmpty(namePattern)
                     ? type.Fields
                     : type.Fields.Where(f => MatchesPattern(f.Name, namePattern)).ToList();
 
-                if (fields.Count > 0)
-                {
+                if (fields.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1313,8 +1208,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var field = type.Fields.FirstOrDefault(f => MatchesPattern(f.Name, fieldName));
                 if (field != null)
                     return FormatFieldDetail(field, type.Name, filePath);
@@ -1331,8 +1225,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var field = type.Fields.FirstOrDefault(f => MatchesPattern(f.Name, fieldName));
                 if (field != null)
                     return FormatFieldDetail(field, type.Name, fileName);
@@ -1353,14 +1246,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var properties = string.IsNullOrEmpty(namePattern)
                     ? type.Properties
                     : type.Properties.Where(p => MatchesPattern(p.Name, namePattern)).ToList();
 
-                if (properties.Count > 0)
-                {
+                if (properties.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1385,14 +1276,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var properties = string.IsNullOrEmpty(namePattern)
                     ? type.Properties
                     : type.Properties.Where(p => MatchesPattern(p.Name, namePattern)).ToList();
 
-                if (properties.Count > 0)
-                {
+                if (properties.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1413,8 +1302,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var property = type.Properties.FirstOrDefault(p => MatchesPattern(p.Name, propertyName));
                 if (property != null)
                     return FormatPropertyDetail(property, type.Name, filePath);
@@ -1431,8 +1319,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var property = type.Properties.FirstOrDefault(p => MatchesPattern(p.Name, propertyName));
                 if (property != null)
                     return FormatPropertyDetail(property, type.Name, fileName);
@@ -1453,14 +1340,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var methods = string.IsNullOrEmpty(namePattern)
                     ? type.Methods
                     : type.Methods.Where(m => MatchesPattern(m.Name, namePattern)).ToList();
 
-                if (methods.Count > 0)
-                {
+                if (methods.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1485,14 +1370,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var methods = string.IsNullOrEmpty(namePattern)
                     ? type.Methods
                     : type.Methods.Where(m => MatchesPattern(m.Name, namePattern)).ToList();
 
-                if (methods.Count > 0)
-                {
+                if (methods.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1513,8 +1396,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var method = type.Methods.FirstOrDefault(m => MatchesPattern(m.Name, methodName));
                 if (method != null)
                     return FormatMethodDetail(method, type.Name, filePath);
@@ -1531,8 +1413,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var method = type.Methods.FirstOrDefault(m => MatchesPattern(m.Name, methodName));
                 if (method != null)
                     return FormatMethodDetail(method, type.Name, fileName);
@@ -1554,14 +1435,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var events = string.IsNullOrEmpty(namePattern)
                     ? type.Events
                     : type.Events.Where(e => MatchesPattern(e.Name, namePattern)).ToList();
 
-                if (events.Count > 0)
-                {
+                if (events.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1586,14 +1465,12 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var events = string.IsNullOrEmpty(namePattern)
                     ? type.Events
                     : type.Events.Where(e => MatchesPattern(e.Name, namePattern)).ToList();
 
-                if (events.Count > 0)
-                {
+                if (events.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1614,8 +1491,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var evt = type.Events.FirstOrDefault(e => MatchesPattern(e.Name, eventName));
                 if (evt != null)
                     return FormatEventDetail(evt, type.Name, filePath);
@@ -1632,8 +1508,7 @@ namespace AgentCore.CodeAnalysis
 
             var matchingTypes = FindAllMatchingTypes(parsed, className);
 
-            foreach (var type in matchingTypes)
-            {
+            foreach (var type in matchingTypes) {
                 var evt = type.Events.FirstOrDefault(e => MatchesPattern(e.Name, eventName));
                 if (evt != null)
                     return FormatEventDetail(evt, type.Name, fileName);
@@ -1655,10 +1530,8 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
-                if (type.Constructors.Count > 0)
-                {
+            foreach (var type in matchingTypes) {
+                if (type.Constructors.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1683,10 +1556,8 @@ namespace AgentCore.CodeAnalysis
 
             var sb = new StringBuilder();
             int totalCount = 0;
-            foreach (var type in matchingTypes)
-            {
-                if (type.Constructors.Count > 0)
-                {
+            foreach (var type in matchingTypes) {
+                if (type.Constructors.Count > 0) {
                     if (totalCount > 0)
                         sb.AppendLine();
                     if (matchingTypes.Count > 1)
@@ -1874,12 +1745,10 @@ namespace AgentCore.CodeAnalysis
         private string FindNodesInternal(string code, ProgrammingLanguage language, string pattern, string fileName)
         {
             ITreeSitterTree tree;
-            try
-            {
+            try {
                 tree = ParseTreeSitter(code, language);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 return $"Failed to parse {language}: {ex.Message}";
             }
 
@@ -1895,8 +1764,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"File: {fileName} ({language})");
             sb.AppendLine();
 
-            foreach (var (node, nameValue) in matches)
-            {
+            foreach (var (node, nameValue) in matches) {
                 FormatNodeInfo(sb, node, sourceLines, nameValue);
             }
 
@@ -1907,12 +1775,10 @@ namespace AgentCore.CodeAnalysis
         private string FindNodeInternal(string code, ProgrammingLanguage language, string pattern, string fileName)
         {
             ITreeSitterTree tree;
-            try
-            {
+            try {
                 tree = ParseTreeSitter(code, language);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 return $"Failed to parse {language}: {ex.Message}";
             }
 
@@ -1957,42 +1823,34 @@ namespace AgentCore.CodeAnalysis
             string? nameFieldValue = null;
 
             // Match node's own text (excluding children text) against the pattern
-            if (!matched)
-            {
-                try
-                {
+            if (!matched) {
+                try {
                     var ownText = GetNodeOwnText(node, sourceCode);
-                    if (!string.IsNullOrEmpty(ownText))
-                    {
-                        try
-                        {
+                    if (!string.IsNullOrEmpty(ownText)) {
+                        try {
                             if (Regex.IsMatch(ownText, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
                                 matched = true;
                         }
-                        catch (ArgumentException)
-                        {
+                        catch (ArgumentException) {
                             // Invalid regex, fallback to substring match
                             if (ownText.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
                                 matched = true;
                         }
                     }
                 }
-                catch
-                {
+                catch {
                     // Skip nodes that fail to get text
                 }
             }
 
-            if (matched && node.IsNamed)
-            {
+            if (matched && node.IsNamed) {
                 matches.Add((node, nameFieldValue));
                 if (firstOnly)
                     return;
             }
 
             // Recurse into children
-            foreach (var child in node.Children)
-            {
+            foreach (var child in node.Children) {
                 if (firstOnly && matches.Count > 0)
                     return;
                 if (child.IsNamed)
@@ -2009,8 +1867,7 @@ namespace AgentCore.CodeAnalysis
 
             // If node has no children, the full text IS the own text
             bool hasChildren = false;
-            foreach (var _ in node.Children)
-            {
+            foreach (var _ in node.Children) {
                 hasChildren = true;
                 break;
             }
@@ -2019,20 +1876,16 @@ namespace AgentCore.CodeAnalysis
 
             // Remove each child's text from the full text
             var ownText = fullText;
-            foreach (var child in node.Children)
-            {
-                try
-                {
+            foreach (var child in node.Children) {
+                try {
                     var childText = child.GetText(sourceCode);
-                    if (!string.IsNullOrEmpty(childText))
-                    {
+                    if (!string.IsNullOrEmpty(childText)) {
                         int idx = ownText.IndexOf(childText, StringComparison.Ordinal);
                         if (idx >= 0)
                             ownText = ownText.Remove(idx, childText.Length);
                     }
                 }
-                catch
-                {
+                catch {
                     // Skip children that fail to get text
                 }
             }
@@ -2059,8 +1912,7 @@ namespace AgentCore.CodeAnalysis
             // Children count
             int namedCount = 0;
             int totalCount = 0;
-            foreach (var child in node.Children)
-            {
+            foreach (var child in node.Children) {
                 totalCount++;
                 if (child.IsNamed)
                     namedCount++;
@@ -2073,8 +1925,7 @@ namespace AgentCore.CodeAnalysis
 
             // Text preview from startLine
             int lineIndex = startLine - 1;
-            if (lineIndex >= 0 && lineIndex < sourceLines.Length)
-            {
+            if (lineIndex >= 0 && lineIndex < sourceLines.Length) {
                 var lineText = sourceLines[lineIndex].TrimEnd('\r').Trim();
                 if (lineText.Length > 120)
                     lineText = lineText.Substring(0, 120) + "...";
@@ -2097,35 +1948,28 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"Total Lines: {parsed.TotalLines}");
             sb.AppendLine();
 
-            if (parsed.Types.Count > 0)
-            {
+            if (parsed.Types.Count > 0) {
                 sb.AppendLine($"Classes: {parsed.Types.Count}");
-                foreach (var type in parsed.Types)
-                {
+                foreach (var type in parsed.Types) {
                     sb.AppendLine($"  - {type.Name} {FormatLocation(type.Location)}");
-                    if (type.IsNested)
-                    {
+                    if (type.IsNested) {
                         sb.AppendLine($"    Nested: Yes");
                         sb.AppendLine($"    Parent Type: {type.ParentTypeName}");
                         sb.AppendLine($"    Full Type Name: {type.FullTypeName}");
                     }
 
                     // Show fields in the class
-                    if (type.Fields.Count > 0)
-                    {
+                    if (type.Fields.Count > 0) {
                         sb.AppendLine($"    Fields:");
-                        foreach (var field in type.Fields)
-                        {
+                        foreach (var field in type.Fields) {
                             sb.AppendLine($"      {FormatLocation(field.Location)} {field.Name}: {field.Type}{(string.IsNullOrEmpty(field.Modifiers) ? "" : $" ({field.Modifiers})")}");
                         }
                     }
 
                     // Show properties in the class
-                    if (type.Properties.Count > 0)
-                    {
+                    if (type.Properties.Count > 0) {
                         sb.AppendLine($"    Properties:");
-                        foreach (var prop in type.Properties)
-                        {
+                        foreach (var prop in type.Properties) {
                             var accessors = new List<string>();
                             if (prop.HasGetter) accessors.Add("get");
                             if (prop.HasSetter) accessors.Add("set");
@@ -2135,31 +1979,25 @@ namespace AgentCore.CodeAnalysis
                     }
 
                     // Show events in the class
-                    if (type.Events.Count > 0)
-                    {
+                    if (type.Events.Count > 0) {
                         sb.AppendLine($"    Events:");
-                        foreach (var evt in type.Events)
-                        {
+                        foreach (var evt in type.Events) {
                             sb.AppendLine($"      {FormatLocation(evt.Location)} {evt.Name}: {evt.Type}{(string.IsNullOrEmpty(evt.Modifiers) ? "" : $" ({evt.Modifiers})")}");
                         }
                     }
 
                     // Show constructors in the class
-                    if (type.Constructors.Count > 0)
-                    {
+                    if (type.Constructors.Count > 0) {
                         sb.AppendLine($"    Constructors:");
-                        foreach (var ctor in type.Constructors)
-                        {
+                        foreach (var ctor in type.Constructors) {
                             sb.AppendLine($"      {FormatLocation(ctor.Location)} {FormatFunctionSignature(ctor)}{(string.IsNullOrEmpty(ctor.Modifiers) ? "" : $" ({ctor.Modifiers})")}");
                         }
                     }
 
                     // Show methods in the class
-                    if (type.Methods.Count > 0)
-                    {
+                    if (type.Methods.Count > 0) {
                         sb.AppendLine($"    Methods:");
-                        foreach (var method in type.Methods)
-                        {
+                        foreach (var method in type.Methods) {
                             sb.AppendLine($"      {FormatLocation(method.Location)} {FormatFunctionSignature(method)}{(string.IsNullOrEmpty(method.Modifiers) ? "" : $" ({method.Modifiers})")}");
                         }
                     }
@@ -2167,58 +2005,45 @@ namespace AgentCore.CodeAnalysis
                 sb.AppendLine();
             }
 
-            if (parsed.Functions.Count > 0)
-            {
+            if (parsed.Functions.Count > 0) {
                 // Collect all method locations from classes to avoid duplicates
                 var methodLocations = new HashSet<string>();
-                foreach (var type in parsed.Types)
-                {
-                    foreach (var method in type.Methods)
-                    {
-                        if (method.Location != null)
-                        {
+                foreach (var type in parsed.Types) {
+                    foreach (var method in type.Methods) {
+                        if (method.Location != null) {
                             methodLocations.Add($"{method.Location.StartLine}:{method.Location.StartColumn}");
                         }
                     }
-                    foreach (var ctor in type.Constructors)
-                    {
-                        if (ctor.Location != null)
-                        {
+                    foreach (var ctor in type.Constructors) {
+                        if (ctor.Location != null) {
                             methodLocations.Add($"{ctor.Location.StartLine}:{ctor.Location.StartColumn}");
                         }
                     }
                 }
 
                 // Filter out functions that are class methods
-                var standaloneFunctions = parsed.Functions.Where(func =>
-                {
+                var standaloneFunctions = parsed.Functions.Where(func => {
                     if (func.Location == null) return true;
                     var locationKey = $"{func.Location.StartLine}:{func.Location.StartColumn}";
                     return !methodLocations.Contains(locationKey);
                 }).ToList();
 
-                if (standaloneFunctions.Count > 0)
-                {
+                if (standaloneFunctions.Count > 0) {
                     sb.AppendLine($"Functions: {standaloneFunctions.Count}");
-                    foreach (var func in standaloneFunctions)
-                    {
+                    foreach (var func in standaloneFunctions) {
                         sb.AppendLine($"  - {func.Name} {FormatLocation(func.Location)}");
                     }
                     sb.AppendLine();
                 }
             }
 
-            if (parsed.Interfaces.Count > 0)
-            {
+            if (parsed.Interfaces.Count > 0) {
                 sb.AppendLine($"Interfaces: {parsed.Interfaces.Count}");
-                foreach (var iface in parsed.Interfaces)
-                {
+                foreach (var iface in parsed.Interfaces) {
                     sb.AppendLine($"  - {iface.Name} {FormatLocation(iface.Location)}");
-                    if (iface.Methods.Count > 0)
-                    {
+                    if (iface.Methods.Count > 0) {
                         sb.AppendLine($"    Methods:");
-                        foreach (var method in iface.Methods)
-                        {
+                        foreach (var method in iface.Methods) {
                             sb.AppendLine($"      {FormatLocation(method.Location)} {FormatFunctionSignature(method)}");
                         }
                     }
@@ -2226,17 +2051,13 @@ namespace AgentCore.CodeAnalysis
                 sb.AppendLine();
             }
 
-            if (parsed.Structs.Count > 0)
-            {
+            if (parsed.Structs.Count > 0) {
                 sb.AppendLine($"Structs: {parsed.Structs.Count}");
-                foreach (var structType in parsed.Structs)
-                {
+                foreach (var structType in parsed.Structs) {
                     sb.AppendLine($"  - {structType.Name} {FormatLocation(structType.Location)}");
-                    if (structType.Fields.Count > 0)
-                    {
+                    if (structType.Fields.Count > 0) {
                         sb.AppendLine($"    Fields:");
-                        foreach (var field in structType.Fields)
-                        {
+                        foreach (var field in structType.Fields) {
                             sb.AppendLine($"      {FormatLocation(field.Location)} {field.Name}: {field.Type}");
                         }
                     }
@@ -2244,35 +2065,28 @@ namespace AgentCore.CodeAnalysis
                 sb.AppendLine();
             }
 
-            if (parsed.Enums.Count > 0)
-            {
+            if (parsed.Enums.Count > 0) {
                 sb.AppendLine($"Enums: {parsed.Enums.Count}");
-                foreach (var enumType in parsed.Enums)
-                {
+                foreach (var enumType in parsed.Enums) {
                     sb.AppendLine($"  - {enumType.Name} {FormatLocation(enumType.Location)}");
-                    if (enumType.Members.Count > 0)
-                    {
+                    if (enumType.Members.Count > 0) {
                         sb.AppendLine($"    Members: {string.Join(", ", enumType.Members.Select(m => m.Name))}");
                     }
                 }
                 sb.AppendLine();
             }
 
-            if (parsed.Imports.Count > 0)
-            {
+            if (parsed.Imports.Count > 0) {
                 sb.AppendLine($"Imports: {parsed.Imports.Count}");
-                foreach (var import in parsed.Imports)
-                {
+                foreach (var import in parsed.Imports) {
                     sb.AppendLine($"  - {import}");
                 }
                 sb.AppendLine();
             }
 
-            if (parsed.Dependencies.Count > 0)
-            {
+            if (parsed.Dependencies.Count > 0) {
                 sb.AppendLine($"Dependencies: {parsed.Dependencies.Count}");
-                foreach (var dep in parsed.Dependencies)
-                {
+                foreach (var dep in parsed.Dependencies) {
                     sb.AppendLine($"  - {dep.Name} ({dep.Type})");
                 }
             }
@@ -2289,8 +2103,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Functions Found: {functions.Count} ===");
             sb.AppendLine();
 
-            foreach (var func in functions)
-            {
+            foreach (var func in functions) {
                 sb.AppendLine($"Function: {func.Name}");
                 sb.AppendLine($"File: {filePath}");
                 sb.AppendLine($"Location: {FormatLocation(func.Location)}");
@@ -2309,11 +2122,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"Location: {FormatLocation(func.Location)}");
             sb.AppendLine($"Signature: {FormatFunctionSignature(func)}");
 
-            if (func.Parameters.Count > 0)
-            {
+            if (func.Parameters.Count > 0) {
                 sb.AppendLine("Parameters:");
-                foreach (var param in func.Parameters)
-                {
+                foreach (var param in func.Parameters) {
                     sb.AppendLine($"  - {param.Type} {param.Name}");
                 }
             }
@@ -2334,11 +2145,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Types Found: {types.Count} ===");
             sb.AppendLine();
 
-            foreach (var type in types)
-            {
+            foreach (var type in types) {
                 sb.AppendLine($"{type.Type}: {type.Name}");
-                if (type.IsNested)
-                {
+                if (type.IsNested) {
                     sb.AppendLine($"  Nested: Yes");
                     sb.AppendLine($"  Parent Type: {type.ParentTypeName}");
                     sb.AppendLine($"  Full Type Name: {type.FullTypeName}");
@@ -2357,8 +2166,7 @@ namespace AgentCore.CodeAnalysis
         {
             var sb = new StringBuilder();
             sb.AppendLine($"{type.Type}: {type.Name}");
-            if (type.IsNested)
-            {
+            if (type.IsNested) {
                 sb.AppendLine($"Nested: Yes");
                 sb.AppendLine($"Parent Type: {type.ParentTypeName}");
                 sb.AppendLine($"Full Type Name: {type.FullTypeName}");
@@ -2369,29 +2177,23 @@ namespace AgentCore.CodeAnalysis
             if (type.BaseTypes.Count > 0)
                 sb.AppendLine($"Base Types: {string.Join(", ", type.BaseTypes)}");
 
-            if (type.Methods.Count > 0)
-            {
+            if (type.Methods.Count > 0) {
                 sb.AppendLine($"Methods: {type.Methods.Count}");
-                foreach (var method in type.Methods)
-                {
+                foreach (var method in type.Methods) {
                     sb.AppendLine($"  - {FormatFunctionSignature(method)} {FormatLocation(method.Location)}");
                 }
             }
 
-            if (type.Properties.Count > 0)
-            {
+            if (type.Properties.Count > 0) {
                 sb.AppendLine($"Properties: {type.Properties.Count}");
-                foreach (var prop in type.Properties)
-                {
+                foreach (var prop in type.Properties) {
                     sb.AppendLine($"  - {prop.Name}: {prop.Type} {FormatLocation(prop.Location)}");
                 }
             }
 
-            if (type.Fields.Count > 0)
-            {
+            if (type.Fields.Count > 0) {
                 sb.AppendLine($"Fields: {type.Fields.Count}");
-                foreach (var field in type.Fields)
-                {
+                foreach (var field in type.Fields) {
                     sb.AppendLine($"  - {field.Name}: {field.Type} {FormatLocation(field.Location)}");
                 }
             }
@@ -2405,12 +2207,9 @@ namespace AgentCore.CodeAnalysis
             var count = 0;
 
             // Collect all variables from types
-            foreach (var type in parsed.Types)
-            {
-                foreach (var field in type.Fields)
-                {
-                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(field.Name, namePattern))
-                    {
+            foreach (var type in parsed.Types) {
+                foreach (var field in type.Fields) {
+                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(field.Name, namePattern)) {
                         if (count == 0) sb.AppendLine("=== Variables Found ===").AppendLine();
                         sb.AppendLine($"Variable: {field.Name}");
                         sb.AppendLine($"File: {filePath}");
@@ -2431,11 +2230,9 @@ namespace AgentCore.CodeAnalysis
         private string FormatVariable(ParsedCodeFile parsed, string variableName, string filePath)
         {
             // Search in type fields
-            foreach (var type in parsed.Types)
-            {
+            foreach (var type in parsed.Types) {
                 var field = type.Fields.FirstOrDefault(f => f.Name == variableName);
-                if (field != null)
-                {
+                if (field != null) {
                     var sb = new StringBuilder();
                     sb.AppendLine($"Variable: {field.Name}");
                     sb.AppendLine($"File: {filePath}");
@@ -2456,12 +2253,9 @@ namespace AgentCore.CodeAnalysis
             var sb = new StringBuilder();
             var count = 0;
 
-            foreach (var type in parsed.Types)
-            {
-                foreach (var field in type.Fields)
-                {
-                    if (field.IsStatic && (string.IsNullOrEmpty(namePattern) || MatchesPattern(field.Name, namePattern)))
-                    {
+            foreach (var type in parsed.Types) {
+                foreach (var field in type.Fields) {
+                    if (field.IsStatic && (string.IsNullOrEmpty(namePattern) || MatchesPattern(field.Name, namePattern))) {
                         if (count == 0) sb.AppendLine("=== Global Variables Found ===").AppendLine();
                         sb.AppendLine($"Variable: {field.Name}");
                         sb.AppendLine($"File: {filePath}");
@@ -2489,12 +2283,9 @@ namespace AgentCore.CodeAnalysis
             var sb = new StringBuilder();
             var count = 0;
 
-            foreach (var func in parsed.Functions)
-            {
-                foreach (var param in func.Parameters)
-                {
-                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(param.Name, namePattern))
-                    {
+            foreach (var func in parsed.Functions) {
+                foreach (var param in func.Parameters) {
+                    if (string.IsNullOrEmpty(namePattern) || MatchesPattern(param.Name, namePattern)) {
                         if (count == 0) sb.AppendLine("=== Parameters Found ===").AppendLine();
                         sb.AppendLine($"Parameter: {param.Name}");
                         sb.AppendLine($"File: {filePath}");
@@ -2506,14 +2297,10 @@ namespace AgentCore.CodeAnalysis
                 }
             }
 
-            foreach (var type in parsed.Types)
-            {
-                foreach (var method in type.Methods)
-                {
-                    foreach (var param in method.Parameters)
-                    {
-                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(param.Name, namePattern))
-                        {
+            foreach (var type in parsed.Types) {
+                foreach (var method in type.Methods) {
+                    foreach (var param in method.Parameters) {
+                        if (string.IsNullOrEmpty(namePattern) || MatchesPattern(param.Name, namePattern)) {
                             if (count == 0) sb.AppendLine("=== Parameters Found ===").AppendLine();
                             sb.AppendLine($"Parameter: {param.Name}");
                             sb.AppendLine($"File: {filePath}");
@@ -2536,21 +2323,17 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"File: {filePath}");
             sb.AppendLine();
 
-            if (type.Fields.Count > 0)
-            {
+            if (type.Fields.Count > 0) {
                 sb.AppendLine($"Fields: {type.Fields.Count}");
-                foreach (var field in type.Fields)
-                {
+                foreach (var field in type.Fields) {
                     sb.AppendLine($"  {FormatLocation(field.Location)} {field.Name}: {field.Type} ({field.Modifiers})");
                 }
                 sb.AppendLine();
             }
 
-            if (type.Properties.Count > 0)
-            {
+            if (type.Properties.Count > 0) {
                 sb.AppendLine($"Properties: {type.Properties.Count}");
-                foreach (var prop in type.Properties)
-                {
+                foreach (var prop in type.Properties) {
                     var accessors = new List<string>();
                     if (prop.HasGetter) accessors.Add("get");
                     if (prop.HasSetter) accessors.Add("set");
@@ -2559,11 +2342,9 @@ namespace AgentCore.CodeAnalysis
                 sb.AppendLine();
             }
 
-            if (type.Methods.Count > 0)
-            {
+            if (type.Methods.Count > 0) {
                 sb.AppendLine($"Methods: {type.Methods.Count}");
-                foreach (var method in type.Methods)
-                {
+                foreach (var method in type.Methods) {
                     sb.AppendLine($"  {FormatLocation(method.Location)} {FormatFunctionSignature(method)} ({method.Modifiers})");
                 }
             }
@@ -2584,8 +2365,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Fields in class {type.Name}: {fields.Count} ===");
             sb.AppendLine();
 
-            foreach (var field in fields)
-            {
+            foreach (var field in fields) {
                 sb.AppendLine($"Field: {field.Name}");
                 sb.AppendLine($"Class: {type.Name}");
                 sb.AppendLine($"File: {filePath}");
@@ -2625,8 +2405,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Properties in class {type.Name}: {properties.Count} ===");
             sb.AppendLine();
 
-            foreach (var prop in properties)
-            {
+            foreach (var prop in properties) {
                 sb.AppendLine($"Property: {prop.Name}");
                 sb.AppendLine($"Class: {type.Name}");
                 sb.AppendLine($"File: {filePath}");
@@ -2676,8 +2455,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Methods in class {type.Name}: {methods.Count} ===");
             sb.AppendLine();
 
-            foreach (var method in methods)
-            {
+            foreach (var method in methods) {
                 sb.AppendLine($"Method: {method.Name}");
                 sb.AppendLine($"Class: {type.Name}");
                 sb.AppendLine($"File: {filePath}");
@@ -2700,11 +2478,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"Location: {FormatLocation(method.Location)}");
             sb.AppendLine($"Signature: {FormatFunctionSignature(method)}");
 
-            if (method.Parameters.Count > 0)
-            {
+            if (method.Parameters.Count > 0) {
                 sb.AppendLine("Parameters:");
-                foreach (var param in method.Parameters)
-                {
+                foreach (var param in method.Parameters) {
                     sb.AppendLine($"  - {param.Type} {param.Name}");
                 }
             }
@@ -2729,8 +2505,7 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Events in class {type.Name}: {events.Count} ===");
             sb.AppendLine();
 
-            foreach (var evt in events)
-            {
+            foreach (var evt in events) {
                 sb.AppendLine($"Event: {evt.Name}");
                 sb.AppendLine($"Class: {type.Name}");
                 sb.AppendLine($"File: {filePath}");
@@ -2766,18 +2541,15 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Constructors in class {type.Name}: {type.Constructors.Count} ===");
             sb.AppendLine();
 
-            foreach (var ctor in type.Constructors)
-            {
+            foreach (var ctor in type.Constructors) {
                 sb.AppendLine($"Constructor: {type.Name}");
                 sb.AppendLine($"File: {filePath}");
                 sb.AppendLine($"Location: {FormatLocation(ctor.Location)}");
                 sb.AppendLine($"Signature: {FormatFunctionSignature(ctor)}");
 
-                if (ctor.Parameters.Count > 0)
-                {
+                if (ctor.Parameters.Count > 0) {
                     sb.AppendLine("Parameters:");
-                    foreach (var param in ctor.Parameters)
-                    {
+                    foreach (var param in ctor.Parameters) {
                         sb.AppendLine($"  - {param.Type} {param.Name}");
                     }
                 }
@@ -2800,11 +2572,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Interfaces Found: {interfaces.Count} ===");
             sb.AppendLine();
 
-            foreach (var iface in interfaces)
-            {
+            foreach (var iface in interfaces) {
                 sb.AppendLine($"Interface: {iface.Name}");
-                if (iface.IsNested)
-                {
+                if (iface.IsNested) {
                     sb.AppendLine($"  Nested: Yes");
                     sb.AppendLine($"  Parent Type: {iface.ParentTypeName}");
                     sb.AppendLine($"  Full Type Name: {iface.FullTypeName}");
@@ -2825,8 +2595,7 @@ namespace AgentCore.CodeAnalysis
         {
             var sb = new StringBuilder();
             sb.AppendLine($"Interface: {iface.Name}");
-            if (iface.IsNested)
-            {
+            if (iface.IsNested) {
                 sb.AppendLine($"Nested: Yes");
                 sb.AppendLine($"Parent Type: {iface.ParentTypeName}");
                 sb.AppendLine($"Full Type Name: {iface.FullTypeName}");
@@ -2837,20 +2606,16 @@ namespace AgentCore.CodeAnalysis
             if (iface.BaseTypes.Count > 0)
                 sb.AppendLine($"Base Interfaces: {string.Join(", ", iface.BaseTypes)}");
 
-            if (iface.Methods.Count > 0)
-            {
+            if (iface.Methods.Count > 0) {
                 sb.AppendLine($"Methods: {iface.Methods.Count}");
-                foreach (var method in iface.Methods)
-                {
+                foreach (var method in iface.Methods) {
                     sb.AppendLine($"  - {FormatFunctionSignature(method)} {FormatLocation(method.Location)}");
                 }
             }
 
-            if (iface.Properties.Count > 0)
-            {
+            if (iface.Properties.Count > 0) {
                 sb.AppendLine($"Properties: {iface.Properties.Count}");
-                foreach (var prop in iface.Properties)
-                {
+                foreach (var prop in iface.Properties) {
                     var accessors = new List<string>();
                     if (prop.HasGetter) accessors.Add("get");
                     if (prop.HasSetter) accessors.Add("set");
@@ -2871,11 +2636,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Structs Found: {structs.Count} ===");
             sb.AppendLine();
 
-            foreach (var structType in structs)
-            {
+            foreach (var structType in structs) {
                 sb.AppendLine($"Struct: {structType.Name}");
-                if (structType.IsNested)
-                {
+                if (structType.IsNested) {
                     sb.AppendLine($"  Nested: Yes");
                     sb.AppendLine($"  Parent Type: {structType.ParentTypeName}");
                     sb.AppendLine($"  Full Type Name: {structType.FullTypeName}");
@@ -2894,8 +2657,7 @@ namespace AgentCore.CodeAnalysis
         {
             var sb = new StringBuilder();
             sb.AppendLine($"Struct: {structType.Name}");
-            if (structType.IsNested)
-            {
+            if (structType.IsNested) {
                 sb.AppendLine($"Nested: Yes");
                 sb.AppendLine($"Parent Type: {structType.ParentTypeName}");
                 sb.AppendLine($"Full Type Name: {structType.FullTypeName}");
@@ -2903,20 +2665,16 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"File: {filePath}");
             sb.AppendLine($"Location: {FormatLocation(structType.Location)}");
 
-            if (structType.Fields.Count > 0)
-            {
+            if (structType.Fields.Count > 0) {
                 sb.AppendLine($"Fields: {structType.Fields.Count}");
-                foreach (var field in structType.Fields)
-                {
+                foreach (var field in structType.Fields) {
                     sb.AppendLine($"  - {field.Name}: {field.Type} {FormatLocation(field.Location)}");
                 }
             }
 
-            if (structType.Methods.Count > 0)
-            {
+            if (structType.Methods.Count > 0) {
                 sb.AppendLine($"Methods: {structType.Methods.Count}");
-                foreach (var method in structType.Methods)
-                {
+                foreach (var method in structType.Methods) {
                     sb.AppendLine($"  - {FormatFunctionSignature(method)} {FormatLocation(method.Location)}");
                 }
             }
@@ -2933,11 +2691,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"=== Enums Found: {enums.Count} ===");
             sb.AppendLine();
 
-            foreach (var enumType in enums)
-            {
+            foreach (var enumType in enums) {
                 sb.AppendLine($"Enum: {enumType.Name}");
-                if (enumType.IsNested)
-                {
+                if (enumType.IsNested) {
                     sb.AppendLine($"  Nested: Yes");
                     sb.AppendLine($"  Parent Type: {enumType.ParentTypeName}");
                     sb.AppendLine($"  Full Type Name: {enumType.FullTypeName}");
@@ -2955,8 +2711,7 @@ namespace AgentCore.CodeAnalysis
         {
             var sb = new StringBuilder();
             sb.AppendLine($"Enum: {enumType.Name}");
-            if (enumType.IsNested)
-            {
+            if (enumType.IsNested) {
                 sb.AppendLine($"Nested: Yes");
                 sb.AppendLine($"Parent Type: {enumType.ParentTypeName}");
                 sb.AppendLine($"Full Type Name: {enumType.FullTypeName}");
@@ -2964,11 +2719,9 @@ namespace AgentCore.CodeAnalysis
             sb.AppendLine($"File: {filePath}");
             sb.AppendLine($"Location: {FormatLocation(enumType.Location)}");
 
-            if (enumType.Members.Count > 0)
-            {
+            if (enumType.Members.Count > 0) {
                 sb.AppendLine($"Members: {enumType.Members.Count}");
-                foreach (var member in enumType.Members)
-                {
+                foreach (var member in enumType.Members) {
                     sb.AppendLine($"  - {member.Name} = {member.Value}");
                 }
             }
@@ -2996,12 +2749,9 @@ namespace AgentCore.CodeAnalysis
             var matchingTypes = new List<TypeInfo>();
 
             // Handle C# Roslyn - prefer native syntax tree
-            if (parsed.Language == ProgrammingLanguage.CSharp && parsed.NativeSyntaxTree is RoslynParsedFile roslynFile)
-            {
-                foreach (var cls in roslynFile.Classes)
-                {
-                    if (MatchesPattern(cls.Name, classNamePattern))
-                    {
+            if (parsed.Language == ProgrammingLanguage.CSharp && parsed.NativeSyntaxTree is RoslynParsedFile roslynFile) {
+                foreach (var cls in roslynFile.Classes) {
+                    if (MatchesPattern(cls.Name, classNamePattern)) {
                         matchingTypes.Add(ConvertFromRoslynClass(cls));
                     }
                 }
@@ -3009,12 +2759,9 @@ namespace AgentCore.CodeAnalysis
             }
 
             // Handle all languages including C# (fallback) - use Types collection
-            if (parsed.Types != null && parsed.Types.Count > 0)
-            {
-                foreach (var type in parsed.Types)
-                {
-                    if (MatchesPattern(type.Name, classNamePattern))
-                    {
+            if (parsed.Types != null && parsed.Types.Count > 0) {
+                foreach (var type in parsed.Types) {
+                    if (MatchesPattern(type.Name, classNamePattern)) {
                         matchingTypes.Add(type);
                     }
                 }
@@ -3025,13 +2772,11 @@ namespace AgentCore.CodeAnalysis
 
         private bool MatchesPattern(string name, string pattern, bool ignoreCase = true)
         {
-            try
-            {
+            try {
                 var options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
                 return Regex.IsMatch(name, pattern, options);
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
                 return name.IndexOf(pattern, comparison) >= 0;
             }

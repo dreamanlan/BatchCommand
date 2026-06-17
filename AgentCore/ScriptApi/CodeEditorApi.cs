@@ -416,6 +416,84 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before]) - return list of match blocks
+    sealed class SearchInFileAsListExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_file_as_list(path, regex_pattern[, context_lines_after, context_lines_before]), aliased as grep_file_as_list|grepfileaslist");
+                return BoxedValue.FromObject(new List<object>());
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
+                int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
+                var blocks = Core.AgentCore.Instance.FileOps.SearchFileAsList(path, pattern, contextLinesAfter, contextLinesBefore);
+                var result = new List<object>();
+                foreach (var b in blocks) {
+                    result.Add(b);
+                }
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_file_as_list error: {ex.Message}");
+                return BoxedValue.FromObject(new List<object>());
+            }
+        }
+    }
+
+    // search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]) - return list of per-file results
+    sealed class SearchInFilesAsListExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_in_files_as_list(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...]), aliased as grep_files_as_list|grepfilesaslist");
+                return BoxedValue.FromObject(new List<object>());
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
+                int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
+                List<string>? filterAndNewExts = null;
+                if (operands.Count > 4) {
+                    filterAndNewExts = new List<string>();
+                    for (int i = 4; i < operands.Count; i++) {
+                        string str = operands[i].AsString;
+                        if (str != null) {
+                            filterAndNewExts.Add(str);
+                            continue;
+                        }
+                        var strList = operands[i].As<System.Collections.IList>();
+                        if (strList == null) {
+                            continue;
+                        }
+                        foreach (object strObj in strList) {
+                            if (strObj is string tempStr) {
+                                filterAndNewExts.Add(tempStr);
+                            }
+                        }
+                    }
+                }
+                var items = Core.AgentCore.Instance.FileOps.SearchFilesAsList(path, pattern, contextLinesAfter, contextLinesBefore, filterAndNewExts);
+                var result = new List<object>();
+                foreach (var s in items) {
+                    result.Add(s);
+                }
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_in_files_as_list error: {ex.Message}");
+                return BoxedValue.FromObject(new List<object>());
+            }
+        }
+    }
+
     // count_file_indentations(path[, startLine, endLine]) - display file lines with line number, indent info, and left-aligned content
     sealed class CountFileIndentationsExp : SimpleExpressionBase
     {

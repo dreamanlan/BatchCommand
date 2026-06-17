@@ -93,6 +93,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("find_nodes_in_code", "find_nodes_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodesInCodeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("find_node", "find_node(filePath, language, nodeRegexPattern)", new ExpressionFactoryHelper<FindNodeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("find_node_in_code", "find_node_in_code(code, language, nodeRegexPattern, [fileName])", new ExpressionFactoryHelper<FindNodeInCodeExp>());
+
+            // Register list-returning variants (each item corresponds to one matching target)
+            RegisterAsListApis();
         }
 
         // Helper: Parse language string (delegates to UnifiedCodeAnalysisApi.ResolveLanguage)
@@ -361,7 +364,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         // ========== Variable Search APIs () ==========
 
         // Find variables (formatted)
-    public sealed class FindVariablesExp : SimpleExpressionBase
+        public sealed class FindVariablesExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -385,7 +388,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find variables in code (formatted)
-    public sealed class FindVariablesInCodeExp : SimpleExpressionBase
+        public sealed class FindVariablesInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -410,7 +413,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find variable (formatted)
-    public sealed class FindVariableExp : SimpleExpressionBase
+        public sealed class FindVariableExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -434,7 +437,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find variable in code (formatted)
-    public sealed class FindVariableInCodeExp : SimpleExpressionBase
+        public sealed class FindVariableInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -459,7 +462,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find global variables (formatted)
-    public sealed class FindGlobalVariablesExp : SimpleExpressionBase
+        public sealed class FindGlobalVariablesExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -483,7 +486,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find global variables in code (formatted)
-    public sealed class FindGlobalVariablesInCodeExp : SimpleExpressionBase
+        public sealed class FindGlobalVariablesInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -508,7 +511,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find parameters (formatted)
-    public sealed class FindParametersExp : SimpleExpressionBase
+        public sealed class FindParametersExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -532,7 +535,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find parameters in code (formatted)
-    public sealed class FindParametersInCodeExp : SimpleExpressionBase
+        public sealed class FindParametersInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -559,7 +562,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         // ========== Class Member Search APIs () ==========
 
         // Find class members (formatted)
-    public sealed class FindClassMembersExp : SimpleExpressionBase
+        public sealed class FindClassMembersExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -583,7 +586,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find class members in code (formatted)
-    public sealed class FindClassMembersInCodeExp : SimpleExpressionBase
+        public sealed class FindClassMembersInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -608,7 +611,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find fields (formatted)
-    public sealed class FindFieldsExp : SimpleExpressionBase
+        public sealed class FindFieldsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -633,7 +636,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find fields in code (formatted)
-    public sealed class FindFieldsInCodeExp : SimpleExpressionBase
+        public sealed class FindFieldsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -659,7 +662,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find field (formatted)
-    public sealed class FindFieldExp : SimpleExpressionBase
+        public sealed class FindFieldExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -684,7 +687,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find field in code (formatted)
-    public sealed class FindFieldInCodeExp : SimpleExpressionBase
+        public sealed class FindFieldInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -710,7 +713,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find properties (formatted)
-    public sealed class FindPropertiesExp : SimpleExpressionBase
+        public sealed class FindPropertiesExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -735,7 +738,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find properties in code (formatted)
-    public sealed class FindPropertiesInCodeExp : SimpleExpressionBase
+        public sealed class FindPropertiesInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -761,7 +764,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find property (formatted)
-    public sealed class FindPropertyExp : SimpleExpressionBase
+        public sealed class FindPropertyExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -786,7 +789,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find property in code (formatted)
-    public sealed class FindPropertyInCodeExp : SimpleExpressionBase
+        public sealed class FindPropertyInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -812,7 +815,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find methods (formatted)
-    public sealed class FindMethodsExp : SimpleExpressionBase
+        public sealed class FindMethodsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -837,7 +840,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find methods in code (formatted)
-    public sealed class FindMethodsInCodeExp : SimpleExpressionBase
+        public sealed class FindMethodsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -863,7 +866,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find method (formatted)
-    public sealed class FindMethodExp : SimpleExpressionBase
+        public sealed class FindMethodExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -888,7 +891,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find method in code (formatted)
-    public sealed class FindMethodInCodeExp : SimpleExpressionBase
+        public sealed class FindMethodInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -914,7 +917,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find constructors (formatted)
-    public sealed class FindConstructorsExp : SimpleExpressionBase
+        public sealed class FindConstructorsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -938,7 +941,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find constructors in code (formatted)
-    public sealed class FindConstructorsInCodeExp : SimpleExpressionBase
+        public sealed class FindConstructorsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -963,7 +966,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find events (formatted)
-    public sealed class FindEventsExp : SimpleExpressionBase
+        public sealed class FindEventsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -988,7 +991,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find events in code (formatted)
-    public sealed class FindEventsInCodeExp : SimpleExpressionBase
+        public sealed class FindEventsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1014,7 +1017,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find event (formatted)
-    public sealed class FindEventExp : SimpleExpressionBase
+        public sealed class FindEventExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1039,7 +1042,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find event in code (formatted)
-    public sealed class FindEventInCodeExp : SimpleExpressionBase
+        public sealed class FindEventInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1065,7 +1068,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find interfaces (formatted)
-    public sealed class FindInterfacesExp : SimpleExpressionBase
+        public sealed class FindInterfacesExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1089,7 +1092,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find interfaces in code (formatted)
-    public sealed class FindInterfacesInCodeExp : SimpleExpressionBase
+        public sealed class FindInterfacesInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1114,7 +1117,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find interface (formatted)
-    public sealed class FindInterfaceExp : SimpleExpressionBase
+        public sealed class FindInterfaceExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1138,7 +1141,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find interface in code (formatted)
-    public sealed class FindInterfaceInCodeExp : SimpleExpressionBase
+        public sealed class FindInterfaceInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1163,7 +1166,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find structs (formatted)
-    public sealed class FindStructsExp : SimpleExpressionBase
+        public sealed class FindStructsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1187,7 +1190,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find structs in code (formatted)
-    public sealed class FindStructsInCodeExp : SimpleExpressionBase
+        public sealed class FindStructsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1212,7 +1215,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find struct (formatted)
-    public sealed class FindStructExp : SimpleExpressionBase
+        public sealed class FindStructExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1236,7 +1239,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find struct in code (formatted)
-    public sealed class FindStructInCodeExp : SimpleExpressionBase
+        public sealed class FindStructInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1261,7 +1264,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find enums (formatted)
-    public sealed class FindEnumsExp : SimpleExpressionBase
+        public sealed class FindEnumsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1285,7 +1288,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find enums in code (formatted)
-    public sealed class FindEnumsInCodeExp : SimpleExpressionBase
+        public sealed class FindEnumsInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1310,7 +1313,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find enum (formatted)
-    public sealed class FindEnumExp : SimpleExpressionBase
+        public sealed class FindEnumExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1334,7 +1337,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find enum in code (formatted)
-    public sealed class FindEnumInCodeExp : SimpleExpressionBase
+        public sealed class FindEnumInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1361,7 +1364,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         // ========== AST Node Search APIs ==========
 
         // Find all AST nodes matching pattern in file
-    public sealed class FindNodesExp : SimpleExpressionBase
+        public sealed class FindNodesExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1385,7 +1388,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find all AST nodes matching pattern in code
-    public sealed class FindNodesInCodeExp : SimpleExpressionBase
+        public sealed class FindNodesInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1410,7 +1413,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find first AST node matching pattern in file
-    public sealed class FindNodeExp : SimpleExpressionBase
+        public sealed class FindNodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -1434,7 +1437,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
 
         // Find first AST node matching pattern in code
-    public sealed class FindNodeInCodeExp : SimpleExpressionBase
+        public sealed class FindNodeInCodeExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {

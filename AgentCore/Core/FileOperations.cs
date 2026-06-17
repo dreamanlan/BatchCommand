@@ -548,13 +548,11 @@ namespace CefDotnetApp.AgentCore.Core
 
         private bool MatchesPattern(string text, string pattern, bool ignoreCase = true)
         {
-            try
-            {
+            try {
                 var options = ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None;
                 return Regex.IsMatch(text, pattern, options);
             }
-            catch (ArgumentException)
-            {
+            catch (ArgumentException) {
                 var comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
                 return text.IndexOf(pattern, comparison) >= 0;
             }
@@ -652,6 +650,57 @@ namespace CefDotnetApp.AgentCore.Core
             return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _);
         }
 
+        public List<MatchBlock> SearchFileAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (!File.Exists(fullPath))
+                return new List<MatchBlock>();
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+        }
+
+        public List<MatchBlock> SearchLogFileAsList(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        {
+            string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
+            if (!File.Exists(fullPath))
+                return new List<MatchBlock>();
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+        }
+
+        public List<MatchBlock> SearchFilesAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
+        {
+            var results = new List<MatchBlock>();
+            string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
+            if (File.Exists(fullPath)) {
+                return SearchFileAsList(path, searchRegex, contextLinesAfter, contextLinesBefore);
+            }
+            if (!Directory.Exists(fullPath)) {
+                return results;
+            }
+
+            if (null == filterAndNewExts) {
+                filterAndNewExts = new List<string> { "*.txt", "*.md", "*.jsonl", "*.json", "*.xml", "*.yaml", "*.csv", "*.htm", "*.html", "*.css",
+                    "*.js", "*.py", "*.java", "*.c", "*.cpp", "*.h", "*.hpp", "*.m", "*.mm", "*.cxx", "*.hxx", "*.cc", "*.hh", "*.swift", "*.kt",
+                    "*.cs", "*.vb", "*.php", "*.asp", "*.aspx", "*.jsp", "*.cgi", "*.pl", "*.rb", "*.lua", "*.go", "*.rs", "*.kts", "*.fs", "*.fsx",
+                    "*.ts", "*.tsx", "*.jsx", "*.dsl", "*.sh", "*.bat", "*.cmd", "*.toml", "*.tml", "*.log"};
+            }
+            if (filterAndNewExts.Count <= 0) {
+                filterAndNewExts.Add("*");
+            }
+            for (int i = 0; i < filterAndNewExts.Count; ++i) {
+                string filter = filterAndNewExts[i];
+                string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
+                foreach (string file in files) {
+                    var blocks = SearchFileInternalAsBlocks(file, searchRegex, contextLinesAfter, contextLinesBefore);
+                    if (blocks.Count == 0) {
+                        continue;
+                    }
+                    results.AddRange(blocks);
+                }
+            }
+            return results;
+        }
+
+
         public string HeadFile(string file, int lines)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
@@ -683,15 +732,13 @@ namespace CefDotnetApp.AgentCore.Core
                 return $"File not found: {file}";
             return TailInternal(fullPath, lines);
         }
-
         // Private helpers
 
-        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch)
+        private List<MatchBlock> SearchFileInternalAsBlocks(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore)
         {
-            hasMatch = false;
+            var blocks = new List<MatchBlock>();
             var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
             var matchedLineIndices = new HashSet<int>();
-            var result = new StringBuilder();
 
             try {
                 var regex = new Regex(searchRegex, RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -711,11 +758,10 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             if (matchedLineIndices.Count == 0) {
-                return $"No matches found for pattern: {searchRegex}";
+                return blocks;
             }
-            hasMatch = true;
 
-            // Build output with context lines
+            // Compute the union of context-expanded line ranges
             var outputLines = new HashSet<int>();
             foreach (var matchIndex in matchedLineIndices) {
                 int startLine = Math.Max(0, matchIndex - contextLinesBefore);
@@ -726,20 +772,75 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             var sortedLines = outputLines.OrderBy(x => x).ToList();
+            var currentText = new StringBuilder();
+            int blockStart = -1;
+            int blockEnd = -1;
+            int blockMatchCount = 0;
             int lastLine = -2;
+
             foreach (var lineIndex in sortedLines) {
-                if (lineIndex > lastLine + 1) {
-                    if (lastLine >= 0) {
-                        result.AppendLine("--");
-                    }
+                if (lineIndex > lastLine + 1 && lastLine >= 0) {
+                    // Flush previous block
+                    blocks.Add(new MatchBlock {
+                        FilePath = fullPath,
+                        StartLine = blockStart + 1,
+                        EndLine = blockEnd + 1,
+                        MatchedCount = blockMatchCount,
+                        Text = currentText.ToString()
+                    });
+                    currentText.Clear();
+                    blockStart = -1;
+                    blockMatchCount = 0;
                 }
-                string prefix = matchedLineIndices.Contains(lineIndex) ? "* " : "  ";
-                result.AppendLine($"{prefix}{lineIndex + 1}: {lines[lineIndex]}");
+                if (blockStart < 0) {
+                    blockStart = lineIndex;
+                }
+                bool isMatched = matchedLineIndices.Contains(lineIndex);
+                if (isMatched) {
+                    blockMatchCount++;
+                }
+                string prefix = isMatched ? "* " : "  ";
+                currentText.AppendLine($"{prefix}{lineIndex + 1}: {lines[lineIndex]}");
+                blockEnd = lineIndex;
                 lastLine = lineIndex;
             }
 
+            if (currentText.Length > 0) {
+                blocks.Add(new MatchBlock {
+                    FilePath = fullPath,
+                    StartLine = blockStart + 1,
+                    EndLine = blockEnd + 1,
+                    MatchedCount = blockMatchCount,
+                    Text = currentText.ToString()
+                });
+            }
+
+            return blocks;
+        }
+
+        private string RenderBlocksAsString(List<MatchBlock> blocks)
+        {
+            var result = new StringBuilder();
+            for (int i = 0; i < blocks.Count; i++) {
+                if (i > 0) {
+                    result.AppendLine("--");
+                }
+                result.Append(blocks[i].Text);
+            }
             return result.ToString();
         }
+
+        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch)
+        {
+            var blocks = SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            if (blocks.Count == 0) {
+                hasMatch = false;
+                return $"No matches found for pattern: {searchRegex}";
+            }
+            hasMatch = true;
+            return RenderBlocksAsString(blocks);
+        }
+
 
         private string HeadInternal(string fullPath, int lines)
         {

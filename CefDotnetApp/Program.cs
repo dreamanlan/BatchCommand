@@ -3158,6 +3158,8 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("args", "args() api");
             BatchCommand.BatchScript.AddUserApiDoc("arg", "arg(ix) api");
             BatchCommand.BatchScript.AddUserApiDoc("argnum", "argnum() api");
+            BatchCommand.BatchScript.AddUserApiDoc("inc", "inc(var) or inc(var,val) api");
+            BatchCommand.BatchScript.AddUserApiDoc("dec", "dec(var) or dec(var,val) api");
             BatchCommand.BatchScript.AddUserApiDoc("+", "add operator");
             BatchCommand.BatchScript.AddUserApiDoc("-", "sub operator");
             BatchCommand.BatchScript.AddUserApiDoc("*", "mul operator");
@@ -3191,7 +3193,11 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("collectioncall", "collectioncall api, internal implementation, using csharp object syntax");
             BatchCommand.BatchScript.AddUserApiDoc("collectionset", "collectionset api, internal implementation, using csharp object syntax");
             BatchCommand.BatchScript.AddUserApiDoc("collectionget", "collectionget api, internal implementation, using csharp object syntax");
-            BatchCommand.BatchScript.AddUserApiDoc("linq", "linq(list,method,arg1,arg2,...) statement, internal implementation, using obj.method(arg1,arg2,...) syntax, method can be orderby/orderbydesc/where/top, iterator is $$");
+            BatchCommand.BatchScript.AddUserApiDoc("linq", "linq(list,method,arg1,arg2,...) statement, internal implementation, using obj.method(arg1,arg2,...) syntax, method can be where/filter/select/map/top/take/skip/distinct/concat/groupby/orderby/orderbydesc/aggregate/reduce/any/all/count/first/last/tolist/sum/min/max/average, iterator is $$ (An additional iterator $$acc for aggregate/reduce operators)");
+            BatchCommand.BatchScript.AddUserApiDoc("null", "null() api");
+            BatchCommand.BatchScript.AddUserApiDoc("propset", "propset(varname,val) - set variable");
+            BatchCommand.BatchScript.AddUserApiDoc("propget", "propget(varname[,defval]) - get variable");
+            BatchCommand.BatchScript.AddUserApiDoc("propexists", "propexists(varname) - check variable");
             BatchCommand.BatchScript.AddUserApiDoc("max", "max(v1,v2)");
             BatchCommand.BatchScript.AddUserApiDoc("min", "min(v1,v2)");
             BatchCommand.BatchScript.AddUserApiDoc("abs", "abs(v)");
@@ -3228,12 +3234,32 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("float", "float(v)");
             BatchCommand.BatchScript.AddUserApiDoc("double", "double(v)");
             BatchCommand.BatchScript.AddUserApiDoc("decimal", "decimal(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("datetime", "datetime(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("isobject", "isobject(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isstring", "isstring(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isboolean", "isboolean(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("ischar", "ischar(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isinteger", "isinteger(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("issignedinteger", "issignedinteger(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isunsignedinteger", "isunsignedinteger(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isnumber", "isnumber(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("isdatetime", "isdatetime(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("istuple", "istuple(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("boxedvaluetype", "boxedvaluetype(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("boxedvaluetypename", "boxedvaluetypename(v)");
+            BatchCommand.BatchScript.AddUserApiDoc("ftoi", "ftoi(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("itof", "itof(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("ftou", "ftou(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("utof", "utof(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("dtol", "dtol(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("ltod", "ltod(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("dtou", "dtou(v) api");
+            BatchCommand.BatchScript.AddUserApiDoc("utod", "utod(v) api");
             BatchCommand.BatchScript.AddUserApiDoc("lerp", "lerp(a,b,t)");
             BatchCommand.BatchScript.AddUserApiDoc("clamp01", "clamp01(v)");
             BatchCommand.BatchScript.AddUserApiDoc("clamp", "clamp(v,v1,v2)");
             BatchCommand.BatchScript.AddUserApiDoc("approximately", "approximately(v1,v2)");
             BatchCommand.BatchScript.AddUserApiDoc("format", "format(fmt,arg1,arg2,...)");
-            BatchCommand.BatchScript.AddUserApiDoc("null", "null()");
             BatchCommand.BatchScript.AddUserApiDoc("tuple", "(v1,v2,...) or tuple(v1,v2,...) object");
             BatchCommand.BatchScript.AddUserApiDoc("array", "[v1,v2,...] or array(v1,v2,...) object");
             BatchCommand.BatchScript.AddUserApiDoc("list", "list(v1,v2,...) object");
@@ -3251,6 +3277,11 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("pwd", "pwd()");
             BatchCommand.BatchScript.AddUserApiDoc("os", "os()");
             BatchCommand.BatchScript.AddUserApiDoc("echo", "echo(fmt,arg1,arg2,...) api, Console.WriteLine");
+            BatchCommand.BatchScript.AddUserApiDoc("calcmd5", "calcmd5(file) api");
+            BatchCommand.BatchScript.AddUserApiDoc("pid", "pid() api");
+            BatchCommand.BatchScript.AddUserApiDoc("sleep", "sleep(milliseconds) api");
+            BatchCommand.BatchScript.AddUserApiDoc("now", "now() api");
+            BatchCommand.BatchScript.AddUserApiDoc("isnullorempty", "isnullorempty(str) api");
         }
         internal static string GetMetaDslResult(int maxResultSize, StringBuilder resSb, StringBuilder errSb)
         {

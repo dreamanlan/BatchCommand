@@ -1265,15 +1265,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return v;
             }
         }
-	    internal sealed class DateTimeExp : SimpleExpressionBase
-	    {
-	        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-	        {
-	            DateTime v1 = operands[0].GetDateTime();
-	            BoxedValue v = v1;
-	            return v;
-	        }
-	    }
+        internal sealed class DateTimeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                DateTime v1 = operands[0].GetDateTime();
+                BoxedValue v = v1;
+                return v;
+            }
+        }
         internal sealed class IsObjectExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1360,19 +1360,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromBool(false);
                 }
                 return BoxedValue.FromBool(operands[0].IsNumber);
-	        }
-	    }
-	    internal sealed class IsDateTimeExp : SimpleExpressionBase
-	    {
-	        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-	        {
-	            if (operands.Count != 1) {
-	            	AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_date_time(v)");
-	                return BoxedValue.FromBool(false);
-	            }
-	            return BoxedValue.FromBool(operands[0].IsDateTime);
-	        }
-	    }
+            }
+        }
+        internal sealed class IsDateTimeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: is_date_time(v)");
+                    return BoxedValue.FromBool(false);
+                }
+                return BoxedValue.FromBool(operands[0].IsDateTime);
+            }
+        }
         internal sealed class IsTupleExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)

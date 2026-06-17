@@ -226,12 +226,21 @@ namespace BatchCommand
                 throw new Exception("Expected: grep(lines,regex[,context_lines_after,context_lines_before]) api");
             BoxedValue r = BoxedValue.EmptyString;
             if (operands.Count >= 1) {
-                var lines = operands[0].As<IList<string>>();
+                var lines = operands[0].As<IList>();
                 var regex = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
                 if (null != lines) {
-                    string result = GrepLines(lines, regex, contextLinesAfter, contextLinesBefore);
+                    var strLines = new List<string>();
+                    foreach (var item in lines) {
+                        if (item is string str) {
+                            strLines.Add(str);
+                        }
+                        else {
+                            strLines.Add(item.ToString());
+                        }
+                    }
+                    string result = GrepLines(strLines, regex, contextLinesAfter, contextLinesBefore);
                     r = BoxedValue.FromObject(result);
                 }
             }
@@ -299,7 +308,7 @@ namespace BatchCommand
                 throw new Exception("Expected: subst(lines,regex,subst[,count]) api, count is the max count of per subst");
             var r = BoxedValue.NullObject;
             if (operands.Count >= 3) {
-                var lines = operands[0].As<IList<string>>();
+                var lines = operands[0].As<IList>();
                 Regex regex = new Regex(operands[1].AsString, RegexOptions.Compiled);
                 string subst = operands[2].AsString;
                 int count = -1;
@@ -307,9 +316,18 @@ namespace BatchCommand
                     count = operands[3].GetInt();
                 var outLines = new List<string>();
                 if (null != lines && null != regex && null != subst) {
-                    int ct = lines.Count;
+                    var strLines = new List<string>();
+                    foreach (var item in lines) {
+                        if (item is string str) {
+                            strLines.Add(str);
+                        }
+                        else {
+                            strLines.Add(item.ToString());
+                        }
+                    }
+                    int ct = strLines.Count;
                     for (int i = 0; i < ct; ++i) {
-                        string lineStr = lines[i];
+                        string lineStr = strLines[i];
                         lineStr = regex.Replace(lineStr, subst, count);
                         outLines.Add(lineStr);
                     }
@@ -328,7 +346,7 @@ namespace BatchCommand
                 throw new Exception("Expected: awk(lines,scp[,removeEmpties,sep1,sep2,...]) api");
             var r = BoxedValue.NullObject;
             if (operands.Count >= 2) {
-                var lines = operands[0].As<IList<string>>();
+                var lines = operands[0].As<IList>();
                 var script = operands[1].AsString;
                 bool removeEmpties = true;
                 if (operands.Count >= 3)
@@ -345,12 +363,21 @@ namespace BatchCommand
                 }
                 var outLines = new List<string>();
                 if (null != lines && !string.IsNullOrEmpty(script)) {
+                    var strLines = new List<string>();
+                    foreach (var item in lines) {
+                        if (item is string str) {
+                            strLines.Add(str);
+                        }
+                        else {
+                            strLines.Add(item.ToString());
+                        }
+                    }
                     var seps = sepList.ToArray();
                     var scpId = BatchScript.EvalAsFunc(script, s_ArgNames);
                     var args = BatchScript.NewCalculatorValueList();
-                    int ct = lines.Count;
+                    int ct = strLines.Count;
                     for (int i = 0; i < ct; ++i) {
-                        string lineStr = lines[i];
+                        string lineStr = strLines[i];
                         var fields = lineStr.Split(seps, removeEmpties ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
                         args.Clear();
                         args.Add(lineStr);

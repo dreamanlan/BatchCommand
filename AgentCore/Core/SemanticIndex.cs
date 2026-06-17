@@ -5,8 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.Data.Sqlite;
+using ScriptableFramework;
 
 namespace CefDotnetApp.AgentCore.Core
 {
@@ -57,9 +57,6 @@ namespace CefDotnetApp.AgentCore.Core
         private int _schemaVersion = 1;
         // Current schema version for new databases
         private const int CurrentSchemaVersion = 2;
-
-        /// <summary>Fired when a collection finishes background loading.</summary>
-        public event Action<string>? OnCollectionReady;
 
         /// <summary>Set an optional reranker to apply after BM25+cosine retrieval.</summary>
         public void SetRerankService(RerankService? reranker) => _rerankService = reranker;
@@ -1121,42 +1118,36 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             return sb.ToString();
         }
 
-        public List<string> QuerySqlCore(string sql)
+        public List<Dictionary<string, BoxedValue>> QuerySqlCore(string sql)
         {
-            using var conn = OpenConnection();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            using var reader = cmd.ExecuteReader();
-            var rows = new List<string>();
-            while (reader.Read()) {
-                var sb = new StringBuilder("{");
-                bool firstCol = true;
-                for (int i = 0; i < reader.FieldCount; i++) {
-                    if (!firstCol) sb.Append(',');
-                    firstCol = false;
-                    string colName = reader.GetName(i);
-                    sb.Append(EscapeJson(colName));
-                    sb.Append(':');
-                    if (reader.IsDBNull(i)) {
-                        sb.Append("null");
-                    }
-                    else {
-                        var fieldType = reader.GetFieldType(i);
-                        if (fieldType == typeof(long) || fieldType == typeof(int)) {
-                            sb.Append(reader.GetValue(i).ToString());
-                        }
-                        else if (fieldType == typeof(double) || fieldType == typeof(float)) {
-                            sb.Append(Convert.ToDouble(reader.GetValue(i)).ToString("G"));
-                        }
-                        else {
-                            sb.Append(EscapeJson(reader.GetValue(i).ToString() ?? ""));
-                        }
-                    }
-                }
-                sb.Append('}');
-                rows.Add(sb.ToString());
+         using var conn = OpenConnection();
+         using var cmd = conn.CreateCommand();
+         cmd.CommandText = sql;
+         using var reader = cmd.ExecuteReader();
+         var rows = new List<Dictionary<string, BoxedValue>>();
+         while (reader.Read()) {
+          var row = new Dictionary<string, BoxedValue>();
+          for (int i = 0; i < reader.FieldCount; i++) {
+           string colName = reader.GetName(i);
+           if (reader.IsDBNull(i)) {
+            row[colName] = BoxedValue.NullObject;
+           }
+           else {
+            var fieldType = reader.GetFieldType(i);
+            if (fieldType == typeof(long) || fieldType == typeof(int)) {
+             row[colName] = BoxedValue.From(Convert.ToInt64(reader.GetValue(i)));
             }
-            return rows;
+            else if (fieldType == typeof(double) || fieldType == typeof(float)) {
+             row[colName] = BoxedValue.From(Convert.ToDouble(reader.GetValue(i)));
+            }
+            else {
+             row[colName] = BoxedValue.FromString(reader.GetValue(i).ToString() ?? "");
+            }
+           }
+          }
+          rows.Add(row);
+         }
+         return rows;
         }
 
         private void MigrateV1ToV2()

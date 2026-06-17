@@ -144,7 +144,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, bytes);
                     return BoxedValue.From(result);
                 }
-                else if(obj is IList<byte> list) {
+                else if (obj is IList<byte> list) {
                     bool result = Core.AgentCore.Instance.FileOps.WriteFileBytes(path, list.ToArray());
                     return BoxedValue.From(result);
                 }
@@ -615,6 +615,35 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_log_file error: {ex.Message}");
                 return BoxedValue.FromString($"Error: {ex.Message}");
+            }
+        }
+    }
+
+    // search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before]) - return list of match blocks
+    sealed class SearchLogFileAsListExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before]), aliased as grep_log_file_as_list");
+                return BoxedValue.FromObject(new List<object>());
+            }
+
+            try {
+                string logFile = operands[0].AsString;
+                string searchRegex = operands[1].AsString;
+                int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
+                int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
+                var blocks = Core.AgentCore.Instance.FileOps.SearchLogFileAsList(logFile, searchRegex, contextLinesAfter, contextLinesBefore);
+                var result = new List<object>();
+                foreach (var b in blocks) {
+                    result.Add(b);
+                }
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"search_log_file_as_list error: {ex.Message}");
+                return BoxedValue.FromObject(new List<object>());
             }
         }
     }

@@ -116,8 +116,10 @@ public delegate void HostNativeLogDelegation([MarshalAs(UnmanagedType.LPUTF8Str)
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSendCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int cef_process_id);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostSendJavascriptCodeDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string code, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostSendJavascriptCallDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostCallJavascriptFuncInRendererDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func, IntPtr args, int argCount, IntPtr browser, IntPtr frame);
@@ -126,6 +128,7 @@ public delegate IntPtr HostExecuteJavascriptInRendererDelegation([MarshalAs(Unma
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostFreeNativeStringDelegation(IntPtr str);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostCommandLineHasSwitchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostCommandLineGetSwitchValueDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
@@ -137,12 +140,16 @@ public delegate void HostCommandLineAppendSwitchWithValueDelegation(IntPtr comma
 public delegate void HostCommandLineRemoveSwitchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 // CommandLine extended
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostCommandLineIsValidDelegation(IntPtr command_line);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostCommandLineIsReadOnlyDelegation(IntPtr command_line);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostCommandLineHasSwitchesDelegation(IntPtr command_line);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostCommandLineHasArgumentsDelegation(IntPtr command_line);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostCommandLineGetProgramDelegation(IntPtr command_line);
@@ -177,10 +184,13 @@ public delegate int HostBrowserGetIdDelegation(IntPtr browser);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostBrowserGetUrlDelegation(IntPtr browser);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostBrowserIsLoadingDelegation(IntPtr browser);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostBrowserIsPopupDelegation(IntPtr browser);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostBrowserHasDocumentDelegation(IntPtr browser);
 // Browser frame access
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -219,10 +229,13 @@ public delegate IntPtr HostFrameGetNameDelegation(IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostFrameGetIdentifierDelegation(IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostFrameIsMainDelegation(IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostFrameIsValidDelegation(IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostFrameIsFocusedDelegation(IntPtr frame);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostFrameGetParentDelegation(IntPtr frame);
@@ -233,6 +246,7 @@ public delegate IntPtr HostFrameGetBrowserDelegation(IntPtr frame);
 public delegate void HostFrameLoadUrlDelegation(IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
 // CefRequest properties
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
 public delegate bool HostRequestIsReadOnlyDelegation(IntPtr request);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostRequestGetUrlDelegation(IntPtr request);
@@ -1888,53 +1902,63 @@ namespace DotNetLib
             return 0;
         }
 
-        public delegate bool OnInitDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string cmd_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int process_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string app_dir, bool is_mac);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnInitDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string cmd_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string path, int process_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string app_dir, [MarshalAs(UnmanagedType.U1)] bool is_mac);
         public delegate void OnFinalizeDelegation();
         public delegate void OnBrowserInitDelegation(IntPtr browser);
         public delegate void OnBrowserFinalizeDelegation(IntPtr browser);
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBrowserHotReloadCopyFilesDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnBrowserHotReloadCompletedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, bool persistent);
+        public delegate int OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent);
         public delegate void OnRendererInitDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnRendererFinalizeDelegation(IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, bool is_loading, bool can_go_back, bool can_go_forward);
+        public delegate void OnLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.U1)] bool is_loading, [MarshalAs(UnmanagedType.U1)] bool can_go_back, [MarshalAs(UnmanagedType.U1)] bool can_go_forward);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnBeforeCommandLineProcessingDelegation(int process_type, IntPtr command_line);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnBeforeChildProcessLaunchDelegation(int process_type, IntPtr command_line);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnAlreadyRunningAppRelaunchDelegation(IntPtr command_line, [MarshalAs(UnmanagedType.LPUTF8Str)] string current_directory);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRenderProcessTerminatedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string startup_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int status, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_string);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, bool is_main);
+        public delegate void OnLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool inject_all_frame, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, bool is_main);
+        public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool OnRendererLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, bool is_main, IntPtr js_code, ref int code_size);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnRendererLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnRendererLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, bool is_loading, bool can_go_back, bool can_go_forward);
+        public delegate void OnRendererLoadingStateChangeDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, [MarshalAs(UnmanagedType.U1)] bool is_loading, [MarshalAs(UnmanagedType.U1)] bool can_go_back, [MarshalAs(UnmanagedType.U1)] bool can_go_forward);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnReceiveCefMessageDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, [MarshalAs(UnmanagedType.U1)] bool user_gesture, [MarshalAs(UnmanagedType.U1)] bool is_redirect, [MarshalAs(UnmanagedType.U1)] ref bool out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)

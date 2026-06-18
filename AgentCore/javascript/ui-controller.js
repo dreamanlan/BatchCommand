@@ -264,14 +264,11 @@ class UIController {
 
         // Check if API is configured
         const config = this.apiClient.getConfig();
-        const requiresKey = config.apiType !== 'auto_metadsl' && config.apiType !== 'local_openai';
+        const requiresKey = config.apiType !== 'auto_metadsl'
+            && config.apiType !== 'local_openai'
+            && config.apiType !== 'ollama';
         if (requiresKey && !config.apiKey) {
             this.showError('Please configure your API key first');
-            this.showConfigModal();
-            return;
-        }
-        if (config.apiType === 'local_openai' && !config.apiEndpoint) {
-            this.showError('Please configure the API endpoint URL for Local OpenAI');
             this.showConfigModal();
             return;
         }
@@ -639,17 +636,14 @@ saveConfiguration() {
     const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
     const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
 
-    // API key is optional for auto_metadsl and local_openai
-    if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && !apiKey) {
+    // API key is optional for auto_metadsl, local_openai and ollama
+    if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && apiType !== 'ollama' && !apiKey) {
         this.showError('API key is required');
         return;
     }
 
-    // local_openai requires the endpoint URL (used as-is, no suffix appending)
-    if (apiType === 'local_openai' && !apiEndpoint) {
-        this.showError('API endpoint URL is required for Local OpenAI');
-        return;
-    }
+    // local_openai/ollama endpoint is optional: defaults to http://localhost:11434
+    // and the proper suffix is appended automatically when missing.
 
     // Username is required for agent token mode
     if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {

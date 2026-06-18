@@ -49,16 +49,15 @@ class APIClient {
     }
 
     validateConfig() {
-        // auto_metadsl and local_openai may not require API key in some cases
+        // auto_metadsl, local_openai and ollama may not require API key
         if (this.config.apiType !== 'auto_metadsl' &&
             this.config.apiType !== 'local_openai' &&
+            this.config.apiType !== 'ollama' &&
             !this.config.apiKey) {
             throw new Error('API key is required');
         }
-        // local_openai requires an explicit endpoint URL
-        if (this.config.apiType === 'local_openai' && !this.config.apiEndpoint) {
-            throw new Error('API endpoint URL is required for Local OpenAI');
-        }
+        // local_openai/ollama endpoints are optional: when empty we fall back to
+        // http://localhost:11434 and append the proper suffix automatically.
         return true;
     }
 
@@ -70,14 +69,67 @@ class APIClient {
         } else if (this.config.apiType === 'auto_metadsl') {
             return 'https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a';
         } else if (this.config.apiType === 'local_openai') {
-            // No default: user must provide the full URL (no suffix appending)
-            return '';
+            // Default to Ollama's standard local address. The OpenAI-compatible
+            // suffix '/v1/chat/completions' will be appended automatically by
+            // resolveLocalOpenAIEndpoint() if the user only provides the base URL.
+            return 'http://localhost:11434';
+        } else if (this.config.apiType === 'ollama') {
+            // Default to Ollama's standard local address. The native Ollama
+            // suffix '/api/chat' will be appended automatically by
+            // resolveOllamaEndpoint() if the user only provides the base URL.
+            return 'http://localhost:11434';
         }
         return '';
     }
 
     getEndpoint() {
         return this.config.apiEndpoint || this.getDefaultEndpoint();
+    }
+
+    /**
+     * Normalize a local OpenAI-compatible endpoint URL.
+     * Accepts either a base URL (e.g. http://localhost:11434) or a full URL
+     * (e.g. http://localhost:11434/v1/chat/completions). When only the base
+     * URL is supplied, '/v1/chat/completions' is appended automatically.
+     */
+    resolveLocalOpenAIEndpoint(rawUrl) {
+        let url = (rawUrl || '').trim();
+        if (!url) return url;
+        // Strip trailing slashes for consistent suffix detection
+        url = url.replace(/\/+$/, '');
+        // If user already provided the chat completions path, keep as-is
+        if (/\/v1\/chat\/completions$/i.test(url)) {
+            return url;
+        }
+        // If user provided '/v1' only, append the rest
+        if (/\/v1$/i.test(url)) {
+            return url + '/chat/completions';
+        }
+        // Otherwise treat as base URL and append the standard suffix
+        return url + '/v1/chat/completions';
+    }
+
+    /**
+     * Normalize an Ollama native endpoint URL.
+     * Accepts either a base URL (e.g. http://localhost:11434) or a full URL
+     * (e.g. http://localhost:11434/api/chat). When only the base URL is
+     * supplied, '/api/chat' is appended automatically.
+     */
+    resolveOllamaEndpoint(rawUrl) {
+        let url = (rawUrl || '').trim();
+        if (!url) return url;
+        // Strip trailing slashes for consistent suffix detection
+        url = url.replace(/\/+$/, '');
+        // If user already provided the chat path, keep as-is
+        if (/\/api\/chat$/i.test(url)) {
+            return url;
+        }
+        // If user provided '/api' only, append the rest
+        if (/\/api$/i.test(url)) {
+            return url + '/chat';
+        }
+        // Otherwise treat as base URL and append the standard suffix
+        return url + '/api/chat';
     }
 
     async sendMessage(messages, onChunk, contextRounds) {
@@ -92,15 +144,21 @@ class APIClient {
             return await this.sendClaudeMessage(messages, onChunk);
         } else if (this.config.apiType === 'auto_metadsl') {
             return await this.sendAutoMetaDSLMessage(messages, onChunk);
+        } else if (this.config.apiType === 'ollama') {
+            return await this.sendOllamaMessage(messages, onChunk);
         } else {
             throw new Error('Unsupported API type: ' + this.config.apiType);
         }
     }
 
     async sendOpenAIMessage(messages, onChunk) {
-        // Endpoint is used as-is (no suffix appending). For local_openai users
-        // must provide the full URL (e.g. http://localhost:11434/v1/chat/completions).
-        const endpoint = this.getEndpoint();
+        // For 'openai' the endpoint is used as-is. For 'local_openai' we accept
+        // either a base URL (http://localhost:11434) or a full URL and normalize
+        // it to '<base>/v1/chat/completions' automatically.
+        let endpoint = this.getEndpoint();
+        if (this.config.apiType === 'local_openai') {
+            endpoint = this.resolveLocalOpenAIEndpoint(endpoint);
+        }
 
         const requestBody = {
             model: this.config.model || 'gpt-4.1',
@@ -130,6 +188,117 @@ class APIClient {
         }
 
         return await this.handleStreamResponse(response, onChunk, 'openai');
+    }
+
+    /**
+     * Send a chat request to a local Ollama server using its native
+     * '/api/chat' endpoint. The endpoint accepts either a base URL or a
+     * full URL; '/api/chat' is appended automatically when missing.
+     *
+     * The response is NDJSON: one JSON object per line, each containing
+     * { message: { role, content }, done } until 'done' is true.
+     */
+    async sendOllamaMessage(messages, onChunk) {
+        let endpoint = this.getEndpoint();
+        endpoint = this.resolveOllamaEndpoint(endpoint);
+
+        // Ollama's /api/chat accepts the same role/content shape used by
+        // OpenAI, so we can pass the messages array directly.
+        const requestBody = {
+            model: this.config.model || 'llama3',
+            messages: messages,
+            stream: true
+        };
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        // Ollama normally has no auth, but allow an optional bearer token
+        // for users who put it behind a reverse proxy.
+        if (this.config.apiKey) {
+            headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody),
+            signal: this.abortController.signal
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Ollama API error: ${response.status} - ${error}`);
+        }
+
+        return await this.handleOllamaStreamResponse(response, onChunk);
+    }
+
+    /**
+     * Parse an Ollama NDJSON streaming response. Each line is a standalone
+     * JSON object: { message: { content }, done }. We accumulate content
+     * fragments and invoke onChunk for each new piece.
+     */
+    async handleOllamaStreamResponse(response, onChunk) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                // Keep the last (possibly incomplete) line in the buffer
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed) continue;
+                    try {
+                        const data = JSON.parse(trimmed);
+                        if (data.error) {
+                            throw new Error(`Ollama API error: ${data.error}`);
+                        }
+                        const content = data.message?.content || '';
+                        if (content) {
+                            fullResponse += content;
+                            if (onChunk) onChunk(content, fullResponse);
+                        }
+                        if (data.done) {
+                            return fullResponse;
+                        }
+                    } catch (e) {
+                        if (apiLogger) apiLogger.error('Error parsing Ollama stream line:', { error: e, trimmed });
+                    }
+                }
+            }
+            // Flush any remaining buffered line
+            const tail = buffer.trim();
+            if (tail) {
+                try {
+                    const data = JSON.parse(tail);
+                    const content = data.message?.content || '';
+                    if (content) {
+                        fullResponse += content;
+                        if (onChunk) onChunk(content, fullResponse);
+                    }
+                } catch (e) {
+                    if (apiLogger) apiLogger.error('Error parsing trailing Ollama chunk:', { error: e, tail });
+                }
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                if (apiLogger) apiLogger.info('Request aborted');
+                throw new Error('Request cancelled');
+            }
+            throw error;
+        }
+
+        return fullResponse;
     }
 
     async sendClaudeMessage(messages, onChunk) {
@@ -434,6 +603,10 @@ class APIClient {
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,
             // because local model names are user-defined (e.g. Ollama tag).
+            return [];
+        } else if (apiType === 'ollama') {
+            // Empty list signals UI to switch to a free-text model input,
+            // because local model names are user-defined (e.g. 'llama3:8b').
             return [];
         }
         return [];

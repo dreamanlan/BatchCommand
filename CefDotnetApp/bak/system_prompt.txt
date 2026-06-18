@@ -120,7 +120,8 @@ __string_end__
 
 ```
 // @execute
-execute_command("cmd", "/c cd /d d:/AiWebGame && python tools/gen_tiles.py", "d:/AiWebGame", 120000);
+set_env("ProjectDirectory", agent_get_project_dir(9527));
+execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
 ```
 
 **脚本执行**
@@ -169,6 +170,18 @@ sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pr
 // @execute
 $query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
 to_pretty_string($query_result);
+```
+
+**需要知道的目录或值**
+- 项目目录: agent_get_project_dir(9527)
+- 项目标识: agent_get_project_identity(9527)
+- cefclient: basepath
+- 当前应用目录: appdir
+- 是否Mac: ismac
+
+```
+// @execute
+format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_identity(9527),appdir,basepath,ismac);
 ```
 
 ****强调****

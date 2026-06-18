@@ -533,7 +533,7 @@ showConfigModal() {
     this.updateUsernameFieldVisibility(config.authMode || 'personal');
     // Apply saved model only when a select is active; for free-text the
     // value was already set inside updateModelOptions.
-    if (this.elements.modelSelect.style.display !== 'none') {
+    if (this._modelInputMode !== 'text') {
         this.elements.modelSelect.value = config.model || '';
     }
 
@@ -564,9 +564,14 @@ handleClearHistory() {
     updateModelOptions(apiType) {
         const models = this.apiClient.getAvailableModels(apiType);
         const config = this.apiClient.getConfig();
+        // Use a free-text input when no predefined model list is available
+        // (e.g. local_openai where users name models themselves).
+        const useFreeText = (models.length === 0);
+        // Track current mode on the controller so other methods (save/read)
+        // don't have to inspect DOM inline styles.
+        this._modelInputMode = useFreeText ? 'text' : 'select';
 
-        if (models.length === 0) {
-            // No predefined model list: switch to free-text input (e.g. local_openai)
+        if (useFreeText) {
             this.elements.modelSelect.style.display = 'none';
             this.elements.modelTextInput.style.display = 'block';
             this.elements.modelTextInput.value = config.model || '';
@@ -626,8 +631,8 @@ saveConfiguration() {
     const authMode = this.elements.authModeSelect.value;
     const username = this.elements.usernameInput.value.trim();
     const apiEndpoint = this.elements.apiEndpointInput.value.trim();
-    // Read model from whichever control is currently visible
-    const model = (this.elements.modelTextInput.style.display !== 'none')
+    // Read model from whichever control is currently active
+    const model = (this._modelInputMode === 'text')
         ? this.elements.modelTextInput.value.trim()
         : this.elements.modelSelect.value;
     const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);

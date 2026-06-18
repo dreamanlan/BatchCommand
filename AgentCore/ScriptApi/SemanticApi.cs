@@ -101,8 +101,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     string? metadata = operands.Count > 2 ? operands[2].AsString : null;
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
-                    if (!embedding.IsReady)
+                    if (!embedding.IsReady) {
+                        Core.AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
                         return BoxedValue.FromString("[error] embedding model not ready");
+                    }
 
                     float[]? vector = embedding.Encode(content);
                     if (vector == null)

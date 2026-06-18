@@ -424,6 +424,9 @@ namespace CefDotnetApp.AgentCore.Core
                         AgentCore.Instance.SemanticIndex.InitCollection("metadsl_history");
                     }
                 }
+                else {
+                    AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
+                }
 
                 if (appendContext) {
                     if (inst != null) {

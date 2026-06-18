@@ -127,6 +127,7 @@ script(on_load_error)params($errorCode,$errorText,$failedUrl)
 script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$errorString)
 {
 	nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
+	return((true, ""));
 };
 
 script(on_receive_cef_message)params($msg,$args,$srcProcId)

@@ -1926,7 +1926,8 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadErrorDelegation(IntPtr browser, IntPtr frame, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string failed_url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnRenderProcessTerminatedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string startup_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int status, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_string);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnRenderProcessTerminatedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string startup_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int status, int error_code, [MarshalAs(UnmanagedType.LPUTF8Str)] string error_string, IntPtr reload_url, ref int reload_url_size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2533,7 +2534,7 @@ namespace DotNetLib
             }
         }
 
-        internal static void OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string)
+        internal static bool OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string, IntPtr reload_url, ref int reload_url_size)
         {
             NativeApi.SetContext(browser, frame);
             NativeLogNoLock($"[csharp] OnRenderProcessTerminated: startup_url={startup_url}, url={url}, status={status}, error_code={error_code}, error_string={error_string}");
@@ -2548,14 +2549,46 @@ namespace DotNetLib
                     vargs.Add(BoxedValue.From(status));
                     vargs.Add(BoxedValue.From(error_code));
                     vargs.Add(BoxedValue.FromString(error_string));
-                    BatchCommand.BatchScript.Call("on_render_process_terminated", vargs);
+                    var r = BatchCommand.BatchScript.Call("on_render_process_terminated", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
+                    // Return value convention: (should_reload, reload_url)
+                    if (!r.IsNullObject) {
+                        if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                            var tuple = r.GetTuple2();
+                            if (null != tuple) {
+                                bool shouldReload = tuple.Item1.GetBool();
+                                string reloadUrl = tuple.Item2.GetString();
+                                if (shouldReload) {
+                                    if (string.IsNullOrEmpty(reloadUrl)) {
+                                        reload_url_size = 0;
+                                        return true;
+                                    }
+                                    else {
+                                        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(reloadUrl);
+                                        if (bytes.Length < reload_url_size) {
+                                            Marshal.Copy(bytes, 0, reload_url, bytes.Length);
+                                            reload_url_size = bytes.Length;
+                                            return true;
+                                        }
+                                        else {
+                                            NativeLogNoLock($"[csharp] reload_url buffer too small: needed={bytes.Length}, provided={reload_url_size}");
+                                            // Report required size to caller; caller will fallback.
+                                            reload_url_size = bytes.Length;
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnRenderProcessTerminated:" + e.Message + "\n" + e.StackTrace);
             }
+            reload_url_size = 0;
+            return false;
         }
 
         internal static void OnBeforeCommandLineProcessing(int process_type, IntPtr command_line)

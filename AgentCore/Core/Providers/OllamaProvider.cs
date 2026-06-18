@@ -125,7 +125,7 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             // Record assistant reply in session history
-            string fullReply = sb.ToString();
+            string fullReply = ThinkingFilter.StripThink(sb.ToString());
             lock (messages)
             {
                 messages.Add(new { role = "assistant", content = fullReply });
@@ -138,6 +138,8 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Parses a single NDJSON line from Ollama streaming response.
         /// Returns the content chunk; sets done=true when stream is finished.
+        /// Intentionally ignores message.thinking so reasoning output never
+        /// leaks into the final answer returned by the API.
         /// </summary>
         private static string ParseChunk(string line, out bool done)
         {
@@ -146,16 +148,20 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 using var doc = System.Text.Json.JsonDocument.Parse(line);
                 var root = doc.RootElement;
-                if (root.TryGetProperty("done", out var doneEl) && doneEl.GetBoolean())
-                {
-                    done = true;
-                    return "";
-                }
+                // Note: 'done' may co-occur with a final 'message.content'
+                // payload on the same line. Read content first, then signal
+                // completion - otherwise we drop the last text fragment.
+                string text = "";
                 if (root.TryGetProperty("message", out var msgEl) &&
                     msgEl.TryGetProperty("content", out var contentEl))
                 {
-                    return contentEl.GetString() ?? "";
+                    text = contentEl.GetString() ?? "";
                 }
+                if (root.TryGetProperty("done", out var doneEl) && doneEl.GetBoolean())
+                {
+                    done = true;
+                }
+                return text;
             }
             catch { /* ignore malformed lines */ }
             return "";

@@ -234,7 +234,12 @@ namespace CefDotnetApp.AgentCore.Core
                     }
                     catch { /* skip malformed lines */ }
                 }
-                return sb.ToString();
+                // Strip any in-band <think>/<thinking>/<reasoning> tags so
+                // only the user-facing answer is returned. AGUI's event
+                // filter (TEXT_MESSAGE_CONTENT only) already excludes most
+                // out-of-band reasoning events; this catches anything the
+                // upstream agent embedded directly in the text payload.
+                return ThinkingFilter.StripThink(sb.ToString());
             }, _maxRetries, "AutoMetaDslProvider");
 
             // persist updated conversation_id for history continuation

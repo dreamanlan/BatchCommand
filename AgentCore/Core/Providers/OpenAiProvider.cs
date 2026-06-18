@@ -165,9 +165,17 @@ namespace CefDotnetApp.AgentCore.Core
             if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
             {
                 var first = choices[0];
-                if (first.TryGetProperty("message", out var msg) &&
-                    msg.TryGetProperty("content", out var content))
-                    return content.GetString() ?? "";
+                if (first.TryGetProperty("message", out var msg))
+                {
+                    // Intentionally ignore reasoning fields used by reasoning
+                    // models (DeepSeek-R1: reasoning_content; some Ollama
+                    // OpenAI-compat builds and OpenAI o-series: reasoning).
+                    // The API consumer only wants the user-facing answer.
+                    string content = msg.TryGetProperty("content", out var c) ? (c.GetString() ?? "") : "";
+                    // Some models still embed <think>...</think> directly in
+                    // the content field. Strip them defensively.
+                    return ThinkingFilter.StripThink(content);
+                }
             }
             if (root.TryGetProperty("error", out var err))
                 return $"[error] {err.GetRawText()}";

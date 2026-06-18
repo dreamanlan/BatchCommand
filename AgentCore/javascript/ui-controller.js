@@ -129,6 +129,70 @@ class UIController {
         return this.escapeHtml(content).replace(/\n/g, '<br>');
     }
 
+    /**
+     * Lightweight text renderer for streaming display.
+     * Only does HTML escaping and line-break preservation — no Markdown parsing.
+     * This avoids blocking the main thread with expensive marked.parse() calls
+     * on every single token, which causes the "freeze then all-at-once" effect.
+     */
+    renderStreamingText(content) {
+        return this.escapeHtml(content).replace(/\n/g, '<br>');
+    }
+
+    /**
+     * Update the assistant message's reasoning ("thinking") block.
+     * Reasoning is rendered as plain pre-wrapped text (never as Markdown)
+     * so it can never interfere with code-block detection in the answer.
+     * The block is shown auto-expanded while streaming and auto-collapsed
+     * once the answer streaming starts/finishes.
+     */
+    updateAssistantReasoning(messageId, reasoningText) {
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (!wrapper) return;
+        let block = wrapper.querySelector('.reasoning-block');
+        if (!block) {
+            block = document.createElement('details');
+            block.className = 'reasoning-block';
+            block.open = true; // expanded while reasoning is streaming
+            const summary = document.createElement('summary');
+            summary.className = 'reasoning-summary';
+            summary.textContent = '💭 思考中…';
+            const body = document.createElement('div');
+            body.className = 'reasoning-body';
+            block.appendChild(summary);
+            block.appendChild(body);
+            // Insert reasoning block before message-content so it appears above
+            const messageContent = wrapper.querySelector('.message-content');
+            if (messageContent && messageContent.parentNode) {
+                messageContent.parentNode.insertBefore(block, messageContent);
+            } else {
+                wrapper.querySelector('.vac-message-box')?.appendChild(block);
+            }
+        }
+        const body = block.querySelector('.reasoning-body');
+        if (body) {
+            body.textContent = reasoningText; // plain text only, no HTML / no Markdown
+            this.scrollToBottom();
+        }
+    }
+
+    /**
+     * Called once the assistant starts producing its real answer (or when
+     * streaming finishes). Collapses the reasoning block and switches the
+     * label from "thinking…" to a final "thought" caption.
+     */
+    finalizeAssistantReasoning(messageId) {
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (!wrapper) return;
+        const block = wrapper.querySelector('.reasoning-block');
+        if (!block) return;
+        if (block.dataset.finalized === '1') return;
+        block.dataset.finalized = '1';
+        block.open = false;
+        const summary = block.querySelector('.reasoning-summary');
+        if (summary) summary.textContent = '💭 已思考（点击展开）';
+    }
+
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -303,23 +367,24 @@ class UIController {
 
             // Send to API with streaming
             fullResponse = '';
+            let fullReasoning = '';
             const contextRounds = this.messageHandler.getContextConfig().contextRounds;
-            await this.apiClient.sendMessage(messages, (chunk, accumulated) => {
-                fullResponse = accumulated;
-                this.updateAssistantMessage(assistantMessageId, accumulated);
+            await this.apiClient.sendMessage(messages, (chunk, accumulated, kind) => {
+                if (kind === 'reasoning') {
+                    fullReasoning = accumulated;
+                    this.updateAssistantReasoning(assistantMessageId, accumulated);
+                } else {
+                    fullResponse = accumulated;
+                    this.updateAssistantMessage(assistantMessageId, accumulated);
+                }
             }, contextRounds);
 
-            // Finalize: render mermaid/svg code blocks in the assistant message
-            try {
-                const wrapper = this.elements.messagesArea.querySelector('[data-message-id="' + assistantMessageId + '"]');
-                if (wrapper) {
-                    const contentEl = wrapper.querySelector('.message-content');
-                    if (contentEl) this.processCodeBlocks(contentEl);
-                }
-            } catch (e) {
-                if (uiLogger) uiLogger.error('Finalize codeblocks error:', e);
-            }
+            // Make sure the reasoning block ends up collapsed even if no
+            // answer text arrived (rare edge case).
+            this.finalizeAssistantReasoning(assistantMessageId);
 
+            // Finalize: full Markdown render + code blocks after streaming is done
+            this.finalizeAssistantMessage(assistantMessageId, fullResponse);
 
             // Save assistant response
             this.messageHandler.addMessage('assistant', fullResponse);
@@ -331,18 +396,11 @@ class UIController {
             if (error.message === 'Request cancelled') {
                 // User clicked Stop: save partial response if any
                 if (uiLogger) uiLogger.info('Generation stopped by user, partial response length:', { length: fullResponse.length });
+                this.finalizeAssistantReasoning(assistantMessageId);
                 if (fullResponse) {
                     this.messageHandler.addMessage('assistant', fullResponse);
                     this.addMessageTag(assistantMessageId, new Date().toLocaleTimeString());
-                }
-                try {
-                    const wrapper = this.elements.messagesArea.querySelector('[data-message-id="' + assistantMessageId + '"]');
-                    if (wrapper) {
-                        const contentEl = wrapper.querySelector('.message-content');
-                        if (contentEl) this.processCodeBlocks(contentEl);
-                    }
-                } catch (e) {
-                    if (uiLogger) uiLogger.error('Finalize codeblocks error (stop):', e);
+                    this.finalizeAssistantMessage(assistantMessageId, fullResponse);
                 }
 
             } else {
@@ -447,10 +505,43 @@ updateAssistantMessage(messageId, content) {
     if (wrapper) {
         const messageContent = wrapper.querySelector('.message-content');
         if (messageContent) {
-            // Render Markdown for assistant messages
-            messageContent.innerHTML = this.renderMarkdown(content);
+            // Use lightweight text rendering during streaming to avoid
+            // expensive Markdown parsing on every single token chunk
+            messageContent.innerHTML = this.renderStreamingText(content);
             this.scrollToBottom();
         }
+        // First real answer chunk arrived — collapse the thinking block
+        this.finalizeAssistantReasoning(messageId);
+    }
+}
+
+/**
+ * Finalize an assistant message after streaming completes.
+ * Re-renders with full Markdown parsing and processes code blocks.
+ *
+ * IMPORTANT: rawText must be the original streamed text. We cannot recover
+ * it from DOM.textContent because the streaming renderer converted "\n"
+ * into "<br>" tags, and textContent does not turn <br> back into "\n".
+ */
+finalizeAssistantMessage(messageId, rawText) {
+    if (!messageId) return;
+    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+    if (!wrapper) return;
+    const messageContent = wrapper.querySelector('.message-content');
+    if (!messageContent) return;
+
+    // Re-render with full Markdown now that streaming is done.
+    // Fall back to empty string when rawText is missing (e.g. cancelled
+    // before any token arrived) so we don't feed undefined to marked.
+    const text = (typeof rawText === 'string') ? rawText : '';
+    messageContent.innerHTML = this.renderMarkdown(text);
+    this.scrollToBottom();
+
+    // Process code blocks (mermaid, svg, etc.)
+    try {
+        this.processCodeBlocks(messageContent);
+    } catch (e) {
+        if (uiLogger) uiLogger.error('Finalize codeblocks error:', e);
     }
 }
 

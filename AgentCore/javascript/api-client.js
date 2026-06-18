@@ -132,6 +132,121 @@ class APIClient {
         return url + '/api/chat';
     }
 
+    /**
+     * Stateful splitter that extracts reasoning segments from a streaming
+     * text fragment. Recognises three tag styles emitted by reasoning
+     * models (qwen3, gpt-oss, deepseek-r1, glm, ...):
+     *     <think>...</think>
+     *     <thinking>...</thinking>
+     *     <reasoning>...</reasoning>
+     * Tags are case-insensitive and may span chunk boundaries.
+     *
+     * Returns { reasoning, text }:
+     *   - reasoning: portion of the new fragment that belongs inside a
+     *                reasoning tag
+     *   - text:      portion that belongs to the visible answer
+     *
+     * State is carried via the `state` object the caller owns:
+     *   { inThink: bool, pending: string, closeTag: string }
+     *  - inThink:  whether we are currently inside a reasoning block
+     *  - pending:  small carry-over buffer holding a possibly-incomplete
+     *              tag at the tail of the previous fragment (e.g. '<thi')
+     *  - closeTag: when inThink, the exact close tag we are waiting for
+     *              (matches the open tag that started the block, lower-cased)
+     */
+    splitThinkFragment(fragment, state) {
+        // All recognised open/close tag pairs (lower-case for matching).
+        const OPENS = ['<think>', '<thinking>', '<reasoning>'];
+        const CLOSES = ['</think>', '</thinking>', '</reasoning>'];
+
+        let buf = (state.pending || '') + (fragment || '');
+        state.pending = '';
+        let reasoning = '';
+        let text = '';
+
+        // Find the earliest occurrence of any candidate in buf, doing a
+        // case-insensitive search. Returns { idx, length, matchedLower }
+        // or null when none of the candidates appear in buf.
+        const findEarliest = (haystack, candidates) => {
+            const lower = haystack.toLowerCase();
+            let best = null;
+            for (const cand of candidates) {
+                const i = lower.indexOf(cand);
+                if (i !== -1 && (best === null || i < best.idx)) {
+                    best = { idx: i, length: cand.length, matchedLower: cand };
+                }
+            }
+            return best;
+        };
+
+        // Maximum chars we may need to retain at tail to detect a partial
+        // tag that straddles the chunk boundary. Equals (longestTag - 1).
+        const maxTagLen = Math.max(
+            ...OPENS.map(s => s.length),
+            ...CLOSES.map(s => s.length)
+        );
+
+        while (buf.length > 0) {
+            if (state.inThink) {
+                // Wait for the specific close tag matching the open tag.
+                const closeTag = state.closeTag || '</think>';
+                const lower = buf.toLowerCase();
+                const idx = lower.indexOf(closeTag);
+                if (idx === -1) {
+                    // No close tag yet; keep last few chars as pending in
+                    // case a partial close tag is straddling the boundary.
+                    const keep = Math.min(buf.length, closeTag.length - 1);
+                    const tail = buf.slice(buf.length - keep);
+                    if (keep > 0 && closeTag.startsWith(tail.toLowerCase())) {
+                        reasoning += buf.slice(0, buf.length - keep);
+                        state.pending = tail;
+                    } else {
+                        reasoning += buf;
+                    }
+                    buf = '';
+                } else {
+                    reasoning += buf.slice(0, idx);
+                    buf = buf.slice(idx + closeTag.length);
+                    state.inThink = false;
+                    state.closeTag = '';
+                }
+            } else {
+                const hit = findEarliest(buf, OPENS);
+                if (hit === null) {
+                    // No open tag found. Watch for a partial open tag at
+                    // the tail that could be the prefix of any candidate.
+                    const keep = Math.min(buf.length, maxTagLen - 1);
+                    const tail = buf.slice(buf.length - keep);
+                    const tailLower = tail.toLowerCase();
+                    let isPrefix = false;
+                    for (let k = tailLower.length; k > 0 && !isPrefix; k--) {
+                        const sub = tailLower.slice(tailLower.length - k);
+                        for (const cand of OPENS) {
+                            if (cand.startsWith(sub)) {
+                                // Carry the matching suffix only; flush
+                                // everything before it as visible text.
+                                text += buf.slice(0, buf.length - k);
+                                state.pending = buf.slice(buf.length - k);
+                                isPrefix = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPrefix) text += buf;
+                    buf = '';
+                } else {
+                    text += buf.slice(0, hit.idx);
+                    buf = buf.slice(hit.idx + hit.length);
+                    state.inThink = true;
+                    // Derive the matching close tag from the open tag,
+                    // e.g. '<thinking>' -> '</thinking>'.
+                    state.closeTag = '</' + hit.matchedLower.slice(1);
+                }
+            }
+        }
+        return { reasoning, text };
+    }
+
     async sendMessage(messages, onChunk, contextRounds) {
         this.validateConfig();
 
@@ -243,7 +358,29 @@ class APIClient {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = '';
+        let fullReasoning = '';
         let buffer = '';
+        // State for inline <think>...</think> extraction across chunks
+        const thinkState = { inThink: false, pending: '', closeTag: '' };
+
+        const emitContent = (content) => {
+            if (!content) return;
+            const { reasoning, text } = this.splitThinkFragment(content, thinkState);
+            if (reasoning) {
+                fullReasoning += reasoning;
+                if (onChunk) onChunk(reasoning, fullReasoning, 'reasoning');
+            }
+            if (text) {
+                fullResponse += text;
+                if (onChunk) onChunk(text, fullResponse, 'text');
+            }
+        };
+
+        const emitReasoning = (reasoning) => {
+            if (!reasoning) return;
+            fullReasoning += reasoning;
+            if (onChunk) onChunk(reasoning, fullReasoning, 'reasoning');
+        };
 
         try {
             while (true) {
@@ -263,11 +400,11 @@ class APIClient {
                         if (data.error) {
                             throw new Error(`Ollama API error: ${data.error}`);
                         }
+                        // Ollama-native thinking field (gpt-oss / qwen3 / r1, etc.)
+                        const thinking = data.message?.thinking || '';
+                        if (thinking) emitReasoning(thinking);
                         const content = data.message?.content || '';
-                        if (content) {
-                            fullResponse += content;
-                            if (onChunk) onChunk(content, fullResponse);
-                        }
+                        if (content) emitContent(content);
                         if (data.done) {
                             return fullResponse;
                         }
@@ -281,11 +418,10 @@ class APIClient {
             if (tail) {
                 try {
                     const data = JSON.parse(tail);
+                    const thinking = data.message?.thinking || '';
+                    if (thinking) emitReasoning(thinking);
                     const content = data.message?.content || '';
-                    if (content) {
-                        fullResponse += content;
-                        if (onChunk) onChunk(content, fullResponse);
-                    }
+                    if (content) emitContent(content);
                 } catch (e) {
                     if (apiLogger) apiLogger.error('Error parsing trailing Ollama chunk:', { error: e, tail });
                 }
@@ -495,7 +631,29 @@ class APIClient {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullResponse = '';
+        let fullReasoning = '';
         let buffer = '';
+        // State for inline <think>...</think> extraction across chunks
+        const thinkState = { inThink: false, pending: '', closeTag: '' };
+
+        const emitContent = (content) => {
+            if (!content) return;
+            const { reasoning, text } = this.splitThinkFragment(content, thinkState);
+            if (reasoning) {
+                fullReasoning += reasoning;
+                if (onChunk) onChunk(reasoning, fullReasoning, 'reasoning');
+            }
+            if (text) {
+                fullResponse += text;
+                if (onChunk) onChunk(text, fullResponse, 'text');
+            }
+        };
+
+        const emitReasoning = (reasoning) => {
+            if (!reasoning) return;
+            fullReasoning += reasoning;
+            if (onChunk) onChunk(reasoning, fullReasoning, 'reasoning');
+        };
 
         try {
             while (true) {
@@ -523,11 +681,21 @@ class APIClient {
                             const data = JSON.parse(jsonStr);
 
                             let content = '';
+                            let reasoning = '';
                             if (apiType === 'openai') {
-                                content = data.choices?.[0]?.delta?.content || '';
+                                const delta = data.choices?.[0]?.delta || {};
+                                content = delta.content || '';
+                                // DeepSeek-R1 / o1 / many vendors: reasoning_content
+                                // Some Ollama OpenAI-compat builds: reasoning
+                                reasoning = delta.reasoning_content || delta.reasoning || '';
                             } else if (apiType === 'claude') {
                                 if (data.type === 'content_block_delta') {
-                                    content = data.delta?.text || '';
+                                    const dt = data.delta || {};
+                                    if (dt.type === 'thinking_delta') {
+                                        reasoning = dt.thinking || '';
+                                    } else {
+                                        content = dt.text || '';
+                                    }
                                 }
                             } else if (apiType === 'auto_metadsl') {
                                 // Handle auto_metadsl response format
@@ -542,12 +710,8 @@ class APIClient {
                                 }
                             }
 
-                            if (content) {
-                                fullResponse += content;
-                                if (onChunk) {
-                                    onChunk(content, fullResponse);
-                                }
-                            }
+                            if (reasoning) emitReasoning(reasoning);
+                            if (content) emitContent(content);
                         } catch (e) {
                             if (apiLogger) apiLogger.error('Error parsing stream data:', { error: e, trimmed });
                         }

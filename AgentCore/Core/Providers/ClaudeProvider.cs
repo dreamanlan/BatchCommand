@@ -160,11 +160,16 @@ namespace CefDotnetApp.AgentCore.Core
                 var sb = new StringBuilder();
                 foreach (var block in content.EnumerateArray())
                 {
+                    // Only collect plain text blocks. Anthropic extended-thinking
+                    // emits type=="thinking" blocks which we deliberately skip
+                    // so reasoning output never reaches the API consumer.
                     if (block.TryGetProperty("type", out var t) && t.GetString() == "text" &&
                         block.TryGetProperty("text", out var text))
                         sb.Append(text.GetString());
                 }
-                return sb.ToString();
+                // Defensive: strip any in-band <think>/<thinking> tags
+                // that might have been produced by an upstream proxy.
+                return ThinkingFilter.StripThink(sb.ToString());
             }
             if (root.TryGetProperty("error", out var err))
                 return $"[error] {err.GetRawText()}";

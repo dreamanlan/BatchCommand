@@ -49,9 +49,15 @@ class APIClient {
     }
 
     validateConfig() {
-        // auto_metadsl may not require API key in some cases
-        if (this.config.apiType !== 'auto_metadsl' && !this.config.apiKey) {
+        // auto_metadsl and local_openai may not require API key in some cases
+        if (this.config.apiType !== 'auto_metadsl' &&
+            this.config.apiType !== 'local_openai' &&
+            !this.config.apiKey) {
             throw new Error('API key is required');
+        }
+        // local_openai requires an explicit endpoint URL
+        if (this.config.apiType === 'local_openai' && !this.config.apiEndpoint) {
+            throw new Error('API endpoint URL is required for Local OpenAI');
         }
         return true;
     }
@@ -63,6 +69,9 @@ class APIClient {
             return 'https://api.anthropic.com/v1/messages';
         } else if (this.config.apiType === 'auto_metadsl') {
             return 'https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a';
+        } else if (this.config.apiType === 'local_openai') {
+            // No default: user must provide the full URL (no suffix appending)
+            return '';
         }
         return '';
     }
@@ -77,7 +86,7 @@ class APIClient {
         // Create new abort controller for this request
         this.abortController = new AbortController();
 
-        if (this.config.apiType === 'openai') {
+        if (this.config.apiType === 'openai' || this.config.apiType === 'local_openai') {
             return await this.sendOpenAIMessage(messages, onChunk);
         } else if (this.config.apiType === 'claude') {
             return await this.sendClaudeMessage(messages, onChunk);
@@ -89,6 +98,8 @@ class APIClient {
     }
 
     async sendOpenAIMessage(messages, onChunk) {
+        // Endpoint is used as-is (no suffix appending). For local_openai users
+        // must provide the full URL (e.g. http://localhost:11434/v1/chat/completions).
         const endpoint = this.getEndpoint();
 
         const requestBody = {
@@ -97,12 +108,18 @@ class APIClient {
             stream: true
         };
 
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        // Authorization is optional for local_openai (Ollama / LM Studio usually
+        // don't require auth). Only attach the header when an API key is set.
+        if (this.config.apiKey) {
+            headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+        }
+
         const response = await fetch(endpoint, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
+            headers: headers,
             body: JSON.stringify(requestBody),
             signal: this.abortController.signal
         });
@@ -414,6 +431,10 @@ class APIClient {
                 { value: 'hy3-preview', label: 'HY3-Preview' },
                 { value: 'kimi-k2.6', label: 'Kimi-K2.6' }
             ];
+        } else if (apiType === 'local_openai') {
+            // Empty list signals UI to switch to a free-text model input,
+            // because local model names are user-defined (e.g. Ollama tag).
+            return [];
         }
         return [];
     }

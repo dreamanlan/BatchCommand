@@ -32,6 +32,7 @@ class UIController {
             usernameGroup: document.getElementById('username-group'),
             apiEndpointInput: document.getElementById('api-endpoint'),
             modelSelect: document.getElementById('model'),
+            modelTextInput: document.getElementById('model-text'),
             streamCheckbox: document.getElementById('stream-enabled'),
             streamGroup: document.getElementById('stream-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
@@ -263,8 +264,14 @@ class UIController {
 
         // Check if API is configured
         const config = this.apiClient.getConfig();
-        if (config.apiType !== 'auto_metadsl' && !config.apiKey) {
+        const requiresKey = config.apiType !== 'auto_metadsl' && config.apiType !== 'local_openai';
+        if (requiresKey && !config.apiKey) {
             this.showError('Please configure your API key first');
+            this.showConfigModal();
+            return;
+        }
+        if (config.apiType === 'local_openai' && !config.apiEndpoint) {
+            this.showError('Please configure the API endpoint URL for Local OpenAI');
             this.showConfigModal();
             return;
         }
@@ -524,7 +531,11 @@ showConfigModal() {
     this.updateModelOptions(config.apiType);
     this.updateAutoMetaDSLFields(config.apiType);
     this.updateUsernameFieldVisibility(config.authMode || 'personal');
-    this.elements.modelSelect.value = config.model || '';
+    // Apply saved model only when a select is active; for free-text the
+    // value was already set inside updateModelOptions.
+    if (this.elements.modelSelect.style.display !== 'none') {
+        this.elements.modelSelect.value = config.model || '';
+    }
 
     this.elements.configModal.classList.add('active');
     this.hideError();
@@ -550,25 +561,37 @@ handleClearHistory() {
     }
 }
 
-updateModelOptions(apiType) {
-    const models = this.apiClient.getAvailableModels(apiType);
-    this.elements.modelSelect.innerHTML = '';
+    updateModelOptions(apiType) {
+        const models = this.apiClient.getAvailableModels(apiType);
+        const config = this.apiClient.getConfig();
 
-    models.forEach(model => {
-        const option = document.createElement('option');
-        option.value = model.value;
-        option.textContent = model.label;
-        this.elements.modelSelect.appendChild(option);
-    });
+        if (models.length === 0) {
+            // No predefined model list: switch to free-text input (e.g. local_openai)
+            this.elements.modelSelect.style.display = 'none';
+            this.elements.modelTextInput.style.display = 'block';
+            this.elements.modelTextInput.value = config.model || '';
+            return;
+        }
 
-    // Set default model
-    const config = this.apiClient.getConfig();
-    if (config.model && models.find(m => m.value === config.model)) {
-        this.elements.modelSelect.value = config.model;
-    } else if (models.length > 0) {
-        this.elements.modelSelect.value = models[0].value;
+        // Predefined list: use the select control
+        this.elements.modelSelect.style.display = 'block';
+        this.elements.modelTextInput.style.display = 'none';
+        this.elements.modelSelect.innerHTML = '';
+
+        models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model.value;
+            option.textContent = model.label;
+            this.elements.modelSelect.appendChild(option);
+        });
+
+        // Set default model
+        if (config.model && models.find(m => m.value === config.model)) {
+            this.elements.modelSelect.value = config.model;
+        } else if (models.length > 0) {
+            this.elements.modelSelect.value = models[0].value;
+        }
     }
-}
 
 updateAutoMetaDSLFields(apiType) {
     // Show auth mode and username fields only for auto_metadsl
@@ -603,14 +626,23 @@ saveConfiguration() {
     const authMode = this.elements.authModeSelect.value;
     const username = this.elements.usernameInput.value.trim();
     const apiEndpoint = this.elements.apiEndpointInput.value.trim();
-    const model = this.elements.modelSelect.value;
+    // Read model from whichever control is currently visible
+    const model = (this.elements.modelTextInput.style.display !== 'none')
+        ? this.elements.modelTextInput.value.trim()
+        : this.elements.modelSelect.value;
     const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
     const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
     const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
 
-    // API key is optional for auto_metadsl
-    if (apiType !== 'auto_metadsl' && !apiKey) {
+    // API key is optional for auto_metadsl and local_openai
+    if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && !apiKey) {
         this.showError('API key is required');
+        return;
+    }
+
+    // local_openai requires the endpoint URL (used as-is, no suffix appending)
+    if (apiType === 'local_openai' && !apiEndpoint) {
+        this.showError('API endpoint URL is required for Local OpenAI');
         return;
     }
 

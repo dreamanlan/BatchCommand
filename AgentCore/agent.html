@@ -508,6 +508,7 @@
                 <option value="openai">OpenAI</option>
                 <option value="claude">Claude</option>
                 <option value="auto_metadsl">Auto MetaDSL</option>
+                <option value="local_openai">Local OpenAI</option>
             </select>
             <button class="api-config-btn" id="config-btn">⚙️ Config</button>
             <button class="clear-history-btn" id="clear-history-btn">🗑️ Clear History</button>
@@ -552,6 +553,7 @@
                     <option value="openai">OpenAI</option>
                     <option value="claude">Claude</option>
                     <option value="auto_metadsl">Auto MetaDSL</option>
+                    <option value="local_openai">Local OpenAI</option>
                 </select>
             </div>
 
@@ -595,6 +597,8 @@
                 <select id="model">
                     <!-- Options will be populated by JavaScript -->
                 </select>
+                <input type="text" id="model-text" placeholder="e.g. qwen2.5:7b (Ollama) or any (LM Studio)"
+                    style="display: none;">
             </div>
 
             <div class="config-group">

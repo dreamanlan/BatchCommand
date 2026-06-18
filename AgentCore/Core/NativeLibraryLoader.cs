@@ -373,11 +373,15 @@ var agentCoreDir = GetAgentCoreDir();
             return IntPtr.Zero;
         }
 
+        // Cached handle to the loaded onnxruntime native library, used by DllImportResolver
+        // to satisfy [DllImport("onnxruntime")] calls in Microsoft.ML.OnnxRuntime assembly.
+        private static IntPtr _onnxRuntimeHandle = IntPtr.Zero;
+
         private static void PreloadOnnxRuntimeDlls()
         {
             try
             {
-var agentCoreDir = GetAgentCoreDir();
+                var agentCoreDir = GetAgentCoreDir();
                 if (string.IsNullOrEmpty(agentCoreDir))
                     return;
 
@@ -397,16 +401,320 @@ var agentCoreDir = GetAgentCoreDir();
                         continue;
                     }
 
-                    if (NativeLibrary.TryLoad(libPath, out _))
+                    // On macOS, the libonnxruntime.dylib shipped by Microsoft.ML.OnnxRuntime
+                    // has its install_name set to "@rpath/libonnxruntime.X.Y.Z.dylib" (versioned),
+                    // but only the unversioned file exists on disk. As a result, dyld registers the
+                    // loaded module under the versioned name, and CoreCLR's [DllImport("onnxruntime")]
+                    // (which probes for the unversioned "libonnxruntime.dylib") cannot reuse the
+                    // preloaded handle and re-resolves from disk -> dyld then chases the @rpath
+                    // versioned name and fails to find it -> NativeMethods cctor throws.
+                    //
+                    // Fix: ensure a sibling file exists with the install_name's basename so dyld
+                    // can satisfy the rpath lookup. We use a hard link (or copy as fallback) to
+                    // avoid having to re-codesign the dylib (which would be required if we used
+                    // install_name_tool to rewrite the id).
+                    if (baseName == "onnxruntime" && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        TryMaterializeOnnxRuntimeInstallNameAlias(libPath);
+                    }
+
+                    if (NativeLibrary.TryLoad(libPath, out IntPtr handle))
+                    {
                         Log("info", $"[NativeLibraryLoader] Successfully preloaded {libName} from {libPath}");
+                        if (baseName == "onnxruntime")
+                            _onnxRuntimeHandle = handle;
+                    }
                     else
+                    {
                         Log("warning", $"[NativeLibraryLoader] Failed to preload {libName} from {libPath}");
+                    }
+                }
+
+                // Plan B: register a DllImportResolver for Microsoft.ML.OnnxRuntime so that any
+                // [DllImport("onnxruntime")] in NativeMethods is satisfied by the preloaded handle.
+                // This works regardless of install_name / RID-based probing quirks, especially in
+                // HostCLR environments where the assembly may be loaded from byte arrays
+                // (Assembly.Location is empty, so the runtime can't infer runtimes/<rid>/native).
+                try
+                {
+                    RegisterOnnxRuntimeDllImportResolver();
+                }
+                catch (Exception resolverEx)
+                {
+                    Log("warning", $"[NativeLibraryLoader] Failed to register OnnxRuntime DllImportResolver: {resolverEx.Message}");
                 }
             }
             catch (Exception ex)
             {
                 Log("error", $"[NativeLibraryLoader] Exception preloading OnnxRuntime native libraries: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// On macOS, read the dylib's install_name (LC_ID_DYLIB) and, if it points to a
+        /// different basename in @rpath (e.g. "libonnxruntime.1.20.1.dylib"), create a
+        /// hard link (or copy) next to <paramref name="libPath"/> so dyld can resolve it.
+        /// Safe to call multiple times; no-op if alias already exists or install_name matches.
+        /// </summary>
+        private static void TryMaterializeOnnxRuntimeInstallNameAlias(string libPath)
+        {
+            try
+            {
+                string? installName = ReadDylibInstallName(libPath);
+                if (string.IsNullOrEmpty(installName))
+                {
+                    Log("info", $"[NativeLibraryLoader] Could not read install_name from {libPath}, skipping alias materialization");
+                    return;
+                }
+
+                string installBaseName = Path.GetFileName(installName);
+                string actualBaseName = Path.GetFileName(libPath);
+                if (string.Equals(installBaseName, actualBaseName, StringComparison.Ordinal))
+                {
+                    // install_name already matches the on-disk filename, nothing to do
+                    return;
+                }
+
+                string? nativeDir = Path.GetDirectoryName(libPath);
+                if (string.IsNullOrEmpty(nativeDir))
+                    return;
+
+                string aliasPath = Path.Combine(nativeDir, installBaseName);
+                if (File.Exists(aliasPath))
+                {
+                    Log("info", $"[NativeLibraryLoader] OnnxRuntime install_name alias already exists: {aliasPath}");
+                    return;
+                }
+
+                Log("info", $"[NativeLibraryLoader] Creating OnnxRuntime install_name alias '{installBaseName}' -> '{actualBaseName}' in {nativeDir}");
+
+                // Try hard link first (cheap, no extra disk space, no re-codesign needed)
+                if (TryCreateHardLink(libPath, aliasPath))
+                {
+                    Log("info", $"[NativeLibraryLoader] Successfully created hard link: {aliasPath}");
+                    return;
+                }
+
+                // Fallback: copy the file
+                try
+                {
+                    File.Copy(libPath, aliasPath, overwrite: false);
+                    Log("info", $"[NativeLibraryLoader] Successfully copied dylib to alias: {aliasPath}");
+                }
+                catch (Exception copyEx)
+                {
+                    Log("warning", $"[NativeLibraryLoader] Failed to copy dylib alias '{aliasPath}': {copyEx.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("warning", $"[NativeLibraryLoader] TryMaterializeOnnxRuntimeInstallNameAlias failed: {ex.Message}");
+            }
+        }
+
+        // P/Invoke into libc's link(2) for hard link creation on POSIX systems.
+        [DllImport("libc", EntryPoint = "link", SetLastError = true)]
+        private static extern int PosixLink(string oldpath, string newpath);
+
+        private static bool TryCreateHardLink(string source, string target)
+        {
+            try
+            {
+                int rc = PosixLink(source, target);
+                return rc == 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Read the LC_ID_DYLIB install_name from a Mach-O dylib file.
+        /// Supports both 32/64-bit and fat (universal) binaries; returns the install_name
+        /// from the first matching arch slice. Returns null on any parse error.
+        /// </summary>
+        private static string? ReadDylibInstallName(string path)
+        {
+            try
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var br = new BinaryReader(fs);
+
+                uint magic = br.ReadUInt32();
+
+                // Fat / universal binary: walk arch slices and parse the first one we can read.
+                // FAT_MAGIC = 0xCAFEBABE (big-endian on disk), FAT_MAGIC_64 = 0xCAFEBABF.
+                if (magic == 0xBEBAFECA || magic == 0xBFBAFECA)
+                {
+                    bool is64 = magic == 0xBFBAFECA;
+                    uint nfat = ReadUInt32BigEndian(br);
+                    for (int i = 0; i < nfat; i++)
+                    {
+                        // fat_arch / fat_arch_64
+                        br.ReadUInt32(); // cputype
+                        br.ReadUInt32(); // cpusubtype
+                        ulong offset = is64 ? ReadUInt64BigEndian(br) : ReadUInt32BigEndian(br);
+                        if (is64) ReadUInt64BigEndian(br); else ReadUInt32BigEndian(br); // size
+                        br.ReadUInt32(); // align
+                        if (is64) br.ReadUInt32(); // reserved
+
+                        long savedPos = fs.Position;
+                        fs.Seek((long)offset, SeekOrigin.Begin);
+                        string? name = ReadInstallNameFromMachOSlice(br);
+                        if (!string.IsNullOrEmpty(name))
+                            return name;
+                        fs.Seek(savedPos, SeekOrigin.Begin);
+                    }
+                    return null;
+                }
+
+                // Thin Mach-O: rewind and parse from start
+                fs.Seek(0, SeekOrigin.Begin);
+                return ReadInstallNameFromMachOSlice(br);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static uint ReadUInt32BigEndian(BinaryReader br)
+        {
+            byte[] b = br.ReadBytes(4);
+            return ((uint)b[0] << 24) | ((uint)b[1] << 16) | ((uint)b[2] << 8) | b[3];
+        }
+
+        private static ulong ReadUInt64BigEndian(BinaryReader br)
+        {
+            byte[] b = br.ReadBytes(8);
+            return ((ulong)b[0] << 56) | ((ulong)b[1] << 48) | ((ulong)b[2] << 40) | ((ulong)b[3] << 32)
+                 | ((ulong)b[4] << 24) | ((ulong)b[5] << 16) | ((ulong)b[6] << 8) | b[7];
+        }
+
+        private static string? ReadInstallNameFromMachOSlice(BinaryReader br)
+        {
+            // Mach-O magic numbers (host endian, 32 / 64 bit)
+            const uint MH_MAGIC = 0xFEEDFACE;
+            const uint MH_CIGAM = 0xCEFAEDFE;
+            const uint MH_MAGIC_64 = 0xFEEDFACF;
+            const uint MH_CIGAM_64 = 0xCFFAEDFE;
+            const uint LC_ID_DYLIB = 0x0D;
+
+            uint magic = br.ReadUInt32();
+            bool is64;
+            bool swap;
+            if (magic == MH_MAGIC) { is64 = false; swap = false; }
+            else if (magic == MH_MAGIC_64) { is64 = true; swap = false; }
+            else if (magic == MH_CIGAM) { is64 = false; swap = true; }
+            else if (magic == MH_CIGAM_64) { is64 = true; swap = true; }
+            else return null;
+
+            // mach_header(_64) remaining fields:
+            //   cputype, cpusubtype, filetype, ncmds, sizeofcmds, flags [, reserved (64-bit)]
+            br.ReadUInt32(); // cputype
+            br.ReadUInt32(); // cpusubtype
+            br.ReadUInt32(); // filetype
+            uint ncmds = swap ? ReadUInt32BigEndian(br) : br.ReadUInt32();
+            br.ReadUInt32(); // sizeofcmds
+            br.ReadUInt32(); // flags
+            if (is64) br.ReadUInt32(); // reserved
+
+            for (int i = 0; i < ncmds; i++)
+            {
+                long cmdStart = br.BaseStream.Position;
+                uint cmd = swap ? ReadUInt32BigEndian(br) : br.ReadUInt32();
+                uint cmdSize = swap ? ReadUInt32BigEndian(br) : br.ReadUInt32();
+                if (cmdSize < 8) return null;
+
+                if (cmd == LC_ID_DYLIB)
+                {
+                    // dylib_command:
+                    //   uint32 cmd; uint32 cmdsize;
+                    //   struct dylib { union lc_str name; uint32 timestamp; uint32 current_version; uint32 compatibility_version; }
+                    uint nameOffset = swap ? ReadUInt32BigEndian(br) : br.ReadUInt32();
+                    br.ReadUInt32(); // timestamp
+                    br.ReadUInt32(); // current_version
+                    br.ReadUInt32(); // compatibility_version
+
+                    long nameAbs = cmdStart + nameOffset;
+                    long nameMaxLen = cmdStart + cmdSize - nameAbs;
+                    if (nameMaxLen <= 0) return null;
+
+                    br.BaseStream.Seek(nameAbs, SeekOrigin.Begin);
+                    byte[] buf = br.ReadBytes((int)nameMaxLen);
+                    int zero = Array.IndexOf<byte>(buf, 0);
+                    int len = zero >= 0 ? zero : buf.Length;
+                    return System.Text.Encoding.UTF8.GetString(buf, 0, len);
+                }
+
+                // Skip to next command
+                br.BaseStream.Seek(cmdStart + cmdSize, SeekOrigin.Begin);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Register a DllImportResolver for Microsoft.ML.OnnxRuntime so that
+        /// [DllImport("onnxruntime")] inside NativeMethods is resolved to the
+        /// preloaded native handle (cached in <see cref="_onnxRuntimeHandle"/>).
+        /// </summary>
+        private static void RegisterOnnxRuntimeDllImportResolver()
+        {
+            if (_onnxRuntimeHandle == IntPtr.Zero)
+                return;
+
+            // Register resolver for already-loaded Microsoft.ML.OnnxRuntime assembly
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var name = asm.GetName().Name;
+                if (name != null && name.Equals("Microsoft.ML.OnnxRuntime", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        NativeLibrary.SetDllImportResolver(asm, OnnxRuntimeDllImportResolver);
+                        Log("info", $"[NativeLibraryLoader] Registered OnnxRuntime DllImportResolver for {name}");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        Log("info", $"[NativeLibraryLoader] DllImportResolver already set for {name}");
+                    }
+                }
+            }
+
+            // Also register for future assembly loads
+            AppDomain.CurrentDomain.AssemblyLoad += OnOnnxRuntimeAssemblyLoad;
+        }
+
+        private static void OnOnnxRuntimeAssemblyLoad(object? sender, AssemblyLoadEventArgs args)
+        {
+            var name = args.LoadedAssembly.GetName().Name;
+            if (name != null && name.Equals("Microsoft.ML.OnnxRuntime", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    NativeLibrary.SetDllImportResolver(args.LoadedAssembly, OnnxRuntimeDllImportResolver);
+                    Log("info", $"[NativeLibraryLoader] Registered OnnxRuntime DllImportResolver for late-loaded {name}");
+                }
+                catch (InvalidOperationException)
+                {
+                    // Already set
+                }
+            }
+        }
+
+        private static IntPtr OnnxRuntimeDllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            // Microsoft.ML.OnnxRuntime uses [DllImport("onnxruntime")] for all P/Invoke.
+            // Return the cached handle directly; this avoids dyld's @rpath resolution
+            // chasing a versioned filename that doesn't exist on disk.
+            if (_onnxRuntimeHandle != IntPtr.Zero &&
+                string.Equals(libraryName, "onnxruntime", StringComparison.Ordinal))
+            {
+                return _onnxRuntimeHandle;
+            }
+            return IntPtr.Zero;
         }
 
         private static void PreloadTreeSitterDlls()

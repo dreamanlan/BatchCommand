@@ -45,7 +45,11 @@ class ConfigManager {
         maxProcessedBlocks: 1000,
         maxSendRetries: 5,
         llmContextCountModuloForKeep: 16,
-        llmContextCountModuloForAlign: 8
+        llmContextCountModuloForAlign: 8,
+        // When true, validate the latest LLM response for MetaDSL formatting
+        // before scanning code blocks. On failure, feedback is sent to LLM and
+        // the scan is skipped to avoid executing partially rendered code.
+        strictValidation: true
       },
 
       // WebSocket settings
@@ -84,7 +88,7 @@ class ConfigManager {
       'panel.streamingPage',
       'panel.jsHotReload',
       'panel.maxConversationRounds',
-      
+
       'relay.wsUrl'
     ];
 

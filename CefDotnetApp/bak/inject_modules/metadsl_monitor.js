@@ -775,6 +775,38 @@ class MetaDSLMonitor {
       return;
     }
 
+    // Validate MetaDSL formatting in the latest LLM response before scanning code blocks.
+    // On failure, feedback is sent to LLM and code block scan is skipped for this round
+    // to avoid executing partially rendered or split code.
+    if (CONFIG.get('metadsl.strictValidation') && !this.isInitializing) {
+      const allMsgBoxesForValidate = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
+      const lastMsgBoxForValidate = allMsgBoxesForValidate.length > 0
+        ? allMsgBoxesForValidate[allMsgBoxesForValidate.length - 1]
+        : null;
+      // Skip validation if this message has already been validated (success or failure)
+      const alreadyValidated = lastMsgBoxForValidate
+        && (lastMsgBoxForValidate.dataset.metadslInvalid === '1'
+          || lastMsgBoxForValidate.dataset.metadslValidated === '1');
+      if (lastMsgBoxForValidate && !alreadyValidated && !this.isHistoryNode(lastMsgBoxForValidate)) {
+        const rawMarkdown = this.pageAdapter.extractLatestResponse();
+        const validation = this.validateLatestResponseMetaDSL(rawMarkdown);
+        if (!validation.ok) {
+          this.info('MetaDSL validation failed: ' + validation.reason);
+          this.sendResultToLLM('MetaDSL validation failed: ' + validation.reason
+            + '\nPlease resend with correct format.');
+          // Mark the message as invalid and scan-complete to avoid repeated feedback on the same message
+          lastMsgBoxForValidate.dataset.metadslInvalid = '1';
+          lastMsgBoxForValidate.dataset.scanComplete = '1';
+          this.pageAdapter.setLastScannedResponse(rawMarkdown, lastMsgBoxForValidate);
+          this.scanComplete = true;
+          this.pruneOldMessages();
+          return;
+        }
+        // Mark as validated to skip future re-validation on the same message
+        lastMsgBoxForValidate.dataset.metadslValidated = '1';
+      }
+    }
+
     this.info('LLM has stopped generating, processing code blocks...');
 
     // Re-mark any lazy-loaded history message boxes by DOM order:
@@ -1154,6 +1186,115 @@ class MetaDSLMonitor {
       hash = hash | 0; // Convert to 32-bit integer
     }
     return hash.toString();
+  }
+
+  // ========================================================================
+  // MetaDSL Format Validation
+  // ========================================================================
+
+  // Validate MetaDSL formatting in the reconstructed markdown text returned
+  // by extractLatestResponse(). Detects DOM splitting errors caused by nested
+  // ``` fences and missing newlines after fence/marker.
+  // Returns { ok: boolean, reason?: string }.
+  validateLatestResponseMetaDSL(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      return { ok: true };
+    }
+    const markers = CONFIG.metadslMarkers || [];
+    if (markers.length === 0) {
+      return { ok: true };
+    }
+    // Find all line-start fence positions (``` possibly indented).
+    const lines = rawText.split('\n');
+    const fenceLineIndices = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/^[ \t]*```/.test(lines[i])) {
+        fenceLineIndices.push(i);
+      }
+    }
+    // S1: odd number of fences -> unclosed fence
+    if (fenceLineIndices.length % 2 !== 0) {
+      return {
+        ok: false,
+        reason: 'Unclosed markdown code fence detected (found ' + fenceLineIndices.length
+          + ' fence markers, expected even count).'
+      };
+    }
+    // Pair fences and extract code blocks.
+    const blocks = [];
+    for (let p = 0; p < fenceLineIndices.length; p += 2) {
+      const openLineIdx = fenceLineIndices[p];
+      const closeLineIdx = fenceLineIndices[p + 1];
+      const openLine = lines[openLineIdx];
+      const bodyLines = lines.slice(openLineIdx + 1, closeLineIdx);
+      blocks.push({ openLine: openLine, bodyLines: bodyLines });
+    }
+    // Check helper: does a trimmed line start with any marker?
+    const startsWithMarker = (line) => {
+      const t = (line || '').trim();
+      for (const m of markers) {
+        if (t.indexOf(m) === 0) return true;
+      }
+      return false;
+    };
+    // Filter blocks whose first non-empty body line starts with a marker.
+    const markerBlocks = [];
+    for (const blk of blocks) {
+      // First non-empty body line
+      let firstNonEmpty = '';
+      for (const ln of blk.bodyLines) {
+        if (ln.trim().length > 0) { firstNonEmpty = ln; break; }
+      }
+      if (startsWithMarker(firstNonEmpty)) {
+        markerBlocks.push(blk);
+      }
+    }
+    // No MetaDSL block -> pass silently
+    if (markerBlocks.length === 0) {
+      return { ok: true };
+    }
+    // S3: more than one MetaDSL block -> split error or multi-segment
+    if (markerBlocks.length > 1) {
+      return {
+        ok: false,
+        reason: 'Detected ' + markerBlocks.length
+          + ' MetaDSL code blocks (with marker), but only 1 is allowed per reply.'
+          + ' This may also indicate the code block was split by an inner ``` fence.'
+      };
+    }
+    // Single MetaDSL block: further checks
+    const target = markerBlocks[0];
+    // S4: opening fence must be on its own line (no marker glued after ```lang).
+    // openLine is something like "```" or "```dsl" - extract content after the
+    // last leading ``` and ensure no marker appears on it.
+    const openTrim = target.openLine.trim();
+    const afterFence = openTrim.replace(/^```/, '');
+    if (startsWithMarker(afterFence)) {
+      return {
+        ok: false,
+        reason: 'MetaDSL marker is glued to the opening ``` fence without a newline.'
+      };
+    }
+    // S5: marker line itself must be a comment-only line (marker + optional trailing text
+    // is allowed because marker is a comment, but it must end at line break - already
+    // guaranteed by line splitting). Just ensure body has at least 2 lines (marker + code).
+    const nonEmptyBody = target.bodyLines.filter(ln => ln.trim().length > 0);
+    if (nonEmptyBody.length < 2) {
+      return {
+        ok: false,
+        reason: 'MetaDSL block contains only the marker line, no actual code.'
+      };
+    }
+    // S6: body must not contain another ``` fence inside.
+    for (const ln of target.bodyLines) {
+      if (/^[ \t]*```/.test(ln)) {
+        return {
+          ok: false,
+          reason: 'MetaDSL code block must not contain inner ``` fence markers.'
+        };
+      }
+    }
+    return { ok: true };
   }
 
   // ========================================================================

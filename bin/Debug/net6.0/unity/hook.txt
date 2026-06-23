@@ -412,24 +412,18 @@ hook("HookVkCommandBuffer")
 hook("GfxDeviceClient::CreateGpuProgram")
 {
 	onenter{
-		$a:int = ptrget(argv(0),8);
-		$b:int = ptrget(argv(1),8);
-		$c:int = ptrget(argv(2),8);
-		$d:int = ptrget(argv(3),8);
-		$e:string = ptrget(argv(4),8);
+		//$retVal:int = ptrget(argv(0),8);
+		$shaderProgramType:int = ptrget(argv(1),8);
+		$sourceAddr:int = argv(2);
+		$outputAddr:int = argv(3);
+		$shaderName:string = ptrget(argv(4),8);
 
-		//$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$e);
-		//printf("%s",$str);
-		//WriteLog($str);
+		$str:string = format("GfxDeviceClient::CreateGpuProgram enter time:%lld thread:%d shader:%s\n",time(),GetTID(),$shaderName);
+		printf("%s",$str);
+		WriteLog($str);
 		//dumpstack("#GfxDeviceClient::CreateGpuProgram");
 		//LogStack("#GfxDeviceClient::CreateGpuProgram");
-
 		return 0;
-	};
-	onexit{
-		//$str:string = format("GfxDeviceClient::CreateGpuProgram exit time:%lld thread:%d\n",time(),GetTID());
-		//printf("%s",$str);
-		//WriteLog($str);
 	};
 };
 hook("GfxDeviceClient::CreateComputeProgram")
@@ -1606,16 +1600,28 @@ hook("D3D11DrawBindings")
 		//   argv(3) = &pPS      (char*) pixel    shader debug name ("" if not bound)
 		//   argv(4) = &pBindings(char*) compact one-line snapshot of graphics-pipeline bindings:
 		//                                "vs_srvs: t<slot>=<viewDim>/<format>/<size>/<name>
+		//                                 [| vs_samplers: s<slot>=F=<filter>[/CmpF=<func>] ...]
 		//                                 [| gs_srvs: ...]
 		//                                 | ps_srvs: ...
+		//                                 | ps_samplers: s<slot>=F=<filter>[/CmpF=<func>] ...
 		//                                 | rts: r<slot>=<viewDim>/<format>/<size>/<name>
 		//                                 [| dsv=<viewDim>/<format>/<size>/<name>]
 		//                                 | vs_cbs: b<slot>=Buf/B=<byteWidth>/<name>
 		//                                 [| gs_cbs: ...]
 		//                                 | ps_cbs: ..."
 		//                                gs_srvs/gs_cbs are omitted entirely when the GS stage has
-		//                                no bindings; empty slots are skipped within each segment.
-		//                                Slot ranges: VS SRV/CB 0..7, GS SRV/CB 0..7, PS SRV 0..15,
+		//                                no bindings; vs_samplers is omitted entirely when VS has
+		//                                no sampler bound (VS samplers are rare). ps_samplers is
+		//                                always emitted for the PS stage. Empty slots are skipped
+		//                                within each segment. <filter> is the raw D3D11_FILTER
+		//                                value (decimal). When the D3D11_COMPARISON_FILTERING_BIT
+		//                                (0x80) bit is set the sampler is a comparison sampler
+		//                                and CmpF=<func> is appended. DEVICE_DRAW_SAMPLER_MISMATCH
+		//                                (#390) fires when the shader-declared sampler kind
+		//                                (Sampler vs SamplerComparisonState) does not match the
+		//                                currently-bound sampler's filter kind.
+		//                                Slot ranges: VS SRV/CB 0..7, VS sampler 0..7,
+		//                                GS SRV/CB 0..7, PS SRV 0..15, PS sampler 0..15,
 		//                                PS CB 0..7, RT 0..7, DSV single slot.
 		$frame:int = ptrget(argv(0),4);
 		$vs:string = ptrget(argv(1),8);
@@ -2397,5 +2403,47 @@ hook("D3D11DeferredClearState")
 		$str:string = format("D3D11DeferredClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
 		printf("%s",$str);
 		WriteLog($str);
+	};
+};
+hook("D3D11DeviceLost")
+{
+	onenter{
+		// Invoked from OnD3D11DeviceLost() right after Unity has classified the
+		// failure and BEFORE the recreate-vs-crash branch is taken. The script
+		// can:
+		//   - read hr / reason / reasonStr / reasonQueried as diagnostic input
+		//   - flip canRecover to steer between recreate path (1) and crash path (0)
+		//   - break inside the hook to fully take over and suppress both paths
+		//
+		// argv layout (DBGSCP_HOOK_VOID has NO return-value slot, args start at 0):
+		//   argv(0) = &hr                (int32_t HRESULT) the failing call's HRESULT
+		//   argv(1) = &reason            (int32_t HRESULT) GetDeviceRemovedReason() result
+		//                                                  (or DXGI_ERROR_DEVICE_REMOVED fallback when device==null)
+		//   argv(2) = &reasonStr         (const char*)     human readable string for reason
+		//   argv(3) = &reasonQueried     (bool, 1 byte)    1 if reason came from driver,
+		//                                                  0 if it is the fallback (device was null)
+		//   argv(4) = &effectiveTdrDelay (int)             TDR delay in seconds (registry value or default 2)
+		//   argv(5) = &canRecoverInt     (int)             1 = take recreate path, 0 = crash path.
+		//                                                  Script can override via ptrset(argv(5),4,X).
+		$hr:int            = ptrget(argv(0),4);
+		$reason:int        = ptrget(argv(1),4);
+		$reasonStr:string  = ptrget(argv(2),8);
+		$reasonQueried:int = ptrget(argv(3),1);
+		$tdrDelay:int      = ptrget(argv(4),4);
+		$canRecover:int    = ptrget(argv(5),4);
+
+		$str:string = format("D3D11DeviceLost time:%lld tid:%d hr:0x%08x reason:0x%08x (%s) queried:%d tdrDelay:%d canRecover:%d\n",time(),GetTID(),$hr,$reason,$reasonStr,$reasonQueried,$tdrDelay,$canRecover);
+		printf("%s",$str);
+		WriteLog($str);
+		FlushLog();
+
+		dumpstack("#D3D11DeviceLost");
+		LogStack("#D3D11DeviceLost");
+
+		// To force a crash even on otherwise-recoverable codes (HUNG/RESET/OOM), uncomment:
+		// ptrset(argv(5),4,0);
+
+		// To force a recreate attempt even on otherwise-fatal codes (REMOVED/DRIVER_INTERNAL/INVALID_CALL), uncomment:
+		// ptrset(argv(5),4,1);
 	};
 };

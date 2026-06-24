@@ -155,7 +155,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("dotnet_new", "dotnet_new(assembly,type_name,arg1,arg2,...)", new ExpressionFactoryHelper<DotnetNewExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_substring", "string_substring(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_substr", "string_substr(str[,start,len]) function", new ExpressionFactoryHelper<SubstringExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("substr", "substr(str[, start, count])", new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("substr", "substr(str[, start, count])", false, new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sub_str", "sub_str(str[, start, count])", false, new ExpressionFactoryHelper<SubstringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sub_string", "sub_string(str[, start, count])", false, new ExpressionFactoryHelper<SubstringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_string_builder", "new_string_builder()", new ExpressionFactoryHelper<NewStringBuilderExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_format", "append_format(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_format_line", "append_format_line(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatLineExp>());
@@ -3998,6 +4000,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         }
                         if (operands.Count >= 3) {
                             len = operands[2].GetInt();
+                        }
+                        if (start >= str.Length) {
+                            start = str.Length - 1;
+                        }
+                        if (start < 0) {
+                            start = 0;
+                        }
+                        if (len < 0) {
+                            len = 0;
+                        }
+                        else if (start + len > str.Length) {
+                            len = str.Length - start;
                         }
                         r = str.Substring(start, len);
                     }

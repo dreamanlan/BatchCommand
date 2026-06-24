@@ -431,8 +431,8 @@ hook("DbgScpShouldUseVulkan")
 		WriteLog($str);
 		assert(0);
 
-		// retval = 0;
-		ptrset(argv(0),1,0);
+		// retval = 1;
+		ptrset(argv(0),1,1);
 		// retry = 0;
 		return(0);
 	};

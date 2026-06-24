@@ -794,6 +794,22 @@ class MetaDSLMonitor {
           this.info('MetaDSL validation failed: ' + validation.reason);
           this.sendResultToLLM('MetaDSL validation failed: ' + validation.reason
             + '\nPlease resend with correct format.');
+          // Mark all code blocks inside this invalid message as processed/skipped,
+          // so the subsequent scanForNewCodeBlocks() will not enqueue them for execution.
+          // Without this, blocks would still be picked up on the next page-stable round
+          // because alreadyValidated short-circuits the validation but scan still runs.
+          const blocksInMsg = lastMsgBoxForValidate.querySelectorAll(
+            'code.code-block-body, code[class*="language-"], pre code');
+          blocksInMsg.forEach((blk) => {
+            if (blk.dataset.metadslStatus) return;
+            blk.dataset.metadslStatus = 'invalid_skipped';
+            blk.style.borderLeft = '3px solid #f44336';
+            blk.style.backgroundColor = 'rgba(244, 67, 54, 0.05)';
+            try {
+              const bid = this.getBlockId(blk);
+              if (bid) this.processedBlocks.add(bid);
+            } catch (e) { /* ignore id errors */ }
+          });
           // Mark the message as invalid and scan-complete to avoid repeated feedback on the same message
           lastMsgBoxForValidate.dataset.metadslInvalid = '1';
           lastMsgBoxForValidate.dataset.scanComplete = '1';

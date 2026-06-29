@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
@@ -30,8 +31,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("regex_find_first", "regex_find_first(str, regex_pattern, [ignoreCase]) return first match string or null", new ExpressionFactoryHelper<RegexFindFirstExp>());
 
             // File-based regex operations
-            AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
 
             // Regex capture group APIs
             AgentFrameworkService.Instance.DslEngine!.Register("regex_group", "regex_group(str, regex_pattern, group_index, [ignoreCase]) return the specified capture group (1-based) of the first match, or null", new ExpressionFactoryHelper<RegexGroupExp>());
@@ -183,8 +184,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 3 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase])");
+            if (operands.Count < 3 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])");
                 return BoxedValue.From(false);
             }
 
@@ -193,20 +194,22 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 string replacement = operands[2].AsString;
                 bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
+                Encoding? encoding = operands.Count > 4 ? GetEncoding(operands[4]) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
                     return BoxedValue.From(false);
                 }
 
-                string content = System.IO.File.ReadAllText(path);
+                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
                 if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: {path} pattern not found: {pattern}");
                     return BoxedValue.From(false);
                 }
                 string newContent = StringHelper.ReplacePattern(content, pattern, replacement, ignoreCase);
-                // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: false);
+                // When encoding is specified, use it for write as well.
+                // Otherwise, preserve original BOM state when overwriting existing file.
+                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: false);
                 System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -224,8 +227,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_search_file(path, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string");
                 return BoxedValue.FromObject(new List<string>());
             }
 
@@ -233,13 +236,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
+                Encoding? encoding = operands.Count > 3 ? GetEncoding(operands[3]) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
                     return BoxedValue.FromObject(new List<string>());
                 }
 
-                string content = System.IO.File.ReadAllText(path);
+                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
                 var matches = StringHelper.FindAllMatches(content, pattern, ignoreCase);
                 return BoxedValue.FromObject(matches);
             }

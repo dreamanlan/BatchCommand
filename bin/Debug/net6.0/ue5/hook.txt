@@ -431,8 +431,8 @@ hook("DbgScpShouldUseVulkan")
 		WriteLog($str);
 		assert(0);
 
-		// retval = 1;
-		ptrset(argv(0),1,1);
+		// retval = 0;
+		ptrset(argv(0),1,0);
 		// retry = 0;
 		return(0);
 	};
@@ -622,7 +622,17 @@ hook("Java_com_epicgames_unreal_GameActivity_nativeConsoleCommand")
 	onenter{
 		$cmdStr:string = ptrget(argv(0),8);
 
-		printf("receive android broadcast command: %s\n", $cmdStr);
+		printf("Java_com_epicgames_unreal_GameActivity_nativeConsoleCommand receive android broadcast command: %s\n", $cmdStr);
+
+		//assert(0);
+	};
+};
+hook("UE::Jni::FGameActivity::nativeConsoleCommand")
+{
+	onenter{
+		$cmdStr:string = ptrget(argv(0),8);
+
+		printf("UE::Jni::FGameActivity::nativeConsoleCommand receive android broadcast command: %s\n", $cmdStr);
 
 		//assert(0);
 	};

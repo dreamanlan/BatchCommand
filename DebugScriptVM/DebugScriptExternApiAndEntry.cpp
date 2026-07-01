@@ -19,24 +19,24 @@
 template<typename T>
 struct SystemAllocator {
     using value_type = T;
-    
+
     SystemAllocator() noexcept = default;
     template<typename U>
     SystemAllocator(const SystemAllocator<U>&) noexcept {}
-    
+
     T* allocate(std::size_t n) {
         if (n > std::size_t(-1) / sizeof(T)) {
             //throw std::bad_alloc();
-			return nullptr;
+            return nullptr;
         }
         T* ptr = static_cast<T*>(std::malloc(n * sizeof(T)));
         if (!ptr) {
             //throw std::bad_alloc();
-			return nullptr;
+            return nullptr;
         }
         return ptr;
     }
-    
+
     void deallocate(T* ptr, std::size_t) noexcept {
         std::free(ptr);
     }

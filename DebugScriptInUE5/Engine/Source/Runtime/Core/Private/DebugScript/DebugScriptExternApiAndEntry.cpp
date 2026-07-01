@@ -26,11 +26,13 @@ struct SystemAllocator {
     
     T* allocate(std::size_t n) {
         if (n > std::size_t(-1) / sizeof(T)) {
-            throw std::bad_alloc();
+            //throw std::bad_alloc();
+			return nullptr;
         }
         T* ptr = static_cast<T*>(std::malloc(n * sizeof(T)));
         if (!ptr) {
-            throw std::bad_alloc();
+            //throw std::bad_alloc();
+			return nullptr;
         }
         return ptr;
     }

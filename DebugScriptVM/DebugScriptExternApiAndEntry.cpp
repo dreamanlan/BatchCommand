@@ -58,7 +58,7 @@ bool operator!=(const SystemAllocator<T>&, const SystemAllocator<U>&) {
 #if defined(DBGSCP_ON_UNREAL)
 
 #include "CoreMinimal.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 

@@ -15,7 +15,9 @@
 // Semaphore (Windows)
 //---------------------------------------------------------
 
+#include "Windows/AllowWindowsPlatformTypes.h"
 #include <windows.h>
+#include "Windows/HideWindowsPlatformTypes.h"
 #undef min
 #undef max
 

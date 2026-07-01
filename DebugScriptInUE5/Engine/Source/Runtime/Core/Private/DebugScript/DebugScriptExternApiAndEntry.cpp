@@ -399,7 +399,7 @@ static void get_errno_message(int err, char* buf, size_t buflen)
         snprintf(buf, buflen, "Unknown error %d", err);
     }
 #else
-#if defined(GLIBC) && defined(_GNU_SOURCE)
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
     char* msg = strerror_r(err, buf, buflen);
     if (msg) {
         strncpy(buf, msg, buflen);

@@ -8,12 +8,18 @@
 int GetReadableRangeAround(void* addr,
     size_t half_range,
     ReadableRange* out_range) {
+    (void)addr;
+    (void)half_range;
+    (void)out_range;
     return 0;
 }
 
 int GetReadWritableRangeAround(void* addr,
     size_t half_range,
     ReadableRange* out_range) {
+    (void)addr;
+    (void)half_range;
+    (void)out_range;
     return 0;
 }
 
@@ -29,6 +35,8 @@ uint64_t CED_GetThreadId() {
 
 // Write dump file using async-signal-safe APIs.
 int CED_Platform_WriteDumpFile(const char* path, const CED_CrashDump* dump) {
+    (void)path;
+    (void)dump;
     return 0;
 }
 #endif

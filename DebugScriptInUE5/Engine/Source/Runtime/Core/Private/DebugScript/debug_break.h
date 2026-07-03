@@ -28,12 +28,13 @@ static inline bool IsDebuggerAttached_Native()
 
 #define DEBUG_BREAK() __debugbreak()
 
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(__linux__) || defined(__OHOS__)
 
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <cassert>
 
 static inline bool IsDebuggerAttached_Native()
 {
@@ -104,6 +105,11 @@ static inline bool IsDebuggerAttached_Native()
 
 #elif defined(__GNUC__)
 
+static inline bool IsDebuggerAttached_Native()
+{
+    return false;
+}
+
 // Some versions of GCC do provide __builtin_debugtrap, but it seems to be unreliable.
 // See https://github.com/scottt/debugbreak/issues/13
 #if defined(__i386__) || defined(__x86_64__)
@@ -115,5 +121,14 @@ static inline bool IsDebuggerAttached_Native()
 #elif defined(__aarch64__)
 #define DEBUG_BREAK() __asm__ volatile(".inst 0xd4200000")
 #endif
+
+#else
+
+static inline bool IsDebuggerAttached_Native()
+{
+    return false;
+}
+
+#define DEBUG_BREAK()
 
 #endif

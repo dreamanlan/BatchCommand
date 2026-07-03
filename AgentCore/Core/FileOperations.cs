@@ -23,14 +23,14 @@ namespace CefDotnetApp.AgentCore.Core
             _isMac = isMac;
         }
 
-        public string ReadFile(string path)
+        public string ReadFile(string path, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
                 throw new IOException($"File not found: {path}");
             }
 
-            return File.ReadAllText(fullPath, Encoding.UTF8);
+            return File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
         }
 
         public byte[] ReadFileBytes(string path)
@@ -43,17 +43,17 @@ namespace CefDotnetApp.AgentCore.Core
             return File.ReadAllBytes(fullPath);
         }
 
-        public string[] ReadFileLines(string path)
+        public string[] ReadFileLines(string path, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
                 throw new IOException($"File not found: {path}");
             }
 
-            return File.ReadAllLines(fullPath, Encoding.UTF8);
+            return File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
         }
 
-        public bool WriteFile(string path, string content, bool createDirectory = true)
+        public bool WriteFile(string path, string content, bool createDirectory = true, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
 
@@ -64,10 +64,11 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             if (!string.IsNullOrEmpty(content)) {
-                // Preserve original BOM state when overwriting existing file.
-                // If file does not exist, default to with-BOM (keep legacy behavior).
-                var encoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
-                File.WriteAllText(fullPath, content, encoding);
+                // When encoding is specified, use it directly.
+                // Otherwise, preserve original BOM state when overwriting existing file
+                // (defaults to with-BOM for new files to keep legacy behavior).
+                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                File.WriteAllText(fullPath, content, writeEncoding);
                 return true;
             }
             return false;
@@ -107,14 +108,15 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool AppendFile(string path, string content)
+        public bool AppendFile(string path, string content, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!string.IsNullOrEmpty(content)) {
-                // Preserve original BOM state when appending to existing file.
-                // If file does not exist, default to with-BOM (keep legacy behavior).
-                var encoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
-                File.AppendAllText(fullPath, content, encoding);
+                // When encoding is specified, use it directly.
+                // Otherwise, preserve original BOM state when appending to existing file
+                // (defaults to with-BOM for new files to keep legacy behavior).
+                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                File.AppendAllText(fullPath, content, writeEncoding);
                 return true;
             }
             return false;
@@ -286,7 +288,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         // Code editing methods
 
-        public bool ReplaceInFile(string path, string oldString, string newString, bool allOccurrences = false, bool exactMatch = false)
+        public bool ReplaceInFile(string path, string oldString, string newString, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -294,9 +296,10 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string content = File.ReadAllText(fullPath, Encoding.UTF8);
-            // Preserve original BOM state when overwriting existing file.
-            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            string content = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -346,7 +349,7 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool ReplaceLines(string path, int startLine, int endLine, string newContent)
+        public bool ReplaceLines(string path, int startLine, int endLine, string newContent, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -354,7 +357,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string[] lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_lines: out of range");
@@ -375,13 +378,14 @@ namespace CefDotnetApp.AgentCore.Core
                 result[index++] = lines[i];
             }
 
-            // Preserve original BOM state when overwriting existing file.
-            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
             File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }
 
-        public bool InsertAfterText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
+        public bool InsertAfterText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -389,9 +393,10 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string fileContent = File.ReadAllText(fullPath, Encoding.UTF8);
-            // Preserve original BOM state when overwriting existing file.
-            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            string fileContent = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -440,7 +445,7 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool InsertBeforeText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false)
+        public bool InsertBeforeText(string path, string searchLiteralText, string content, bool allOccurrences = false, bool exactMatch = false, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -448,9 +453,10 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string fileContent = File.ReadAllText(fullPath, Encoding.UTF8);
-            // Preserve original BOM state when overwriting existing file.
-            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            string fileContent = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -499,7 +505,7 @@ namespace CefDotnetApp.AgentCore.Core
             return false;
         }
 
-        public bool DeleteLines(string path, int startLine, int endLine)
+        public bool DeleteLines(string path, int startLine, int endLine, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
@@ -507,7 +513,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string[] lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("delete_lines: out of range");
@@ -522,19 +528,20 @@ namespace CefDotnetApp.AgentCore.Core
                 }
             }
 
-            // Preserve original BOM state when overwriting existing file.
-            var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            // When encoding is specified, use it for write as well.
+            // Otherwise, preserve original BOM state when overwriting existing file.
+            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
             File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }
 
-        public List<int> SearchLinesInFile(string path, string pattern, bool ignoreCase = true)
+        public List<int> SearchLinesInFile(string path, string pattern, bool ignoreCase = true, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return new List<int>();
 
-            var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            var lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var result = new List<int>();
 
             for (int i = 0; i < lines.Length; i++) {
@@ -558,14 +565,14 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
-        public string[] ReadLinesRange(string path, int startLine, int endLine)
+        public string[] ReadLinesRange(string path, int startLine, int endLine, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath)) {
                 throw new IOException($"File not found: {path}");
             }
 
-            string[] lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine > endLine) {
                 throw new IOException($"startLine:{startLine} > endLine:{endLine}");
@@ -586,29 +593,29 @@ namespace CefDotnetApp.AgentCore.Core
             return result;
         }
 
-        public int GetLineCount(string path)
+        public int GetLineCount(string path, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return 0;
 
-            string[] lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             return lines.Length;
         }
 
-        public string SearchFile(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        public string SearchFile(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return $"File not found: {path}";
-            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _);
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
         }
 
-        public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
+        public string SearchFiles(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (File.Exists(fullPath)) {
-                return SearchFile(path, searchRegex, contextLinesAfter, contextLinesBefore);
+                return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
             }
             if (!Directory.Exists(fullPath)) {
                 return $"Directory not found: {path}";
@@ -628,7 +635,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string filter = filterAndNewExts[i];
                 string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
                 foreach (string file in files) {
-                    var result = SearchFileInternal(file, searchRegex, contextLinesAfter, contextLinesBefore, out bool hasMatch);
+                    var result = SearchFileInternal(file, searchRegex, contextLinesAfter, contextLinesBefore, out bool hasMatch, encoding);
                     if (!hasMatch) {
                         continue;
                     }
@@ -642,36 +649,36 @@ namespace CefDotnetApp.AgentCore.Core
             return sb.ToString();
         }
 
-        public string SearchLogFile(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        public string SearchLogFile(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
             if (!File.Exists(fullPath))
                 return $"Log file not found: {logFile}";
-            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _);
+            return SearchFileInternal(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, out _, encoding);
         }
 
-        public List<MatchBlock> SearchFileAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        public List<MatchBlock> SearchFileAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return new List<MatchBlock>();
-            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
         }
 
-        public List<MatchBlock> SearchLogFileAsList(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0)
+        public List<MatchBlock> SearchLogFileAsList(string logFile, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(logFile, _appDir);
             if (!File.Exists(fullPath))
                 return new List<MatchBlock>();
-            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
         }
 
-        public List<MatchBlock> SearchFilesAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null)
+        public List<MatchBlock> SearchFilesAsList(string path, string searchRegex, int contextLinesAfter = 5, int contextLinesBefore = 0, List<string>? filterAndNewExts = null, Encoding? encoding = null)
         {
             var results = new List<MatchBlock>();
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (File.Exists(fullPath)) {
-                return SearchFileAsList(path, searchRegex, contextLinesAfter, contextLinesBefore);
+                return SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
             }
             if (!Directory.Exists(fullPath)) {
                 return results;
@@ -690,7 +697,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string filter = filterAndNewExts[i];
                 string[] files = Directory.GetFiles(path, filter, SearchOption.AllDirectories);
                 foreach (string file in files) {
-                    var blocks = SearchFileInternalAsBlocks(file, searchRegex, contextLinesAfter, contextLinesBefore);
+                    var blocks = SearchFileInternalAsBlocks(file, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
                     if (blocks.Count == 0) {
                         continue;
                     }
@@ -701,43 +708,43 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
 
-        public string HeadFile(string file, int lines)
+        public string HeadFile(string file, int lines, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
             if (!File.Exists(fullPath))
                 return $"File not found: {file}";
-            return HeadInternal(fullPath, lines);
+            return HeadInternal(fullPath, lines, encoding);
         }
 
-        public string TailFile(string file, int lines)
+        public string TailFile(string file, int lines, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _basePath);
             if (!File.Exists(fullPath))
                 return $"File not found: {file}";
-            return TailInternal(fullPath, lines);
+            return TailInternal(fullPath, lines, encoding);
         }
 
-        public string HeadLogFile(string file, int lines)
+        public string HeadLogFile(string file, int lines, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
             if (!File.Exists(fullPath))
                 return $"File not found: {file}";
-            return HeadInternal(fullPath, lines);
+            return HeadInternal(fullPath, lines, encoding);
         }
 
-        public string TailLogFile(string file, int lines)
+        public string TailLogFile(string file, int lines, Encoding? encoding = null)
         {
             string fullPath = PathHelper.EnsureAbsolutePath(file, _appDir);
             if (!File.Exists(fullPath))
                 return $"File not found: {file}";
-            return TailInternal(fullPath, lines);
+            return TailInternal(fullPath, lines, encoding);
         }
         // Private helpers
 
-        private List<MatchBlock> SearchFileInternalAsBlocks(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore)
+        private List<MatchBlock> SearchFileInternalAsBlocks(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, Encoding? encoding = null)
         {
             var blocks = new List<MatchBlock>();
-            var lines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            var lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var matchedLineIndices = new HashSet<int>();
 
             try {
@@ -830,9 +837,9 @@ namespace CefDotnetApp.AgentCore.Core
             return result.ToString();
         }
 
-        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch)
+        private string SearchFileInternal(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, out bool hasMatch, Encoding? encoding = null)
         {
-            var blocks = SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore);
+            var blocks = SearchFileInternalAsBlocks(fullPath, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
             if (blocks.Count == 0) {
                 hasMatch = false;
                 return $"No matches found for pattern: {searchRegex}";
@@ -842,17 +849,17 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
 
-        private string HeadInternal(string fullPath, int lines)
+        private string HeadInternal(string fullPath, int lines, Encoding? encoding = null)
         {
-            var allLines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            var allLines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var lineCount = Math.Min(lines, allLines.Length);
             var headLines = allLines.SkipLast(Math.Max(0, allLines.Length - lineCount)).ToArray();
             return string.Join("\n", headLines);
         }
 
-        private string TailInternal(string fullPath, int lines)
+        private string TailInternal(string fullPath, int lines, Encoding? encoding = null)
         {
-            var allLines = File.ReadAllLines(fullPath, Encoding.UTF8);
+            var allLines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var lineCount = Math.Min(lines, allLines.Length);
             var tailLines = allLines.Skip(Math.Max(0, allLines.Length - lineCount)).ToArray();
             return string.Join("\n", tailLines);

@@ -11,19 +11,20 @@ using CefDotnetApp.AgentCore.Utils;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
-    // read_file(path) - read file content
+    // read_file(path[, encoding]) - read file content
     sealed class ReadFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_file(path)");
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_file(path[, encoding])");
                 return BoxedValue.NullObject;
             }
 
             try {
                 string path = operands[0].AsString;
-                string content = Core.AgentCore.Instance.FileOps.ReadFile(path);
+                Encoding? encoding = operands.Count > 1 ? GetEncoding(operands[1]) : null;
+                string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding);
                 return BoxedValue.FromString(content ?? string.Empty);
             }
             catch (Exception ex) {
@@ -33,19 +34,20 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // write_file(path, content) - write file content
+    // write_file(path, content[, encoding]) - write file content
     sealed class WriteFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file(path, content)");
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: write_file(path, content[, encoding])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
@@ -59,7 +61,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         return BoxedValue.From(false);
                     }
                 }
-                bool result = Core.AgentCore.Instance.FileOps.WriteFile(path, content);
+                bool result = Core.AgentCore.Instance.FileOps.WriteFile(path, content, true, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
@@ -228,24 +230,25 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // append_file(path, content) - append to file
+    // append_file(path, content[, encoding]) - append to file
     sealed class AppendFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_file(path, content)");
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: append_file(path, content[, encoding])");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
                 string content = operands[1].AsString;
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values to a file !!!");
                     return BoxedValue.From(false);
                 }
-                bool result = Core.AgentCore.Instance.FileOps.AppendFile(path, content);
+                bool result = Core.AgentCore.Instance.FileOps.AppendFile(path, content, encoding);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
@@ -594,14 +597,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // search_log_file(log_file, search_regex[, context_lines_after, context_lines_before]) - search log file with regex pattern
+    // search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]) - search log file with regex pattern
     sealed class SearchLogFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before]), aliased as grep_log_file");
-                return BoxedValue.FromString("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before])");
+            if (operands.Count < 2 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file");
+                return BoxedValue.FromString("Expected: search_log_file(log_file, search_regex[, context_lines_after, context_lines_before, encoding])");
             }
 
             try {
@@ -609,7 +612,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string searchRegex = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                string result = Core.AgentCore.Instance.FileOps.SearchLogFile(logFile, searchRegex, contextLinesAfter, contextLinesBefore);
+                Encoding? encoding = operands.Count > 4 ? GetEncoding(operands[4]) : null;
+                string result = Core.AgentCore.Instance.FileOps.SearchLogFile(logFile, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -619,13 +623,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before]) - return list of match blocks
+    // search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]) - return list of match blocks
     sealed class SearchLogFileAsListExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 4) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before]), aliased as grep_log_file_as_list");
+            if (operands.Count < 2 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: search_log_file_as_list(log_file, search_regex[, context_lines_after, context_lines_before, encoding]), aliased as grep_log_file_as_list");
                 return BoxedValue.FromObject(new List<object>());
             }
 
@@ -634,7 +638,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string searchRegex = operands[1].AsString;
                 int contextLinesAfter = operands.Count > 2 ? operands[2].GetInt() : 5;
                 int contextLinesBefore = operands.Count > 3 ? operands[3].GetInt() : 0;
-                var blocks = Core.AgentCore.Instance.FileOps.SearchLogFileAsList(logFile, searchRegex, contextLinesAfter, contextLinesBefore);
+                Encoding? encoding = operands.Count > 4 ? GetEncoding(operands[4]) : null;
+                var blocks = Core.AgentCore.Instance.FileOps.SearchLogFileAsList(logFile, searchRegex, contextLinesAfter, contextLinesBefore, encoding);
                 var result = new List<object>();
                 foreach (var b in blocks) {
                     result.Add(b);
@@ -648,20 +653,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // tail_log_file(log_file, lines) - get last N lines from log file
+    // tail_log_file(log_file, lines[, encoding]) - get last N lines from log file
     sealed class TailLogFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_log_file(log_file, lines)");
-                return BoxedValue.FromString("Expected: tail_log_file(log_file, lines)");
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_log_file(log_file, lines[, encoding])");
+                return BoxedValue.FromString("Expected: tail_log_file(log_file, lines[, encoding])");
             }
 
             try {
                 string logFile = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                string result = Core.AgentCore.Instance.FileOps.TailLogFile(logFile, lines);
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
+                string result = Core.AgentCore.Instance.FileOps.TailLogFile(logFile, lines, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -671,20 +677,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // head_log_file(log_file, lines) - get first N lines from log file
+    // head_log_file(log_file, lines[, encoding]) - get first N lines from log file
     sealed class HeadLogFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_log_file(log_file, lines)");
-                return BoxedValue.FromString("Expected: head_log_file(log_file, lines)");
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_log_file(log_file, lines[, encoding])");
+                return BoxedValue.FromString("Expected: head_log_file(log_file, lines[, encoding])");
             }
 
             try {
                 string logFile = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                string result = Core.AgentCore.Instance.FileOps.HeadLogFile(logFile, lines);
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
+                string result = Core.AgentCore.Instance.FileOps.HeadLogFile(logFile, lines, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -694,20 +701,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // tail_file(file, lines) - get last N lines from file
+    // tail_file(file, lines[, encoding]) - get last N lines from file
     sealed class TailFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_file(file, lines)");
-                return BoxedValue.FromString("Expected: tail_file(file, lines)");
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: tail_file(file, lines[, encoding])");
+                return BoxedValue.FromString("Expected: tail_file(file, lines[, encoding])");
             }
 
             try {
                 string file = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                string result = Core.AgentCore.Instance.FileOps.TailFile(file, lines);
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
+                string result = Core.AgentCore.Instance.FileOps.TailFile(file, lines, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {
@@ -717,20 +725,21 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // head_file(file, lines) - get first N lines from file
+    // head_file(file, lines[, encoding]) - get first N lines from file
     sealed class HeadFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_file(file, lines)");
-                return BoxedValue.FromString("Expected: head_file(file, lines)");
+            if (operands.Count < 1 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: head_file(file, lines[, encoding])");
+                return BoxedValue.FromString("Expected: head_file(file, lines[, encoding])");
             }
 
             try {
                 string file = operands[0].AsString;
                 int lines = operands.Count > 1 ? operands[1].GetInt() : 100;
-                string result = Core.AgentCore.Instance.FileOps.HeadFile(file, lines);
+                Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
+                string result = Core.AgentCore.Instance.FileOps.HeadFile(file, lines, encoding);
                 return BoxedValue.FromString(result);
             }
             catch (Exception ex) {

@@ -19,22 +19,24 @@
 template<typename T>
 struct SystemAllocator {
     using value_type = T;
-    
+
     SystemAllocator() noexcept = default;
     template<typename U>
     SystemAllocator(const SystemAllocator<U>&) noexcept {}
-    
+
     T* allocate(std::size_t n) {
         if (n > std::size_t(-1) / sizeof(T)) {
-            throw std::bad_alloc();
+            //throw std::bad_alloc();
+            return nullptr;
         }
         T* ptr = static_cast<T*>(std::malloc(n * sizeof(T)));
         if (!ptr) {
-            throw std::bad_alloc();
+            //throw std::bad_alloc();
+            return nullptr;
         }
         return ptr;
     }
-    
+
     void deallocate(T* ptr, std::size_t) noexcept {
         std::free(ptr);
     }
@@ -58,7 +60,7 @@ bool operator!=(const SystemAllocator<T>&, const SystemAllocator<U>&) {
 #if defined(DBGSCP_ON_UNREAL)
 
 #include "CoreMinimal.h"
-#include "HAL/PlatformFilemanager.h"
+#include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 
@@ -397,7 +399,7 @@ static void get_errno_message(int err, char* buf, size_t buflen)
         snprintf(buf, buflen, "Unknown error %d", err);
     }
 #else
-#if defined(GLIBC) && defined(_GNU_SOURCE)
+#if defined(__GLIBC__) && defined(_GNU_SOURCE)
     char* msg = strerror_r(err, buf, buflen);
     if (msg) {
         strncpy(buf, msg, buflen);
@@ -1253,12 +1255,16 @@ bool IsDbgScpLoaded()
 }
 void InitGpuCaptureManager()
 {
+    char path[1025] = { 0 };
+    memset(path, 0, sizeof(path));
+    const char* libPath = path;
+    DBGSCP_HOOK_VOID("InitGpuCaptureManager", libPath);
 #if defined(__APPLE__) && __APPLE__
-    GpuCaptureManager::Instance().Init(GpuCaptureBackend::MetalXcode);
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::MetalXcode, libPath);
 #elif defined(__OHOS__)
-    GpuCaptureManager::Instance().Init(GpuCaptureBackend::HuaweiSquid);
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::HuaweiSquid, libPath);
 #else
-    GpuCaptureManager::Instance().Init(GpuCaptureBackend::RenderDoc);
+    GpuCaptureManager::Instance().Init(GpuCaptureBackend::RenderDoc, libPath);
 #endif
     g_bFrameCapturing = false;
 }

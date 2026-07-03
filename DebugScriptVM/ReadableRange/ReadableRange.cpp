@@ -1,6 +1,46 @@
 #include "ReadableRange.h"
 #include <string.h>
 
+#if defined(_WIN32)
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
+#elif defined(__ANDROID__)
+#else
+int GetReadableRangeAround(void* addr,
+    size_t half_range,
+    ReadableRange* out_range) {
+    (void)addr;
+    (void)half_range;
+    (void)out_range;
+    return 0;
+}
+
+int GetReadWritableRangeAround(void* addr,
+    size_t half_range,
+    ReadableRange* out_range) {
+    (void)addr;
+    (void)half_range;
+    (void)out_range;
+    return 0;
+}
+
+// Get epoch time (seconds).
+uint64_t CED_GetTimestamp() {
+    return 0;
+}
+
+// Get Linux thread ID.
+uint64_t CED_GetThreadId() {
+    return 0;
+}
+
+// Write dump file using async-signal-safe APIs.
+int CED_Platform_WriteDumpFile(const char* path, const CED_CrashDump* dump) {
+    (void)path;
+    (void)dump;
+    return 0;
+}
+#endif
+
 // Global configuration
 static char g_cedDumpDir[512] = { 0 };
 static char g_cedDumpBase[128] = { 0 };

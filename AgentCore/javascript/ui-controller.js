@@ -35,6 +35,12 @@ class UIController {
             modelTextInput: document.getElementById('model-text'),
             streamCheckbox: document.getElementById('stream-enabled'),
             streamGroup: document.getElementById('stream-group'),
+            enableWebSearchCheckbox: document.getElementById('enable-web-search'),
+            webSearchGroup: document.getElementById('web-search-group'),
+            enableThinkingCheckbox: document.getElementById('enable-thinking'),
+            thinkingGroup: document.getElementById('thinking-group'),
+            reasoningEffortSelect: document.getElementById('reasoning-effort'),
+            reasoningEffortGroup: document.getElementById('reasoning-effort-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
             maxContextCharsInput: document.getElementById('max-context-chars'),
             maxHistoryMessagesInput: document.getElementById('max-history-messages'),
@@ -358,7 +364,7 @@ class UIController {
         try {
             // Get API type for context optimization
             const config = this.apiClient.getConfig();
-            
+
             // Get conversation context (optimized for auto_metadsl)
             const messages = this.messageHandler.getConversationContext(undefined, config.apiType);
 
@@ -420,7 +426,7 @@ class UIController {
         // Check if we need to remove old messages to maintain display limit
         const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
         const currentVisibleMessages = this.elements.messagesArea.querySelectorAll('.vac-message-wrapper').length;
-        
+
         // Remove oldest message if we exceed the display limit
         if (currentVisibleMessages >= displayLimit) {
             const oldestMessage = this.elements.messagesArea.querySelector('.vac-message-wrapper');
@@ -429,7 +435,7 @@ class UIController {
                 if (uiLogger) uiLogger.debug('Removed oldest message from display (limit: ' + displayLimit + ')');
             }
         }
-        
+
         const wrapper = document.createElement('div');
         wrapper.className = 'vac-message-wrapper';
         if (role === 'user') {
@@ -586,11 +592,11 @@ loadExistingMessages() {
     // Older messages are still stored in localStorage but not displayed
     const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
     const messagesToDisplay = messages.slice(-displayLimit);
-    
+
     if (messagesToDisplay.length < messages.length) {
         if (uiLogger) uiLogger.info('Displaying last ' + messagesToDisplay.length + ' of ' + messages.length + ' messages');
     }
-    
+
     messagesToDisplay.forEach(msg => {
         const wrapper = this.displayMessage(msg.role, msg.content);
         // Add el-tag for assistant messages (history messages are already complete)
@@ -607,8 +613,11 @@ showConfigModal() {
     this.elements.apiKeyInput.value = config.apiKey || '';
     this.elements.authModeSelect.value = config.authMode || 'personal';
     this.elements.usernameInput.value = config.username || '';
-    this.elements.streamCheckbox.checked = !!config.stream;
-    this.elements.apiEndpointInput.value = config.apiEndpoint || '';
+        this.elements.streamCheckbox.checked = !!config.stream;
+        this.elements.enableWebSearchCheckbox.checked = !!config.enableWebSearch;
+        this.elements.enableThinkingCheckbox.checked = !!config.enableThinking;
+        this.elements.reasoningEffortSelect.value = config.reasoningEffort || '';
+        this.elements.apiEndpointInput.value = config.apiEndpoint || '';
 
     // Load context configuration
     const contextConfig = this.messageHandler.getContextConfig();
@@ -692,10 +701,16 @@ updateAutoMetaDSLFields(apiType) {
         this.elements.authModeGroup.style.display = 'block';
         this.elements.usernameGroup.style.display = 'block';
         this.elements.streamGroup.style.display = 'block';
+        this.elements.webSearchGroup.style.display = 'block';
+        this.elements.thinkingGroup.style.display = 'block';
+        this.elements.reasoningEffortGroup.style.display = 'block';
     } else {
         this.elements.authModeGroup.style.display = 'none';
         this.elements.usernameGroup.style.display = 'none';
         this.elements.streamGroup.style.display = 'none';
+        this.elements.webSearchGroup.style.display = 'none';
+        this.elements.thinkingGroup.style.display = 'none';
+        this.elements.reasoningEffortGroup.style.display = 'none';
     }
 }
 
@@ -759,12 +774,18 @@ saveConfiguration() {
     }
 
     const stream = this.elements.streamCheckbox.checked;
+    const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
+    const enableThinking = this.elements.enableThinkingCheckbox.checked;
+    const reasoningEffort = this.elements.reasoningEffortSelect.value;
     const config = {
         apiType: apiType,
         apiKey: apiKey,
         authMode: authMode,
         username: username,
         stream: stream,
+        enableWebSearch: enableWebSearch,
+        enableThinking: enableThinking,
+        reasoningEffort: reasoningEffort,
         apiEndpoint: apiEndpoint,
         model: model
     };

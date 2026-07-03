@@ -638,6 +638,35 @@
                 <small style="color: #7f8c8d; font-size: 12px;">Use SSE streaming mode (default: on)</small>
             </div>
 
+            <div class="config-group" id="web-search-group" style="display: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="enable-web-search" style="margin: 0; width: auto;">
+                    Enable Web Search
+                </label>
+                <small style="color: #7f8c8d; font-size: 12px;">AGUI input.enable_web_search (default: off)</small>
+            </div>
+
+            <div class="config-group" id="thinking-group" style="display: none;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="enable-thinking" style="margin: 0; width: auto;">
+                    Enable Thinking
+                </label>
+                <small style="color: #7f8c8d; font-size: 12px;">AGUI chat_extra.enable_thinking (only sent when
+                    enabled)</small>
+            </div>
+
+            <div class="config-group" id="reasoning-effort-group" style="display: none;">
+                <label for="reasoning-effort">Reasoning Effort:</label>
+                <select id="reasoning-effort">
+                    <option value="">(not set)</option>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                </select>
+                <small style="color: #7f8c8d; font-size: 12px;">AGUI chat_extra.reasoning_effort (only sent when
+                    non-empty)</small>
+            </div>
+
             <div class="config-group">
                 <label for="api-endpoint">API Endpoint (Optional):</label>
                 <input type="text" id="api-endpoint" placeholder="Leave empty for default">

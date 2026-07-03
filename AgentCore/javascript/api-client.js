@@ -35,7 +35,10 @@ class APIClient {
             model: 'gpt-4.1',
             username: '', // For auto_metadsl auth
             authMode: 'personal', // 'personal' or 'agent' for auto_metadsl
-            stream: true // Use streaming for auto_metadsl
+            stream: true, // Use streaming for auto_metadsl
+            enableWebSearch: false, // AGUI: input.enable_web_search
+            enableThinking: false, // AGUI: input.chat_extra.enable_thinking
+            reasoningEffort: '' // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | ...)
         };
     }
 
@@ -475,22 +478,35 @@ class APIClient {
         // Build full context message in the same format as C# AutoMetaDslProvider
         // Format: [role]: content\n for each message
         let messageContent = '';
-        
+
         // Always prepend system prompt (frontend manages context, server is stateless)
         const systemMessages = messages.filter(m => m.role === 'system');
         if (systemMessages.length > 0) {
             const systemContext = systemMessages.map(m => m.content).join('\n\n');
             messageContent += '[system]: ' + systemContext + '\n';
         }
-        
+
         // Append all user/assistant history messages (already cleaned by getConversationContext)
         const conversationMessages = messages.filter(m => m.role !== 'system');
         for (const m of conversationMessages) {
             messageContent += '[' + m.role + ']: ' + m.content + '\n';
         }
-        
+
         if (!messageContent.trim()) {
             throw new Error('No message content to send');
+        }
+
+        // Build chat_extra dynamically so optional fields are omitted when not
+        // enabled (AGUI protocol: do not send fields the model does not support).
+        const chatExtra = {
+            attached_images: [],
+            extra_headers: {}
+        };
+        if (this.config.enableThinking) {
+            chatExtra.enable_thinking = true;
+        }
+        if (this.config.reasoningEffort) {
+            chatExtra.reasoning_effort = this.config.reasoningEffort;
         }
 
         // Build request body in auto_metadsl format
@@ -502,11 +518,8 @@ class APIClient {
                 conversation_id: '', // Always empty - frontend manages context
                 model: this.config.model || 'deepseek-v3.1',
                 stream: !!this.config.stream,
-                enable_web_search: false,
-                chat_extra: {
-                    attached_images: [],
-                    extra_headers: {}
-                },
+                enable_web_search: !!this.config.enableWebSearch,
+                chat_extra: chatExtra,
                 temperature: 0.5
             }
         };
@@ -752,17 +765,26 @@ class APIClient {
             ];
         } else if (apiType === 'auto_metadsl') {
             return [
-                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
-                { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
-                { value: 'glm-5.1', label: 'GLM-5.1' },
+                { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet' },
+                { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus' },
                 { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
+                { value: 'claude-4.7-opus-1m-context', label: 'Claude-4.7-Opus-1M' },
                 { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
                 { value: 'claude-4.6-sonnet-1m-context', label: 'Claude-4.6-Sonnet-1M' },
                 { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
                 { value: 'claude-4.6-opus-1m-context', label: 'Claude-4.6-Opus-1M' },
                 { value: 'gpt-5.4', label: 'GPT-5.4' },
+                { value: 'gpt-5.5', label: 'GPT-5.5' },
+                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro' },
                 { value: 'hy3-preview', label: 'HY3-Preview' },
-                { value: 'kimi-k2.6', label: 'Kimi-K2.6' }
+                { value: 'kimi-k2.6', label: 'Kimi-K2.6' },
+                { value: 'glm-5.2', label: 'GLM-5.2' },
+                { value: 'glm-5.1', label: 'GLM-5.1' },
+                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash' },
+                { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
+                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
+                { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash' },
+                { value: 'hy-3.0', label: 'HY-3.0' }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

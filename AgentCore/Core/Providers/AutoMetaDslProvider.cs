@@ -25,6 +25,10 @@ namespace CefDotnetApp.AgentCore.Core
         private bool _keepSession = false;
         private int _contextRounds = 16;
         private int _maxContextChars = 128 * 1024; // 128KB default
+        // AGUI extended options
+        private bool _enableWebSearch = false;
+        private bool _enableThinking = false;
+        private string _reasoningEffort = ""; // empty = not set; typical values: low/medium/high
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         // send count per tag for periodic system prompt injection
@@ -57,6 +61,9 @@ namespace CefDotnetApp.AgentCore.Core
             else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
             else if (key == "max_context_chars" && int.TryParse(value, out var mcc) && mcc > 0) _maxContextChars = mcc;
             else if (key == "timeout" && int.TryParse(value, out var ts) && ts > 0) _timeoutSeconds = ts;
+            else if (key == "enable_web_search") _enableWebSearch = value == "true" || value == "1";
+            else if (key == "enable_thinking") _enableThinking = value == "true" || value == "1";
+            else if (key == "reasoning_effort") _reasoningEffort = value ?? "";
         }
 
         public void SetSystemPrompt(string tag, string prompt)
@@ -165,15 +172,15 @@ namespace CefDotnetApp.AgentCore.Core
                 _sendCounts[tag] = count + 1;
             }
 
-            var input = new
+            var input = new Dictionary<string, object>
             {
-                message = finalMessage,
-                conversation_id = convId,
-                model = _model,
-                stream = useStream,
-                enable_web_search = false,
-                chat_extra = BuildChatExtra(tag, imageUrls),
-                temperature = 0.5
+                ["message"] = finalMessage,
+                ["conversation_id"] = convId,
+                ["model"] = _model,
+                ["stream"] = useStream,
+                ["enable_web_search"] = _enableWebSearch,
+                ["chat_extra"] = BuildChatExtra(tag, imageUrls),
+                ["temperature"] = 0.5
             };
             var body = new { input };
             string json = System.Text.Json.JsonSerializer.Serialize(body);
@@ -307,12 +314,19 @@ namespace CefDotnetApp.AgentCore.Core
                         extraHeaders[hdrs[i]] = hdrs[i + 1];
                 }
             }
-            return new
+            var chatExtra = new Dictionary<string, object>
             {
-                agent_client_uuid = agentClientUuid,
-                attached_images = imageUrls,
-                extra_headers = extraHeaders
+                ["agent_client_uuid"] = agentClientUuid,
+                ["attached_images"] = imageUrls,
+                ["extra_headers"] = extraHeaders
             };
+            // Only inject optional fields when explicitly enabled, so unsupported
+            // models won't reject the request per AGUI protocol guidance.
+            if (_enableThinking)
+                chatExtra["enable_thinking"] = true;
+            if (!string.IsNullOrEmpty(_reasoningEffort))
+                chatExtra["reasoning_effort"] = _reasoningEffort;
+            return chatExtra;
         }
     }
 }

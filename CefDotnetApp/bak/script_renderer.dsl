@@ -940,10 +940,10 @@ script(handle_agent_notification)params($jsonData)
 			induction_plan();
 
 			if ($lockAgent) {
-				$prompt = "长时间开发模式下不要等用户桷认（用户不在线），请参考todo与plan的内容继续开发工作";
+				$prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请参考todo与plan的内容继续开发工作";
 			}
 			else {
-				$prompt = "正在更新计划，请继续";
+				$prompt = "没有识别到代码。插空更新计划，请继续；如果没有todo事项，可停止agent以避免重复更新计划";
 			};
 			send_command_to_inject("send_message", to_json({text: $prompt}));
 		}

@@ -446,7 +446,7 @@ script(handle_update_agent_configs_command)params($id, $params)
 
 	// LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
 	llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.6:latest");
-	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "glm-5");
+	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "hy3-preview");
 
 	// Search services configured here; apiKey uses %var% placeholders
 	brave_set_api_key("%brave_api_key%");
@@ -778,6 +778,7 @@ script(handle_agent_notification)params($jsonData)
 		$url = get_message_param($data, "url");
 		nativelog("[dsl] Hyarena initialized, url: {0}", $url);
 
+		agent_set_max_result_size(9528, 50*1024);
 		agent_enable_context_injection(9528, false);
 		agent_set_project_dir(9528, "d:/AiClaw");
 		agent_set_project_identity(9528, "hyarena");
@@ -796,6 +797,7 @@ script(handle_agent_notification)params($jsonData)
 		$url = get_message_param($data, "url");
 		nativelog("[dsl] Hyarena initialized, url: {0}", $url);
 
+		agent_set_max_result_size(9529, 50*1024);
 		agent_enable_context_injection(9529, false);
 		agent_set_project_dir(9529, "d:/AiClaw");
 		agent_set_project_identity(9529, "venus");

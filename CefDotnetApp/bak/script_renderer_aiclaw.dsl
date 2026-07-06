@@ -366,7 +366,7 @@ script(handle_update_agent_configs_command)params($id, $params)
 
 	// LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
 	llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.6:latest");
-	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "glm-5");
+	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "hy3-preview");
 
 	// Search services configured here; apiKey uses %var% placeholders
 	brave_set_api_key("%brave_api_key%");

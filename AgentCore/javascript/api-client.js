@@ -784,7 +784,7 @@ class APIClient {
                 { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
                 { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash' },
-                { value: 'hy-3.0', label: 'HY-3.0' }
+                { value: 'hy3-preview', label: 'HY-3.0' }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

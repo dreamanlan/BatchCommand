@@ -673,51 +673,51 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	$basePromptFile = combine_path(basepath, "docs/system_prompt.txt");
 	$toplevelRulesFile = combine_path(basepath, "docs/rules_toplevel.txt");
 	$emphasizeFile = combine_path(basepath, "docs/emphasize.txt");
+	$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
 	$projectPromptFile = combine_path(@ProjectDirectory, "docs/project_prompt.txt");
 	$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-	$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
-	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 	$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
+	$contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
 	$historyFile = combine_path(@ProjectDirectory, "docs/history.txt");
 
 	$basePrompt = read_file($basePromptFile);
 	$toplevelRules = read_file($toplevelRulesFile);
 	$emphasize = read_file($emphasizeFile);
+	$soul = read_file($soulFile);
 	$projectPrompt = read_file($projectPromptFile);
 	$plan = read_file($planFile);
-	$soul = read_file($soulFile);
-	$context = read_file($contextFile);
 	$todo = read_file($todoFile);
+	$context = read_file($contextFile);
 	$history = read_file($historyFile);
 
 	nativelog("[dsl] Base prompt length: {0}", $basePrompt.Length);
 	nativelog("[dsl] Toplevel rules length: {0}", $toplevelRules.Length);
-	nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
 	nativelog("[dsl] Emphasize length: {0}", $emphasize.Length);
-	nativelog("[dsl] Plan length: {0}", $plan.Length);
 	nativelog("[dsl] Soul length: {0}", $soul.Length);
-	nativelog("[dsl] Context length: {0}", $context.Length);
+	nativelog("[dsl] Project prompt length: {0}", $projectPrompt.Length);
+	nativelog("[dsl] Plan length: {0}", $plan.Length);
 	nativelog("[dsl] Todo length: {0}", $todo.Length);
+	nativelog("[dsl] Context length: {0}", $context.Length);
 	nativelog("[dsl] History length: {0}", $history.Length);
 
 	//now we use dynamic system prompts
 	if ($pageType == "local-agent") {
-		$prompt = $projectPrompt + "\n\n" + $emphasize + "\n\n" + $todo + "\n\n" + $context;
+		$prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context;
 		if ($isFirst) {
 			$prompt = $prompt + "\n\n" + $history;
 		};
 	} else {
-		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $projectPrompt + "\n\n" + $emphasize + "\n\n" + $todo + "\n\n" + $context + "\n\n" + $history;
+		$prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context + "\n\n" + $history;
 	};
 	agent_set_system_prompt(9527, $prompt);
 	agent_set_project_prompt(9527, $projectPrompt);
 
 	if ($isFirst) {
 		agent_set_emphasize(9527, $emphasize);
-		agent_set_plan(9527, $plan);
 		agent_set_soul(9527, $soul);
-		agent_set_context(9527, $context);
+		agent_set_plan(9527, $plan);
 		agent_set_todo(9527, $todo);
+		agent_set_context(9527, $context);
 		agent_set_history(9527, $history);
 	};
 

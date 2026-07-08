@@ -442,6 +442,10 @@ namespace CefDotnetApp.AgentCore.Core
                             sb.AppendLine();
                             sb.AppendLine(inst.History);
                         }
+                        if (!string.IsNullOrEmpty(inst.Soul)) {
+                            sb.AppendLine();
+                            sb.AppendLine(inst.Soul);
+                        }
                         if (!string.IsNullOrEmpty(inst.Emphasize)) {
                             sb.AppendLine();
                             sb.AppendLine(inst.Emphasize);

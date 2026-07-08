@@ -776,15 +776,14 @@ class APIClient {
                 { value: 'gpt-5.4', label: 'GPT-5.4' },
                 { value: 'gpt-5.5', label: 'GPT-5.5' },
                 { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro' },
-                { value: 'hy3-preview', label: 'HY3-Preview' },
+                { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code' },
                 { value: 'kimi-k2.6', label: 'Kimi-K2.6' },
                 { value: 'glm-5.2', label: 'GLM-5.2' },
                 { value: 'glm-5.1', label: 'GLM-5.1' },
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash' },
                 { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
-                { value: 'gemini-3.5-flash', label: 'Gemini-3.5-Flash' },
-                { value: 'hy3-preview', label: 'HY-3.0' }
+                { value: 'hy3', label: 'HY-3.0' }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

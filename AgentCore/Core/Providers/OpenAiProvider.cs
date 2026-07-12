@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +20,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly Func<string, string> _apiKeyResolver;
         private readonly string _model;
         private readonly int _maxRetries;
-        private readonly ConcurrentDictionary<string, List<object>> _sessions = new();
+        private readonly ConcurrentDictionary<string, List<ChatMessage>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
@@ -69,31 +70,41 @@ namespace CefDotnetApp.AgentCore.Core
             _gatewaySessionIds.TryRemove(tag, out _);
         }
 
-        public async Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message)
         {
-            var messages = _sessions.GetOrAdd(tag, _ => new List<object>());
-            lock (messages) { messages.Add(new { role = "user", content = message }); }
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+        }
 
-            List<object> snapshot;
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+        }
+
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
+            lock (messages) { messages.Add(new ChatMessage("user", message)); }
+
+            List<ChatMessage> snapshot;
             lock (messages)
             {
                 if (_keepSession)
                 {
                     // server session mode: only send current message
-                    snapshot = new List<object> { new { role = "user", content = message } };
+                    snapshot = new List<ChatMessage> { new ChatMessage("user", message) };
                     // inject system prompt every _contextRounds sends
                     int count = _sendCounts.GetOrAdd(tag, _ => 0);
                     if (count % _contextRounds == 0 &&
                         _systemPrompts.TryGetValue(tag, out var sp1) && !string.IsNullOrEmpty(sp1))
                     {
-                        snapshot.Insert(0, new { role = "system", content = sp1 });
+                        snapshot.Insert(0, new ChatMessage("system", sp1));
                     }
                     _sendCounts[tag] = count + 1;
                 }
                 else
                 {
                     // local history mode: send full history + always prepend system prompt
-                    snapshot = new List<object>(messages);
+                    snapshot = new List<ChatMessage>(messages);
                     // Apply maxContextChars limit on history (keep most recent messages that fit)
                     if (_maxContextChars > 0 && snapshot.Count > 1)
                     {
@@ -101,8 +112,7 @@ namespace CefDotnetApp.AgentCore.Core
                         int startFrom = 0;
                         for (int i = snapshot.Count - 2; i >= 0; i--) // skip last (current) message
                         {
-                            var msgContent = GetMessageContent(snapshot[i]);
-                            totalChars += msgContent.Length;
+                            totalChars += snapshot[i].Content.Length;
                             if (totalChars > _maxContextChars)
                             {
                                 startFrom = i + 1;
@@ -113,15 +123,26 @@ namespace CefDotnetApp.AgentCore.Core
                             snapshot.RemoveRange(0, startFrom);
                     }
                     if (_systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2))
-                        snapshot.Insert(0, new { role = "system", content = sp2 });
+                        snapshot.Insert(0, new ChatMessage("system", sp2));
                 }
             }
 
+            // Build the outbound messages list. When image URLs are attached,
+            // the LAST user message is replaced by a multipart-content variant
+            // (text part + image_url parts). All other messages keep the
+            // plain-text ChatMessage shape.
+            List<object> outMessages = BuildOutgoingMessages(snapshot, imageUrls);
+
             string json;
             if (_gatewayMode == "boxai")
-                json = BuildBoxAiRequestJson(tag, snapshot);
+                json = BuildBoxAiRequestJson(outMessages);
             else
-                json = System.Text.Json.JsonSerializer.Serialize(new { model = _model, messages = snapshot, stream = false });
+                json = System.Text.Json.JsonSerializer.Serialize(new OpenAiRequest
+                {
+                    Model = _model,
+                    Messages = outMessages,
+                    Stream = false
+                });
 
             string reply = await HttpRetryHelper.RetryAsync(async () =>
             {
@@ -151,11 +172,46 @@ namespace CefDotnetApp.AgentCore.Core
 
             lock (messages)
             {
-                messages.Add(new { role = "assistant", content = reply });
+                messages.Add(new ChatMessage("assistant", reply));
                 if (messages.Count > c_maxHistoryMessages)
                     messages.RemoveRange(0, messages.Count - c_maxHistoryMessages);
             }
             return reply;
+        }
+
+        /// <summary>
+        /// Build the outgoing messages list. Without images, this is just
+        /// the snapshot itself (each element is a ChatMessage). With images,
+        /// the last user message is swapped for a multi-part variant so the
+        /// model can see the attached pictures.
+        /// </summary>
+        private static List<object> BuildOutgoingMessages(List<ChatMessage> snapshot, string[] imageUrls)
+        {
+            var outMessages = new List<object>(snapshot.Count);
+            foreach (var m in snapshot) outMessages.Add(m);
+            if (imageUrls == null || imageUrls.Length == 0) return outMessages;
+
+            // Find the last user message and replace it with a parts-array
+            // variant that carries the images.
+            for (int i = outMessages.Count - 1; i >= 0; i--)
+            {
+                if (outMessages[i] is ChatMessage cm && cm.Role == "user")
+                {
+                    var parts = new List<object>();
+                    parts.Add(new OpenAiTextPart { Text = cm.Content });
+                    foreach (var url in imageUrls)
+                    {
+                        if (string.IsNullOrEmpty(url)) continue;
+                        parts.Add(new OpenAiImagePart
+                        {
+                            ImageUrl = new OpenAiImageUrl { Url = url }
+                        });
+                    }
+                    outMessages[i] = new OpenAiMessageWithParts { Role = "user", Content = parts };
+                    break;
+                }
+            }
+            return outMessages;
         }
 
         private static string ParseOpenAiReply(string json)
@@ -182,12 +238,6 @@ namespace CefDotnetApp.AgentCore.Core
             return "[error] unexpected response format";
         }
 
-        private static string GetMessageContent(object msg)
-        {
-            var prop = msg.GetType().GetProperty("content");
-            return prop?.GetValue(msg) as string ?? "";
-        }
-
         private static HttpClient CreateHttpClient() => new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler
             {
@@ -198,12 +248,21 @@ namespace CefDotnetApp.AgentCore.Core
         { Timeout = TimeSpan.FromMinutes(5) };
 
         /// <summary>Build boxai gateway request JSON (OpenAI-compatible with optional model_config).</summary>
-        private string BuildBoxAiRequestJson(string tag, List<object> messages)
+        private string BuildBoxAiRequestJson(List<object> messages)
         {
             // boxai gateway uses standard OpenAI message format but model is optional
             if (!string.IsNullOrEmpty(_model))
-                return System.Text.Json.JsonSerializer.Serialize(new { model = _model, messages, stream = false });
-            return System.Text.Json.JsonSerializer.Serialize(new { messages, stream = false });
+                return System.Text.Json.JsonSerializer.Serialize(new OpenAiRequest
+                {
+                    Model = _model,
+                    Messages = messages,
+                    Stream = false
+                });
+            return System.Text.Json.JsonSerializer.Serialize(new OpenAiRequestNoModel
+            {
+                Messages = messages,
+                Stream = false
+            });
         }
 
         /// <summary>Add boxai-specific HTTP headers to the request.</summary>
@@ -215,6 +274,47 @@ namespace CefDotnetApp.AgentCore.Core
                 req.Headers.TryAddWithoutValidation("X-Session-Mode", _sessionMode);
             if (_keepSession && _gatewaySessionIds.TryGetValue(tag, out var sid) && !string.IsNullOrEmpty(sid))
                 req.Headers.TryAddWithoutValidation("X-Session-Id", sid);
+        }
+
+        // -----------------------------------------------------------------
+        // Wire-format DTOs. Explicit POCOs let System.Text.Json cache the
+        // serialization metadata and skip the anonymous-type reflection cost.
+        // -----------------------------------------------------------------
+
+        private sealed class OpenAiRequest
+        {
+            [JsonPropertyName("model")]    public string Model { get; set; } = "";
+            [JsonPropertyName("messages")] public List<object> Messages { get; set; } = new();
+            [JsonPropertyName("stream")]   public bool Stream { get; set; }
+        }
+
+        private sealed class OpenAiRequestNoModel
+        {
+            [JsonPropertyName("messages")] public List<object> Messages { get; set; } = new();
+            [JsonPropertyName("stream")]   public bool Stream { get; set; }
+        }
+
+        private sealed class OpenAiMessageWithParts
+        {
+            [JsonPropertyName("role")]    public string Role { get; set; } = "";
+            [JsonPropertyName("content")] public List<object> Content { get; set; } = new();
+        }
+
+        private sealed class OpenAiTextPart
+        {
+            [JsonPropertyName("type")] public string Type { get; set; } = "text";
+            [JsonPropertyName("text")] public string Text { get; set; } = "";
+        }
+
+        private sealed class OpenAiImagePart
+        {
+            [JsonPropertyName("type")]      public string Type { get; set; } = "image_url";
+            [JsonPropertyName("image_url")] public OpenAiImageUrl ImageUrl { get; set; } = new();
+        }
+
+        private sealed class OpenAiImageUrl
+        {
+            [JsonPropertyName("url")] public string Url { get; set; } = "";
         }
     }
 }

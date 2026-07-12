@@ -81,7 +81,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     /// <summary>
     /// llm_chat_with_images_callback(provider_id, tag, topic, message [, image_url1, image_url2, ...])
     /// Sends a message with attached image URLs to the specified provider+session.
-    /// Images must be COS URLs (starting with http:// or https://).
+    /// Images must be URLs starting with http://, https:// or data: (base64 data URI).
     /// Returns "ok", "busy", or an error string.
     /// Full reply arrives via llm_callback(provider_id, tag, topic, reply) CEF message.
     /// </summary>
@@ -102,8 +102,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             for (int i = 4; i < operands.Count; i++) {
                 string url = operands[i].AsString;
                 if (string.IsNullOrWhiteSpace(url)) continue;
-                if (!url.StartsWith("http://") && !url.StartsWith("https://")) {
-                    return BoxedValue.FromString($"error: image must be a URL (http/https), got: {url}");
+                if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
+                    return BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
                 }
                 imageUrls.Add(url);
             }
@@ -277,11 +277,18 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             string tag = operands[1].GetString();
             string topic = operands[2].GetString();
             string message = operands[3].GetString();
-            var imageUrls = new string[operands.Count - 4];
-            for (int i = 4; i < operands.Count; i++)
-                imageUrls[i - 4] = operands[i].GetString();
+            var imageUrls = new List<string>();
+            for (int i = 4; i < operands.Count; i++) {
+                string url = operands[i].GetString();
+                if (string.IsNullOrWhiteSpace(url)) continue;
+                if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
+                    result.Value = BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
+                    yield break;
+                }
+                imageUrls.Add(url);
+            }
 
-            var task = Core.LlmClientService.Instance.ChatWithImagesAsync(providerId, tag, topic, message, imageUrls);
+            var task = Core.LlmClientService.Instance.ChatWithImagesAsync(providerId, tag, topic, message, imageUrls.ToArray());
             while (!task.IsCompleted)
                 yield return null;
 
@@ -341,8 +348,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             for (int i = 4; i < operands.Count; i++) {
                 string url = operands[i].AsString;
                 if (string.IsNullOrWhiteSpace(url)) continue;
-                if (!url.StartsWith("http://") && !url.StartsWith("https://")) {
-                    return BoxedValue.FromString($"error: image must be a URL (http/https), got: {url}");
+                if (!url.StartsWith("http://") && !url.StartsWith("https://") && !url.StartsWith("data:")) {
+                    return BoxedValue.FromString($"error: image must be a URL (http/https/data), got: {url}");
                 }
                 imageUrls.Add(url);
             }

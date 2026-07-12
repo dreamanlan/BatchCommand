@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +18,7 @@ namespace CefDotnetApp.AgentCore.Core
         private const int c_maxHistoryMessages = 64;
         private readonly string _baseUrl;
         private readonly string _model;
-        private readonly ConcurrentDictionary<string, List<object>> _sessions = new();
+        private readonly ConcurrentDictionary<string, List<ChatMessage>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
@@ -58,37 +59,57 @@ namespace CefDotnetApp.AgentCore.Core
             _sendCounts.TryRemove(tag, out _);
         }
 
-        public async Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message)
         {
-            var messages = _sessions.GetOrAdd(tag, _ => new List<object>());
-            lock (messages) { messages.Add(new { role = "user", content = message }); }
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+        }
 
-            List<object> snapshot;
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+        }
+
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
+            lock (messages) { messages.Add(new ChatMessage("user", message)); }
+
+            List<ChatMessage> snapshot;
             lock (messages)
             {
                 if (_keepSession)
                 {
                     // server session mode: only send current message
-                    snapshot = new List<object> { new { role = "user", content = message } };
+                    snapshot = new List<ChatMessage> { new ChatMessage("user", message) };
                     // inject system prompt every _contextRounds sends
                     int count = _sendCounts.GetOrAdd(tag, _ => 0);
                     if (count % _contextRounds == 0 &&
                         _systemPrompts.TryGetValue(tag, out var sp1) && !string.IsNullOrEmpty(sp1))
                     {
-                        snapshot.Insert(0, new { role = "system", content = sp1 });
+                        snapshot.Insert(0, new ChatMessage("system", sp1));
                     }
                     _sendCounts[tag] = count + 1;
                 }
                 else
                 {
                     // local history mode: send full history + always prepend system prompt
-                    snapshot = new List<object>(messages);
+                    snapshot = new List<ChatMessage>(messages);
                     if (_systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2))
-                        snapshot.Insert(0, new { role = "system", content = sp2 });
+                        snapshot.Insert(0, new ChatMessage("system", sp2));
                 }
             }
 
-            var requestBody = new { model = _model, messages = snapshot, stream = true };
+            // Build the outbound messages list. When image URLs are attached,
+            // the LAST user message is replaced by a variant that carries
+            // an "images" sibling field (Ollama's native format).
+            List<object> outMessages = BuildOutgoingMessages(snapshot, imageUrls);
+
+            var requestBody = new OllamaRequest
+            {
+                Model = _model,
+                Messages = outMessages,
+                Stream = true
+            };
             string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
@@ -128,11 +149,57 @@ namespace CefDotnetApp.AgentCore.Core
             string fullReply = ThinkingFilter.StripThink(sb.ToString());
             lock (messages)
             {
-                messages.Add(new { role = "assistant", content = fullReply });
+                messages.Add(new ChatMessage("assistant", fullReply));
                 if (messages.Count > c_maxHistoryMessages)
                     messages.RemoveRange(0, messages.Count - c_maxHistoryMessages);
             }
             return fullReply;
+        }
+
+        /// <summary>
+        /// Build the outgoing messages list. Without images this is just the
+        /// snapshot itself. With images, the last user message is replaced by
+        /// a variant carrying an "images" array of base64-encoded pictures
+        /// (Ollama's native format).
+        ///
+        /// Ollama only accepts raw base64 data (no data-URI prefix, no http
+        /// URLs). Data-URI images are decoded to their base64 payload; plain
+        /// http(s) URLs are skipped because Ollama cannot fetch them.
+        /// </summary>
+        private static List<object> BuildOutgoingMessages(List<ChatMessage> snapshot, string[] imageUrls)
+        {
+            var outMessages = new List<object>(snapshot.Count);
+            foreach (var m in snapshot) outMessages.Add(m);
+            if (imageUrls == null || imageUrls.Length == 0) return outMessages;
+
+            var base64Images = new List<string>();
+            foreach (var url in imageUrls)
+            {
+                if (string.IsNullOrEmpty(url)) continue;
+                if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    int comma = url.IndexOf(',');
+                    if (comma > 0)
+                        base64Images.Add(url.Substring(comma + 1));
+                }
+                // Non-data URLs are skipped: Ollama does not fetch remote images.
+            }
+            if (base64Images.Count == 0) return outMessages;
+
+            for (int i = outMessages.Count - 1; i >= 0; i--)
+            {
+                if (outMessages[i] is ChatMessage cm && cm.Role == "user")
+                {
+                    outMessages[i] = new OllamaMessageWithImages
+                    {
+                        Role = "user",
+                        Content = cm.Content,
+                        Images = base64Images
+                    };
+                    break;
+                }
+            }
+            return outMessages;
         }
 
         /// <summary>
@@ -165,6 +232,25 @@ namespace CefDotnetApp.AgentCore.Core
             }
             catch { /* ignore malformed lines */ }
             return "";
+        }
+
+        // -----------------------------------------------------------------
+        // Wire-format DTOs. Explicit POCOs let System.Text.Json cache the
+        // serialization metadata and skip anonymous-type reflection.
+        // -----------------------------------------------------------------
+
+        private sealed class OllamaRequest
+        {
+            [JsonPropertyName("model")]    public string Model { get; set; } = "";
+            [JsonPropertyName("messages")] public List<object> Messages { get; set; } = new();
+            [JsonPropertyName("stream")]   public bool Stream { get; set; }
+        }
+
+        private sealed class OllamaMessageWithImages
+        {
+            [JsonPropertyName("role")]    public string Role { get; set; } = "";
+            [JsonPropertyName("content")] public string Content { get; set; } = "";
+            [JsonPropertyName("images")]  public List<string> Images { get; set; } = new();
         }
     }
 }

@@ -46,7 +46,10 @@ class UIController {
             maxHistoryMessagesInput: document.getElementById('max-history-messages'),
             saveBtn: document.getElementById('save-btn'),
             cancelBtn: document.getElementById('cancel-btn'),
-            errorMessage: document.getElementById('error-message')
+            errorMessage: document.getElementById('error-message'),
+            imageUrlsList: document.getElementById('image-urls-list'),
+            addImageUrlBtn: document.getElementById('add-image-url-btn'),
+            clearImageUrlsBtn: document.getElementById('clear-image-urls-btn')
         };
 
         this.initializeEventListeners();
@@ -300,9 +303,65 @@ class UIController {
             }
         });
 
+        // Image URL rows: add first empty row and bind buttons
+        this.addImageUrlRow();
+        if (this.elements.addImageUrlBtn) {
+            this.elements.addImageUrlBtn.addEventListener('click', () => {
+                this.addImageUrlRow();
+            });
+        }
+        if (this.elements.clearImageUrlsBtn) {
+            this.elements.clearImageUrlsBtn.addEventListener('click', () => {
+                this.clearImageUrls();
+            });
+        }
+
         // Load current API type
         const config = this.apiClient.getConfig();
         this.elements.apiTypeSelect.value = config.apiType;
+    }
+
+    addImageUrlRow(initialValue = '') {
+        if (!this.elements.imageUrlsList) return;
+        const row = document.createElement('div');
+        row.className = 'image-url-row';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'https://... or data:image/png;base64,...';
+        input.value = initialValue;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '\u00D7';
+        removeBtn.title = 'Remove this URL';
+        removeBtn.addEventListener('click', () => {
+            const list = this.elements.imageUrlsList;
+            if (list.children.length > 1) {
+                row.remove();
+            } else {
+                input.value = '';
+            }
+        });
+        row.appendChild(input);
+        row.appendChild(removeBtn);
+        this.elements.imageUrlsList.appendChild(row);
+    }
+
+    getImageUrls() {
+        if (!this.elements.imageUrlsList) return [];
+        const inputs = this.elements.imageUrlsList.querySelectorAll('input');
+        const urls = [];
+        inputs.forEach((el) => {
+            const v = (el.value || '').trim();
+            if (v) urls.push(v);
+        });
+        return urls;
+    }
+
+    clearImageUrls() {
+        if (!this.elements.imageUrlsList) return;
+        this.elements.imageUrlsList.innerHTML = '';
+        this.addImageUrlRow();
     }
 
     updateSendButtonState() {
@@ -375,6 +434,7 @@ class UIController {
             fullResponse = '';
             let fullReasoning = '';
             const contextRounds = this.messageHandler.getContextConfig().contextRounds;
+            const imageUrls = this.getImageUrls();
             await this.apiClient.sendMessage(messages, (chunk, accumulated, kind) => {
                 if (kind === 'reasoning') {
                     fullReasoning = accumulated;
@@ -383,7 +443,7 @@ class UIController {
                     fullResponse = accumulated;
                     this.updateAssistantMessage(assistantMessageId, accumulated);
                 }
-            }, contextRounds);
+            }, contextRounds, imageUrls);
 
             // Make sure the reasoning block ends up collapsed even if no
             // answer text arrived (rare edge case).

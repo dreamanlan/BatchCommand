@@ -250,26 +250,107 @@ class APIClient {
         return { reasoning, text };
     }
 
-    async sendMessage(messages, onChunk, contextRounds) {
+    async sendMessage(messages, onChunk, contextRounds, imageUrls) {
         this.validateConfig();
 
         // Create new abort controller for this request
         this.abortController = new AbortController();
 
         if (this.config.apiType === 'openai' || this.config.apiType === 'local_openai') {
-            return await this.sendOpenAIMessage(messages, onChunk);
+            return await this.sendOpenAIMessage(messages, onChunk, imageUrls);
         } else if (this.config.apiType === 'claude') {
-            return await this.sendClaudeMessage(messages, onChunk);
+            return await this.sendClaudeMessage(messages, onChunk, imageUrls);
         } else if (this.config.apiType === 'auto_metadsl') {
-            return await this.sendAutoMetaDSLMessage(messages, onChunk);
+            return await this.sendAutoMetaDSLMessage(messages, onChunk, imageUrls);
         } else if (this.config.apiType === 'ollama') {
-            return await this.sendOllamaMessage(messages, onChunk);
+            return await this.sendOllamaMessage(messages, onChunk, imageUrls);
         } else {
             throw new Error('Unsupported API type: ' + this.config.apiType);
         }
     }
 
-    async sendOpenAIMessage(messages, onChunk) {
+    /**
+     * Attach image URLs to the LAST user message in the given messages
+     * array, using the wire format required by 'format'. The messages
+     * array is copied (last user entry is replaced) so callers do not
+     * mutate the shared history.
+     *
+     * format ∈ {'openai','claude','ollama'}
+     *   openai: content becomes [{type:'text',text},{type:'image_url',image_url:{url}}, ...]
+     *   claude: content becomes [{type:'text',text},{type:'image',source:{...}}, ...]
+     *           - data:*;base64,YYYY  -> source.type='base64' + media_type + data
+     *           - http(s)://...       -> source.type='url' + url
+     *   ollama: content stays a plain string; a sibling 'images' array is
+     *           added carrying raw base64 payloads. Non-data URLs are
+     *           skipped because Ollama cannot fetch remote images.
+     *
+     * Returns the new messages array. When imageUrls is empty or no user
+     * message exists, returns the input array unchanged.
+     */
+    attachImagesToLastUserMessage(messages, imageUrls, format) {
+        if (!Array.isArray(imageUrls) || imageUrls.length === 0) return messages;
+        if (!Array.isArray(messages) || messages.length === 0) return messages;
+
+        // Find the last user message.
+        let lastUserIdx = -1;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i] && messages[i].role === 'user') { lastUserIdx = i; break; }
+        }
+        if (lastUserIdx === -1) return messages;
+
+        const text = messages[lastUserIdx].content || '';
+        let replacement = null;
+
+        if (format === 'openai') {
+            const parts = [{ type: 'text', text }];
+            for (const url of imageUrls) {
+                if (!url) continue;
+                parts.push({ type: 'image_url', image_url: { url } });
+            }
+            replacement = { role: 'user', content: parts };
+        } else if (format === 'claude') {
+            const blocks = [{ type: 'text', text }];
+            for (const url of imageUrls) {
+                if (!url) continue;
+                if (/^data:/i.test(url)) {
+                    // data:image/xxx;base64,YYYY
+                    const semi = url.indexOf(';');
+                    const comma = url.indexOf(',');
+                    if (semi > 5 && comma > semi) {
+                        const mediaType = url.substring(5, semi);
+                        const data = url.substring(comma + 1);
+                        blocks.push({
+                            type: 'image',
+                            source: { type: 'base64', media_type: mediaType, data }
+                        });
+                    }
+                } else {
+                    blocks.push({ type: 'image', source: { type: 'url', url } });
+                }
+            }
+            replacement = { role: 'user', content: blocks };
+        } else if (format === 'ollama') {
+            const images = [];
+            for (const url of imageUrls) {
+                if (!url) continue;
+                if (/^data:/i.test(url)) {
+                    const comma = url.indexOf(',');
+                    if (comma > 0) images.push(url.substring(comma + 1));
+                }
+                // Non-data URLs are skipped: Ollama does not fetch remote images.
+            }
+            if (images.length === 0) return messages;
+            replacement = { role: 'user', content: text, images };
+        } else {
+            return messages;
+        }
+
+        const out = messages.slice();
+        out[lastUserIdx] = replacement;
+        return out;
+    }
+
+    async sendOpenAIMessage(messages, onChunk, imageUrls) {
         // For 'openai' the endpoint is used as-is. For 'local_openai' we accept
         // either a base URL (http://localhost:11434) or a full URL and normalize
         // it to '<base>/v1/chat/completions' automatically.
@@ -278,9 +359,13 @@ class APIClient {
             endpoint = this.resolveLocalOpenAIEndpoint(endpoint);
         }
 
+        // Attach images (if any) to the last user message using OpenAI's
+        // multipart content format (text + image_url parts).
+        const outMessages = this.attachImagesToLastUserMessage(messages, imageUrls, 'openai');
+
         const requestBody = {
             model: this.config.model || 'gpt-4.1',
-            messages: messages,
+            messages: outMessages,
             stream: true
         };
 
@@ -316,15 +401,21 @@ class APIClient {
      * The response is NDJSON: one JSON object per line, each containing
      * { message: { role, content }, done } until 'done' is true.
      */
-    async sendOllamaMessage(messages, onChunk) {
+    async sendOllamaMessage(messages, onChunk, imageUrls) {
         let endpoint = this.getEndpoint();
         endpoint = this.resolveOllamaEndpoint(endpoint);
+
+        // Attach images (if any) to the last user message using Ollama's
+        // native format (sibling 'images' array of base64 payloads). Only
+        // data: URIs are supported; http(s) URLs are skipped because
+        // Ollama cannot fetch remote images.
+        const outMessages = this.attachImagesToLastUserMessage(messages, imageUrls, 'ollama');
 
         // Ollama's /api/chat accepts the same role/content shape used by
         // OpenAI, so we can pass the messages array directly.
         const requestBody = {
             model: this.config.model || 'llama3',
-            messages: messages,
+            messages: outMessages,
             stream: true
         };
 
@@ -440,15 +531,20 @@ class APIClient {
         return fullResponse;
     }
 
-    async sendClaudeMessage(messages, onChunk) {
+    async sendClaudeMessage(messages, onChunk, imageUrls) {
         const endpoint = this.getEndpoint();
 
         // Convert OpenAI format to Claude format
         const claudeMessages = this.convertToClaudeFormat(messages);
 
+        // Attach images (if any) to the last user message using Claude's
+        // content-blocks format (text + image blocks). Both data:base64
+        // and http(s) URLs are supported.
+        const outMessages = this.attachImagesToLastUserMessage(claudeMessages, imageUrls, 'claude');
+
         const requestBody = {
             model: this.config.model || 'claude-sonnet-4-20250514',
-            messages: claudeMessages,
+            messages: outMessages,
             max_tokens: 8192,
             stream: true
         };
@@ -472,7 +568,7 @@ class APIClient {
         return await this.handleStreamResponse(response, onChunk, 'claude');
     }
 
-    async sendAutoMetaDSLMessage(messages, onChunk) {
+    async sendAutoMetaDSLMessage(messages, onChunk, imageUrls) {
         const endpoint = this.getEndpoint();
 
         // Build full context message in the same format as C# AutoMetaDslProvider
@@ -499,7 +595,7 @@ class APIClient {
         // Build chat_extra dynamically so optional fields are omitted when not
         // enabled (AGUI protocol: do not send fields the model does not support).
         const chatExtra = {
-            attached_images: [],
+            attached_images: Array.isArray(imageUrls) ? imageUrls.slice() : [],
             extra_headers: {}
         };
         if (this.config.enableThinking) {

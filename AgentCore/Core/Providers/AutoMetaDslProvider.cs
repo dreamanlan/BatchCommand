@@ -182,7 +182,10 @@ namespace CefDotnetApp.AgentCore.Core
                 ["chat_extra"] = BuildChatExtra(tag, imageUrls),
                 ["temperature"] = 0.5
             };
-            var body = new { input };
+            // Explicit POCO instead of anonymous type: lets System.Text.Json
+            // cache the serialization metadata and avoids anonymous-type
+            // reflection cost on every request.
+            var body = new AutoMetaDslRequest { Input = input };
             string json = System.Text.Json.JsonSerializer.Serialize(body);
 
             string reply = "";
@@ -327,6 +330,19 @@ namespace CefDotnetApp.AgentCore.Core
             if (!string.IsNullOrEmpty(_reasoningEffort))
                 chatExtra["reasoning_effort"] = _reasoningEffort;
             return chatExtra;
+        }
+
+        // -----------------------------------------------------------------
+        // Wire-format DTOs. Explicit POCOs let System.Text.Json cache the
+        // serialization metadata and skip anonymous-type reflection. The
+        // 'input' payload keeps the Dictionary<string, object> shape because
+        // its fields are dynamic (optional keys omitted per AGUI protocol).
+        // -----------------------------------------------------------------
+
+        private sealed class AutoMetaDslRequest
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("input")]
+            public Dictionary<string, object> Input { get; set; } = new();
         }
     }
 }

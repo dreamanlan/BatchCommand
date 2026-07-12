@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +21,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly string _model;
         private int _maxTokens = 4096;
         private readonly int _maxRetries;
-        private readonly ConcurrentDictionary<string, List<object>> _sessions = new();
+        private readonly ConcurrentDictionary<string, List<ChatMessage>> _sessions = new();
         private readonly ConcurrentDictionary<string, bool> _busySessions = new();
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
@@ -71,19 +72,29 @@ namespace CefDotnetApp.AgentCore.Core
             _sendCounts.TryRemove(tag, out _);
         }
 
-        public async Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message)
         {
-            var messages = _sessions.GetOrAdd(tag, _ => new List<object>());
-            lock (messages) { messages.Add(new { role = "user", content = message }); }
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+        }
 
-            List<object> snapshot;
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+        }
+
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        {
+            var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
+            lock (messages) { messages.Add(new ChatMessage("user", message)); }
+
+            List<ChatMessage> snapshot;
             string? sysPrompt;
             lock (messages)
             {
                 if (_keepSession)
                 {
                     // server session mode: only send current message
-                    snapshot = new List<object> { new { role = "user", content = message } };
+                    snapshot = new List<ChatMessage> { new ChatMessage("user", message) };
                     // inject system prompt every _contextRounds sends
                     int count = _sendCounts.GetOrAdd(tag, _ => 0);
                     sysPrompt = (count % _contextRounds == 0 &&
@@ -93,7 +104,7 @@ namespace CefDotnetApp.AgentCore.Core
                 else
                 {
                     // local history mode: send full history + always prepend system prompt
-                    snapshot = new List<object>(messages);
+                    snapshot = new List<ChatMessage>(messages);
                     // Apply maxContextChars limit on history (keep most recent messages that fit)
                     if (_maxContextChars > 0 && snapshot.Count > 1)
                     {
@@ -101,8 +112,7 @@ namespace CefDotnetApp.AgentCore.Core
                         int startFrom = 0;
                         for (int i = snapshot.Count - 2; i >= 0; i--)
                         {
-                            var msgContent = GetMessageContent(snapshot[i]);
-                            totalChars += msgContent.Length;
+                            totalChars += snapshot[i].Content.Length;
                             if (totalChars > _maxContextChars)
                             {
                                 startFrom = i + 1;
@@ -115,16 +125,32 @@ namespace CefDotnetApp.AgentCore.Core
                     sysPrompt = _systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2) ? sp2 : null;
                 }
             }
+
+            // Build the outbound messages list. When image URLs are attached,
+            // the LAST user message is replaced by a content-blocks variant
+            // (text block + image blocks). All other messages keep the plain
+            // ChatMessage shape.
+            List<object> outMessages = BuildOutgoingMessages(snapshot, imageUrls);
+
             string json;
             if (sysPrompt != null)
             {
-                var body = new { model = _model, max_tokens = _maxTokens, system = sysPrompt, messages = snapshot };
-                json = System.Text.Json.JsonSerializer.Serialize(body);
+                json = System.Text.Json.JsonSerializer.Serialize(new ClaudeRequestWithSystem
+                {
+                    Model = _model,
+                    MaxTokens = _maxTokens,
+                    System = sysPrompt,
+                    Messages = outMessages
+                });
             }
             else
             {
-                var body = new { model = _model, max_tokens = _maxTokens, messages = snapshot };
-                json = System.Text.Json.JsonSerializer.Serialize(body);
+                json = System.Text.Json.JsonSerializer.Serialize(new ClaudeRequest
+                {
+                    Model = _model,
+                    MaxTokens = _maxTokens,
+                    Messages = outMessages
+                });
             }
 
             string reply = await HttpRetryHelper.RetryAsync(async () =>
@@ -144,11 +170,80 @@ namespace CefDotnetApp.AgentCore.Core
 
             lock (messages)
             {
-                messages.Add(new { role = "assistant", content = reply });
+                messages.Add(new ChatMessage("assistant", reply));
                 if (messages.Count > c_maxHistoryMessages)
                     messages.RemoveRange(0, messages.Count - c_maxHistoryMessages);
             }
             return reply;
+        }
+
+        /// <summary>
+        /// Build the outgoing messages list. Without images this is just the
+        /// snapshot itself. With images, the last user message is replaced
+        /// by a content-blocks variant (text + image blocks) so Claude can
+        /// see the pictures.
+        /// Supported URL forms:
+        ///   * "data:image/xxx;base64,YYYY" - decoded and sent via source.type=base64
+        ///   * "http(s)://..."              - sent via source.type=url
+        /// </summary>
+        private static List<object> BuildOutgoingMessages(List<ChatMessage> snapshot, string[] imageUrls)
+        {
+            var outMessages = new List<object>(snapshot.Count);
+            foreach (var m in snapshot) outMessages.Add(m);
+            if (imageUrls == null || imageUrls.Length == 0) return outMessages;
+
+            for (int i = outMessages.Count - 1; i >= 0; i--)
+            {
+                if (outMessages[i] is ChatMessage cm && cm.Role == "user")
+                {
+                    var blocks = new List<object>();
+                    blocks.Add(new ClaudeTextBlock { Text = cm.Content });
+                    foreach (var url in imageUrls)
+                    {
+                        if (string.IsNullOrEmpty(url)) continue;
+                        var block = BuildImageBlock(url);
+                        if (block != null) blocks.Add(block);
+                    }
+                    outMessages[i] = new ClaudeMessageWithBlocks { Role = "user", Content = blocks };
+                    break;
+                }
+            }
+            return outMessages;
+        }
+
+        /// <summary>
+        /// Build a single Claude image block from a URL string. Returns null
+        /// when the input cannot be classified (empty, malformed data URL).
+        /// </summary>
+        private static ClaudeImageBlock? BuildImageBlock(string url)
+        {
+            // data:image/xxx;base64,YYYY
+            if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                int semi = url.IndexOf(';');
+                int comma = url.IndexOf(',');
+                if (semi <= 5 || comma <= semi) return null;
+                string mediaType = url.Substring(5, semi - 5); // e.g. "image/png"
+                string data = url.Substring(comma + 1);
+                return new ClaudeImageBlock
+                {
+                    Source = new ClaudeImageSource
+                    {
+                        Type = "base64",
+                        MediaType = mediaType,
+                        Data = data
+                    }
+                };
+            }
+            // Regular URL (http/https). Claude accepts source.type="url".
+            return new ClaudeImageBlock
+            {
+                Source = new ClaudeImageSource
+                {
+                    Type = "url",
+                    Url = url
+                }
+            };
         }
 
         private static string ParseClaudeReply(string json)
@@ -176,12 +271,6 @@ namespace CefDotnetApp.AgentCore.Core
             return "[error] unexpected response format";
         }
 
-        private static string GetMessageContent(object msg)
-        {
-            var prop = msg.GetType().GetProperty("content");
-            return prop?.GetValue(msg) as string ?? "";
-        }
-
         private static HttpClient CreateHttpClient() => new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler
             {
@@ -190,5 +279,54 @@ namespace CefDotnetApp.AgentCore.Core
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             }))
         { Timeout = TimeSpan.FromMinutes(5) };
+
+        // -----------------------------------------------------------------
+        // Wire-format DTOs. Explicit POCOs let System.Text.Json cache the
+        // serialization metadata and skip anonymous-type reflection.
+        // -----------------------------------------------------------------
+
+        private sealed class ClaudeRequest
+        {
+            [JsonPropertyName("model")]      public string Model { get; set; } = "";
+            [JsonPropertyName("max_tokens")] public int MaxTokens { get; set; }
+            [JsonPropertyName("messages")]   public List<object> Messages { get; set; } = new();
+        }
+
+        private sealed class ClaudeRequestWithSystem
+        {
+            [JsonPropertyName("model")]      public string Model { get; set; } = "";
+            [JsonPropertyName("max_tokens")] public int MaxTokens { get; set; }
+            [JsonPropertyName("system")]     public string System { get; set; } = "";
+            [JsonPropertyName("messages")]   public List<object> Messages { get; set; } = new();
+        }
+
+        private sealed class ClaudeMessageWithBlocks
+        {
+            [JsonPropertyName("role")]    public string Role { get; set; } = "";
+            [JsonPropertyName("content")] public List<object> Content { get; set; } = new();
+        }
+
+        private sealed class ClaudeTextBlock
+        {
+            [JsonPropertyName("type")] public string Type { get; set; } = "text";
+            [JsonPropertyName("text")] public string Text { get; set; } = "";
+        }
+
+        private sealed class ClaudeImageBlock
+        {
+            [JsonPropertyName("type")]   public string Type { get; set; } = "image";
+            [JsonPropertyName("source")] public ClaudeImageSource Source { get; set; } = new();
+        }
+
+        private sealed class ClaudeImageSource
+        {
+            [JsonPropertyName("type")]       public string Type { get; set; } = "";
+            [JsonPropertyName("media_type"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? MediaType { get; set; }
+            [JsonPropertyName("data"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? Data { get; set; }
+            [JsonPropertyName("url"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? Url { get; set; }
+        }
     }
 }

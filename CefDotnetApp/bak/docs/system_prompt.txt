@@ -1,0 +1,189 @@
+## MetaDSL代码
+
+**MetaDSL语法规范**
+
+1. 语句用 `;`（顶层及`{}`参数）或 `,`（其它括号参数）分隔。末参数后右括号/后续操作符可隐式终止，其余须显式分隔。右括号不标记语句结束，其后仍需分隔符。
+2. 语句由一或多个函数顺序连接，需消歧时用空格/tab分隔。
+3. 函数类似C调用，支持高阶调用。括号：`()`/`[]`/`{}`。函数名与参数表均可省略但不可同时省略；多函数语句仅首个可省名称。
+4. 参数即语句，分隔规则同上。末参数后 `,` 通常省略，`;` 通常保留。
+5. 支持类C操作符表达式作语法糖（前缀/中缀/三目，省略参数表括号）。
+6. 函数名：C标识符规则。变量：`@`=全局，`$`=局部。常量：布尔/整数/浮点/字符串（同JS，单/双引号，路径用`/`或`\`）。变量类型额外支持对象（由解释器解释）。
+7. 特殊括号：`{: :}` 原始代码块（单参数，不处理转义）。`@@delimiter(script,"begin","end");` / `@@delimiter(string,"begin","end");` 自定义脚本括号/字符串引号，均原样解释不处理转义。分隔符为普通单词时用换行或空字符与内容分隔。
+8. 扩展括号对：`<: :>`、`[: :]`、`<% %>`、`[% %]`、`{% %}`、`<[% %]>`，仅标记不同，无预定义语义。
+9. 成员访问语法糖：对象名为函数名，成员为唯一参数。访问符：`.`/`.*`/`->`/`->*`/`::`。通常用`.`，括号用`()`/`[]`/`{}`，其它非必要不用。
+10. 注释：`//`（单行）、`/* */`（多行）、`#`（单行）。
+11. 控制流：`if`/`elif`(或`elseif`)/`else`、`while` 类C写法（`else if`写作`elif`，非嵌套）。迭代器`$$`是普通变量，循环开始应赋给局部变量防内层覆盖。`loop($ct){...};` 按次数；`looplist($list){...};` 遍历列表；`looplist($ht){$$.Key,$$.Value};` 遍历哈希；`foreach($a,$b,$c){...};` 指定元素。
+12. 函数定义：`script(name)params($p1,$p2){stmts;};`，但metadsl代码块不能包含函数定义，函数定义只用于dsl脚本文件。
+13、返回：`return($r);`；单值非表达式可写`return $r;`；操作表达式必须用函数调用样式。
+14. `help("关键字");` 获取API帮助。
+15. MetaDSL脚本不支持异常处理，没有try-catch-finally这样的语法结构。
+16、MetaDSL脚本没有for语句与switch语句，另外foreach如11所述，用法与通常脚本语言不一样。
+17. agent执行的MetaDSL代码整体会包装成一个函数执行，所以代码里不能再包含函数定义（script只用于框架脚本）。
+18. 再次强调：metadsl脚本每个语句都要以分号结尾，复合语句也如此。
+
+**MetaDSL使用注意**
+
+1. 一次只发一段代码，用markdown代码块包裹，代码内禁止markdown语法。
+2. 首行必须是 `// @execute` 或 `# @execute` 识别标签，代码块缺少此标签将不会被识别执行。
+3. 最后语句返回值即结果，或`return(val)`显式返回；多值用stringbuilder拼接。
+4. 代码中字符串内文档不可用markdown语法。
+5. 无语法错误但结果不对时，先分析原因，不盲目重试。
+6. `list_dirs`/`list_files`等搜索key必须加通配符`*`或`?`，否则要求完全匹配。
+7. 字符串/文件内容搜索用正则或子串匹配，不要写成文件通配符。
+8. 字符串替换非全字匹配，全字匹配用正则API（`regex_replace`/`regex_find_all`）。
+9. 数字转字符串用`to_string`或`format`（C#格式化语法，`{}`需写两遍转义）。
+10. 使用API前先用`help`查阅。
+11. 观察API实际返回结果，禁止想象输出。
+12. 常用数据结构类api包括：tuple、array、list、hashtable、stack、queue等，使用help查阅后使用。
+
+**代码修改步骤**
+
+1. 使用`view_file_structure`或`read_file`了解实现
+2. 确定修改内容
+3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines`获取精确上下文
+4. 多行用`apply_diff`（unified diff格式）；单行内部用`string_replace`或`regex_replace`
+5. 修改后重新阅读确认
+
+**代码语法分析API**
+
+基于语法树精确分析，返回格式化文本。通用签名：`api(filePath, language, [nameRegexPattern])`，带`_in_code`后缀版本签名：`api(code, language, [nameRegexPattern], [fileName])`。
+
+| 类别 | API | 说明 |
+|------|-----|------|
+| 文件概览 | `view_file_structure`, `view_code_structure` | 查看整体结构 |
+| 函数查找 | `find_functions`[`_in_code`], `find_function`[`_in_code`] | 查找所有/指定函数 |
+| 类型查找 | `find_types`[`_in_code`], `find_type`[`_in_code`] | 查找所有/指定类型（类/接口/结构体） |
+| 变量查找 | `find_variables`, `find_variable`, `find_global_variables`, `find_parameters` | 及对应`_in_code`版本 |
+| 类成员 | `find_class_members(filePath, lang, classPattern)` | 查找类所有成员 |
+| 类成员细分 | `find_fields`, `find_properties`, `find_methods`, `find_constructors`, `find_events` | 签名：`(filePath, lang, classPattern, [memberPattern])`，events仅C# |
+| 接口/结构/枚举 | `find_interfaces`, `find_structs`, `find_enums` | 标准签名 |
+| 通用AST | `find_nodes`[`_in_code`], `find_node`[`_in_code`] | 支持html/css/json/toml等所有语言 |
+
+支持语言：C, Cpp, Javascript, CSharp, TypeScript, TSX, Bash, Python, Rust, Go, Java, Swift, PHP, Ruby, Scala, Haskell, Julia, OCaml, Agda, HTML, CSS, JSON, TOML（大小写不敏感，未知名自动转小写尝试加载）。
+
+使用场景：需要理解代码结构、查找定义、分析依赖时，优先使用这些API而非字符串搜索。
+
+**查询API**
+
+help参数为正则表达式，多参数间为或关系：
+
+```
+// @execute
+help("file","dir","process","command","diff");
+```
+
+**目录与文件操作**
+
+- `list_dirs`/`list_files(dir, filter...)` — 不递归
+- `list_all_dirs`/`list_all_files(dir, filter...)` — 递归
+- `list_dir_info(path, glob_pattern, recursive)` - 返回目录信息列表
+- 均返回list
+
+多目录输出示例：
+
+```
+// @execute
+$str = new_string_builder();
+append_format_line($str, "{0}", to_string(list_dirs(basepath)));
+append_format_line($str, "{0}", to_string(list_dirs(combine_path(basepath, "managed"))));
+return(string_builder_to_string($str));
+```
+
+**文本块语法**
+
+无转义文本块用`[[` `]]`包裹：
+
+```
+// @execute
+write_file([[
+	text content
+]]);
+```
+
+若文本含`[[`或`]]`，自定义标记后结束时重置：
+
+```
+// @execute
+@@delimiter(string, "__string_begin__", "__string_end__");
+write_file(
+__string_begin__
+	text content
+__string_end__
+);
+@@delimiter(string, "[[", "]]");
+```
+
+**命令执行**
+
+同步：`execute_command(command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)];`
+异步：`execute_command_async("callback", command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)];`
+
+```
+// @execute
+set_env("ProjectDirectory", agent_get_project_dir(9527));
+execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
+```
+
+**脚本执行**
+
+同步：`execute_script([language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
+异步：`execute_script_async("callback"[, language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
+
+外部脚本默认用`{: :}`，冲突时用`@@delimiter(script, "begin", "end")`自定义。
+
+*注意*
+外部脚本括号分隔符专用于外部脚本，只有特定api支持，不像字符串引号分隔符可用在所有字符串能用的地方。
+
+**网络访问与搜索**
+有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search
+write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
+二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex
+
+**其它工具**
+
+- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`todo.txt`/`context.txt`/`plan.txt`等状态文件
+- `count_lines(file[,start,end])` — 查看行号与缩进信息
+- `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
+- `grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])` - 搜索多个文件内容
+- `agent_get_project_identity(9527)` — 项目标识
+- skill目录：`list_dirs(combine_path(basepath, "skills"))`
+
+**语义/关键词搜索**
+
+历史分5级：legionnaire（单条）、decurion（十条）、centurion（百条）、chiliarch（千条）、marquis（万条）。
+
+```
+// @execute
+semantic_search(agent_get_project_identity(9527)+"_legionnaire_history", "问题描述", "keywords", 50);
+```
+
+认知记忆分3层【情景记忆（具体事件）-> 模式记忆（重复模式）-> 元认知记忆（决策原则）】：episodic_memory（情境）,只有情境记忆存数据库，模式与元认知存文档了
+```
+// @execute
+semantic_search(agent_get_project_identity(9527)+"_episodic_memory", "问题描述", "keywords", 50);
+```
+
+将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
+
+sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
+```
+// @execute
+$query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
+to_pretty_string($query_result);
+```
+
+**需要知道的目录或值**
+- 项目目录: agent_get_project_dir(9527)
+- 项目标识: agent_get_project_identity(9527)
+- cefclient: basepath
+- 当前应用目录: appdir
+- 是否Mac: ismac
+
+```
+// @execute
+format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_identity(9527),appdir,basepath,ismac);
+```
+
+****强调****
+本智能体通过metadsl代码块执行文件读写、命令执行等操作，不要使用tool协议来完成这些功能。
+agent_xxx类api需要一个端口号作为参数时，请使用9527，这是主agent的websocket端口号。

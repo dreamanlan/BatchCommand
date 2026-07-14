@@ -138,7 +138,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("or", "or(a,b)", new ExpressionFactoryHelper<OrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("not", "not(a)", new ExpressionFactoryHelper<NotExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("if_expr", "if_expr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("ifexpr", "ifexpr(expr,a,b)", new ExpressionFactoryHelper<CondExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ifexpr", "ifexpr(expr,a,b)", false, new ExpressionFactoryHelper<CondExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("format", "format(fmt,arg1,arg2,...)", new ExpressionFactoryHelper<FormatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_assembly_name", "get_type_assembly_name(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("assemblyname", "assemblyname(obj)", new ExpressionFactoryHelper<GetTypeAssemblyNameExp>());

@@ -255,10 +255,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_tuple", "(v1,v2,...) or new_tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("newtuple", "(v1,v2,...) or newtuple(v1,v2,...) object", false, new ExpressionFactoryHelper<TupleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("tuple_new", "(v1,v2,...) or tuple_new(v1,v2,...) object", false, new ExpressionFactoryHelper<TupleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("tuple_set", "(var1,var2,...) = (v1,v2,...) or tuple_set((var1,var2,...), (v1,v2,...))", new ExpressionFactoryHelper<TupleSetExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("array", "[v1,v2,...] or array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_array", "[v1,v2,...] or new_array(v1,v2,...) object", new ExpressionFactoryHelper<ArrayExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("newarray", "[v1,v2,...] or newarray(v1,v2,...) object", false, new ExpressionFactoryHelper<ArrayExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("array_new", "[v1,v2,...] or array_new(v1,v2,...) object", false, new ExpressionFactoryHelper<ArrayExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("to_array", "to_array(list)", new ExpressionFactoryHelper<ToArrayExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_count", "list_count(list)", new ExpressionFactoryHelper<ListSizeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_get_count", "list_get_count(list)", false, new ExpressionFactoryHelper<ListSizeExp>());
@@ -267,6 +270,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("list", "list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_list", "new_list(v1,v2,...) object", new ExpressionFactoryHelper<ListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("newlist", "newlist(v1,v2,...) object", false, new ExpressionFactoryHelper<ListExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_new", "list_new(v1,v2,...) object", false, new ExpressionFactoryHelper<ListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_get", "list_get(list,index[,defval])", new ExpressionFactoryHelper<ListGetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_set", "list_set(list,index,val)", new ExpressionFactoryHelper<ListSetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_index_of", "list_index_of(list,val)", new ExpressionFactoryHelper<ListIndexOfExp>());
@@ -284,6 +288,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable(k1=>v1,k2=>v2,...) or hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_hashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or new_hashtable(k1=>v1,k2=>v2,...) or new_hashtable(k1:v1,k2:v2,...) object", new ExpressionFactoryHelper<HashtableExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("newhashtable", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or newhashtable(k1=>v1,k2=>v2,...) or newhashtable(k1:v1,k2:v2,...) object", false, new ExpressionFactoryHelper<HashtableExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("hashtable_new", "{k1=>v1,k2=>v2,...} or {k1:v1,k2:v2,...} or hashtable_new(k1=>v1,k2=>v2,...) or new_hashtable(k1:v1,k2:v2,...) object", false, new ExpressionFactoryHelper<HashtableExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hashtable_get", "hashtable_get(hash,key[,defval])", new ExpressionFactoryHelper<HashtableGetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hashtable_set", "hashtable_set(hash,key,val)", new ExpressionFactoryHelper<HashtableSetExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hashtable_add", "hashtable_add(hash,key,val)", new ExpressionFactoryHelper<HashtableAddExp>());
@@ -301,6 +306,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("stack", "stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_stack", "new_stack(v1,v2,...) object", new ExpressionFactoryHelper<StackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("newstack", "newstack(v1,v2,...) object", false, new ExpressionFactoryHelper<StackExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stack_new", "stack_new(v1,v2,...) object", false, new ExpressionFactoryHelper<StackExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("push", "push(stack,v)", new ExpressionFactoryHelper<PushExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("pop", "pop(stack)", new ExpressionFactoryHelper<PopExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("stack_clear", "stack_clear(stack)", new ExpressionFactoryHelper<StackClearExp>());
@@ -311,6 +317,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("queue", "queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_queue", "new_queue(v1,v2,...) object", new ExpressionFactoryHelper<QueueExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("newqueue", "newqueue(v1,v2,...) object", false, new ExpressionFactoryHelper<QueueExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("queue_new", "queue_new(v1,v2,...) object", false, new ExpressionFactoryHelper<QueueExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());

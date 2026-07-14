@@ -140,7 +140,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, read_file(combine_path($base, "secret_store.js")));
 		append_line($sb, read_file(combine_path($base, "ws_worker.js")));
 		append_line($sb, read_file(combine_path($base, "bridge.js")));
-		append_line($sb, read_file(combine_path($base, "plan_decider.js")));
+		append_line($sb, read_file(combine_path($base, "response_decider.js")));
 		append_line($sb, read_file(combine_path($base, "input_monitor.js")));
 		append_line($sb, read_file(combine_path($base, "state_machine.js")));
 		append_line($sb, read_file(combine_path($base, "page_adapter.js")));
@@ -269,7 +269,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		agent_set_plan(9527, $reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
-		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Keep under 500 chars, no empty slogans.]", $reply);
+		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $reply, agent_get_project_dir(9527), agent_get_project_identity(9527));
 		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
 	}
 	elif ($tag == "llm_pm_align") {
@@ -518,7 +518,7 @@ script(induction_info)params($batch, $infos, $session)
 			append_line($induction, $infos[$j]);
 		};
 
-		llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，在不丢失关键信息的前提下，总结成一段话（一次回复输出完成）", string_builder_to_string($induction)));
+		llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词", string_builder_to_string($induction)));
 	};
 };
 
@@ -908,7 +908,7 @@ script(handle_agent_notification)params($jsonData)
 		if ($episodicCount - $lastPatternEpisodicCount >= 30) {
 			set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
 			nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
-			$prompt = "最近反思记录已超过30条，可以考虑基于反思数据总结新模式了。";
+			$prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir(9527), agent_get_project_identity(9527));
 			send_command_to_inject("send_message", to_json({text: $prompt}));
 		};
 		if (agent_is_context_injection_enabled(9527) && agent_add_cur_context_rounds(9527) == 0) {
@@ -919,7 +919,7 @@ script(handle_agent_notification)params($jsonData)
 		UpdateSystemPrompt($pageType, false);
 	}
 	elif ($type == "agent_need_to_plan") {
-		// Planning heuristics have been moved to JS (plan_decider.js).
+		// Planning heuristics have been moved to JS (response_decider.js).
 		// JS now only sends this notification when it decides planning is needed.
 		nativelog("[dsl] agent_need_to_plan notification received (trigger_plan)");
 
@@ -927,6 +927,7 @@ script(handle_agent_notification)params($jsonData)
 		$queuedCount = get_message_param($data, "queuedCount");
 		$pageType = get_message_param($data, "pageType");
 		$count = get_message_param($data, "count");
+		$autoPlan = get_message_param($data, "autoPlan");
 		$lockAgent = get_message_param($data, "lockAgent");
 		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
 		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
@@ -935,7 +936,7 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] agent_need_to_plan: queued:{0} page:{1} count:{2}", $queuedCount, $pageType, $count);
 
-		if (file_exists($planPath)) {
+		if (file_exists($planPath) && $autoPlan) {
 			nativelog("[dsl] induction_plan triggered");
 			induction_plan();
 

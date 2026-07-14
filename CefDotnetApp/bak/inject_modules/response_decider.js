@@ -1,5 +1,5 @@
 // ============================================================================
-// PlanDecider - Decide what to do when agent needs to plan
+// ResponseDecider - Decide how to respond when agent needs to plan
 // Heuristics ported from Script.dsl's agent_need_to_plan branch.
 // Decision output (action):
 //   - 'skip'          : do nothing
@@ -9,10 +9,10 @@
 //   - 'trigger_plan'  : ask DSL to run induction_plan (notify agent_need_to_plan)
 //   - 'none'          : fall-through, nothing to do
 // ============================================================================
-class PlanDecider {
+class ResponseDecider {
   constructor(logger) {
     this.logger = logger || (typeof window !== 'undefined' && window.logger
-      ? window.logger.createLogger('PlanDecider')
+      ? window.logger.createLogger('ResponseDecider')
       : console);
     // Mirror DSL's @EnableLlmPM. Kept as JS-local flag; planning still runs in DSL.
     this.enableLlmPM = true;

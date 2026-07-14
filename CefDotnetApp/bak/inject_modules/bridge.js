@@ -97,11 +97,6 @@ class AgentBridge {
   // Send agent_need_to_plan notification (encapsulated for reuse)
   // JS-side plan decider filters easy cases; only 'trigger_plan' falls through to DSL.
   sendAgentNeedToPlan(state, pageAdapter, queuedCount) {
-    if (!this.autoPlanEnabled) {
-      this.logger.debug('Auto plan disabled, skipping agent_need_to_plan notification', { state });
-      return;
-    }
-
     const data = {
       state: state,
       timestamp: Date.now(),
@@ -111,20 +106,21 @@ class AgentBridge {
       queuedCount: queuedCount,
       pageType: pageAdapter ? pageAdapter.pageType : 'unknown',
       count: CONFIG.llmContextCountModuloForAlign,
+      autoPlan: this.autoPlanEnabled,
       lockAgent: this.lockAgentEnabled
     };
 
-    // Lazy-init PlanDecider
-    if (!this._planDecider && typeof PlanDecider !== 'undefined') {
-      this._planDecider = new PlanDecider(this.logger);
+    // Lazy-init ResponseDecider
+    if (!this._responseDecider && typeof ResponseDecider !== 'undefined') {
+      this._responseDecider = new ResponseDecider(this.logger);
     }
 
     let decision = { action: 'trigger_plan' };
-    if (this._planDecider) {
+    if (this._responseDecider) {
       try {
-        decision = this._planDecider.decide(data) || { action: 'none' };
+        decision = this._responseDecider.decide(data) || { action: 'none' };
       } catch (e) {
-        this.logger.error('PlanDecider.decide failed, fallback to trigger_plan', { error: e.toString() });
+        this.logger.error('ResponseDecider.decide failed, fallback to trigger_plan', { error: e.toString() });
         decision = { action: 'trigger_plan' };
       }
     }

@@ -1,12 +1,12 @@
 // ============================================================================
 // ResponseDecider - Decide how to respond when agent needs to plan
-// Heuristics ported from Script.dsl's agent_need_to_plan branch.
+// Heuristics ported from Script.dsl's agent_need_to_decide branch.
 // Decision output (action):
 //   - 'skip'          : do nothing
 //   - 'reply'         : reply a text to LLM (text in decision.text)
 //   - 'command'       : issue inject command (cmd/start_agent or stop_agent)
 //   - 'reply_ref'     : reply with ref-wrapped prompt (text in decision.text)
-//   - 'trigger_plan'  : ask DSL to run induction_plan (notify agent_need_to_plan)
+//   - 'trigger_decision' : ask DSL to run induction_decision (notify agent_need_to_decide)
 //   - 'none'          : fall-through, nothing to do
 // ============================================================================
 class ResponseDecider {
@@ -105,14 +105,8 @@ class ResponseDecider {
         };
       }
 
-      // C-class semantic keyword short-circuit -> lightweight PM reply channel
-      if ((this.containsAny(msg, '需要', '继续', '确定', '确认', '修改') && this.containsAll(msg, '吗')) ||
-        (this.containsAny(msg, '继续', '等待') && !this.containsAny(msg, '用户'))) {
-        return { action: 'trigger_reply' };
-      }
-
       // Default for lastFromLLM=true: trigger planning (DSL checks plan.txt existence)
-      return { action: 'trigger_plan' };
+      return { action: 'trigger_decision' };
     }
 
     // 4. Last message not from LLM
@@ -121,6 +115,6 @@ class ResponseDecider {
     }
 
     // Default for lastFromLLM=false: trigger planning
-    return { action: 'trigger_plan' };
+    return { action: 'trigger_decision' };
   }
 }

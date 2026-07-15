@@ -299,10 +299,43 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		semantic_add(@DecurionHistory, $reply, to_json({source: "inject", date: date_time_str()}));
 		llm_clear_history(@LlmProviderId, "llm_pm_decurion");
 	}
-	elif ($tag == "llm_pm_reply") {
+	elif ($tag == "llm_pm_decision") {
 		// Forward PM's fixed decision text as user reply to LLM.
-		send_command_to_inject("send_message", to_json({text: $reply}));
-		llm_clear_history(@LlmProviderId, "llm_pm_reply");
+		$tags = extract_tags($reply, "action", 1);
+		if (count($tags) > 0) {
+			$actions = $tags[0];
+			if (count($actions) > 0) {
+				$action = $actions[0];
+				$autoPlanStr = $actions[1];
+				$lockAgentStr = $actions[2];
+				$autoPlan = $autoPlanStr=="true" || $autoPlanStr=="True";
+				$lockAgent = $lockAgentStr=="true" || $lockAgentStr=="True";
+				if ($action=="plan"){
+					trigger_plan($autoPlan, $lockAgent);
+				}
+				elif ($action=="plan_if"){
+					if ($autoPlan) {
+						trigger_plan($autoPlan, $lockAgent);
+					}
+					else {
+						nativelog("[dsl] plan_if: auto_plan={0} lock_agent={1}", $autoPlan, $lockAgent);
+					};
+				}
+				elif ($action=="reply_if"){
+					$info = $actions[3];
+					if ($autoPlan) {
+						send_command_to_inject("send_message", to_json({text: $info}));
+					}
+					else {
+						nativelog("[dsl] reply_if: auto_plan={0} lock_agent={1} info={2}", $autoPlan, $lockAgent, $info);
+					};
+				};
+			};
+		}
+		else{
+			send_command_to_inject("send_message", to_json({text: $reply}));
+		};
+		llm_clear_history(@LlmProviderId, "llm_pm_decision");
 	}
 	else {
 		if ($queuedCount > 0) {
@@ -556,24 +589,17 @@ script(induction_plan)params()
 	};
 };
 
-script(induction_reply)params($lastMsg)
+script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
 {
-	$prompt = format("现在Agent与LLM之间在对话，目前已经没有命令在执行，LLM最新回复是“{0}”\n" +
-		"我们不希望工作卡住，请理解LLM的话并区分如下情形：\n" +
-		"1、LLM在请示确认（如“确定吗？”“需要继续吗？”），那我们回复“是的，请继续”\n" +
-		"2、LLM只是简单表述继续/等待，但没有实质内容，那我们回复“没有待执行代码了”\n" +
-		"3、LLM给了一些选项，并且有推荐或倾向，那我们回复“按你推荐的来，继续”\n" +
-		"4、LLM给了一些选项但没有明确推荐，那我们回复“你推荐一个吧”\n" +
-		"5、LLM表示所有工作都已经完成，没有更多事情可做，那我们回复“需要等待，请只回复一个句号”\n" +
-		"其它情况一律回复“继续（目前没有待执行代码了）”。\n" +
-		"我要把你的回复直接转给LLM，所以你要模仿我来说话，不要带其它信息。", $lastMsg);
+	$promptTpl = read_file(combine_path(basepath, "docs/reply_prompt.txt"));
+	$prompt = format($promptTpl, $autoPlan, $lockAgent, $lastMsg);
 
 	if (@EnableLlmPM) {
-		llm_chat_callback(@LlmProviderId, "llm_pm_reply", "reply_decision", $prompt);
+		llm_chat_callback(@LlmProviderId, "llm_pm_decision", "reply_decision", $prompt);
 	}
 	else {
 		// Fallback when PM is disabled: just send "continue" to keep LLM moving.
-		send_command_to_inject("send_message", to_json({text: "继续（目前没有待执行代码了）"}));
+		send_command_to_inject("send_message", to_json({text: "请继续（目前没有待执行代码了）"}));
 	};
 };
 
@@ -605,6 +631,32 @@ script(induction_todo)params($count,$queuedCount,$pageType)
 	};
 };
 
+script(trigger_plan)params($autoPlan,$lockAgent)
+{
+	$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
+	$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
+
+	agent_set_soul(9527, read_file($soulPath));
+
+	nativelog("[dsl] trigger_plan: auto_plan:{0} lock_agent:{1}", $autoPlan, $lockAgent);
+
+	if (file_exists($planPath) && $autoPlan) {
+		nativelog("[dsl] induction_plan triggered");
+		induction_plan();
+
+		if ($lockAgent) {
+			$prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请参考todo与plan的内容继续开发工作";
+		}
+		else {
+			$prompt = "没有识别到代码。插空更新计划，请继续；如果没有todo事项，可停止agent以避免重复更新计划";
+		};
+		send_command_to_inject("send_message", to_json({text: $prompt}));
+	}
+	else {
+		nativelog("[dsl] trigger_plan: plan_file not found or auto_plan is false, skip induction_plan");
+	};
+};
+
 script(trigger_reflection)params()
 {
 	nativelog("[dsl] trigger_reflection called");
@@ -617,15 +669,7 @@ script(trigger_reflection)params()
 	$prompt = format("【最近对话历史】：\n{0}\n\n【当前待办】：\n{1}\n\n【当前上下文】：\n{2}", $legionnaireHistory, $todoHistory, $contextHistory);
 
 	// Set reflection system prompt
-	$sysPrompt = "根据对话历史提取结构化经验记录。" +
-		"严格要求：只记录具体事实和操作，禁止抽象总结、口号式描述。" +
-		"每条必须包含具体文件名、函数名、命令或操作步骤。\n" +
-		"输出格式：\n" +
-		"【任务】：具体做了什么（含文件/函数）\n" +
-		"【方法】：用了什么工具和具体命令\n" +
-		"【结果】：成功/失败及具体表现\n" +
-		"【教训】：踩过的坑（附具体场景）\n\n" +
-		"控制在300字以内（超出会被截断丢弃），一次回复输出完成（不要使用记忆tool，结果数据持续入库，不要使用编号）";
+	$sysPrompt = read_file(combine_path(basepath, "docs/reflection_prompt.txt"));
 	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
 
 	// Send reflection request
@@ -752,9 +796,9 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 	if (@EnableLlmPM) {
 		$note = "你作为PM，要特别注意，一切以对话事实信息为准，不要猜测，缺少信息的保持现状不修改";
 		$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
+		llm_set_system_prompt(@LlmProviderId, "llm_pm_decision", "");
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
-		llm_set_system_prompt(@LlmProviderId, "llm_pm_reply", $llm_sys_prompt);
 	};
 };
 
@@ -794,9 +838,9 @@ script(handle_agent_notification)params($jsonData)
 		send_command_to_inject("ws_start", to_json({port: 9527}));
 
 		if (@EnableLlmPM) {
+			llm_clear_history(@LlmProviderId, "llm_pm_decision");
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
 			llm_clear_history(@LlmProviderId, "llm_pm_project");
-			llm_clear_history(@LlmProviderId, "llm_pm_reply");
 		};
 	}
 	elif ($type == "hyarena_ready") {
@@ -946,44 +990,10 @@ script(handle_agent_notification)params($jsonData)
 
 		UpdateSystemPrompt($pageType, false);
 	}
-	elif ($type == "agent_need_to_plan") {
-		// Planning heuristics have been moved to JS (response_decider.js).
-		// JS now only sends this notification when it decides planning is needed.
-		nativelog("[dsl] agent_need_to_plan notification received (trigger_plan)");
-
-		$data = get_message_param($notif, "data");
-		$queuedCount = get_message_param($data, "queuedCount");
-		$pageType = get_message_param($data, "pageType");
-		$count = get_message_param($data, "count");
-		$autoPlan = get_message_param($data, "autoPlan");
-		$lockAgent = get_message_param($data, "lockAgent");
-		$planPath = combine_path(@ProjectDirectory, "docs/plan.txt");
-		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
-
-		agent_set_soul(9527, read_file($soulPath));
-
-		nativelog("[dsl] agent_need_to_plan: queued:{0} page:{1} count:{2}", $queuedCount, $pageType, $count);
-
-		if (file_exists($planPath) && $autoPlan) {
-			nativelog("[dsl] induction_plan triggered");
-			induction_plan();
-
-			if ($lockAgent) {
-				$prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请参考todo与plan的内容继续开发工作";
-			}
-			else {
-				$prompt = "没有识别到代码。插空更新计划，请继续；如果没有todo事项，可停止agent以避免重复更新计划";
-			};
-			send_command_to_inject("send_message", to_json({text: $prompt}));
-		}
-		else {
-			nativelog("[dsl] agent_need_to_plan: plan file not found, skip induction_plan");
-		};
-	}
-	elif ($type == "agent_need_to_reply") {
+	elif ($type == "agent_need_to_decide") {
 		// Lightweight PM reply channel for C-class semantic keywords
 		// (e.g. 确定吗/需要继续吗/请继续/请等待). Prompt details to be aligned later.
-		nativelog("[dsl] agent_need_to_reply notification received (trigger_reply)");
+		nativelog("[dsl] agent_need_to_decide notification received (trigger_decision)");
 
 		$data = get_message_param($notif, "data");
 		$lastScannedMessage = get_message_param($data, "lastScannedMessage");
@@ -995,8 +1005,8 @@ script(handle_agent_notification)params($jsonData)
 
 		agent_set_soul(9527, read_file($soulPath));
 
-		nativelog("[dsl] agent_need_to_reply: page:{0} lastMsg:{1}", $pageType, $lastScannedMessage);
-		induction_reply($lastScannedMessage);
+		nativelog("[dsl] agent_need_to_decide: page:{0} lastMsg:{1}", $pageType, $lastScannedMessage);
+		induction_decision($lastScannedMessage, $autoPlan, $lockAgent);
 	}
 	else {
 		nativelog("[dsl] Unknown notification type: {0}", $type);

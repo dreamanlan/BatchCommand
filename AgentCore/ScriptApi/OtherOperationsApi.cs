@@ -451,6 +451,180 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             return BoxedValue.From(false);
         }
     }
+    
+    sealed class ExtractTagsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var empty = new List<IList<string>>();
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: extract_tags(txt, tag_name[, max_num]), aliased as extracttags");
+                return BoxedValue.FromObject(empty);
+            }
+
+            try {
+                string txt = operands[0].AsString;
+                string tagName = operands[1].AsString;
+                int maxNum = 0;
+                if (operands.Count == 3) {
+                    maxNum = operands[2].GetInt();
+                }
+                if (maxNum < 0) {
+                    maxNum = 0;
+                }
+                if (string.IsNullOrEmpty(txt) || string.IsNullOrEmpty(tagName)) {
+                    return BoxedValue.FromObject(empty);
+                }
+
+                var result = new List<IList<string>>();
+                string escaped = System.Text.RegularExpressions.Regex.Escape(tagName);
+                // Match three XML forms: <tag>content</tag>, <tag></tag>, <tag/>
+                // Non-greedy, case-sensitive, tolerate whitespace around self-closing slash
+                string pattern = "<" + escaped + @"\s*/\s*>|<" + escaped + ">(.*?)</" + escaped + ">";
+                var re = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.Singleline);
+                foreach (System.Text.RegularExpressions.Match m in re.Matches(txt)) {
+                    if (maxNum > 0 && result.Count >= maxNum) break;
+                    var g = m.Groups[1];
+                    if (!g.Success || g.Value.Length == 0) {
+                        result.Add(new List<string>());
+                    } else {
+                        var parts = g.Value.Split('|');
+                        result.Add(new List<string>(parts));
+                    }
+                }
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"extract_tags error: {ex.Message}");
+            }
+            return BoxedValue.FromObject(empty);
+        }
+    }
+
+    sealed class ExtractTagCodesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            var empty = new List<BoxedValue>();
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: extract_tag_codes(txt, tag_name[, max_num]), aliased as extracttagcodes");
+                return BoxedValue.FromObject(empty);
+            }
+
+            try {
+                string txt = operands[0].AsString;
+                string tagName = operands[1].AsString;
+                int maxNum = 0;
+                if (operands.Count == 3) {
+                    maxNum = operands[2].GetInt();
+                }
+                if (maxNum < 0) {
+                    maxNum = 0;
+                }
+                if (string.IsNullOrEmpty(txt) || string.IsNullOrEmpty(tagName)) {
+                    return BoxedValue.FromObject(empty);
+                }
+
+                var result = new List<BoxedValue>();
+                string escaped = System.Text.RegularExpressions.Regex.Escape(tagName);
+                // Match three XML forms: <tag>content</tag>, <tag></tag>, <tag/>
+                // Non-greedy, case-sensitive, tolerate whitespace around self-closing slash
+                string pattern = "<" + escaped + @"\s*/\s*>|<" + escaped + ">(.*?)</" + escaped + ">";
+                var re = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.Singleline);
+                foreach (System.Text.RegularExpressions.Match m in re.Matches(txt)) {
+                    if (maxNum > 0 && result.Count >= maxNum) break;
+                    var g = m.Groups[1];
+                    result.Add(BoxedValue.FromString(g.Success ? g.Value : string.Empty));
+                }
+                return BoxedValue.FromObject(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"extract_tag_codes error: {ex.Message}");
+            }
+            return BoxedValue.FromObject(empty);
+        }
+    }
+
+    // HTML/URL Encode Operations
+    sealed class HtmlEncodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: html_encode(html_str)");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            try {
+                string s = operands[0].AsString ?? string.Empty;
+                return BoxedValue.FromString(System.Net.WebUtility.HtmlEncode(s));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"html_encode error: {ex.Message}");
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
+    sealed class HtmlDecodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: html_decode(encoded_html_str)");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            try {
+                string s = operands[0].AsString ?? string.Empty;
+                return BoxedValue.FromString(System.Net.WebUtility.HtmlDecode(s));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"html_decode error: {ex.Message}");
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
+    sealed class UrlEncodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: url_encode(url_str)");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            try {
+                string s = operands[0].AsString ?? string.Empty;
+                return BoxedValue.FromString(System.Net.WebUtility.UrlEncode(s));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"url_encode error: {ex.Message}");
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
+
+    sealed class UrlDecodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: url_decode(encoded_url_str)");
+                return BoxedValue.FromString(string.Empty);
+            }
+
+            try {
+                string s = operands[0].AsString ?? string.Empty;
+                return BoxedValue.FromString(System.Net.WebUtility.UrlDecode(s));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"url_decode error: {ex.Message}");
+            }
+            return BoxedValue.FromString(string.Empty);
+        }
+    }
 
     sealed class ToPrettyStringExp : SimpleExpressionBase
     {

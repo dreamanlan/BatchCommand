@@ -93,9 +93,9 @@ class AgentBridge {
       this.logger.error('Error parsing response', { error: e.toString() });
     }
   }
-
+    
   // Send agent decision notification (encapsulated for reuse)
-  // JS-side decider filters easy cases; 'trigger_plan' and 'trigger_reply' fall through to DSL.
+  // JS-side decider filters easy cases; 'trigger_decision' falls through to DSL.
   dispatchAgentDecision(state, pageAdapter, queuedCount) {
     const data = {
       state: state,
@@ -114,19 +114,19 @@ class AgentBridge {
     if (!this._responseDecider && typeof ResponseDecider !== 'undefined') {
       this._responseDecider = new ResponseDecider(this.logger);
     }
-
-    let decision = { action: 'trigger_plan' };
+    
+    let decision = { action: 'trigger_decision' };
     if (this._responseDecider) {
       try {
         decision = this._responseDecider.decide(data) || { action: 'none' };
       } catch (e) {
-        this.logger.error('ResponseDecider.decide failed, fallback to trigger_plan', { error: e.toString() });
-        decision = { action: 'trigger_plan' };
+        this.logger.error('ResponseDecider.decide failed, fallback to trigger_decision', { error: e.toString() });
+        decision = { action: 'trigger_decision' };
       }
     }
-
-    this.logger.info('Plan decision', { state, action: decision.action, reason: decision.reason });
-
+    
+    this.logger.info('Agent decision', { state, action: decision.action, reason: decision.reason });
+    
     switch (decision.action) {
       case 'skip':
       case 'none':
@@ -146,14 +146,10 @@ class AgentBridge {
           window.AgentAPI.stopAgent();
         }
         return;
-      case 'trigger_reply':
-        this.logger.info('Sending agent_need_to_reply notification to DSL', { state });
-        this.sendNotification('agent_need_to_reply', data);
-        return;
-      case 'trigger_plan':
+      case 'trigger_decision':
       default:
-        this.logger.info('Sending agent_need_to_plan notification to DSL', { state });
-        this.sendNotification('agent_need_to_plan', data);
+        this.logger.info('Sending agent_need_to_decide notification to DSL', { state });
+        this.sendNotification('agent_need_to_decide', data);
         return;
     }
   }

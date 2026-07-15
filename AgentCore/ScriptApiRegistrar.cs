@@ -174,7 +174,17 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("str_starts_with", "str_starts_with(str, substr)", false, new ExpressionFactoryHelper<StringStartsWithExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_ends_with", "string_ends_with(str, substr)", new ExpressionFactoryHelper<StringEndsWithExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_ends_with", "str_ends_with(str, substr)", false, new ExpressionFactoryHelper<StringEndsWithExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("extract_tags", "extract_tags(txt, tag_name[, max_num]) - extract XML-style tag contents like <a>x|y</a>/<a></a>/<a/>, content split by '|', case-sensitive, non-greedy. Returns IList<IList<string>>. max_num<=0 means no limit.", new ExpressionFactoryHelper<ExtractTagsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("extracttags", "extracttags(txt, tag_name[, max_num])", false, new ExpressionFactoryHelper<ExtractTagsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("extract_tag_codes", "extract_tag_codes(txt, tag_name[, max_num]) - extract XML-style tag contents like <a>x</a>/<a></a>/<a/>, case-sensitive, non-greedy. Returns List<BoxedValue> of raw string content per match. max_num<=0 means no limit.", new ExpressionFactoryHelper<ExtractTagCodesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("extracttagcodes", "extracttagcodes(txt, tag_name[, max_num])", false, new ExpressionFactoryHelper<ExtractTagCodesExp>());
 
+            // HTML/URL Encode Operations
+            AgentFrameworkService.Instance.DslEngine!.Register("html_encode", "html_encode(html_str)", new ExpressionFactoryHelper<HtmlEncodeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("html_decode", "html_decode(encoded_html_str)", new ExpressionFactoryHelper<HtmlDecodeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("url_encode", "url_encode(url_str)", new ExpressionFactoryHelper<UrlEncodeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("url_decode", "url_decode(encoded_url_str)", new ExpressionFactoryHelper<UrlDecodeExp>());
+    
             // Process Operations
             AgentFrameworkService.Instance.DslEngine!.Register("execute_script", "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string. The default template code delimiters are \"{%{{{#\" and \"%}}}#}\"; specifically, {% %} and {{ }} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<ExecuteScriptExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("execute_script_callback", "execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; - async exec, result via command_callback. The default template code delimiters are \"{%{{{#\" and \"%}}}#}\"; specifically, {% %} and {{ }} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<ExecuteScriptCallbackExp>());

@@ -399,7 +399,7 @@
                 this.debug('Still initializing, skipping need_to_plan');
               } else {
                 // Send notification to Script.dsl to trigger planning
-                this.monitor.bridge.sendAgentNeedToPlan('AGENT_EXECUTING', this.monitor.pageAdapter, this.monitor.operationQueue.length);
+                this.monitor.bridge.dispatchAgentDecision('AGENT_EXECUTING', this.monitor.pageAdapter, this.monitor.operationQueue.length);
                 // Mark as executed to avoid sending notification repeatedly
                 this.operationExecuted = true;
                 this.operationExecuteTime = Date.now();

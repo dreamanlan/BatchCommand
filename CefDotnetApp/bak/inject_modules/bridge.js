@@ -94,9 +94,9 @@ class AgentBridge {
     }
   }
 
-  // Send agent_need_to_plan notification (encapsulated for reuse)
-  // JS-side plan decider filters easy cases; only 'trigger_plan' falls through to DSL.
-  sendAgentNeedToPlan(state, pageAdapter, queuedCount) {
+  // Send agent decision notification (encapsulated for reuse)
+  // JS-side decider filters easy cases; 'trigger_plan' and 'trigger_reply' fall through to DSL.
+  dispatchAgentDecision(state, pageAdapter, queuedCount) {
     const data = {
       state: state,
       timestamp: Date.now(),
@@ -145,6 +145,10 @@ class AgentBridge {
           && window.AgentAPI && typeof window.AgentAPI.stopAgent === 'function') {
           window.AgentAPI.stopAgent();
         }
+        return;
+      case 'trigger_reply':
+        this.logger.info('Sending agent_need_to_reply notification to DSL', { state });
+        this.sendNotification('agent_need_to_reply', data);
         return;
       case 'trigger_plan':
       default:

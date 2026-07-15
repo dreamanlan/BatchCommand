@@ -371,7 +371,7 @@ class MetaDSLMonitor {
       // Only send AGENT_INITIALIZED on first start, skip on restart
       if (!this.hasEverInitialized) {
         this.hasEverInitialized = true;
-        this.bridge.sendAgentNeedToPlan('AGENT_INITIALIZED', this.pageAdapter, this.operationQueue.length);
+        this.bridge.dispatchAgentDecision('AGENT_INITIALIZED', this.pageAdapter, this.operationQueue.length);
       } else {
         this.info('Restart detected - skipping AGENT_INITIALIZED notification');
       }

@@ -60,17 +60,8 @@ class ResponseDecider {
 
     // 3. Last message came from LLM
     if (lastFromLLM) {
-      if (this.containsAll(msg, '需要', '继续', '吗') && msgLen > 16) {
-        return { action: 'reply', text: '继续' };
-      }
-      if (msg.indexOf('确定吗') >= 0 || msg.indexOf('确认吗') >= 0 || msg.indexOf('修改吗') >= 0) {
-        return { action: 'reply', text: '确定' };
-      }
       if (this.containsAll(msg, 'Error', 'Occur')) {
         return { action: 'reply', text: '继续' };
-      }
-      if (this.containsAny(msg, '继续', '等待') && msgLen <= 32) {
-        return { action: 'reply', text: '没有代码要执行了' };
       }
       if (msg.indexOf('启动Agent') >= 0 && msgLen <= 32) {
         return { action: 'command', command: 'start_agent' };
@@ -112,6 +103,12 @@ class ResponseDecider {
           action: 'reply',
           text: `ref{:\n${msg}\n:};\n\n请等待代码结果\n\n或者请检查metadsl代码是否使用了markdown代码块语法，如果没有请重新提交`,
         };
+      }
+
+      // C-class semantic keyword short-circuit -> lightweight PM reply channel
+      if ((this.containsAny(msg, '需要', '继续', '确定', '确认', '修改') && this.containsAll(msg, '吗')) ||
+        (this.containsAny(msg, '继续', '等待') && !this.containsAny(msg, '用户'))) {
+        return { action: 'trigger_reply' };
       }
 
       // Default for lastFromLLM=true: trigger planning (DSL checks plan.txt existence)

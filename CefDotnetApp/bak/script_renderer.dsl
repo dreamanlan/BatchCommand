@@ -299,6 +299,11 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		semantic_add(@DecurionHistory, $reply, to_json({source: "inject", date: date_time_str()}));
 		llm_clear_history(@LlmProviderId, "llm_pm_decurion");
 	}
+	elif ($tag == "llm_pm_reply") {
+		// Forward PM's fixed decision text as user reply to LLM.
+		send_command_to_inject("send_message", to_json({text: $reply}));
+		llm_clear_history(@LlmProviderId, "llm_pm_reply");
+	}
 	else {
 		if ($queuedCount > 0) {
 			$reply = format("{0}\n**还有{1}个代码要执行，不要再发新代码，回复继续即可**", $reply, $queuedCount);
@@ -551,6 +556,27 @@ script(induction_plan)params()
 	};
 };
 
+script(induction_reply)params($lastMsg)
+{
+	$prompt = format("现在Agent与LLM之间在对话，目前已经没有命令在执行，LLM最新回复是“{0}”\n" +
+		"我们不希望工作卡住，请理解LLM的话并区分如下情形：\n" +
+		"1、LLM在请示确认（如“确定吗？”“需要继续吗？”），那我们回复“是的，请继续”\n" +
+		"2、LLM只是简单表述继续/等待，但没有实质内容，那我们回复“没有待执行代码了”\n" +
+		"3、LLM给了一些选项，并且有推荐或倾向，那我们回复“按你推荐的来，继续”\n" +
+		"4、LLM给了一些选项但没有明确推荐，那我们回复“你推荐一个吧”\n" +
+		"5、LLM表示所有工作都已经完成，没有更多事情可做，那我们回复“需要等待，请只回复一个句号”\n" +
+		"其它情况一律回复“继续（目前没有待执行代码了）”。\n" +
+		"我要把你的回复直接转给LLM，所以你要模仿我来说话，不要带其它信息。", $lastMsg);
+
+	if (@EnableLlmPM) {
+		llm_chat_callback(@LlmProviderId, "llm_pm_reply", "reply_decision", $prompt);
+	}
+	else {
+		// Fallback when PM is disabled: just send "continue" to keep LLM moving.
+		send_command_to_inject("send_message", to_json({text: "继续（目前没有待执行代码了）"}));
+	};
+};
+
 script(induction_todo)params($count,$queuedCount,$pageType)
 {
 	$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
@@ -728,6 +754,7 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 		$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
+		llm_set_system_prompt(@LlmProviderId, "llm_pm_reply", $llm_sys_prompt);
 	};
 };
 
@@ -769,6 +796,7 @@ script(handle_agent_notification)params($jsonData)
 		if (@EnableLlmPM) {
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
 			llm_clear_history(@LlmProviderId, "llm_pm_project");
+			llm_clear_history(@LlmProviderId, "llm_pm_reply");
 		};
 	}
 	elif ($type == "hyarena_ready") {
@@ -951,6 +979,24 @@ script(handle_agent_notification)params($jsonData)
 		else {
 			nativelog("[dsl] agent_need_to_plan: plan file not found, skip induction_plan");
 		};
+	}
+	elif ($type == "agent_need_to_reply") {
+		// Lightweight PM reply channel for C-class semantic keywords
+		// (e.g. 确定吗/需要继续吗/请继续/请等待). Prompt details to be aligned later.
+		nativelog("[dsl] agent_need_to_reply notification received (trigger_reply)");
+
+		$data = get_message_param($notif, "data");
+		$lastScannedMessage = get_message_param($data, "lastScannedMessage");
+		$pageType = get_message_param($data, "pageType");
+		$count = get_message_param($data, "count");
+		$autoPlan = get_message_param($data, "autoPlan");
+		$lockAgent = get_message_param($data, "lockAgent");
+		$soulPath = combine_path(@ProjectDirectory, "docs/soul.md");
+
+		agent_set_soul(9527, read_file($soulPath));
+
+		nativelog("[dsl] agent_need_to_reply: page:{0} lastMsg:{1}", $pageType, $lastScannedMessage);
+		induction_reply($lastScannedMessage);
 	}
 	else {
 		nativelog("[dsl] Unknown notification type: {0}", $type);

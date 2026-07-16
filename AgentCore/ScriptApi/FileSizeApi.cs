@@ -34,5 +34,32 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(-1L);
             }
         }
+
+        // file_last_write_time(path) - get file last write time as DateTime
+        sealed class GetFileLastWriteTimeExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 1) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: file_last_write_time(path)");
+                    return BoxedValue.NullObject;
+                }
+
+                try {
+                    string path = operands[0].AsString;
+                    if (!System.IO.File.Exists(path)) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_last_write_time: file not found: {path}");
+                        return BoxedValue.NullObject;
+                    }
+
+                    var t = System.IO.File.GetLastWriteTime(path);
+                    return BoxedValue.FromDateTime(t);
+                }
+                catch (Exception ex) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"file_last_write_time error: {ex.Message}");
+                    return BoxedValue.NullObject;
+                }
+            }
+        }
     }
 }

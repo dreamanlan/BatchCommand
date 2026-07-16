@@ -748,4 +748,102 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
     }
+    // csv_read(path[, encoding]) - read CSV file into List<List<string>>. minimal RFC4180 subset: comma delimiter, double-quoted fields, "" escape. no cross-line quoted fields.
+    sealed class CsvReadExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: csv_read(path[, encoding])");
+                return BoxedValue.NullObject;
+            }
+            try {
+                string path = operands[0].AsString;
+                Encoding? encoding = operands.Count > 1 ? GetEncoding(operands[1]) : null;
+                string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding) ?? string.Empty;
+                var rows = new List<List<string>>();
+                var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                foreach (var line in lines) {
+                    if (line.Length == 0)
+                        continue;
+                    var row = new List<string>();
+                    var field = new StringBuilder();
+                    bool inQuote = false;
+                    for (int i = 0; i < line.Length; ++i) {
+                        char c = line[i];
+                        if (inQuote) {
+                            if (c == '"') {
+                                if (i + 1 < line.Length && line[i + 1] == '"') {
+                                    field.Append('"');
+                                    ++i;
+                                }
+                                else {
+                                    inQuote = false;
+                                }
+                            }
+                            else {
+                                field.Append(c);
+                            }
+                        }
+                        else {
+                            if (c == ',') {
+                                row.Add(field.ToString());
+                                field.Clear();
+                            }
+                            else if (c == '"' && field.Length == 0) {
+                                inQuote = true;
+                            }
+                            else {
+                                field.Append(c);
+                            }
+                        }
+                    }
+                    row.Add(field.ToString());
+                    rows.Add(row);
+                }
+                return BoxedValue.FromObject(rows);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"csv_read error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // read_file_line_range(path, startLine, endLine[, encoding]) - read line range as concatenated string, preserving original newline style
+    sealed class ReadFileLineRangeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: read_file_line_range(path, startLine, endLine[, encoding])");
+                return BoxedValue.FromString(string.Empty);
+            }
+            try {
+                string path = operands[0].AsString;
+                int startLine = operands[1].GetInt();
+                int endLine = operands[2].GetInt();
+                Encoding? encoding = operands.Count > 3 ? GetEncoding(operands[3]) : null;
+                string content = Core.AgentCore.Instance.FileOps.ReadFile(path, encoding) ?? string.Empty;
+                string newline = "\n";
+                if (content.Contains("\r\n")) newline = "\r\n";
+                else if (content.Contains("\r")) newline = "\r";
+                var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                if (startLine < 1) startLine = 1;
+                if (endLine > lines.Length) endLine = lines.Length;
+                if (startLine > endLine) return BoxedValue.FromString(string.Empty);
+                var sb = new StringBuilder();
+                for (int i = startLine - 1; i < endLine; ++i) {
+                    if (i > startLine - 1) sb.Append(newline);
+                    sb.Append(lines[i]);
+                }
+                return BoxedValue.FromString(sb.ToString());
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"read_file_line_range error: {ex.Message}");
+                return BoxedValue.FromString(string.Empty);
+            }
+        }
+    }
+
 }

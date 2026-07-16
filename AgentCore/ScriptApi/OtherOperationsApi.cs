@@ -451,7 +451,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             return BoxedValue.From(false);
         }
     }
-    
+
     sealed class ExtractTagsExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -487,7 +487,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     var g = m.Groups[1];
                     if (!g.Success || g.Value.Length == 0) {
                         result.Add(new List<string>());
-                    } else {
+                    }
+                    else {
                         var parts = g.Value.Split('|');
                         result.Add(new List<string>(parts));
                     }
@@ -692,42 +693,42 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     case 'a': sb.Append('\a'); i += 2; break;
                     case '0': sb.Append('\0'); i += 2; break;
                     case 'u': {
-                        // \uXXXX - require exactly 4 hex digits
-                        if (i + 5 < n && IsHex(input[i + 2]) && IsHex(input[i + 3]) && IsHex(input[i + 4]) && IsHex(input[i + 5])) {
-                            int code = (HexVal(input[i + 2]) << 12) | (HexVal(input[i + 3]) << 8) | (HexVal(input[i + 4]) << 4) | HexVal(input[i + 5]);
-                            sb.Append((char)code);
-                            i += 6;
+                            // \uXXXX - require exactly 4 hex digits
+                            if (i + 5 < n && IsHex(input[i + 2]) && IsHex(input[i + 3]) && IsHex(input[i + 4]) && IsHex(input[i + 5])) {
+                                int code = (HexVal(input[i + 2]) << 12) | (HexVal(input[i + 3]) << 8) | (HexVal(input[i + 4]) << 4) | HexVal(input[i + 5]);
+                                sb.Append((char)code);
+                                i += 6;
+                            }
+                            else {
+                                // invalid, keep literal
+                                sb.Append(c);
+                                sb.Append(next);
+                                i += 2;
+                            }
+                            break;
                         }
-                        else {
-                            // invalid, keep literal
-                            sb.Append(c);
-                            sb.Append(next);
-                            i += 2;
-                        }
-                        break;
-                    }
                     case 'x': {
-                        // \xH{1..4} - greedy 1 to 4 hex digits
-                        int j = i + 2;
-                        int hexCount = 0;
-                        int code = 0;
-                        while (j < n && hexCount < 4 && IsHex(input[j])) {
-                            code = (code << 4) | HexVal(input[j]);
-                            j++;
-                            hexCount++;
+                            // \xH{1..4} - greedy 1 to 4 hex digits
+                            int j = i + 2;
+                            int hexCount = 0;
+                            int code = 0;
+                            while (j < n && hexCount < 4 && IsHex(input[j])) {
+                                code = (code << 4) | HexVal(input[j]);
+                                j++;
+                                hexCount++;
+                            }
+                            if (hexCount > 0) {
+                                sb.Append((char)code);
+                                i = j;
+                            }
+                            else {
+                                // no hex digit, keep literal
+                                sb.Append(c);
+                                sb.Append(next);
+                                i += 2;
+                            }
+                            break;
                         }
-                        if (hexCount > 0) {
-                            sb.Append((char)code);
-                            i = j;
-                        }
-                        else {
-                            // no hex digit, keep literal
-                            sb.Append(c);
-                            sb.Append(next);
-                            i += 2;
-                        }
-                        break;
-                    }
                     default:
                         // unknown escape, keep literal
                         sb.Append(c);
@@ -1020,7 +1021,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 3)
-                throw new Exception("Expected: sublist(list[,start,count])");
+                throw new Exception("Expected: sublist(list[,start,count]) (alias: list_slice)");
             BoxedValue r = BoxedValue.NullObject;
             if (operands.Count >= 1) {
                 var list = operands[0].As<IList>();
@@ -1109,4 +1110,130 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
     }
+    // subarray(array[, start, count]) - slice array, returns array of same element type
+    internal sealed class SubArrayExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 3)
+                throw new Exception("Expected: subarray(array[,start,count]) (alias: array_slice)");
+            BoxedValue r = BoxedValue.NullObject;
+            var arr = operands[0].As<Array>();
+            if (null != arr) {
+                int start = 0;
+                int count = arr.Length;
+                if (operands.Count >= 2) {
+                    start = operands[1].GetInt();
+                    if (start < 0) {
+                        start = 0;
+                    }
+                    else if (start >= count) {
+                        start = count - 1;
+                    }
+                    count -= start;
+                }
+                if (operands.Count >= 3) {
+                    count = operands[2].GetInt();
+                    if (count < 0) {
+                        count = 0;
+                    }
+                    else if (count > arr.Length - start) {
+                        count = arr.Length - start;
+                    }
+                }
+                var elementType = arr.GetType().GetElementType();
+                if (null != elementType) {
+                    var result = Array.CreateInstance(elementType, count);
+                    Array.Copy(arr, start, result, 0, count);
+                    r = BoxedValue.FromObject(result);
+                }
+            }
+            return r;
+        }
+    }
+    // bytes_to_string(bytes[, encoding]) - convert byte array to string, default UTF-8
+    internal sealed class BytesToStringExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2)
+                throw new Exception("Expected: bytes_to_string(bytes[, encoding]) (alias: bytestostring)");
+            byte[]? bytes = operands[0].As<byte[]>();
+            if (null == bytes) {
+                var list = operands[0].As<IList<byte>>();
+                if (null != list) {
+                    bytes = new byte[list.Count];
+                    list.CopyTo(bytes, 0);
+                }
+            }
+            if (null == bytes)
+                return BoxedValue.FromString(string.Empty);
+            Encoding encoding = operands.Count > 1 ? (GetEncoding(operands[1]) ?? Encoding.UTF8) : Encoding.UTF8;
+            return BoxedValue.FromString(encoding.GetString(bytes));
+        }
+    }
+    // string_to_bytes(str[, encoding]) - convert string to byte array, default UTF-8
+    internal sealed class StringToBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1 || operands.Count > 2)
+                throw new Exception("Expected: string_to_bytes(str[, encoding]) (alias: stringtobytes)");
+            string s = operands[0].AsString ?? string.Empty;
+            Encoding encoding = operands.Count > 1 ? (GetEncoding(operands[1]) ?? Encoding.UTF8) : Encoding.UTF8;
+            return BoxedValue.FromObject(encoding.GetBytes(s));
+        }
+        // string_first_lines(str, n) - return the first n lines of a string
+        internal sealed class StringFirstLinesExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 2)
+                    throw new Exception("Expected: string_first_lines(str, n) (alias: stringfirstlines)");
+                string s = operands[0].AsString ?? string.Empty;
+                int n = operands[1].GetInt();
+                if (n <= 0)
+                    return BoxedValue.FromString(string.Empty);
+                var lines = s.Split('\n');
+                if (n >= lines.Length)
+                    return BoxedValue.FromString(s);
+                var sb = new StringBuilder();
+                for (int i = 0; i < n; ++i) {
+                    if (i > 0) sb.Append('\n');
+                    sb.Append(lines[i]);
+                }
+                return BoxedValue.FromString(sb.ToString());
+            }
+        }
+        // string_replace_with_count(str, oldValue, newValue, count) - replace first N occurrences
+        internal sealed class StringReplaceWithCountExp : SimpleExpressionBase
+        {
+            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+            {
+                if (operands.Count != 4)
+                    throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count) (alias: stringreplacewithcount)");
+                string s = operands[0].AsString ?? string.Empty;
+                string oldValue = operands[1].AsString ?? string.Empty;
+                string newValue = operands[2].AsString ?? string.Empty;
+                int count = operands[3].GetInt();
+                if (string.IsNullOrEmpty(oldValue) || count <= 0)
+                    return BoxedValue.FromString(s);
+                var sb = new StringBuilder();
+                int pos = 0;
+                int replaced = 0;
+                while (replaced < count) {
+                    int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
+                    if (idx < 0) break;
+                    sb.Append(s, pos, idx - pos);
+                    sb.Append(newValue);
+                    pos = idx + oldValue.Length;
+                    ++replaced;
+                }
+                if (pos < s.Length) sb.Append(s, pos, s.Length - pos);
+                return BoxedValue.FromString(sb.ToString());
+            }
+        }
+
+    }
+
 }

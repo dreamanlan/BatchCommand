@@ -145,7 +145,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_full_name", "get_type_full_name(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("fullname", "fullname(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_name", "get_type_name(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("typename", "typename(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("typename", "typename(obj)", new ExpressionFactoryHelper<GetTypeNameExp>()); AgentFrameworkService.Instance.DslEngine!.Register("type_of", "type_of(obj)", false, new ExpressionFactoryHelper<GetTypeNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type", "get_type(type_str)", new ExpressionFactoryHelper<GetTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("change_type", "change_type(obj,type_str)", new ExpressionFactoryHelper<ChangeTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("parse_enum", "parse_enum(type_str,val_str)", new ExpressionFactoryHelper<ParseEnumExp>());
@@ -163,6 +163,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("append_format", "append_format(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_format_line", "append_format_line(sb,fmt,arg1,arg2,...)", new ExpressionFactoryHelper<AppendFormatLineExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_builder_to_string", "string_builder_to_string(sb)", new ExpressionFactoryHelper<StringBuilderToStringExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("stringbuilder_to_string", "stringbuilder_to_string(sb)", false, new ExpressionFactoryHelper<StringBuilderToStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("stringbuildertostring", "stringbuildertostring(sb)", false, new ExpressionFactoryHelper<StringBuilderToStringExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_join", "string_join(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("join_string", "join_string(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
@@ -218,16 +219,28 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("not_contains_any", "not_contains_any(str, substr1, ...)", new ExpressionFactoryHelper<StringNotContainsAnyExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_to_int", "string_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_int", "str_to_int(str)", new ExpressionFactoryHelper<Str2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("int_parse", "int_parse(str)", false, new ExpressionFactoryHelper<Str2IntExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_int", "parse_int(str)", false, new ExpressionFactoryHelper<Str2IntExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_to_uint", "string_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_uint", "str_to_uint(str)", new ExpressionFactoryHelper<Str2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("uint_parse", "uint_parse(str)", false, new ExpressionFactoryHelper<Str2UintExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_uint", "parse_uint(str)", false, new ExpressionFactoryHelper<Str2UintExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_to_long", "string_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_long", "str_to_long(str)", new ExpressionFactoryHelper<Str2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("long_parse", "long_parse(str)", false, new ExpressionFactoryHelper<Str2LongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_long", "parse_long(str)", false, new ExpressionFactoryHelper<Str2LongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_to_ulong", "string_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_ulong", "str_to_ulong(str)", new ExpressionFactoryHelper<Str2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ulong_parse", "ulong_parse(str)", false, new ExpressionFactoryHelper<Str2UlongExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_ulong", "parse_ulong(str)", false, new ExpressionFactoryHelper<Str2UlongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_to_float", "string_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_float", "str_to_float(str)", new ExpressionFactoryHelper<Str2FloatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("float_parse", "float_parse(str)", false, new ExpressionFactoryHelper<Str2FloatExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_float", "parse_float(str)", false, new ExpressionFactoryHelper<Str2FloatExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("strint_to_double", "strint_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_to_double", "str_to_double(str)", new ExpressionFactoryHelper<Str2DoubleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("double_parse", "double_parse(str)", false, new ExpressionFactoryHelper<Str2DoubleExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("parse_double", "parse_double(str)", false, new ExpressionFactoryHelper<Str2DoubleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hex_string_to_int", "hex_string_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hex_str_to_int", "hex_str_to_int(str)", false, new ExpressionFactoryHelper<Hex2IntExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("hex_to_int", "hex_to_int(str)", new ExpressionFactoryHelper<Hex2IntExp>());
@@ -242,6 +255,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("hex_to_ulong", "hex_to_ulong(str)", new ExpressionFactoryHelper<Hex2UlongExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("date_time_string", "date_time_string([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("date_time_str", "date_time_str([fmt])", new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("current_date_time", "current_date_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_current_date_time", "get_current_date_time([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("current_date", "current_date([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_current_date", "get_current_date([fmt])", false, new ExpressionFactoryHelper<DatetimeStrExp>());
+
             AgentFrameworkService.Instance.DslEngine!.Register("long_date_string", "long_date_string()", new ExpressionFactoryHelper<LongDateStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("long_date_str", "long_date_str()", new ExpressionFactoryHelper<LongDateStrExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("long_time_string", "long_time_string()", new ExpressionFactoryHelper<LongTimeStrExp>());
@@ -253,6 +271,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("now", "now() api", new ExpressionFactoryHelper<NowExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("parse_date_time", "parse_date_time(str) api", new ExpressionFactoryHelper<ParseDateTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("format_date_time", "format_date_time(fmt,datetime) api", new ExpressionFactoryHelper<FormatDateTimeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("date_format", "date_format(fmt,datetime)", false, new ExpressionFactoryHelper<FormatDateTimeExp>());
+
             AgentFrameworkService.Instance.DslEngine!.Register("is_null_or_empty", "is_null_or_empty(str)", new ExpressionFactoryHelper<IsNullOrEmptyExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("tuple", "(v1,v2,...) or tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("new_tuple", "(v1,v2,...) or new_tuple(v1,v2,...) object", new ExpressionFactoryHelper<TupleExp>());
@@ -373,7 +393,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("is_directory", "is_directory(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", false, new ExpressionFactoryHelper<DirectoryExistExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", false, new ExpressionFactoryHelper<FileExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>()); AgentFrameworkService.Instance.DslEngine!.Register("list_dir", "list_dir(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", false, new ExpressionFactoryHelper<ListDirectoriesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_all_files", "list_all_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllFilesExp>());

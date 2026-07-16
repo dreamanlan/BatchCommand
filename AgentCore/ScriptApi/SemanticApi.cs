@@ -968,6 +968,39 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
     }
+    // sqlite_list_tables() - list all user tables in the semantic sqlite database
+    sealed class SqliteListTablesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                string sql = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
+                string result = Core.AgentCore.Instance.SemanticIndex.QuerySql(sql);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"sqlite_list_tables error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+    // list_semantic_collections() - list all distinct collection names in semantic_records
+    sealed class ListSemanticCollectionsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                string sql = "SELECT DISTINCT collection FROM semantic_records ORDER BY collection;";
+                string result = Core.AgentCore.Instance.SemanticIndex.QuerySql(sql);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"list_semantic_collections error: {ex.Message}");
+                return BoxedValue.FromString($"[error] {ex.Message}");
+            }
+        }
+    }
+
 
     public static class SemanticApi
     {
@@ -1002,7 +1035,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("semantic_migrate_fts", "semantic_migrate_fts() - migrate FTS schema to latest version, returns report", new ExpressionFactoryHelper<SemanticMigrateFtsExp>());
             // SQLite direct execution APIs
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_execute", "sqlite_execute(sql) - execute non-query SQL (INSERT/UPDATE/DELETE/DDL), returns affected rows", new ExpressionFactoryHelper<SqliteExecuteExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query", "sqlite_query(sql) - execute query SQL (SELECT), returns JSON array of row objects", new ExpressionFactoryHelper<SqliteQueryExp>()); AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query_sql", "sqlite_query_sql(sql) - execute query SQL (SELECT), returns JSON array of row objects", false, new ExpressionFactoryHelper<SqliteQueryExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_query_as_list", "sqlite_query_as_list(sql) - execute query SQL (SELECT), returns List<Dictionary<string,BoxedValue>> (column->value, native types preserved), supports LINQ. Example: linq($result,where,$$['score']>0.5)", new ExpressionFactoryHelper<SqliteQueryAsListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_backup", "sqlite_backup([path]) - backup database using VACUUM INTO, returns backup file path", new ExpressionFactoryHelper<SqliteBackupExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_restore", "sqlite_restore(backupPath) - restore database from backup file, clears in-memory indexes", new ExpressionFactoryHelper<SqliteRestoreExp>());
@@ -1013,6 +1046,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_as_list", "sqlite_search_between_as_list(collection, query, startTime[, endTime[, topN[, meta_keywords]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]), supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenAsListExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_order_by_time", "sqlite_search_order_by_time(collection, query[, topN[, isAsc[, meta_keywords]]]) - return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchOrderByTimeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("sqlite_search_between_order_by_time", "sqlite_search_between_order_by_time(collection, query, startTime[, endTime[, topN[, isAsc[, meta_keywords]]]]) - time format:yyyyMMdd or yyyyMMdd hhmmss, return List of SearchResultItem(Id/Content/Metadata/Score=0/CreatedAt[Unix seconds UTC]) sorted by time, supports LINQ like .where($$.CreatedAt>0).select($$.Content), use 'to_string' to convert to a string", new ExpressionFactoryHelper<SqliteSearchBetweenOrderByTimeExp>());
+            // list tables/collections
+            AgentFrameworkService.Instance.DslEngine!.Register("sqlite_list_tables", "sqlite_list_tables() - list all user tables in the semantic sqlite database, returns JSON array", new ExpressionFactoryHelper<SqliteListTablesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_semantic_collections", "list_semantic_collections() - list all distinct collection names in semantic_records, returns JSON array", new ExpressionFactoryHelper<ListSemanticCollectionsExp>());
+
         }
     }
 }

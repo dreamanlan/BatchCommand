@@ -93,10 +93,10 @@ class AgentBridge {
       this.logger.error('Error parsing response', { error: e.toString() });
     }
   }
-    
+        
   // Send agent decision notification (encapsulated for reuse)
   // JS-side decider filters easy cases; 'trigger_decision' falls through to DSL.
-  dispatchAgentDecision(state, pageAdapter, queuedCount) {
+  dispatchAgentDecision(state, pageAdapter, queuedCount, force) {
     const data = {
       state: state,
       timestamp: Date.now(),
@@ -147,10 +147,20 @@ class AgentBridge {
         }
         return;
       case 'trigger_decision':
-      default:
-        this.logger.info('Sending agent_need_to_decide notification to DSL', { state });
+      default: {
+        const curMsg = data.lastScannedMessage || '';
+        if (!force && curMsg && this._lastTriggerDecisionMsg === curMsg) {
+          this.logger.info('Skip duplicate trigger_decision (same message)', {
+            state,
+            msgPrefix: curMsg.substring(0, 30)
+          });
+          return;
+        }
+        this._lastTriggerDecisionMsg = curMsg;
+        this.logger.info('Sending agent_need_to_decide notification to DSL', { state, force: !!force });
         this.sendNotification('agent_need_to_decide', data);
         return;
+      }
     }
   }
 }

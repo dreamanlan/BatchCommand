@@ -4,7 +4,7 @@
 class ChatInputPanel {
   static STATE_KEY = 'chat_panel_state';
   static ENV_KEY = 'agent_environments';
-  static DEFAULT_CATEGORIES = ['llm', 'mcp'];
+  static DEFAULT_CATEGORIES = ['llm', 'mcp', 'search'];
   static MAX_CHAT_LINES = 200;
 
   constructor(bridge) {

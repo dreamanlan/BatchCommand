@@ -6,6 +6,8 @@
     <RootNamespace>CefDotnetApp.AgentCore</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Include node drivers for all platforms (darwin-arm64/x64, linux-arm64/x64, win32_x64) so Mac deployment works out-of-the-box. -->
+    <PlaywrightPlatform>all</PlaywrightPlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,6 +42,9 @@
 
     <!-- Jint for JavaScript code parsing and execution -->
     <PackageReference Include="Jint" Version="4.2.0" />
+
+    <!-- Playwright for browser automation (headed persistent context for Google/Cloudflare-protected sites) -->
+    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
 
     <!-- ONNX Runtime for embedding inference -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />

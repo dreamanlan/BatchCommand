@@ -16,6 +16,7 @@ namespace CefDotnetApp.AgentCore.Core
         private const int MaxCount = 20;
 
         private string _instanceUrl = string.Empty;
+        private string _engines = "google,bing,yahoo,360search,baidu,sogou,quark";
         private readonly HttpClientOperations _httpClient;
 
         public bool IsConfigured => !string.IsNullOrEmpty(_instanceUrl);
@@ -45,6 +46,24 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         /// <summary>
+        /// Set the engines whitelist used in every SearXNG query (comma-separated).
+        /// Pass empty string to disable the engines parameter (fall back to server default).
+        /// </summary>
+        public string SetEngines(string engines)
+        {
+            _engines = engines ?? string.Empty;
+            return "ok";
+        }
+
+        /// <summary>
+        /// Get the current engines whitelist. Returns empty string if disabled.
+        /// </summary>
+        public string GetEngines()
+        {
+            return _engines;
+        }
+
+        /// <summary>
         /// Perform a web search via SearXNG.
         /// Returns formatted text results suitable for LLM consumption.
         /// </summary>
@@ -60,6 +79,8 @@ namespace CefDotnetApp.AgentCore.Core
             try {
                 string encodedQuery = Uri.EscapeDataString(query);
                 string url = $"{_instanceUrl}/search?q={encodedQuery}&format=json";
+                if (!string.IsNullOrEmpty(_engines))
+                    url += $"&engines={Uri.EscapeDataString(_engines)}";
 
                 var headers = new Dictionary<string, string> {
                     { "Accept", "application/json" }
@@ -88,6 +109,8 @@ namespace CefDotnetApp.AgentCore.Core
             try {
                 string encodedQuery = Uri.EscapeDataString(query);
                 string url = $"{_instanceUrl}/search?q={encodedQuery}&format=json";
+                if (!string.IsNullOrEmpty(_engines))
+                    url += $"&engines={Uri.EscapeDataString(_engines)}";
 
                 var headers = new Dictionary<string, string> {
                     { "Accept", "application/json" }

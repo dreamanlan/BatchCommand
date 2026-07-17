@@ -70,3 +70,5 @@ x64/Debug/MonoBleedingEdge
 /AgentCore/docs
 /AgentCore/nodejs/node_modules
 /AgentCore/Tests
+/AgentCore/bin/Debug/net8.0/.playwright
+/AgentCore/bin/Release/net8.0/.playwright

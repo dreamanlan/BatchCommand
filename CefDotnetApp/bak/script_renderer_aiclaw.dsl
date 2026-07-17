@@ -3,6 +3,8 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
+	set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(basepath, "managed"));
+
 	@EnableLlmPM = true;
 	//@LlmProviderId = "ollama";
 	@LlmProviderId = "auto_metadsl";

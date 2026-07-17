@@ -3,6 +3,8 @@
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
 {
+	set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(basepath, "managed"));
+
 	@EnableLlmPM = true;
 	//@LlmProviderId = "ollama";
 	@LlmProviderId = "auto_metadsl";
@@ -133,7 +135,6 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 		append_line($sb, "  let pageAdapter = null;");
 		append_line($sb, "  let metadslMonitor = null;");
 		append_line($sb, "  let panel = null;");
-		append_line($sb, "  let projectWindow = null;");
 		append_line($sb, "  let chatRoomWindow = null;");
 		append_line($sb, read_file(combine_path($base, "config.js")));
 		append_line($sb, read_file(combine_path($base, "logger.js")));
@@ -492,7 +493,8 @@ script(handle_update_agent_configs_command)params($id, $params)
 	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", $pmModel);
 
 	// Search services configured here; apiKey uses %var% placeholders
-	brave_set_api_key("%brave_api_key%");
+	// brave_set_api_key("%brave_api_key%");
+	searxng_set_engines("bing,yahoo,360search,baidu,sogou,quark");
 	searxng_set_url("https://www.gamexyz.net:8090");
 };
 

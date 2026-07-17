@@ -289,26 +289,6 @@ class MetaDSLMonitor {
     };
     this.enqueueOperation(operation);
   }
-  openProjectWindow() {
-    if (projectWindow && !projectWindow.closed) {
-      projectWindow.location.reload();
-      this.sendResultToLLM("project window refreshed");
-    }
-    else {
-      const projData = JSON.parse(localStorage.getItem('project_panel_configs') || '{}');
-      const proj = (projData.projects || [])[projData.currentIndex || 0];
-      const url = (proj && proj.projectUrl) || 'http://localhost:8081';
-      projectWindow = window.open(url, '_blank');
-      this.sendResultToLLM("project window opened");
-    }
-  }
-  closeProjectWindow() {
-    if (projectWindow && !projectWindow.closed) {
-      projectWindow.close();
-      projectWindow = null;
-    }
-    this.sendResultToLLM("project window closed");
-  }
 
   // ========================================================================
   // Send Button Monitoring
@@ -1321,7 +1301,6 @@ class MetaDSLMonitor {
     try {
       // Check if this is a JavaScript request (not MetaDSL)
       const js_request_prefix = "js_request:";
-      const js_eval_prefix = "js_eval:";
       const trimedCommand = command.trim();
       if (trimedCommand.startsWith(js_request_prefix)) {
         let jsRequest = trimedCommand.substring(js_request_prefix.length).trim();
@@ -1342,14 +1321,6 @@ class MetaDSLMonitor {
           this.keepContext(CONFIG.llmContextCountModuloForKeep);
           return;
         }
-        else if (jsRequest === "open_project_window") {
-          this.openProjectWindow();
-          return;
-        }
-        else if (jsRequest === "close_project_window") {
-          this.closeProjectWindow();
-          return;
-        }
         else if (jsRequest === "reflect") {
           this.triggerReflection();
           this.sendResultToLLM("Reflection triggered, episodic_reflection notification enqueued.");
@@ -1357,16 +1328,6 @@ class MetaDSLMonitor {
         }
 
         this.sendResultToLLM("unknown request: " + jsRequest);
-        return; // Don't send to C#
-      }
-      else if (trimedCommand.startsWith(js_eval_prefix)) {
-        const jsEval = trimedCommand.substring(js_eval_prefix.length).trim();
-        this.info('JavaScript eval detected:', jsEval);
-        if (projectWindow) {
-          projectWindow.postMessage({ type: 'js_eval', code: jsEval }, '*');
-        } else {
-          this.sendResultToLLM("projectWindow not available, use js_request:open_project_window first");
-        }
         return; // Don't send to C#
       }
 

@@ -77,6 +77,24 @@ namespace CefDotnetApp.AgentCore.Utils
                         sb.Append('}');
                         sb.AppendLine();
                     }
+                    else if (obj is IDictionary<string, BoxedValue> svdict) {
+                        sb.Append('{');
+                        sb.AppendLine();
+                        ++indent;
+                        foreach (var pair in svdict) {
+                            var k = pair.Key;
+                            var v = pair.Value;
+                            AppendIndent(sb, indent);
+                            sb.Append(k);
+                            sb.Append(" : ");
+                            ConvertToString(v, sb, indent, false);
+                            sb.AppendLine();
+                        }
+                        --indent;
+                        AppendIndent(sb, indent);
+                        sb.Append('}');
+                        sb.AppendLine();
+                    }
                     else {
                         sb.Append(obj.ToString());
                     }
@@ -181,6 +199,9 @@ namespace CefDotnetApp.AgentCore.Utils
                     else if (value is IDictionary<string, object?> dict) {
                         return BoxedValue.FromObject(GetBoxedValueFromDictionary(dict));
                     }
+                    else if (value is IDictionary<string, BoxedValue> svDict) {
+                        return BoxedValue.FromObject(GetBoxedValueFromDictionary(svDict));
+                    }
                 }
                 return BoxedValue.FromObject(value);
             }
@@ -235,6 +256,16 @@ namespace CefDotnetApp.AgentCore.Utils
             foreach (var pair in dict) {
                 var k = GetBoxedValueFromValue(pair.Key);
                 var v = GetBoxedValueFromValue(pair.Value);
+                newDict.Add(k, v);
+            }
+            return newDict;
+        }
+        public static IDictionary<BoxedValue, BoxedValue> GetBoxedValueFromDictionary(IDictionary<string, BoxedValue> dict)
+        {
+            var newDict = new Dictionary<BoxedValue, BoxedValue>();
+            foreach (var pair in dict) {
+                var k = GetBoxedValueFromValue(pair.Key);
+                var v = pair.Value;
                 newDict.Add(k, v);
             }
             return newDict;

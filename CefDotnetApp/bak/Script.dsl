@@ -4,6 +4,7 @@
 script(init_global_consts)
 {
 	// Initialize global constants for browser here
+	set_env("PLAYWRIGHT_DRIVER_SEARCH_PATH", combine_path(basepath, "managed"));
 };
 script(on_init)
 {

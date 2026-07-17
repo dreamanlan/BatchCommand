@@ -492,7 +492,7 @@ namespace DotNetLib
             string funcName = operands[0].AsString;
             var args = new string[operands.Count - 1];
             for (int i = 1; i < operands.Count; i++) {
-                args[i-1] = operands[i].AsString;
+                args[i - 1] = operands[i].AsString;
             }
             bool r = Lib.EnqueueCefMessage(funcName, args);
             return BoxedValue.FromBool(r);
@@ -3339,6 +3339,11 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("sleep", "sleep(milliseconds) api");
             BatchCommand.BatchScript.AddUserApiDoc("now", "now() api");
             BatchCommand.BatchScript.AddUserApiDoc("isnullorempty", "isnullorempty(str) api");
+
+            BatchCommand.BatchScript.AddUserApiDoc("time", "time() or timestamp() api, return milliseconds since startup");
+            BatchCommand.BatchScript.AddUserApiDoc("timestamp", "time() or timestamp() api, return milliseconds since startup");
+            BatchCommand.BatchScript.AddUserApiDoc("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)");
+            BatchCommand.BatchScript.AddUserApiDoc("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)");
         }
         internal static string GetMetaDslResult(int maxResultSize, StringBuilder resSb, StringBuilder errSb)
         {

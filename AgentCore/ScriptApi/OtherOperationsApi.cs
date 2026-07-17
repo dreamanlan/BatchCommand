@@ -133,19 +133,50 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     // HTTP Operations
+    static class HttpHeaderHelper
+    {
+        public static Dictionary<string, string>? ExtractStringHeaders(BoxedValue bv)
+        {
+            var obj = bv.GetObject();
+            if (obj is IDictionary<BoxedValue, BoxedValue> bvdict) {
+                var d = new Dictionary<string, string>();
+                foreach (var kv in bvdict) {
+                    d[kv.Key.ToString()] = kv.Value.ToString();
+                }
+                return d.Count > 0 ? d : null;
+            }
+            if (obj is IDictionary<string, object?> sdict) {
+                var d = new Dictionary<string, string>();
+                foreach (var kv in sdict) {
+                    d[kv.Key] = kv.Value?.ToString() ?? string.Empty;
+                }
+                return d.Count > 0 ? d : null;
+            }
+            return null;
+        }
+    }
+
     sealed class HttpGetExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: fetch(url), aliased as http_get");
+            if (operands.Count < 1 || operands.Count > 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get(url) or http_get(url, headers)");
                 return BoxedValue.NullObject;
             }
 
             {
                 try {
                     string url = operands[0].AsString;
-                    string result = Core.AgentCore.Instance.HttpClient.Get(url);
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 1) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[1]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_get(url, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.Get(url, headers);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
@@ -160,8 +191,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post(url, content, contentType)");
+            if (operands.Count < 2 || operands.Count > 4) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)");
                 return BoxedValue.NullObject;
             }
 
@@ -169,8 +200,25 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string url = operands[0].AsString;
                     string content = operands[1].AsString;
-                    string contentType = operands.Count > 2 ? operands[2].AsString : "application/json";
-                    string result = Core.AgentCore.Instance.HttpClient.Post(url, content, contentType);
+                    string contentType = "application/json";
+                    if (operands.Count > 2) {
+                        if (operands[2].IsString) {
+                            contentType = operands[2].ToString();
+                        }
+                        else {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post(url, content, contentType) or http_post(url, content, contentType, headers), contentType must be string");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 3) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[3]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: http_post(url, content, contentType, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    string result = Core.AgentCore.Instance.HttpClient.Post(url, content, contentType, headers);
                     return BoxedValue.FromString(result);
                 }
                 catch (Exception ex) {
@@ -185,8 +233,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file(url, savePath)");
+            if (operands.Count < 2 || operands.Count > 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file(url, savePath) or download_file(url, savePath, headers)");
                 return BoxedValue.From(false);
             }
 
@@ -194,7 +242,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 try {
                     string url = operands[0].AsString;
                     string savePath = operands[1].AsString;
-                    bool result = Core.AgentCore.Instance.HttpClient.DownloadFile(url, savePath);
+                    Dictionary<string, string>? headers = null;
+                    if (operands.Count > 2) {
+                        headers = HttpHeaderHelper.ExtractStringHeaders(operands[2]);
+                        if (headers == null) {
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: download_file(url, savePath, headers), headers must be hashtable");
+                            return BoxedValue.NullObject;
+                        }
+                    }
+                    bool result = Core.AgentCore.Instance.HttpClient.DownloadFile(url, savePath, headers);
                     return BoxedValue.From(result);
                 }
                 catch (Exception ex) {
@@ -1183,57 +1239,55 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             Encoding encoding = operands.Count > 1 ? (GetEncoding(operands[1]) ?? Encoding.UTF8) : Encoding.UTF8;
             return BoxedValue.FromObject(encoding.GetBytes(s));
         }
-        // string_first_lines(str, n) - return the first n lines of a string
-        internal sealed class StringFirstLinesExp : SimpleExpressionBase
-        {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-            {
-                if (operands.Count != 2)
-                    throw new Exception("Expected: string_first_lines(str, n) (alias: stringfirstlines)");
-                string s = operands[0].AsString ?? string.Empty;
-                int n = operands[1].GetInt();
-                if (n <= 0)
-                    return BoxedValue.FromString(string.Empty);
-                var lines = s.Split('\n');
-                if (n >= lines.Length)
-                    return BoxedValue.FromString(s);
-                var sb = new StringBuilder();
-                for (int i = 0; i < n; ++i) {
-                    if (i > 0) sb.Append('\n');
-                    sb.Append(lines[i]);
-                }
-                return BoxedValue.FromString(sb.ToString());
-            }
-        }
-        // string_replace_with_count(str, oldValue, newValue, count) - replace first N occurrences
-        internal sealed class StringReplaceWithCountExp : SimpleExpressionBase
-        {
-            protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-            {
-                if (operands.Count != 4)
-                    throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count) (alias: stringreplacewithcount)");
-                string s = operands[0].AsString ?? string.Empty;
-                string oldValue = operands[1].AsString ?? string.Empty;
-                string newValue = operands[2].AsString ?? string.Empty;
-                int count = operands[3].GetInt();
-                if (string.IsNullOrEmpty(oldValue) || count <= 0)
-                    return BoxedValue.FromString(s);
-                var sb = new StringBuilder();
-                int pos = 0;
-                int replaced = 0;
-                while (replaced < count) {
-                    int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
-                    if (idx < 0) break;
-                    sb.Append(s, pos, idx - pos);
-                    sb.Append(newValue);
-                    pos = idx + oldValue.Length;
-                    ++replaced;
-                }
-                if (pos < s.Length) sb.Append(s, pos, s.Length - pos);
-                return BoxedValue.FromString(sb.ToString());
-            }
-        }
-
     }
-
+    // string_first_lines(str, n) - return the first n lines of a string
+    internal sealed class StringFirstLinesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2)
+                throw new Exception("Expected: string_first_lines(str, n) (alias: stringfirstlines)");
+            string s = operands[0].AsString ?? string.Empty;
+            int n = operands[1].GetInt();
+            if (n <= 0)
+                return BoxedValue.FromString(string.Empty);
+            var lines = s.Split('\n');
+            if (n >= lines.Length)
+                return BoxedValue.FromString(s);
+            var sb = new StringBuilder();
+            for (int i = 0; i < n; ++i) {
+                if (i > 0) sb.Append('\n');
+                sb.Append(lines[i]);
+            }
+            return BoxedValue.FromString(sb.ToString());
+        }
+    }
+    // string_replace_with_count(str, oldValue, newValue, count) - replace first N occurrences
+    internal sealed class StringReplaceWithCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 4)
+                throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count) (alias: stringreplacewithcount)");
+            string s = operands[0].AsString ?? string.Empty;
+            string oldValue = operands[1].AsString ?? string.Empty;
+            string newValue = operands[2].AsString ?? string.Empty;
+            int count = operands[3].GetInt();
+            if (string.IsNullOrEmpty(oldValue) || count <= 0)
+                return BoxedValue.FromString(s);
+            var sb = new StringBuilder();
+            int pos = 0;
+            int replaced = 0;
+            while (replaced < count) {
+                int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
+                if (idx < 0) break;
+                sb.Append(s, pos, idx - pos);
+                sb.Append(newValue);
+                pos = idx + oldValue.Length;
+                ++replaced;
+            }
+            if (pos < s.Length) sb.Append(s, pos, s.Length - pos);
+            return BoxedValue.FromString(sb.ToString());
+        }
+    }
 }

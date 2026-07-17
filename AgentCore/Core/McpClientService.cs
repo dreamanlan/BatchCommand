@@ -35,14 +35,13 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public static string BuildRequest(string method, object? parameters, int id)
         {
-            var req = new
+            if (parameters == null)
             {
-                jsonrpc = "2.0",
-                id,
-                method,
-                @params = parameters
-            };
-            return System.Text.Json.JsonSerializer.Serialize(req);
+                var req = new { jsonrpc = "2.0", id, method };
+                return System.Text.Json.JsonSerializer.Serialize(req);
+            }
+            var reqWithParams = new { jsonrpc = "2.0", id, method, @params = parameters };
+            return System.Text.Json.JsonSerializer.Serialize(reqWithParams);
         }
 
         public static System.Text.Json.JsonElement? ParseResult(string response)
@@ -87,7 +86,6 @@ namespace CefDotnetApp.AgentCore.Core
         public List<McpTool> Tools { get; } = new List<McpTool>();
         public string Type { get; }
         public string Target { get; }
-        public SemaphoreSlim ReconnectLock { get; } = new SemaphoreSlim(1, 1);
         private int _requestId;
 
         public McpServerConnection(IMcpTransport transport, string type, string target)
@@ -101,7 +99,6 @@ namespace CefDotnetApp.AgentCore.Core
 
         public void Dispose()
         {
-            ReconnectLock.Dispose();
             Transport.Dispose();
         }
     }
@@ -143,6 +140,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private readonly ConcurrentDictionary<string, McpServerConnection> _servers = new();
         private readonly ConcurrentDictionary<string, Dictionary<string, List<string>>> _pendingOptions = new();
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _reconnectLocks = new();
 
         private McpClientService() { }
 
@@ -239,6 +237,20 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     conn.Dispose();
                     return $"error: initialize failed - {ex.Message}";
+                }
+            }
+            else if (type == "sse" || type == "streamable-http")
+            {
+                try
+                {
+                    // Transport.ConnectAsync already sent initialize; complete handshake with notifications/initialized
+                    string notif = System.Text.Json.JsonSerializer.Serialize(new { jsonrpc = "2.0", method = "notifications/initialized" });
+                    transport.SendNotificationAsync(notif).GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    conn.Dispose();
+                    return $"error: initialized notification failed - {ex.Message}";
                 }
             }
 
@@ -363,9 +375,12 @@ namespace CefDotnetApp.AgentCore.Core
                     // Auto-reconnect if transport is no longer connected (with lock to prevent concurrent reconnects)
                     if (!conn.Transport.IsConnected)
                     {
-                        await conn.ReconnectLock.WaitAsync();
+                        var reconnectLock = _reconnectLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
+                        await reconnectLock.WaitAsync();
                         try
                         {
+                            if (_servers.TryGetValue(serverId, out var latest))
+                                conn = latest;
                             if (!conn.Transport.IsConnected) // double-check inside lock
                             {
                                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
@@ -380,18 +395,19 @@ namespace CefDotnetApp.AgentCore.Core
                                 nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, "[error] server not found after reconnect" });
                                 return;
                                 }
-                                req = JsonRpcHelper.BuildRequest("tools/call", new
-                                {
-                                    name = toolName,
-                                    arguments = args ?? new { }
-                                }, conn.NextId());
                             }
+                            req = JsonRpcHelper.BuildRequest("tools/call", new
+                            {
+                                name = toolName,
+                                arguments = args ?? new { }
+                            }, conn.NextId());
                         }
                         finally
                         {
-                            conn.ReconnectLock.Release();
+                            reconnectLock.Release();
                         }
                     }
+
 
                     string resp = await conn.Transport.SendRequestAsync(req);
                     string result = ExtractToolResult(resp);
@@ -436,9 +452,12 @@ namespace CefDotnetApp.AgentCore.Core
                     // Auto-reconnect if transport is no longer connected
                     if (!conn.Transport.IsConnected)
                     {
-                        await conn.ReconnectLock.WaitAsync();
+                        var reconnectLock = _reconnectLocks.GetOrAdd(serverId, _ => new SemaphoreSlim(1, 1));
+                        await reconnectLock.WaitAsync();
                         try
                         {
+                            if (_servers.TryGetValue(serverId, out var latest))
+                                conn = latest;
                             if (!conn.Transport.IsConnected)
                             {
                                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] '{serverId}' disconnected, reconnecting...");
@@ -447,18 +466,19 @@ namespace CefDotnetApp.AgentCore.Core
                                     return $"[error] reconnect failed: {reconnResult}";
                                 if (!_servers.TryGetValue(serverId, out conn!))
                                     return "[error] server not found after reconnect";
-                                req = JsonRpcHelper.BuildRequest("tools/call", new
-                                {
-                                    name = toolName,
-                                    arguments = args ?? new { }
-                                }, conn.NextId());
                             }
+                            req = JsonRpcHelper.BuildRequest("tools/call", new
+                            {
+                                name = toolName,
+                                arguments = args ?? new { }
+                            }, conn.NextId());
                         }
                         finally
                         {
-                            conn.ReconnectLock.Release();
+                            reconnectLock.Release();
                         }
                     }
+
 
                     string resp = await conn.Transport.SendRequestAsync(req);
                     return ExtractToolResult(resp);

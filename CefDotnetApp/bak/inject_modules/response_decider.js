@@ -96,8 +96,8 @@ class ResponseDecider {
           }
           return { action: 'skip', reason: 'reflect without LlmPM' };
         }
-        if (this.containsAny(msg, 'js_request', 'js_eval')) {
-          return { action: 'skip', reason: 'js_request/js_eval submitted' };
+        if (this.containsAny(msg, 'js_request')) {
+          return { action: 'skip', reason: 'js_request submitted' };
         }
         return {
           action: 'reply',

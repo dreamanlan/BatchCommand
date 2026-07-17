@@ -18,6 +18,7 @@ namespace CefDotnetApp.AgentCore.Core
         private bool _connected;
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
         private readonly TimeSpan _lockTimeout;
+        private string? _sessionId;
 
         public bool IsConnected => _connected;
 
@@ -79,10 +80,19 @@ namespace CefDotnetApp.AgentCore.Core
                 throw new TimeoutException("SseTransport: timed out waiting for send lock");
             try
             {
-                using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-                using var response = await _httpClient.PostAsync($"{_baseUrl}", content);
+                using var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
+                request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+                request.Headers.TryAddWithoutValidation("Accept", "application/json, text/event-stream");
+                if (_sessionId != null)
+                    request.Headers.TryAddWithoutValidation("Mcp-Session-Id", _sessionId);
+                using var response = await _httpClient.SendAsync(request);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
-                return await response.Content.ReadAsStringAsync();
+                if (response.Headers.TryGetValues("Mcp-Session-Id", out var vals))
+                {
+                    foreach (var v in vals) { _sessionId = v; break; }
+                }
+                string body = await response.Content.ReadAsStringAsync();
+                return ExtractJsonFromResponse(response, body);
             }
             catch (Exception) when (!_connected)
             {
@@ -99,9 +109,33 @@ namespace CefDotnetApp.AgentCore.Core
             }
         }
 
+        private static string ExtractJsonFromResponse(HttpResponseMessage response, string body)
+        {
+            var mediaType = response.Content.Headers.ContentType?.MediaType;
+            if (!string.Equals(mediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
+                return body;
+            // Parse SSE frames: aggregate all lines starting with "data:" (strip prefix, join by newline)
+            var sb = new StringBuilder();
+            using var reader = new System.IO.StringReader(body);
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (line.StartsWith("data:", StringComparison.Ordinal))
+                {
+                    string payload = line.Substring(5);
+                    if (payload.StartsWith(" ", StringComparison.Ordinal))
+                        payload = payload.Substring(1);
+                    if (sb.Length > 0) sb.Append('\n');
+                    sb.Append(payload);
+                }
+            }
+            return sb.Length > 0 ? sb.ToString() : body;
+        }
+
         public void Disconnect()
         {
             _connected = false;
+            _sessionId = null;
         }
 
         public void Dispose()

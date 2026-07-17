@@ -66,6 +66,37 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// searxng_set_engines(engines_csv)
+    /// Sets the engines whitelist used in every SearXNG query (comma-separated, e.g. "google,bing,yahoo_news").
+    /// Pass empty string to disable the engines parameter (fall back to server default).
+    /// Returns "ok".
+    /// </summary>
+    sealed class SearXNGSetEnginesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("searxng_set_engines requires (engines_csv)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string engines = operands[0].AsString;
+            return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.SetEngines(engines));
+        }
+    }
+
+    /// <summary>
+    /// searxng_get_engines()
+    /// Returns the current SearXNG engines whitelist. Empty string means disabled.
+    /// </summary>
+    sealed class SearXNGGetEnginesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.FromString(Core.AgentCore.Instance.SearXNGSearch.GetEngines());
+        }
+    }
+
+    /// <summary>
     /// web_search(query[, count])
     /// Searches the web via the currently active search engine (Brave or SearXNG).
     /// Returns formatted text results (title + URL + description).
@@ -132,6 +163,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("searxng_get_url",
                 "searxng_get_url() - get current SearXNG instance URL, returns empty string if not set",
                 new ExpressionFactoryHelper<SearXNGGetUrlExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("searxng_set_engines",
+                "searxng_set_engines(engines_csv) - set SearXNG engines whitelist (comma-separated, e.g. \"google,bing,yahoo_news\"). Empty string disables the filter.",
+                new ExpressionFactoryHelper<SearXNGSetEnginesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("searxng_get_engines",
+                "searxng_get_engines() - get current SearXNG engines whitelist, empty string means disabled",
+                new ExpressionFactoryHelper<SearXNGGetEnginesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("web_search",
                 "web_search(query[, count]) - search the web via active engine (Brave/SearXNG), returns formatted text (default 5 results, max 20)",
                 new ExpressionFactoryHelper<WebSearchExp>());

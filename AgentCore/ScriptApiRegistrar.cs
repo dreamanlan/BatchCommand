@@ -37,6 +37,8 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("base64_string_to_bytes", "base64_string_to_bytes(base64String) - convert base64 string to byte array", false, new ExpressionFactoryHelper<Base64ToBytesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("bytes_to_base64", "bytes_to_base64(bytes) - convert byte array to base64 string", new ExpressionFactoryHelper<BytesToBase64Exp>());
             AgentFrameworkService.Instance.DslEngine!.Register("bytes_to_base64_string", "bytes_to_base64_string(bytes) - convert byte array to base64 string", false, new ExpressionFactoryHelper<BytesToBase64Exp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_first_lines", "string_first_lines(str, n) - return the first n lines of a string", new ExpressionFactoryHelper<StringFirstLinesExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("string_replace_with_count", "string_replace_with_count(str, oldValue, newValue, count) - replace first N occurrences", new ExpressionFactoryHelper<StringReplaceWithCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_file", "append_file(path, content[, encoding])", new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_text", "append_text(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_text_to_file", "append_text_to_file(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
@@ -163,10 +165,10 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("log_warning", "log_warning(fmt, ...)", new ExpressionFactoryHelper<LogWarningExp>());
 
             // HTTP Operations
-            AgentFrameworkService.Instance.DslEngine!.Register("fetch", "fetch(url)", new ExpressionFactoryHelper<HttpGetExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("http_get", "http_get(url)", new ExpressionFactoryHelper<HttpGetExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("http_post", "http_post(url, content, contentType)", new ExpressionFactoryHelper<HttpPostExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("download_file", "download_file(url, savePath)", new ExpressionFactoryHelper<DownloadFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("fetch", "fetch(url) or fetch(url, headers)", new ExpressionFactoryHelper<HttpGetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_get", "http_get(url) or http_get(url, headers)", new ExpressionFactoryHelper<HttpGetExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("http_post", "http_post(url, content) or http_post(url, content, contentType) or http_post(url, content, contentType, headers)", new ExpressionFactoryHelper<HttpPostExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("download_file", "download_file(url, savePath) or download_file(url, savePath, headers)", new ExpressionFactoryHelper<DownloadFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_http_user_agent", "set_http_user_agent(user_agent) - set User-Agent header for http_get/http_post/download_file", new ExpressionFactoryHelper<SetHttpUserAgentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_http_user_agent", "get_http_user_agent() - get current User-Agent header string", new ExpressionFactoryHelper<GetHttpUserAgentExp>());
 
@@ -411,6 +413,9 @@ namespace CefDotnetApp.AgentCore
 
             // MCP Client API
             McpApi.RegisterApis();
+
+            // Playwright Browser Automation API
+            PlaywrightApi.RegisterApis();
 
             // Agent State API
             AgentStateApi.RegisterApis();

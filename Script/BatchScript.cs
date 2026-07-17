@@ -218,6 +218,44 @@ namespace BatchCommand
         }
     }
 
+    internal sealed class TimeStampExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From((GetElapsedTimeUsExp.GetElapsedTimeUs() - m_StartTimeUs) / 1000);
+        }
+
+        public TimeStampExp()
+        {
+            m_StartTimeUs = GetElapsedTimeUsExp.GetElapsedTimeUs();
+        }
+
+        private long m_StartTimeUs = 0L;
+    }
+
+    internal sealed class GetElapsedTimeMsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(GetElapsedTimeUsExp.GetElapsedTimeUs() / 1000);
+        }
+    }
+
+    internal sealed class GetElapsedTimeUsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(GetElapsedTimeUs() / 1000);
+        }
+
+        public static long GetElapsedTimeUs()
+        {
+            return (long)((double)Stopwatch.GetTimestamp() / s_TickPerUs);
+        }
+
+        private static double s_TickPerUs = (double)Stopwatch.Frequency / 1000000.0;
+    }
+
     internal sealed class GrepExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1566,6 +1604,10 @@ namespace BatchCommand
             Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
             Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
+            Calculator.Register("time", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
+            Calculator.Register("timestamp", "time() or timestamp() api", new ExpressionFactoryHelper<TimeStampExp>());
+            Calculator.Register("getelapsedms", "getelapsedms() api, return elapsed milliseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeMsExp>());
+            Calculator.Register("getelapsedus", "getelapsedus() api, return elapsed microseconds (time)", new ExpressionFactoryHelper<GetElapsedTimeUsExp>());
             Calculator.Register("grep", "grep(lines,regex[,context_lines_after,context_lines_before]) api", new ExpressionFactoryHelper<GrepExp>());
             Calculator.Register("subst", "subst(lines,regex,subst[,count]) api, count is the max count of per subst", new ExpressionFactoryHelper<SubstExp>());
             Calculator.Register("awk", "awk(lines,scp[,removeEmpties,sep1,sep2,...]) api", new ExpressionFactoryHelper<AwkExp>());
@@ -1895,8 +1937,8 @@ namespace BatchCommand
             int handle = NextAsyncTaskId();
             var runtimeCtx = Calculator.CreateAsyncContext();
             var stack = new Stack<IEnumerator>();
-                stack.Push(enumerator);
-                tasks[handle] = new Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>(stack, asyncResult, runtimeCtx);
+            stack.Push(enumerator);
+            tasks[handle] = new Tuple<Stack<IEnumerator>, AsyncCalcResult, AsyncTaskRuntimeContext>(stack, asyncResult, runtimeCtx);
             return handle;
         }
         public static int TickAsyncTasks()

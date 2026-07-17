@@ -230,6 +230,58 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
+    // base64_to_bytes(base64String) - convert base64 string to byte array
+    sealed class Base64ToBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: base64_to_bytes(base64String)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                string base64 = operands[0].AsString;
+                byte[] bytes = Convert.FromBase64String(base64);
+                return BoxedValue.FromObject(bytes);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"base64_to_bytes error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // bytes_to_base64(bytes) - convert byte array to base64 string
+    sealed class BytesToBase64Exp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: bytes_to_base64(bytes)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var obj = operands[0].GetObject();
+                byte[]? bytes = obj switch {
+                    byte[] b => b,
+                    IList<byte> list => list.ToArray(),
+                    _ => null
+                };
+                if (bytes == null) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("bytes_to_base64: first argument must be a byte array");
+                    return BoxedValue.NullObject;
+                }
+                return BoxedValue.FromString(Convert.ToBase64String(bytes));
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"bytes_to_base64 error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
     // append_file(path, content[, encoding]) - append to file
     sealed class AppendFileExp : SimpleExpressionBase
     {

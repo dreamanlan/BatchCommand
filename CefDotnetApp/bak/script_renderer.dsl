@@ -567,7 +567,7 @@ script(induction_plan)params()
 	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
 	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
 	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
-	$conversationHistory = read_file(combine_path(@ProjectDirectory, "docs/history.txt"));
+	$conversationHistory = getstringinlength(read_file(combine_path(@ProjectDirectory, "docs/history.txt")), 75 * 1024, 1);
 
 	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
 		"【以下是最近的待办事项】：\n{1}\n" +
@@ -578,13 +578,11 @@ script(induction_plan)params()
 		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在1000字以内）", $prompt);
 
 	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		llm_chat_callback(@LlmProviderId, "llm_pm_project", "project_history", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
 			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $planFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	};
 };
@@ -620,13 +618,11 @@ script(induction_todo)params($count,$queuedCount,$pageType)
 		"（一次回复输出完成,字数控制到300~500字左右）", $prompt);
 
 	if (@EnableLlmPM) {
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		llm_chat_callback(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
 	}
 	else {
 		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
 			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $todoFile);
-		$prompt = getstringinlength($prompt, 100 * 1024, 1);
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	};
 };
@@ -662,7 +658,7 @@ script(trigger_reflection)params()
 	nativelog("[dsl] trigger_reflection called");
 
 	// Collect recent conversation history
-	$legionnaireHistory = to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20));
+	$legionnaireHistory = getstringinlength(to_pretty_string(semantic_get_recent(@LegionnaireHistory, 20)), 75 * 1024, 1);
 	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
 	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
 
@@ -674,7 +670,6 @@ script(trigger_reflection)params()
 
 	// Send reflection request
 	$prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录。", $prompt);
-	$prompt = getstringinlength($prompt, 100 * 1024, 1);
 	llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
 
 	nativelog("[dsl] trigger_reflection: reflection request sent");

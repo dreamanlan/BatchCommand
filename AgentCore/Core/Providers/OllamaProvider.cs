@@ -23,6 +23,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         private readonly ConcurrentDictionary<string, int> _sendCounts = new();
         private int _contextRounds = 16;
+        private int _maxContextChars = 128 * 1024; // 128KB default
         private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = new HttpClient(
             RedirectHandler.Create(new SocketsHttpHandler
@@ -45,6 +46,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             if (key == "keep_session") _keepSession = value == "true" || value == "1";
             else if (key == "context_rounds" && int.TryParse(value, out var cr) && cr > 0) _contextRounds = cr;
+            else if (key == "max_context_chars" && int.TryParse(value, out var mcc) && mcc > 0) _maxContextChars = mcc;
             else if (key == "timeout" && int.TryParse(value, out var ts) && ts > 0) _timeoutSeconds = ts;
         }
         public void SetSystemPrompt(string tag, string prompt)
@@ -94,6 +96,23 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     // local history mode: send full history + always prepend system prompt
                     snapshot = new List<ChatMessage>(messages);
+                    // Apply maxContextChars limit on history (keep most recent messages that fit)
+                    if (_maxContextChars > 0 && snapshot.Count > 1)
+                    {
+                        int totalChars = 0;
+                        int startFrom = 0;
+                        for (int i = snapshot.Count - 2; i >= 0; i--) // skip last (current) message
+                        {
+                            totalChars += snapshot[i].Content.Length;
+                            if (totalChars > _maxContextChars)
+                            {
+                                startFrom = i + 1;
+                                break;
+                            }
+                        }
+                        if (startFrom > 0)
+                            snapshot.RemoveRange(0, startFrom);
+                    }
                     if (_systemPrompts.TryGetValue(tag, out var sp2) && !string.IsNullOrEmpty(sp2))
                         snapshot.Insert(0, new ChatMessage("system", sp2));
                 }

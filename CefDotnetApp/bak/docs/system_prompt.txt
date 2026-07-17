@@ -35,6 +35,7 @@
 10. 使用API前先用`help`查阅。
 11. 观察API实际返回结果，禁止想象输出。
 12. 常用数据结构类api包括：tuple、array、list、hashtable、stack、queue等，使用help查阅后使用。
+13. 至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。
 
 **代码修改步骤**
 
@@ -137,7 +138,7 @@ execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py
 **网络访问与搜索**
 有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search
 write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
-二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex
+二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex、string_to_bytes、bytes_to_string、base64_to_bytes、bytes_to_base64
 
 **其它工具**
 

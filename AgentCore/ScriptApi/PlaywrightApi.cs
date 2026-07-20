@@ -872,7 +872,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 "playwright_install([browser]) - download Playwright browser binaries. browser: 'chromium' (default), 'firefox', 'webkit', or 'all'. First run ~1-3 min. Returns 'ok' or 'error: ...'.",
                 new ExpressionFactoryHelper<PlaywrightInstallExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("playwright_start",
-                "playwright_start([headless, user_data_dir, cdp_endpoint]) - launch Chromium; cdp_endpoint non-empty=connect over CDP (reuse remote), else user_data_dir empty=fresh context, non-empty=persistent context. Returns 'ok' or error.",
+                "playwright_start([headless, user_data_dir, cdp_endpoint]) - Launch Chromium; if `headless` is `true`, headless mode is used (default is `false`). If `cdp_endpoint` is provided, connect via CDP (reusing a remote instance); otherwise, if `user_data_dir` is empty (default), create a fresh context, or if it is not empty, use a persistent context. Returns 'ok' or an error message.",
                 new ExpressionFactoryHelper<PlaywrightStartExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("playwright_stop",
                 "playwright_stop() - close all pages, context and browser. Returns 'ok'.",

@@ -72,3 +72,4 @@ x64/Debug/MonoBleedingEdge
 /AgentCore/Tests
 /AgentCore/bin/Debug/net8.0/.playwright
 /AgentCore/bin/Release/net8.0/.playwright
+/CefDotnetApp/.codebuddy

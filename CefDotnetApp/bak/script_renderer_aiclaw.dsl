@@ -371,7 +371,8 @@ script(handle_update_agent_configs_command)params($id, $params)
 	llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "kimi-k2.7-code");
 
 	// Search services configured here; apiKey uses %var% placeholders
-	brave_set_api_key("%brave_api_key%");
+	//brave_set_api_key("%brave_api_key%");
+	searxng_set_engines("bing,yahoo,360search,baidu,sogou,quark");
 	searxng_set_url("https://www.gamexyz.net:8090");
 };
 

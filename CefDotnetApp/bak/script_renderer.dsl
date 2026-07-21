@@ -270,7 +270,16 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		agent_set_plan(9527, $reply);
 		llm_clear_history(@LlmProviderId, $tag);
 
-		$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $reply, agent_get_project_dir(9527), agent_get_project_identity(9527));
+		$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
+		$time1 = get_file_last_write_time($soulFile);
+		$time2 = now();
+		$days = get_diff_time_days($time1, $time2);
+		if ($days > 7) {
+			$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $reply, agent_get_project_dir(9527), agent_get_project_identity(9527));
+		}
+		else {
+			$replyWithReminder = $reply;
+		};
 		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
 	}
 	elif ($tag == "llm_pm_align") {

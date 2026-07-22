@@ -52,6 +52,11 @@ namespace CefDotnetApp.AgentCore.Core
         }
 
         /// <summary>
+        /// Gets the number of active MetaDSL worker tasks
+        /// </summary>
+        public int ActiveWorkers => _activeWorkers;
+
+        /// <summary>
         /// Event fired when a client connects
         /// </summary>
         public event Action? OnClientConnected;

@@ -261,8 +261,9 @@ script(handle_mcp_callback)params($serverId, $callbackTag, $resultText)
 // $providerId: provider id, $tag: session tag, $topic: topic, $reply: full reply text
 script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 {
-	nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3}", $providerId, $tag, $topic, strlen($reply));
 	$queuedCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getQueuedCount",[]));
+	$activeWorkers = agent_get_active_workers(9527);
+	nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3} queued_count={4} active_workers={5}", $providerId, $tag, $topic, strlen($reply), $queuedCount, $activeWorkers);
 
 	if ($tag == "llm_pm_project") {
 		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
@@ -343,13 +344,21 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 			};
 		}
 		else{
-			send_command_to_inject("send_message", to_json({text: $reply}));
+			$workers = agent_get_active_workers(9527);
+			if (stringcontains($reply, "没有待执行代码了") && $workers > 0) {
+				// Remain silent
+				nativelog("[dsl] skip reply: info={0} workers={1}", $info, $workers);
+			}
+			else {
+				send_command_to_inject("send_message", to_json({text: $reply}));
+			};
 		};
 		llm_clear_history(@LlmProviderId, "llm_pm_decision");
 	}
 	else {
+		$workers = agent_get_active_workers(9527);
 		if ($queuedCount > 0) {
-			$reply = format("{0}\n**还有{1}个代码要执行，不要再发新代码，回复继续即可**", $reply, $queuedCount);
+			$reply = format("{0}\n**还有{1}个代码在排队执行，不要再发新代码，回复继续即可（当前有{2}个代码正在执行中）**", $reply, $queuedCount, $workers);
 		};
 		send_command_to_inject("send_message", to_json({text: $reply}));
 	};

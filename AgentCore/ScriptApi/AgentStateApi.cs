@@ -514,6 +514,22 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// agent_get_active_workers(port) - get the number of currently active MetaDSL worker tasks
+    /// </summary>
+    sealed class AgentGetActiveWorkersExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_active_workers requires (port)");
+                return BoxedValue.From(0);
+            }
+            int port = operands[0].GetInt();
+            return BoxedValue.From(WebSocketServerManager.GetServer(port).ActiveWorkers);
+        }
+    }
+
+    /// <summary>
     /// set_agent_environment(category, group, key, value) - global, not per-instance
     /// </summary>
     sealed class SetAgentEnvironmentExp : SimpleExpressionBase
@@ -795,6 +811,10 @@ namespace AgentCore.ScriptApi
                 "agent_get_max_worker_concurrency(port) - get max concurrent MetaDSL worker tasks",
                 false,
                 new ExpressionFactoryHelper<AgentGetMaxWorkerConcurrencyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_active_workers",
+                "agent_get_active_workers(port) - get the number of currently active MetaDSL worker tasks",
+                false,
+                new ExpressionFactoryHelper<AgentGetActiveWorkersExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_max_result_size",
                 "agent_set_max_result_size(port, value) - set the MaxResultSize (0=unlimited)",
                 false,

@@ -265,25 +265,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 	$activeWorkers = agent_get_active_workers(9527);
 	nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3} queued_count={4} active_workers={5}", $providerId, $tag, $topic, strlen($reply), $queuedCount, $activeWorkers);
 
-	if ($tag == "llm_pm_project") {
-		$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-		write_file($planFile, $reply);
-		agent_set_plan(9527, $reply);
-		llm_clear_history(@LlmProviderId, $tag);
-
-		$soulFile = combine_path(@ProjectDirectory, "docs/soul.md");
-		$time1 = get_file_last_write_time($soulFile);
-		$time2 = now();
-		$days = get_diff_time_days($time1, $time2);
-		if ($days > 7) {
-			$replyWithReminder = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $reply, agent_get_project_dir(9527), agent_get_project_identity(9527));
-		}
-		else {
-			$replyWithReminder = $reply;
-		};
-		send_command_to_inject("send_message", to_json({text: $replyWithReminder}));
-	}
-	elif ($tag == "llm_pm_align") {
+	if ($tag == "llm_pm_align") {
 		$todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
 		write_file($todoFile, $reply);
 		agent_set_todo(9527, $reply);
@@ -585,33 +567,6 @@ script(induction_info)params($batch, $infos, $session)
 	};
 };
 
-script(induction_plan)params()
-{
-	$planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
-
-	$planHistory = read_file(combine_path(@ProjectDirectory, "docs/plan.txt"));
-	$todoHistory = read_file(combine_path(@ProjectDirectory, "docs/todo.txt"));
-	$contextHistory = read_file(combine_path(@ProjectDirectory, "docs/context.txt"));
-	$conversationHistory = getstringinlength(read_file(combine_path(@ProjectDirectory, "docs/history.txt")), 75 * 1024, 1);
-
-	$prompt = format("【以下是最近的开发计划】：\n{0}\n" +
-		"【以下是最近的待办事项】：\n{1}\n" +
-		"【以下是最近上下文信息】：\n{2}\n" +
-		"【以下是最近对话历史】：\n{3}", $planHistory, $todoHistory, $contextHistory, $conversationHistory);
-
-	$prompt = format("{0}\n\n以PM身份重述一下项目概况、开发计划与待办事项" +
-		"，基于事实，重点突出，不要猜测臆想（分章节分阶段分步骤，一次回复输出完成，控制在1000字以内）", $prompt);
-
-	if (@EnableLlmPM) {
-		llm_chat_callback(@LlmProviderId, "llm_pm_project", "project_history", $prompt);
-	}
-	else {
-		$prompt = format("{0}\n\n并使用metadsl代码写入{1}，\n" +
-			"记得metadsl代码里不能有markdown代码块标记，所以文档内容格式要简洁", $prompt, $planFile);
-		send_command_to_inject("send_message", to_json({text: $prompt}));
-	};
-};
-
 script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
 {
 	$promptTpl = read_file(combine_path(basepath, "docs/reply_prompt.txt"));
@@ -662,19 +617,18 @@ script(trigger_plan)params($autoPlan,$lockAgent)
 	nativelog("[dsl] trigger_plan: auto_plan:{0} lock_agent:{1}", $autoPlan, $lockAgent);
 
 	if (file_exists($planPath) && $autoPlan) {
-		nativelog("[dsl] induction_plan triggered");
-		induction_plan();
+		nativelog("[dsl] plan triggered");
 
 		if ($lockAgent) {
-			$prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请参考todo与plan的内容继续开发工作";
+			$prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt与todo.txt状态，然后选取计划工作更新todo.txt后继续";
 		}
 		else {
-			$prompt = "没有识别到代码。插空更新计划，请继续；如果没有todo事项，可停止agent以避免重复更新计划";
+			$prompt = "没有识别到代码。请更新plan.txt与todo.txt状态，如果todo工作已完成，请停止agent以避免重复提醒";
 		};
 		send_command_to_inject("send_message", to_json({text: $prompt}));
 	}
 	else {
-		nativelog("[dsl] trigger_plan: plan_file not found or auto_plan is false, skip induction_plan");
+		nativelog("[dsl] trigger_plan: plan_file not found or auto_plan is false, skip plan");
 	};
 };
 
@@ -818,7 +772,19 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
 		$llm_sys_prompt = format("{0}\n\n{1}", $note, $projectPrompt);
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_decision", "");
 		llm_set_system_prompt(@LlmProviderId, "llm_pm_align", $llm_sys_prompt);
-		llm_set_system_prompt(@LlmProviderId, "llm_pm_project", $llm_sys_prompt);
+	};
+
+	if ($isFirst) {
+		$time1 = get_file_last_write_time($soulFile);
+		$time2 = now();
+		$days = get_diff_time_days($time1, $time2);
+		if ($days > 7) {
+			$reply = format("{0}\n\n[Reminder: Check if soul.md needs updating. Before refining, use read_file(\"{1}/docs/patterns.md\") and semantic_get_recent(\"{2}_episodic_memory\",30) to form the abstraction chain (episodic->pattern->metacognition). Keep soul.md updates under 500 chars, no empty slogans.]", $plan, agent_get_project_dir(9527), agent_get_project_identity(9527));
+		}
+		else {
+			$reply = $plan;
+		};
+		send_command_to_inject("send_message", to_json({text: $reply}));
 	};
 };
 
@@ -860,7 +826,6 @@ script(handle_agent_notification)params($jsonData)
 		if (@EnableLlmPM) {
 			llm_clear_history(@LlmProviderId, "llm_pm_decision");
 			llm_clear_history(@LlmProviderId, "llm_pm_align");
-			llm_clear_history(@LlmProviderId, "llm_pm_project");
 		};
 	}
 	elif ($type == "hyarena_ready") {
@@ -909,8 +874,6 @@ script(handle_agent_notification)params($jsonData)
 
 		nativelog("[dsl] LLM update system prompt pageType: {0}", $pageType);
 		UpdateSystemPrompt($pageType, true);
-
-		induction_plan();
 	}
 	elif ($type == "llm_context_count_down") {
 		nativelog("[dsl] LLM context count down notification received");

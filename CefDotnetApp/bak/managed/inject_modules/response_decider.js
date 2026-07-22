@@ -75,7 +75,7 @@ class ResponseDecider {
         this.containsAll(msg, 'MetaDSL', '{:', ':}') ||
         this.containsAll(msg, 'MetaDsl', '{:', ':}') ||
         this.containsAll(msg, 'metadsl', '{:', ':}');
-      // MetaDSL / @execute blocks
+      // @execute blocks
       const hasMetaDsl =
         this.containsAll(msg, '//', '@execute') ||
         this.containsAll(msg, '#', '@execute');
@@ -111,13 +111,10 @@ class ResponseDecider {
         if (this.containsAny(msg, 'sleep(')) {
           return { action: 'skip', reason: 'sleep submitted' };
         }
-        if (this.containsAll(msg, '```')) {
-          return {
-            action: 'reply',
-            text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
-          };
-        }
-        return { action: 'skip', reason: 'markdown code block' };
+        return {
+          action: 'reply',
+          text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
+        };
       }
 
       // Default for lastFromLLM=true: trigger planning (DSL checks plan.txt existence)

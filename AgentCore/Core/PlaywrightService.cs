@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -40,6 +41,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, (string action, string promptText)> _dialogConfigs = new();
         private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _networkRequests = new();
         private readonly ConcurrentDictionary<string, string> _searchOptions = new();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, Func<IRoute, Task>>> _routeHandlers = new();
 
         private PlaywrightService() { InitSearchOptionDefaults(); }
 
@@ -607,6 +609,743 @@ namespace CefDotnetApp.AgentCore.Core
             }
             catch (Exception ex) { return $"error: {ex.Message}"; }
         }
+        public async Task<string> CdpEvaluateAsync(string targetId, string script, int timeoutMs = 30000)
+        {
+            try {
+                if (string.IsNullOrEmpty(_cdpEndpoint)) return "error: not in cdp mode";
+                if (string.IsNullOrEmpty(targetId)) return "error: missing target_id";
+                if (string.IsNullOrEmpty(script)) return "error: missing script";
+                var uri = new Uri(_cdpEndpoint!);
+                var listUrl = $"http://{uri.Host}:{uri.Port}/json";
+                var listResp = await _cdpHttp.GetAsync(listUrl);
+                var listBody = await listResp.Content.ReadAsStringAsync();
+                if (!listResp.IsSuccessStatusCode) return $"error: http {(int)listResp.StatusCode}: {listBody}";
+                string? wsUrl = null;
+                using (var doc = JsonDocument.Parse(listBody)) {
+                    foreach (var el in doc.RootElement.EnumerateArray()) {
+                        if (el.TryGetProperty("id", out var idEl) && idEl.GetString() == targetId) {
+                            if (el.TryGetProperty("webSocketDebuggerUrl", out var wsEl)) {
+                                wsUrl = wsEl.GetString();
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (string.IsNullOrEmpty(wsUrl)) return $"error: target not found or no webSocketDebuggerUrl: {targetId}";
+                using var ws = new ClientWebSocket();
+                using var cts = new System.Threading.CancellationTokenSource(timeoutMs);
+                await ws.ConnectAsync(new Uri(wsUrl!), cts.Token);
+                var reqObj = new Dictionary<string, object?> {
+                    ["id"] = 1,
+                    ["method"] = "Runtime.evaluate",
+                    ["params"] = new Dictionary<string, object?> {
+                        ["expression"] = script,
+                        ["returnByValue"] = true,
+                        ["awaitPromise"] = true,
+                        ["userGesture"] = true,
+                    },
+                };
+                var reqJson = JsonSerializer.Serialize(reqObj);
+                var reqBytes = Encoding.UTF8.GetBytes(reqJson);
+                await ws.SendAsync(new ArraySegment<byte>(reqBytes), WebSocketMessageType.Text, true, cts.Token);
+                var recvBuf = new byte[65536];
+                var sb = new StringBuilder();
+                while (ws.State == WebSocketState.Open) {
+                    sb.Clear();
+                    WebSocketReceiveResult rr;
+                    do {
+                        rr = await ws.ReceiveAsync(new ArraySegment<byte>(recvBuf), cts.Token);
+                        if (rr.MessageType == WebSocketMessageType.Close) {
+                            return $"error: ws closed: {rr.CloseStatusDescription}";
+                        }
+                        sb.Append(Encoding.UTF8.GetString(recvBuf, 0, rr.Count));
+                    } while (!rr.EndOfMessage);
+                    var msgText = sb.ToString();
+                    using var msgDoc = JsonDocument.Parse(msgText);
+                    var root = msgDoc.RootElement;
+                    if (root.TryGetProperty("id", out var midEl) && midEl.TryGetInt32(out var mid) && mid == 1) {
+                        try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", System.Threading.CancellationToken.None); } catch { }
+                        if (root.TryGetProperty("error", out var errEl)) {
+                            return $"error: cdp: {errEl.GetRawText()}";
+                        }
+                        if (root.TryGetProperty("result", out var resEl)) {
+                            return "ok:" + resEl.GetRawText();
+                        }
+                        return "ok:" + msgText;
+                    }
+                }
+                return "error: ws not open";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        // ---------- Group 5 (M11.2 P1): frames / load state / bring to front ----------
+
+        public Task<string> FramesAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return Task.FromResult(err);
+            try {
+                var sb = new StringBuilder();
+                int idx = 0;
+                foreach (var f in page!.Frames) {
+                    if (idx > 0) sb.Append('\n');
+                    sb.Append(idx).Append('|').Append(f.Name ?? "").Append('|').Append(f.Url ?? "");
+                    idx++;
+                }
+                return Task.FromResult("ok:" + sb.ToString());
+            }
+            catch (Exception ex) { return Task.FromResult($"error: {ex.Message}"); }
+        }
+
+        public async Task<string> FrameEvaluateAsync(string pageId, string frameUrlRegex, string script)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(frameUrlRegex)) return "error: frame_url_regex required";
+            if (string.IsNullOrEmpty(script)) return "error: script required";
+            try {
+                var re = new System.Text.RegularExpressions.Regex(frameUrlRegex);
+                IFrame? target = null;
+                foreach (var f in page!.Frames) {
+                    if (re.IsMatch(f.Url ?? "")) { target = f; break; }
+                }
+                if (target == null) return $"error: no frame matches regex: {frameUrlRegex}";
+                var result = await target.EvaluateAsync<object?>(script);
+                return "ok:" + (result?.ToString() ?? "");
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> FrameClickAsync(string pageId, string frameUrlRegex, string selector, string? button, int? clickCount)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(frameUrlRegex)) return "error: frame_url_regex required";
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                var re = new System.Text.RegularExpressions.Regex(frameUrlRegex);
+                IFrame? target = null;
+                foreach (var f in page!.Frames) {
+                    if (re.IsMatch(f.Url ?? "")) { target = f; break; }
+                }
+                if (target == null) return $"error: no frame matches regex: {frameUrlRegex}";
+                var opts = new LocatorClickOptions();
+                if (!string.IsNullOrEmpty(button)) {
+                    opts.Button = button!.ToLowerInvariant() switch {
+                        "right" => MouseButton.Right,
+                        "middle" => MouseButton.Middle,
+                        _ => MouseButton.Left,
+                    };
+                }
+                if (clickCount.HasValue && clickCount.Value > 0) opts.ClickCount = clickCount.Value;
+                await target.Locator(selector).ClickAsync(opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> FrameTypeAsync(string pageId, string frameUrlRegex, string selector, string text, bool clearFirst)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(frameUrlRegex)) return "error: frame_url_regex required";
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                var re = new System.Text.RegularExpressions.Regex(frameUrlRegex);
+                IFrame? target = null;
+                foreach (var f in page!.Frames) {
+                    if (re.IsMatch(f.Url ?? "")) { target = f; break; }
+                }
+                if (target == null) return $"error: no frame matches regex: {frameUrlRegex}";
+                var loc = target.Locator(selector);
+                if (clearFirst) await loc.FillAsync(text ?? "");
+                else await loc.PressSequentiallyAsync(text ?? "");
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> FrameFillAsync(string pageId, string frameUrlRegex, string selector, string value)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(frameUrlRegex)) return "error: frame_url_regex required";
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                var re = new System.Text.RegularExpressions.Regex(frameUrlRegex);
+                IFrame? target = null;
+                foreach (var f in page!.Frames) {
+                    if (re.IsMatch(f.Url ?? "")) { target = f; break; }
+                }
+                if (target == null) return $"error: no frame matches regex: {frameUrlRegex}";
+                await target.Locator(selector).FillAsync(value ?? "");
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> RouteAsync(string pageId, string urlPattern, string action, string? body)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(urlPattern)) return "error: url_pattern required";
+            if (string.IsNullOrEmpty(action)) return "error: action required";
+            var act = action.ToLowerInvariant();
+            if (act != "abort" && act != "fulfill" && act != "continue") return "error: action must be abort|fulfill|continue";
+            try {
+                var perPage = _routeHandlers.GetOrAdd(pageId, _ => new ConcurrentDictionary<string, Func<IRoute, Task>>());
+                if (perPage.TryRemove(urlPattern, out var oldHandler)) {
+                    try { await page!.UnrouteAsync(urlPattern, oldHandler); } catch { }
+                }
+                var bodyCopy = body;
+                Func<IRoute, Task> handler = async route => {
+                    try {
+                        if (act == "abort") await route.AbortAsync();
+                        else if (act == "fulfill") {
+                            var opts = new RouteFulfillOptions { Status = 200 };
+                            if (!string.IsNullOrEmpty(bodyCopy)) opts.Body = bodyCopy;
+                            await route.FulfillAsync(opts);
+                        }
+                        else await route.ContinueAsync();
+                    }
+                    catch { try { await route.ContinueAsync(); } catch { } }
+                };
+                perPage[urlPattern] = handler;
+                await page!.RouteAsync(urlPattern, handler);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> UnrouteAsync(string pageId, string urlPattern)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(urlPattern)) return "error: url_pattern required";
+            try {
+                if (_routeHandlers.TryGetValue(pageId, out var perPage) && perPage.TryRemove(urlPattern, out var handler)) {
+                    await page!.UnrouteAsync(urlPattern, handler);
+                    return "ok";
+                }
+                await page!.UnrouteAsync(urlPattern);
+                return "ok:no-tracked-handler";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        // ---------- Group 8 (M11.3-C): cookies clear + native keyboard + web storage ----------
+
+        public async Task<string> ClearCookiesAsync()
+        {
+            if (!IsRunning()) return "error: playwright not started";
+            if (_context == null) return "error: no browser context";
+            try {
+                await _context.ClearCookiesAsync();
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> KeyboardDownAsync(string pageId, string key)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(key)) return "error: key required";
+            try {
+                await page!.Keyboard.DownAsync(key);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> KeyboardUpAsync(string pageId, string key)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(key)) return "error: key required";
+            try {
+                await page!.Keyboard.UpAsync(key);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> KeyboardPressAsync(string pageId, string key, int? delayMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(key)) return "error: key required";
+            try {
+                var opts = new KeyboardPressOptions();
+                if (delayMs.HasValue && delayMs.Value > 0) opts.Delay = delayMs.Value;
+                await page!.Keyboard.PressAsync(key, opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> KeyboardTypeAsync(string pageId, string text, int? delayMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (text == null) return "error: text required";
+            try {
+                var opts = new KeyboardTypeOptions();
+                if (delayMs.HasValue && delayMs.Value > 0) opts.Delay = delayMs.Value;
+                await page!.Keyboard.TypeAsync(text, opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetLocalStorageAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var json = await page!.EvaluateAsync<string>("() => JSON.stringify(Object.fromEntries(Object.entries(localStorage)))");
+                return "ok:" + (json ?? "{}");
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> SetLocalStorageAsync(string pageId, string key, string value)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(key)) return "error: key required";
+            try {
+                await page!.EvaluateAsync("([k,v]) => { localStorage.setItem(k, v); }", new object?[] { key, value ?? "" });
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> ClearLocalStorageAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.EvaluateAsync("() => localStorage.clear()");
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetSessionStorageAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var json = await page!.EvaluateAsync<string>("() => JSON.stringify(Object.fromEntries(Object.entries(sessionStorage)))");
+                return "ok:" + (json ?? "{}");
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> ClearSessionStorageAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.EvaluateAsync("() => sessionStorage.clear()");
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> InputValueAsync(string pageId, string selector)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                var val = await page!.Locator(selector).InputValueAsync();
+                return "ok:" + (val ?? "");
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> WaitForLoadStateAsync(string pageId, string? state, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                LoadState ls = LoadState.Load;
+                if (!string.IsNullOrEmpty(state)) {
+                    ls = state.ToLowerInvariant() switch {
+                        "domcontentloaded" => LoadState.DOMContentLoaded,
+                        "networkidle" => LoadState.NetworkIdle,
+                        _ => LoadState.Load,
+                    };
+                }
+                var opts = new PageWaitForLoadStateOptions();
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) opts.Timeout = timeoutMs.Value;
+                await page!.WaitForLoadStateAsync(ls, opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> BringToFrontAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.BringToFrontAsync();
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        // ---------- Group 6 (M11.2 P2): cookies / role / wheel / init script ----------
+
+        public async Task<string> GetCookiesAsync(string? urlFilter)
+        {
+            if (!IsRunning()) return "error: playwright not started";
+            if (_context == null) return "error: no browser context";
+            try {
+                IReadOnlyList<BrowserContextCookiesResult> cookies;
+                if (!string.IsNullOrEmpty(urlFilter)) {
+                    cookies = await _context.CookiesAsync(new[] { urlFilter });
+                }
+                else {
+                    cookies = await _context.CookiesAsync();
+                }
+                var json = JsonSerializer.Serialize(cookies);
+                return "ok:" + json;
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> SetCookiesAsync(string cookiesJson)
+        {
+            if (!IsRunning()) return "error: playwright not started";
+            if (_context == null) return "error: no browser context";
+            if (string.IsNullOrEmpty(cookiesJson)) return "error: cookies_json required";
+            try {
+                var list = JsonSerializer.Deserialize<List<Cookie>>(cookiesJson);
+                if (list == null || list.Count == 0) return "error: cookies_json parse empty";
+                await _context.AddCookiesAsync(list);
+                return $"ok:{list.Count}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetByRoleAsync(string pageId, string role, string? name, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(role)) return "error: role required";
+            try {
+                if (!Enum.TryParse<AriaRole>(role, true, out var ar)) {
+                    return $"error: unknown role: {role}";
+                }
+                var opts = new PageGetByRoleOptions();
+                if (!string.IsNullOrEmpty(name)) opts.Name = name;
+                var loc = page!.GetByRole(ar, opts);
+                var waitOpts = new LocatorWaitForOptions { State = WaitForSelectorState.Attached };
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) waitOpts.Timeout = timeoutMs.Value;
+                try { await loc.First.WaitForAsync(waitOpts); } catch { }
+                var count = await loc.CountAsync();
+                if (count == 0) return "ok:0|";
+                var html = await loc.First.EvaluateAsync<string>("el => el.outerHTML");
+                return $"ok:{count}|{html}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseWheelAsync(string pageId, float dx, float dy)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.Mouse.WheelAsync(dx, dy);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseMoveAsync(string pageId, float x, float y)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.Mouse.MoveAsync(x, y);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseDownAsync(string pageId, string? button)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var opts = new MouseDownOptions();
+                if (!string.IsNullOrEmpty(button)) {
+                    if (button == "right") opts.Button = MouseButton.Right;
+                    else if (button == "middle") opts.Button = MouseButton.Middle;
+                    else opts.Button = MouseButton.Left;
+                }
+                await page!.Mouse.DownAsync(opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseUpAsync(string pageId, string? button)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var opts = new MouseUpOptions();
+                if (!string.IsNullOrEmpty(button)) {
+                    if (button == "right") opts.Button = MouseButton.Right;
+                    else if (button == "middle") opts.Button = MouseButton.Middle;
+                    else opts.Button = MouseButton.Left;
+                }
+                await page!.Mouse.UpAsync(opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseClickAsync(string pageId, float x, float y, string? button, int? clickCount)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var opts = new MouseClickOptions();
+                if (!string.IsNullOrEmpty(button)) {
+                    if (button == "right") opts.Button = MouseButton.Right;
+                    else if (button == "middle") opts.Button = MouseButton.Middle;
+                    else opts.Button = MouseButton.Left;
+                }
+                if (clickCount.HasValue && clickCount.Value > 0) opts.ClickCount = clickCount.Value;
+                await page!.Mouse.ClickAsync(x, y, opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> MouseDblClickAsync(string pageId, float x, float y)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.Mouse.DblClickAsync(x, y);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> WaitForUrlAsync(string pageId, string urlRegex, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(urlRegex)) return "error: url_regex required";
+            try {
+                var opts = new PageWaitForURLOptions();
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) opts.Timeout = timeoutMs.Value;
+                await page!.WaitForURLAsync(new System.Text.RegularExpressions.Regex(urlRegex), opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> WaitForTimeoutAsync(string pageId, int timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.WaitForTimeoutAsync(timeoutMs);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> SetViewportSizeAsync(string pageId, int width, int height)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await page!.SetViewportSizeAsync(width, height);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetViewportSizeAsync(string pageId)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                await Task.CompletedTask;
+                var vs = page!.ViewportSize;
+                if (vs == null) return "{}";
+                return $"{{\"width\":{vs.Width},\"height\":{vs.Height}}}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> FocusAsync(string pageId, string selector)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                await page!.Locator(selector).FocusAsync();
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> BlurAsync(string pageId, string selector)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                await page!.Locator(selector).EvaluateAsync("el => el.blur()");
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> CdpSendAsync(string pageId, string method, string? paramsJson)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(method)) return "error: method required";
+            try {
+                var cdp = await page!.Context.NewCDPSessionAsync(page);
+                Dictionary<string, object>? args = null;
+                if (!string.IsNullOrEmpty(paramsJson)) {
+                    args = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(paramsJson!);
+                }
+                var result = await cdp.SendAsync(method, args);
+                return result?.ToString() ?? "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> SessionStorageSetAsync(string pageId, string key, string value)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(key)) return "error: key required";
+            try {
+                var args = new Dictionary<string, string> { { "k", key }, { "v", value ?? "" } };
+                await page!.EvaluateAsync("({k,v}) => sessionStorage.setItem(k, v)", args);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> WaitForResponseAsync(string pageId, string urlRegex, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(urlRegex)) return "error: url_regex required";
+            try {
+                var opts = new PageWaitForResponseOptions();
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) opts.Timeout = timeoutMs.Value;
+                var rx = new System.Text.RegularExpressions.Regex(urlRegex);
+                var resp = await page!.WaitForResponseAsync(r => rx.IsMatch(r.Url), opts);
+                return $"ok:{resp.Status}|{resp.Url}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> EmulateMediaAsync(string pageId, string? media, string? colorScheme)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            try {
+                var opts = new PageEmulateMediaOptions();
+                if (!string.IsNullOrEmpty(media)) {
+                    opts.Media = media!.ToLowerInvariant() switch {
+                        "screen" => Media.Screen,
+                        "print" => Media.Print,
+                        "null" => Media.Null,
+                        _ => Media.Screen
+                    };
+                }
+                if (!string.IsNullOrEmpty(colorScheme)) {
+                    opts.ColorScheme = colorScheme!.ToLowerInvariant() switch {
+                        "light" => ColorScheme.Light,
+                        "dark" => ColorScheme.Dark,
+                        "no-preference" => ColorScheme.NoPreference,
+                        "null" => ColorScheme.Null,
+                        _ => ColorScheme.Light
+                    };
+                }
+                await page!.EmulateMediaAsync(opts);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> ScrollIntoViewAsync(string pageId, string selector)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(selector)) return "error: selector required";
+            try {
+                await page!.Locator(selector).ScrollIntoViewIfNeededAsync();
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+
+        public async Task<string> AddInitScriptAsync(string pageId, string script)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(script)) return "error: script required";
+            try {
+                await page!.AddInitScriptAsync(script);
+                return "ok";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetByTextAsync(string pageId, string text, bool exact, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(text)) return "error: text required";
+            try {
+                var opts = new PageGetByTextOptions { Exact = exact };
+                var loc = page!.GetByText(text, opts);
+                var waitOpts = new LocatorWaitForOptions { State = WaitForSelectorState.Attached };
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) waitOpts.Timeout = timeoutMs.Value;
+                try { await loc.First.WaitForAsync(waitOpts); } catch { }
+                var count = await loc.CountAsync();
+                if (count == 0) return "ok:0|";
+                var html = await loc.First.EvaluateAsync<string>("el => el.outerHTML");
+                return $"ok:{count}|{html}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetByLabelAsync(string pageId, string label, bool exact, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(label)) return "error: label required";
+            try {
+                var opts = new PageGetByLabelOptions { Exact = exact };
+                var loc = page!.GetByLabel(label, opts);
+                var waitOpts = new LocatorWaitForOptions { State = WaitForSelectorState.Attached };
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) waitOpts.Timeout = timeoutMs.Value;
+                try { await loc.First.WaitForAsync(waitOpts); } catch { }
+                var count = await loc.CountAsync();
+                if (count == 0) return "ok:0|";
+                var html = await loc.First.EvaluateAsync<string>("el => el.outerHTML");
+                return $"ok:{count}|{html}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetByPlaceholderAsync(string pageId, string placeholder, bool exact, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(placeholder)) return "error: placeholder required";
+            try {
+                var opts = new PageGetByPlaceholderOptions { Exact = exact };
+                var loc = page!.GetByPlaceholder(placeholder, opts);
+                var waitOpts = new LocatorWaitForOptions { State = WaitForSelectorState.Attached };
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) waitOpts.Timeout = timeoutMs.Value;
+                try { await loc.First.WaitForAsync(waitOpts); } catch { }
+                var count = await loc.CountAsync();
+                if (count == 0) return "ok:0|";
+                var html = await loc.First.EvaluateAsync<string>("el => el.outerHTML");
+                return $"ok:{count}|{html}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
+        public async Task<string> GetByTestIdAsync(string pageId, string testId, int? timeoutMs)
+        {
+            if (!TryGetPage(pageId, out var page, out var err)) return err;
+            if (string.IsNullOrEmpty(testId)) return "error: testId required";
+            try {
+                var loc = page!.GetByTestId(testId);
+                var waitOpts = new LocatorWaitForOptions { State = WaitForSelectorState.Attached };
+                if (timeoutMs.HasValue && timeoutMs.Value > 0) waitOpts.Timeout = timeoutMs.Value;
+                try { await loc.First.WaitForAsync(waitOpts); } catch { }
+                var count = await loc.CountAsync();
+                if (count == 0) return "ok:0|";
+                var html = await loc.First.EvaluateAsync<string>("el => el.outerHTML");
+                return $"ok:{count}|{html}";
+            }
+            catch (Exception ex) { return $"error: {ex.Message}"; }
+        }
+
         private void InitSearchOptionDefaults()
         {
             // Google

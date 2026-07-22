@@ -41,26 +41,34 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // multi_replace(path, editsJson[, encoding]) - perform multiple replacements sequentially
-    // editsJson: [{"old_string":"...","new_string":"...","replace_all":false}, ...]
+    // multi_replace(path, editsJsonOrList[, encoding]) - perform multiple replacements sequentially
+    // editsJson: [{"old_string":"...","new_string":"...","replace_all":false,"exact_match":false}, ...]
+    // editsList: DSL list of dicts, e.g. [{old_string:"...",new_string:"...",replace_all:false}]
     sealed class MultiReplaceExp : SimpleExpressionBase
     {
+        private struct EditItem
+        {
+            public string OldString;
+            public string NewString;
+            public bool ReplaceAll;
+            public bool ExactMatch;
+        }
+
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 2 || operands.Count > 3) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(
-                    "Expected: multi_replace(path, editsJson[, encoding]) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...]");
+                    "Expected: multi_replace(path, editsJsonOrList[, encoding]) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...], string or list of hashtables");
                 return BoxedValue.From(false);
             }
 
             try {
                 string path = operands[0].AsString;
-                string editsJson = operands[1].AsString;
                 Encoding? encoding = operands.Count > 2 ? GetEncoding(operands[2]) : null;
 
-                var edits = LitJson.JsonMapper.ToObject<LitJson.JsonData>(editsJson);
-                if (edits == null || !edits.IsArray || edits.Count == 0) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("multi_replace: editsJson must be a non-empty JSON array");
+                var edits = ParseEdits(operands[1]);
+                if (edits == null || edits.Count == 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("multi_replace: edits must be a non-empty JSON array or list of objects");
                     return BoxedValue.From(false);
                 }
 
@@ -74,15 +82,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
                 for (int i = 0; i < edits.Count; i++) {
                     var edit = edits[i];
-                    if (!edit.Keys.Contains("old_string") || !edit.Keys.Contains("new_string")) {
-                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
-                        return BoxedValue.From(false);
-                    }
-
-                    string oldString = (string)edit["old_string"];
-                    string newString = (string)edit["new_string"];
-                    bool replaceAll = edit.Keys.Contains("replace_all") ? (bool)edit["replace_all"] : false;
-                    bool exactMatch = edit.Keys.Contains("exact_match") ? (bool)edit["exact_match"] : false;
+                    string oldString = edit.OldString;
+                    string newString = edit.NewString;
+                    bool replaceAll = edit.ReplaceAll;
+                    bool exactMatch = edit.ExactMatch;
 
                     if (string.IsNullOrEmpty(oldString)) {
                         AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] old_string cannot be empty");
@@ -140,6 +143,117 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace error: {ex.Message}");
                 return BoxedValue.From(false);
             }
+        }
+
+        private static List<EditItem>? ParseEdits(BoxedValue operand)
+        {
+            // Try string (JSON) first
+            string? json = operand.AsString;
+            if (!string.IsNullOrEmpty(json)) {
+                return ParseEditsFromJson(json);
+            }
+            // Try list of dicts
+            var list = operand.As<System.Collections.IList>();
+            if (list != null) {
+                return ParseEditsFromList(list);
+            }
+            return null;
+        }
+
+        private static List<EditItem>? ParseEditsFromJson(string json)
+        {
+            var edits = LitJson.JsonMapper.ToObject<LitJson.JsonData>(json);
+            if (edits == null || !edits.IsArray || edits.Count == 0) {
+                return null;
+            }
+            var result = new List<EditItem>();
+            for (int i = 0; i < edits.Count; i++) {
+                var edit = edits[i];
+                if (!edit.Keys.Contains("old_string") || !edit.Keys.Contains("new_string")) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
+                    return null;
+                }
+                var item = new EditItem {
+                    OldString = (string)edit["old_string"],
+                    NewString = (string)edit["new_string"],
+                    ReplaceAll = edit.Keys.Contains("replace_all") ? (bool)edit["replace_all"] : false,
+                    ExactMatch = edit.Keys.Contains("exact_match") ? (bool)edit["exact_match"] : false
+                };
+                result.Add(item);
+            }
+            return result;
+        }
+
+        private static List<EditItem>? ParseEditsFromList(System.Collections.IList list)
+        {
+            if (list.Count == 0) {
+                return null;
+            }
+            var result = new List<EditItem>();
+            for (int i = 0; i < list.Count; i++) {
+                object? elemObj = list[i];
+                var dict = AsIDictionaryHelper(elemObj);
+                if (dict == null) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] is not an object");
+                    return null;
+                }
+                string? oldString = GetDictString(dict, "old_string");
+                string? newString = GetDictString(dict, "new_string");
+                if (oldString == null || newString == null) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: edit[{i}] missing old_string or new_string");
+                    return null;
+                }
+                var item = new EditItem {
+                    OldString = oldString,
+                    NewString = newString,
+                    ReplaceAll = GetDictBool(dict, "replace_all", false),
+                    ExactMatch = GetDictBool(dict, "exact_match", false)
+                };
+                result.Add(item);
+            }
+            return result;
+        }
+
+        private static System.Collections.IDictionary? AsIDictionaryHelper(object? obj)
+        {
+            if (obj == null) {
+                return null;
+            }
+            if (obj is System.Collections.IDictionary d) {
+                return d;
+            }
+            if (obj is BoxedValue bv) {
+                return bv.As<System.Collections.IDictionary>();
+            }
+            var wrapped = BoxedValue.FromObject(obj);
+            return wrapped.As<System.Collections.IDictionary>();
+        }
+
+        private static string? GetDictString(System.Collections.IDictionary dict, string key)
+        {
+            var keyObj = BoxedValue.FromObject(key);
+            if (dict is Dictionary<BoxedValue, BoxedValue> bvDict) {
+                return bvDict.TryGetValue(keyObj, out var v) ? v.AsString : null;
+            }
+            if (dict.Contains(key)) {
+                return BoxedValue.FromObject(dict[key]).AsString;
+            }
+            return null;
+        }
+
+        private static bool GetDictBool(System.Collections.IDictionary dict, string key, bool defVal)
+        {
+            var keyObj = BoxedValue.FromObject(key);
+            if (dict is Dictionary<BoxedValue, BoxedValue> bvDict) {
+                if (bvDict.TryGetValue(keyObj, out var v)) {
+                    try { return v.GetBool(); } catch { return defVal; }
+                }
+                return defVal;
+            }
+            if (dict.Contains(key)) {
+                try { return BoxedValue.FromObject(dict[key]).GetBool(); } catch { return defVal; }
+            }
+            return defVal;
         }
     }
 
@@ -339,7 +453,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_line_count(path[, encoding]), aliased as get_file_line_count|line_count|file_line_count");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_line_count(path[, encoding]), aliased as get_file_line_count|line_count|file_line_count|count_lines");
                 return BoxedValue.From(0);
             }
 

@@ -42,7 +42,7 @@
 1. 使用`view_file_structure`或`read_file`了解实现
 2. 确定修改内容
 3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines`获取精确上下文
-4. 多行用`apply_diff`（unified diff格式）；单行内部用`string_replace`或`regex_replace`
+4. 多行用`apply_diff`（unified diff格式）；单行用`replace_in_file`或`regex_replace_in_file`（注意，`string_replace`或`regex_replace`是字符串替换，不用于文件）
 5. 修改后重新阅读确认
 
 **代码语法分析API**
@@ -140,10 +140,22 @@ execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py
 write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
 二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex、string_to_bytes、bytes_to_string、base64_to_bytes、bytes_to_base64
 
+**Playwright API**
+- playwright_is_running() - returns bool indicating whether playwright is started.
+- playwright_start([headless, user_data_dir]) - Launch Chromium; if `headless` is `true`, headless mode is used (default is `false`). If `user_data_dir` is empty (default), create a fresh context, or if it is not empty, use a persistent context.
+- playwright_cdp_start(cdp_endpoint) - Launch Chromium; connect via CDP (reusing a remote instance).
+- playwright_stop() - close all pages, context and browser.
+- playwright_tabs([refresh]) - list all pages as 'id|url' semicolon separated; refresh=true syncs pages from context (CDP-attach case).
+- playwright_cdp_list_targets() - list CDP targets via HTTP /json (attach mode); returns raw JSON.
+- playwright_frames(page_id) - list all frames of a page. Returns JSON array of {url, name, is_main}.
+- 使用help("playwright_")获取更多Playwright相关API
+playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭之前启动的playwright或者记得使用结束后stop
+
 **其它工具**
 
 - `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`todo.txt`/`context.txt`/`plan.txt`等状态文件
-- `count_lines(file[,start,end])` — 查看行号与缩进信息
+- `count_lines(path[, encoding])` — 查看文件行数
+- `count_indentations(path[, startLine, endLine, encoding])` - 查看行号与缩进信息
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
 - `grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])` - 搜索多个文件内容
 - `agent_get_project_identity(9527)` — 项目标识

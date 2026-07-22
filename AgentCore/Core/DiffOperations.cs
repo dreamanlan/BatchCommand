@@ -173,13 +173,14 @@ namespace CefDotnetApp.AgentCore.Core
                 string line = lines[i];
 
                 // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
-                var match = Regex.Match(line, @"^@@\s+-?(\d+)(?:,(\d+))?\s+\+?(\d+)(?:,(\d+))?\s+@@");
+                // Allow empty hunk header @@ @@ (numbers optional) so LLM can emit headless @@ headers
+                var match = Regex.Match(line, @"^@@\s+(?:-?(\d+)(?:,(\d+))?\s+)?(?:\+?(\d+)(?:,(\d+))?\s+)?@@");
                 if (match.Success) {
                     var hunk = new DiffHunk {
-                        OldStartLine = int.Parse(match.Groups[1].Value) - 1,  // Convert to 0-based
-                        OldLineCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 1,
-                        NewStartLine = int.Parse(match.Groups[3].Value) - 1,  // Convert to 0-based
-                        NewLineCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 1,
+                        OldStartLine = match.Groups[1].Success ? int.Parse(match.Groups[1].Value) - 1 : 0,
+                        OldLineCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0,
+                        NewStartLine = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) - 1 : 0,
+                        NewLineCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 0,
                         Lines = new List<DiffLine>()
                     };
 
@@ -237,6 +238,32 @@ namespace CefDotnetApp.AgentCore.Core
 
                     hunks.Add(hunk);
                     i--; // Back up one line
+                }
+            }
+
+            // Fallback (no @@ headers at all): treat +/-/space-prefixed lines as a single headless hunk
+            if (hunks.Count == 0) {
+                var fallbackLines = new List<DiffLine>();
+                foreach (string l in lines) {
+                    if (l.Length == 0)
+                        continue;
+                    if (l.StartsWith("@@") || l.StartsWith("diff ") || l.StartsWith("index ")
+                        || l.StartsWith("---") || l.StartsWith("+++"))
+                        continue;
+                    char prefix = l[0];
+                    if (prefix != '+' && prefix != '-' && prefix != ' ')
+                        continue;
+                    string content = l.Length > 1 ? l.Substring(1) : string.Empty;
+                    fallbackLines.Add(new DiffLine { Prefix = prefix, Content = content });
+                }
+                if (fallbackLines.Count > 0) {
+                    hunks.Add(new DiffHunk {
+                        OldStartLine = 0,
+                        OldLineCount = 0,
+                        NewStartLine = 0,
+                        NewLineCount = 0,
+                        Lines = fallbackLines
+                    });
                 }
             }
 

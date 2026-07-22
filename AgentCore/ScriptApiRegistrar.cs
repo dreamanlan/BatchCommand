@@ -42,6 +42,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("append_file", "append_file(path, content[, encoding])", new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_text", "append_text(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_text_to_file", "append_text_to_file(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("append_line_to_file", "append_line_to_file(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("append_all_text", "append_all_text(path, content)", false, new ExpressionFactoryHelper<AppendFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("copy_file", "copy_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<CopyFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("move_file", "move_file(sourcePath, destPath, overwrite)", new ExpressionFactoryHelper<MoveFileExp>());
@@ -130,7 +131,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("replaceinfile", "replaceinfile(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_replace_in_file", "string_replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_replace_file", "string_replace_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]])", false, new ExpressionFactoryHelper<ReplaceInFileExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("multi_replace", "multi_replace(path, editsJson[, encoding]) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...]", new ExpressionFactoryHelper<MultiReplaceExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("multi_replace", "multi_replace(path, editsJson[, encoding]) editsJson=[{\"old_string\":\"...\",\"new_string\":\"...\",\"replace_all\":false,\"exact_match\":false},...], string or list of hashtables", new ExpressionFactoryHelper<MultiReplaceExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("replace_range", "replace_range(path, startLine, endLine, newContent[, encoding])", new ExpressionFactoryHelper<ReplaceRangeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("insert_after_text", "insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])", new ExpressionFactoryHelper<InsertAfterTextExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("insert_before_text", "insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]])", new ExpressionFactoryHelper<InsertBeforeTextExp>());

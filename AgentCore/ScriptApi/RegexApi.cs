@@ -24,6 +24,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             // Regex replacement APIs
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace", "regex_replace(str, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_string", "regex_replace_string(str, regex_pattern, replacement, [ignoreCase])", new ExpressionFactoryHelper<RegexReplaceExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_with_count", "regex_replace_with_count(str, regex_pattern, replacement, count, [ignoreCase]) - replace first N matches", new ExpressionFactoryHelper<RegexReplaceWithCountExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_string_with_count", "regex_replace_string_with_count(str, regex_pattern, replacement, count, [ignoreCase]) - replace first N matches", new ExpressionFactoryHelper<RegexReplaceWithCountExp>());
 
             // Regex find all matches
             AgentFrameworkService.Instance.DslEngine!.Register("regex_find_all", "regex_find_all(str, regex_pattern, [ignoreCase]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexFindAllExp>());
@@ -32,6 +34,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             // File-based regex operations
             AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file", "regex_replace_in_file(path, regex_pattern, replacement, [ignoreCase[, encoding]])", new ExpressionFactoryHelper<RegexReplaceInFileExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("regex_replace_in_file_with_count", "regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [ignoreCase[, encoding]]) - replace first N matches in file", new ExpressionFactoryHelper<RegexReplaceInFileWithCountExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("regex_search_file", "regex_search_file(path, regex_pattern, [ignoreCase[, encoding]]) return List, use 'to_string' to convert to a string", new ExpressionFactoryHelper<RegexSearchFileExp>());
 
             // Regex capture group APIs
@@ -110,6 +113,51 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_replace: {ex.Message}");
+                if (null != str) {
+                    return str;
+                }
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replace first N matches of regex pattern in string.
+    /// count &lt;= 0 returns the original string unchanged (same convention as string_replace_with_count).
+    /// </summary>
+    sealed class RegexReplaceWithCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4 || operands.Count > 5) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [ignoreCase]), aliased as regex_replace_string_with_count");
+                return BoxedValue.EmptyString;
+            }
+
+            string str = operands[0].AsString;
+            try {
+                string pattern = operands[1].AsString;
+                string replacement = operands[2].AsString;
+                int count = operands[3].GetInt();
+                bool ignoreCase = operands.Count > 4 ? operands[4].GetBool() || operands[4].ToString() == "i" : true;
+
+                if (string.IsNullOrEmpty(pattern) || count <= 0) {
+                    return BoxedValue.FromString(str ?? string.Empty);
+                }
+                if (!StringHelper.MatchesPattern(str, pattern, ignoreCase)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: pattern not found: {pattern}");
+                    if (File.Exists(str)) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_replace_with_count(str, regex_pattern, replacement, count, [ignoreCase]), str must be a string");
+                    }
+                    return BoxedValue.FromString(str ?? string.Empty);
+                }
+                var options = ignoreCase ? System.Text.RegularExpressions.RegexOptions.IgnoreCase : System.Text.RegularExpressions.RegexOptions.None;
+                var regex = new System.Text.RegularExpressions.Regex(pattern, options);
+                string result = regex.Replace(str ?? string.Empty, replacement, count);
+                return BoxedValue.FromString(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_replace_with_count: {ex.Message}");
                 if (null != str) {
                     return str;
                 }
@@ -215,6 +263,61 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
             catch (Exception ex) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_replace_in_file: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replace first N matches of regex pattern in file content.
+    /// count &lt;= 0 does not modify the file and returns false.
+    /// </summary>
+    sealed class RegexReplaceInFileWithCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4 || operands.Count > 6) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: regex_replace_in_file_with_count(path, regex_pattern, replacement, count, [ignoreCase[, encoding]])");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string pattern = operands[1].AsString;
+                string replacement = operands[2].AsString;
+                int count = operands[3].GetInt();
+                bool ignoreCase = operands.Count > 4 ? operands[4].GetBool() || operands[4].ToString() == "i" : true;
+                Encoding? encoding = operands.Count > 5 ? GetEncoding(operands[5]) : null;
+
+                if (count <= 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"regex_replace_in_file_with_count: count must be > 0, got {count}");
+                    return BoxedValue.From(false);
+                }
+                if (string.IsNullOrEmpty(pattern)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("regex_replace_in_file_with_count: regex_pattern cannot be empty");
+                    return BoxedValue.From(false);
+                }
+                if (!System.IO.File.Exists(path)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
+                    return BoxedValue.From(false);
+                }
+
+                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
+                if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: {path} pattern not found: {pattern}");
+                    return BoxedValue.From(false);
+                }
+                var options = ignoreCase ? System.Text.RegularExpressions.RegexOptions.IgnoreCase : System.Text.RegularExpressions.RegexOptions.None;
+                var regex = new System.Text.RegularExpressions.Regex(pattern, options);
+                string newContent = regex.Replace(content, replacement, count);
+                // When encoding is specified, use it for write as well.
+                // Otherwise, preserve original BOM state when overwriting existing file.
+                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: false);
+                System.IO.File.WriteAllText(path, newContent, writeEncoding);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error in regex_replace_in_file_with_count: {ex.Message}");
                 return BoxedValue.From(false);
             }
         }

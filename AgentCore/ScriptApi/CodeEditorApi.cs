@@ -15,7 +15,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 3 || operands.Count > 6) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]])");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file");
                 return BoxedValue.From(false);
             }
 
@@ -38,6 +38,106 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file error: {ex.Message}");
                 return BoxedValue.From(false);
             }
+        }
+    }
+
+    // replace_in_file_with_count(path, oldString, newString, count[, replaceAll[, exactMatch[, encoding]]])
+    // Replace first N literal occurrences. count <= 0 does not modify the file and returns false.
+    // The replaceAll parameter is kept for position parity with replace_in_file but is ignored when count > 0.
+    // exactMatch=true: only exact literal match is attempted; false: falls back to trimmed / normalized-whitespace match on the first occurrence when count=1.
+    sealed class ReplaceInFileWithCountExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 4 || operands.Count > 7) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                string path = operands[0].AsString;
+                string oldString = operands[1].AsString;
+                string newString = operands[2].AsString;
+                int count = operands[3].GetInt();
+                // operands[4] (replaceAll) intentionally ignored when count > 0; read to keep parameter parity.
+                bool exactMatch = operands.Count > 5 ? operands[5].GetBool() : false;
+                Encoding? encoding = operands.Count > 6 ? GetEncoding(operands[6]) : null;
+
+                if (string.IsNullOrEmpty(oldString)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file_with_count: oldString cannot be empty");
+                    return BoxedValue.From(false);
+                }
+                if (count <= 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: count must be > 0, got {count}");
+                    return BoxedValue.From(false);
+                }
+
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                if (!System.IO.File.Exists(fullPath)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: file not found: {path}");
+                    return BoxedValue.From(false);
+                }
+
+                var readEncoding = encoding ?? Encoding.UTF8;
+                string content = System.IO.File.ReadAllText(fullPath, readEncoding);
+
+                // Try to replace first N literal occurrences.
+                string? newContent = ReplaceFirstN(content, oldString, newString, count, out int replaced);
+                if (replaced == 0 && !exactMatch && count == 1) {
+                    // Fallback level 2: trimmed literal match (only meaningful for count==1).
+                    var trimmedOld = oldString.Trim();
+                    var trimmedNew = newString.Trim();
+                    if (!string.IsNullOrEmpty(trimmedOld)) {
+                        newContent = ReplaceFirstN(content, trimmedOld, trimmedNew, 1, out replaced);
+                    }
+                    if (replaced == 0) {
+                        // Fallback level 3: normalized whitespace match via DiffOps.
+                        var normResult = CefDotnetApp.AgentCore.Core.DiffOperations.ReplaceFullLinesText(content, oldString, newString, false);
+                        if (normResult.Success) {
+                            newContent = normResult.ResultContent;
+                            replaced = 1;
+                        }
+                    }
+                }
+
+                if (replaced == 0) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: oldString not found in {path}");
+                    return BoxedValue.From(false);
+                }
+
+                // When encoding is specified, use it for write as well.
+                // Otherwise, preserve original BOM state when overwriting existing file.
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                System.IO.File.WriteAllText(fullPath, newContent ?? content, writeEncoding);
+                return BoxedValue.From(true);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+
+        private static string ReplaceFirstN(string s, string oldValue, string newValue, int count, out int replaced)
+        {
+            replaced = 0;
+            if (string.IsNullOrEmpty(s) || string.IsNullOrEmpty(oldValue) || count <= 0) {
+                return s;
+            }
+            var sb = new StringBuilder();
+            int pos = 0;
+            while (replaced < count) {
+                int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
+                if (idx < 0) break;
+                sb.Append(s, pos, idx - pos);
+                sb.Append(newValue);
+                pos = idx + oldValue.Length;
+                ++replaced;
+            }
+            if (replaced == 0) {
+                return s;
+            }
+            if (pos < s.Length) sb.Append(s, pos, s.Length - pos);
+            return sb.ToString();
         }
     }
 

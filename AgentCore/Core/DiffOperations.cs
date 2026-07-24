@@ -42,7 +42,7 @@ namespace CefDotnetApp.AgentCore.Core
                     ? File.ReadAllLines(fullTargetPath, Encoding.UTF8)
                     : new string[0];
 
-                var hunks = ParseUnifiedDiff(diffContent);
+                var hunks = ParseUnifiedDiff(diffContent, fullTargetPath);
                 if (hunks.Count == 0)
                     return new DiffResult { Success = false, Error = "No valid hunks found in diff (only supports unified diff)", Library = "Basic" };
 
@@ -105,7 +105,7 @@ namespace CefDotnetApp.AgentCore.Core
                     ? File.ReadAllLines(fullTargetPath, Encoding.UTF8)
                     : new string[0];
 
-                var hunks = ParseUnifiedDiff(diffContent);
+                var hunks = ParseUnifiedDiff(diffContent, fullTargetPath);
                 if (hunks.Count == 0)
                     return new DiffResult { Success = false, Error = "No valid hunks found in diff (only supports unified diff)", Library = "Basic" };
 
@@ -164,98 +164,92 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Parse unified diff format and extract hunks
         /// </summary>
-        private static List<DiffHunk> ParseUnifiedDiff(string diffContent)
+        private static List<DiffHunk> ParseUnifiedDiff(string diffContent, string targetPath)
         {
             var hunks = new List<DiffHunk>();
             var lines = diffContent.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            bool currentFileMatchesTarget = true;
 
             for (int i = 0; i < lines.Length; i++) {
                 string line = lines[i];
 
+                if (TryGetUpdateFilePath(line, out string updateFilePath)) {
+                    currentFileMatchesTarget = IsTargetFileMatch(updateFilePath, targetPath);
+                    continue;
+                }
+
                 // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
                 // Allow empty hunk header @@ @@ (numbers optional) so LLM can emit headless @@ headers
                 var match = Regex.Match(line, @"^@@\s+(?:-?(\d+)(?:,(\d+))?\s+)?(?:\+?(\d+)(?:,(\d+))?\s+)?@@");
-                if (match.Success) {
-                    var hunk = new DiffHunk {
-                        OldStartLine = match.Groups[1].Success ? int.Parse(match.Groups[1].Value) - 1 : 0,
-                        OldLineCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0,
-                        NewStartLine = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) - 1 : 0,
-                        NewLineCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 0,
-                        Lines = new List<DiffLine>()
-                    };
+                if (!match.Success || !currentFileMatchesTarget)
+                    continue;
 
-                    // Collect hunk lines
-                    i++;
-                    while (i < lines.Length) {
-                        string hunkLine = lines[i];
-                        if (hunkLine.StartsWith("@@") || hunkLine.StartsWith("diff ") || hunkLine.StartsWith("index "))
+                var hunk = new DiffHunk {
+                    OldStartLine = match.Groups[1].Success ? int.Parse(match.Groups[1].Value) - 1 : 0,
+                    OldLineCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0,
+                    NewStartLine = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) - 1 : 0,
+                    NewLineCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 0,
+                    Lines = new List<DiffLine>()
+                };
+
+                // Collect only valid unified-diff application lines.
+                i++;
+                while (i < lines.Length) {
+                    string hunkLine = lines[i];
+                    if (IsHunkBoundary(hunkLine))
+                        break;
+
+                    if (hunkLine.Length == 0) {
+                        bool isEndOfHunk = i + 1 >= lines.Length || IsHunkBoundary(lines[i + 1].TrimStart());
+                        if (isEndOfHunk)
                             break;
 
-                        if (hunkLine.Length == 0) {
-                            // Empty line - need to determine if it's end of hunk or empty context line
-                            bool isEndOfHunk = false;
-                            if (i + 1 < lines.Length) {
-                                string nextLine = lines[i + 1].TrimStart();
-                                if (nextLine.StartsWith("@@") ||      // Next hunk
-                                    nextLine.StartsWith("diff ") ||   // Next file
-                                    nextLine.StartsWith("index ") ||  // Git index line
-                                    nextLine.StartsWith("---") ||     // File marker
-                                    nextLine.StartsWith("+++"))       // File marker
-                                {
-                                    isEndOfHunk = true;
-                                }
-                            }
-                            else {
-                                // Last line of diff - end of hunk
-                                isEndOfHunk = true;
-                            }
-
-                            if (isEndOfHunk) {
-                                // Empty line marks end of hunk
-                                break;
-                            }
-                            else {
-                                // Treat as empty context line (for compatibility with non-standard diffs)
-                                hunk.Lines.Add(new DiffLine {
-                                    Prefix = ' ',
-                                    Content = string.Empty
-                                });
-                                i++;
-                                continue;
-                            }
-                        }
-
-                        char prefix = hunkLine[0];
-                        string content = hunkLine.Length > 1 ? hunkLine.Substring(1) : string.Empty;
-
                         hunk.Lines.Add(new DiffLine {
-                            Prefix = prefix,
-                            Content = content
+                            Prefix = ' ',
+                            Content = string.Empty
                         });
-
                         i++;
+                        continue;
                     }
 
-                    hunks.Add(hunk);
-                    i--; // Back up one line
+                    char prefix = hunkLine[0];
+                    if (prefix == ' ' || prefix == '+' || prefix == '-') {
+                        hunk.Lines.Add(new DiffLine {
+                            Prefix = prefix,
+                            Content = hunkLine.Length > 1 ? hunkLine.Substring(1) : string.Empty
+                        });
+                    }
+
+                    i++;
                 }
+
+                hunks.Add(hunk);
+                i--;
             }
 
-            // Fallback (no @@ headers at all): treat +/-/space-prefixed lines as a single headless hunk
+            // Fallback: treat valid +/-/space-prefixed lines as one headless hunk.
             if (hunks.Count == 0) {
                 var fallbackLines = new List<DiffLine>();
-                foreach (string l in lines) {
-                    if (l.Length == 0)
+                bool fallbackFileMatchesTarget = true;
+
+                foreach (string line in lines) {
+                    if (TryGetUpdateFilePath(line, out string updateFilePath)) {
+                        fallbackFileMatchesTarget = IsTargetFileMatch(updateFilePath, targetPath);
                         continue;
-                    if (l.StartsWith("@@") || l.StartsWith("diff ") || l.StartsWith("index ")
-                        || l.StartsWith("---") || l.StartsWith("+++"))
+                    }
+
+                    if (!fallbackFileMatchesTarget || line.Length == 0 || IsHunkBoundary(line))
                         continue;
-                    char prefix = l[0];
-                    if (prefix != '+' && prefix != '-' && prefix != ' ')
-                        continue;
-                    string content = l.Length > 1 ? l.Substring(1) : string.Empty;
-                    fallbackLines.Add(new DiffLine { Prefix = prefix, Content = content });
+
+                    char prefix = line[0];
+                    if (prefix == '+' || prefix == '-' || prefix == ' ') {
+                        fallbackLines.Add(new DiffLine {
+                            Prefix = prefix,
+                            Content = line.Length > 1 ? line.Substring(1) : string.Empty
+                        });
+                    }
                 }
+
                 if (fallbackLines.Count > 0) {
                     hunks.Add(new DiffHunk {
                         OldStartLine = 0,
@@ -269,6 +263,58 @@ namespace CefDotnetApp.AgentCore.Core
 
             return hunks;
         }
+
+        private static bool TryGetUpdateFilePath(string line, out string filePath)
+        {
+            const string singleStarPrefix = "* Update File:";
+            const string tripleStarPrefix = "*** Update File:";
+
+            string prefix = line.StartsWith(tripleStarPrefix, StringComparison.Ordinal)
+                ? tripleStarPrefix
+                : line.StartsWith(singleStarPrefix, StringComparison.Ordinal)
+                    ? singleStarPrefix
+                    : string.Empty;
+
+            if (prefix.Length > 0) {
+                filePath = line.Substring(prefix.Length).Trim().Trim('"');
+                return filePath.Length > 0;
+            }
+
+            filePath = string.Empty;
+            return false;
+        }
+
+        private static bool IsTargetFileMatch(string diffFilePath, string targetPath)
+        {
+            string normalizedDiffPath = diffFilePath.Replace('\\', '/').TrimEnd('/');
+            string normalizedTargetPath = targetPath.Replace('\\', '/').TrimEnd('/');
+
+            if (string.Equals(normalizedDiffPath, normalizedTargetPath, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return !Path.IsPathRooted(diffFilePath)
+                && normalizedTargetPath.EndsWith("/" + normalizedDiffPath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsHunkBoundary(string line)
+        {
+            return line.StartsWith("@@")
+                || line.StartsWith("diff ")
+                || line.StartsWith("index ")
+                || line.StartsWith("---")
+                || line.StartsWith("+++")
+                || line.StartsWith("* Begin Patch")
+                || line.StartsWith("*** Begin Patch")
+                || line.StartsWith("* Update File:")
+                || line.StartsWith("*** Update File:")
+                || line.StartsWith("* Delete File:")
+                || line.StartsWith("*** Delete File:")
+                || line.StartsWith("* Add File:")
+                || line.StartsWith("*** Add File:")
+                || line.StartsWith("* End Patch")
+                || line.StartsWith("*** End Patch");
+        }
+
         private static DiffHunkResult ApplyHunk(List<string> lines, DiffHunk hunk, bool exactMatch = false)
         {
             var result = new DiffHunkResult {

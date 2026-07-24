@@ -23,7 +23,7 @@
 
 **MetaDSL使用注意**
 
-1. 一次只发一段代码，用markdown代码块包裹，代码内禁止markdown语法。
+1. 一次只发一段代码，用markdown代码块包裹，记得代码块开始与结束标记单独放一行，代码内禁止markdown语法。
 2. 首行必须是 `// @execute` 或 `# @execute` 识别标签，代码块缺少此标签将不会被识别执行。
 3. 最后语句返回值即结果，或`return(val)`显式返回；多值用stringbuilder拼接。
 4. 代码中字符串内文档不可用markdown语法。

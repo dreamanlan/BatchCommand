@@ -178,9 +178,10 @@ namespace CefDotnetApp.AgentCore.Core
                     continue;
                 }
 
-                // Match hunk header: @@ -old_start,old_count +new_start,new_count @@
-                // Allow empty hunk header @@ @@ (numbers optional) so LLM can emit headless @@ headers
-                var match = Regex.Match(line, @"^@@\s+(?:-?(\d+)(?:,(\d+))?\s+)?(?:\+?(\d+)(?:,(\d+))?\s+)?@@");
+                // Match hunk header: @@ -old_start,old_count +new_start,new_count @@.
+                // Also allow headless @@ and @@ @@ headers.
+                var match = Regex.Match(line, @"^(?:@@\s*$|@@\s+@@\s*$|@@\s+-?(\d+)(?:,(\d+))?\s+\+?(\d+)(?:,(\d+))?\s+@@.*$)");
+
                 if (!match.Success || !currentFileMatchesTarget)
                     continue;
 
@@ -189,6 +190,7 @@ namespace CefDotnetApp.AgentCore.Core
                     OldLineCount = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0,
                     NewStartLine = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) - 1 : 0,
                     NewLineCount = match.Groups[4].Success ? int.Parse(match.Groups[4].Value) : 0,
+                    HasLineNumbers = match.Groups[1].Success,
                     Lines = new List<DiffLine>()
                 };
 
@@ -256,6 +258,7 @@ namespace CefDotnetApp.AgentCore.Core
                         OldLineCount = 0,
                         NewStartLine = 0,
                         NewLineCount = 0,
+                        HasLineNumbers = false,
                         Lines = fallbackLines
                     });
                 }
@@ -326,12 +329,13 @@ namespace CefDotnetApp.AgentCore.Core
                 int startIndex = hunk.OldStartLine;  // Already 0-based
 
                 // Find match using context + removed lines
-                int matchedIndex = FindContextMatch(lines, startIndex, hunk, exactMatch);
+                int matchedIndex = FindContextMatch(lines, startIndex, hunk, exactMatch, out string matchError);
                 if (matchedIndex < 0) {
                     result.Success = false;
-                    result.Error = "Context mismatch";
+                    result.Error = matchError;
                     return result;
                 }
+
 
                 // Record corrected line number if it differs from the specified one
                 int corrected1Based = matchedIndex + 1;
@@ -415,8 +419,10 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Find the best match for original lines (context + removed) in the file
         /// </summary>
-        private static int FindContextMatch(List<string> lines, int expectedIndex, DiffHunk hunk, bool exactMatch = false)
+        private static int FindContextMatch(List<string> lines, int expectedIndex, DiffHunk hunk, bool exactMatch, out string matchError)
         {
+            matchError = "Context mismatch";
+
             // Build the list of original lines that should exist in the file
             var originalLines = hunk.Lines
                 .Where(l => l.Prefix == ' ' || l.Prefix == '-')
@@ -424,6 +430,11 @@ namespace CefDotnetApp.AgentCore.Core
                 .ToList();
 
             if (originalLines.Count == 0) {
+                if (!hunk.HasLineNumbers) {
+                    matchError = "Headless hunk requires context or removed lines to determine a unique insertion position";
+                    return -1;
+                }
+
                 // For pure insertion (no context, no removed lines)
                 // Insert at expected position, or at file end if beyond range
                 if (expectedIndex < 0)
@@ -431,6 +442,25 @@ namespace CefDotnetApp.AgentCore.Core
                 if (expectedIndex > lines.Count)
                     return lines.Count; // Insert at end
                 return expectedIndex;
+            }
+
+            if (!hunk.HasLineNumbers) {
+                var matches = new List<int>();
+                for (int i = 0; i <= lines.Count - originalLines.Count; i++) {
+                    if (TryMatchAt(lines, i, originalLines, exactMatch)) {
+                        matches.Add(i);
+                        if (matches.Count > 1) {
+                            matchError = "Headless hunk context is ambiguous";
+                            return -1;
+                        }
+                    }
+                }
+
+                if (matches.Count == 1)
+                    return matches[0];
+
+                matchError = "Headless hunk context not found";
+                return -1;
             }
 
             // Try match at expected position
@@ -1328,7 +1358,9 @@ namespace CefDotnetApp.AgentCore.Core
         public int OldLineCount { get; set; }
         public int NewStartLine { get; set; }
         public int NewLineCount { get; set; }
+        public bool HasLineNumbers { get; set; } = true;
         public List<DiffLine> Lines { get; set; } = new List<DiffLine>();
+
     }
 
     public class DiffLine

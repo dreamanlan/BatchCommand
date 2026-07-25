@@ -117,20 +117,40 @@ __string_end__
 **命令执行**
 
 同步：`execute_command(command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)];`
-异步：`execute_command_async("callback", command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)];`
+异步：`execute_command_callback('command_callback', command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)];`
+bindings与delimiter部分可省略，用法与脚本执行api相同。
 
 ```
 // @execute
 set_env("ProjectDirectory", agent_get_project_dir(9527));
 execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
 ```
+如果是多行命令可以考虑用[[与]]来包裹命令字符串，这样不用写转义符【更复杂命令可用`@@delimiter(string, "begin", "end")`自定义】
 
 **脚本执行**
 
-同步：`execute_script([language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
-异步：`execute_script_async("callback"[, language, workingDir, timeout])[bindings(...)delimiter(begin,end)]{: code :};`
+同步：`execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
+异步：`execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; - async exec, result via command_callback.`
+bindings与delimiter部分可省略。bindings指定脚本里通过模板语法引用的MetaDSL变量; delimiter指定脚本里模板语法的分隔符，每个分隔符约定2个字符，通常使用默认即可。
+默认的模板代码分隔符是 `{%{{{#` 和 `%}}}#}`; 其中指定3组分隔符，每组2个字符, {% %} 与 {{ }} 是模板变量括弧, {# #} 用于模板代码注释.
 
+```
+// @execute
+execute_script("python", "E:/tmp", 30000){:
+print("hello from python")
+:};
+```
 外部脚本默认用`{: :}`，冲突时用`@@delimiter(script, "begin", "end")`自定义。
+需要指明命令行选项时可以使用额外的cmd_and_args_str参数提供（以-或/开头时只有选项不含命令路径）：
+
+```
+// @execute
+$info = "hello from PowerShell 5.1 with arguments";
+$result = execute_script("powershell", "E:/tmp", 30000, "-NoProfile -ExecutionPolicy Bypass")bindings($info){:
+Write-Output "{{ $info }}"
+:};
+return(to_string($result));
+```
 
 *注意*
 外部脚本括号分隔符专用于外部脚本，只有特定api支持，不像字符串引号分隔符可用在所有字符串能用的地方。
@@ -153,12 +173,15 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 **其它工具**
 
-- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`todo.txt`/`context.txt`/`plan.txt`等状态文件
+- `agent_get_project_identity(9527)` — 项目标识
+- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`todo.txt`/`context.txt`/`plan.txt`/`project_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看行号与缩进信息
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
 - `grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])` - 搜索多个文件内容
-- `agent_get_project_identity(9527)` — 项目标识
+- `string_join(sep, list) - 将list中的元素用sep分隔符连接成字符串
+- `string_split(str, sep) - 将str按照sep分隔符分割成list`
+- `calc_md5(path)` - 计算文件的md5值
 - skill目录：`list_dirs(combine_path(basepath, "skills"))`
 
 **语义/关键词搜索**
@@ -196,6 +219,24 @@ to_pretty_string($query_result);
 // @execute
 format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_identity(9527),appdir,basepath,ismac);
 ```
+
+##特别关注
+
+你可以发下面metadsl代码块请求来生成最新的对话历史信息(不要太频繁)
+// @execute
+js_request:keep_llm_context
+
+如果计划工作全部完成或者阶段工作完成需要用户验证，你可以发下面指令停止agent的计划提醒
+// @execute
+js_request:stop_agent
+
+用户确认后，你可以再发下面指令启动agent的计划提醒
+// @execute
+js_request:start_agent
+
+**切记：metadsl代码要放在 Markdown 代码块中；一次对话只发一个 metadsl 代码块；并且每个语句以分号结束**
+
+**切记：js_request请求代码也要放在 Markdown 代码块中；一个代码块只能包含一个指令，一次对话只发一个指令；js_request不是metadsl代码，不要与其它metadsl代码混在一起**
 
 ****强调****
 本智能体通过metadsl代码块执行文件读写、命令执行等操作，不要使用tool协议来完成这些功能。

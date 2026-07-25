@@ -41,16 +41,17 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // replace_in_file_with_count(path, oldString, newString, count[, replaceAll[, exactMatch[, encoding]]])
-    // Replace first N literal occurrences. count <= 0 does not modify the file and returns false.
-    // The replaceAll parameter is kept for position parity with replace_in_file but is ignored when count > 0.
-    // exactMatch=true: only exact literal match is attempted; false: falls back to trimmed / normalized-whitespace match on the first occurrence when count=1.
+    // replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]])
+    // Skip the first skipCount literal matches, then replace the next count literal occurrences.
+    // count <= 0 does not modify the file and returns false. skipCount < 0 is treated as 0.
+    // exactMatch=true: only exact literal match is attempted; when skipCount==0 && count==1 && !exactMatch,
+    // it falls back to trimmed / normalized-whitespace match on the first occurrence.
     sealed class ReplaceInFileWithCountExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count < 4 || operands.Count > 7) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, replaceAll[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]]), aliased as string_replace_in_file_with_count");
                 return BoxedValue.From(false);
             }
 
@@ -59,7 +60,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 int count = operands[3].GetInt();
-                // operands[4] (replaceAll) intentionally ignored when count > 0; read to keep parameter parity.
+                int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
+                if (skipCount < 0) skipCount = 0;
                 bool exactMatch = operands.Count > 5 ? operands[5].GetBool() : false;
                 Encoding? encoding = operands.Count > 6 ? GetEncoding(operands[6]) : null;
 
@@ -81,14 +83,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 var readEncoding = encoding ?? Encoding.UTF8;
                 string content = System.IO.File.ReadAllText(fullPath, readEncoding);
 
-                // Try to replace first N literal occurrences.
-                string? newContent = ReplaceFirstN(content, oldString, newString, count, out int replaced);
-                if (replaced == 0 && !exactMatch && count == 1) {
-                    // Fallback level 2: trimmed literal match (only meaningful for count==1).
+                // Skip skipCount literal matches, then replace next count literal occurrences.
+                string? newContent = ReplaceRange(content, oldString, newString, skipCount, count, out int replaced);
+                if (replaced == 0 && !exactMatch && skipCount == 0 && count == 1) {
+                    // Fallback level 2: trimmed literal match (only meaningful for skipCount==0 && count==1).
                     var trimmedOld = oldString.Trim();
                     var trimmedNew = newString.Trim();
                     if (!string.IsNullOrEmpty(trimmedOld)) {
-                        newContent = ReplaceFirstN(content, trimmedOld, trimmedNew, 1, out replaced);
+                        newContent = ReplaceRange(content, trimmedOld, trimmedNew, 0, 1, out replaced);
                     }
                     if (replaced == 0) {
                         // Fallback level 3: normalized whitespace match via DiffOps.
@@ -117,14 +119,24 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
 
-        private static string ReplaceFirstN(string s, string oldValue, string newValue, int count, out int replaced)
+        private static string ReplaceRange(string s, string oldValue, string newValue, int skipCount, int count, out int replaced)
         {
             replaced = 0;
             if (string.IsNullOrEmpty(s) || string.IsNullOrEmpty(oldValue) || count <= 0) {
                 return s;
             }
-            var sb = new StringBuilder();
+            if (skipCount < 0) skipCount = 0;
             int pos = 0;
+            int skipped = 0;
+            // Skip the first skipCount matches without touching them.
+            while (skipped < skipCount) {
+                int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
+                if (idx < 0) return s;
+                pos = idx + oldValue.Length;
+                ++skipped;
+            }
+            var sb = new StringBuilder();
+            sb.Append(s, 0, pos);
             while (replaced < count) {
                 int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
                 if (idx < 0) break;

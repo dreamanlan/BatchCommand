@@ -71,6 +71,8 @@ namespace CefDotnetApp.AgentCore.Core
                         };
                     }
 
+                    process.WaitForExit();
+                    endTime = DateTime.Now;
                     return new ProcessResult {
                         Success = process.ExitCode == 0,
                         ExitCode = process.ExitCode,
@@ -113,33 +115,39 @@ namespace CefDotnetApp.AgentCore.Core
                 var errorBuilder = new StringBuilder();
 
                 using (var process = new Process { StartInfo = processInfo }) {
+                    var exitedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var outputCompletedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    var errorCompletedTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     process.OutputDataReceived += (sender, e) => {
                         if (e.Data != null)
                             outputBuilder.AppendLine(e.Data);
+                        else
+                            outputCompletedTcs.TrySetResult(true);
                     };
 
                     process.ErrorDataReceived += (sender, e) => {
                         if (e.Data != null)
                             errorBuilder.AppendLine(e.Data);
+                        else
+                            errorCompletedTcs.TrySetResult(true);
                     };
+
+                    process.Exited += (sender, args) => exitedTcs.TrySetResult(true);
 
                     var startTime = DateTime.Now;
                     process.Start();
+                    process.EnableRaisingEvents = true;
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
 
-                    var tcs = new TaskCompletionSource<bool>();
-                    process.EnableRaisingEvents = true;
-                    process.Exited += (sender, args) => tcs.TrySetResult(true);
-
                     using (cancellationToken.Register(() => {
-                        tcs.TrySetCanceled();
+                        exitedTcs.TrySetCanceled();
                         try { process.Kill(); } catch { }
                     })) {
-                        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs, cancellationToken));
+                        var completedTask = await Task.WhenAny(exitedTcs.Task, Task.Delay(timeoutMs, cancellationToken));
                         var endTime = DateTime.Now;
 
-                        if (completedTask != tcs.Task) {
+                        if (completedTask != exitedTcs.Task || exitedTcs.Task.IsCanceled) {
                             try { process.Kill(); } catch { }
                             return new ProcessResult {
                                 Success = false,
@@ -150,6 +158,8 @@ namespace CefDotnetApp.AgentCore.Core
                             };
                         }
 
+                        await Task.WhenAll(outputCompletedTcs.Task, errorCompletedTcs.Task);
+                        endTime = DateTime.Now;
                         return new ProcessResult {
                             Success = process.ExitCode == 0,
                             ExitCode = process.ExitCode,

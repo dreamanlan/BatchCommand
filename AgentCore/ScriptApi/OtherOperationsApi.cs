@@ -1262,21 +1262,31 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             return BoxedValue.FromString(sb.ToString());
         }
     }
-    // string_replace_with_count(str, oldValue, newValue, count) - replace first N occurrences
+    // string_replace_with_count(str, oldValue, newValue, count[, skipCount]) - skip first skipCount matches, then replace next N occurrences
     internal sealed class StringReplaceWithCountExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count != 4)
-                throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count) (alias: stringreplacewithcount)");
+            if (operands.Count < 4 || operands.Count > 5)
+                throw new Exception("Expected: string_replace_with_count(str, oldValue, newValue, count[, skipCount]) (alias: stringreplacewithcount)");
             string s = operands[0].AsString ?? string.Empty;
             string oldValue = operands[1].AsString ?? string.Empty;
             string newValue = operands[2].AsString ?? string.Empty;
             int count = operands[3].GetInt();
+            int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
+            if (skipCount < 0) skipCount = 0;
             if (string.IsNullOrEmpty(oldValue) || count <= 0)
                 return BoxedValue.FromString(s);
-            var sb = new StringBuilder();
             int pos = 0;
+            int skipped = 0;
+            while (skipped < skipCount) {
+                int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);
+                if (idx < 0) return BoxedValue.FromString(s);
+                pos = idx + oldValue.Length;
+                ++skipped;
+            }
+            var sb = new StringBuilder();
+            sb.Append(s, 0, pos);
             int replaced = 0;
             while (replaced < count) {
                 int idx = s.IndexOf(oldValue, pos, StringComparison.Ordinal);

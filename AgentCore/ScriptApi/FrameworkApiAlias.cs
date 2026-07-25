@@ -169,6 +169,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("join_string", "join_string(sep,list)", new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_join", "str_join(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("join_str", "join_str(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("list_join", "list_join(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("join_list", "join_list(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("array_join", "array_join(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("join_array", "join_array(sep,list)", false, new ExpressionFactoryHelper<StringJoinExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("string_split", "string_split(str, sep) or string_split(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("split_string", "split_string(str, sep) or split_string(str,sep_list)", new ExpressionFactoryHelper<StringSplitExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("str_split", "str_split(str, sep) or str_split(str,sep_list)", false, new ExpressionFactoryHelper<StringSplitExp>());

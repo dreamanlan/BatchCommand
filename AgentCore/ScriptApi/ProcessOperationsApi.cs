@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 using AgentPlugin.Abstractions;
 using System.Collections.Generic;
 using DotnetStoryScript;
@@ -46,7 +47,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         protected override bool Load(Dsl.FunctionData callData)
         {
             if (NeedExternScript) {
-                callData = callData.ThisOrLowerOrderBody;
+                m_Script = callData.GetParamId(0);
+                callData = callData.ThisOrLowerOrderCall;
             }
             for (int i = 0; i < callData.GetParamNum(); ++i) {
                 Dsl.ISyntaxComponent param = callData.GetParam(i);
@@ -113,21 +115,27 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         {
             string cmd = string.Empty;
             string args = string.Empty;
+            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
             if (ext == ".py") {
-                cmd = "python";
-                args = "-File " + file;
+                cmd = isWindows ? "python" : "python3";
+                args = file;
             }
             else if (ext == ".sh") {
-                cmd = "sh";
+                cmd = "bash";
                 args = file;
             }
             else if (ext == ".ps1") {
-                cmd = "powershell";
+                cmd = isWindows ? "powershell" : "pwsh";
                 args = "-File " + file;
             }
-            else {
+            else if (ext == ".bat" || ext == ".cmd") {
+                if (!isWindows)
+                    throw new PlatformNotSupportedException("BAT and CMD scripts are only supported on Windows.");
                 cmd = "cmd";
                 args = "/c " + file;
+            }
+            else {
+                throw new NotSupportedException("Unsupported script extension: " + ext);
             }
             if (!string.IsNullOrEmpty(cmdAndArgs)) {
                 string trimmedCmdAndArgs = cmdAndArgs.Trim();
@@ -253,11 +261,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
-            if (operands.Count > 3) {
+            if (operands.Count > 4) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
                 return BoxedValue.NullObject;
             }
@@ -273,9 +281,32 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.NullObject;
                 }
 
-                var script = TrimScriptBlankLines(ApplyTemplate(m_Script, bindingVals));
+                var rawScript = m_Script ?? string.Empty;
+                var templatedScript = ApplyTemplate(rawScript, bindingVals);
+                var script = TrimScriptBlankLines(templatedScript);
                 string file = ProcessOperations.GetUniqueRandomFilePath(ext);
+                try {
+                    var operandText = new StringBuilder();
+                    for (int i = 0; i < operands.Count; ++i) {
+                        if (i > 0)
+                            operandText.Append(" | ");
+                        operandText.Append(operands[i].ToString());
+                    }
+                    string preview = script.Replace("\r", "\\r").Replace("\n", "\\n");
+                    if (preview.Length > 500)
+                        preview = preview.Substring(0, 500);
+                    File.AppendAllText("E:/tmp/execute_script_diagnostic.log",
+                        $"before_write raw_length={rawScript.Length} template_length={templatedScript.Length} script_length={script.Length} operands_count={operands.Count} operands={operandText} file={file} preview={preview}{Environment.NewLine}");
+                }
+                catch {
+                }
                 File.WriteAllText(file, script);
+                try {
+                    File.AppendAllText("E:/tmp/execute_script_diagnostic.log",
+                        $"after_write file_length={new FileInfo(file).Length}{Environment.NewLine}");
+                }
+                catch {
+                }
 
                 var (command, arguments) = BuildScriptCommand(ext, file, cmdAndArgs);
                 ProcessResult result;
@@ -291,7 +322,13 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     ["exitCode"] = result.ExitCode,
                     ["output"] = result.Output,
                     ["error"] = result.Error,
-                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds
+                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds,
+                    ["diagnosticRawLength"] = rawScript.Length,
+                    ["diagnosticTemplateLength"] = templatedScript.Length,
+                    ["diagnosticScriptLength"] = script.Length,
+                    ["diagnosticScriptPreview"] = script.Length > 500 ? script.Substring(0, 500) : script,
+                    ["diagnosticTempFile"] = file,
+                    ["diagnosticBuildMarker"] = $"{typeof(ExecuteScriptExp).Assembly.FullName}|{typeof(ExecuteScriptExp).Assembly.Location}"
                 };
 
                 return BoxedValue.FromObject(dict);
@@ -307,11 +344,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     sealed class ExecuteScriptCallbackExp : ProcessCommandExpBase
     {
         protected override bool NeedExternScript => true;
-        protected override string UsageHint => "execute_script_callback(callbackMsg[, language, workingDir, timeout_def_30000ms, cmd_and_args])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
+        protected override string UsageHint => "execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :};";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
-            if (operands.Count < 1 || operands.Count > 4) {
+            if (operands.Count < 1 || operands.Count > 5) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: " + UsageHint);
                 return BoxedValue.FromString("error: invalid arguments");
             }
@@ -387,7 +424,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Execute command asynchronously with callback via command_callback CEF message
     sealed class ExecuteCommandCallbackExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command_callback(callbackMsg, command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command_callback('command_callback', command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {

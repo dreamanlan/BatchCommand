@@ -409,7 +409,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     ["exitCode"] = result.ExitCode,
                     ["output"] = result.Output,
                     ["error"] = result.Error,
-                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds
+                    ["executionTime"] = result.ExecutionTime.TotalMilliseconds,
+                    ["diagnosticBuildMarker"] = $"{typeof(ExecuteScriptExp).Assembly.FullName}|{typeof(ExecuteScriptExp).Assembly.Location}"
                 };
 
                 return BoxedValue.FromObject(dict);

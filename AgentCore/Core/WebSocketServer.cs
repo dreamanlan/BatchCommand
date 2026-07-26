@@ -187,11 +187,27 @@ namespace CefDotnetApp.AgentCore.Core
 
                     var context = await _listener.GetContextAsync();
 
-                    if (context.Request.IsWebSocketRequest)
+                    // Handle Private Network Access (PNA) preflight - Chromium 130+ enforces this
+                    // When a page from file:// or https:// connects to http://localhost, Chromium sends
+                    // an OPTIONS preflight with Access-Control-Request-Private-Network: true
+                    if (context.Request.HttpMethod == "OPTIONS" &&
+                        context.Request.Headers["Access-Control-Request-Private-Network"] == "true")
+                    {
+                        string? origin = context.Request.Headers["Origin"];
+                        AgentCore.Instance.Logger.Info($"PNA preflight from origin: {origin}");
+                        context.Response.StatusCode = 204;
+                        context.Response.Headers.Add("Access-Control-Allow-Origin", origin ?? "*");
+                        context.Response.Headers.Add("Access-Control-Allow-Private-Network", "true");
+                        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Upgrade, Connection, Sec-WebSocket-Key, Sec-WebSocket-Version");
+                        context.Response.Close();
+                    }
+                    else if (context.Request.IsWebSocketRequest)
                     {
                         // Validate Origin header - only allow localhost/known connections
                         string? origin = context.Request.Headers["Origin"];
                         if (!string.IsNullOrEmpty(origin) &&
+                            !string.Equals(origin, "null", StringComparison.OrdinalIgnoreCase) && // file:// protocol sends Origin: null
                             !origin.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase) &&
                             !origin.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase) &&
                             !origin.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&

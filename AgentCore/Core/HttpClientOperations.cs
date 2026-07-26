@@ -13,7 +13,7 @@ namespace CefDotnetApp.AgentCore.Core
 {
     public class HttpClientOperations
     {
-        private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7559.172 Safari/537.36";
+        private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.187 Safari/537.36";
 
         private readonly HttpClient _httpClient;
         private readonly Dictionary<string, string> _defaultHeaders;

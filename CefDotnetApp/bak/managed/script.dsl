@@ -71,7 +71,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 	$cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
 
 	// Override user-agent-product to look like standard Chrome
-	$cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/144.0.7559.172");
+	$cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
 
 	$platform = osplatform();
 	nativelog("[dsl] on_before_command_line_processing platform:{0}", $platform);

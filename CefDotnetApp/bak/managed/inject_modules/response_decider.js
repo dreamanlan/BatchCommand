@@ -111,10 +111,13 @@ class ResponseDecider {
         if (this.containsAny(msg, 'sleep(')) {
           return { action: 'skip', reason: 'sleep submitted' };
         }
-        return {
-          action: 'reply',
-          text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
-        };
+        if (this.containsAll(msg, '```')) {
+          return {
+            action: 'reply',
+            text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
+          };
+        }
+        return { action: 'skip', reason: 'metadsl submitted' };
       }
 
       // Default for lastFromLLM=true: trigger planning (DSL checks plan.txt existence)

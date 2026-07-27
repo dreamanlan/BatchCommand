@@ -570,6 +570,25 @@ class LLMPageAdapter extends PageAdapter {
     return null;
   }
 
+  _makeFence(content) {
+    // CommonMark fenced code block rule: a closing fence must use the SAME
+    // char as the opening fence AND be at least as long as it. So to safely
+    // wrap content that itself contains backtick runs (e.g. a rendered block
+    // whose text has ``` inside), the outer fence must be LONGER than the
+    // longest backtick run in the content. We keep using backticks (never
+    // switch to ~~~): a 4+ backtick fence still contains the "```" substring,
+    // so downstream loose checks like containsAll('```') keep working and
+    // never need to also detect ~~~.
+    let max = 0;
+    const runs = String(content).match(/`+/g);
+    if (runs) {
+      for (const r of runs) {
+        if (r.length > max) max = r.length;
+      }
+    }
+    return '`'.repeat(Math.max(3, max + 1));
+  }
+
   _domToMarkdown(node) {
     if (!node) return '';
     const NL = '\n';
@@ -611,10 +630,17 @@ class LLMPageAdapter extends PageAdapter {
               lang = 'mermaid';
             }
           }
-          return NL + '```' + lang + NL + text.replace(/\n+$/, '') + NL + '```' + NL;
+          const body = text.replace(/\n+$/, '');
+          const fence = this._makeFence(body);
+          // Info string on a backtick fence must not itself contain backticks.
+          const safeLang = (lang || '').replace(/`/g, '');
+          return NL + fence + safeLang + NL + body + NL + fence + NL;
         }
-        case 'svg':
-          return NL + '```svg' + NL + (n.outerHTML || '') + NL + '```' + NL;
+        case 'svg': {
+          const svgBody = n.outerHTML || '';
+          const svgFence = this._makeFence(svgBody);
+          return NL + svgFence + 'svg' + NL + svgBody + NL + svgFence + NL;
+        }
         case 'a': {
           const href = n.getAttribute('href') || '';
           const txt = inner() || href;

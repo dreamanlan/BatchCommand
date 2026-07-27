@@ -111,7 +111,12 @@ class ResponseDecider {
         if (this.containsAny(msg, 'sleep(')) {
           return { action: 'skip', reason: 'sleep submitted' };
         }
-        if (this.containsAll(msg, '```')) {
+        // Trigger the syntax reminder only when a code fence (```) appears
+        // BEFORE the @execute marker, i.e. the @execute block is wrapped in a
+        // markdown code fence. A fence located after @execute does not count.
+        const fenceIdx = msg.indexOf('```');
+        const execIdx = msg.indexOf('@execute');
+        if (fenceIdx >= 0 && execIdx >= 0 && fenceIdx < execIdx) {
           return {
             action: 'reply',
             text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,

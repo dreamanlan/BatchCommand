@@ -559,32 +559,20 @@ namespace BatchCommand
                     m_EndFirst = c2[0];
                     m_EndSecond = c2[1];
 
-                    m_BeginFirst2 = m_BeginFirst;
-                    m_BeginSecond2 = m_BeginSecond;
-                    m_EndFirst2 = m_EndFirst;
-                    m_EndSecond2 = m_EndSecond;
-
                     m_CommentBeginFirst = '\0';
                     m_CommentBeginSecond = '\0';
                     m_CommentEndFirst = '\0';
                     m_CommentEndSecond = '\0';
                 }
                 if (c1.Length >= 4 && c2.Length >= 4) {
-                    m_BeginFirst2 = c1[2];
-                    m_BeginSecond2 = c1[3];
-                    m_EndFirst2 = c2[2];
-                    m_EndSecond2 = c2[3];
-                }
-                if (c1.Length >= 6 && c2.Length >= 6) {
-                    m_CommentBeginFirst = c1[4];
-                    m_CommentBeginSecond = c1[5];
-                    m_CommentEndFirst = c2[4];
-                    m_CommentEndSecond = c2[5];
+                    m_CommentBeginFirst = c1[2];
+                    m_CommentBeginSecond = c1[3];
+                    m_CommentEndFirst = c2[2];
+                    m_CommentEndSecond = c2[3];
                 }
             }
             Console.Write(BlockExp.CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
                 , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
-                , m_BeginFirst2, m_BeginSecond2, m_EndFirst2, m_EndSecond2
                 , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
             return BoxedValue.NullObject;
         }
@@ -603,6 +591,10 @@ namespace BatchCommand
             return true;
         }
 
+        /// <summary>
+        /// When beginChars/endChars are empty, uses default delimiters {%..%} {#..#}.
+        /// beginChars/endChars format: 2 chars = primary delimiter, 4 chars = primary+comment delimiters.
+        /// </summary>
         private IExpression m_BeginChars = null;
         private IExpression m_EndChars = null;
 
@@ -613,10 +605,6 @@ namespace BatchCommand
         private char m_BeginSecond = BlockExp.c_BeginSecond;
         private char m_EndFirst = BlockExp.c_EndFirst;
         private char m_EndSecond = BlockExp.c_EndSecond;
-        private char m_BeginFirst2 = BlockExp.c_BeginFirst2;
-        private char m_BeginSecond2 = BlockExp.c_BeginSecond2;
-        private char m_EndFirst2 = BlockExp.c_EndFirst2;
-        private char m_EndSecond2 = BlockExp.c_EndSecond2;
         private char m_CommentBeginFirst = BlockExp.c_CommentBeginFirst;
         private char m_CommentBeginSecond = BlockExp.c_CommentBeginSecond;
         private char m_CommentEndFirst = BlockExp.c_CommentEndFirst;
@@ -636,32 +624,20 @@ namespace BatchCommand
                     m_EndFirst = c2[0];
                     m_EndSecond = c2[1];
 
-                    m_BeginFirst2 = m_BeginFirst;
-                    m_BeginSecond2 = m_BeginSecond;
-                    m_EndFirst2 = m_EndFirst;
-                    m_EndSecond2 = m_EndSecond;
-
                     m_CommentBeginFirst = '\0';
                     m_CommentBeginSecond = '\0';
                     m_CommentEndFirst = '\0';
                     m_CommentEndSecond = '\0';
                 }
                 if (c1.Length >= 4 && c2.Length >= 4) {
-                    m_BeginFirst2 = c1[2];
-                    m_BeginSecond2 = c1[3];
-                    m_EndFirst2 = c2[2];
-                    m_EndSecond2 = c2[3];
-                }
-                if (c1.Length >= 6 && c2.Length >= 6) {
-                    m_CommentBeginFirst = c1[4];
-                    m_CommentBeginSecond = c1[5];
-                    m_CommentEndFirst = c2[4];
-                    m_CommentEndSecond = c2[5];
+                    m_CommentBeginFirst = c1[2];
+                    m_CommentBeginSecond = c1[3];
+                    m_CommentEndFirst = c2[2];
+                    m_CommentEndSecond = c2[3];
                 }
             }
             return BoxedValue.From(CalcBlockString(m_Block, Calculator, m_OutputBuilder, m_TempBuilder
                 , m_BeginFirst, m_BeginSecond, m_EndFirst, m_EndSecond
-                , m_BeginFirst2, m_BeginSecond2, m_EndFirst2, m_EndSecond2
                 , m_CommentBeginFirst, m_CommentBeginSecond, m_CommentEndFirst, m_CommentEndSecond));
         }
         protected override bool Load(Dsl.FunctionData funcData)
@@ -679,6 +655,10 @@ namespace BatchCommand
             return true;
         }
 
+        /// <summary>
+        /// When beginChars/endChars are empty, uses default delimiters {%..%} {#..#}.
+        /// beginChars/endChars format: 2 chars = primary delimiter, 4 chars = primary+comment delimiters.
+        /// </summary>
         private IExpression m_BeginChars = null;
         private IExpression m_EndChars = null;
 
@@ -689,10 +669,6 @@ namespace BatchCommand
         private char m_BeginSecond = c_BeginSecond;
         private char m_EndFirst = c_EndFirst;
         private char m_EndSecond = c_EndSecond;
-        private char m_BeginFirst2 = c_BeginFirst2;
-        private char m_BeginSecond2 = c_BeginSecond2;
-        private char m_EndFirst2 = c_EndFirst2;
-        private char m_EndSecond2 = c_EndSecond2;
         private char m_CommentBeginFirst = c_CommentBeginFirst;
         private char m_CommentBeginSecond = c_CommentBeginSecond;
         private char m_CommentEndFirst = c_CommentEndFirst;
@@ -700,7 +676,6 @@ namespace BatchCommand
 
         internal static string CalcBlockString(string block, DslCalculator calculator, StringBuilder outputBuilder, StringBuilder tempBuilder
             , char beginFirst, char beginSecond, char endFirst, char endSecond
-            , char beginFirst2, char beginSecond2, char endFirst2, char endSecond2
             , char commentBeginFirst, char commentBeginSecond, char commentEndFirst, char commentEndSecond)
         {
             outputBuilder.Length = 0;
@@ -715,14 +690,9 @@ namespace BatchCommand
                     ++i;
                     ExtractBlockString(block, ref i, endFirst, endSecond, tempBuilder);
                     BoxedValue val = CalcBlockString(calculator, tempBuilder);
-                    outputBuilder.Append(val.ToString());
-                }
-                else if (c == beginFirst2 && nc == beginSecond2) {
-                    ++i;
-                    ++i;
-                    ExtractBlockString(block, ref i, endFirst2, endSecond2, tempBuilder);
-                    BoxedValue val = CalcBlockString(calculator, tempBuilder);
-                    outputBuilder.Append(val.ToString());
+                    if (!val.IsNullOrEmptyString) {
+                        outputBuilder.Append(val.ToString());
+                    }
                 }
                 else if (c == commentBeginFirst && nc == commentBeginSecond) {
                     ++i;
@@ -766,10 +736,6 @@ namespace BatchCommand
         internal const char c_BeginSecond = '%';
         internal const char c_EndFirst = '%';
         internal const char c_EndSecond = '}';
-        internal const char c_BeginFirst2 = '{';
-        internal const char c_BeginSecond2 = '{';
-        internal const char c_EndFirst2 = '}';
-        internal const char c_EndSecond2 = '}';
         internal const char c_CommentBeginFirst = '{';
         internal const char c_CommentBeginSecond = '#';
         internal const char c_CommentEndFirst = '#';
@@ -1615,8 +1581,8 @@ namespace BatchCommand
             Calculator.Register("pause", "pause() api", new ExpressionFactoryHelper<PauseExp>());
             Calculator.Register("clear", "clear() api, clear console", new ExpressionFactoryHelper<ClearExp>());
             Calculator.Register("write", "write(fmt,arg1,arg2,....) api, Console.Write", new ExpressionFactoryHelper<WriteExp>());
-            Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(two_chars_begin,two_chars_end){:txt:} api, Console.Write with macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<WriteBlockExp>());
-            Calculator.Register("block", "block{:txt:} or block(two_chars_begin,two_chars_end){:txt:} api, macro expand, def begin is {% end is %}", new ExpressionFactoryHelper<BlockExp>());
+            Calculator.Register("writeblock", "writeblock{:txt:} or writeblock(begin_template_code_chars,end_template_code_chars){:txt:} api, Console.Write with macro expand, The default template code delimiters are \"{%{#\" and \"%}#}\"; specifically, {% %} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<WriteBlockExp>());
+            Calculator.Register("block", "block{:txt:} or block(begin_template_code_chars,end_template_code_chars){:txt:} api, macro expand, The default template code delimiters are \"{%{#\" and \"%}#}\"; specifically, {% %} serve as the template code brackets, while {# #} denote template code comments.", new ExpressionFactoryHelper<BlockExp>());
             Calculator.Register("readline", "readline() api, Console.ReadLine", new ExpressionFactoryHelper<ReadLineExp>());
             Calculator.Register("read", "read([nodisplay]) api, Console.Read", new ExpressionFactoryHelper<ReadExp>());
             Calculator.Register("beep", "beep([frequence,duration]) api, Console.Beep, only on win32", new ExpressionFactoryHelper<BeepExp>());

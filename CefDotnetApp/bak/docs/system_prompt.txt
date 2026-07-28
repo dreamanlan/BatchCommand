@@ -132,7 +132,7 @@ execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py
 同步：`execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
 异步：`execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; - async exec, result via command_callback.`
 bindings与delimiter部分可省略。bindings指定脚本里通过模板语法引用的MetaDSL变量; delimiter指定脚本里模板语法的分隔符，每个分隔符约定2个字符，通常使用默认即可。
-默认的模板代码分隔符是 `{%{{{#` 和 `%}}}#}`; 其中指定3组分隔符，每组2个字符, {% %} 与 {{ }} 是模板变量括弧, {# #} 用于模板代码注释.
+默认的模板代码分隔符是 `{%` 和 `%}`; 其中可指定1或2组分隔符，每组2个字符, {% %} 是模板变量括弧, 另一组字符用于模板代码注释.
 
 ```
 // @execute
@@ -147,7 +147,7 @@ print("hello from python")
 // @execute
 $info = "hello from PowerShell 5.1 with arguments";
 $result = execute_script("powershell", "E:/tmp", 30000, "-NoProfile -ExecutionPolicy Bypass")bindings($info){:
-Write-Output "{{ $info }}"
+Write-Output "{% $info %}"
 :};
 return(to_string($result));
 ```

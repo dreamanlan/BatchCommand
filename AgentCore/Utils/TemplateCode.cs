@@ -9,24 +9,20 @@ namespace CefDotnetApp.AgentCore.Utils
     /// </summary>
     public static class TemplateCode
     {
-        // default delimiters: {%...%} for params/envs, {{...}} for params/envs, {#...#} for comments
+        // default delimiters: {%...%} for params/envs, no delimiters for comments
         private const char c_BeginFirst = '{';
         private const char c_BeginSecond = '%';
         private const char c_EndFirst = '%';
         private const char c_EndSecond = '}';
-        private const char c_BeginFirst2 = '{';
-        private const char c_BeginSecond2 = '{';
-        private const char c_EndFirst2 = '}';
-        private const char c_EndSecond2 = '}';
-        private const char c_CommentBeginFirst = '{';
-        private const char c_CommentBeginSecond = '#';
-        private const char c_CommentEndFirst = '#';
-        private const char c_CommentEndSecond = '}';
+        private const char c_CommentBeginFirst = '\0';
+        private const char c_CommentBeginSecond = '\0';
+        private const char c_CommentEndFirst = '\0';
+        private const char c_CommentEndSecond = '\0';
 
         /// <summary>
         /// Substitute parameters and environment variables in a block string.
-        /// When beginChars/endChars are empty, uses default delimiters {%..%} {{..}} {#..#}.
-        /// beginChars/endChars format: 2 chars = primary delimiter, 4 chars = primary+secondary, 6 chars = primary+secondary+comment.
+        /// When beginChars/endChars are empty, uses default delimiters {%..%}.
+        /// beginChars/endChars format: 2 chars = primary delimiter, 4 chars = primary+comment delimiters.
         /// </summary>
         public static string CalcBlockString(string block, Dictionary<string, string> args,
             Dictionary<string, string> envs, StringBuilder outputBuilder,
@@ -36,10 +32,6 @@ namespace CefDotnetApp.AgentCore.Utils
             char beginSecond = c_BeginSecond;
             char endFirst = c_EndFirst;
             char endSecond = c_EndSecond;
-            char beginFirst2 = c_BeginFirst2;
-            char beginSecond2 = c_BeginSecond2;
-            char endFirst2 = c_EndFirst2;
-            char endSecond2 = c_EndSecond2;
             char commentBeginFirst = c_CommentBeginFirst;
             char commentBeginSecond = c_CommentBeginSecond;
             char commentEndFirst = c_CommentEndFirst;
@@ -51,39 +43,26 @@ namespace CefDotnetApp.AgentCore.Utils
                 endFirst = endChars[0];
                 endSecond = endChars[1];
 
-                beginFirst2 = beginFirst;
-                beginSecond2 = beginSecond;
-                endFirst2 = endFirst;
-                endSecond2 = endSecond;
-
                 commentBeginFirst = '\0';
                 commentBeginSecond = '\0';
                 commentEndFirst = '\0';
                 commentEndSecond = '\0';
             }
             if (beginChars.Length >= 4 && endChars.Length >= 4) {
-                beginFirst2 = beginChars[2];
-                beginSecond2 = beginChars[3];
-                endFirst2 = endChars[2];
-                endSecond2 = endChars[3];
-            }
-            if (beginChars.Length >= 6 && endChars.Length >= 6) {
-                commentBeginFirst = beginChars[4];
-                commentBeginSecond = beginChars[5];
-                commentEndFirst = endChars[4];
-                commentEndSecond = endChars[5];
+                commentBeginFirst = beginChars[2];
+                commentBeginSecond = beginChars[3];
+                commentEndFirst = endChars[2];
+                commentEndSecond = endChars[3];
             }
 
             return CalcBlockStringInternal(block, args, envs, outputBuilder, paramAndEnvBuilder
                 , beginFirst, beginSecond, endFirst, endSecond
-                , beginFirst2, beginSecond2, endFirst2, endSecond2
                 , commentBeginFirst, commentBeginSecond, commentEndFirst, commentEndSecond);
         }
 
         private static string CalcBlockStringInternal(string block, Dictionary<string, string> args,
             Dictionary<string, string> envs, StringBuilder outputBuilder, StringBuilder paramAndEnvBuilder
             , char beginFirst, char beginSecond, char endFirst, char endSecond
-            , char beginFirst2, char beginSecond2, char endFirst2, char endSecond2
             , char commentBeginFirst, char commentBeginSecond, char commentEndFirst, char commentEndSecond)
         {
             outputBuilder.Length = 0;
@@ -97,12 +76,6 @@ namespace CefDotnetApp.AgentCore.Utils
                     ++i;
                     ++i;
                     ExtractBlockString(block, ref i, endFirst, endSecond, paramAndEnvBuilder);
-                    ReplaceParamAndEnvs(args, envs, outputBuilder, paramAndEnvBuilder);
-                }
-                else if (c == beginFirst2 && nc == beginSecond2) {
-                    ++i;
-                    ++i;
-                    ExtractBlockString(block, ref i, endFirst2, endSecond2, paramAndEnvBuilder);
                     ReplaceParamAndEnvs(args, envs, outputBuilder, paramAndEnvBuilder);
                 }
                 else if (c == commentBeginFirst && nc == commentBeginSecond) {

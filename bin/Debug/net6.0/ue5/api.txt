@@ -99,3 +99,5 @@ defexternapi(GetReadWritableRange,int,noparams,[int,int,int,int]){
 };
 defexternapi(GetCurrentModuleBase,int,noparams,[]);
 defexternapi(DumpExtraCrashData,int,noparams,[int]);
+defexternapi(CanRead,int,noparams,[int,int]);
+defexternapi(CanWrite,int,noparams,[int,int]);

@@ -105,6 +105,61 @@ int GetReadWritableRangeAround(void* addr,
     return GetRangeAroundInternal(addr, half_range, out_range, 1);
 }
 
+// Check if [addr, addr+size) is fully readable/writable.
+// The whole range must fit inside a single readable/writable vma.
+int CanAccessRangeInternal(void* addr,
+    size_t size,
+    int require_writable) {
+    if (!addr || size == 0) return 0;
+
+    uintptr_t target = (uintptr_t)addr;
+    uintptr_t target_end = target + size;
+
+    FILE* fp = fopen("/proc/self/maps", "r");
+    if (!fp) {
+        return 0;
+    }
+
+    char line[512];
+    VmArea vma;
+    int found = 0;
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (!ParseMapsLine(line, &vma)) {
+            continue;
+        }
+
+        if (!vma.readable) {
+            continue;
+        }
+        if (require_writable && !vma.writable) {
+            continue;
+        }
+
+        if (target < vma.start || target >= vma.end) {
+            continue;
+        }
+
+        // whole [target, target_end) must fit in this vma
+        if (target_end > vma.end) {
+            break;
+        }
+        found = 1;
+        break;
+    }
+
+    fclose(fp);
+    return found;
+}
+
+int CanReadRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 0);
+}
+
+int CanWriteRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 1);
+}
+
 // Get epoch time (seconds).
 uint64_t CED_GetTimestamp() {
     struct timespec ts;

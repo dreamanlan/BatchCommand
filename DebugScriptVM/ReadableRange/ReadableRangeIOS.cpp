@@ -77,6 +77,57 @@ int GetReadWritableRangeAround(void* addr,
     return GetRangeAroundInternal(addr, half_range, out_range, 1);
 }
 
+int CanAccessRangeInternal(void* addr,
+    size_t size,
+    int require_writable) {
+    if (!addr || size == 0) return 0;
+
+    mach_vm_address_t region_addr = (mach_vm_address_t)addr;
+    mach_vm_size_t    region_size = 0;
+    vm_region_basic_info_data_64_t info;
+    mach_msg_type_number_t info_count = VM_REGION_BASIC_INFO_COUNT_64;
+    mach_port_t object_name = MACH_PORT_NULL;
+
+    kern_return_t kr = mach_vm_region(
+        mach_task_self(),
+        &region_addr,
+        &region_size,
+        VM_REGION_BASIC_INFO_64,
+        (vm_region_info_t)&info,
+        &info_count,
+        &object_name
+    );
+    if (kr != KERN_SUCCESS) {
+        return 0;
+    }
+
+    uintptr_t region_start = (uintptr_t)region_addr;
+    uintptr_t region_end = region_start + (uintptr_t)region_size;
+    uintptr_t target = (uintptr_t)addr;
+    uintptr_t target_end = target + size;
+
+    if (!(info.protection & VM_PROT_READ)) {
+        return 0;
+    }
+    if (require_writable && !(info.protection & VM_PROT_WRITE)) {
+        return 0;
+    }
+
+    // whole [target, target_end) must fit in this region
+    if (target < region_start || target_end > region_end) {
+        return 0;
+    }
+    return 1;
+}
+
+int CanReadRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 0);
+}
+
+int CanWriteRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 1);
+}
+
 // Timestamp (seconds).
 uint64_t CED_GetTimestamp() {
     struct timespec ts;

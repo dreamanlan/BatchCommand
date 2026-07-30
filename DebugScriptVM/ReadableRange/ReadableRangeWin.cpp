@@ -92,6 +92,45 @@ int GetReadWritableRangeAround(void* addr,
     return GetRangeAroundInternal(addr, half_range, out_range, 1);
 }
 
+int CanAccessRangeInternal(void* addr,
+    size_t size,
+    int require_writable) {
+    if (!addr || size == 0) return 0;
+
+    MEMORY_BASIC_INFORMATION mbi;
+    SIZE_T r = VirtualQuery(addr, &mbi, sizeof(mbi));
+    if (r != sizeof(mbi)) {
+        return 0;
+    }
+
+    DWORD protect = mbi.Protect;
+    if (require_writable) {
+        if (!IsReadWritable(protect)) return 0;
+    }
+    else {
+        if (!IsReadable(protect)) return 0;
+    }
+
+    uintptr_t region_start = (uintptr_t)mbi.BaseAddress;
+    uintptr_t region_end = region_start + (uintptr_t)mbi.RegionSize;
+    uintptr_t target = (uintptr_t)addr;
+    uintptr_t target_end = target + size;
+
+    // whole [target, target_end) must fit in this region
+    if (target < region_start || target_end > region_end) {
+        return 0;
+    }
+    return 1;
+}
+
+int CanReadRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 0);
+}
+
+int CanWriteRange(void* addr, size_t size) {
+    return CanAccessRangeInternal(addr, size, 1);
+}
+
 // Timestamp (seconds from Unix epoch).
 uint64_t CED_GetTimestamp() {
     FILETIME ft;

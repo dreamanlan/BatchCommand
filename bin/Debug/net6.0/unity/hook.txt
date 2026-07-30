@@ -1,4 +1,4 @@
-
+﻿
 @g_dir_chged : int = 0;
 @g_enable_watch_point : int = 0;
 @g_enable_mem_log : int = 0;
@@ -1545,9 +1545,9 @@ hook("D3D11Init")
 		$breakWarning:int    = ptrget(argv(5),4);
 		$breakInfo:int       = ptrget(argv(6),4);
 
-		$str:string = format("D3D11Init enter time:%lld tid:%d createDebug:%d breakWhenError:%d break(C:%d E:%d W:%d I:%d)\n",time(),GetTID(),$createDebug,$breakWhenError,$breakCorruption,$breakError,$breakWarning,$breakInfo);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11Init enter time:%lld tid:%d createDebug:%d breakWhenError:%d break(C:%d E:%d W:%d I:%d)\n",time(),GetTID(),$createDebug,$breakWhenError,$breakCorruption,$breakError,$breakWarning,$breakInfo);
+//		printf("%s",$str);
+//		WriteLog($str);
 		FlushLog();
 
 		// To force-enable the D3D11 debug device + break-on-error from script, uncomment:
@@ -1585,9 +1585,9 @@ hook("D3D11Draw")
 		elif($drawType==4){ $kindStr = "DrawInstancedIndirect"; }
 		elif($drawType==5){ $kindStr = "DrawIndexedInstancedIndirect"; };
 
-		$str:string = format("D3D11Draw frame:%d tid:%d %s cA:%d cB:%d vs:%s gs:%s ps:%s\n",$frame,GetTID(),$kindStr,$countA,$countB,$vs,$gs,$ps);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11Draw frame:%d tid:%d %s cA:%d cB:%d vs:%s gs:%s ps:%s\n",$frame,GetTID(),$kindStr,$countA,$countB,$vs,$gs,$ps);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DrawBindings")
@@ -1629,9 +1629,9 @@ hook("D3D11DrawBindings")
 		$ps:string = ptrget(argv(3),8);
 		$bindings:string = ptrget(argv(4),8);
 
-		$str:string = format("D3D11DrawBindings frame:%d tid:%d vs:%s gs:%s ps:%s %s\n",$frame,GetTID(),$vs,$gs,$ps,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DrawBindings frame:%d tid:%d vs:%s gs:%s ps:%s %s\n",$frame,GetTID(),$vs,$gs,$ps,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11Dispatch")
@@ -1654,9 +1654,9 @@ hook("D3D11Dispatch")
 		$kindStr:string = "Dispatch";
 		if($kind==1){ $kindStr = "DispatchIndirect"; };
 
-		$str:string = format("D3D11Dispatch frame:%d tid:%d %s shader:%s groups:(%d,%d,%d)\n",$frame,GetTID(),$kindStr,$shaderName,$gx,$gy,$gz);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11Dispatch frame:%d tid:%d %s shader:%s groups:(%d,%d,%d)\n",$frame,GetTID(),$kindStr,$shaderName,$gx,$gy,$gz);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DispatchBindings")
@@ -1677,9 +1677,9 @@ hook("D3D11DispatchBindings")
 		$shaderName:string = ptrget(argv(1),8);
 		$bindings:string = ptrget(argv(2),8);
 
-		$str:string = format("D3D11DispatchBindings frame:%d tid:%d shader:%s %s\n",$frame,GetTID(),$shaderName,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DispatchBindings frame:%d tid:%d shader:%s %s\n",$frame,GetTID(),$shaderName,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DebugMsg")
@@ -2074,9 +2074,9 @@ hook("D3D11CSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11CSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11CSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11CSSetUnorderedAccessViews")
@@ -2096,9 +2096,9 @@ hook("D3D11CSSetUnorderedAccessViews")
 		$numUAVs:int    = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11CSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11CSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11CSSetConstantBuffers")
@@ -2118,9 +2118,9 @@ hook("D3D11CSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11CSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11CSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredCSSetShaderResources")
@@ -2136,9 +2136,9 @@ hook("D3D11DeferredCSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredCSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredCSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredCSSetUnorderedAccessViews")
@@ -2152,9 +2152,9 @@ hook("D3D11DeferredCSSetUnorderedAccessViews")
 		$numUAVs:int    = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredCSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredCSSetUnorderedAccessViews frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numUAVs,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredCSSetConstantBuffers")
@@ -2168,9 +2168,9 @@ hook("D3D11DeferredCSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredCSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredCSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11VSSetShaderResources")
@@ -2191,9 +2191,9 @@ hook("D3D11VSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11VSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11VSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11VSSetConstantBuffers")
@@ -2207,9 +2207,9 @@ hook("D3D11VSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11VSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11VSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11GSSetShaderResources")
@@ -2223,9 +2223,9 @@ hook("D3D11GSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11GSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11GSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11GSSetConstantBuffers")
@@ -2239,9 +2239,9 @@ hook("D3D11GSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11GSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11GSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11PSSetShaderResources")
@@ -2255,9 +2255,9 @@ hook("D3D11PSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11PSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11PSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11PSSetConstantBuffers")
@@ -2271,9 +2271,9 @@ hook("D3D11PSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11PSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11PSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredVSSetShaderResources")
@@ -2287,9 +2287,9 @@ hook("D3D11DeferredVSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredVSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredVSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredVSSetConstantBuffers")
@@ -2303,9 +2303,9 @@ hook("D3D11DeferredVSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredVSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredVSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredGSSetShaderResources")
@@ -2319,9 +2319,9 @@ hook("D3D11DeferredGSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredGSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredGSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredGSSetConstantBuffers")
@@ -2335,9 +2335,9 @@ hook("D3D11DeferredGSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredGSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredGSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredPSSetShaderResources")
@@ -2351,9 +2351,9 @@ hook("D3D11DeferredPSSetShaderResources")
 		$numViews:int   = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredPSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredPSSetShaderResources frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numViews,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredPSSetConstantBuffers")
@@ -2367,9 +2367,9 @@ hook("D3D11DeferredPSSetConstantBuffers")
 		$numBuffers:int = ptrget(argv(3),4);
 		$ret:int        = ptrget(argv(4),8);
 		$bindings:string= ptrget(argv(5),8);
-		$str:string = format("D3D11DeferredPSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredPSSetConstantBuffers frame:%d tid:%d ctx:%llx start:%d n:%d retAddr:%llx %s\n",$frame,GetTID(),$ctx,$startSlot,$numBuffers,$ret,$bindings);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11ClearState")
@@ -2387,9 +2387,9 @@ hook("D3D11ClearState")
 		$frame:int = ptrget(argv(0),4);
 		$ctx:int   = ptrget(argv(1),8);
 		$ret:int   = ptrget(argv(2),8);
-		$str:string = format("D3D11ClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11ClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeferredClearState")
@@ -2400,9 +2400,9 @@ hook("D3D11DeferredClearState")
 		$frame:int = ptrget(argv(0),4);
 		$ctx:int   = ptrget(argv(1),8);
 		$ret:int   = ptrget(argv(2),8);
-		$str:string = format("D3D11DeferredClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
-		printf("%s",$str);
-		WriteLog($str);
+//		$str:string = format("D3D11DeferredClearState frame:%d tid:%d ctx:%llx retAddr:%llx\n",$frame,GetTID(),$ctx,$ret);
+//		printf("%s",$str);
+//		WriteLog($str);
 	};
 };
 hook("D3D11DeviceLost")
@@ -2445,5 +2445,86 @@ hook("D3D11DeviceLost")
 
 		// To force a recreate attempt even on otherwise-fatal codes (REMOVED/DRIVER_INTERNAL/INVALID_CALL), uncomment:
 		// ptrset(argv(5),4,1);
+	};
+};
+
+hook("UC_delete_object_step1_check")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("UC_delete_object_step1_check", object, file, line, func)
+		//   argv(0) = &object (Object*, 8 bytes)
+		//   argv(1) = &file   (const char*, 8 bytes)
+		//   argv(2) = &line   (int, 4 bytes)
+		//   argv(3) = &func   (const char*, 8 bytes)
+		// Validate object pointer before any member access in delete_object_internal_step1.
+		// If the vtable is outside the user-mode canonical address range, the Object*
+		// is stale and accessing members would crash with 0xC0000005. Skip the function.
+		$object:int = ptrget(argv(0),8);
+
+		if($object == 0){
+			return 1;
+		};
+
+		if(CanRead($object,8) == 0){
+			$file:string = ptrget(argv(1),8);
+			$line:int = ptrget(argv(2),4);
+			$func:string = ptrget(argv(3),8);
+			$str:string = format("UC_delete_object_step1_check SKIP unreadable object:%llx file:%s line:%d func:%s tid:%d time:%lld\n",$object,$file,$line,$func,GetTID(),time());
+			printf("%s",$str);
+			WriteLog($str);
+			return 1;
+		};
+
+		$vtbl:int = ptrget($object,8);
+		if($vtbl <= 0x100000000 || $vtbl >= 0x800000000000){
+			$file:string = ptrget(argv(1),8);
+			$line:int = ptrget(argv(2),4);
+			$func:string = ptrget(argv(3),8);
+			$str:string = format("UC_delete_object_step1_check SKIP bad vtbl:%llx object:%llx file:%s line:%d func:%s tid:%d time:%lld\n",$vtbl,$object,$file,$line,$func,GetTID(),time());
+			printf("%s",$str);
+			WriteLog($str);
+			return 1;
+		};
+
+		return 0;
+	};
+};
+hook("UC_delete_object_step2_check")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("UC_delete_object_step2_check", object, file, line, func)
+		//   argv(0) = &object (Object*, 8 bytes)
+		//   argv(1) = &file   (const char*, 8 bytes)
+		//   argv(2) = &line   (int, 4 bytes)
+		//   argv(3) = &func   (const char*, 8 bytes)
+		// Validate object pointer before any member access in delete_object_internal_step2.
+		$object:int = ptrget(argv(0),8);
+
+		if($object == 0){
+			return 1;
+		};
+
+		if(CanRead($object,8) == 0){
+			$file:string = ptrget(argv(1),8);
+			$line:int = ptrget(argv(2),4);
+			$func:string = ptrget(argv(3),8);
+			$str:string = format("UC_delete_object_step2_check SKIP unreadable object:%llx file:%s line:%d func:%s tid:%d time:%lld\n",$object,$file,$line,$func,GetTID(),time());
+			printf("%s",$str);
+			WriteLog($str);
+			return 1;
+		};
+
+		$vtbl:int = ptrget($object,8);
+		if($vtbl <= 0x100000000 || $vtbl >= 0x800000000000){
+			$file:string = ptrget(argv(1),8);
+			$line:int = ptrget(argv(2),4);
+			$func:string = ptrget(argv(3),8);
+			$str:string = format("UC_delete_object_step2_check SKIP bad vtbl:%llx object:%llx file:%s line:%d func:%s tid:%d time:%lld\n",$vtbl,$object,$file,$line,$func,GetTID(),time());
+			printf("%s",$str);
+			WriteLog($str);
+			return 1;
+		};
+
+		return 0;
 	};
 };

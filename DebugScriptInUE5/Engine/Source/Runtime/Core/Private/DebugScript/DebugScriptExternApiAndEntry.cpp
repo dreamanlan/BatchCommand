@@ -452,12 +452,16 @@ struct WatchPointCommandInfo
     int64_t tid;
 };
 
-static std::recursive_mutex g_WatchPointMutex{};
 WatchPointCommandInfo g_WatchPointCommandInfo{ 0, 0, 0, 0, 0 };
 
+static inline std::recursive_mutex& GetWatchPointMutexRef()
+{
+    static std::recursive_mutex s_WatchPointMutex;
+    return s_WatchPointMutex;
+}
 static void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, int64_t tid)
 {
-    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+    std::lock_guard<std::recursive_mutex> lock(GetWatchPointMutexRef());
 
     g_WatchPointCommandInfo.cmd = cmd;
     g_WatchPointCommandInfo.flag = flag;
@@ -467,7 +471,7 @@ static void DbgScp_SetWatchPoint(short cmd, short flag, int size, int64_t addr, 
 }
 static short DbgScp_GetWatchPoint(short& flag, int& size, int64_t& addr, int64_t& tid)
 {
-    std::lock_guard<std::recursive_mutex> lock(g_WatchPointMutex);
+    std::lock_guard<std::recursive_mutex> lock(GetWatchPointMutexRef());
 
     flag = g_WatchPointCommandInfo.flag;
     size = g_WatchPointCommandInfo.size;
@@ -1330,6 +1334,8 @@ enum class ExternApiEnum
     GetReadWritableRange,
 	GetCurrentModuleBase,
 	DumpExtraCrashData,
+	CanRead,
+	CanWrite,
     Num
 };
 
@@ -1848,6 +1854,20 @@ struct ExternApi
         bool r = CED_OnCrash(reinterpret_cast<void*>(addr));
         DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r ? 1 : 0, stackBase, intLocals, intGlobals);
     }
+    static inline void CanRead(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int r = CanReadRange(reinterpret_cast<void*>(addr), (size_t)size);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r, stackBase, intLocals, intGlobals);
+    }
+    static inline void CanWrite(int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
+    {
+        int64_t addr = DebugScript::GetVarInt(args[0].IsGlobal, args[0].Index, stackBase, intLocals, intGlobals);
+        int64_t size = DebugScript::GetVarInt(args[1].IsGlobal, args[1].Index, stackBase, intLocals, intGlobals);
+        int r = CanWriteRange(reinterpret_cast<void*>(addr), (size_t)size);
+        DebugScript::SetVarInt(retVal.IsGlobal, retVal.Index, r, stackBase, intLocals, intGlobals);
+    }
 };
 
 void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals& intLocals, DebugScript::FloatLocals& fltLocals, DebugScript::StringLocals& strLocals, DebugScript::IntGlobals& intGlobals, DebugScript::FloatGlobals& fltGlobals, DebugScript::StringGlobals& strGlobals, const ExternApiArgOrRetVal args[], int32_t argNum, const ExternApiArgOrRetVal& retVal)
@@ -1985,6 +2005,12 @@ void CppDbgScp_CallExternApi(int api, int32_t stackBase, DebugScript::IntLocals&
         break;
     case ExternApiEnum::DumpExtraCrashData:
         ExternApi::DumpExtraCrashData(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::CanRead:
+        ExternApi::CanRead(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
+        break;
+    case ExternApiEnum::CanWrite:
+        ExternApi::CanWrite(stackBase, intLocals, fltLocals, strLocals, intGlobals, fltGlobals, strGlobals, args, argNum, retVal);
         break;
     default:
         break;

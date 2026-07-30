@@ -23,6 +23,18 @@ int GetReadWritableRangeAround(void* addr,
     return 0;
 }
 
+int CanReadRange(void* addr, size_t size) {
+    (void)addr;
+    (void)size;
+    return 0;
+}
+
+int CanWriteRange(void* addr, size_t size) {
+    (void)addr;
+    (void)size;
+    return 0;
+}
+
 // Get epoch time (seconds).
 uint64_t CED_GetTimestamp() {
     return 0;

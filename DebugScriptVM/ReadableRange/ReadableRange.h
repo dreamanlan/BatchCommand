@@ -37,6 +37,10 @@ int GetReadWritableRangeAround(void* addr,
     size_t half_range,
     ReadableRange* out_range);
 
+int CanReadRange(void* addr, size_t size);
+
+int CanWriteRange(void* addr, size_t size);
+
 uint64_t CED_GetTimestamp();
 uint64_t CED_GetThreadId();
 int CED_Platform_WriteDumpFile(const char* path, const CED_CrashDump* dump);

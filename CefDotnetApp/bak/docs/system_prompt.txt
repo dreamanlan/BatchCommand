@@ -182,6 +182,8 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 - `string_join(sep, list) - 将list中的元素用sep分隔符连接成字符串
 - `string_split(str, sep) - 将str按照sep分隔符分割成list`
 - `calc_md5(path)` - 计算文件的md5值
+- `regex_escape(regex_str)` - 正则表达式转义，反向用`regex_unescape`
+- `json_escape(json_str[, bool_add_quotes])` - JSON转义，反向用`json_unescape`
 - skill目录：`list_dirs(combine_path(basepath, "skills"))`
 
 **语义/关键词搜索**

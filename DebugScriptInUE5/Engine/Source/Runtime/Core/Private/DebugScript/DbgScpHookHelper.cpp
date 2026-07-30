@@ -221,13 +221,13 @@ bool FDbgScpHookHelper::DbgScpAssertWithStrKeyInfo(const char* file, int line, c
 	return true;
 }
 
-void FDbgScpHookHelper::DbgScpBeforeGLSLToDeviceCompatibleGLSL(const char* glsl, const char* name, uint32_t typeEnum, const void* capabilities)
+void FDbgScpHookHelper::DbgScpBeforeGLSLToDeviceCompatibleGLSL(const char* shaderHash, const char* glsl, const char* name, uint32_t typeEnum, const void* capabilities)
 {
-	DBGSCP_HOOK_VOID("DbgScpBeforeGLSLToDeviceCompatibleGLSL", glsl, name, typeEnum, capabilities);
+	DBGSCP_HOOK_VOID("DbgScpBeforeGLSLToDeviceCompatibleGLSL", shaderHash, glsl, name, typeEnum, capabilities);
 }
-void FDbgScpHookHelper::DbgScpAfterGLSLToDeviceCompatibleGLSL(const char* glsl, const char* name, uint32_t typeEnum, const void* capabilities, const char* newGlsl, bool isPlatformExtension)
+void FDbgScpHookHelper::DbgScpAfterGLSLToDeviceCompatibleGLSL(const char* shaderHash, const char* glsl, const char* name, uint32_t typeEnum, const void* capabilities, const char* newGlsl, bool isPlatformExtension)
 {
-    DBGSCP_HOOK_VOID("DbgScpAfterGLSLToDeviceCompatibleGLSL", glsl, name, typeEnum, capabilities, newGlsl, isPlatformExtension);
+    DBGSCP_HOOK_VOID("DbgScpAfterGLSLToDeviceCompatibleGLSL", shaderHash, glsl, name, typeEnum, capabilities, newGlsl, isPlatformExtension);
 }
 
 void FDbgScpHookHelper::DbgScpRegisterShaderName(const char* hash, const char* name)

@@ -272,7 +272,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "reflection") {
-		if (strlen($reply) > 500) {
+		if (strlen($reply) > 1500) {
 			llm_chat_callback(@LlmProviderId, "reflection", "reflection", "超长了，请控制到300字左右");
 			nativelog("[dsl] Episodic memory too long: {0}", getstringinlength($reply, 500, 0));
 		}

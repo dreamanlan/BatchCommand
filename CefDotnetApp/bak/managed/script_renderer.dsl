@@ -272,9 +272,15 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 		llm_clear_history(@LlmProviderId, $tag);
 	}
 	elif ($tag == "reflection") {
-		semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
-		llm_clear_history(@LlmProviderId, "reflection");
-		nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 500, 0));
+		if (strlen($reply) > 500) {
+			llm_chat_callback(@LlmProviderId, "reflection", "reflection", "超长了，请控制到300字左右");
+			nativelog("[dsl] Episodic memory too long: {0}", getstringinlength($reply, 500, 0));
+		}
+		else {
+			semantic_add(@EpisodicMemory, $reply, to_json({source: "reflection", date: date_time_str(), type: "episodic"}));
+			llm_clear_history(@LlmProviderId, "reflection");
+			nativelog("[dsl] Episodic memory saved: {0}", getstringinlength($reply, 500, 0));
+		};
 	}
 	elif ($tag == "llm_pm_marquis") {
 		semantic_add(@MarquisHistory, $reply, to_json({source: "inject", date: date_time_str()}));
@@ -645,10 +651,10 @@ script(trigger_reflection)params()
 
 	// Set reflection system prompt
 	$sysPrompt = read_file(combine_path(basepath, "docs/reflection_prompt.txt"));
-	llm_set_system_prompt(@LlmProviderId, "reflection", "reflection", $sysPrompt);
+	llm_set_system_prompt(@LlmProviderId, "reflection", $sysPrompt);
 
 	// Send reflection request
-	$prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录。", $prompt);
+	$prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。", $prompt);
 	llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
 
 	nativelog("[dsl] trigger_reflection: reflection request sent");

@@ -87,15 +87,6 @@ class ResponseDecider {
         };
       }
       else if (hasMetaDsl) {
-        if (this.containsAll(msg, 'js_request', 'keep_llm_context')) {
-          if (this.enableLlmPM) {
-            return {
-              action: 'reply',
-              text: `ref{:\n${msg}\n:};\n\n已提交上下文更新请求，稍后请阅读context.txt与history.txt了解上下文`,
-            };
-          }
-          return { action: 'skip', reason: 'keep_llm_context without LlmPM' };
-        }
         if (this.containsAll(msg, 'js_request', 'reflect')) {
           if (this.enableLlmPM) {
             return {

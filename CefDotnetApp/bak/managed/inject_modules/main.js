@@ -170,6 +170,7 @@ window.AgentAPI = {
   keepContext: () => metadslMonitor && metadslMonitor.keepContext(CONFIG.llmContextCountModuloForKeep),
   alignTarget: () => metadslMonitor && metadslMonitor.alignTarget(CONFIG.llmContextCountModuloForAlign),
   needToPlan: () => bridge && pageAdapter && metadslMonitor && bridge.dispatchAgentDecision('AGENT_EXECUTING', pageAdapter, metadslMonitor.operationQueue.length, true),
+  triggerReflection: () => metadslMonitor && metadslMonitor.triggerReflection(),
   getQueuedCount: () => metadslMonitor ? metadslMonitor.operationQueue.length : 0,
   showPanel: () => panel && panel.show(),
   hidePanel: () => panel && panel.hide(),

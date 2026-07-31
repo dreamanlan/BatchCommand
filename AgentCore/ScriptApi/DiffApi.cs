@@ -43,6 +43,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                             { "newStartLine", hunk.NewStartLine },
                             { "success", hunk.Success },
                             { "error", hunk.Error ?? string.Empty },
+                            { "correction", hunk.Correction ?? string.Empty },
                             { "linesAdded", hunk.LinesAdded },
                             { "linesRemoved", hunk.LinesRemoved }
                         };

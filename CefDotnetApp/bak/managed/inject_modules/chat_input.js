@@ -93,7 +93,8 @@ class ChatInputPanel {
       { label: 'Prompt', action: () => window.AgentAPI.updateSystemPrompt() },
       { label: 'Context', action: () => window.AgentAPI.keepContext() },
       { label: 'Align', action: () => window.AgentAPI.alignTarget() },
-      { label: 'Plan', action: () => window.AgentAPI.needToPlan() }
+      { label: 'Plan', action: () => window.AgentAPI.needToPlan() },
+      { label: 'Reflection', action: () => window.AgentAPI.triggerReflection() }
     ];
     actionButtons.forEach(({ label, action }) => {
       const btn = document.createElement('button');

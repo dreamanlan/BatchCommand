@@ -155,8 +155,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             foreach (var hr in hunkResults) {
                 if (hr.Success && hr.CorrectedStartLine > 0 && hr.CorrectedStartLine != hr.OldStartLine) {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine(
-                        $"[diff info] Hunk line number corrected: specified line {hr.OldStartLine} -> actual line {hr.CorrectedStartLine}");
+                    hr.Correction = $"[diff info] Hunk line number corrected: specified line {hr.OldStartLine} -> actual line {hr.CorrectedStartLine}";
                 }
             }
         }
@@ -1383,6 +1382,7 @@ namespace CefDotnetApp.AgentCore.Core
     {
         public bool Success { get; set; }
         public string? Error { get; set; }
+        public string? Correction { get; set; }
         public int OldStartLine { get; set; }
         public int NewStartLine { get; set; }
         public int CorrectedStartLine { get; set; } // Actual matched line (1-based), 0 means no correction

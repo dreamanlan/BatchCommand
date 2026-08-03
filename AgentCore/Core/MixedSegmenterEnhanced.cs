@@ -122,7 +122,7 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ITransformer _mlTransformer;
         private readonly bool _preserveSeparators;
 
-        private static readonly Regex TokenSplitRegex = new Regex(@"([\p{L}\p{N}]+)|([^\p{L}\p{N}]+)", RegexOptions.Compiled);
+        private static readonly Regex TokenSplitRegex = new Regex(@"([\p{L}\p{N}_]+)|([^\p{L}\p{N}_]+)", RegexOptions.Compiled);
         private static readonly Regex HanLatinSplit = new Regex(@"(\p{IsCJKUnifiedIdeographs}+)|([A-Za-z0-9_']+)|([^\p{IsCJKUnifiedIdeographs}A-Za-z0-9_']+)", RegexOptions.Compiled);
 
         public class MlFeaturizeOptions

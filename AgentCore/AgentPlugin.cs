@@ -98,6 +98,11 @@ namespace CefDotnetApp.AgentCore
             return Core.AgentCore.Instance.SemanticSearch(queries, candidates, topN);
         }
 
+        public string TakeHelpSearchDebugInfo()
+        {
+            return Core.AgentCore.Instance.TakeHelpSearchDebugInfo();
+        }
+
         public string RefreshSkills()
         {
             var skillsDir = System.IO.Path.Combine(_basePath, "skills");

@@ -12,6 +12,8 @@ namespace AgentPlugin.Abstractions
         void EnqueueCefMessage(string msgName, string[] args);
         string GetStringInLength(string str, int len, int beginOrEndOrBeginEnd);
         string QuoteString(string? value);
+        System.Collections.Generic.IEnumerable<string> GetHelpDocs();
+
         string StripQuotes(string? s);
     }
 }

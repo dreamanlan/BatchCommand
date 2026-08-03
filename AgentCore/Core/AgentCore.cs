@@ -45,11 +45,14 @@ namespace CefDotnetApp.AgentCore.Core
         private BagOfWordsService _bagOfWordsService = null!;
         private TfIdfService _tfIdfService = null!;
         private MixedSegmenterEnhanced _mixedSegmenter = null!;
+        private MixedSegmenterEnhanced _semanticMixedSegmenter = null!;
         private BraveSearchService _braveSearch = null!;
         private SearXNGSearchService _searxngSearch = null!;
         private WebSearchRouter _webSearchRouter = null!;
         private HelpSearchType _helpSearchMode = HelpSearchType.BagOfWords;
         private bool _helpUseReranker = true;
+        private bool _helpDebug;
+        private string _helpSearchDebugInfo = string.Empty;
         // Three-level dictionary: category -> group -> key -> encrypted_value
         // Used for agent environment data (e.g. mcp tokens, skill config)
         // Values are AES-encrypted at rest; decrypted only during ResolveEnvironmentValue calls.
@@ -86,6 +89,16 @@ namespace CefDotnetApp.AgentCore.Core
         {
             get => _helpUseReranker;
             set => _helpUseReranker = value;
+        }
+        public bool HelpDebug
+        {
+            get => _helpDebug;
+            set
+            {
+                _helpDebug = value;
+                if (!value)
+                    _helpSearchDebugInfo = string.Empty;
+            }
         }
         public string BasePath => _basePath;
 
@@ -263,14 +276,21 @@ namespace CefDotnetApp.AgentCore.Core
             _skillMgr = new SkillManager(_processOps, _basePath, _appDir, isMac);
             _embeddingService = new EmbeddingService();
             _rerankService = new RerankService();
-            // Initialize mixed segmenter with empty freq lines; jieba handles Chinese, internal trie handles Latin
+            JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = Path.Combine(_basePath, "managed", "Resources");
             string freqPath = System.IO.Path.Combine(_basePath, "onnx", "help_freq.txt");
-            _mixedSegmenter = new MixedSegmenterEnhanced(new WordSegmenterHybridTrie(freqPath));
+            string englishBaseWordsPath = System.IO.Path.Combine(_basePath, "onnx", "englishbasewords.txt");
+            IEnumerable<string> baseWords = File.Exists(englishBaseWordsPath)
+                ? File.ReadLines(englishBaseWordsPath)
+                : Enumerable.Empty<string>();
+            var segmenterTrie = new WordSegmenterHybridTrie(File.ReadLines(freqPath), baseWords);
+            _mixedSegmenter = new MixedSegmenterEnhanced(segmenterTrie);
             _bagOfWordsService = new BagOfWordsService(_mixedSegmenter);
+            var semanticSegmenterTrie = new WordSegmenterHybridTrie(Enumerable.Empty<string>(), baseWords);
+            _semanticMixedSegmenter = new MixedSegmenterEnhanced(semanticSegmenterTrie);
             _tfIdfService = new TfIdfService();
             string dbPath = System.IO.Path.Combine(_basePath, "onnx", "semantic.db");
             _semanticIndex = new SemanticIndex(dbPath);
-            _semanticIndex.SetSegmenter(_mixedSegmenter);
+            _semanticIndex.SetSegmenter(_semanticMixedSegmenter);
             _braveSearch = new BraveSearchService(_httpClient);
             _searxngSearch = new SearXNGSearchService(_httpClient);
             _webSearchRouter = new WebSearchRouter(_braveSearch, _searxngSearch);
@@ -299,8 +319,6 @@ namespace CefDotnetApp.AgentCore.Core
 
                 _instance = new AgentCore(basePath, appDir, isMac);
                 _isInitialized = true;
-
-                JiebaNet.Segmenter.ConfigManager.ConfigFileBaseDir = Path.Combine(basePath, "managed", "Resources");
 
                 // try to load embedding model if available
                 try {
@@ -360,13 +378,16 @@ namespace CefDotnetApp.AgentCore.Core
                 .Select(s => (s.Key, s.Document ?? string.Empty))
                 .ToList();
             if (_embeddingService.IsReady) {
-                _embeddingService.BuildIndex(items);
+                try { _embeddingService.BuildIndex(items); }
+                catch (Exception ex) { _logger.Error($"[EmbeddingService] BuildIndex failed: {ex.Message}"); }
             }
             if (_bagOfWordsService.IsReady) {
-                _bagOfWordsService.BuildIndex(items);
+                try { _bagOfWordsService.BuildIndex(items); }
+                catch (Exception ex) { _logger.Error($"[BagOfWordsService] BuildIndex failed: {ex.Message}"); }
             }
             if (_tfIdfService.IsReady) {
-                _tfIdfService.BuildIndex(items);
+                try { _tfIdfService.BuildIndex(items); }
+                catch (Exception ex) { _logger.Error($"[TfIdfService] BuildIndex failed: {ex.Message}"); }
             }
         }
 
@@ -375,6 +396,7 @@ namespace CefDotnetApp.AgentCore.Core
             IEnumerable<(string key, string text)> candidates,
             int topN)
         {
+            _helpSearchDebugInfo = string.Empty;
             bool useReranker = _helpUseReranker && _rerankService.IsReady;
             int recallN = useReranker ? topN * 3 : topN;
             var candidateList = candidates as IList<(string key, string text)> ?? candidates.ToList();
@@ -389,11 +411,16 @@ namespace CefDotnetApp.AgentCore.Core
                     results = _embeddingService.Search(queries, candidateList, recallN);
                 }
                 if (results == null && _bagOfWordsService.IsReady) {
-                    results = _bagOfWordsService.Search(queries, candidateList, recallN);
+                    results = SearchBagOfWordsWithDebug(queries, candidateList, recallN);
                 }
             }
             else if (_bagOfWordsService.IsReady) {
-                results = _bagOfWordsService.Search(queries, candidateList, recallN);
+                results = SearchBagOfWordsWithDebug(queries, candidateList, recallN);
+            }
+            if (_helpDebug && _helpSearchDebugInfo.Length == 0) {
+                _helpSearchDebugInfo = string.Format(
+                    "[help_debug]\nsearch_mode: {0}\nBM25 Explain is unavailable for this search path.\n",
+                    _helpSearchMode);
             }
             if (results == null || results.Count == 0 || !useReranker || queries.Count == 0) {
                 return results;
@@ -402,7 +429,36 @@ namespace CefDotnetApp.AgentCore.Core
             foreach (var (key, text, _) in results) {
                 rerankCandidates.Add((key, text));
             }
-            return _rerankService.Rerank(queries[0], rerankCandidates, topN);
+            var rerankResults = _rerankService.Rerank(queries[0], rerankCandidates, topN);
+            if (_helpDebug) {
+                var debug = new StringBuilder(_helpSearchDebugInfo);
+                debug.AppendLine("reranker: enabled");
+                foreach (var (key, _, score) in rerankResults) {
+                    debug.AppendLine(string.Format("reranker_result: {0}, score: {1:F4}", key, score));
+                }
+                _helpSearchDebugInfo = debug.ToString();
+            }
+            return rerankResults;
+        }
+
+        private IList<(string key, string text, float score)>? SearchBagOfWordsWithDebug(
+            IList<string> queries,
+            IList<(string key, string text)> candidates,
+            int topN)
+        {
+            if (!_helpDebug)
+                return _bagOfWordsService.Search(queries, candidates, topN);
+
+            var results = _bagOfWordsService.SearchWithDebug(queries, candidates, topN, out string debugInfo);
+            _helpSearchDebugInfo = "[help_debug]\nsearch_mode: BagOfWords\n" + debugInfo;
+            return results;
+        }
+
+        public string TakeHelpSearchDebugInfo()
+        {
+            string debugInfo = _helpSearchDebugInfo;
+            _helpSearchDebugInfo = string.Empty;
+            return debugInfo;
         }
 
         public void BuildSkillDocs()

@@ -41,7 +41,7 @@
 
 1. 使用`view_file_structure`或`read_file`了解实现
 2. 确定修改内容
-3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）
+3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines(path, startLine, endLine[, encoding])`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）
 4. 多行用`apply_diff`（unified diff格式）；单行用`replace_in_file`或`regex_replace_in_file`（注意，`string_replace`或`regex_replace`是字符串替换，不用于文件）
 5. 修改后重新阅读确认
 

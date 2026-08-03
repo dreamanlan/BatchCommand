@@ -101,4 +101,14 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Deploy jieba.NET dictionary resources (dict.txt, prob_*.json, pos_prob_*.json) to the
+         output so they are available at runtime under managed/Resources (ConfigManager.ConfigFileBaseDir). -->
+    <Content Include="$(NuGetPackageRoot)jieba.net\*\Resources\**\*">
+      <Link>Resources\%(RecursiveDir)%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>false</Pack>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -29,6 +29,7 @@ namespace CefDotnetApp.AgentCore.Core
             new ThreadLocal<(string, List<(string, float[], float[])>)>(() => (string.Empty, new List<(string, float[], float[])>()));
 
         private bool _hasTokenTypeIds = false;
+        private string _outputName = string.Empty;
         private bool _disposed = false;
 
         /// <summary>
@@ -58,6 +59,10 @@ namespace CefDotnetApp.AgentCore.Core
                     _tokenizer = BertTokenizer.Create(tokenizerPath);
                 }
                 _hasTokenTypeIds = _session.InputMetadata.ContainsKey("token_type_ids");
+                // detect the token-level hidden state output (3-D tensor) for mean pooling;
+                // models may name it 'last_hidden_state', 'token_embeddings', etc.
+                _outputName = _session.OutputMetadata.FirstOrDefault(kv => kv.Value.Dimensions.Length == 3).Key
+                            ?? _session.OutputMetadata.Keys.First();
                 _index.Clear();
             }
             finally { _rwLock.ExitWriteLock(); }
@@ -70,7 +75,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             _rwLock.EnterWriteLock();
             try {
-                if (_session == null || _tokenizer == null)
+                if (_session == null || (_tokenizer == null && _hfTokenizer == null))
                     return;
                 _index.Clear();
                 foreach (var (key, text) in items) {
@@ -106,7 +111,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             _rwLock.EnterReadLock();
             try {
-                if (_session == null || _tokenizer == null || _index.Count == 0)
+                if (_session == null || (_tokenizer == null && _hfTokenizer == null) || _index.Count == 0)
                     return null;
 
                 // union: key -> best score across all queries
@@ -155,7 +160,7 @@ namespace CefDotnetApp.AgentCore.Core
         {
             _rwLock.EnterReadLock();
             try {
-                if (_session == null || _tokenizer == null)
+                if (_session == null || (_tokenizer == null && _hfTokenizer == null))
                     return null;
 
                 // use per-thread cache to avoid re-encoding candidates when unchanged
@@ -283,7 +288,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             using var outputs = _session.Run(inputs);
             // last_hidden_state: shape [1, seqLen, hiddenSize]
-            var rawOutput = outputs.First(o => o.Name == "last_hidden_state");
+            var rawOutput = outputs.First(o => o.Name == _outputName);
 
             int hiddenSize;
             float[] pooled;

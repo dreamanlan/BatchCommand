@@ -17,6 +17,8 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly HybridTrie.TrieNode _root;
         private readonly int _maxWordLen;
         private readonly double _totalCount;
+        private readonly HashSet<string> _baseWords;
+        private readonly int _maxBaseWordLen;
         internal readonly bool _caseSensitive;
 
         // Configurable parameters (kept for compatibility)
@@ -24,7 +26,8 @@ namespace CefDotnetApp.AgentCore.Core
         internal readonly int _minChildrenForArray; // min child count to consider allocating array
         internal readonly double _asciiFractionThreshold; // fraction of children that are ascii to trigger array
 
-        private static readonly Regex _tokenSplitRegex = new Regex(@"([\p{L}\p{N}]+)|([^\p{L}\p{N}]+)", RegexOptions.Compiled);
+        private static readonly Regex _tokenSplitRegex = new Regex(@"([\p{L}\p{N}_]+)|([^\p{L}\p{N}_]+)", RegexOptions.Compiled);
+
 
         /// <summary>
         /// Construct from frequency file path (will build trie with parallel aggregation).
@@ -48,11 +51,36 @@ namespace CefDotnetApp.AgentCore.Core
             int arraySize = 256,
             int minChildrenForArray = 8,
             double asciiFractionThreshold = 0.6)
+            : this(freqLines, null, caseSensitive, arraySize, minChildrenForArray, asciiFractionThreshold)
+        {
+        }
+
+        /// <summary>
+        /// Construct from domain frequency lines plus a separate general-purpose word list.
+        /// Base words participate only as segmentation candidates and do not affect domain frequencies.
+        /// </summary>
+        public WordSegmenterHybridTrie(
+            IEnumerable<string> freqLines,
+            IEnumerable<string>? baseWords,
+            bool caseSensitive = false,
+            int arraySize = 256,
+            int minChildrenForArray = 8,
+            double asciiFractionThreshold = 0.6)
         {
             _caseSensitive = caseSensitive;
             _arraySize = arraySize >= 2 ? arraySize : 256;
             _minChildrenForArray = Math.Max(1, minChildrenForArray);
             _asciiFractionThreshold = (asciiFractionThreshold >= 0 && asciiFractionThreshold <= 1) ? asciiFractionThreshold : 0.6;
+            _baseWords = new HashSet<string>(caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            _maxBaseWordLen = 1;
+            foreach (string word in baseWords ?? Enumerable.Empty<string>()) {
+                string normalized = word?.Trim() ?? string.Empty;
+                if (normalized.Length == 0)
+                    continue;
+                normalized = caseSensitive ? normalized : normalized.ToLowerInvariant();
+                if (_baseWords.Add(normalized) && normalized.Length > _maxBaseWordLen)
+                    _maxBaseWordLen = normalized.Length;
+            }
 
             // Use HybridTrie.BuildFromFreqLines (parallel aggregation + partitioned build)
             var hybrid = HybridTrie.BuildFromFreqLines(freqLines, _caseSensitive, _arraySize, _minChildrenForArray, _asciiFractionThreshold);
@@ -77,6 +105,8 @@ namespace CefDotnetApp.AgentCore.Core
             _root = hybrid.Root;
             _totalCount = hybrid.TotalCount;
             _maxWordLen = hybrid.MaxWordLen;
+            _baseWords = new HashSet<string>(caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+            _maxBaseWordLen = 1;
             _caseSensitive = caseSensitive;
             _arraySize = arraySize;
             _minChildrenForArray = minChildrenForArray;
@@ -104,6 +134,8 @@ namespace CefDotnetApp.AgentCore.Core
 
         private double UnknownCost(int len) => Math.Log(_totalCount) + 5.0 * len;
 
+        private double BaseWordCost() => Math.Log(_totalCount) + 1.0;
+
         public List<string> SegmentToken(string token)
         {
             if (string.IsNullOrEmpty(token)) return new List<string>();
@@ -130,6 +162,17 @@ namespace CefDotnetApp.AgentCore.Core
                             cost[end + 1] = cand;
                             prev[end + 1] = start;
                         }
+                    }
+                }
+                int baseLimit = Math.Min(n, start + _maxBaseWordLen);
+                for (int end = start; end < baseLimit; end++) {
+                    string candidate = working.Substring(start, end - start + 1);
+                    if (!_baseWords.Contains(candidate))
+                        continue;
+                    double cand = cost[start] + BaseWordCost();
+                    if (cand < cost[end + 1]) {
+                        cost[end + 1] = cand;
+                        prev[end + 1] = start;
                     }
                 }
                 {

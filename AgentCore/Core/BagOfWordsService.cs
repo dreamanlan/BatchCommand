@@ -124,28 +124,78 @@ namespace CefDotnetApp.AgentCore.Core
             return RunSearch(searcher, queries, topN);
         }
 
+        /// <summary>
+        /// BM25 search over an ad-hoc candidate set with Lucene diagnostics.
+        /// Diagnostics contain query tokens, recalled documents, scores, and Explain output.
+        /// </summary>
+        public IList<(string key, string text, float score)>? SearchWithDebug(
+            IList<string> queries,
+            IEnumerable<(string key, string text)> candidates,
+            int topN,
+            out string debugInfo)
+        {
+            var candidateList = candidates as IList<(string key, string text)>
+                ?? candidates.ToList();
+            if (candidateList.Count == 0) {
+                debugInfo = "[help_debug]\nBM25 candidate set is empty.\n";
+                return null;
+            }
+
+            string newCacheKey = BuildCacheKey(candidateList);
+            var cache = _adHocCache.Value!;
+            IndexSearcher searcher;
+
+            if (cache.cacheKey == newCacheKey && cache.searcher != null) {
+                searcher = cache.searcher;
+            } else {
+                try { cache.reader?.Dispose(); } catch { }
+                try { cache.dir?.Dispose(); } catch { }
+
+                var dir = new RAMDirectory();
+                WriteToDirectory(dir, candidateList);
+                var reader = DirectoryReader.Open(dir);
+                searcher = new IndexSearcher(reader) { Similarity = new BM25Similarity() };
+                _adHocCache.Value = (newCacheKey, dir, reader, searcher);
+            }
+
+            var debug = new StringBuilder();
+            var results = RunSearch(searcher, queries, topN, debug);
+            debugInfo = debug.ToString();
+            return results;
+        }
+
         // ---- private helpers ----
 
         private IList<(string key, string text, float score)> RunSearch(
             IndexSearcher searcher,
             IList<string> queries,
-            int topN)
+            int topN,
+            StringBuilder? debug = null)
         {
             // union: key -> best score across all queries
             var best = new Dictionary<string, float>(StringComparer.Ordinal);
             var textMap = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (var query in queries) {
-                var bq = BuildBooleanQuery(query);
+                var bq = BuildBooleanQuery(query, out var tokens);
                 if (bq == null)
                     continue;
 
                 var hits = searcher.Search(bq, topN * queries.Count + topN);
+                if (debug != null) {
+                    debug.AppendLine(string.Format("BM25 query: {0}", query));
+                    debug.AppendLine(string.Format("tokens: {0}", string.Join(", ", tokens)));
+                    debug.AppendLine(string.Format("recalled: {0}", hits.ScoreDocs.Length));
+                }
                 foreach (var hit in hits.ScoreDocs) {
                     var doc = searcher.Doc(hit.Doc);
                     string key = doc.Get(FIELD_KEY);
                     string text = doc.Get(FIELD_ORIGINAL) ?? doc.Get(FIELD_CONTENT);
                     float score = hit.Score;
+                    if (debug != null) {
+                        debug.AppendLine(string.Format("doc: {0}, bm25_score: {1:F4}", key, score));
+                        debug.AppendLine(searcher.Explain(bq, hit.Doc).ToString());
+                    }
                     if (!best.TryGetValue(key, out float prev) || score > prev)
                         best[key] = score;
                     if (!textMap.ContainsKey(key))
@@ -160,9 +210,9 @@ namespace CefDotnetApp.AgentCore.Core
                 .ToList();
         }
 
-        private BooleanQuery? BuildBooleanQuery(string queryText)
+        private BooleanQuery? BuildBooleanQuery(string queryText, out List<string> tokens)
         {
-            var tokens = Tokenize(queryText);
+            tokens = Tokenize(queryText);
             if (tokens.Count == 0)
                 return null;
 

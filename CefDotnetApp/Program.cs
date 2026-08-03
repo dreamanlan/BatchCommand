@@ -621,6 +621,7 @@ namespace DotNetLib
                         }
                     }
                 }
+                sb.Append(Lib.AgentPlugin.TakeHelpSearchDebugInfo());
             }
             if (null != Lib.AgentPlugin) {
                 string infos = Lib.AgentPlugin.SkillHelp(regexes);
@@ -673,6 +674,7 @@ namespace DotNetLib
                         }
                     }
                 }
+                sb.Append(Lib.AgentPlugin.TakeHelpSearchDebugInfo());
             }
             if (null != Lib.AgentPlugin) {
                 string infos = Lib.AgentPlugin.SkillHelp(regexes);
@@ -1120,6 +1122,14 @@ namespace DotNetLib
         string INativeApi.GetStringInLength(string str, int len, int beginOrEndOrBeginEnd) => GetStringInLength(str, len, beginOrEndOrBeginEnd);
         string INativeApi.QuoteString(string? value) => QuoteString(value);
         string INativeApi.StripQuotes(string? s) => StripQuotes(s);
+            IEnumerable<string> INativeApi.GetHelpDocs()
+            {
+                return BatchCommand.BatchScript.ApiDocs
+                    .Concat(BatchCommand.BatchScript.UserApiDocs)
+                    .Select(pair => string.Format("{0}: {1}", pair.Key, pair.Value))
+                    .ToArray();
+            }
+
 
         // IErrorReporter explicit interface implementation (delegates to static methods)
         void IErrorReporter.ClearApiErrorInfo() => ClearApiErrorInfo();

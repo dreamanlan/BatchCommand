@@ -621,11 +621,16 @@ namespace CefDotnetApp.AgentCore.Core
 
             // select search service based on provided parameters
             IList<(string key, string text, float score)>? searchResults = null;
+            string bm25DebugInfo = string.Empty;
             if (tfIdfService != null && tfIdfService.IsReady) {
                 searchResults = tfIdfService.Search(queries, recallN);
             }
             else if (bagOfWordsService != null && bagOfWordsService.IsReady) {
-                searchResults = bagOfWordsService.Search(queries, recallN);
+                if (AgentCore.Instance.HelpDebug) {
+                    searchResults = bagOfWordsService.SearchWithDebug(queries, _skillDocs.Select(pair => (pair.Key, pair.Value)), recallN, out bm25DebugInfo);
+                } else {
+                    searchResults = bagOfWordsService.Search(queries, recallN);
+                }
             }
 
             // fallback to embedding search if primary not ready
@@ -655,6 +660,15 @@ namespace CefDotnetApp.AgentCore.Core
                 foreach (var (key, text, score) in searchResults.Where(r => !matchedKeys.Contains(r.key)).Take(5)) {
                     sb.AppendLine(string.Format("{0}: {1} ({2:F4})", key, text, score));
                 }
+            }
+            if (AgentCore.Instance.HelpDebug) {
+                sb.AppendLine("[help_debug]");
+                if (!string.IsNullOrEmpty(bm25DebugInfo)) {
+                    sb.Append(bm25DebugInfo);
+                } else {
+                    sb.AppendLine("BM25 Explain is unavailable for this skill search path.");
+                }
+                sb.AppendLine(string.Format("reranker: {0}", hasReranker ? "enabled" : "disabled"));
             }
             return sb.ToString();
         }

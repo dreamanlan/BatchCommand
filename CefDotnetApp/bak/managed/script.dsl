@@ -144,9 +144,9 @@ script(on_resource_response_filter)params($request, $response)
     // (either Set-Cookie ingestion or UR_FLAG_ALLOW_STORED_CREDENTIALS).
     // Note: substring match is intentionally loose; version-query strings
     // like "vue.min.js?v=xxx" are still covered.
-    //if (stringcontainsany($request.Url, ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf")) {
-    //    return((false, false));
-    //};
+    if (stringcontainsany($request.Url, "account", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf")) {
+        return((false, false));
+    };
     if ($response.IsReadOnly) {
         nativelog("[dsl] on_resource_response_filter: {0}", $response.HeaderMap);
     }

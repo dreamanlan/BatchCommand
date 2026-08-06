@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -82,6 +82,12 @@ public struct HostApi
     public IntPtr BrowserClose;
     public IntPtr BrowserSetFocus;
     public IntPtr BrowserGetOpenerId;
+    // DevTools host actions
+    public IntPtr BrowserShowDevTools;
+    public IntPtr BrowserCloseDevTools;
+    public IntPtr BrowserHasDevTools;
+    public IntPtr BrowserSendDevToolsMessage;
+    public IntPtr BrowserExecuteDevToolsMethod;
     // Frame properties
     public IntPtr FrameGetUrl;
     public IntPtr FrameGetName;
@@ -106,6 +112,22 @@ public struct HostApi
     public IntPtr RequestGetResourceType;
     public IntPtr RequestGetTransitionType;
     public IntPtr RequestGetIdentifier;
+    // CefResponse properties
+    public IntPtr ResponseIsReadOnly;
+    public IntPtr ResponseGetStatus;
+    public IntPtr ResponseSetStatus;
+    public IntPtr ResponseGetStatusText;
+    public IntPtr ResponseSetStatusText;
+    public IntPtr ResponseGetMimeType;
+    public IntPtr ResponseSetMimeType;
+    public IntPtr ResponseGetCharset;
+    public IntPtr ResponseSetCharset;
+    public IntPtr ResponseGetUrl;
+    public IntPtr ResponseGetHeaderMap;
+    public IntPtr ResponseGetHeaderByName;
+    public IntPtr ResponseSetHeaderByName;
+    public IntPtr ResponseRemoveHeaderByName;
+    public IntPtr ResponseSetHeaderMap;
     // Heartbeat control
     public IntPtr SetHeartbeatInterval;
 }
@@ -221,6 +243,17 @@ public delegate void HostBrowserCloseDelegation(IntPtr browser, int force_close)
 public delegate void HostBrowserSetFocusDelegation(IntPtr browser, int focus);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate int HostBrowserGetOpenerIdDelegation(IntPtr browser);
+// DevTools host actions
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserShowDevToolsDelegation(IntPtr browser, int inspect_x, int inspect_y, int has_inspect_point);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserCloseDevToolsDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserHasDevToolsDelegation(IntPtr browser);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserSendDevToolsMessageDelegation(IntPtr browser, IntPtr message, int size);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostBrowserExecuteDevToolsMethodDelegation(IntPtr browser, int message_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, [MarshalAs(UnmanagedType.LPUTF8Str)] string? params_json);
 // Frame properties
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate IntPtr HostFrameGetUrlDelegation(IntPtr frame);
@@ -270,6 +303,38 @@ public delegate int HostRequestGetResourceTypeDelegation(IntPtr request);
 public delegate int HostRequestGetTransitionTypeDelegation(IntPtr request);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate ulong HostRequestGetIdentifierDelegation(IntPtr request);
+// CefResponse properties
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+[return: MarshalAs(UnmanagedType.U1)]
+public delegate bool HostResponseIsReadOnlyDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostResponseGetStatusDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetStatusDelegation(IntPtr response, int status);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetStatusTextDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetStatusTextDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? status_text);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetMimeTypeDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetMimeTypeDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? mime_type);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetCharsetDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetCharsetDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? charset);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetUrlDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetHeaderMapDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostResponseGetHeaderByNameDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetHeaderByNameDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string? value, int overwrite);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseRemoveHeaderByNameDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetHeaderMapDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? header_map_str);
 // Heartbeat control
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
@@ -576,6 +641,76 @@ namespace DotNetLib
             return BoxedValue.From(id);
         }
     }
+    // Parse a UTF-8 JSON payload (byte[] or string) into a DSL value tree.
+    // Uses System.Text.Json for efficient in-place UTF-8 parsing without extra string allocation.
+    sealed class DevToolsParseBytesExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: dev_tools_parse_bytes(bytes_or_string)");
+                return BoxedValue.NullObject;
+            }
+            try {
+                var obj = operands[0].GetObject();
+                if (obj is byte[] bytes) {
+                    if (bytes.Length == 0) return BoxedValue.NullObject;
+                    var reader = new System.Text.Json.Utf8JsonReader(bytes);
+                    using (var doc = System.Text.Json.JsonDocument.ParseValue(ref reader)) {
+                        return JsonElementToBoxed(doc.RootElement);
+                    }
+                }
+                else {
+                    string s = operands[0].AsString ?? string.Empty;
+                    if (string.IsNullOrEmpty(s)) return BoxedValue.NullObject;
+                    using (var doc = System.Text.Json.JsonDocument.Parse(s)) {
+                        return JsonElementToBoxed(doc.RootElement);
+                    }
+                }
+            }
+            catch (Exception ex) {
+                NativeApi.AppendApiErrorInfoLine("dev_tools_parse_bytes failed: " + ex.Message);
+                return BoxedValue.NullObject;
+            }
+        }
+
+        private static BoxedValue JsonElementToBoxed(System.Text.Json.JsonElement elem)
+        {
+            switch (elem.ValueKind) {
+                case System.Text.Json.JsonValueKind.Object: {
+                        var d = new Dictionary<BoxedValue, BoxedValue>();
+                        foreach (var p in elem.EnumerateObject()) {
+                            d.Add(BoxedValue.FromString(p.Name), JsonElementToBoxed(p.Value));
+                        }
+                        return BoxedValue.FromObject(d);
+                    }
+                case System.Text.Json.JsonValueKind.Array: {
+                        var l = new List<BoxedValue>();
+                        foreach (var v in elem.EnumerateArray()) {
+                            l.Add(JsonElementToBoxed(v));
+                        }
+                        return BoxedValue.FromObject(l);
+                    }
+                case System.Text.Json.JsonValueKind.String:
+                    return BoxedValue.FromString(elem.GetString() ?? string.Empty);
+                case System.Text.Json.JsonValueKind.Number:
+                    if (elem.TryGetInt64(out var i64)) {
+                        if (i64 >= int.MinValue && i64 <= int.MaxValue) return BoxedValue.From((int)i64);
+                        return BoxedValue.From(i64);
+                    }
+                    if (elem.TryGetDouble(out var dbl)) return BoxedValue.From(dbl);
+                    return BoxedValue.FromString(elem.GetRawText());
+                case System.Text.Json.JsonValueKind.True:
+                    return BoxedValue.FromBool(true);
+                case System.Text.Json.JsonValueKind.False:
+                    return BoxedValue.FromBool(false);
+                case System.Text.Json.JsonValueKind.Null:
+                case System.Text.Json.JsonValueKind.Undefined:
+                default:
+                    return BoxedValue.NullObject;
+            }
+        }
+    }
     sealed class HelpExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -747,6 +882,11 @@ namespace DotNetLib
             m_BrowserCloseApi = Marshal.GetDelegateForFunctionPointer<HostBrowserCloseDelegation>(hostApi.BrowserClose);
             m_BrowserSetFocusApi = Marshal.GetDelegateForFunctionPointer<HostBrowserSetFocusDelegation>(hostApi.BrowserSetFocus);
             m_BrowserGetOpenerIdApi = Marshal.GetDelegateForFunctionPointer<HostBrowserGetOpenerIdDelegation>(hostApi.BrowserGetOpenerId);
+            m_BrowserShowDevToolsApi = Marshal.GetDelegateForFunctionPointer<HostBrowserShowDevToolsDelegation>(hostApi.BrowserShowDevTools);
+            m_BrowserCloseDevToolsApi = Marshal.GetDelegateForFunctionPointer<HostBrowserCloseDevToolsDelegation>(hostApi.BrowserCloseDevTools);
+            m_BrowserHasDevToolsApi = Marshal.GetDelegateForFunctionPointer<HostBrowserHasDevToolsDelegation>(hostApi.BrowserHasDevTools);
+            m_BrowserSendDevToolsMessageApi = Marshal.GetDelegateForFunctionPointer<HostBrowserSendDevToolsMessageDelegation>(hostApi.BrowserSendDevToolsMessage);
+            m_BrowserExecuteDevToolsMethodApi = Marshal.GetDelegateForFunctionPointer<HostBrowserExecuteDevToolsMethodDelegation>(hostApi.BrowserExecuteDevToolsMethod);
             m_FrameGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetUrlDelegation>(hostApi.FrameGetUrl);
             m_FrameGetNameApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetNameDelegation>(hostApi.FrameGetName);
             m_FrameGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostFrameGetIdentifierDelegation>(hostApi.FrameGetIdentifier);
@@ -769,6 +909,22 @@ namespace DotNetLib
             m_RequestGetResourceTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetResourceTypeDelegation>(hostApi.RequestGetResourceType);
             m_RequestGetTransitionTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetTransitionTypeDelegation>(hostApi.RequestGetTransitionType);
             m_RequestGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetIdentifierDelegation>(hostApi.RequestGetIdentifier);
+            // CefResponse properties
+            m_ResponseIsReadOnlyApi = Marshal.GetDelegateForFunctionPointer<HostResponseIsReadOnlyDelegation>(hostApi.ResponseIsReadOnly);
+            m_ResponseGetStatusApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetStatusDelegation>(hostApi.ResponseGetStatus);
+            m_ResponseSetStatusApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetStatusDelegation>(hostApi.ResponseSetStatus);
+            m_ResponseGetStatusTextApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetStatusTextDelegation>(hostApi.ResponseGetStatusText);
+            m_ResponseSetStatusTextApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetStatusTextDelegation>(hostApi.ResponseSetStatusText);
+            m_ResponseGetMimeTypeApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetMimeTypeDelegation>(hostApi.ResponseGetMimeType);
+            m_ResponseSetMimeTypeApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetMimeTypeDelegation>(hostApi.ResponseSetMimeType);
+            m_ResponseGetCharsetApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetCharsetDelegation>(hostApi.ResponseGetCharset);
+            m_ResponseSetCharsetApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetCharsetDelegation>(hostApi.ResponseSetCharset);
+            m_ResponseGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetUrlDelegation>(hostApi.ResponseGetUrl);
+            m_ResponseGetHeaderMapApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetHeaderMapDelegation>(hostApi.ResponseGetHeaderMap);
+            m_ResponseGetHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetHeaderByNameDelegation>(hostApi.ResponseGetHeaderByName);
+            m_ResponseSetHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetHeaderByNameDelegation>(hostApi.ResponseSetHeaderByName);
+            m_ResponseRemoveHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostResponseRemoveHeaderByNameDelegation>(hostApi.ResponseRemoveHeaderByName);
+            m_ResponseSetHeaderMapApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetHeaderMapDelegation>(hostApi.ResponseSetHeaderMap);
             // Heartbeat control
             m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
         }
@@ -995,6 +1151,21 @@ namespace DotNetLib
         public bool HasApiErrorInfoForDSL => ApiErrorInfo.Length > 0;
         public string GetApiErrorInfoForDSL() => ApiErrorInfo.ToString();
 
+        public BrowserProxy? GetBrowser()
+        {
+            if (s_Browser != IntPtr.Zero) {
+                return new BrowserProxy(s_Browser, this);
+            }
+            return null;
+        }
+        public FrameProxy? GetFrame()
+        {
+            if (s_Frame != IntPtr.Zero) {
+                return new FrameProxy(s_Frame, this);
+            }
+            return null;
+        }
+
         internal static string LoadDslFunc(string func, string code, IList<string> paramNames, bool update)
         {
             if (Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId) {
@@ -1103,8 +1274,7 @@ namespace DotNetLib
         internal static bool HasApiErrorInfo => ApiErrorInfo.Length > 0;
         internal static string GetApiErrorInfo() => ApiErrorInfo.ToString();
 
-        internal static StringBuilder ApiErrorInfo
-        {
+        internal static StringBuilder ApiErrorInfo {
             get {
                 if (s_ApiErrorInfo == null) {
                     s_ApiErrorInfo = new StringBuilder();
@@ -1122,14 +1292,13 @@ namespace DotNetLib
         string INativeApi.GetStringInLength(string str, int len, int beginOrEndOrBeginEnd) => GetStringInLength(str, len, beginOrEndOrBeginEnd);
         string INativeApi.QuoteString(string? value) => QuoteString(value);
         string INativeApi.StripQuotes(string? s) => StripQuotes(s);
-            IEnumerable<string> INativeApi.GetHelpDocs()
-            {
-                return BatchCommand.BatchScript.ApiDocs
-                    .Concat(BatchCommand.BatchScript.UserApiDocs)
-                    .Select(pair => string.Format("{0}: {1}", pair.Key, pair.Value))
-                    .ToArray();
-            }
-
+        IEnumerable<string> INativeApi.GetHelpDocs()
+        {
+            return BatchCommand.BatchScript.ApiDocs
+                .Concat(BatchCommand.BatchScript.UserApiDocs)
+                .Select(pair => string.Format("{0}: {1}", pair.Key, pair.Value))
+                .ToArray();
+        }
 
         // IErrorReporter explicit interface implementation (delegates to static methods)
         void IErrorReporter.ClearApiErrorInfo() => ClearApiErrorInfo();
@@ -1147,13 +1316,11 @@ namespace DotNetLib
         void IDslEngine.Register(string name, string doc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, factory);
         void IDslEngine.Register(string name, string doc, bool addToUserApiDoc, IExpressionFactory factory) => BatchCommand.BatchScript.Register(name, doc, addToUserApiDoc, factory);
 
-        internal static nint Browser
-        {
+        internal static nint Browser {
             get => s_Browser;
             set => s_Browser = value;
         }
-        internal static nint Frame
-        {
+        internal static nint Frame {
             get => s_Frame;
             set => s_Frame = value;
         }
@@ -1416,6 +1583,46 @@ namespace DotNetLib
             return m_BrowserGetOpenerIdApi(browser);
         }
 
+        // --- DevTools host actions ---
+        public void BrowserShowDevTools(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserShowDevToolsApi == null) return;
+            m_BrowserShowDevToolsApi(browser, 0, 0, 0);
+        }
+        public void BrowserShowDevTools(IntPtr browser, int inspectX, int inspectY)
+        {
+            if (browser == IntPtr.Zero || m_BrowserShowDevToolsApi == null) return;
+            m_BrowserShowDevToolsApi(browser, inspectX, inspectY, 1);
+        }
+        public void BrowserCloseDevTools(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserCloseDevToolsApi == null) return;
+            m_BrowserCloseDevToolsApi(browser);
+        }
+        public bool BrowserHasDevTools(IntPtr browser)
+        {
+            if (browser == IntPtr.Zero || m_BrowserHasDevToolsApi == null) return false;
+            return m_BrowserHasDevToolsApi(browser) != 0;
+        }
+        public bool BrowserSendDevToolsMessage(IntPtr browser, byte[] messageBytes)
+        {
+            if (browser == IntPtr.Zero || m_BrowserSendDevToolsMessageApi == null) return false;
+            if (messageBytes == null || messageBytes.Length == 0) return false;
+            var handle = GCHandle.Alloc(messageBytes, GCHandleType.Pinned);
+            try {
+                return m_BrowserSendDevToolsMessageApi(browser, handle.AddrOfPinnedObject(), messageBytes.Length) != 0;
+            }
+            finally {
+                handle.Free();
+            }
+        }
+        public int BrowserExecuteDevToolsMethod(IntPtr browser, int messageId, string method, string? paramsJson)
+        {
+            if (browser == IntPtr.Zero || m_BrowserExecuteDevToolsMethodApi == null) return 0;
+            if (string.IsNullOrEmpty(method)) return 0;
+            return m_BrowserExecuteDevToolsMethodApi(browser, messageId, method, paramsJson);
+        }
+
         // --- Frame properties ---
         public string FrameGetUrl(IntPtr frame)
         {
@@ -1526,6 +1733,82 @@ namespace DotNetLib
             if (request == IntPtr.Zero || m_RequestGetIdentifierApi == null) return 0;
             return m_RequestGetIdentifierApi(request);
         }
+        // CefResponse properties
+        public bool ResponseIsReadOnly(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseIsReadOnlyApi == null) return true;
+            return m_ResponseIsReadOnlyApi(response);
+        }
+        public int ResponseGetStatus(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetStatusApi == null) return 0;
+            return m_ResponseGetStatusApi(response);
+        }
+        public void ResponseSetStatus(IntPtr response, int status)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetStatusApi?.Invoke(response, status);
+        }
+        public string ResponseGetStatusText(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetStatusTextApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetStatusTextApi(response));
+        }
+        public void ResponseSetStatusText(IntPtr response, string? status_text)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetStatusTextApi?.Invoke(response, status_text);
+        }
+        public string ResponseGetMimeType(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetMimeTypeApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetMimeTypeApi(response));
+        }
+        public void ResponseSetMimeType(IntPtr response, string? mime_type)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetMimeTypeApi?.Invoke(response, mime_type);
+        }
+        public string ResponseGetCharset(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetCharsetApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetCharsetApi(response));
+        }
+        public void ResponseSetCharset(IntPtr response, string? charset)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetCharsetApi?.Invoke(response, charset);
+        }
+        public string ResponseGetUrl(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetUrlApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetUrlApi(response));
+        }
+        public string ResponseGetHeaderMap(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetHeaderMapApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetHeaderMapApi(response));
+        }
+        public string ResponseGetHeaderByName(IntPtr response, string name)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetHeaderByNameApi == null) return string.Empty;
+            return ReadAndFreeNativeString(m_ResponseGetHeaderByNameApi(response, name));
+        }
+        public void ResponseSetHeaderByName(IntPtr response, string name, string? value, bool overwrite)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetHeaderByNameApi?.Invoke(response, name, value, overwrite ? 1 : 0);
+        }
+        public void ResponseRemoveHeaderByName(IntPtr response, string name)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseRemoveHeaderByNameApi?.Invoke(response, name);
+        }
+        public void ResponseSetHeaderMap(IntPtr response, string? header_map_str)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetHeaderMapApi?.Invoke(response, header_map_str);
+        }
         public void SetHeartbeatInterval(int intervalMs)
         {
             m_SetHeartbeatIntervalApi?.Invoke(intervalMs);
@@ -1542,8 +1825,8 @@ namespace DotNetLib
             if (!isMainThread) {
                 return;
             }
-            if (s_Browser == IntPtr.Zero || s_Frame == IntPtr.Zero) {
-                Lib.NativeLogNoLock($"[csharp] Error HandleAllQueues, browser:{s_Browser} frame:{s_Frame}");
+            if (s_Browser == IntPtr.Zero) {
+                Lib.NativeLogNoLock($"[csharp] Error HandleAllQueues, browser is null");
                 return;
             }
 
@@ -1674,6 +1957,12 @@ namespace DotNetLib
         private HostBrowserCloseDelegation? m_BrowserCloseApi;
         private HostBrowserSetFocusDelegation? m_BrowserSetFocusApi;
         private HostBrowserGetOpenerIdDelegation? m_BrowserGetOpenerIdApi;
+        // DevTools host actions
+        private HostBrowserShowDevToolsDelegation? m_BrowserShowDevToolsApi;
+        private HostBrowserCloseDevToolsDelegation? m_BrowserCloseDevToolsApi;
+        private HostBrowserHasDevToolsDelegation? m_BrowserHasDevToolsApi;
+        private HostBrowserSendDevToolsMessageDelegation? m_BrowserSendDevToolsMessageApi;
+        private HostBrowserExecuteDevToolsMethodDelegation? m_BrowserExecuteDevToolsMethodApi;
         // Frame properties
         private HostFrameGetUrlDelegation? m_FrameGetUrlApi;
         private HostFrameGetNameDelegation? m_FrameGetNameApi;
@@ -1698,6 +1987,22 @@ namespace DotNetLib
         private HostRequestGetResourceTypeDelegation? m_RequestGetResourceTypeApi;
         private HostRequestGetTransitionTypeDelegation? m_RequestGetTransitionTypeApi;
         private HostRequestGetIdentifierDelegation? m_RequestGetIdentifierApi;
+        // CefResponse properties
+        private HostResponseIsReadOnlyDelegation? m_ResponseIsReadOnlyApi;
+        private HostResponseGetStatusDelegation? m_ResponseGetStatusApi;
+        private HostResponseSetStatusDelegation? m_ResponseSetStatusApi;
+        private HostResponseGetStatusTextDelegation? m_ResponseGetStatusTextApi;
+        private HostResponseSetStatusTextDelegation? m_ResponseSetStatusTextApi;
+        private HostResponseGetMimeTypeDelegation? m_ResponseGetMimeTypeApi;
+        private HostResponseSetMimeTypeDelegation? m_ResponseSetMimeTypeApi;
+        private HostResponseGetCharsetDelegation? m_ResponseGetCharsetApi;
+        private HostResponseSetCharsetDelegation? m_ResponseSetCharsetApi;
+        private HostResponseGetUrlDelegation? m_ResponseGetUrlApi;
+        private HostResponseGetHeaderMapDelegation? m_ResponseGetHeaderMapApi;
+        private HostResponseGetHeaderByNameDelegation? m_ResponseGetHeaderByNameApi;
+        private HostResponseSetHeaderByNameDelegation? m_ResponseSetHeaderByNameApi;
+        private HostResponseRemoveHeaderByNameDelegation? m_ResponseRemoveHeaderByNameApi;
+        private HostResponseSetHeaderMapDelegation? m_ResponseSetHeaderMapApi;
         private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
 
         [ThreadStatic]
@@ -1775,6 +2080,36 @@ namespace DotNetLib
         public void StopLoad() => m_Api.BrowserStopLoad(m_Browser);
         public void Close(bool forceClose = false) => m_Api.BrowserClose(m_Browser, forceClose);
         public void SetFocus(bool focus) => m_Api.BrowserSetFocus(m_Browser, focus);
+
+        // --- DevTools ---
+        public void ShowDevTools() => m_Api.BrowserShowDevTools(m_Browser);
+        public void ShowDevTools(int inspectX, int inspectY) => m_Api.BrowserShowDevTools(m_Browser, inspectX, inspectY);
+        public void CloseDevTools() => m_Api.BrowserCloseDevTools(m_Browser);
+        public bool HasDevTools => m_Api.BrowserHasDevTools(m_Browser);
+
+        public bool SendDevToolsMessage(byte[] messageBytes) => m_Api.BrowserSendDevToolsMessage(m_Browser, messageBytes);
+        public bool SendDevToolsMessage(string messageJson)
+        {
+            if (string.IsNullOrEmpty(messageJson)) return false;
+            return m_Api.BrowserSendDevToolsMessage(m_Browser, System.Text.Encoding.UTF8.GetBytes(messageJson));
+        }
+
+        public int ExecuteDevToolsMethod(string method, string? paramsJson = null, int messageId = 0)
+        {
+            return m_Api.BrowserExecuteDevToolsMethod(m_Browser, messageId, method, paramsJson);
+        }
+
+        /// <summary>
+        /// Convenience wrapper: enable Network domain and toggle CSP bypass.
+        /// Requires the browser DevTools agent to be attached; call again after navigation if needed.
+        /// </summary>
+        public void SetCspBypass(bool enable)
+        {
+            ExecuteDevToolsMethod("Network.enable");
+            ExecuteDevToolsMethod("Page.setBypassCSP", enable ? "{\"enabled\":true}" : "{\"enabled\":false}");
+        }
+
+        // DevTools observer callbacks are dispatched directly to DSL (see Lib.OnDevTools*).
     }
 
     /// <summary>
@@ -1848,6 +2183,74 @@ namespace DotNetLib
     }
 
     /// <summary>
+    /// Proxy wrapper for a native CefResponse pointer.
+    /// Passed as parameter during OnResourceResponseFilter / OnResponseContentFilter callbacks.
+    /// In decision mode (GetResourceHandler hook) the response is an empty writable
+    /// CefResponse created by native; C# fills header overrides into it.
+    /// In inspection mode (GetResourceResponseFilter hook) the response is the actual
+    /// upstream response and is read-only; write APIs (SetHeaderByName etc.) are
+    /// silently dropped by CEF, only read APIs are meaningful.
+    /// </summary>
+    public class CefResponseProxy
+    {
+        private readonly IntPtr m_Response;
+        private readonly NativeApi m_Api;
+
+        public CefResponseProxy(IntPtr response, NativeApi api)
+        {
+            m_Response = response;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_Response;
+        public bool IsReadOnly => m_Api.ResponseIsReadOnly(m_Response);
+        public int Status {
+            get => m_Api.ResponseGetStatus(m_Response);
+            set => m_Api.ResponseSetStatus(m_Response, value);
+        }
+        public string StatusText {
+            get => m_Api.ResponseGetStatusText(m_Response);
+            set => m_Api.ResponseSetStatusText(m_Response, value);
+        }
+        public string MimeType {
+            get => m_Api.ResponseGetMimeType(m_Response);
+            set => m_Api.ResponseSetMimeType(m_Response, value);
+        }
+        public string Charset {
+            get => m_Api.ResponseGetCharset(m_Response);
+            set => m_Api.ResponseSetCharset(m_Response, value);
+        }
+        public string Url => m_Api.ResponseGetUrl(m_Response);
+        /// <summary>
+        /// Get header map as newline-separated "key:value" pairs (split by first ':').
+        /// </summary>
+        public string HeaderMap => m_Api.ResponseGetHeaderMap(m_Response);
+        /// <summary>
+        /// Replace the entire header map from newline-separated "key:value" pairs.
+        /// </summary>
+        public void SetHeaderMap(string? headerMapStr) => m_Api.ResponseSetHeaderMap(m_Response, headerMapStr);
+        public string GetHeaderByName(string name) => m_Api.ResponseGetHeaderByName(m_Response, name);
+        /// <summary>
+        /// Set a header. overwrite=true replaces all existing values for the name.
+        /// </summary>
+        public void SetHeaderByName(string name, string? value, bool overwrite = true) => m_Api.ResponseSetHeaderByName(m_Response, name, value, overwrite);
+        /// <summary>
+        /// Remove all values for the given header name (case-insensitive).
+        /// </summary>
+        public void RemoveHeaderByName(string name) => m_Api.ResponseRemoveHeaderByName(m_Response, name);
+        /// <summary>
+        /// Mark a header for pending removal on the response_override map (decision
+        /// mode). Implemented by writing an empty value for the given name so that
+        /// MyResourceHandler will erase all matching entries from the outgoing
+        /// response headers when composing the final header list. Use this from
+        /// on_resource_response_filter (decision branch) instead of
+        /// RemoveHeaderByName, since response_override starts as an empty map and
+        /// erase-on-empty-map is a no-op.
+        /// </summary>
+        public void AddPendingRemoveHeaderByName(string name) => m_Api.ResponseSetHeaderByName(m_Response, name, string.Empty, true);
+    }
+
+    /// <summary>
     /// Proxy wrapper for a native CefCommandLine pointer.
     /// Passed as parameter during OnBeforeCommandLineProcessing / OnBeforeChildProcessLaunch callbacks,
     /// or obtained via GetGlobalCommandLine() for the read-only global instance (after CefInitialize).
@@ -1868,8 +2271,7 @@ namespace DotNetLib
         public bool IsReadOnly => m_Api.CommandLineIsReadOnly(m_CommandLine);
         public bool HasSwitches => m_Api.CommandLineHasSwitches(m_CommandLine);
         public bool HasArguments => m_Api.CommandLineHasArguments(m_CommandLine);
-        public string Program
-        {
+        public string Program {
             get => m_Api.CommandLineGetProgram(m_CommandLine);
             set => m_Api.CommandLineSetProgram(m_CommandLine, value);
         }
@@ -1959,7 +2361,7 @@ namespace DotNetLib
         public delegate bool OnExecuteMetaDSLDelegation(IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, [MarshalAs(UnmanagedType.U1)] bool user_gesture, [MarshalAs(UnmanagedType.U1)] bool is_redirect, [MarshalAs(UnmanagedType.U1)] ref bool out_return_value);
+        public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, [MarshalAs(UnmanagedType.U1)] bool user_gesture, [MarshalAs(UnmanagedType.U1)] bool is_redirect, IntPtr out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
@@ -1971,6 +2373,47 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
+
+        // Resource interception callbacks (invoked on browser process IO thread).
+        // Decision mode (GetResourceHandler): response is an empty writable
+        // CefResponse for C# to fill header overrides into; return true to
+        // intercept with MyResourceHandler. Inspection mode
+        // (GetResourceResponseFilter): response is the actual upstream response
+        // for read-only inspection; return true to register MyResponseFilter
+        // for body filtering.
+        // out_replace_content: whether to enable body filtering. false = skip
+        // body filter (inspection mode: don't register MyResponseFilter;
+        // decision mode: MyResourceHandler only applies header overrides,
+        // passes body through unchanged). true = enable body filter (default).
+        // IntPtr (bool*) instead of ref bool: C# bool marshals as 4-byte
+        // UnmanagedType.Bool by default, mismatching C++ 1-byte bool. Use
+        // IntPtr + Marshal.WriteByte for correct 1-byte layout.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnResourceResponseFilterDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, IntPtr out_replace_content);
+        // Body filter: streams body chunks through C# for transformation.
+        // Returns true if DSL handled the chunk (use DSL's outputs), false to
+        // pass through unchanged. out_status receives the filter status (0=DONE,
+        // 1=NEED_MORE_DATA, 2=ERROR, matches cef_response_filter_status_t).
+        // out_data_in_read / out_data_out_written receive consumed/written byte
+        // counts (ref int, matches on_before_resource_load_fn's int* pattern).
+        // No browser/frame: CefResourceHandler::Read / CefResponseFilter::Filter
+        // signatures do not carry them; body filter is a pure data transform.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnResponseContentFilterDelegation(IntPtr data_in, int data_in_size, IntPtr data_out, int data_out_size, ref int out_data_in_read, ref int out_data_out_written, ref int out_status);
+
+        // DevTools observer callbacks (invoked on browser process UI thread).
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate int OnDevToolsMessageDelegation(IntPtr browser, IntPtr msg, int size);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnDevToolsMethodResultDelegation(IntPtr browser, int message_id, int success, IntPtr result, int size);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnDevToolsEventDelegation(IntPtr browser, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, IntPtr @params, int size);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnDevToolsAgentAttachedDelegation(IntPtr browser);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void OnDevToolsAgentDetachedDelegation(IntPtr browser);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
@@ -2147,6 +2590,104 @@ namespace DotNetLib
             NativeApi.LastSourceProcessId = -1;
         }
 
+        // --- DevTools observer callbacks (browser process UI thread) ---
+        // All callbacks dispatch directly to DSL (no C# event layer).
+        // Keep handlers fast; heavy work should be dispatched off-thread by DSL side.
+
+        internal static int OnDevToolsMessage(IntPtr browser, IntPtr msg, int size)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    byte[] buf = ReadNativeBytes(msg, size);
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_dev_tools_message",
+                        BoxedValue.FromObject(buf));
+                    CheckDslError();
+                    if (!r.IsNullObject) return r.GetInt();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnDevToolsMessage Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            return 0;
+        }
+
+        internal static void OnDevToolsMethodResult(IntPtr browser, int message_id, int success, IntPtr result, int size)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    byte[] buf = ReadNativeBytes(result, size);
+                    BatchCommand.BatchScript.Call("on_dev_tools_method_result",
+                        BoxedValue.From(message_id),
+                        BoxedValue.FromBool(success != 0),
+                        BoxedValue.FromObject(buf));
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnDevToolsMethodResult Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static void OnDevToolsEvent(IntPtr browser, string method, IntPtr @params, int size)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    byte[] buf = ReadNativeBytes(@params, size);
+                    BatchCommand.BatchScript.Call("on_dev_tools_event",
+                        BoxedValue.FromString(method ?? string.Empty),
+                        BoxedValue.FromObject(buf));
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnDevToolsEvent Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static void OnDevToolsAgentAttached(IntPtr browser)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    BatchCommand.BatchScript.Call("on_dev_tools_agent_attached");
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnDevToolsAgentAttached Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        internal static void OnDevToolsAgentDetached(IntPtr browser)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    BatchCommand.BatchScript.Call("on_dev_tools_agent_detached");
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnDevToolsAgentDetached Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+        }
+
+        private static byte[] ReadNativeBytes(IntPtr ptr, int size)
+        {
+            if (ptr == IntPtr.Zero || size <= 0) return Array.Empty<byte>();
+            byte[] buf = new byte[size];
+            Marshal.Copy(ptr, buf, 0, size);
+            return buf;
+        }
+
         internal static bool OnBrowserHotReloadCopyFiles(string url)
         {
             NativeLogNoLock("[csharp] Browser Hot Reload Copy Files, url: " + url);
@@ -2225,11 +2766,13 @@ namespace DotNetLib
             NativeApi.SetContext(browser, frame);
             s_StartupUrl = url;
 
-            // Track main frame browser/frame pair for renderer process
+            // Track main-frame browser id for renderer process. Only the id
+            // is stored; the native ref map holds the CefRefPtr and the main
+            // frame is retrieved on demand via BrowserGetMainFrame.
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
-                    s_RendererBrowserFrames[browserId] = (browser, frame);
+                    s_RendererBrowsers.Add(browserId);
                     NativeLogNoLock($"[csharp] Renderer browser tracked: id={browserId}");
                 }
             }
@@ -2259,12 +2802,12 @@ namespace DotNetLib
             NativeApi.SetContext(browser, frame);
             NativeLogNoLock("[csharp] Renderer Finalize");
 
-            // Untrack main frame browser/frame pair for renderer process
-            // Only remove if the frame pointer matches (avoid removing a newer frame after navigation)
-            if (s_NativeApi != null) {
+            // Untrack main-frame browser id for renderer process. Only untrack when
+            // the finalized frame is the main frame; navigation-driven sub frame
+            // finalize should not remove the browser id.
+            if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
-                if (browserId > 0 && s_RendererBrowserFrames.TryGetValue(browserId, out var existing) && existing.frame == frame) {
-                    s_RendererBrowserFrames.Remove(browserId);
+                if (browserId > 0 && s_RendererBrowsers.Remove(browserId)) {
                     NativeLogNoLock($"[csharp] Renderer browser untracked: id={browserId}");
                 }
             }
@@ -2678,7 +3221,7 @@ namespace DotNetLib
             return false;
         }
 
-        internal static bool OnBeforeBrowse(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, ref bool out_return_value)
+        internal static bool OnBeforeBrowse(IntPtr browser, IntPtr frame, IntPtr request, bool user_gesture, bool is_redirect, IntPtr out_return_value)
         {
             NativeApi.SetContext(browser, frame);
 
@@ -2696,12 +3239,13 @@ namespace DotNetLib
                     CheckDslError();
                     // Return value convention: (handled, return_value)
                     // If handled is true, out_return_value is set and we return true
-                    if (!r.IsNullObject) {
-                        var list = r.GetObject() as IList<BoxedValue>;
-                        if (list != null && list.Count >= 2) {
-                            bool handled = list[0].GetBool();
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
                             if (handled) {
-                                out_return_value = list[1].GetBool();
+                                bool retVal = tuple2.Item2.GetBool();
+                                if (out_return_value != IntPtr.Zero) Marshal.WriteByte(out_return_value, (byte)(retVal ? 1 : 0));
                                 return true;
                             }
                         }
@@ -2711,9 +3255,11 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnBeforeBrowse:" + e.Message + "\n" + e.StackTrace);
             }
+            if (out_return_value != IntPtr.Zero) Marshal.WriteByte(out_return_value, (byte)0);
             return false;
         }
 
+        //Note: this method will be called on the browser process IO thread.
         internal static bool OnBeforeResourceLoad(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value)
         {
             NativeApi.SetContext(browser, frame);
@@ -2730,12 +3276,13 @@ namespace DotNetLib
                     CheckDslError();
                     // Return value convention: (handled, return_value_int)
                     // If handled is true, out_return_value is set and we return true
-                    if (!r.IsNullObject) {
-                        var list = r.GetObject() as IList<BoxedValue>;
-                        if (list != null && list.Count >= 2) {
-                            bool handled = list[0].GetBool();
+                    // DSL returns raw cef_return_value_t enum (RV_CANCEL=0, RV_CONTINUE=1, RV_CONTINUE_ASYNC=2).
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
                             if (handled) {
-                                out_return_value = list[1].GetInt();
+                                out_return_value = tuple2.Item2.GetInt();
                                 return true;
                             }
                         }
@@ -2745,6 +3292,120 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
             }
+            return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static bool OnResourceResponseFilter(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, IntPtr out_replace_content)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var responseProxy = new CefResponseProxy(response, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(responseProxy));
+                    var r = BatchCommand.BatchScript.Call("on_resource_response_filter", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // DSL return value: (handled, replace_content) or just handled.
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
+                            // Default: disable body filtering. Write via Marshal.WriteByte to
+                            // match C++ 1-byte bool layout (IntPtr param instead of ref bool).
+                            bool replaceContent = tuple2.Item2.GetBool();
+                            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)(replaceContent ? 1 : 0));
+                            return handled;
+                        }
+                    }
+                    // Single bool return: treated as handled, replace_content defaults to false.
+                    else if (!r.IsNullObject) {
+                        if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
+                        return r.GetBool();
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnResourceResponseFilter Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
+            return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static bool OnResponseContentFilter(IntPtr data_in, int data_in_size, IntPtr data_out, int data_out_size, ref int out_data_in_read, ref int out_data_out_written, ref int out_status)
+        {
+            // Default: not handled (native will pass through unchanged).
+            // DSL return value: (handled, status, output_bytes, bytes_read).
+            //   handled: true = use DSL's outputs, false = pass through.
+            //   status: 0=DONE, 1=NEED_MORE_DATA, 2=ERROR.
+            //   output_bytes: byte[] filtered output (clamped to data_out_size).
+            //   bytes_read: how many input bytes DSL consumed (0..data_in_size).
+            // No SetContext here: body filter is a pure data transform, no
+            // browser/frame is available from the native side.
+            out_status = 0;  // DONE
+            out_data_in_read = data_in_size;
+            out_data_out_written = 0;
+
+            try {
+                if (s_NativeApi != null && data_in_size > 0) {
+                    TryLoadDSL();
+                    byte[] inputBuf = ReadNativeBytes(data_in, data_in_size);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromObject(inputBuf));
+                    var r = BatchCommand.BatchScript.Call("on_response_content_filter", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+
+                    bool handled = false;
+                    byte[]? outputBuf = null;
+                    int bytesRead = data_in_size;
+                    if (r.IsTuple) {
+                        int len = r.TupleLength;
+                        if (len >= 1) {
+                            handled = r.GetTupleValue(0).GetBool();
+                            if (handled) {
+                                if (len >= 2) {
+                                    out_status = r.GetTupleValue(1).GetInt();
+                                }
+                                if (len >= 3) {
+                                    outputBuf = r.GetTupleValue(2).As<byte[]>();
+                                }
+                                if (len >= 4) {
+                                    bytesRead = r.GetTupleValue(3).GetInt();
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        handled = r.GetBool();
+                    }
+                    if (handled) {
+                        // Clamp output to what chromium's buffer can hold.
+                        int written = 0;
+                        if (outputBuf != null && data_out != IntPtr.Zero && data_out_size > 0) {
+                            written = outputBuf.Length > data_out_size ? data_out_size : outputBuf.Length;
+                            Marshal.Copy(outputBuf, 0, data_out, written);
+                        }
+                        out_data_out_written = written;
+
+                        // Clamp bytes_read to [0, data_in_size].
+                        if (bytesRead < 0) bytesRead = 0;
+                        if (bytesRead > data_in_size) bytesRead = data_in_size;
+                        out_data_in_read = bytesRead;
+
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnResponseContentFilter Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            // Not handled: native falls back to pass-through.
             return false;
         }
 
@@ -2765,7 +3426,7 @@ namespace DotNetLib
                     var r = BatchCommand.BatchScript.Call("on_console_log", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
-                    if (!r.IsNullObject) {
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
                         var tuple = r.GetTuple2();
                         if (tuple != null) {
                             bool handled = tuple.Item1.GetBool();
@@ -2962,50 +3623,43 @@ namespace DotNetLib
             }
         }
 
-        internal static string CmdLine
-        {
+        internal static string CmdLine {
             get {
                 return s_CmdLine;
             }
         }
 
-        internal static string BasePath
-        {
+        internal static string BasePath {
             get {
                 return s_BasePath;
             }
         }
 
-        internal static string AppDir
-        {
+        internal static string AppDir {
             get {
                 return s_AppDir;
             }
         }
 
-        internal static bool IsMac
-        {
+        internal static bool IsMac {
             get {
                 return s_IsMac;
             }
         }
 
-        internal static IAgentPlugin? AgentPlugin
-        {
+        internal static IAgentPlugin? AgentPlugin {
             get {
                 return AgentFrameworkService.Instance.AgentPlugin;
             }
         }
 
-        internal static int MainThreadId
-        {
+        internal static int MainThreadId {
             get {
                 return s_MainThreadId;
             }
         }
 
-        internal static string DslScriptFile
-        {
+        internal static string DslScriptFile {
             get {
                 return s_DslScriptFile;
             }
@@ -3076,7 +3730,7 @@ namespace DotNetLib
         internal static int[] GetAllContextBrowserIds()
         {
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                return s_RendererBrowserFrames.Keys.ToArray();
+                return s_RendererBrowsers.ToArray();
             }
             return s_BrowserBrowserIds.ToArray();
         }
@@ -3092,8 +3746,8 @@ namespace DotNetLib
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
-                    // Sync: remove stale entry from C# dictionary
-                    s_RendererBrowserFrames.Remove(browserId);
+                    // Sync: remove stale entry from C# id set
+                    s_RendererBrowsers.Remove(browserId);
                     return false;
                 }
                 NativeApi.SetContext(pair.browser, pair.frame);
@@ -3107,6 +3761,7 @@ namespace DotNetLib
                 return false;
             }
             IntPtr frame = s_NativeApi.BrowserGetMainFrame(browser);
+            if (frame == IntPtr.Zero) return false;
             NativeApi.SetContext(browser, frame);
             return true;
         }
@@ -3122,8 +3777,8 @@ namespace DotNetLib
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
-                    // Sync: remove stale entry from C# dictionary
-                    s_RendererBrowserFrames.Remove(browserId);
+                    // Sync: remove stale entry from C# id set
+                    s_RendererBrowsers.Remove(browserId);
                 }
                 return pair.browser;
             }
@@ -3147,16 +3802,19 @@ namespace DotNetLib
             foreach (var id in ids) {
                 string url = string.Empty;
                 if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                    // In renderer process, use GetRendererBrowserFrameById to get valid pointers
+                    // In renderer process, use GetRendererBrowserFrameById to get valid pointers.
+                    // NOTE: do NOT call FrameIsValid / FrameGetUrl on the returned frame ptr.
+                    // The native impl fetches the main frame on-the-fly and may not keep a
+                    // ref beyond the call, so the frame ptr can point to an already-released
+                    // CefFrame object; CToCpp GetWrapperStruct will hit NOTREACHED and abort.
+                    // The browser ptr is safer because native ref map holds a strong ref.
                     var pair = s_NativeApi.GetRendererBrowserFrameById(id);
-                    if (pair.browser == IntPtr.Zero) {
-                        // Sync: remove stale entry from C# dictionary
-                        s_RendererBrowserFrames.Remove(id);
+                    if (pair.browser == IntPtr.Zero || !s_NativeApi.BrowserIsValid(pair.browser)) {
+                        // Sync: remove stale entry from C# id set
+                        s_RendererBrowsers.Remove(id);
                         continue;
                     }
-                    if (pair.frame != IntPtr.Zero && s_NativeApi.FrameIsValid(pair.frame)) {
-                        url = s_NativeApi.FrameGetUrl(pair.frame);
-                    }
+                    url = s_NativeApi.BrowserGetUrl(pair.browser);
                 }
                 else {
                     IntPtr browser = s_NativeApi.GetBrowserById(id);
@@ -3531,6 +4189,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("get_browser_ids", "get_browser_ids() - get all browser IDs in current process", false, new ExpressionFactoryHelper<GetBrowserIdsExp>());
             BatchCommand.BatchScript.Register("set_context_by_id", "set_context_by_id(browser_id) - set current context by browser ID, returns bool", false, new ExpressionFactoryHelper<SetContextByIdExp>());
             BatchCommand.BatchScript.Register("find_browser_id_by_url_key", "find_browser_id_by_url_key(url_key) - find browser ID by URL substring, returns -1 if not found", false, new ExpressionFactoryHelper<FindBrowserIdByUrlKeyExp>());
+            BatchCommand.BatchScript.Register("dev_tools_parse_bytes", "dev_tools_parse_bytes(bytes_or_string) - parse UTF-8 JSON to DSL value tree (dict/list/primitives)", new ExpressionFactoryHelper<DevToolsParseBytesExp>());
         }
         private static void PrepareBatchScript()
         {
@@ -3561,8 +4220,8 @@ namespace DotNetLib
         private static string s_AppDir = string.Empty;
         private static bool s_IsMac = false;
         private static int s_ProcessType = -1;
-        // Renderer process: tracked browser/frame pairs (browserId -> (browser, frame))
-        private static readonly Dictionary<int, (IntPtr browser, IntPtr frame)> s_RendererBrowserFrames = new();
+        // Renderer process: tracked main-frame browser ids (native ref map owns the CefRefPtr)
+        private static readonly HashSet<int> s_RendererBrowsers = new();
         // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
@@ -3576,7 +4235,7 @@ namespace DotNetLib
         private static string s_ProjectSwitch = string.Empty;
         private static List<string> s_EmptyArgs = new List<string>();
         private static StringBuilder s_StringBuilder = new StringBuilder();
-        private static StringWriter s_StringWriter = new StringWriter(s_StringBuilder);
+        private static TextWriter s_StringWriter = StreamWriter.Synchronized(new StringWriter(s_StringBuilder));
         private static NativeApi? s_NativeApi;
     }
     internal static class CefDotnetAppApi

@@ -21,6 +21,10 @@ script(on_finalize)
 script(on_browser_init)
 {
     nativelog("[dsl] on_browser_init finish");
+    $browser = nativeapi.GetBrowser();
+    if (!isnull($browser)) {
+        $browser.SetCspBypass(true);
+    };
 };
 script(on_browser_finalize)
 {
@@ -30,6 +34,9 @@ script(on_browser_finalize)
 script(on_heart_beat)params($processType,$deltaTime)
 {
     // Do something every heart beat
+    if ($processType == 0) {
+        handle_thread_queue();
+    };
 };
 script(on_console_log)params($level,$message,$source,$line,$maxLogSize)
 {
@@ -59,7 +66,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -103,11 +110,80 @@ script(on_before_browse)params($request,$userGesture,$isRedirect)
     nativelog("[dsl] on_before_browse: url={0} method={1} userGesture={2} isRedirect={3}", $request.Url, $request.Method, $userGesture, $isRedirect);
     return((false, false));
 };
+
+// Note: this function will be called on the browser process IO thread.
 script(on_before_resource_load)params($request)
 {
     nativelog("[dsl] on_before_resource_load: url={0} method={1}", $request.Url, $request.Method);
     return((false, 1));
 };
+
+// Note: this function will be called on the browser process IO thread.
+// Resource interception hook.
+// Decision mode (GetResourceHandler): $response is an empty writable
+// CefResponse; fill header overrides into it and return (true, ...) to
+// intercept the resource with MyResourceHandler. Header overrides are merged
+// onto the upstream response headers (same-name overwrite; empty value means
+// delete).
+// Inspection mode (GetResourceResponseFilter): $response is the actual
+// upstream response (read-only; mutations are silently dropped by CEF).
+// Return (handled, replace_content):
+//   handled: decision mode = intercept the resource; inspection mode =
+//   register MyResponseFilter for body filtering.
+//   replace_content: whether to enable body filtering via
+//   on_response_content_filter. false = skip body filter (inspection mode:
+//   don't register MyResponseFilter; decision mode: MyResourceHandler only
+//   applies header overrides, passes body through unchanged). true = enable
+//   body filter (default).
+script(on_resource_response_filter)params($request, $response)
+{
+    nativelog("[dsl] on_resource_response_filter: url={0}", $request.Url);
+    // Diagnostic bypass: let chromium's native stack handle common static
+    // assets (js/css/images/fonts). If the SSO site renders correctly after
+    // this change, our custom-handler forwarding path is losing auth cookies
+    // (either Set-Cookie ingestion or UR_FLAG_ALLOW_STORED_CREDENTIALS).
+    // Note: substring match is intentionally loose; version-query strings
+    // like "vue.min.js?v=xxx" are still covered.
+    //if (stringcontainsany($request.Url, ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf")) {
+    //    return((false, false));
+    //};
+    if ($response.IsReadOnly) {
+        nativelog("[dsl] on_resource_response_filter: {0}", $response.HeaderMap);
+    }
+    else {
+        $response.AddPendingRemoveHeaderByName("Content-Security-Policy");
+        return((true, false));
+    };
+    // Example: intercept evaluation.woa.com and strip CSP headers.
+    // if (strcontains($request.Url, "evaluation.woa.com")) {
+    //     $response.AddPendingRemoveHeaderByName("Content-Security-Policy");
+    //     $response.AddPendingRemoveHeaderByName("Content-Security-Policy-Report-Only");
+    //     return((true, true));
+    // };
+    return((false, false));
+};
+
+// Note: this function will be called on the browser process IO thread.
+// Response body filter. Streams body chunks through DSL for transformation.
+// $data_in is a byte[] of the current chunk (capped to 4MB by native).
+// Return (handled_bool, status_int, output_byte_array, bytes_read):
+//   handled_bool: true = use DSL's outputs below; false = native passes the
+//   chunk through unchanged (ignores the other fields).
+//   status_int: 0=DONE, 1=NEED_MORE_DATA, 2=ERROR (matches
+//   cef_response_filter_status_t).
+//   output_byte_array: filtered output (byte[], may be empty; length is
+//   clamped to chromium's buffer size by the C# side).
+//   bytes_read: how many input bytes DSL consumed (0..$data_in.length).
+//   Used when input > output buffer (e.g. decompress filter that fills the
+//   4MB staging before consuming all input); native keeps the unconsumed
+//   remainder for the next call.
+// Default: handled=true, pass through unchanged (consume all input, produce
+// input as-is).
+script(on_response_content_filter)params($data_in)
+{
+    return((false, 0, $data_in, len($data_in)));
+};
+
 script(on_load_start)params($url,$transitionType,$isMainFrame)
 {
     nativelog("[dsl] on_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
@@ -170,4 +246,41 @@ script(on_browser_cef_query)params($query_id, $request, $persistent)
     // Return 0 to indicate success
     // Return non-zero error code to indicate failure
     return(-1);
+};
+
+// DevTools observer callbacks (browser process only, fired on UI thread).
+// $bytes is a managed byte[] holding a UTF-8 JSON CDP payload; use
+// dev_tools_parse_bytes($bytes) to get a dict/list/primitive tree.
+
+// Raw CDP message received from the agent. Return non-zero to swallow it
+// (prevent CEF default handling). Default: 0 = let CEF process normally.
+// The active browser is the one C# set via SetContext (see on_dev_tools_* entry).
+script(on_dev_tools_message)params($bytes)
+{
+    //nativelog("[dsl] on_dev_tools_message");
+    return(0);
+};
+
+// Result of a previous ExecuteDevToolsMethod call, matched by $message_id.
+script(on_dev_tools_method_result)params($message_id, $success, $bytes)
+{
+    nativelog("[dsl] on_dev_tools_method_result: message_id={0} success={1}", $message_id, $success);
+};
+
+// Unsolicited CDP event from the agent (e.g. Network.responseReceived).
+script(on_dev_tools_event)params($method, $bytes)
+{
+    //nativelog("[dsl] on_dev_tools_event: method={0}", $method);
+};
+
+// DevTools agent attached to the browser (CDP channel is ready).
+script(on_dev_tools_agent_attached)
+{
+    nativelog("[dsl] on_dev_tools_agent_attached");
+};
+
+// DevTools agent detached from the browser.
+script(on_dev_tools_agent_detached)
+{
+    nativelog("[dsl] on_dev_tools_agent_detached");
 };

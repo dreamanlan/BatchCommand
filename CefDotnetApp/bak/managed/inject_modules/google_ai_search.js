@@ -1,6 +1,6 @@
 ﻿// ==UserScript==
 // @name         MetaDSL Agent Bridge (Google AI Search)
-// @version      1.0
+// @version      1.1
 // @description  Google AI Search page <-> local WebSocket code execution loop (single model)
 // @match        *://*/*
 // @grant        none
@@ -34,16 +34,21 @@
     // Fallback root used by Observer until first AI message is found.
     chatListFallback: 'body',
     // AI message anchor: each represents one round of AI reply.
-    aiMsg: '.mZJni[data-xid="VpUvz"]',
+    aiMsg: 'model-response, .mZJni[data-xid="VpUvz"]',
     // Code block container (also carries data-complete="true" when stream done).
     codeBlock: '.r1PmQe',
+    geminiCodeBlock: 'pre',
+    allCodeBlock: 'model-response pre, .r1PmQe',
+
     codeBlockComplete: '.r1PmQe[data-complete="true"]',
+    messageComplete: '.response-footer.complete, message-content[aria-busy="false"], .markdown-main-panel[aria-busy="false"]',
+
     // Code text inside the block.
     codeText: 'pre code',
     // Real textarea for chat input.
-    inputTA: 'textarea.ITIRGe[maxlength="8192"]',
+    inputTA: 'div[contenteditable="true"][role="textbox"], textarea.ITIRGe[maxlength="8192"]',
     // Send button - must be precise to avoid voice-send-button twin.
-    sendBtn: 'button[data-xid="input-plate-send-button"]',
+    sendBtn: 'button[data-xid="input-plate-send-button"], button[aria-label], button[title], button[type="submit"], button[data-test-id]',
   };
 
   /** Pick the first visible (rect non-zero) element matching selector. */
@@ -67,10 +72,71 @@
     return out;
   }
 
+  /** Pick AI messages whose host or visible content has a non-zero rect. */
+  function pickAllVisibleMessages(root) {
+    const all = (root || document).querySelectorAll(SEL.aiMsg);
+    const out = [];
+    for (const el of all) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        out.push(el);
+        continue;
+      }
+      const content = el.querySelector('pre, code, message-content, .markdown-main-panel');
+      if (!content) continue;
+      const contentRect = content.getBoundingClientRect();
+      if (contentRect.width > 0 && contentRect.height > 0) out.push(el);
+    }
+    return out;
+  }
+
+  /** Return code blocks scoped to one AI message. */
+  function getMessageCodeBlocks(aiMsgEl) {
+    if (!aiMsgEl.matches('model-response')) {
+      return aiMsgEl.querySelectorAll(SEL.codeBlock);
+    }
+    const blocks = aiMsgEl.querySelectorAll(SEL.geminiCodeBlock);
+    if (blocks.length > 0) return blocks;
+    const messageContent = aiMsgEl.querySelector('message-content');
+    if (!messageContent) return [];
+    const content = messageContent.querySelector('.markdown-main-panel') || messageContent;
+    return hasExecuteMarker(readCodeText(content)) ? [content] : [];
+  }
+
+  /** Read plain text from textarea/input or a contenteditable textbox. */
+  function getInputText(el) {
+    if (!el) return '';
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+      return el.value || '';
+    }
+    return (el.innerText || el.textContent || '').replace(/\u00a0/g, ' ');
+  }
+
+  /** Pick a visible button whose metadata explicitly identifies send/submit. */
+  function pickSendButton() {
+    const candidates = pickAllVisible(SEL.sendBtn);
+    for (const btn of candidates) {
+      if (btn.getAttribute('data-xid') === 'input-plate-send-button') return btn;
+      if ((btn.getAttribute('type') || '').toLowerCase() === 'submit') return btn;
+      const label = (btn.getAttribute('aria-label') || btn.getAttribute('title') || '')
+        .trim().toLowerCase();
+      if (/^(send|send message|send prompt|submit|submit prompt)$/.test(label)) return btn;
+      const ident = [
+        btn.getAttribute('data-test-id') || '',
+        btn.id || '',
+        typeof btn.className === 'string' ? btn.className : '',
+      ].join(' ').toLowerCase();
+      if (/(^|[\s_-])(send|submit)([\s_-]|$)/.test(ident)) return btn;
+    }
+    return null;
+  }
+
   /* ===========================================
      Section 1  Global State (single model)
      =========================================== */
+
   const ST = {
+
     // Single WebSocket connection (no slot keying).
     ws: null,
     reconCnt: 0,
@@ -315,8 +381,8 @@
     // NOT auto-write ourselves, the user is composing a message. Defer the
     // flush (keep queue intact) and retry in 2s.
     const taNow = pickVisible(SEL.inputTA);
-    const curVal = taNow ? taNow.value : '';
-    if (curVal && curVal !== ST.lastAutoSentText) {
+    const curVal = getInputText(taNow);
+    if (curVal.trim() && curVal !== ST.lastAutoSentText) {
       const nowTs = Date.now();
       if (nowTs - ST.deferLastLogTs > 1000) {
         ST.deferLastLogTs = nowTs;
@@ -401,8 +467,10 @@
   function baselineCodeOnly() {
     const root = getChatRoot();
     let n = 0;
-    root.querySelectorAll(SEL.codeBlock).forEach(el => {
-      if (!ST.processedCodes.has(el)) { ST.processedCodes.add(el); n++; }
+    pickAllVisibleMessages(root).forEach(msg => {
+      getMessageCodeBlocks(msg).forEach(el => {
+        if (!ST.processedCodes.has(el)) { ST.processedCodes.add(el); n++; }
+      });
     });
     log(`[baseline] absorbed ${n} existing code blocks`);
     return n;
@@ -533,6 +601,7 @@
 
   function mkBtn(text, onClick) {
     const b = document.createElement('button');
+    b.dataset.action = text;
     b.textContent = text;
     b.style.cssText = `
       background:#3a4a6b; color:#fff; border:none; border-radius:3px;
@@ -556,30 +625,28 @@
     const status = ST.panelEl.querySelector('#metadsl-gai-status');
     if (!status) return;
 
-    const armTag = ST.armed
-      ? '<span style="color:#4caf50;font-weight:bold;">ARM</span>'
-      : '<span style="color:#999;">idle</span>';
-    const brkTag = ST.breakerOn
-      ? '<span style="color:#f44336;font-weight:bold;">BRK</span>'
-      : (ST.longRunMode
-        ? '<span style="color:#ff9800;">LONG</span>'
-        : '<span style="color:#4caf50;">run</span>');
-    const autoTag = ST.autoSendOn
-      ? '<span style="color:#00bcd4;">AUTO</span>'
-      : '';
     const queue = ST.pendingResults.length;
-    const queueTag = queue > 0
-      ? `<span style="color:#ff9800;">Q:${queue}</span>`
-      : '<span style="color:#666;">Q:0</span>';
-    const wsTag = (ST.ws && ST.ws.readyState === 1)
-      ? '<span style="color:#4caf50;">ws</span>'
-      : '<span style="color:#f44336;">ws-off</span>';
-    const failTag = ST.sendFailAt
-      ? `<span style="color:#f44336;" title="${ST.sendFailInfo}">FAIL</span>`
-      : '';
+    const wsText = (ST.ws && ST.ws.readyState === 1) ? 'ws' : 'ws-off';
+    const modeText = ST.breakerOn ? 'BREAK' : (ST.longRunMode ? 'LONG' : 'RUN');
+    const autoText = ST.autoSendOn ? 'AUTO' : 'MANUAL';
+    const failText = ST.sendFailAt ? ' | FAIL' : '';
+    status.style.whiteSpace = 'pre-line';
+    status.textContent =
+      `${ST.armed ? 'ARM' : 'IDLE'} | ${modeText} | ${autoText} | Q:${queue} | ${wsText}${failText}\n` +
+      `rounds: ${ST.roundCount}/${CFG.MAX_ROUNDS}`;
+    status.title = ST.sendFailAt ? ST.sendFailInfo : '';
 
-    status.innerHTML = `${armTag} ${brkTag} ${autoTag} ${queueTag} ${wsTag} ${failTag}
-      <br>rounds: ${ST.roundCount}/${CFG.MAX_ROUNDS}`;
+    const setButtonState = (action, active, activeColor) => {
+      const button = ST.panelEl.querySelector(`button[data-action="${action}"]`);
+      if (!button) return;
+      button.textContent = `${action}:${active ? 'on' : 'off'}`;
+      button.style.background = active ? activeColor : '#3a4a6b';
+      button.style.fontWeight = active ? 'bold' : 'normal';
+    };
+    setButtonState('arm', ST.armed, '#2e7d32');
+    setButtonState('break', ST.breakerOn, '#c62828');
+    setButtonState('long', ST.longRunMode, '#ef6c00');
+    setButtonState('auto', ST.autoSendOn, '#00838f');
   }
 
   /* ===========================================
@@ -631,9 +698,9 @@
     if (!ST.autoSendOn) return;
     const ta = pickVisible(SEL.inputTA);
     if (!ta) return;
-    const text = (ta.value || '').trim();
+    const text = getInputText(ta).trim();
     if (!text) return;
-    const btn = pickVisible(SEL.sendBtn);
+    const btn = pickSendButton();
     if (!btn) return;
     if (btn.disabled) return;
     // Don't click if currently generating (button shows stop icon).
@@ -669,8 +736,19 @@
     }
   }
 
-  /** Set textarea value via React-native setter so React notices the change. */
+  /** Set textarea/input or contenteditable text and notify the page. */
   function setReactValue(el, value) {
+    if (el.isContentEditable) {
+      el.focus();
+      el.textContent = value;
+      el.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText',
+        data: value,
+      }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
     const proto = el.tagName === 'TEXTAREA'
       ? window.HTMLTextAreaElement.prototype
       : window.HTMLInputElement.prototype;
@@ -687,7 +765,7 @@
    */
   function chatSend(text) {
     const ta = pickVisible(SEL.inputTA);
-    if (!ta) { markSendFail('input textarea not found'); return; }
+    if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }
     catch (e) { markSendFail('setReactValue threw: ' + e.message); return; }
 
@@ -701,14 +779,14 @@
           const b = all[i];
           dump.push(`${i}:${(b.getAttribute('data-xid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
         }
-        markSendFail('send button never enabled. ta.val.len=' + (ta.value || '').length + ' btns=' + dump.join(';'));
+        markSendFail('send button never enabled. input.len=' + getInputText(ta).length + ' btns=' + dump.join(';'));
         return;
       }
-      const btn = pickVisible(SEL.sendBtn);
+      const btn = pickSendButton();
       const ta2 = pickVisible(SEL.inputTA);
-      // Wait until: send btn visible & enabled, AND React has flushed our
-      // value into the visible textarea (defends against framework rollback).
-      if (!btn || btn.disabled || !ta2 || ta2.value !== text) {
+      // Wait until: send btn visible & enabled, AND the page has retained our
+      // value in the visible input (defends against framework rollback).
+      if (!btn || btn.disabled || !ta2 || getInputText(ta2) !== text) {
         setTimeout(tick, 200);
         return;
       }
@@ -775,11 +853,15 @@
    *   2. The message text has been stable for TEXT_STABLE_MS.
    */
   function isMessageComplete(aiMsgEl) {
-    // 1) All code blocks marked complete.
-    const allCb = aiMsgEl.querySelectorAll(SEL.codeBlock);
-    const completeCb = aiMsgEl.querySelectorAll(SEL.codeBlockComplete);
-    if (allCb.length > 0 && completeCb.length !== allCb.length) {
-      return false;
+    // 1) Require the page-specific completion marker.
+    if (aiMsgEl.matches('model-response')) {
+      if (!aiMsgEl.querySelector(SEL.messageComplete)) return false;
+    } else {
+      const allCb = getMessageCodeBlocks(aiMsgEl);
+      const completeCb = aiMsgEl.querySelectorAll(SEL.codeBlockComplete);
+      if (allCb.length > 0 && completeCb.length !== allCb.length) {
+        return false;
+      }
     }
     // 2) Text-stable window.
     const txt = aiMsgEl.textContent || '';
@@ -804,10 +886,14 @@
    */
   function extractBlocks(aiMsgEl) {
     const out = [];
-    const blocks = aiMsgEl.querySelectorAll(SEL.codeBlock);
+    const blocks = getMessageCodeBlocks(aiMsgEl);
     blocks.forEach(blk => {
       if (ST.processedCodes.has(blk)) return;
-      const codeEl = blk.querySelector(SEL.codeText);
+      const codeEl = blk.matches('pre')
+        ? (blk.querySelector('code') || blk)
+        : (blk.matches('message-content, .markdown-main-panel')
+          ? blk
+          : blk.querySelector(SEL.codeText));
       if (!codeEl) return;
       const code = readCodeText(codeEl);
       if (!code || !code.trim()) return;
@@ -862,14 +948,14 @@
     const root = getChatRoot();
     if (!root) return;
 
-    const aiMsgs = pickAllVisible(SEL.aiMsg, root);
+    const aiMsgs = pickAllVisibleMessages(root);
     if (aiMsgs.length === 0) return;
 
     // Disarmed mode: rolling baseline - absorb every visible code block as
     // already processed; do not mark messages, do not send to WS.
     if (!ST.armed) {
       aiMsgs.forEach(msg => {
-        const blocks = msg.querySelectorAll(SEL.codeBlock);
+        const blocks = getMessageCodeBlocks(msg);
         blocks.forEach(blk => {
           if (!ST.processedCodes.has(blk)) ST.processedCodes.add(blk);
         });
@@ -914,9 +1000,9 @@
     const root = getChatRoot();
     if (!root) return;
     let nMsg = 0, nBlk = 0;
-    pickAllVisible(SEL.aiMsg, root).forEach(msg => {
+    pickAllVisibleMessages(root).forEach(msg => {
       ST.processedMsgs.add(msg); nMsg++;
-      msg.querySelectorAll(SEL.codeBlock).forEach(blk => {
+      getMessageCodeBlocks(msg).forEach(blk => {
         ST.processedCodes.add(blk); nBlk++;
       });
     });

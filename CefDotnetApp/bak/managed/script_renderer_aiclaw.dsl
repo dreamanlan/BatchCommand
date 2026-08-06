@@ -89,7 +89,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -120,7 +120,7 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 {
     nativelog("[dsl] on_renderer_load_end:{0} {1} {2}", $url, $httpStatusCode, $isMainFrame);
-    if (string_contains_any($url, "https://www.google.com/ai", "https://www.google.com/search") && ($isMainFrame == "True" || $isMainFrame == true)) {
+    if (string_contains_any($url, "https://gemini.google.com/app") && ($isMainFrame == "True" || $isMainFrame == true)) {
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));

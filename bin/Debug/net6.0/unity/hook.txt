@@ -2528,3 +2528,86 @@ hook("UC_delete_object_step2_check")
 		return 0;
 	};
 };
+hook("AssetImportManager::GetImportManagerDiagSwitches")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("AssetImportManager::GetImportManagerDiagSwitches",
+		//   switches.master, switches.slowest, switches.queueLevelRestart)
+		// argv layout (no ret slot, args start at 0); each arg is a bool (1 byte):
+		//   argv(0) = &master             false = skip all diag timing and output
+		//   argv(1) = &slowest            slowest resource Top5 snapshot
+		//   argv(2) = &queueLevelRestart  behavior switch (NOT timing): true = defer restart to queue end, false = per-asset immediate restart
+		// Default: do not modify (engine defaults are all true). Uncomment ptrset lines to override.
+		$master:int            = ptrget(argv(0),1);
+		$slowest:int           = ptrget(argv(1),1);
+		$queueLevelRestart:int = ptrget(argv(2),1);
+
+		// Example: master off, slowest on (output only slowest resources):
+		// ptrset(argv(0),1,0);
+
+		// Example: switch to per-asset immediate restart instead of queue-level deferred:
+		// ptrset(argv(2),1,0);
+
+		return 0;
+	};
+};
+hook("WorkerManagerASIO::GetWorkerThreadCounts")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("WorkerManagerASIO::GetWorkerThreadCounts",
+		//   jobWorkerCount, backgroundJobWorkerCount, assetGarbageCollectorCount)
+		// argv layout (no ret slot, args start at 0); each arg is int32 (4 bytes):
+		//   argv(0) = &jobWorkerCount            JobSystem worker threads per worker process
+		//   argv(1) = &backgroundJobWorkerCount   BackgroundJobQueue worker threads per worker process
+		//   argv(2) = &assetGarbageCollectorCount asset GC threads per worker process
+		// Default: do not modify (engine computes halved defaults). Uncomment ptrset lines to override.
+		$jobWorkerCount:int             = ptrget(argv(0),4);
+		$backgroundJobWorkerCount:int   = ptrget(argv(1),4);
+		$assetGarbageCollectorCount:int = ptrget(argv(2),4);
+
+		// Example: pin worker thread counts to fixed values for repeatable A/B tests
+		// (e.g. to verify the Run 11 "fewer workers -> smaller ImportBridge" observation):
+		ptrset(argv(0),4,1); // jobWorkerCount
+		ptrset(argv(1),4,4); // backgroundJobWorkerCount
+		ptrset(argv(2),4,1); // assetGarbageCollectorCount
+
+		return 0;
+	};
+};
+hook("OnDemandScheduler::GetWorkerProcessCounts")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("OnDemandScheduler::GetWorkerProcessCounts",
+		//   desiredWorkerCount, standbyWorkerCount, idleWorkerShutdownDelayMs)
+		// argv layout (no ret slot, args start at 0); each arg is int32 (4 bytes):
+		//   argv(0) = &desiredWorkerCount        desired number of OnDemand worker processes
+		//   argv(1) = &standbyWorkerCount        standby workers kept alive when idle
+		//   argv(2) = &idleWorkerShutdownDelayMs idle worker shutdown delay in milliseconds
+		// Default: do not modify (config/command-line/EditorUserSettings). Uncomment ptrset lines to override.
+		$desiredWorkerCount:int        = ptrget(argv(0),4);
+		$standbyWorkerCount:int        = ptrget(argv(1),4);
+		$idleWorkerShutdownDelayMs:int = ptrget(argv(2),4);
+
+		// Example: limit to 2 worker processes, 0 standby, 60s idle shutdown:
+		// ptrset(argv(0),4,2);
+		// ptrset(argv(1),4,0);
+		// ptrset(argv(2),4,60000);
+
+		return 0;
+	};
+};
+hook("ImportCategorization::CategorizeAssets_ForcePrint")
+{
+	onenter{
+		// DBGSCP_HOOK_VOID("ImportCategorization::CategorizeAssets_ForcePrint", forcePrint)
+		// argv layout (no ret slot, args start at 0); arg is bool (1 byte):
+		//   argv(0) = &forcePrint  1 = force PrintImportInfos even when printImportLog=false or HasPersistentDirtyNonVersionedSingletonAssets=true
+		// Default: do not modify (forcePrint stays false). Set to 1 to force print:
+		ptrset(argv(0),1,1); // forcePrint = true
+
+		dumpstack("#ImportCategorization::CategorizeAssets");
+		LogStack("#ImportCategorization::CategorizeAssets");
+
+		return 0;
+	};
+};

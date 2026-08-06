@@ -538,7 +538,7 @@ class AgentPanel {
         cursor: pointer;
         font-size: 11px;
       `;
-    googleAiBtn.onclick = () => window.open('https://www.google.com/ai');
+    googleAiBtn.onclick = () => window.open('https://gemini.google.com/app');
 
     buttonBar.appendChild(testBtn);
     buttonBar.appendChild(chatRoomBtn);

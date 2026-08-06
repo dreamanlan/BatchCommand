@@ -89,7 +89,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://ai.woa.com/#/chat", "https://www.google.com")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://ai.woa.com/#/chat", "https://gemini.google.com/app")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -117,7 +117,7 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 {
     nativelog("[dsl] on_renderer_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
     if (($isMainFrame == "True" || $isMainFrame == true)) {
-        if (string_contains_any($url, "http://localhost:8082/index.html", "https://www.google.com/ai", "https://www.google.com/search")) {
+        if (string_contains_any($url, "http://localhost:8082/index.html", "https://gemini.google.com/app")) {
             // redirect to aiclaw dsl
             setdslfile("Script_renderer_aiclaw.dsl");
         };

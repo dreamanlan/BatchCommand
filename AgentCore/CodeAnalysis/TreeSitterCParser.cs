@@ -36,7 +36,7 @@ namespace AgentCore.CodeAnalysis
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
 
-            var code = File.ReadAllText(filePath);
+            var code = SafeFileReader.ReadAllText(filePath);
             return ParseText(code, filePath);
         }
 

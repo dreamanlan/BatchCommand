@@ -100,6 +100,21 @@ namespace BatchCommand
             return BoxedValue.FromBool(Debugger.IsAttached);
         }
     }
+    internal sealed class GetStringLengthExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                throw new Exception("Expected: getstringlength(val)");
+            }
+
+            string str = operands[0].AsString;
+            if (!string.IsNullOrEmpty(str)) {
+                return BoxedValue.From(str.Length);
+            }
+            return -1;
+        }
+    }
     internal sealed class GetStringInLengthExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -1231,7 +1246,7 @@ namespace BatchCommand
             s_AutoCompletions.Clear();
             string autoCompleteFile = Path.Combine(fileDir, "AutoComplete.txt");
             if (File.Exists(autoCompleteFile)) {
-                var lines = File.ReadAllLines(autoCompleteFile);
+                var lines = ReadAllLinesShared(autoCompleteFile);
                 foreach (var line in lines) {
                     int si = line.IndexOf("=>");
                     if (si > 0) {
@@ -1241,6 +1256,18 @@ namespace BatchCommand
                     }
                 }
             }
+        }
+        private static string[] ReadAllLinesShared(string path)
+        {
+            var lines = new List<string>();
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                using (var sr = new StreamReader(fs, Encoding.UTF8, true)) {
+                    while (!sr.EndOfStream) {
+                        lines.Add(sr.ReadLine() ?? string.Empty);
+                    }
+                }
+            }
+            return lines.ToArray();
         }
         private static void MoveCursor(int pos)
         {
@@ -1567,6 +1594,7 @@ namespace BatchCommand
             Calculator.Register("getasynctaskresult", "getasynctaskresult(handle) api, get the result of a completed async task, tuple (success, completed, result)", new ExpressionFactoryHelper<GetAsyncTaskResultExp>());
             Calculator.Register("debuggerlaunch", "debuggerlaunch() api", new ExpressionFactoryHelper<DebuggerLaunchExp>());
             Calculator.Register("debuggerbreak", "debuggerbreak() api", new ExpressionFactoryHelper<DebuggerBreakExp>());
+            Calculator.Register("getstringlength", "getstringlength(str)", new ExpressionFactoryHelper<GetStringLengthExp>());
             Calculator.Register("getstringinlength", "getstringinlength(str,len[,begin0_end1_or_beginend2])", new ExpressionFactoryHelper<GetStringInLengthExp>());
             Calculator.Register("clone", "clone(v)", new ExpressionFactoryHelper<CloneExp>());
             Calculator.Register("timestat", "timestat(bool) or timestat() api", new ExpressionFactoryHelper<TimeStatisticOnExp>());
@@ -2006,12 +2034,21 @@ namespace BatchCommand
             DslFile dslFile = new DslFile();
             dslFile.SetStringDelimiter("[[", "]]");
             ScriptableDslHelper.ForDslCalculator.SetCallbacks(dslFile);
-            if (!dslFile.Load(file, OnDslError)) {
+            string content = ReadAllTextShared(file);
+            if (!dslFile.LoadFromString(content, OnDslError)) {
                 return;
             }
 
             foreach (ISyntaxComponent dslInfo in dslFile.DslInfos) {
                 Calculator.LoadDsl(dslInfo);
+            }
+        }
+        private static string ReadAllTextShared(string path)
+        {
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
+                using (var sr = new StreamReader(fs, Encoding.UTF8, true)) {
+                    return sr.ReadToEnd();
+                }
             }
         }
         private static void OnDslError(string err)

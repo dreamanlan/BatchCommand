@@ -6,6 +6,7 @@ using DotnetStoryScript;
 using DotnetStoryScript.DslExpression;
 using ScriptableFramework;
 using CefDotnetApp.AgentCore.Utils;
+using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
@@ -287,7 +288,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
+                string content = SafeFileReader.ReadAllText(path, encoding ?? Encoding.UTF8);
                 if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: {path} pattern not found: {pattern}");
                     return BoxedValue.From(false);
@@ -342,7 +343,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
+                string content = SafeFileReader.ReadAllText(path, encoding ?? Encoding.UTF8);
                 if (!StringHelper.MatchesPattern(content, pattern, ignoreCase)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: {path} pattern not found: {pattern}");
                     return BoxedValue.From(false);
@@ -386,7 +387,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.FromObject(new List<string>());
                 }
 
-                string content = System.IO.File.ReadAllText(path, encoding ?? Encoding.UTF8);
+                string content = SafeFileReader.ReadAllText(path, encoding ?? Encoding.UTF8);
                 var matches = StringHelper.FindAllMatches(content, pattern, ignoreCase);
                 return BoxedValue.FromObject(matches);
             }

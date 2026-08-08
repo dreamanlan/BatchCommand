@@ -29,6 +29,7 @@ namespace CefDotnetApp.AgentCore.Core
         private bool _enableWebSearch = false;
         private bool _enableThinking = false;
         private string _reasoningEffort = ""; // empty = not set; typical values: low/medium/high
+        private int _maxContextTokens = 0; // 0 = do not send; AGUI chat_extra.max_context_tokens
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();
         // send count per tag for periodic system prompt injection
@@ -64,6 +65,7 @@ namespace CefDotnetApp.AgentCore.Core
             else if (key == "enable_web_search") _enableWebSearch = value == "true" || value == "1";
             else if (key == "enable_thinking") _enableThinking = value == "true" || value == "1";
             else if (key == "reasoning_effort") _reasoningEffort = value ?? "";
+            else if (key == "max_context_tokens" && int.TryParse(value, out var mct) && mct > 0) _maxContextTokens = mct;
         }
 
         public void SetSystemPrompt(string tag, string prompt)
@@ -329,6 +331,8 @@ namespace CefDotnetApp.AgentCore.Core
                 chatExtra["enable_thinking"] = true;
             if (!string.IsNullOrEmpty(_reasoningEffort))
                 chatExtra["reasoning_effort"] = _reasoningEffort;
+            if (_maxContextTokens > 0)
+                chatExtra["max_context_tokens"] = _maxContextTokens;
             return chatExtra;
         }
 

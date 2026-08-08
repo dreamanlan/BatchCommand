@@ -6,6 +6,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using CefDotnetApp.AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -54,7 +55,7 @@ namespace AgentCore.CodeAnalysis
             var sourceFiles = GetSourceFiles();
             foreach (var file in sourceFiles) {
                 try {
-                    var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file);
+                    var tree = CSharpSyntaxTree.ParseText(SafeFileReader.ReadAllText(file), path: file);
                     _syntaxTrees[file] = tree;
                 }
                 catch (Exception ex) {
@@ -318,7 +319,7 @@ namespace AgentCore.CodeAnalysis
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
 
-            var newTree = CSharpSyntaxTree.ParseText(File.ReadAllText(filePath), path: filePath);
+            var newTree = CSharpSyntaxTree.ParseText(SafeFileReader.ReadAllText(filePath), path: filePath);
 
             if (_syntaxTrees.ContainsKey(filePath)) {
                 var oldTree = _syntaxTrees[filePath];

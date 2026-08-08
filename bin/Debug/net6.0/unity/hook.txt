@@ -2451,14 +2451,15 @@ hook("D3D11DeviceLost")
 hook("UC_delete_object_step1_check")
 {
 	onenter{
-		// DBGSCP_HOOK_VOID("UC_delete_object_step1_check", object, file, line, func)
-		//   argv(0) = &object (Object*, 8 bytes)
-		//   argv(1) = &file   (const char*, 8 bytes)
-		//   argv(2) = &line   (int, 4 bytes)
-		//   argv(3) = &func   (const char*, 8 bytes)
+		// DBGSCP_HOOK_VOID("UC_delete_object_step1_check", object, file, line, func, checkDetail)
+		//   argv(0) = &object      (Object*, 8 bytes)
+		//   argv(1) = &file        (const char*, 8 bytes)
+		//   argv(2) = &line        (int, 4 bytes)
+		//   argv(3) = &func        (const char*, 8 bytes)
+		//   argv(4) = &checkDetail (bool, 1 byte)  set to 1 to enable hook2 + member access
 		// Validate object pointer before any member access in delete_object_internal_step1.
 		// If the vtable is outside the user-mode canonical address range, the Object*
-		// is stale and accessing members would crash with 0xC0000005. Skip the function.
+		// is stale and accessing members would crash with 0xC0000005. Skip hook2.
 		$object:int = ptrget(argv(0),8);
 
 		if($object == 0){
@@ -2486,17 +2487,20 @@ hook("UC_delete_object_step1_check")
 			return 1;
 		};
 
+		// Object pointer is valid: enable hook2 + member access
+		ptrset(argv(4),1,1);
 		return 0;
 	};
 };
 hook("UC_delete_object_step2_check")
 {
 	onenter{
-		// DBGSCP_HOOK_VOID("UC_delete_object_step2_check", object, file, line, func)
-		//   argv(0) = &object (Object*, 8 bytes)
-		//   argv(1) = &file   (const char*, 8 bytes)
-		//   argv(2) = &line   (int, 4 bytes)
-		//   argv(3) = &func   (const char*, 8 bytes)
+		// DBGSCP_HOOK_VOID("UC_delete_object_step2_check", object, file, line, func, checkDetail)
+		//   argv(0) = &object      (Object*, 8 bytes)
+		//   argv(1) = &file        (const char*, 8 bytes)
+		//   argv(2) = &line        (int, 4 bytes)
+		//   argv(3) = &func        (const char*, 8 bytes)
+		//   argv(4) = &checkDetail (bool, 1 byte)  set to 1 to enable hook2 + member access
 		// Validate object pointer before any member access in delete_object_internal_step2.
 		$object:int = ptrget(argv(0),8);
 
@@ -2525,6 +2529,8 @@ hook("UC_delete_object_step2_check")
 			return 1;
 		};
 
+		// Object pointer is valid: enable hook2 + member access
+		ptrset(argv(4),1,1);
 		return 0;
 	};
 };

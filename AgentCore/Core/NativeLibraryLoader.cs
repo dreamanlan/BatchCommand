@@ -538,7 +538,7 @@ var agentCoreDir = GetAgentCoreDir();
         {
             try
             {
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var br = new BinaryReader(fs);
 
                 uint magic = br.ReadUInt32();

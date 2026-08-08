@@ -38,7 +38,8 @@ class APIClient {
             stream: true, // Use streaming for auto_metadsl
             enableWebSearch: false, // AGUI: input.enable_web_search
             enableThinking: false, // AGUI: input.chat_extra.enable_thinking
-            reasoningEffort: '' // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | ...)
+            reasoningEffort: '', // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | ...)
+            maxContextTokens: 0 // AGUI: input.chat_extra.max_context_tokens (0 = do not send)
         };
     }
 
@@ -604,6 +605,9 @@ class APIClient {
         if (this.config.reasoningEffort) {
             chatExtra.reasoning_effort = this.config.reasoningEffort;
         }
+        if (this.config.maxContextTokens && this.config.maxContextTokens > 0) {
+            chatExtra.max_context_tokens = this.config.maxContextTokens;
+        }
 
         // Build request body in auto_metadsl format
         // Note: conversation_id is intentionally not used to avoid server-side context accumulation
@@ -848,38 +852,41 @@ class APIClient {
     getAvailableModels(apiType) {
         if (apiType === 'openai') {
             return [
-                { value: 'gpt-5.4', label: 'GPT-5.4' },
-                { value: 'gpt-5', label: 'GPT-5' },
-                { value: 'gpt-4o', label: 'GPT-4o' }
+                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol' },
+                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra' },
+                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna' }
             ];
         } else if (apiType === 'claude') {
             return [
-                { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
-                { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
-                { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
-                { value: 'claude-3-7-sonnet-20250219', label: 'Claude 3.7 Sonnet' }
+                { value: 'claude-opus-5', label: 'Claude-Opus-5' },
+                { value: 'claude-sonnet-5', label: 'Claude-Sonnet-5' },
+                { value: 'claude-opus-4-8', label: 'Claude-Opus-4.8' },
+                { value: 'claude-opus-4-7', label: 'Claude-Opus-4.7' },
+                { value: 'claude-sonnet-4-6', label: 'Claude-Sonnet-4.6' },
+                { value: 'claude-opus-4-6', label: 'Claude-Opus-4.6' }
             ];
         } else if (apiType === 'auto_metadsl') {
             return [
+                { value: 'claude-opus-5', label: 'Claude-Opus-5' },
                 { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet' },
                 { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus' },
                 { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
-                { value: 'claude-4.7-opus-1m-context', label: 'Claude-4.7-Opus-1M' },
                 { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
-                { value: 'claude-4.6-sonnet-1m-context', label: 'Claude-4.6-Sonnet-1M' },
                 { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
-                { value: 'claude-4.6-opus-1m-context', label: 'Claude-4.6-Opus-1M' },
+                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol' },
+                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra' },
+                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna' },
                 { value: 'gpt-5.4', label: 'GPT-5.4' },
                 { value: 'gpt-5.5', label: 'GPT-5.5' },
-                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro' },
+                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)' },
+                { value: 'tokenhub_deepseek-v4-flash', label: 'DeepSeek-V4-Flash (Ext)' },
+                { value: 'ext-glm-5.2', label: 'GLM-5.2 (Ext)' },
+                { value: 'hy3', label: 'HY-3' },
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code' },
-                { value: 'kimi-k2.6', label: 'Kimi-K2.6' },
                 { value: 'glm-5.2', label: 'GLM-5.2' },
                 { value: 'glm-5.1', label: 'GLM-5.1' },
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash' },
-                { value: 'deepseek-v3.2', label: 'DeepSeek-V3.2' },
-                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' },
-                { value: 'hy3', label: 'HY-3.0' }
+                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

@@ -30,7 +30,7 @@ namespace CefDotnetApp.AgentCore.Core
                 throw new IOException($"File not found: {path}");
             }
 
-            return File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            return SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
         }
 
         public byte[] ReadFileBytes(string path)
@@ -40,7 +40,7 @@ namespace CefDotnetApp.AgentCore.Core
                 throw new IOException($"File not found: {path}");
             }
 
-            return File.ReadAllBytes(fullPath);
+            return SafeFileReader.ReadAllBytes(fullPath);
         }
 
         public string[] ReadFileLines(string path, Encoding? encoding = null)
@@ -50,7 +50,7 @@ namespace CefDotnetApp.AgentCore.Core
                 throw new IOException($"File not found: {path}");
             }
 
-            return File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            return SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
         }
 
         public bool WriteFile(string path, string content, bool createDirectory = true, Encoding? encoding = null)
@@ -200,7 +200,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // Already has BOM, no need to process.
                 return true;
             }
-            byte[] original = File.ReadAllBytes(fullPath);
+            byte[] original = SafeFileReader.ReadAllBytes(fullPath);
             byte[] result = new byte[original.Length + 3];
             result[0] = 0xEF;
             result[1] = 0xBB;
@@ -221,7 +221,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // No BOM, no need to process.
                 return true;
             }
-            byte[] original = File.ReadAllBytes(fullPath);
+            byte[] original = SafeFileReader.ReadAllBytes(fullPath);
             byte[] result = new byte[original.Length - 3];
             Buffer.BlockCopy(original, 3, result, 0, result.Length);
             File.WriteAllBytes(fullPath, result);
@@ -296,7 +296,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string content = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            string content = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
             var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
@@ -357,7 +357,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_lines: out of range");
@@ -393,7 +393,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string fileContent = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
             var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
@@ -453,7 +453,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string fileContent = File.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
+            string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
             var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
@@ -513,7 +513,7 @@ namespace CefDotnetApp.AgentCore.Core
                 return false;
             }
 
-            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine < 1 || endLine > lines.Length || startLine > endLine) {
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("delete_lines: out of range");
@@ -541,7 +541,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (!File.Exists(fullPath))
                 return new List<int>();
 
-            var lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var result = new List<int>();
 
             for (int i = 0; i < lines.Length; i++) {
@@ -572,7 +572,7 @@ namespace CefDotnetApp.AgentCore.Core
                 throw new IOException($"File not found: {path}");
             }
 
-            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
 
             if (startLine > endLine) {
                 throw new IOException($"startLine:{startLine} > endLine:{endLine}");
@@ -599,7 +599,7 @@ namespace CefDotnetApp.AgentCore.Core
             if (!File.Exists(fullPath))
                 return 0;
 
-            string[] lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            string[] lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             return lines.Length;
         }
 
@@ -744,7 +744,7 @@ namespace CefDotnetApp.AgentCore.Core
         private List<MatchBlock> SearchFileInternalAsBlocks(string fullPath, string searchRegex, int contextLinesAfter, int contextLinesBefore, Encoding? encoding = null)
         {
             var blocks = new List<MatchBlock>();
-            var lines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var lines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var matchedLineIndices = new HashSet<int>();
 
             try {
@@ -851,7 +851,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private string HeadInternal(string fullPath, int lines, Encoding? encoding = null)
         {
-            var allLines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var lineCount = Math.Min(lines, allLines.Length);
             var headLines = allLines.SkipLast(Math.Max(0, allLines.Length - lineCount)).ToArray();
             return string.Join("\n", headLines);
@@ -859,7 +859,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private string TailInternal(string fullPath, int lines, Encoding? encoding = null)
         {
-            var allLines = File.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
+            var allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? Encoding.UTF8);
             var lineCount = Math.Min(lines, allLines.Length);
             var tailLines = allLines.Skip(Math.Max(0, allLines.Length - lineCount)).ToArray();
             return string.Join("\n", tailLines);

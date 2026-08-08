@@ -332,7 +332,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         public static HybridTrie LoadFromFile(string path, int arraySize = 256, int minChildrenForArray = 8, double asciiFractionThreshold = 0.6)
         {
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             return Load(fs, arraySize, minChildrenForArray, asciiFractionThreshold);
         }
 

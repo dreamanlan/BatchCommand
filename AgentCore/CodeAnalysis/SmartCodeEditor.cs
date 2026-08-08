@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Text;
+using CefDotnetApp.AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -34,7 +35,7 @@ namespace AgentCore.CodeAnalysis
                 }
 
                 // Parse the file
-                string originalCode = File.ReadAllText(filePath);
+                string originalCode = SafeFileReader.ReadAllText(filePath);
                 var tree = CSharpSyntaxTree.ParseText(originalCode, path: filePath);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
 
@@ -93,7 +94,7 @@ namespace AgentCore.CodeAnalysis
                 }
 
                 // Parse the file
-                string originalCode = File.ReadAllText(filePath);
+                string originalCode = SafeFileReader.ReadAllText(filePath);
                 var tree = CSharpSyntaxTree.ParseText(originalCode, path: filePath);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
 
@@ -165,7 +166,7 @@ namespace AgentCore.CodeAnalysis
                 }
 
                 // Parse the file
-                string originalCode = File.ReadAllText(filePath);
+                string originalCode = SafeFileReader.ReadAllText(filePath);
                 var tree = CSharpSyntaxTree.ParseText(originalCode, path: filePath);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
 
@@ -238,7 +239,7 @@ namespace AgentCore.CodeAnalysis
                 }
 
                 // Parse the file
-                string originalCode = File.ReadAllText(filePath);
+                string originalCode = SafeFileReader.ReadAllText(filePath);
                 var tree = CSharpSyntaxTree.ParseText(originalCode, path: filePath);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
 
@@ -297,7 +298,7 @@ namespace AgentCore.CodeAnalysis
                 }
 
                 // Parse the file
-                string originalCode = File.ReadAllText(filePath);
+                string originalCode = SafeFileReader.ReadAllText(filePath);
                 var tree = CSharpSyntaxTree.ParseText(originalCode, path: filePath);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
 

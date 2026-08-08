@@ -37,9 +37,9 @@ namespace CefDotnetApp.AgentCore.Core
                 if (!File.Exists(fullDiffPath))
                     return new DiffResult { Success = false, Error = "Diff file not found", Library = "Basic" };
 
-                string diffContent = File.ReadAllText(fullDiffPath, Encoding.UTF8);
+                string diffContent = SafeFileReader.ReadAllText(fullDiffPath, Encoding.UTF8);
                 string[] targetLines = File.Exists(fullTargetPath)
-                    ? File.ReadAllLines(fullTargetPath, Encoding.UTF8)
+                    ? SafeFileReader.ReadAllLines(fullTargetPath, Encoding.UTF8)
                     : new string[0];
 
                 var hunks = ParseUnifiedDiff(diffContent, fullTargetPath);
@@ -102,7 +102,7 @@ namespace CefDotnetApp.AgentCore.Core
                 string fullTargetPath = PathHelper.EnsureAbsolutePath(targetPath, _basePath);
 
                 string[] targetLines = File.Exists(fullTargetPath)
-                    ? File.ReadAllLines(fullTargetPath, Encoding.UTF8)
+                    ? SafeFileReader.ReadAllLines(fullTargetPath, Encoding.UTF8)
                     : new string[0];
 
                 var hunks = ParseUnifiedDiff(diffContent, fullTargetPath);
@@ -985,7 +985,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Read file content
-                string targetContent = File.ReadAllText(fullTargetPath, Encoding.UTF8);
+                string targetContent = SafeFileReader.ReadAllText(fullTargetPath, Encoding.UTF8);
 
                 // Call ReplaceFullLinesText to perform the replacement
                 var result = ReplaceFullLinesText(targetContent, searchText, replacementText, replaceAll, normalizeWhitespace);
@@ -1282,7 +1282,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Read file content
-                string targetContent = File.ReadAllText(fullTargetPath, Encoding.UTF8);
+                string targetContent = SafeFileReader.ReadAllText(fullTargetPath, Encoding.UTF8);
 
                 // Call InsertAfterFullLinesText to perform the insertion
                 var result = InsertAfterFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);
@@ -1325,7 +1325,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
 
                 // Read file content
-                string targetContent = File.ReadAllText(fullTargetPath, Encoding.UTF8);
+                string targetContent = SafeFileReader.ReadAllText(fullTargetPath, Encoding.UTF8);
 
                 // Call InsertBeforeFullLinesText to perform the insertion
                 var result = InsertBeforeFullLinesText(targetContent, searchText, insertText, insertAll, normalizeWhitespace);

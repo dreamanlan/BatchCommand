@@ -1,4 +1,4 @@
-﻿// Note:The design philosophy behind these DSL scripts is to be stateless;
+// Note:The design philosophy behind these DSL scripts is to be stateless;
 // all state resides within C# or JS. The DSL's global variables are utilized
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
@@ -85,7 +85,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
 
     nativelog("[dsl] on_before_command_line_processing: process_type={0}, url={1}", $processType, $url);
 
-    if (stringcontainsany($url, "file:///", "http://localhost") && stringcontainsany($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081")) {
+    if (stringcontainsany($url, "file:///", "http://localhost") && stringcontainsany($url, "AgentCore/hotreload_test.html", "http://localhost:8080/agent.html", "http://localhost:8081", "http://localhost:8082")) {
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using TreeSitter;
 using CefDotnetApp.AgentCore.Models;
+using CefDotnetApp.AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -37,7 +38,7 @@ namespace AgentCore.CodeAnalysis
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
 
-            var code = File.ReadAllText(filePath);
+            var code = SafeFileReader.ReadAllText(filePath);
             return ParseText(code, filePath);
         }
 

@@ -54,7 +54,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 string ext = Path.GetExtension(path).ToLower();
                 if (File.Exists(path) && ext != ".txt" && ext != ".md") {
-                    var lineCount = File.ReadAllLines(path).Length;
+                    var lineCount = SafeFileReader.ReadAllLines(path).Length;
                     var newLineCount = path.Split('\n').Length;
                     if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
                         AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file' !!! To delete certain lines, use the 'delete_lines' function.");
@@ -90,7 +90,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
                 string ext = Path.GetExtension(path).ToLower();
                 if (File.Exists(path) && ext != ".txt" && ext != ".md") {
-                    var lineCount = File.ReadAllLines(path).Length;
+                    var lineCount = SafeFileReader.ReadAllLines(path).Length;
                     var newLineCount = content.Split('\n').Length;
                     if (lineCount > newLineCount + Core.AgentCore.Instance.MaxLinesDeletedByWriteFile) {
                         AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot significantly reduce code using 'write_file_no_bom' !!! To delete certain lines, use the 'delete_lines' function.");

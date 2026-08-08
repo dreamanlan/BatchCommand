@@ -81,7 +81,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
 
                 var readEncoding = encoding ?? Encoding.UTF8;
-                string content = System.IO.File.ReadAllText(fullPath, readEncoding);
+                string content = SafeFileReader.ReadAllText(fullPath, readEncoding);
 
                 // Skip skipCount literal matches, then replace next count literal occurrences.
                 string? newContent = ReplaceRange(content, oldString, newString, skipCount, count, out int replaced);
@@ -190,7 +190,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                string content = System.IO.File.ReadAllText(fullPath, encoding ?? System.Text.Encoding.UTF8);
+                string content = SafeFileReader.ReadAllText(fullPath, encoding ?? System.Text.Encoding.UTF8);
 
                 for (int i = 0; i < edits.Count; i++) {
                     var edit = edits[i];
@@ -847,7 +847,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
 
                 Encoding? encoding = operands.Count > 3 ? GetEncoding(operands[3]) : null;
-                string[] allLines = System.IO.File.ReadAllLines(fullPath, encoding ?? System.Text.Encoding.UTF8);
+                string[] allLines = SafeFileReader.ReadAllLines(fullPath, encoding ?? System.Text.Encoding.UTF8);
                 int totalLines = allLines.Length;
                 if (totalLines == 0) {
                     return BoxedValue.FromString("(empty file, 0 lines)");
@@ -965,7 +965,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
 
                 var readEncoding = encoding ?? System.Text.Encoding.UTF8;
-                var lines = new List<string>(System.IO.File.ReadAllLines(fullPath, readEncoding));
+                var lines = new List<string>(SafeFileReader.ReadAllLines(fullPath, readEncoding));
                 if (line < 1 || line > lines.Count) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: line {line} out of range (1-{lines.Count})");
                     return BoxedValue.From(false);
@@ -976,7 +976,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 lines.InsertRange(line, newLines);
 
                 // Detect original line ending
-                string originalContent = System.IO.File.ReadAllText(fullPath, readEncoding);
+                string originalContent = SafeFileReader.ReadAllText(fullPath, readEncoding);
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
@@ -1014,7 +1014,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 }
 
                 var readEncoding = encoding ?? System.Text.Encoding.UTF8;
-                var lines = new List<string>(System.IO.File.ReadAllLines(fullPath, readEncoding));
+                var lines = new List<string>(SafeFileReader.ReadAllLines(fullPath, readEncoding));
                 if (line < 1 || line > lines.Count) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: line {line} out of range (1-{lines.Count})");
                     return BoxedValue.From(false);
@@ -1025,7 +1025,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 lines.InsertRange(line - 1, newLines);
 
                 // Detect original line ending
-                string originalContent = System.IO.File.ReadAllText(fullPath, readEncoding);
+                string originalContent = SafeFileReader.ReadAllText(fullPath, readEncoding);
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.

@@ -120,10 +120,10 @@ namespace AgentPlugin.Abstractions
                         Log($"[csharp] AssemblyResolve: LoadFrom failed for {assemblyName}: {loadFromEx.Message}");
                         Log($"[csharp] AssemblyResolve: Falling back to byte[] loading for {assemblyName}");
                         try {
-                            byte[] assemblyBytes = File.ReadAllBytes(assemblyPath);
+                            byte[] assemblyBytes = ReadAllBytesShared(assemblyPath);
                             string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
                             if (File.Exists(pdbPath)) {
-                                byte[] pdbBytes = File.ReadAllBytes(pdbPath);
+                                byte[] pdbBytes = ReadAllBytesShared(pdbPath);
                                 return Assembly.Load(assemblyBytes, pdbBytes);
                             }
                             return Assembly.Load(assemblyBytes);
@@ -166,13 +166,13 @@ namespace AgentPlugin.Abstractions
                 foreach (string dllPath in dllFiles) {
                     try {
                         string name = Path.GetFileNameWithoutExtension(dllPath);
-                        byte[] dllBytes = File.ReadAllBytes(dllPath);
+                        byte[] dllBytes = ReadAllBytesShared(dllPath);
                         byte[]? pdbBytes = null;
 
                         string pdbPath = Path.ChangeExtension(dllPath, ".pdb");
                         if (File.Exists(pdbPath)) {
                             try {
-                                pdbBytes = File.ReadAllBytes(pdbPath);
+                                pdbBytes = ReadAllBytesShared(pdbPath);
                             }
                             catch {
                                 // PDB loading is optional, ignore errors
@@ -388,6 +388,14 @@ namespace AgentPlugin.Abstractions
                 return pattern;
             string s = Regex.Replace(pattern, "[^\\p{L}\\p{N}]", " ");
             return Regex.Replace(s, " {2,}", " ").Trim();
+        }
+
+        private static byte[] ReadAllBytesShared(string path)
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var ms = new MemoryStream();
+            fs.CopyTo(ms);
+            return ms.ToArray();
         }
     }
 }

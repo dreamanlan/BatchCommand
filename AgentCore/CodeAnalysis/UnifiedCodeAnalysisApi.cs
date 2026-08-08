@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 using AgentCore.CodeAnalysis.TreeSitter.Interfaces;
 using CefDotnetApp.AgentCore.Models;
+using CefDotnetApp.AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -1715,7 +1716,7 @@ namespace AgentCore.CodeAnalysis
             if (!File.Exists(filePath))
                 return $"File not found: {filePath}";
 
-            var code = File.ReadAllText(filePath);
+            var code = SafeFileReader.ReadAllText(filePath);
             return FindNodesInternal(code, language, pattern, filePath);
         }
 
@@ -1731,7 +1732,7 @@ namespace AgentCore.CodeAnalysis
             if (!File.Exists(filePath))
                 return $"File not found: {filePath}";
 
-            var code = File.ReadAllText(filePath);
+            var code = SafeFileReader.ReadAllText(filePath);
             return FindNodeInternal(code, language, pattern, filePath);
         }
 

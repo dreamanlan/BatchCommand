@@ -41,6 +41,8 @@ class UIController {
             thinkingGroup: document.getElementById('thinking-group'),
             reasoningEffortSelect: document.getElementById('reasoning-effort'),
             reasoningEffortGroup: document.getElementById('reasoning-effort-group'),
+            maxContextTokensInput: document.getElementById('max-context-tokens'),
+            maxContextTokensGroup: document.getElementById('max-context-tokens-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
             maxContextCharsInput: document.getElementById('max-context-chars'),
             maxHistoryMessagesInput: document.getElementById('max-history-messages'),
@@ -677,6 +679,7 @@ showConfigModal() {
         this.elements.enableWebSearchCheckbox.checked = !!config.enableWebSearch;
         this.elements.enableThinkingCheckbox.checked = !!config.enableThinking;
         this.elements.reasoningEffortSelect.value = config.reasoningEffort || '';
+        this.elements.maxContextTokensInput.value = (typeof config.maxContextTokens === 'number' ? config.maxContextTokens : 0);
         this.elements.apiEndpointInput.value = config.apiEndpoint || '';
 
     // Load context configuration
@@ -764,6 +767,7 @@ updateAutoMetaDSLFields(apiType) {
         this.elements.webSearchGroup.style.display = 'block';
         this.elements.thinkingGroup.style.display = 'block';
         this.elements.reasoningEffortGroup.style.display = 'block';
+        this.elements.maxContextTokensGroup.style.display = 'block';
     } else {
         this.elements.authModeGroup.style.display = 'none';
         this.elements.usernameGroup.style.display = 'none';
@@ -771,6 +775,7 @@ updateAutoMetaDSLFields(apiType) {
         this.elements.webSearchGroup.style.display = 'none';
         this.elements.thinkingGroup.style.display = 'none';
         this.elements.reasoningEffortGroup.style.display = 'none';
+        this.elements.maxContextTokensGroup.style.display = 'none';
     }
 }
 
@@ -837,6 +842,8 @@ saveConfiguration() {
     const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
     const enableThinking = this.elements.enableThinkingCheckbox.checked;
     const reasoningEffort = this.elements.reasoningEffortSelect.value;
+    const maxContextTokensRaw = parseInt(this.elements.maxContextTokensInput.value, 10);
+    const maxContextTokens = (isNaN(maxContextTokensRaw) || maxContextTokensRaw < 0) ? 0 : maxContextTokensRaw;
     const config = {
         apiType: apiType,
         apiKey: apiKey,
@@ -846,6 +853,7 @@ saveConfiguration() {
         enableWebSearch: enableWebSearch,
         enableThinking: enableThinking,
         reasoningEffort: reasoningEffort,
+        maxContextTokens: maxContextTokens,
         apiEndpoint: apiEndpoint,
         model: model
     };

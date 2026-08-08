@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Esprima;
 using Esprima.Ast;
+using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.CodeAnalysis.JavaScript
 {
@@ -34,7 +35,7 @@ namespace CefDotnetApp.AgentCore.CodeAnalysis.JavaScript
                     return null;
                 }
 
-                var code = File.ReadAllText(filePath);
+                var code = SafeFileReader.ReadAllText(filePath);
                 return _parser.Parse(code, out error);
             }
             catch (Exception ex)

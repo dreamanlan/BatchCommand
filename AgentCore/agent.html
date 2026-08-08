@@ -777,6 +777,13 @@
                     non-empty)</small>
             </div>
 
+            <div class="config-group" id="max-context-tokens-group" style="display: none;">
+                <label for="max-context-tokens">Max Context Tokens:</label>
+                <input type="number" id="max-context-tokens" min="0" step="1000" value="0" placeholder="0 (do not send)">
+                <small style="color: #7f8c8d; font-size: 12px;">AGUI chat_extra.max_context_tokens (model context
+                    window in tokens, 0 = do not send)</small>
+            </div>
+
             <div class="config-group">
                 <label for="api-endpoint">API Endpoint (Optional):</label>
                 <input type="text" id="api-endpoint" placeholder="Leave empty for default">

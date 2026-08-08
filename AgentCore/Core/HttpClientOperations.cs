@@ -181,7 +181,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 var content = new MultipartFormDataContent();
 
-                var fileContent = new ByteArrayContent(File.ReadAllBytes(filePath));
+                var fileContent = new ByteArrayContent(SafeFileReader.ReadAllBytes(filePath));
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
                 content.Add(fileContent, fieldName, Path.GetFileName(filePath));
 

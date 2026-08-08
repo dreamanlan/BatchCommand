@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 using System.Net;
 using AgentPlugin.Abstractions;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Linq;
 using BatchCommand;
 
@@ -112,6 +113,13 @@ public struct HostApi
     public IntPtr RequestGetResourceType;
     public IntPtr RequestGetTransitionType;
     public IntPtr RequestGetIdentifier;
+    public IntPtr RequestSetUrl;
+    public IntPtr RequestSetFlags;
+    public IntPtr RequestSetFirstPartyForCookies;
+    public IntPtr RequestSetHeaderByName;
+    public IntPtr RequestRemoveHeaderByName;
+    public IntPtr RequestSetHeaderMap;
+    public IntPtr RequestSetReferrer;
     // CefResponse properties
     public IntPtr ResponseIsReadOnly;
     public IntPtr ResponseGetStatus;
@@ -128,8 +136,26 @@ public struct HostApi
     public IntPtr ResponseSetHeaderByName;
     public IntPtr ResponseRemoveHeaderByName;
     public IntPtr ResponseSetHeaderMap;
+    public IntPtr ResponseGetError;
+    public IntPtr ResponseSetError;
+    public IntPtr ResponseSetUrl;
     // Heartbeat control
     public IntPtr SetHeartbeatInterval;
+    // CookieListBridge snapshot accessors
+    public IntPtr CookieListGetCount;
+    public IntPtr CookieListGetUrl;
+    public IntPtr CookieListGetStatus;
+    public IntPtr CookieListEntryGetName;
+    public IntPtr CookieListEntryGetValue;
+    public IntPtr CookieListEntryGetDomain;
+    public IntPtr CookieListEntryGetPath;
+    public IntPtr CookieListEntryGetSecure;
+    public IntPtr CookieListEntryGetHttponly;
+    public IntPtr CookieListEntryGetSameSite;
+    public IntPtr CookieListEntryGetCreation;
+    public IntPtr CookieListEntryGetLastAccess;
+    // Pending forwarded-request HTTP auth reply
+    public IntPtr ReplyResourceAuthCredentials;
 }
 
 // delegate for native api
@@ -303,6 +329,20 @@ public delegate int HostRequestGetResourceTypeDelegation(IntPtr request);
 public delegate int HostRequestGetTransitionTypeDelegation(IntPtr request);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate ulong HostRequestGetIdentifierDelegation(IntPtr request);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetUrlDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string? url);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetFlagsDelegation(IntPtr request, int flags);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetFirstPartyForCookiesDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string? url);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetHeaderByNameDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string? value, int overwrite);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestRemoveHeaderByNameDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetHeaderMapDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string? header_map_str);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostRequestSetReferrerDelegation(IntPtr request, [MarshalAs(UnmanagedType.LPUTF8Str)] string? referrer_url, int referrer_policy);
 // CefResponse properties
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 [return: MarshalAs(UnmanagedType.U1)]
@@ -335,9 +375,45 @@ public delegate void HostResponseSetHeaderByNameDelegation(IntPtr response, [Mar
 public delegate void HostResponseRemoveHeaderByNameDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostResponseSetHeaderMapDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? header_map_str);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostResponseGetErrorDelegation(IntPtr response);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetErrorDelegation(IntPtr response, int error);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostResponseSetUrlDelegation(IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string? url);
 // Heartbeat control
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
+// CookieListBridge snapshot accessors (pointer valid only during OnResourceCookieList)
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCookieListGetCountDelegation(IntPtr cookie_list);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCookieListGetUrlDelegation(IntPtr cookie_list);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCookieListGetStatusDelegation(IntPtr cookie_list);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCookieListEntryGetNameDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCookieListEntryGetValueDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCookieListEntryGetDomainDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate IntPtr HostCookieListEntryGetPathDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCookieListEntryGetSecureDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCookieListEntryGetHttponlyDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostCookieListEntryGetSameSiteDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate long HostCookieListEntryGetCreationDelegation(IntPtr cookie_list, int index);
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate long HostCookieListEntryGetLastAccessDelegation(IntPtr cookie_list, int index);
+// Resolve a one-shot pending forwarded-request HTTP auth challenge. Credentials
+// are copied by native and never logged. This API is safe from any managed
+// thread; native posts resolution to CEF's IO thread.
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void HostReplyResourceAuthCredentialsDelegation(ulong challenge_id, int accepted, [MarshalAs(UnmanagedType.LPUTF8Str)] string username, [MarshalAs(UnmanagedType.LPUTF8Str)] string password);
 
 namespace DotNetLib
 {
@@ -608,6 +684,8 @@ namespace DotNetLib
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             var ids = Lib.GetAllContextBrowserIds();
+            if (null == ids)
+                return BoxedValue.NullObject;
             var list = new List<BoxedValue>(ids.Length);
             foreach (var id in ids) {
                 list.Add(BoxedValue.From(id));
@@ -832,6 +910,22 @@ namespace DotNetLib
     }
     public class NativeApi : INativeApi, IErrorReporter, IDslEngine
     {
+        /// <summary>
+        /// Optional application-owned, cross-platform HTTP auth UI hook. It
+        /// runs on CEF's IO callback thread; implementations must return
+        /// promptly and resolve the supplied challenge later via Continue or
+        /// Cancel. No native OS credential dialog is involved.
+        /// </summary>
+        public static event Action<ResourceAuthChallengeProxy>? ResourceAuthChallengeRequested;
+
+        internal static bool RaiseResourceAuthChallengeRequested(ResourceAuthChallengeProxy challenge)
+        {
+            var handler = ResourceAuthChallengeRequested;
+            if (handler == null) return false;
+            handler(challenge);
+            return true;
+        }
+
         public NativeApi(IntPtr apis)
         {
             HostApi hostApi = Marshal.PtrToStructure<HostApi>(apis);
@@ -909,6 +1003,13 @@ namespace DotNetLib
             m_RequestGetResourceTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetResourceTypeDelegation>(hostApi.RequestGetResourceType);
             m_RequestGetTransitionTypeApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetTransitionTypeDelegation>(hostApi.RequestGetTransitionType);
             m_RequestGetIdentifierApi = Marshal.GetDelegateForFunctionPointer<HostRequestGetIdentifierDelegation>(hostApi.RequestGetIdentifier);
+            m_RequestSetUrlApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetUrlDelegation>(hostApi.RequestSetUrl);
+            m_RequestSetFlagsApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetFlagsDelegation>(hostApi.RequestSetFlags);
+            m_RequestSetFirstPartyForCookiesApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetFirstPartyForCookiesDelegation>(hostApi.RequestSetFirstPartyForCookies);
+            m_RequestSetHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetHeaderByNameDelegation>(hostApi.RequestSetHeaderByName);
+            m_RequestRemoveHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostRequestRemoveHeaderByNameDelegation>(hostApi.RequestRemoveHeaderByName);
+            m_RequestSetHeaderMapApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetHeaderMapDelegation>(hostApi.RequestSetHeaderMap);
+            m_RequestSetReferrerApi = Marshal.GetDelegateForFunctionPointer<HostRequestSetReferrerDelegation>(hostApi.RequestSetReferrer);
             // CefResponse properties
             m_ResponseIsReadOnlyApi = Marshal.GetDelegateForFunctionPointer<HostResponseIsReadOnlyDelegation>(hostApi.ResponseIsReadOnly);
             m_ResponseGetStatusApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetStatusDelegation>(hostApi.ResponseGetStatus);
@@ -925,8 +1026,26 @@ namespace DotNetLib
             m_ResponseSetHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetHeaderByNameDelegation>(hostApi.ResponseSetHeaderByName);
             m_ResponseRemoveHeaderByNameApi = Marshal.GetDelegateForFunctionPointer<HostResponseRemoveHeaderByNameDelegation>(hostApi.ResponseRemoveHeaderByName);
             m_ResponseSetHeaderMapApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetHeaderMapDelegation>(hostApi.ResponseSetHeaderMap);
+            m_ResponseGetErrorApi = Marshal.GetDelegateForFunctionPointer<HostResponseGetErrorDelegation>(hostApi.ResponseGetError);
+            m_ResponseSetErrorApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetErrorDelegation>(hostApi.ResponseSetError);
+            m_ResponseSetUrlApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetUrlDelegation>(hostApi.ResponseSetUrl);
             // Heartbeat control
             m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
+            // CookieListBridge snapshot accessors
+            m_CookieListGetCountApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetCountDelegation>(hostApi.CookieListGetCount);
+            m_CookieListGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetUrlDelegation>(hostApi.CookieListGetUrl);
+            m_CookieListGetStatusApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetStatusDelegation>(hostApi.CookieListGetStatus);
+            m_CookieListEntryGetNameApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetNameDelegation>(hostApi.CookieListEntryGetName);
+            m_CookieListEntryGetValueApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetValueDelegation>(hostApi.CookieListEntryGetValue);
+            m_CookieListEntryGetDomainApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetDomainDelegation>(hostApi.CookieListEntryGetDomain);
+            m_CookieListEntryGetPathApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetPathDelegation>(hostApi.CookieListEntryGetPath);
+            m_CookieListEntryGetSecureApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetSecureDelegation>(hostApi.CookieListEntryGetSecure);
+            m_CookieListEntryGetHttponlyApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetHttponlyDelegation>(hostApi.CookieListEntryGetHttponly);
+            m_CookieListEntryGetSameSiteApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetSameSiteDelegation>(hostApi.CookieListEntryGetSameSite);
+            m_CookieListEntryGetCreationApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetCreationDelegation>(hostApi.CookieListEntryGetCreation);
+            m_CookieListEntryGetLastAccessApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetLastAccessDelegation>(hostApi.CookieListEntryGetLastAccess);
+            // Pending forwarded-request HTTP auth reply
+            m_ReplyResourceAuthCredentialsApi = Marshal.GetDelegateForFunctionPointer<HostReplyResourceAuthCredentialsDelegation>(hostApi.ReplyResourceAuthCredentials);
         }
 
         public void NativeLog(string msg)
@@ -1733,6 +1852,43 @@ namespace DotNetLib
             if (request == IntPtr.Zero || m_RequestGetIdentifierApi == null) return 0;
             return m_RequestGetIdentifierApi(request);
         }
+        // CefRequest setters (no-op when request is read-only; DSL side should
+        // check RequestIsReadOnly first).
+        public void RequestSetUrl(IntPtr request, string? url)
+        {
+            if (request == IntPtr.Zero) return;
+            m_RequestSetUrlApi?.Invoke(request, url);
+        }
+        public void RequestSetFlags(IntPtr request, int flags)
+        {
+            if (request == IntPtr.Zero) return;
+            m_RequestSetFlagsApi?.Invoke(request, flags);
+        }
+        public void RequestSetFirstPartyForCookies(IntPtr request, string? url)
+        {
+            if (request == IntPtr.Zero) return;
+            m_RequestSetFirstPartyForCookiesApi?.Invoke(request, url);
+        }
+        public void RequestSetHeaderByName(IntPtr request, string name, string? value, bool overwrite)
+        {
+            if (request == IntPtr.Zero || string.IsNullOrEmpty(name)) return;
+            m_RequestSetHeaderByNameApi?.Invoke(request, name, value, overwrite ? 1 : 0);
+        }
+        public void RequestRemoveHeaderByName(IntPtr request, string name)
+        {
+            if (request == IntPtr.Zero || string.IsNullOrEmpty(name)) return;
+            m_RequestRemoveHeaderByNameApi?.Invoke(request, name);
+        }
+        public void RequestSetHeaderMap(IntPtr request, string? header_map_str)
+        {
+            if (request == IntPtr.Zero) return;
+            m_RequestSetHeaderMapApi?.Invoke(request, header_map_str);
+        }
+        public void RequestSetReferrer(IntPtr request, string? referrer_url, int referrer_policy)
+        {
+            if (request == IntPtr.Zero) return;
+            m_RequestSetReferrerApi?.Invoke(request, referrer_url, referrer_policy);
+        }
         // CefResponse properties
         public bool ResponseIsReadOnly(IntPtr response)
         {
@@ -1809,9 +1965,102 @@ namespace DotNetLib
             if (response == IntPtr.Zero) return;
             m_ResponseSetHeaderMapApi?.Invoke(response, header_map_str);
         }
+        public int ResponseGetError(IntPtr response)
+        {
+            if (response == IntPtr.Zero || m_ResponseGetErrorApi == null) return 0;
+            return m_ResponseGetErrorApi(response);
+        }
+        public void ResponseSetError(IntPtr response, int error)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetErrorApi?.Invoke(response, error);
+        }
+        public void ResponseSetUrl(IntPtr response, string? url)
+        {
+            if (response == IntPtr.Zero) return;
+            m_ResponseSetUrlApi?.Invoke(response, url);
+        }
         public void SetHeartbeatInterval(int intervalMs)
         {
             m_SetHeartbeatIntervalApi?.Invoke(intervalMs);
+        }
+        // CookieListBridge snapshot accessors. cookieList is valid only
+        // during the OnResourceCookieList callback.
+        public int CookieListGetCount(IntPtr cookieList)
+        {
+            if (cookieList == IntPtr.Zero) return 0;
+            return m_CookieListGetCountApi?.Invoke(cookieList) ?? 0;
+        }
+        public string CookieListGetUrl(IntPtr cookieList)
+        {
+            if (cookieList == IntPtr.Zero) return string.Empty;
+            var p = m_CookieListGetUrlApi?.Invoke(cookieList) ?? IntPtr.Zero;
+            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
+        }
+        public int CookieListGetStatus(IntPtr cookieList)
+        {
+            if (cookieList == IntPtr.Zero) return 0;
+            return m_CookieListGetStatusApi?.Invoke(cookieList) ?? 0;
+        }
+        public string CookieListEntryGetName(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return string.Empty;
+            var p = m_CookieListEntryGetNameApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
+            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
+        }
+        public string CookieListEntryGetValue(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return string.Empty;
+            var p = m_CookieListEntryGetValueApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
+            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
+        }
+        public string CookieListEntryGetDomain(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return string.Empty;
+            var p = m_CookieListEntryGetDomainApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
+            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
+        }
+        public string CookieListEntryGetPath(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return string.Empty;
+            var p = m_CookieListEntryGetPathApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
+            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
+        }
+        public bool CookieListEntryGetSecure(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return false;
+            return (m_CookieListEntryGetSecureApi?.Invoke(cookieList, index) ?? 0) != 0;
+        }
+        public bool CookieListEntryGetHttponly(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return false;
+            return (m_CookieListEntryGetHttponlyApi?.Invoke(cookieList, index) ?? 0) != 0;
+        }
+        public int CookieListEntryGetSameSite(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return 0;
+            return m_CookieListEntryGetSameSiteApi?.Invoke(cookieList, index) ?? 0;
+        }
+        public long CookieListEntryGetCreation(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return 0;
+            return m_CookieListEntryGetCreationApi?.Invoke(cookieList, index) ?? 0;
+        }
+        public long CookieListEntryGetLastAccess(IntPtr cookieList, int index)
+        {
+            if (cookieList == IntPtr.Zero) return 0;
+            return m_CookieListEntryGetLastAccessApi?.Invoke(cookieList, index) ?? 0;
+        }
+        /// <summary>
+        /// Resolve one pending forwarded-request HTTP authentication challenge.
+        /// This is one-shot: native ignores unknown, expired, canceled, or
+        /// already-resolved IDs. Never log or persist the password argument.
+        /// Safe from any managed thread.
+        /// </summary>
+        public void ReplyResourceAuthCredentials(ulong challengeId, bool accepted, string username, string password)
+        {
+            m_ReplyResourceAuthCredentialsApi?.Invoke(challengeId, accepted ? 1 : 0,
+                username ?? string.Empty, password ?? string.Empty);
         }
 
         public void EnqueueCefMessage(string msgName, string[] args)
@@ -1824,6 +2073,10 @@ namespace DotNetLib
             bool isMainThread = Thread.CurrentThread.ManagedThreadId == Lib.MainThreadId;
             if (!isMainThread) {
                 return;
+            }
+            if (s_Browser == IntPtr.Zero) {
+                s_Browser = Lib.GetBrowsersFirstValid();
+                s_Frame = BrowserGetMainFrame(s_Browser);
             }
             if (s_Browser == IntPtr.Zero) {
                 Lib.NativeLogNoLock($"[csharp] Error HandleAllQueues, browser is null");
@@ -1987,6 +2240,13 @@ namespace DotNetLib
         private HostRequestGetResourceTypeDelegation? m_RequestGetResourceTypeApi;
         private HostRequestGetTransitionTypeDelegation? m_RequestGetTransitionTypeApi;
         private HostRequestGetIdentifierDelegation? m_RequestGetIdentifierApi;
+        private HostRequestSetUrlDelegation? m_RequestSetUrlApi;
+        private HostRequestSetFlagsDelegation? m_RequestSetFlagsApi;
+        private HostRequestSetFirstPartyForCookiesDelegation? m_RequestSetFirstPartyForCookiesApi;
+        private HostRequestSetHeaderByNameDelegation? m_RequestSetHeaderByNameApi;
+        private HostRequestRemoveHeaderByNameDelegation? m_RequestRemoveHeaderByNameApi;
+        private HostRequestSetHeaderMapDelegation? m_RequestSetHeaderMapApi;
+        private HostRequestSetReferrerDelegation? m_RequestSetReferrerApi;
         // CefResponse properties
         private HostResponseIsReadOnlyDelegation? m_ResponseIsReadOnlyApi;
         private HostResponseGetStatusDelegation? m_ResponseGetStatusApi;
@@ -2003,7 +2263,23 @@ namespace DotNetLib
         private HostResponseSetHeaderByNameDelegation? m_ResponseSetHeaderByNameApi;
         private HostResponseRemoveHeaderByNameDelegation? m_ResponseRemoveHeaderByNameApi;
         private HostResponseSetHeaderMapDelegation? m_ResponseSetHeaderMapApi;
+        private HostResponseGetErrorDelegation? m_ResponseGetErrorApi;
+        private HostResponseSetErrorDelegation? m_ResponseSetErrorApi;
+        private HostResponseSetUrlDelegation? m_ResponseSetUrlApi;
         private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
+        private HostCookieListGetCountDelegation? m_CookieListGetCountApi;
+        private HostCookieListGetUrlDelegation? m_CookieListGetUrlApi;
+        private HostCookieListGetStatusDelegation? m_CookieListGetStatusApi;
+        private HostCookieListEntryGetNameDelegation? m_CookieListEntryGetNameApi;
+        private HostCookieListEntryGetValueDelegation? m_CookieListEntryGetValueApi;
+        private HostCookieListEntryGetDomainDelegation? m_CookieListEntryGetDomainApi;
+        private HostCookieListEntryGetPathDelegation? m_CookieListEntryGetPathApi;
+        private HostCookieListEntryGetSecureDelegation? m_CookieListEntryGetSecureApi;
+        private HostCookieListEntryGetHttponlyDelegation? m_CookieListEntryGetHttponlyApi;
+        private HostCookieListEntryGetSameSiteDelegation? m_CookieListEntryGetSameSiteApi;
+        private HostCookieListEntryGetCreationDelegation? m_CookieListEntryGetCreationApi;
+        private HostCookieListEntryGetLastAccessDelegation? m_CookieListEntryGetLastAccessApi;
+        private HostReplyResourceAuthCredentialsDelegation? m_ReplyResourceAuthCredentialsApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -2166,7 +2442,10 @@ namespace DotNetLib
 
         public IntPtr NativePtr => m_Request;
         public bool IsReadOnly => m_Api.RequestIsReadOnly(m_Request);
-        public string Url => m_Api.RequestGetUrl(m_Request);
+        public string Url {
+            get => m_Api.RequestGetUrl(m_Request);
+            set => m_Api.RequestSetUrl(m_Request, value);
+        }
         public string Method => m_Api.RequestGetMethod(m_Request);
         public string ReferrerUrl => m_Api.RequestGetReferrerUrl(m_Request);
         public int ReferrerPolicy => m_Api.RequestGetReferrerPolicy(m_Request);
@@ -2175,21 +2454,52 @@ namespace DotNetLib
         /// </summary>
         public string HeaderMap => m_Api.RequestGetHeaderMap(m_Request);
         public string GetHeaderByName(string name) => m_Api.RequestGetHeaderByName(m_Request, name);
-        public int Flags => m_Api.RequestGetFlags(m_Request);
-        public string FirstPartyForCookies => m_Api.RequestGetFirstPartyForCookies(m_Request);
+        public int Flags {
+            get => m_Api.RequestGetFlags(m_Request);
+            set => m_Api.RequestSetFlags(m_Request, value);
+        }
+        public string FirstPartyForCookies {
+            get => m_Api.RequestGetFirstPartyForCookies(m_Request);
+            set => m_Api.RequestSetFirstPartyForCookies(m_Request, value);
+        }
         public int ResourceType => m_Api.RequestGetResourceType(m_Request);
         public int TransitionType => m_Api.RequestGetTransitionType(m_Request);
         public ulong Identifier => m_Api.RequestGetIdentifier(m_Request);
+        /// <summary>
+        /// Replace the entire header map from newline-separated "key:value" pairs.
+        /// No-op if the request is read-only (check IsReadOnly first).
+        /// </summary>
+        public void SetHeaderMap(string? headerMapStr) => m_Api.RequestSetHeaderMap(m_Request, headerMapStr);
+        /// <summary>
+        /// Set a header. overwrite=true replaces all existing values for the name.
+        /// No-op if the request is read-only. To delete a header use RemoveHeaderByName,
+        /// not SetHeaderByName with an empty value (empty value sets an empty header).
+        /// </summary>
+        public void SetHeaderByName(string name, string? value, bool overwrite = true) => m_Api.RequestSetHeaderByName(m_Request, name, value, overwrite);
+        /// <summary>
+        /// Remove all values for the given header name (case-insensitive).
+        /// No-op if the request is read-only.
+        /// </summary>
+        public void RemoveHeaderByName(string name) => m_Api.RequestRemoveHeaderByName(m_Request, name);
+        /// <summary>
+        /// Set the Referer via CEF's SetReferrer (goes through the browser's referrer
+        /// policy pipeline). Prefer this over SetHeaderByName("Referer", ...) when the
+        /// referrer policy should be honored. policy defaults to REFERRER_POLICY_DEFAULT
+        /// (0). No-op if the request is read-only.
+        /// </summary>
+        public void SetReferrer(string? url, int policy = 0) => m_Api.RequestSetReferrer(m_Request, url, policy);
     }
 
     /// <summary>
     /// Proxy wrapper for a native CefResponse pointer.
-    /// Passed as parameter during OnResourceResponseFilter / OnResponseContentFilter callbacks.
-    /// In decision mode (GetResourceHandler hook) the response is an empty writable
-    /// CefResponse created by native; C# fills header overrides into it.
-    /// In inspection mode (GetResourceResponseFilter hook) the response is the actual
-    /// upstream response and is read-only; write APIs (SetHeaderByName etc.) are
-    /// silently dropped by CEF, only read APIs are meaningful.
+    /// Passed as parameter during OnGetResourceHandlerFilter /
+    /// OnResourceResponseFilter callbacks.
+    /// At the decision point (OnGetResourceHandlerFilter) the response is an
+    /// empty writable CefResponse created by native; C# fills header overrides
+    /// into it. At the inspection point (OnResourceResponseFilter) the response
+    /// is the actual upstream response and is read-only; write APIs
+    /// (SetHeaderByName etc.) are silently dropped by CEF, only read APIs are
+    /// meaningful.
     /// </summary>
     public class CefResponseProxy
     {
@@ -2220,7 +2530,19 @@ namespace DotNetLib
             get => m_Api.ResponseGetCharset(m_Response);
             set => m_Api.ResponseSetCharset(m_Response, value);
         }
-        public string Url => m_Api.ResponseGetUrl(m_Response);
+        public string Url {
+            get => m_Api.ResponseGetUrl(m_Response);
+            set => m_Api.ResponseSetUrl(m_Response, value);
+        }
+        /// <summary>
+        /// CEF error code carried by the response (cef_errorcode_t). ERR_NONE (0) when
+        /// there is no error. Setting a non-zero value marks the response as failed
+        /// (used when proxying to reflect an upstream network error).
+        /// </summary>
+        public int Error {
+            get => m_Api.ResponseGetError(m_Response);
+            set => m_Api.ResponseSetError(m_Response, value);
+        }
         /// <summary>
         /// Get header map as newline-separated "key:value" pairs (split by first ':').
         /// </summary>
@@ -2239,15 +2561,119 @@ namespace DotNetLib
         /// </summary>
         public void RemoveHeaderByName(string name) => m_Api.ResponseRemoveHeaderByName(m_Response, name);
         /// <summary>
-        /// Mark a header for pending removal on the response_override map (decision
-        /// mode). Implemented by writing an empty value for the given name so that
-        /// MyResourceHandler will erase all matching entries from the outgoing
-        /// response headers when composing the final header list. Use this from
-        /// on_resource_response_filter (decision branch) instead of
-        /// RemoveHeaderByName, since response_override starts as an empty map and
-        /// erase-on-empty-map is a no-op.
+        /// Mark a header for pending removal on the response_override map
+        /// (decision point). Implemented by writing an empty value for the
+        /// given name so that MyResourceHandler will erase all matching
+        /// entries from the outgoing response headers when composing the final
+        /// header list. Use this from on_get_resource_handler_filter instead
+        /// of RemoveHeaderByName, since response_override starts as an empty
+        /// map and erase-on-empty-map is a no-op.
         /// </summary>
         public void AddPendingRemoveHeaderByName(string name) => m_Api.ResponseSetHeaderByName(m_Response, name, string.Empty, true);
+    }
+
+    /// <summary>
+    /// One cookie entry inside a CookieListProxy snapshot.
+    /// Valid only during the OnResourceCookieList callback.
+    /// </summary>
+    public class CookieEntryProxy
+    {
+        private readonly IntPtr m_List;
+        private readonly int m_Index;
+        private readonly NativeApi m_Api;
+
+        internal CookieEntryProxy(IntPtr list, int index, NativeApi api)
+        {
+            m_List = list;
+            m_Index = index;
+            m_Api = api;
+        }
+
+        public string Name => m_Api.CookieListEntryGetName(m_List, m_Index);
+        public string Value => m_Api.CookieListEntryGetValue(m_List, m_Index);
+        public string Domain => m_Api.CookieListEntryGetDomain(m_List, m_Index);
+        public string Path => m_Api.CookieListEntryGetPath(m_List, m_Index);
+        public bool Secure => m_Api.CookieListEntryGetSecure(m_List, m_Index);
+        public bool HttpOnly => m_Api.CookieListEntryGetHttponly(m_List, m_Index);
+        public int SameSite => m_Api.CookieListEntryGetSameSite(m_List, m_Index);
+        /// <summary>Chrome time (microseconds since 1601-01-01 UTC).</summary>
+        public long Creation => m_Api.CookieListEntryGetCreation(m_List, m_Index);
+        /// <summary>Chrome time (microseconds since 1601-01-01 UTC).</summary>
+        public long LastAccess => m_Api.CookieListEntryGetLastAccess(m_List, m_Index);
+    }
+
+    /// <summary>
+    /// Proxy wrapper for a native CookieListBridge pointer (cookie-jar snapshot).
+    /// Valid only during the OnResourceCookieList callback; do not cache.
+    /// </summary>
+    public class CookieListProxy
+    {
+        private readonly IntPtr m_List;
+        private readonly NativeApi m_Api;
+
+        public CookieListProxy(IntPtr list, NativeApi api)
+        {
+            m_List = list;
+            m_Api = api;
+        }
+
+        public IntPtr NativePtr => m_List;
+        /// <summary>The URL the jar was queried with.</summary>
+        public string Url => m_Api.CookieListGetUrl(m_List);
+        /// <summary>Upstream response status observed when the query was issued (0 if unknown).</summary>
+        public int Status => m_Api.CookieListGetStatus(m_List);
+        public int Count => m_Api.CookieListGetCount(m_List);
+        public CookieEntryProxy GetEntry(int index) => new CookieEntryProxy(m_List, index, m_Api);
+    }
+
+    /// <summary>
+    /// One pending HTTP or proxy authentication challenge from a forwarded
+    /// CefURLRequest. Metadata contains no credential secret. Instances can
+    /// be retained by an application-owned cross-platform UI and resolved
+    /// later; native makes Continue/Cancel one-shot and ignores expired IDs.
+    /// </summary>
+    public class ResourceAuthChallengeProxy
+    {
+        private readonly NativeApi m_Api;
+        private int m_Replied;
+
+        internal ResourceAuthChallengeProxy(ulong id, string url, bool isProxy,
+            string host, int port, string realm, string scheme, NativeApi api)
+        {
+            Id = id;
+            Url = url ?? string.Empty;
+            IsProxy = isProxy;
+            Host = host ?? string.Empty;
+            Port = port;
+            Realm = realm ?? string.Empty;
+            Scheme = scheme ?? string.Empty;
+            m_Api = api;
+        }
+
+        public ulong Id { get; }
+        public string Url { get; }
+        public bool IsProxy { get; }
+        public string Host { get; }
+        public int Port { get; }
+        public string Realm { get; }
+        public string Scheme { get; }
+        public bool HasReplied => Volatile.Read(ref m_Replied) != 0;
+
+        /// <summary>Continue the challenge with supplied credentials.</summary>
+        public void Continue(string username, string password)
+        {
+            if (Interlocked.Exchange(ref m_Replied, 1) == 0) {
+                m_Api.ReplyResourceAuthCredentials(Id, true, username, password);
+            }
+        }
+
+        /// <summary>Cancel the challenge without sending credentials.</summary>
+        public void Cancel()
+        {
+            if (Interlocked.Exchange(ref m_Replied, 1) == 0) {
+                m_Api.ReplyResourceAuthCredentials(Id, false, string.Empty, string.Empty);
+            }
+        }
     }
 
     /// <summary>
@@ -2375,22 +2801,47 @@ namespace DotNetLib
         public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
         // Resource interception callbacks (invoked on browser process IO thread).
-        // Decision mode (GetResourceHandler): response is an empty writable
-        // CefResponse for C# to fill header overrides into; return true to
-        // intercept with MyResourceHandler. Inspection mode
-        // (GetResourceResponseFilter): response is the actual upstream response
-        // for read-only inspection; return true to register MyResponseFilter
-        // for body filtering.
-        // out_replace_content: whether to enable body filtering. false = skip
-        // body filter (inspection mode: don't register MyResponseFilter;
-        // decision mode: MyResourceHandler only applies header overrides,
-        // passes body through unchanged). true = enable body filter (default).
+        // OnGetResourceHandlerFilter: decision point (GetResourceHandler).
+        // request: original CEF request (read-only). Its ResourceType /
+        // TransitionType / Identifier are always authoritative here.
+        // request_override: writable copy of the upstream request; DSL may edit
+        // its URL / headers / referrer / flags and the same object is reused by
+        // MyResourceHandler for the forwarded CefURLRequest (no second copy).
+        // response_override: empty writable CefResponse for header overrides.
+        // Return true to intercept with MyResourceHandler.
+        // out_replace_content: whether to enable body filtering. false =
+        // MyResourceHandler only applies header overrides, passes body through
+        // unchanged. true = enable body filter (default).
         // IntPtr (bool*) instead of ref bool: C# bool marshals as 4-byte
         // UnmanagedType.Bool by default, mismatching C++ 1-byte bool. Use
         // IntPtr + Marshal.WriteByte for correct 1-byte layout.
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        // io_want_cookies: in = cookie queries issued so far (DSL knows whether
+        // its cap is reached). Out: n > (in value) requests a cookie-jar
+        // snapshot for this request (delivered via OnResourceCookieList when
+        // the upstream response headers arrive); n <= 0 declines and resets
+        // the issued count.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnGetResourceHandlerFilterDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr request_override, IntPtr response_override, IntPtr out_replace_content, ref int io_want_cookies);
+        // OnResourceResponseFilter: inspection point (GetResourceResponseFilter).
+        // request/response are the actual CEF request and upstream response
+        // (read-only inspection). Return true to register MyResponseFilter for
+        // body filtering; out_replace_content false skips the body filter.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnResourceResponseFilterDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, IntPtr out_replace_content);
+        // OnResourceCookieList: delivers a completed cookie-jar snapshot
+        // requested via io_want_cookies. cookie_list is valid only during
+        // this call; access fields via CookieListProxy.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void OnResourceCookieListDelegation(IntPtr cookie_list);
+        // OnResourceAuthChallenge: a real HTTP/proxy challenge from a
+        // forwarded CefURLRequest. Returning true transfers responsibility to
+        // C#/DSL/application UI, which must call ReplyResourceAuthCredentials
+        // before native timeout; false cancels immediately.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnResourceAuthChallengeDelegation(IntPtr browser, ulong challenge_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme);
         // Body filter: streams body chunks through C# for transformation.
         // Returns true if DSL handled the chunk (use DSL's outputs), false to
         // pass through unchanged. out_status receives the filter status (0=DONE,
@@ -2399,9 +2850,15 @@ namespace DotNetLib
         // counts (ref int, matches on_before_resource_load_fn's int* pattern).
         // No browser/frame: CefResourceHandler::Read / CefResponseFilter::Filter
         // signatures do not carry them; body filter is a pure data transform.
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnResponseContentFilterDelegation(IntPtr data_in, int data_in_size, IntPtr data_out, int data_out_size, ref int out_data_in_read, ref int out_data_out_written, ref int out_status);
+        // OnResourceRedirect: called when a resource request is redirected.
+        // DSL can inspect the redirect and optionally provide a replacement URL.
+        // Returns true if a new URL is provided (written to out_url as UTF-8).
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnResourceRedirectDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string new_url, IntPtr out_url, ref int out_url_size);
 
         // DevTools observer callbacks (invoked on browser process UI thread).
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2515,11 +2972,12 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                AgentFrameworkService.Instance.ShutdownPlugin();
 
-            AgentFrameworkService.Instance.ShutdownPlugin();
-
-            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.LastSourceProcessId = -1;
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                NativeApi.LastSourceProcessId = -1;
+            }
         }
 
         internal static void OnBrowserInit(IntPtr browser)
@@ -2577,17 +3035,18 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
-
-            // Untrack browser id in C# side
-            if (s_NativeApi != null) {
-                int browserId = s_NativeApi.BrowserGetId(browser);
-                if (browserId > 0) {
-                    s_BrowserBrowserIds.Remove(browserId);
-                    NativeLogNoLock($"[csharp] Browser untracked: id={browserId}");
+            finally {
+                // Untrack browser id in C# side
+                if (s_NativeApi != null) {
+                    int browserId = s_NativeApi.BrowserGetId(browser);
+                    if (browserId > 0) {
+                        s_BrowserBrowserIds.Remove(browserId);
+                        NativeLogNoLock($"[csharp] Browser untracked: id={browserId}");
+                    }
                 }
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                NativeApi.LastSourceProcessId = -1;
             }
-            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.LastSourceProcessId = -1;
         }
 
         // --- DevTools observer callbacks (browser process UI thread) ---
@@ -2772,7 +3231,7 @@ namespace DotNetLib
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
-                    s_RendererBrowsers.Add(browserId);
+                    s_RendererBrowserIds.Add(browserId);
                     NativeLogNoLock($"[csharp] Renderer browser tracked: id={browserId}");
                 }
             }
@@ -2807,7 +3266,7 @@ namespace DotNetLib
             // finalize should not remove the browser id.
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
-                if (browserId > 0 && s_RendererBrowsers.Remove(browserId)) {
+                if (browserId > 0 && s_RendererBrowserIds.Remove(browserId)) {
                     NativeLogNoLock($"[csharp] Renderer browser untracked: id={browserId}");
                 }
             }
@@ -2828,9 +3287,10 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
-
-            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            NativeApi.LastSourceProcessId = -1;
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+                NativeApi.LastSourceProcessId = -1;
+            }
         }
 
         internal static void OnLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
@@ -2910,7 +3370,7 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
-
+            code_size = 0;
             return false;
         }
 
@@ -3036,7 +3496,7 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnRendererLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
-
+            code_size = 0;
             return false;
         }
 
@@ -3292,6 +3752,59 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static bool OnGetResourceHandlerFilter(IntPtr browser, IntPtr frame, IntPtr request, IntPtr request_override, IntPtr response_override, IntPtr out_replace_content, ref int io_want_cookies)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var overrideProxy = new CefRequestProxy(request_override, s_NativeApi);
+                    var responseProxy = new CefResponseProxy(response_override, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(overrideProxy));
+                    vargs.Add(BoxedValue.From(responseProxy));
+                    vargs.Add(BoxedValue.From(io_want_cookies));
+                    var r = BatchCommand.BatchScript.Call("on_get_resource_handler_filter", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // DSL return value: (handled, replace_content[, want_cookies]) or just handled.
+                    // want_cookies is read even when handled is false: n <= 0
+                    // resets the native issued-count regardless of interception.
+                    if (r.IsTuple) {
+                        int len = r.TupleLength;
+                        if (len >= 1) {
+                            bool handled = r.GetTupleValue(0).GetBool();
+                            // Default: disable body filtering. Write via Marshal.WriteByte to
+                            // match C++ 1-byte bool layout (IntPtr param instead of ref bool).
+                            bool replaceContent = len >= 2 ? r.GetTupleValue(1).GetBool() : false;
+                            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)(replaceContent ? 1 : 0));
+                            if (len >= 3) io_want_cookies = r.GetTupleValue(2).GetInt();
+                            return handled;
+                        }
+                    }
+                    // Single bool return: treated as handled, replace_content defaults to false.
+                    else if (!r.IsNullObject) {
+                        if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
+                        return r.GetBool();
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnGetResourceHandlerFilter Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
             return false;
         }
 
@@ -3311,13 +3824,11 @@ namespace DotNetLib
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                     // DSL return value: (handled, replace_content) or just handled.
-                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
-                        var tuple2 = r.GetTuple2();
-                        if (null != tuple2) {
-                            bool handled = tuple2.Item1.GetBool();
-                            // Default: disable body filtering. Write via Marshal.WriteByte to
-                            // match C++ 1-byte bool layout (IntPtr param instead of ref bool).
-                            bool replaceContent = tuple2.Item2.GetBool();
+                    if (r.IsTuple) {
+                        int len = r.TupleLength;
+                        if (len >= 1) {
+                            bool handled = r.GetTupleValue(0).GetBool();
+                            bool replaceContent = len >= 2 ? r.GetTupleValue(1).GetBool() : false;
                             if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)(replaceContent ? 1 : 0));
                             return handled;
                         }
@@ -3332,8 +3843,98 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLogNoLock("[csharp] OnResourceResponseFilter Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
             return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        //A real HTTP/proxy auth challenge from a forwarded CefURLRequest.
+        //DSL return convention: (decision[, username, password]) where
+        //0=cancel, 1=continue with credentials, 2=defer to the optional
+        //NativeApi.ResourceAuthChallengeRequested application UI event.
+        internal static bool OnResourceAuthChallenge(IntPtr browser, ulong challenge_id, string url, int is_proxy, string host, int port, string realm, string scheme)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            ResourceAuthChallengeProxy? challenge = null;
+            try {
+                if (s_NativeApi == null) {
+                    return false;
+                }
+
+                TryLoadDSL();
+                challenge = new ResourceAuthChallengeProxy(challenge_id,
+                    url, is_proxy != 0, host, port, realm, scheme, s_NativeApi);
+                var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                vargs.Add(BoxedValue.From(challenge));
+                var r = BatchCommand.BatchScript.Call("on_resource_auth_challenge", vargs);
+                BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                CheckDslError();
+
+                // Advanced DSL integrations may resolve through the proxy
+                // directly. The native registry is one-shot, so do not queue a
+                // second cancel/continue based on the return tuple.
+                if (challenge.HasReplied) {
+                    return true;
+                }
+
+                int decision = 0;
+                string username = string.Empty;
+                string password = string.Empty;
+                if (r.IsTuple && r.TupleLength >= 1) {
+                    decision = r.GetTupleValue(0).GetInt();
+                    if (r.TupleLength >= 2) username = r.GetTupleValue(1).GetString() ?? string.Empty;
+                    if (r.TupleLength >= 3) password = r.GetTupleValue(2).GetString() ?? string.Empty;
+                }
+
+                if (decision == 1) {
+                    challenge.Continue(username, password);
+                    return true;
+                }
+                if (decision == 2) {
+                    if (!NativeApi.RaiseResourceAuthChallengeRequested(challenge)) {
+                        // No application UI is registered. Resolve explicitly
+                        // rather than waiting for the native timeout.
+                        challenge.Cancel();
+                    }
+                    return true;
+                }
+
+                challenge.Cancel();
+                return true;
+            }
+            catch (Exception e) {
+                // Never log credentials; this callback receives metadata only.
+                NativeLogNoLock("[csharp] OnResourceAuthChallenge Exception:" + e.Message + "\n" + e.StackTrace);
+                return challenge?.HasReplied == true;
+            }
+            finally {
+                // |browser| is valid only during the native callback. Do not
+                // retain it in the deferred challenge/UI state.
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        //cookie_list is a CookieListBridge snapshot valid only during this call.
+        internal static void OnResourceCookieList(IntPtr cookie_list)
+        {
+            try {
+                if (s_NativeApi != null && cookie_list != IntPtr.Zero) {
+                    TryLoadDSL();
+                    var listProxy = new CookieListProxy(cookie_list, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(listProxy));
+                    BatchCommand.BatchScript.Call("on_resource_cookie_list", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnResourceCookieList Exception:" + e.Message + "\n" + e.StackTrace);
+            }
         }
 
         //Note: this method will be called on the browser process IO thread.
@@ -3343,8 +3944,12 @@ namespace DotNetLib
             // DSL return value: (handled, status, output_bytes, bytes_read).
             //   handled: true = use DSL's outputs, false = pass through.
             //   status: 0=DONE, 1=NEED_MORE_DATA, 2=ERROR.
-            //   output_bytes: byte[] filtered output (clamped to data_out_size).
+            //   output_bytes: byte[] filtered output. It must fit in
+            //     data_out_size; oversized output is rejected as ERROR rather
+            //     than silently truncated.
             //   bytes_read: how many input bytes DSL consumed (0..data_in_size).
+            // Empty input is a completion flush: DSL may return pending output
+            // with NEED_MORE_DATA, or DONE with no output when finished.
             // No SetContext here: body filter is a pure data transform, no
             // browser/frame is available from the native side.
             out_status = 0;  // DONE
@@ -3352,9 +3957,11 @@ namespace DotNetLib
             out_data_out_written = 0;
 
             try {
-                if (s_NativeApi != null && data_in_size > 0) {
+                if (s_NativeApi != null) {
                     TryLoadDSL();
-                    byte[] inputBuf = ReadNativeBytes(data_in, data_in_size);
+                    byte[] inputBuf = data_in_size > 0
+                        ? ReadNativeBytes(data_in, data_in_size)
+                        : Array.Empty<byte>();
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.FromObject(inputBuf));
                     var r = BatchCommand.BatchScript.Call("on_response_content_filter", vargs);
@@ -3385,10 +3992,21 @@ namespace DotNetLib
                         handled = r.GetBool();
                     }
                     if (handled) {
-                        // Clamp output to what chromium's buffer can hold.
+                        // The native callback has no per-stream C# output
+                        // continuation state. Truncating an oversized DSL
+                        // byte[] would lose its tail after the input is
+                        // consumed, so reject it explicitly instead.
+                        if (outputBuf != null && outputBuf.Length > data_out_size) {
+                            NativeLogNoLock("[csharp] OnResponseContentFilter output exceeds native buffer: " + outputBuf.Length + ">" + data_out_size);
+                            out_status = 2;  // RESPONSE_FILTER_ERROR
+                            out_data_in_read = 0;
+                            out_data_out_written = 0;
+                            return true;
+                        }
+
                         int written = 0;
                         if (outputBuf != null && data_out != IntPtr.Zero && data_out_size > 0) {
-                            written = outputBuf.Length > data_out_size ? data_out_size : outputBuf.Length;
+                            written = outputBuf.Length;
                             Marshal.Copy(outputBuf, 0, data_out, written);
                         }
                         out_data_out_written = written;
@@ -3406,6 +4024,56 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] OnResponseContentFilter Exception:" + e.Message + "\n" + e.StackTrace);
             }
             // Not handled: native falls back to pass-through.
+            return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static bool OnResourceRedirect(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, string new_url, IntPtr out_url, ref int out_url_size)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var responseProxy = new CefResponseProxy(response, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(responseProxy));
+                    vargs.Add(BoxedValue.FromString(new_url ?? string.Empty));
+                    var r = BatchCommand.BatchScript.Call("on_resource_redirect", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+
+                    // DSL return value: (handled, redirect_url_string)
+                    // If handled is true and redirect_url is non-empty, write it to out_url.
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
+                            string redirectUrl = tuple2.Item2.GetString();
+                            if (handled && !string.IsNullOrEmpty(redirectUrl)) {
+                                byte[] bytes = System.Text.Encoding.UTF8.GetBytes(redirectUrl);
+                                if (bytes.Length <= out_url_size) {
+                                    Marshal.Copy(bytes, 0, out_url, bytes.Length);
+                                    out_url_size = bytes.Length;
+                                    return true;
+                                }
+                                else {
+                                    NativeLogNoLock($"[csharp] OnResourceRedirect: out_url buffer too small: needed={bytes.Length}, available={out_url_size}");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnResourceRedirect:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            out_url_size = 0;
             return false;
         }
 
@@ -3647,15 +4315,21 @@ namespace DotNetLib
             }
         }
 
-        internal static IAgentPlugin? AgentPlugin {
+        internal static int ProcessType {
             get {
-                return AgentFrameworkService.Instance.AgentPlugin;
+                return s_ProcessType;
             }
         }
 
         internal static int MainThreadId {
             get {
                 return s_MainThreadId;
+            }
+        }
+
+        internal static IAgentPlugin? AgentPlugin {
+            get {
+                return AgentFrameworkService.Instance.AgentPlugin;
             }
         }
 
@@ -3722,17 +4396,42 @@ namespace DotNetLib
             s_NativeApi?.SetHeartbeatInterval(intervalMs);
             return null != s_NativeApi;
         }
+        internal static IntPtr GetBrowsersFirstValid()
+        {
+            if (s_NativeApi == null)
+                return IntPtr.Zero;
+            if (s_ProcessType == (int)CefProcessType.RendererProcess) {
+                foreach(var id in s_BrowserBrowserIds) {
+                    var pair = s_NativeApi.GetRendererBrowserFrameById(id);
+                    if (pair.browser != IntPtr.Zero) {
+                        return pair.browser;
+                    }
+                }
+            }
+            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                foreach (var id in s_RendererBrowserIds) {
+                    IntPtr browser = s_NativeApi.GetBrowserById(id);
+                    if (browser != IntPtr.Zero) {
+                        return browser;
+                    }
+                }
+            }
+            return IntPtr.Zero;
+        }
         /// <summary>
         /// Get all tracked browser IDs for the current process.
         /// Browser process: returns IDs from the C#-maintained browser id set.
         /// Renderer process: returns IDs from the tracked renderer browser/frame dictionary.
         /// </summary>
-        internal static int[] GetAllContextBrowserIds()
+        internal static int[]? GetAllContextBrowserIds()
         {
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                return s_RendererBrowsers.ToArray();
+                return s_RendererBrowserIds.ToArray();
             }
-            return s_BrowserBrowserIds.ToArray();
+            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                return s_BrowserBrowserIds.ToArray();
+            }
+            return null;
         }
         /// <summary>
         /// Set the current context (Browser/Frame) by browser ID.
@@ -3747,23 +4446,26 @@ namespace DotNetLib
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_RendererBrowsers.Remove(browserId);
+                    s_RendererBrowserIds.Remove(browserId);
                     return false;
                 }
                 NativeApi.SetContext(pair.browser, pair.frame);
                 return true;
             }
-            // Browser process
-            IntPtr browser = s_NativeApi.GetBrowserById(browserId);
-            if (browser == IntPtr.Zero) {
-                // Sync: remove stale entry from C# id set
-                s_BrowserBrowserIds.Remove(browserId);
-                return false;
+            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                // Browser process
+                IntPtr browser = s_NativeApi.GetBrowserById(browserId);
+                if (browser == IntPtr.Zero) {
+                    // Sync: remove stale entry from C# id set
+                    s_BrowserBrowserIds.Remove(browserId);
+                    return false;
+                }
+                IntPtr frame = s_NativeApi.BrowserGetMainFrame(browser);
+                if (frame == IntPtr.Zero) return false;
+                NativeApi.SetContext(browser, frame);
+                return true;
             }
-            IntPtr frame = s_NativeApi.BrowserGetMainFrame(browser);
-            if (frame == IntPtr.Zero) return false;
-            NativeApi.SetContext(browser, frame);
-            return true;
+            return false;
         }
         /// <summary>
         /// Get browser pointer by browser ID. Works for both processes.
@@ -3778,17 +4480,20 @@ namespace DotNetLib
                 var pair = s_NativeApi.GetRendererBrowserFrameById(browserId);
                 if (pair.browser == IntPtr.Zero) {
                     // Sync: remove stale entry from C# id set
-                    s_RendererBrowsers.Remove(browserId);
+                    s_RendererBrowserIds.Remove(browserId);
                 }
                 return pair.browser;
             }
-            // Browser process
-            IntPtr browser = s_NativeApi.GetBrowserById(browserId);
-            if (browser == IntPtr.Zero) {
-                // Sync: remove stale entry from C# id set
-                s_BrowserBrowserIds.Remove(browserId);
+            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                // Browser process
+                IntPtr browser = s_NativeApi.GetBrowserById(browserId);
+                if (browser == IntPtr.Zero) {
+                    // Sync: remove stale entry from C# id set
+                    s_BrowserBrowserIds.Remove(browserId);
+                }
+                return browser;
             }
-            return browser;
+            return IntPtr.Zero;
         }
         /// <summary>
         /// Find a browser ID whose URL contains the given key substring.
@@ -3797,8 +4502,11 @@ namespace DotNetLib
         /// </summary>
         internal static int FindBrowserIdByUrlKey(string urlKey)
         {
-            if (s_NativeApi == null || string.IsNullOrEmpty(urlKey)) return -1;
+            if (s_NativeApi == null || string.IsNullOrEmpty(urlKey))
+                return -1;
             var ids = GetAllContextBrowserIds();
+            if (null == ids)
+                return -1;
             foreach (var id in ids) {
                 string url = string.Empty;
                 if (s_ProcessType == (int)CefProcessType.RendererProcess) {
@@ -3811,12 +4519,12 @@ namespace DotNetLib
                     var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                     if (pair.browser == IntPtr.Zero || !s_NativeApi.BrowserIsValid(pair.browser)) {
                         // Sync: remove stale entry from C# id set
-                        s_RendererBrowsers.Remove(id);
+                        s_RendererBrowserIds.Remove(id);
                         continue;
                     }
                     url = s_NativeApi.BrowserGetUrl(pair.browser);
                 }
-                else {
+                else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
                     IntPtr browser = s_NativeApi.GetBrowserById(id);
                     if (browser != IntPtr.Zero) {
                         url = s_NativeApi.BrowserGetUrl(browser);
@@ -4221,7 +4929,7 @@ namespace DotNetLib
         private static bool s_IsMac = false;
         private static int s_ProcessType = -1;
         // Renderer process: tracked main-frame browser ids (native ref map owns the CefRefPtr)
-        private static readonly HashSet<int> s_RendererBrowsers = new();
+        private static readonly HashSet<int> s_RendererBrowserIds = new();
         // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;

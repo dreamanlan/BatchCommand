@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CefDotnetApp.AgentCore.Models;
+using CefDotnetApp.AgentCore.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,7 +20,7 @@ namespace AgentCore.CodeAnalysis
                 throw new FileNotFoundException($"File not found: {filePath}");
             }
 
-            string code = File.ReadAllText(filePath);
+            string code = SafeFileReader.ReadAllText(filePath);
             return CSharpSyntaxTree.ParseText(code, path: filePath);
         }
 

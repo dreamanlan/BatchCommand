@@ -37,7 +37,7 @@ namespace CefDotnetApp.AgentCore.Core
                 _session = new InferenceSession(modelPath, opts);
                 string tokExt = Path.GetExtension(tokenizerPath).ToLowerInvariant();
                 if (tokExt == ".model") {
-                    using var stream = File.OpenRead(tokenizerPath);
+                    using var stream = SafeFileReader.OpenRead(tokenizerPath);
                     _tokenizer = SentencePieceTokenizer.Create(stream, addBeginningOfSentence: false, addEndOfSentence: false);
                 } else {
                     _tokenizer = BertTokenizer.Create(tokenizerPath);

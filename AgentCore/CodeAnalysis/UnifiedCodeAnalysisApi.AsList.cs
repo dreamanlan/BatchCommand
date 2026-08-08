@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using AgentCore.CodeAnalysis.TreeSitter.Adapters;
 using AgentCore.CodeAnalysis.TreeSitter.Interfaces;
 using CefDotnetApp.AgentCore.Models;
+using CefDotnetApp.AgentCore.Core;
 
 namespace AgentCore.CodeAnalysis
 {
@@ -757,7 +758,7 @@ namespace AgentCore.CodeAnalysis
             if (!File.Exists(filePath))
                 return new List<CodeItem>();
 
-            var code = File.ReadAllText(filePath);
+            var code = SafeFileReader.ReadAllText(filePath);
             return FindNodesAsListInternal(code, language, pattern, filePath);
         }
 

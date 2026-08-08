@@ -151,7 +151,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private void ParseSkillDsl(string dslFilePath, string skillDir)
         {
-            var content = File.ReadAllText(dslFilePath, Encoding.UTF8);
+            var content = SafeFileReader.ReadAllText(dslFilePath, Encoding.UTF8);
             var dslFile = new DslFile();
             dslFile.LoadFromString(content, (msg) => {
                 AgentCore.Instance.Logger.Error($"[SkillDsl] {msg}");
@@ -469,7 +469,7 @@ namespace CefDotnetApp.AgentCore.Core
 
         private void ParseSkillMdOnly(string mdFilePath, string skillDir)
         {
-            var content = File.ReadAllText(mdFilePath, Encoding.UTF8);
+            var content = SafeFileReader.ReadAllText(mdFilePath, Encoding.UTF8);
             string skillName = Path.GetFileName(skillDir);
             string document = string.Empty;
 

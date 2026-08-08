@@ -141,21 +141,6 @@ public struct HostApi
     public IntPtr ResponseSetUrl;
     // Heartbeat control
     public IntPtr SetHeartbeatInterval;
-    // CookieListBridge snapshot accessors
-    public IntPtr CookieListGetCount;
-    public IntPtr CookieListGetUrl;
-    public IntPtr CookieListGetStatus;
-    public IntPtr CookieListEntryGetName;
-    public IntPtr CookieListEntryGetValue;
-    public IntPtr CookieListEntryGetDomain;
-    public IntPtr CookieListEntryGetPath;
-    public IntPtr CookieListEntryGetSecure;
-    public IntPtr CookieListEntryGetHttponly;
-    public IntPtr CookieListEntryGetSameSite;
-    public IntPtr CookieListEntryGetCreation;
-    public IntPtr CookieListEntryGetLastAccess;
-    // Pending forwarded-request HTTP auth reply
-    public IntPtr ReplyResourceAuthCredentials;
 }
 
 // delegate for native api
@@ -384,36 +369,6 @@ public delegate void HostResponseSetUrlDelegation(IntPtr response, [MarshalAs(Un
 // Heartbeat control
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
-// CookieListBridge snapshot accessors (pointer valid only during OnResourceCookieList)
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostCookieListGetCountDelegation(IntPtr cookie_list);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCookieListGetUrlDelegation(IntPtr cookie_list);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostCookieListGetStatusDelegation(IntPtr cookie_list);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCookieListEntryGetNameDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCookieListEntryGetValueDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCookieListEntryGetDomainDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate IntPtr HostCookieListEntryGetPathDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostCookieListEntryGetSecureDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostCookieListEntryGetHttponlyDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate int HostCookieListEntryGetSameSiteDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate long HostCookieListEntryGetCreationDelegation(IntPtr cookie_list, int index);
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate long HostCookieListEntryGetLastAccessDelegation(IntPtr cookie_list, int index);
-// Resolve a one-shot pending forwarded-request HTTP auth challenge. Credentials
-// are copied by native and never logged. This API is safe from any managed
-// thread; native posts resolution to CEF's IO thread.
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void HostReplyResourceAuthCredentialsDelegation(ulong challenge_id, int accepted, [MarshalAs(UnmanagedType.LPUTF8Str)] string username, [MarshalAs(UnmanagedType.LPUTF8Str)] string password);
 
 namespace DotNetLib
 {
@@ -910,22 +865,6 @@ namespace DotNetLib
     }
     public class NativeApi : INativeApi, IErrorReporter, IDslEngine
     {
-        /// <summary>
-        /// Optional application-owned, cross-platform HTTP auth UI hook. It
-        /// runs on CEF's IO callback thread; implementations must return
-        /// promptly and resolve the supplied challenge later via Continue or
-        /// Cancel. No native OS credential dialog is involved.
-        /// </summary>
-        public static event Action<ResourceAuthChallengeProxy>? ResourceAuthChallengeRequested;
-
-        internal static bool RaiseResourceAuthChallengeRequested(ResourceAuthChallengeProxy challenge)
-        {
-            var handler = ResourceAuthChallengeRequested;
-            if (handler == null) return false;
-            handler(challenge);
-            return true;
-        }
-
         public NativeApi(IntPtr apis)
         {
             HostApi hostApi = Marshal.PtrToStructure<HostApi>(apis);
@@ -1031,21 +970,6 @@ namespace DotNetLib
             m_ResponseSetUrlApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetUrlDelegation>(hostApi.ResponseSetUrl);
             // Heartbeat control
             m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
-            // CookieListBridge snapshot accessors
-            m_CookieListGetCountApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetCountDelegation>(hostApi.CookieListGetCount);
-            m_CookieListGetUrlApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetUrlDelegation>(hostApi.CookieListGetUrl);
-            m_CookieListGetStatusApi = Marshal.GetDelegateForFunctionPointer<HostCookieListGetStatusDelegation>(hostApi.CookieListGetStatus);
-            m_CookieListEntryGetNameApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetNameDelegation>(hostApi.CookieListEntryGetName);
-            m_CookieListEntryGetValueApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetValueDelegation>(hostApi.CookieListEntryGetValue);
-            m_CookieListEntryGetDomainApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetDomainDelegation>(hostApi.CookieListEntryGetDomain);
-            m_CookieListEntryGetPathApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetPathDelegation>(hostApi.CookieListEntryGetPath);
-            m_CookieListEntryGetSecureApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetSecureDelegation>(hostApi.CookieListEntryGetSecure);
-            m_CookieListEntryGetHttponlyApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetHttponlyDelegation>(hostApi.CookieListEntryGetHttponly);
-            m_CookieListEntryGetSameSiteApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetSameSiteDelegation>(hostApi.CookieListEntryGetSameSite);
-            m_CookieListEntryGetCreationApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetCreationDelegation>(hostApi.CookieListEntryGetCreation);
-            m_CookieListEntryGetLastAccessApi = Marshal.GetDelegateForFunctionPointer<HostCookieListEntryGetLastAccessDelegation>(hostApi.CookieListEntryGetLastAccess);
-            // Pending forwarded-request HTTP auth reply
-            m_ReplyResourceAuthCredentialsApi = Marshal.GetDelegateForFunctionPointer<HostReplyResourceAuthCredentialsDelegation>(hostApi.ReplyResourceAuthCredentials);
         }
 
         public void NativeLog(string msg)
@@ -1984,85 +1908,6 @@ namespace DotNetLib
         {
             m_SetHeartbeatIntervalApi?.Invoke(intervalMs);
         }
-        // CookieListBridge snapshot accessors. cookieList is valid only
-        // during the OnResourceCookieList callback.
-        public int CookieListGetCount(IntPtr cookieList)
-        {
-            if (cookieList == IntPtr.Zero) return 0;
-            return m_CookieListGetCountApi?.Invoke(cookieList) ?? 0;
-        }
-        public string CookieListGetUrl(IntPtr cookieList)
-        {
-            if (cookieList == IntPtr.Zero) return string.Empty;
-            var p = m_CookieListGetUrlApi?.Invoke(cookieList) ?? IntPtr.Zero;
-            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
-        }
-        public int CookieListGetStatus(IntPtr cookieList)
-        {
-            if (cookieList == IntPtr.Zero) return 0;
-            return m_CookieListGetStatusApi?.Invoke(cookieList) ?? 0;
-        }
-        public string CookieListEntryGetName(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return string.Empty;
-            var p = m_CookieListEntryGetNameApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
-            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
-        }
-        public string CookieListEntryGetValue(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return string.Empty;
-            var p = m_CookieListEntryGetValueApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
-            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
-        }
-        public string CookieListEntryGetDomain(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return string.Empty;
-            var p = m_CookieListEntryGetDomainApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
-            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
-        }
-        public string CookieListEntryGetPath(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return string.Empty;
-            var p = m_CookieListEntryGetPathApi?.Invoke(cookieList, index) ?? IntPtr.Zero;
-            return p != IntPtr.Zero ? ReadAndFreeNativeString(p) : string.Empty;
-        }
-        public bool CookieListEntryGetSecure(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return false;
-            return (m_CookieListEntryGetSecureApi?.Invoke(cookieList, index) ?? 0) != 0;
-        }
-        public bool CookieListEntryGetHttponly(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return false;
-            return (m_CookieListEntryGetHttponlyApi?.Invoke(cookieList, index) ?? 0) != 0;
-        }
-        public int CookieListEntryGetSameSite(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return 0;
-            return m_CookieListEntryGetSameSiteApi?.Invoke(cookieList, index) ?? 0;
-        }
-        public long CookieListEntryGetCreation(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return 0;
-            return m_CookieListEntryGetCreationApi?.Invoke(cookieList, index) ?? 0;
-        }
-        public long CookieListEntryGetLastAccess(IntPtr cookieList, int index)
-        {
-            if (cookieList == IntPtr.Zero) return 0;
-            return m_CookieListEntryGetLastAccessApi?.Invoke(cookieList, index) ?? 0;
-        }
-        /// <summary>
-        /// Resolve one pending forwarded-request HTTP authentication challenge.
-        /// This is one-shot: native ignores unknown, expired, canceled, or
-        /// already-resolved IDs. Never log or persist the password argument.
-        /// Safe from any managed thread.
-        /// </summary>
-        public void ReplyResourceAuthCredentials(ulong challengeId, bool accepted, string username, string password)
-        {
-            m_ReplyResourceAuthCredentialsApi?.Invoke(challengeId, accepted ? 1 : 0,
-                username ?? string.Empty, password ?? string.Empty);
-        }
-
         public void EnqueueCefMessage(string msgName, string[] args)
         {
             s_CefMessageQueue.Enqueue(new Tuple<string, string[]>(msgName, args));
@@ -2267,19 +2112,6 @@ namespace DotNetLib
         private HostResponseSetErrorDelegation? m_ResponseSetErrorApi;
         private HostResponseSetUrlDelegation? m_ResponseSetUrlApi;
         private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
-        private HostCookieListGetCountDelegation? m_CookieListGetCountApi;
-        private HostCookieListGetUrlDelegation? m_CookieListGetUrlApi;
-        private HostCookieListGetStatusDelegation? m_CookieListGetStatusApi;
-        private HostCookieListEntryGetNameDelegation? m_CookieListEntryGetNameApi;
-        private HostCookieListEntryGetValueDelegation? m_CookieListEntryGetValueApi;
-        private HostCookieListEntryGetDomainDelegation? m_CookieListEntryGetDomainApi;
-        private HostCookieListEntryGetPathDelegation? m_CookieListEntryGetPathApi;
-        private HostCookieListEntryGetSecureDelegation? m_CookieListEntryGetSecureApi;
-        private HostCookieListEntryGetHttponlyDelegation? m_CookieListEntryGetHttponlyApi;
-        private HostCookieListEntryGetSameSiteDelegation? m_CookieListEntryGetSameSiteApi;
-        private HostCookieListEntryGetCreationDelegation? m_CookieListEntryGetCreationApi;
-        private HostCookieListEntryGetLastAccessDelegation? m_CookieListEntryGetLastAccessApi;
-        private HostReplyResourceAuthCredentialsDelegation? m_ReplyResourceAuthCredentialsApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -2492,14 +2324,8 @@ namespace DotNetLib
 
     /// <summary>
     /// Proxy wrapper for a native CefResponse pointer.
-    /// Passed as parameter during OnGetResourceHandlerFilter /
-    /// OnResourceResponseFilter callbacks.
-    /// At the decision point (OnGetResourceHandlerFilter) the response is an
-    /// empty writable CefResponse created by native; C# fills header overrides
-    /// into it. At the inspection point (OnResourceResponseFilter) the response
-    /// is the actual upstream response and is read-only; write APIs
-    /// (SetHeaderByName etc.) are silently dropped by CEF, only read APIs are
-    /// meaningful.
+    /// It is writable only during OnBeforeResourceResponse. Other resource
+    /// callbacks receive a read-only response, so write APIs are ignored by CEF.
     /// </summary>
     public class CefResponseProxy
     {
@@ -2560,120 +2386,6 @@ namespace DotNetLib
         /// Remove all values for the given header name (case-insensitive).
         /// </summary>
         public void RemoveHeaderByName(string name) => m_Api.ResponseRemoveHeaderByName(m_Response, name);
-        /// <summary>
-        /// Mark a header for pending removal on the response_override map
-        /// (decision point). Implemented by writing an empty value for the
-        /// given name so that MyResourceHandler will erase all matching
-        /// entries from the outgoing response headers when composing the final
-        /// header list. Use this from on_get_resource_handler_filter instead
-        /// of RemoveHeaderByName, since response_override starts as an empty
-        /// map and erase-on-empty-map is a no-op.
-        /// </summary>
-        public void AddPendingRemoveHeaderByName(string name) => m_Api.ResponseSetHeaderByName(m_Response, name, string.Empty, true);
-    }
-
-    /// <summary>
-    /// One cookie entry inside a CookieListProxy snapshot.
-    /// Valid only during the OnResourceCookieList callback.
-    /// </summary>
-    public class CookieEntryProxy
-    {
-        private readonly IntPtr m_List;
-        private readonly int m_Index;
-        private readonly NativeApi m_Api;
-
-        internal CookieEntryProxy(IntPtr list, int index, NativeApi api)
-        {
-            m_List = list;
-            m_Index = index;
-            m_Api = api;
-        }
-
-        public string Name => m_Api.CookieListEntryGetName(m_List, m_Index);
-        public string Value => m_Api.CookieListEntryGetValue(m_List, m_Index);
-        public string Domain => m_Api.CookieListEntryGetDomain(m_List, m_Index);
-        public string Path => m_Api.CookieListEntryGetPath(m_List, m_Index);
-        public bool Secure => m_Api.CookieListEntryGetSecure(m_List, m_Index);
-        public bool HttpOnly => m_Api.CookieListEntryGetHttponly(m_List, m_Index);
-        public int SameSite => m_Api.CookieListEntryGetSameSite(m_List, m_Index);
-        /// <summary>Chrome time (microseconds since 1601-01-01 UTC).</summary>
-        public long Creation => m_Api.CookieListEntryGetCreation(m_List, m_Index);
-        /// <summary>Chrome time (microseconds since 1601-01-01 UTC).</summary>
-        public long LastAccess => m_Api.CookieListEntryGetLastAccess(m_List, m_Index);
-    }
-
-    /// <summary>
-    /// Proxy wrapper for a native CookieListBridge pointer (cookie-jar snapshot).
-    /// Valid only during the OnResourceCookieList callback; do not cache.
-    /// </summary>
-    public class CookieListProxy
-    {
-        private readonly IntPtr m_List;
-        private readonly NativeApi m_Api;
-
-        public CookieListProxy(IntPtr list, NativeApi api)
-        {
-            m_List = list;
-            m_Api = api;
-        }
-
-        public IntPtr NativePtr => m_List;
-        /// <summary>The URL the jar was queried with.</summary>
-        public string Url => m_Api.CookieListGetUrl(m_List);
-        /// <summary>Upstream response status observed when the query was issued (0 if unknown).</summary>
-        public int Status => m_Api.CookieListGetStatus(m_List);
-        public int Count => m_Api.CookieListGetCount(m_List);
-        public CookieEntryProxy GetEntry(int index) => new CookieEntryProxy(m_List, index, m_Api);
-    }
-
-    /// <summary>
-    /// One pending HTTP or proxy authentication challenge from a forwarded
-    /// CefURLRequest. Metadata contains no credential secret. Instances can
-    /// be retained by an application-owned cross-platform UI and resolved
-    /// later; native makes Continue/Cancel one-shot and ignores expired IDs.
-    /// </summary>
-    public class ResourceAuthChallengeProxy
-    {
-        private readonly NativeApi m_Api;
-        private int m_Replied;
-
-        internal ResourceAuthChallengeProxy(ulong id, string url, bool isProxy,
-            string host, int port, string realm, string scheme, NativeApi api)
-        {
-            Id = id;
-            Url = url ?? string.Empty;
-            IsProxy = isProxy;
-            Host = host ?? string.Empty;
-            Port = port;
-            Realm = realm ?? string.Empty;
-            Scheme = scheme ?? string.Empty;
-            m_Api = api;
-        }
-
-        public ulong Id { get; }
-        public string Url { get; }
-        public bool IsProxy { get; }
-        public string Host { get; }
-        public int Port { get; }
-        public string Realm { get; }
-        public string Scheme { get; }
-        public bool HasReplied => Volatile.Read(ref m_Replied) != 0;
-
-        /// <summary>Continue the challenge with supplied credentials.</summary>
-        public void Continue(string username, string password)
-        {
-            if (Interlocked.Exchange(ref m_Replied, 1) == 0) {
-                m_Api.ReplyResourceAuthCredentials(Id, true, username, password);
-            }
-        }
-
-        /// <summary>Cancel the challenge without sending credentials.</summary>
-        public void Cancel()
-        {
-            if (Interlocked.Exchange(ref m_Replied, 1) == 0) {
-                m_Api.ReplyResourceAuthCredentials(Id, false, string.Empty, string.Empty);
-            }
-        }
     }
 
     /// <summary>
@@ -2801,28 +2513,6 @@ namespace DotNetLib
         public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
         // Resource interception callbacks (invoked on browser process IO thread).
-        // OnGetResourceHandlerFilter: decision point (GetResourceHandler).
-        // request: original CEF request (read-only). Its ResourceType /
-        // TransitionType / Identifier are always authoritative here.
-        // request_override: writable copy of the upstream request; DSL may edit
-        // its URL / headers / referrer / flags and the same object is reused by
-        // MyResourceHandler for the forwarded CefURLRequest (no second copy).
-        // response_override: empty writable CefResponse for header overrides.
-        // Return true to intercept with MyResourceHandler.
-        // out_replace_content: whether to enable body filtering. false =
-        // MyResourceHandler only applies header overrides, passes body through
-        // unchanged. true = enable body filter (default).
-        // IntPtr (bool*) instead of ref bool: C# bool marshals as 4-byte
-        // UnmanagedType.Bool by default, mismatching C++ 1-byte bool. Use
-        // IntPtr + Marshal.WriteByte for correct 1-byte layout.
-        // io_want_cookies: in = cookie queries issued so far (DSL knows whether
-        // its cap is reached). Out: n > (in value) requests a cookie-jar
-        // snapshot for this request (delivered via OnResourceCookieList when
-        // the upstream response headers arrive); n <= 0 declines and resets
-        // the issued count.
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnGetResourceHandlerFilterDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr request_override, IntPtr response_override, IntPtr out_replace_content, ref int io_want_cookies);
         // OnResourceResponseFilter: inspection point (GetResourceResponseFilter).
         // request/response are the actual CEF request and upstream response
         // (read-only inspection). Return true to register MyResponseFilter for
@@ -2830,18 +2520,6 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnResourceResponseFilterDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, IntPtr out_replace_content);
-        // OnResourceCookieList: delivers a completed cookie-jar snapshot
-        // requested via io_want_cookies. cookie_list is valid only during
-        // this call; access fields via CookieListProxy.
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate void OnResourceCookieListDelegation(IntPtr cookie_list);
-        // OnResourceAuthChallenge: a real HTTP/proxy challenge from a
-        // forwarded CefURLRequest. Returning true transfers responsibility to
-        // C#/DSL/application UI, which must call ReplyResourceAuthCredentials
-        // before native timeout; false cancels immediately.
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnResourceAuthChallengeDelegation(IntPtr browser, ulong challenge_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme);
         // Body filter: streams body chunks through C# for transformation.
         // Returns true if DSL handled the chunk (use DSL's outputs), false to
         // pass through unchanged. out_status receives the filter status (0=DONE,
@@ -2859,6 +2537,19 @@ namespace DotNetLib
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnResourceRedirectDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, [MarshalAs(UnmanagedType.LPUTF8Str)] string new_url, IntPtr out_url, ref int out_url_size);
+        // OnBeforeResourceResponse: response is writable only during this
+        // callback, before CEF processes the received response headers.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void OnBeforeResourceResponseDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response);
+        // OnResourceLoadComplete: status is cef_urlrequest_status_t and the
+        // length is the number of response bytes actually read.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void OnResourceLoadCompleteDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, int status, long received_content_length);
+        // OnProtocolExecution: return true only when the callback supplies an
+        // allow value through the one-byte C++ bool pointer.
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnProtocolExecutionDelegation(IntPtr browser, IntPtr frame, IntPtr request, IntPtr out_allow_os_execution);
 
         // DevTools observer callbacks (invoked on browser process UI thread).
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -3759,53 +3450,28 @@ namespace DotNetLib
         }
 
         //Note: this method will be called on the browser process IO thread.
-        internal static bool OnGetResourceHandlerFilter(IntPtr browser, IntPtr frame, IntPtr request, IntPtr request_override, IntPtr response_override, IntPtr out_replace_content, ref int io_want_cookies)
+        internal static void OnBeforeResourceResponse(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response)
         {
             NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
                     var requestProxy = new CefRequestProxy(request, s_NativeApi);
-                    var overrideProxy = new CefRequestProxy(request_override, s_NativeApi);
-                    var responseProxy = new CefResponseProxy(response_override, s_NativeApi);
+                    var responseProxy = new CefResponseProxy(response, s_NativeApi);
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(requestProxy));
-                    vargs.Add(BoxedValue.From(overrideProxy));
                     vargs.Add(BoxedValue.From(responseProxy));
-                    vargs.Add(BoxedValue.From(io_want_cookies));
-                    var r = BatchCommand.BatchScript.Call("on_get_resource_handler_filter", vargs);
+                    BatchCommand.BatchScript.Call("on_before_resource_response", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
-                    // DSL return value: (handled, replace_content[, want_cookies]) or just handled.
-                    // want_cookies is read even when handled is false: n <= 0
-                    // resets the native issued-count regardless of interception.
-                    if (r.IsTuple) {
-                        int len = r.TupleLength;
-                        if (len >= 1) {
-                            bool handled = r.GetTupleValue(0).GetBool();
-                            // Default: disable body filtering. Write via Marshal.WriteByte to
-                            // match C++ 1-byte bool layout (IntPtr param instead of ref bool).
-                            bool replaceContent = len >= 2 ? r.GetTupleValue(1).GetBool() : false;
-                            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)(replaceContent ? 1 : 0));
-                            if (len >= 3) io_want_cookies = r.GetTupleValue(2).GetInt();
-                            return handled;
-                        }
-                    }
-                    // Single bool return: treated as handled, replace_content defaults to false.
-                    else if (!r.IsNullObject) {
-                        if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
-                        return r.GetBool();
-                    }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnGetResourceHandlerFilter Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLogNoLock("[csharp] OnBeforeResourceResponse Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
-            if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
-            return false;
         }
 
         //Note: this method will be called on the browser process IO thread.
@@ -3848,93 +3514,6 @@ namespace DotNetLib
             }
             if (out_replace_content != IntPtr.Zero) Marshal.WriteByte(out_replace_content, (byte)0);
             return false;
-        }
-
-        //Note: this method will be called on the browser process IO thread.
-        //A real HTTP/proxy auth challenge from a forwarded CefURLRequest.
-        //DSL return convention: (decision[, username, password]) where
-        //0=cancel, 1=continue with credentials, 2=defer to the optional
-        //NativeApi.ResourceAuthChallengeRequested application UI event.
-        internal static bool OnResourceAuthChallenge(IntPtr browser, ulong challenge_id, string url, int is_proxy, string host, int port, string realm, string scheme)
-        {
-            NativeApi.SetContext(browser, IntPtr.Zero);
-            ResourceAuthChallengeProxy? challenge = null;
-            try {
-                if (s_NativeApi == null) {
-                    return false;
-                }
-
-                TryLoadDSL();
-                challenge = new ResourceAuthChallengeProxy(challenge_id,
-                    url, is_proxy != 0, host, port, realm, scheme, s_NativeApi);
-                var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                vargs.Add(BoxedValue.From(challenge));
-                var r = BatchCommand.BatchScript.Call("on_resource_auth_challenge", vargs);
-                BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                CheckDslError();
-
-                // Advanced DSL integrations may resolve through the proxy
-                // directly. The native registry is one-shot, so do not queue a
-                // second cancel/continue based on the return tuple.
-                if (challenge.HasReplied) {
-                    return true;
-                }
-
-                int decision = 0;
-                string username = string.Empty;
-                string password = string.Empty;
-                if (r.IsTuple && r.TupleLength >= 1) {
-                    decision = r.GetTupleValue(0).GetInt();
-                    if (r.TupleLength >= 2) username = r.GetTupleValue(1).GetString() ?? string.Empty;
-                    if (r.TupleLength >= 3) password = r.GetTupleValue(2).GetString() ?? string.Empty;
-                }
-
-                if (decision == 1) {
-                    challenge.Continue(username, password);
-                    return true;
-                }
-                if (decision == 2) {
-                    if (!NativeApi.RaiseResourceAuthChallengeRequested(challenge)) {
-                        // No application UI is registered. Resolve explicitly
-                        // rather than waiting for the native timeout.
-                        challenge.Cancel();
-                    }
-                    return true;
-                }
-
-                challenge.Cancel();
-                return true;
-            }
-            catch (Exception e) {
-                // Never log credentials; this callback receives metadata only.
-                NativeLogNoLock("[csharp] OnResourceAuthChallenge Exception:" + e.Message + "\n" + e.StackTrace);
-                return challenge?.HasReplied == true;
-            }
-            finally {
-                // |browser| is valid only during the native callback. Do not
-                // retain it in the deferred challenge/UI state.
-                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
-            }
-        }
-
-        //Note: this method will be called on the browser process IO thread.
-        //cookie_list is a CookieListBridge snapshot valid only during this call.
-        internal static void OnResourceCookieList(IntPtr cookie_list)
-        {
-            try {
-                if (s_NativeApi != null && cookie_list != IntPtr.Zero) {
-                    TryLoadDSL();
-                    var listProxy = new CookieListProxy(cookie_list, s_NativeApi);
-                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                    vargs.Add(BoxedValue.From(listProxy));
-                    BatchCommand.BatchScript.Call("on_resource_cookie_list", vargs);
-                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                    CheckDslError();
-                }
-            }
-            catch (Exception e) {
-                NativeLogNoLock("[csharp] OnResourceCookieList Exception:" + e.Message + "\n" + e.StackTrace);
-            }
         }
 
         //Note: this method will be called on the browser process IO thread.
@@ -4024,6 +3603,68 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] OnResponseContentFilter Exception:" + e.Message + "\n" + e.StackTrace);
             }
             // Not handled: native falls back to pass-through.
+            return false;
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static void OnResourceLoadComplete(IntPtr browser, IntPtr frame, IntPtr request, IntPtr response, int status, long received_content_length)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    var responseProxy = new CefResponseProxy(response, s_NativeApi);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(responseProxy));
+                    vargs.Add(BoxedValue.From(status));
+                    vargs.Add(BoxedValue.From(received_content_length));
+                    BatchCommand.BatchScript.Call("on_resource_load_complete", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnResourceLoadComplete Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
+        //Note: this method will be called on the browser process IO thread.
+        internal static bool OnProtocolExecution(IntPtr browser, IntPtr frame, IntPtr request, IntPtr out_allow_os_execution)
+        {
+            NativeApi.SetContext(browser, frame);
+            try {
+                if (s_NativeApi != null) {
+                    TryLoadDSL();
+                    var requestProxy = new CefRequestProxy(request, s_NativeApi);
+                    bool allowOsExecution = out_allow_os_execution != IntPtr.Zero && Marshal.ReadByte(out_allow_os_execution) != 0;
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(allowOsExecution));
+                    var r = BatchCommand.BatchScript.Call("on_protocol_execution", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (r.IsTuple && r.TupleLength >= 1 && r.GetTupleValue(0).GetBool()) {
+                        bool dslAllowOsExecution = r.TupleLength >= 2
+                            ? r.GetTupleValue(1).GetBool()
+                            : allowOsExecution;
+                        if (out_allow_os_execution != IntPtr.Zero) {
+                            Marshal.WriteByte(out_allow_os_execution, (byte)(dslAllowOsExecution ? 1 : 0));
+                        }
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] OnProtocolExecution Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return false;
         }
 
@@ -4401,7 +4042,7 @@ namespace DotNetLib
             if (s_NativeApi == null)
                 return IntPtr.Zero;
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                foreach(var id in s_BrowserBrowserIds) {
+                foreach (var id in s_BrowserBrowserIds) {
                     var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                     if (pair.browser != IntPtr.Zero) {
                         return pair.browser;

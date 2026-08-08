@@ -125,98 +125,26 @@ script(on_resource_redirect)params($request,$response,$new_url)
 };
 
 // Note: this function will be called on the browser process IO thread.
-// Resource interception decision point (GetResourceHandler).
-// Parameters:
-//   $request: the original CEF request (read-only). Always authoritative for
-//     ResourceType / TransitionType / Identifier (these have no public
-//     setters and are not carried by $request_override).
-//   $request_override: writable copy of the upstream request; DSL may edit
-//     its Url / Method / Headers / Referrer / Flags, and the same object is
-//     reused by MyResourceHandler when forwarding the request (no second
-//     copy).
-//     $request_override.Flags is a cef_urlrequest_flags_t bitmask, so URL
-//     request behaviour can be tuned per resource from here WITHOUT a native
-//     rebuild. Native presets exactly UR_FLAG_ALLOW_STORED_CREDENTIALS (8),
-//     which is mandatory for cookie send / Set-Cookie ingestion - do not
-//     clear it. The incoming flags are always UR_FLAG_NONE (CefRequestImpl
-//     does not copy flags from the ResourceRequest), so Flags is reliably 8
-//     here and adding a flag value acts as a bitwise or - just never add the
-//     same flag twice.
-//     Values: SKIP_CACHE=1, ONLY_FROM_CACHE=2, DISABLE_CACHE=4,
-//     ALLOW_STORED_CREDENTIALS=8, REPORT_UPLOAD_PROGRESS=16,
-//     NO_DOWNLOAD_DATA=32, NO_RETRY_ON_5XX=64, STOP_ON_REDIRECT=128.
-//     NO_RETRY_ON_5XX is worth noting: without it libcef retries the
-//     forwarded request up to twice on 5xx or network change, so a
-//     non-idempotent POST can be silently replayed. Applying it natively to
-//     every request was tried and reverted while chasing an INTERMITTENT
-//     reload loop on the SSO start page; that loop was NOT traced to this flag
-//     (it still occurs with the flag absent), so the cause remains unknown.
-//     Because the loop is intermittent, any conclusion drawn from a single
-//     restart is unreliable - repeat each configuration several times. If the
-//     replay protection is wanted, gate it on non-idempotent methods only and
-//     never on navigations: test $request.Method / $request.ResourceType
-//     first, and only then run
-//     $request_override.Flags = $request_override.Flags + 64;
-//   $response: empty writable CefResponse; fill header overrides into it and
-//     return (true, ...) to intercept the resource with MyResourceHandler.
-//     Header overrides are merged onto the upstream response headers
-//     (same-name overwrite; empty value means delete).
-//   $cookies_issued: cookie-jar snapshots issued so far (global, per
-//     process). Lets the script see whether its cap has been reached.
-// Return (handled, replace_content[, want_cookies]):
-//   handled: true = intercept the resource with MyResourceHandler.
-//   replace_content: whether to enable body filtering via
-//     on_response_content_filter. false = MyResourceHandler only applies
-//     header overrides, passes body through unchanged. true = enable body
-//     filter (default).
-//   want_cookies (optional): cookie-snapshot budget. n > $cookies_issued
-//     requests a jar snapshot for this request, delivered via
-//     on_resource_cookie_list when the upstream response headers arrive
-//     (Set-Cookie already ingested, status known). Returning a constant n
-//     acts as a global lifetime cap (e.g. always 20 = 20 snapshots per
-//     process); return $cookies_issued + 20 to top up. n <= 0 declines and
-//     resets the issued count to 0. Read even when handled is false.
-script(on_get_resource_handler_filter)params($request, $request_override, $response, $cookies_issued)
+// $response is writable only during this callback. Status, status text, MIME
+// type, charset and response headers may be changed before CEF processes them.
+script(on_before_resource_response)params($request,$response)
 {
-    nativelog("[dsl] on_get_resource_handler_filter: type={0} url={1}", $request.ResourceType, $request.Url);
-    // Bypass: let chromium's native stack handle these resources.
-    if (stringcontainsany($request.Url, ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf")) {
-        return((false, false));
+    if (stringcontainsany($request.Url, "gemini.google.com")) {
+        $response.RemoveHeaderByName("Content-Security-Policy");
     };
-    // The SSO redirect chain runs as native browser navigations: every hop's
-    // 302 + Set-Cookie is processed by chromium itself. (Forwarded requests
-    // now use UR_FLAG_STOP_ON_REDIRECT and hand 3xx back to chromium, so
-    // this bypass may be removable - kept until the reload-loop scenario is
-    // retested with the new redirect flow.)
-    if (stringcontainsany($request.Url, "std.passport.woa.com", "/_auth_login")) {
-        return((false, false));
-    };
-    // Experiment: intercept main documents (0), iframes (1) and XHR (13)
-    // only. Main-doc interception keeps the CSP strip alive (required for
-    // the agent websocket to localhost, which CSP connect-src would
-    // otherwise block); static resources go through chromium's native
-    // stack so they get HTTP cache hits instead of full re-downloads.
-    if ($request.ResourceType != 0 && $request.ResourceType != 1 && $request.ResourceType != 13) {
-        return((false, false));
-    };
-    if (stringcontainsany($request.Url, "knot.woa.com/apigw/api/v1/agents/agui/")) {
-        $response.SetHeaderByName("Access-Control-Allow-Origin", "*", true);
-        $response.SetHeaderByName("Access-Control-Allow-Methods", "POST, OPTIONS", true);
-        $response.SetHeaderByName("Access-Control-Allow-Headers", "Content-Type, x-knot-api-token", true);
-        return((true, false));
-    };
-    if (stringcontainsany($request.Url, "woa.com", "gemini.google.com")) {
-        $response.AddPendingRemoveHeaderByName("Content-Security-Policy");
-        // Cookie-jar snapshots for the 401 investigation: 20 per process.
-        return((true, false, 20));
-    };
-    // Example: intercept evaluation.woa.com and strip CSP headers.
-    // if (strcontains($request.Url, "evaluation.woa.com")) {
-    //     $response.AddPendingRemoveHeaderByName("Content-Security-Policy");
-    //     $response.AddPendingRemoveHeaderByName("Content-Security-Policy-Report-Only");
-    //     return((true, true));
-    // };
-    return((false, false));
+};
+
+// Note: this function will be called on the browser process IO thread after a
+// resource load completes. Request and response are read-only here.
+script(on_resource_load_complete)params($request,$response,$status,$received_content_length)
+{
+};
+
+// Note: this function will be called on the browser process IO thread for an
+// unknown URL scheme. Return (handled, allow_os_execution).
+script(on_protocol_execution)params($request,$allow_os_execution)
+{
+    return((false, $allow_os_execution));
 };
 
 // Note: this function will be called on the browser process IO thread.
@@ -229,23 +157,6 @@ script(on_resource_response_filter)params($request, $response)
 {
     nativelog("[dsl] on_resource_response_filter: inspection headers: {0}", $response.HeaderMap);
     return((false, false));
-};
-
-// Note: this function will be called on the browser process IO thread.
-// Cookie-jar snapshot delivery. Requested via the want_cookies return value
-// of on_get_resource_handler_filter; the snapshot is taken when the upstream
-// response headers arrive (Set-Cookie already ingested into the jar).
-// $cookie_list: CookieListProxy, valid only during this call:
-//   Url / Status / Count / GetEntry(i) -> Name, Value, Domain, Path, Secure,
-//   HttpOnly, SameSite, Creation, LastAccess (Chrome time, us since 1601).
-script(on_resource_cookie_list)params($cookie_list)
-{
-    nativelog("[dsl] cookie jar: status={0} count={1} url={2}", $cookie_list.Status, $cookie_list.Count, $cookie_list.Url);
-    loop($cookie_list.Count) {
-        $c = $cookie_list.GetEntry($$);
-        // Never log the value itself (session tokens) - length only.
-        nativelog("[dsl] jar cookie: name={0} vlen={1} domain={2} path={3} secure={4} httponly={5} samesite={6} creation={7} last_access={8}", $c.Name, $c.Value.Length, $c.Domain, $c.Path, $c.Secure, $c.HttpOnly, $c.SameSite, $c.Creation, $c.LastAccess);
-    };
 };
 
 // Note: this function will be called on the browser process IO thread.

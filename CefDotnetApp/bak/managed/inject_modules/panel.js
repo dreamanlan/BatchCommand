@@ -540,11 +540,26 @@ class AgentPanel {
       `;
     googleAiBtn.onclick = () => window.open('https://gemini.google.com/app');
 
+    // OpenAi button - open OpenAi AI in new window
+    const openAiBtn = document.createElement('button');
+    openAiBtn.textContent = 'OpenAi';
+    openAiBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    openAiBtn.onclick = () => window.open('https://chatgpt.com');
+
     buttonBar.appendChild(testBtn);
     buttonBar.appendChild(chatRoomBtn);
     buttonBar.appendChild(hyarenaBtn);
     buttonBar.appendChild(venusBtn);
     buttonBar.appendChild(googleAiBtn);
+    buttonBar.appendChild(openAiBtn);
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);

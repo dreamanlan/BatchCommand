@@ -89,7 +89,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app", "https://chatgpt.com", "https://chat.openai.com")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -126,7 +126,16 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9530, 7168);
+        agent_set_max_result_size(9530, 50*1024);
+        return((true, $code));
+    };
+    if (string_contains_any($url, "https://chatgpt.com", "https://chat.openai.com") && ($isMainFrame == "True" || $isMainFrame == true)) {
+        $base = combine_path(basepath, "managed/inject_modules/");
+        $sb = new_string_builder();
+        append_line($sb, read_file(combine_path($base, "openai_chat.js")));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        agent_set_max_result_size(9530, 50*1024);
         return((true, $code));
     };
     return((false, ""));
@@ -177,20 +186,15 @@ script(get_venus_system_prompt)params()
     $mergePrompt = read_file("d:/AiClaw/docs/venus_prompt.txt");
     return(format("{0}",$mergePrompt));
 };
-script(get_system_prompt_1)params()
+script(get_google_prompt)params()
 {
-    $googlePrompt = read_file("d:/AiClaw/docs/google_prompt_1.txt");
+    $googlePrompt = read_file("d:/AiClaw/docs/google_prompt.txt");
     return(format("{0}",$googlePrompt));
 };
-script(get_system_prompt_2)params()
+script(get_openai_prompt)params()
 {
-    $googlePrompt = read_file("d:/AiClaw/docs/google_prompt_2.txt");
-    return(format("{0}",$googlePrompt));
-};
-script(get_system_prompt_3)params()
-{
-    $googlePrompt = read_file("d:/AiClaw/docs/google_prompt_3.txt");
-    return(format("{0}",$googlePrompt));
+    $openAiPrompt = read_file("d:/AiClaw/docs/openai_prompt.txt");
+    return(format("{0}",$openAiPrompt));
 };
 
 // Handle nativelog batch

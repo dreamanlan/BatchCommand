@@ -146,7 +146,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_full_name", "get_type_full_name(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("fullname", "fullname(obj)", new ExpressionFactoryHelper<GetTypeFullNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type_name", "get_type_name(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("typename", "typename(obj)", new ExpressionFactoryHelper<GetTypeNameExp>()); AgentFrameworkService.Instance.DslEngine!.Register("type_of", "type_of(obj)", false, new ExpressionFactoryHelper<GetTypeNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("typename", "typename(obj)", new ExpressionFactoryHelper<GetTypeNameExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("type_of", "type_of(obj)", false, new ExpressionFactoryHelper<GetTypeNameExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_type", "get_type(type_str)", new ExpressionFactoryHelper<GetTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("change_type", "change_type(obj,type_str)", new ExpressionFactoryHelper<ChangeTypeExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("parse_enum", "parse_enum(type_str,val_str)", new ExpressionFactoryHelper<ParseEnumExp>());

@@ -467,31 +467,41 @@
     statusLine.style.cssText = 'margin-bottom:6px;';
     body.appendChild(statusLine);
 
-    // Button row 1: arm/disarm + break/clear/resume
+    // Button row 1: mode switches
     const row1 = document.createElement('div');
     row1.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnArm = mkBtn('arm', () => { ST.armed ? disarmNow() : armNow(); });
-    const btnBreak = mkBtn('break', manualBreak);
-    const btnClear = mkBtn('clear', manualClear);
-    const btnResume = mkBtn('resume', manualResume);
-    row1.appendChild(btnArm);
-    row1.appendChild(btnBreak);
-    row1.appendChild(btnClear);
-    row1.appendChild(btnResume);
-    body.appendChild(row1);
-
-    // Button row 2: trim + longrun + autosend + keep input
-    const row2 = document.createElement('div');
-    row2.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap; align-items:center;';
-    const btnTrim = mkBtn('trim', () => trimHistory(CFG.KEEP_ROUNDS));
+    btnArm.id = 'metadsl-gai-arm';
     const btnLong = mkBtn('long', () => {
       ST.longRunMode = !ST.longRunMode;
       log('[longrun] ' + ST.longRunMode);
       updatePanel();
     });
+    btnLong.id = 'metadsl-gai-long';
     const btnAuto = mkBtn('auto', () => {
       ST.autoSendOn ? stopAutoSend() : startAutoSend();
     });
+    btnAuto.id = 'metadsl-gai-auto';
+    row1.appendChild(btnArm);
+    row1.appendChild(btnLong);
+    row1.appendChild(btnAuto);
+    body.appendChild(row1);
+
+    // Button row 2: run controls
+    const row2 = document.createElement('div');
+    row2.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
+    const btnBreak = mkBtn('break', manualBreak);
+    const btnResume = mkBtn('resume', manualResume);
+    const btnClear = mkBtn('clear', manualClear);
+    row2.appendChild(btnBreak);
+    row2.appendChild(btnResume);
+    row2.appendChild(btnClear);
+    body.appendChild(row2);
+
+    // Button row 3: history settings
+    const row3 = document.createElement('div');
+    row3.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap; align-items:center;';
+    const btnTrim = mkBtn('trim', () => trimHistory(CFG.KEEP_ROUNDS));
     const keepLabel = document.createElement('label');
     keepLabel.style.cssText = 'font-size:10px; display:inline-flex; align-items:center; gap:2px;';
     const keepInput = document.createElement('input');
@@ -506,18 +516,16 @@
     });
     keepLabel.appendChild(document.createTextNode('keep'));
     keepLabel.appendChild(keepInput);
-    row2.appendChild(btnTrim);
-    row2.appendChild(btnLong);
-    row2.appendChild(btnAuto);
-    row2.appendChild(keepLabel);
-    body.appendChild(row2);
-
-    // Button row 3: prompt (venus single button)
-    const row3 = document.createElement('div');
-    row3.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
-    const btnP = mkBtn('Prompt', () => sendPrompt());
-    row3.appendChild(btnP);
+    row3.appendChild(keepLabel);
+    row3.appendChild(btnTrim);
     body.appendChild(row3);
+
+    // Button row 4: prompt
+    const row4 = document.createElement('div');
+    row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
+    const btnP = mkBtn('Prompt', () => sendPrompt());
+    row4.appendChild(btnP);
+    body.appendChild(row4);
 
     panel.appendChild(header);
     panel.appendChild(body);
@@ -568,6 +576,25 @@
     if (!ST.panelEl) return;
     const status = ST.panelEl.querySelector('#metadsl-gai-status');
     if (!status) return;
+
+    const armButton = ST.panelEl.querySelector('#metadsl-gai-arm');
+    const longButton = ST.panelEl.querySelector('#metadsl-gai-long');
+    const autoButton = ST.panelEl.querySelector('#metadsl-gai-auto');
+    if (armButton) {
+      armButton.textContent = ST.armed ? 'ARM ON' : 'ARM OFF';
+      armButton.style.background = ST.armed ? '#4caf50' : '#555';
+      armButton.style.color = ST.armed ? '#fff' : '#ccc';
+    }
+    if (longButton) {
+      longButton.textContent = ST.longRunMode ? 'LONG ON' : 'LONG OFF';
+      longButton.style.background = ST.longRunMode ? '#ff9800' : '#555';
+      longButton.style.color = ST.longRunMode ? '#fff' : '#ccc';
+    }
+    if (autoButton) {
+      autoButton.textContent = ST.autoSendOn ? 'AUTO ON' : 'AUTO OFF';
+      autoButton.style.background = ST.autoSendOn ? '#00bcd4' : '#555';
+      autoButton.style.color = ST.autoSendOn ? '#fff' : '#ccc';
+    }
 
     const armTag = ST.armed
       ? '<span style="color:#4caf50;font-weight:bold;">ARM</span>'
@@ -682,8 +709,16 @@
     }
   }
 
-  /** Set textarea value via React-native setter so React notices the change. */
+  /** Set textarea value through the browser editing path when possible. */
   function setReactValue(el, value) {
+    el.focus();
+    if (typeof el.select === 'function') el.select();
+    let inserted = false;
+    try {
+      inserted = document.execCommand('insertText', false, value);
+    } catch (_) { }
+    if (inserted && el.value === value) return;
+
     const proto = el.tagName === 'TEXTAREA'
       ? window.HTMLTextAreaElement.prototype
       : window.HTMLInputElement.prototype;
@@ -719,9 +754,37 @@
       }
       const btn = pickVisible(SEL.sendBtn);
       const ta2 = pickVisible(SEL.inputTA);
-      // Wait until: send btn visible & enabled, AND React has flushed our
-      // value into the visible textarea (defends against framework rollback).
-      if (!btn || btn.disabled || !ta2 || ta2.value !== text) {
+      // Wait until the framework has accepted the text.
+      if (!ta2 || ta2.value !== text) {
+        setTimeout(tick, 200);
+        return;
+      }
+      // Venus variants without a send button submit through Enter.
+      if (!btn) {
+        try {
+          ta2.focus();
+          ta2.dispatchEvent(new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+            cancelable: true,
+          }));
+          ta2.dispatchEvent(new KeyboardEvent('keyup', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            which: 13,
+            bubbles: true,
+          }));
+          clearSendFail();
+        } catch (e) {
+          markSendFail('Enter dispatch threw: ' + e.message);
+        }
+        return;
+      }
+      if (btn.disabled) {
         setTimeout(tick, 200);
         return;
       }
@@ -883,16 +946,13 @@
       return;
     }
 
-    // Armed mode: process each AI message that has not yet been finalized.
+    // Armed mode: keep scanning messages because streaming may append blocks.
     aiMsgs.forEach(msg => {
       if (ST.processedMsgs.has(msg)) return;
       if (!isMessageComplete(msg)) return;
 
       const blocks = extractBlocks(msg);
       if (blocks.length === 0) {
-        // No code blocks found in a fully stable message -> mark final.
-        ST.processedMsgs.add(msg);
-        ST.emptyAt.delete(msg);
         return;
       }
 
@@ -906,10 +966,6 @@
           log(`[process] sent ${blk.id} lang=${blk.lang} ${blk.code.length}B`);
         }
       });
-
-      // Finalize this message so we don't re-extract on later mutations.
-      ST.processedMsgs.add(msg);
-      ST.emptyAt.delete(msg);
     });
   }
 

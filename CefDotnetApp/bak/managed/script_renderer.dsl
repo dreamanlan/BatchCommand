@@ -117,7 +117,7 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 {
     nativelog("[dsl] on_renderer_load_start:{0} {1} {2}", $url, $transitionType, $isMainFrame);
     if (($isMainFrame == "True" || $isMainFrame == true)) {
-        if (string_contains_any($url, "http://localhost:8082/index.html", "https://gemini.google.com/app")) {
+        if (string_contains_any($url, "http://localhost:8082/index.html", "https://gemini.google.com/app", "https://chatgpt.com", "https://chat.openai.com")) {
             // redirect to aiclaw dsl
             setdslfile("Script_renderer_aiclaw.dsl");
         };
@@ -629,7 +629,7 @@ script(trigger_plan)params($autoPlan,$lockAgent)
             $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt与todo.txt状态，然后选取计划工作更新todo.txt后继续";
         }
         else {
-            $prompt = "没有识别到代码。请更新plan.txt与todo.txt状态，如果todo工作已完成，请停止agent以避免重复提醒";
+            $prompt = "没有识别到代码。请更新plan.txt与todo.txt状态。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -860,7 +860,7 @@ script(handle_agent_notification)params($jsonData)
         $url = get_message_param($data, "url");
         nativelog("[dsl] Hyarena initialized, url: {0}", $url);
 
-        agent_set_max_result_size(9529, 50*1024);
+        agent_set_max_result_size(9529, 40*1024);
         agent_enable_context_injection(9529, false);
         agent_set_project_dir(9529, "d:/AiClaw");
         agent_set_project_identity(9529, "venus");
@@ -893,6 +893,15 @@ script(handle_agent_notification)params($jsonData)
 
         trigger_reflection();
         SaveContext($count, $queuedCount, $pageType);
+
+        $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
+        $time1 = get_file_last_write_time($planFile);
+        $time2 = now();
+        $seconds = get_diff_time_seconds($time1, $time2);
+        if ($seconds > 300) {
+            $prompt = "可以考虑更新plan.txt与todo.txt还有临时工作进展文档（如有）了";
+            send_command_to_inject("send_message", to_json({text: $prompt}));
+        };
     }
     elif ($type == "llm_align_target") {
         nativelog("[dsl] LLM align target notification received");

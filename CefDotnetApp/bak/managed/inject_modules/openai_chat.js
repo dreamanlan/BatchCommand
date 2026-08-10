@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
-// @name         MetaDSL Agent Bridge (Google AI Search)
+// @name         MetaDSL Agent Bridge (OpenAI Chat)
 // @version      1.1
-// @description  Google AI Search page <-> local WebSocket code execution loop (single model)
+// @description  ChatGPT page <-> local WebSocket code execution loop (single model)
 // @match        *://*/*
 // @grant        none
 // ==/UserScript==
@@ -28,27 +28,21 @@
     TEXT_STABLE_MS: 3000,
   };
 
-  // Selectors aligned with the Google AI Search page structure.
+  // Selectors aligned with the ChatGPT page structure.
   const SEL = {
     // Container for AI messages (cached at first detection - see ST.chatListEl).
     // Fallback root used by Observer until first AI message is found.
     chatListFallback: 'body',
     // AI message anchor: each represents one round of AI reply.
-    aiMsg: 'model-response, .mZJni[data-xid="VpUvz"]',
-    // Code block container (also carries data-complete="true" when stream done).
-    codeBlock: '.r1PmQe',
-    geminiCodeBlock: 'pre',
-    allCodeBlock: 'model-response pre, .r1PmQe',
-
-    codeBlockComplete: '.r1PmQe[data-complete="true"]',
-    messageComplete: '.response-footer.complete, message-content[aria-busy="false"], .markdown-main-panel[aria-busy="false"]',
+    aiMsg: '[data-message-author-role="assistant"]',
+    codeBlock: 'pre',
+    stopBtn: 'button[data-testid="stop-button"]',
 
     // Code text inside the block.
     codeText: 'pre code',
     // Real textarea for chat input.
-    inputTA: 'div[contenteditable="true"][role="textbox"], textarea.ITIRGe[maxlength="8192"]',
-    // Send button - must be precise to avoid voice-send-button twin.
-    sendBtn: 'button[data-xid="input-plate-send-button"], button[aria-label], button[title], button[type="submit"], button[data-test-id]',
+    inputTA: '#prompt-textarea',
+    sendBtn: 'button[data-testid="send-button"]',
   };
 
   /** Pick the first visible (rect non-zero) element matching selector. */
@@ -82,7 +76,7 @@
         out.push(el);
         continue;
       }
-      const content = el.querySelector('pre, code, message-content, .markdown-main-panel');
+      const content = el.querySelector('pre, code, .markdown, [class*="markdown"]');
       if (!content) continue;
       const contentRect = content.getBoundingClientRect();
       if (contentRect.width > 0 && contentRect.height > 0) out.push(el);
@@ -92,14 +86,9 @@
 
   /** Return code blocks scoped to one AI message. */
   function getMessageCodeBlocks(aiMsgEl) {
-    if (!aiMsgEl.matches('model-response')) {
-      return aiMsgEl.querySelectorAll(SEL.codeBlock);
-    }
-    const blocks = aiMsgEl.querySelectorAll(SEL.geminiCodeBlock);
+    const blocks = aiMsgEl.querySelectorAll(SEL.codeBlock);
     if (blocks.length > 0) return blocks;
-    const messageContent = aiMsgEl.querySelector('message-content');
-    if (!messageContent) return [];
-    const content = messageContent.querySelector('.markdown-main-panel') || messageContent;
+    const content = aiMsgEl.querySelector('.markdown, [class*="markdown"]') || aiMsgEl;
     return hasExecuteMarker(readCodeText(content)) ? [content] : [];
   }
 
@@ -114,21 +103,7 @@
 
   /** Pick a visible button whose metadata explicitly identifies send/submit. */
   function pickSendButton() {
-    const candidates = pickAllVisible(SEL.sendBtn);
-    for (const btn of candidates) {
-      if (btn.getAttribute('data-xid') === 'input-plate-send-button') return btn;
-      if ((btn.getAttribute('type') || '').toLowerCase() === 'submit') return btn;
-      const label = (btn.getAttribute('aria-label') || btn.getAttribute('title') || '')
-        .trim().toLowerCase();
-      if (/^(send|send message|send prompt|submit|submit prompt)$/.test(label)) return btn;
-      const ident = [
-        btn.getAttribute('data-test-id') || '',
-        btn.id || '',
-        typeof btn.className === 'string' ? btn.className : '',
-      ].join(' ').toLowerCase();
-      if (/(^|[\s_-])(send|submit)([\s_-]|$)/.test(ident)) return btn;
-    }
-    return null;
+    return pickVisible(SEL.sendBtn);
   }
 
   /* ===========================================
@@ -189,7 +164,7 @@
   /* ===========================================
      Section 2  Logging
      =========================================== */
-  const T = '[MetaDSL-GAI]';
+  const T = '[MetaDSL-OAI]';
   const log = (...a) => CFG.DEBUG && console.log(`%c${T}`, 'color:#00bcd4;font-weight:bold', ...a);
   const warn = (...a) => console.warn(`%c${T}`, 'color:#ff9800;font-weight:bold', ...a);
   const err = (...a) => console.error(`%c${T}`, 'color:#f44336;font-weight:bold', ...a);
@@ -200,10 +175,8 @@
   }
 
   /**
-   * Disabled (no-op). Previous M2 strategy cached aiMsg.parentElement, but on
-   * Google AI Search that parent (.pWvJNd) is a per-message wrapper, not the
-   * chat list. Observer bound there missed new AI msgs added to outer container.
-   * Reverted to always-body strategy.
+   * Keep observation on document.body because ChatGPT replaces conversation
+   * containers during navigation and response streaming.
    */
   function tryCacheChatList() {
     // Intentionally empty.
@@ -498,7 +471,7 @@
   function createPanel() {
     if (ST.panelEl) return;
     const panel = document.createElement('div');
-    panel.id = 'metadsl-gai-panel';
+    panel.id = 'metadsl-oai-panel';
     panel.style.cssText = `
       position:fixed; top:10px; right:10px; z-index:99999;
       background:rgba(20,20,30,0.92); color:#e0e0e0;
@@ -513,7 +486,7 @@
       cursor:pointer; display:flex; justify-content:space-between; align-items:center;
     `;
     const title = document.createElement('span');
-    title.textContent = 'MetaDSL-GAI';
+    title.textContent = 'MetaDSL-OAI';
     title.style.cssText = 'font-weight:bold; color:#00bcd4;';
     const collapseBtn = document.createElement('span');
     collapseBtn.textContent = '[-]';
@@ -532,7 +505,7 @@
 
     // Status line
     const statusLine = document.createElement('div');
-    statusLine.id = 'metadsl-gai-status';
+    statusLine.id = 'metadsl-oai-status';
     statusLine.style.cssText = 'margin-bottom:6px;';
     body.appendChild(statusLine);
 
@@ -586,7 +559,7 @@
     row3.appendChild(btnTrim);
     body.appendChild(row3);
 
-    // Button row 4: prompts
+    // Button row 4: prompt
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnPrompt = mkBtn('prompt', () => sendPrompt());
@@ -614,7 +587,7 @@
 
   function sendPrompt() {
     let txt = '';
-    try { txt = callMetaDSL('get_google_prompt', '') || ''; }
+    try { txt = callMetaDSL('get_openai_prompt', '') || ''; }
     catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
     if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
     chatSend(String(txt));
@@ -623,7 +596,7 @@
 
   function updatePanel() {
     if (!ST.panelEl) return;
-    const status = ST.panelEl.querySelector('#metadsl-gai-status');
+    const status = ST.panelEl.querySelector('#metadsl-oai-status');
     if (!status) return;
 
     const queue = ST.pendingResults.length;
@@ -712,12 +685,7 @@
 
   /** Heuristic: detect 'generating' state on send button. */
   function isGenerating(btn) {
-    // Google AI page swaps the button into a 'stop' state; aria-label or
-    // SVG path tends to change. Fallback: check if disabled property flips
-    // back within next tick.
-    const al = (btn.getAttribute('aria-label') || '').toLowerCase();
-    if (al.includes('stop') || al.includes('停止')) return true;
-    return false;
+    return !!pickVisible(SEL.stopBtn);
   }
 
   /* ===========================================
@@ -741,7 +709,18 @@
   function setReactValue(el, value) {
     if (el.isContentEditable) {
       el.focus();
-      el.textContent = value;
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      let inserted = false;
+      try {
+        inserted = document.execCommand('insertText', false, value);
+      } catch (_) { }
+      if (!inserted) {
+        el.textContent = value;
+      }
       el.dispatchEvent(new InputEvent('input', {
         bubbles: true,
         inputType: 'insertText',
@@ -778,7 +757,7 @@
         const dump = [];
         for (let i = 0; i < Math.min(all.length, 8); i++) {
           const b = all[i];
-          dump.push(`${i}:${(b.getAttribute('data-xid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
+          dump.push(`${i}:${(b.getAttribute('data-testid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
         }
         markSendFail('send button never enabled. input.len=' + getInputText(ta).length + ' btns=' + dump.join(';'));
         return;
@@ -787,7 +766,7 @@
       const ta2 = pickVisible(SEL.inputTA);
       // Wait until: send btn visible & enabled, AND the page has retained our
       // value in the visible input (defends against framework rollback).
-      if (!btn || btn.disabled || !ta2 || getInputText(ta2) !== text) {
+      if (!btn || btn.disabled || !ta2 || !getInputText(ta2).trim()) {
         setTimeout(tick, 200);
         return;
       }
@@ -849,32 +828,24 @@
 
   /**
    * Determine whether the AI message has finished streaming.
-   * Decision beta (double-safety):
-   *   1. All code blocks inside the message carry data-complete="true"; AND
-   *   2. The message text has been stable for TEXT_STABLE_MS.
+   * Double-safety completion check:
+   *   1. The global stop button is no longer visible; AND
+   *   2. The assistant message text is stable for TEXT_STABLE_MS.
+
    */
   function isMessageComplete(aiMsgEl) {
-    // 1) Require the page-specific completion marker.
-    if (aiMsgEl.matches('model-response')) {
-      if (!aiMsgEl.querySelector(SEL.messageComplete)) return false;
-    } else {
-      const allCb = getMessageCodeBlocks(aiMsgEl);
-      const completeCb = aiMsgEl.querySelectorAll(SEL.codeBlockComplete);
-      if (allCb.length > 0 && completeCb.length !== allCb.length) {
-        return false;
-      }
-    }
-    // 2) Text-stable window.
+    // ChatGPT is complete only after the global stop button disappears and
+    // this assistant message remains text-stable for TEXT_STABLE_MS.
+    if (pickVisible(SEL.stopBtn)) return false;
     const txt = aiMsgEl.textContent || '';
     const rec = ST.emptyAt.get(aiMsgEl);
     const now = Date.now();
     if (!rec) {
-      ST.emptyAt.set(aiMsgEl, { len: txt.length, ts: now });
+      ST.emptyAt.set(aiMsgEl, { text: txt, ts: now });
       return false;
     }
-    if (rec.len !== txt.length) {
-      // Still changing; reset the stability window.
-      rec.len = txt.length;
+    if (rec.text !== txt) {
+      rec.text = txt;
       rec.ts = now;
       return false;
     }
@@ -892,7 +863,7 @@
       if (ST.processedCodes.has(blk)) return;
       const codeEl = blk.matches('pre')
         ? (blk.querySelector('code') || blk)
-        : (blk.matches('message-content, .markdown-main-panel')
+        : (blk.matches('.markdown, [class*="markdown"], [data-message-author-role="assistant"]')
           ? blk
           : blk.querySelector(SEL.codeText));
       if (!codeEl) return;

@@ -693,24 +693,26 @@
         <span style="opacity:0.8;">executor:</span>
         <select class="metadsl-exec-select" style="flex:1; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px;">${execOptions}</select>
       </div>
+      <div style="display:flex; gap:4px; margin-bottom:4px;">
+        <button data-act="arm"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.armed ? '#4caf50' : '#555'}; color:${ST.armed ? '#fff' : '#ccc'}; border:none; border-radius:3px;">${ST.armed ? 'ARM ON' : 'ARM OFF'}</button>
+        <button data-act="discuss" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.discussMode ? '#9c27b0' : '#555'}; color:${ST.discussMode ? '#fff' : '#ccc'}; border:none; border-radius:3px;">${ST.discussMode ? 'DISC ON' : 'DISC OFF'}</button>
+        <button data-act="longrun" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.longRunMode ? '#ff9800' : '#555'}; color:${ST.longRunMode ? '#fff' : '#ccc'}; border:none; border-radius:3px;">${ST.longRunMode ? 'LONG ON' : 'LONG OFF'}</button>
+        <button data-act="autosend" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.autoSendOn ? '#00bcd4' : '#555'}; color:${ST.autoSendOn ? '#fff' : '#ccc'}; border:none; border-radius:3px;">${ST.autoSendOn ? 'AUTO ON' : 'AUTO OFF'}</button>
+      </div>
+      <div style="display:flex; gap:4px; margin-bottom:4px;">
+        <button data-act="break"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#d32f2f; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? 'disabled' : ''}>break</button>
+        <button data-act="resume" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#388e3c; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? '' : 'disabled'}>resume</button>
+        <button data-act="clear"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">clear</button>
+      </div>
       <div style="margin-bottom:4px; display:flex; align-items:center; gap:6px;">
         <span style="opacity:0.8;">keep:</span>
         <input class="metadsl-keep-input" type="number" min="1" max="99" value="${CFG.KEEP_ROUNDS}" style="width:44px; padding:2px 4px; font-size:11px; background:#263238; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:3px; text-align:center;">
         <span style="opacity:0.8;">rounds</span>
         <button data-act="trim" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">trim</button>
-        <button data-act="discuss" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.discussMode ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.discussMode ? 'disc:ON' : 'disc:OFF'}</button>
-      </div>
-      <div style="display:flex; gap:4px; margin-bottom:4px;">
-        <button data-act="arm"    style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.armed ? '#ef6c00' : '#455a64'}; color:#fff; border:none; border-radius:3px;">${ST.armed ? 'disarm' : 'arm'}</button>
-        <button data-act="break"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#d32f2f; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? 'disabled' : ''}>break</button>
-        <button data-act="clear"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#546e7a; color:#fff; border:none; border-radius:3px;">clear</button>
-        <button data-act="resume" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#388e3c; color:#fff; border:none; border-radius:3px;" ${ST.breakerOn ? '' : 'disabled'}>resume</button>
       </div>
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
-        <button data-act="longrun"  style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.longRunMode ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.longRunMode ? 'long:ON' : 'long:OFF'}</button>
-        <button data-act="autosend" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:${ST.autoSendOn ? '#e65100' : '#37474f'}; color:#fff; border:none; border-radius:3px;">${ST.autoSendOn ? 'send:ON' : 'send:OFF'}</button>
       </div>
     `;
     body.querySelectorAll('button[disabled]').forEach(b => {

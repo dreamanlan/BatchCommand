@@ -44,6 +44,7 @@
 3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines(path, startLine, endLine[, encoding])`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）
 4. 多行用`apply_diff`（unified diff格式）；单行用`replace_in_file`或`regex_replace_in_file`（注意，`string_replace`或`regex_replace`是字符串替换，不用于文件）
 5. 修改后重新阅读确认
+6. 多行替换时建议exactMatch参数为false（默认值，apply_diff、replace_in_file等，此时空白字符不要求精确匹配，可缓解空格、tab、回车换行差异）
 
 **代码语法分析API**
 

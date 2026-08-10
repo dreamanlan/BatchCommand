@@ -21,7 +21,7 @@
 
   panel = null;
   if (CONFIG.agentPanelEnabled) {
-    panel = new AgentPanel(bridge, metadslMonitor, pageAdapter);
+    panel = new AgentPanel(bridge, metadslMonitor, pageAdapter, metadslWorker);
     // Create and link chat input panel
     const chatInputPanel = new ChatInputPanel(bridge);
     // Async restore config (secrets loaded from SecretStore)
@@ -169,9 +169,11 @@ window.AgentAPI = {
   updateSystemPrompt: () => metadslMonitor && metadslMonitor.updateSystemPrompt(),
   keepContext: () => metadslMonitor && metadslMonitor.keepContext(CONFIG.llmContextCountModuloForKeep),
   alignTarget: () => metadslMonitor && metadslMonitor.alignTarget(CONFIG.llmContextCountModuloForAlign),
-  needToPlan: () => bridge && pageAdapter && metadslMonitor && bridge.dispatchAgentDecision('AGENT_EXECUTING', pageAdapter, metadslMonitor.operationQueue.length, true),
+  needToPlan: () => bridge && pageAdapter && metadslMonitor && bridge.dispatchAgentDecision('AGENT_EXECUTING', panel, true),
   triggerReflection: () => metadslMonitor && metadslMonitor.triggerReflection(),
-  getQueuedCount: () => metadslMonitor ? metadslMonitor.operationQueue.length : 0,
+  getOperationQueueCount: () => metadslMonitor ? metadslMonitor.operationQueue.length : 0,
+  getSendQueueCount: () => metadslWorker ? metadslWorker.getSendQueueCount() : 0,
+  getReceiveQueueCount: () => metadslWorker ? metadslWorker.getReceiveQueueCount() : 0,
   showPanel: () => panel && panel.show(),
   hidePanel: () => panel && panel.hide(),
   togglePanel: () => panel && panel.toggle(),

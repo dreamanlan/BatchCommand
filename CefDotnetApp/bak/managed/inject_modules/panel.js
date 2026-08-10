@@ -2,10 +2,11 @@
 // AgentPanel - Visual Control Panel
 // ============================================================================
 class AgentPanel {
-  constructor(bridge, metadslMonitor, pageAdapter) {
+  constructor(bridge, metadslMonitor, pageAdapter, metadslWorker) {
     this.bridge = bridge;
     this.metadslMonitor = metadslMonitor;
     this.pageAdapter = pageAdapter;
+    this.metadslWorker = metadslWorker;
     this.visible = false;
     this.panel = null;
     this.logArea = null;
@@ -706,7 +707,7 @@ class AgentPanel {
     // Create MetaDSL input area
     this.scriptInput = document.createElement('textarea');
     this.scriptInput.placeholder = 'Enter MetaDSL/Javascript here to execute...';
-    this.scriptInput.value = 'format("{0} {1}",@LlmProviderId,llm_get_providers_config());';
+    this.scriptInput.value = 'format("id:{0}\\ncfgs:\\n{1}\\nworkers:{2}",@LlmProviderId,llm_get_providers_config(),agent_get_active_workers(9527));';
     this.scriptInput.style.cssText = `
         height: 100px;
         background: #2d2d2d;
@@ -845,8 +846,10 @@ class AgentPanel {
       }
     }
 
-    // Get operation queue length
+    // Get operation queue length and send/receive queue length
     const queueLength = this.metadslMonitor.operationQueue ? this.metadslMonitor.operationQueue.length : 0;
+    const sendQueueLength = this.metadslWorker ? this.metadslWorker.getSendQueueCount() : 0;
+    const receiveQueueLength = this.metadslWorker ? this.metadslWorker.getReceiveQueueCount() : 0;
 
     // Get context counter from LLM_RESPONDING state
     let contextCounterForKeep = 0;
@@ -864,7 +867,7 @@ class AgentPanel {
 
     // Update info text
     const execStatus = operationExecuted ? 'Yes' : 'No';
-    this.stateInfo.textContent = `Duration: ${duration}s | Queue: ${queueLength} | Counter: ${contextCounterForKeep} ${contextCounterForAlign} | Executed: ${execStatus}`;
+    this.stateInfo.textContent = `Duration: ${duration}s | Queue: ${queueLength} ${sendQueueLength} ${receiveQueueLength} | Counter: ${contextCounterForKeep} ${contextCounterForAlign} | Executed: ${execStatus}`;
   }
 
   updateLLMType() {

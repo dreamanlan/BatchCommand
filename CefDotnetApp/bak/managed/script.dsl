@@ -114,7 +114,7 @@ script(on_before_browse)params($request,$userGesture,$isRedirect)
 // Note: this function will be called on the browser process IO thread.
 script(on_before_resource_load)params($request)
 {
-    nativelog("[dsl] on_before_resource_load: type={0} url={1} method={2}", $request.ResourceType, $request.Url, $request.Method);
+    //nativelog("[dsl] on_before_resource_load: type={0} url={1} method={2}", $request.ResourceType, $request.Url, $request.Method);
     return((false, 1));
 };
 
@@ -155,7 +155,7 @@ script(on_protocol_execution)params($request,$allow_os_execution)
 //   replace_content: false = skip the body filter (inspection only).
 script(on_resource_response_filter)params($request, $response)
 {
-    nativelog("[dsl] on_resource_response_filter: inspection headers: {0}", $response.HeaderMap);
+    //nativelog("[dsl] on_resource_response_filter: inspection headers: {0}", $response.HeaderMap);
     return((false, false));
 };
 

@@ -261,9 +261,11 @@ script(handle_mcp_callback)params($serverId, $callbackTag, $resultText)
 // $providerId: provider id, $tag: session tag, $topic: topic, $reply: full reply text
 script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
 {
-    $queuedCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getQueuedCount",[]));
+    $operationQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getOperationQueueCount",[]));
+    $sendQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getSendQueueCount",[]));
+    $receiveQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getReceiveQueueCount",[]));
     $activeWorkers = agent_get_active_workers(9527);
-    nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3} queued_count={4} active_workers={5}", $providerId, $tag, $topic, strlen($reply), $queuedCount, $activeWorkers);
+    nativelog("[dsl] llm_callback: provider={0} tag={1} topic={2} reply_len={3} operation={4} send={5} receive={6} active_workers={7}", $providerId, $tag, $topic, strlen($reply), $operationQueueCount, $sendQueueCount, $receiveQueueCount, $activeWorkers);
 
     if ($tag == "llm_pm_align") {
         $todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
@@ -345,8 +347,8 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
     }
     else {
         $workers = agent_get_active_workers(9527);
-        if ($queuedCount > 0) {
-            $reply = format("{0}\n**还有{1}个代码在排队执行，不要再发新代码，回复继续即可（当前有{2}个代码正在执行中）**", $reply, $queuedCount, $workers);
+        if ($operationQueueCount > 0 || $sendQueueCount > 0 || $receiveQueueCount > 0) {
+            $reply = format("{0}\n**还有{1}个代码在排队执行，{2}个请求在排队发送，{3}个结果在排队接收，不要再发新代码，回复继续即可（当前有{4}个代码正在执行中）**", $reply, $operationQueueCount, $sendQueueCount, $receiveQueueCount, $workers);
         };
         send_command_to_inject("send_message", to_json({text: $reply}));
     };
@@ -587,7 +589,7 @@ script(induction_decision)params($lastMsg,$autoPlan,$lockAgent)
     };
 };
 
-script(induction_todo)params($count,$queuedCount,$pageType)
+script(induction_todo)params($count,$pageType)
 {
     $todoFile = combine_path(@ProjectDirectory, "docs/todo.txt");
     // Load recent conversation history from semantic index
@@ -660,7 +662,7 @@ script(trigger_reflection)params()
     nativelog("[dsl] trigger_reflection: reflection request sent");
 };
 
-script(SaveContext)params($count,$queuedCount,$pageType)
+script(SaveContext)params($count,$pageType)
 {
     $contextFile = combine_path(@ProjectDirectory, "docs/context.txt");
     // Load recent conversation history from semantic index
@@ -886,20 +888,19 @@ script(handle_agent_notification)params($jsonData)
 
         $data = get_message_param($notif, "data");
         $pageType = get_message_param($data, "pageType");
-        $queuedCount = get_message_param($data, "queuedCount");
         $count = get_message_param($data, "count");
 
-        nativelog("[dsl] llm_context_count_down pageType: {0}, queuedCount: {1}, count: {2}", $pageType, $queuedCount, $count);
+        nativelog("[dsl] llm_context_count_down pageType: {0}, count: {1}", $pageType, $count);
 
         trigger_reflection();
-        SaveContext($count, $queuedCount, $pageType);
+        SaveContext($count, $pageType);
 
         $planFile = combine_path(@ProjectDirectory, "docs/plan.txt");
         $time1 = get_file_last_write_time($planFile);
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 300) {
-            $prompt = "可以考虑更新plan.txt与todo.txt还有临时工作进展文档（如有）了";
+            $prompt = "可以将最新进展更新到plan.txt与todo.txt后再继续计划工作了（不要停agent!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -908,12 +909,11 @@ script(handle_agent_notification)params($jsonData)
 
         $data = get_message_param($notif, "data");
         $pageType = get_message_param($data, "pageType");
-        $queuedCount = get_message_param($data, "queuedCount");
         $count = get_message_param($data, "count");
 
-        nativelog("[dsl] llm_align_target pageType: {0}, queuedCount: {1}, count: {2}", $pageType, $queuedCount, $count);
+        nativelog("[dsl] llm_align_target pageType: {0}, count: {1}", $pageType, $count);
 
-        induction_todo($count, $queuedCount, $pageType);
+        induction_todo($count, $pageType);
     }
     elif ($type == "episodic_reflection") {
         nativelog("[dsl] episodic_reflection notification received");

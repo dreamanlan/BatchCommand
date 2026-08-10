@@ -37,13 +37,15 @@ class ResponseDecider {
 
   // Main decision -----------------------------------------------------------
   // data: { state, lastFromLLM, lastScannedMessage, isLastResponse,
-  //         queuedCount, pageType, count, lockAgent }
-  decide(data) {
+  //         pageType, count, lockAgent }
+  decide(data, panel) {
     const d = data || {};
     const msg = typeof d.lastScannedMessage === 'string' ? d.lastScannedMessage : '';
     const msgLen = msg.length;
     const lastFromLLM = (d.lastFromLLM === true || d.lastFromLLM === 'True' || d.lastFromLLM === 'true');
-    const queued = typeof d.queuedCount === 'number' ? d.queuedCount : parseInt(d.queuedCount || 0, 10) || 0;
+    const queued = panel?.metadslMonitor?.operationQueue?.length || 0;
+    const send = panel?.metadslWorker?.getSendQueueCount?.() || 0;
+    const receive = panel?.metadslWorker?.getReceiveQueueCount?.() || 0;
 
     // 1. Not the latest response -> skip
     if (d.isLastResponse !== true) {
@@ -51,10 +53,10 @@ class ResponseDecider {
     }
 
     // 2. Still has queued operations -> remind LLM to wait
-    if (queued > 0) {
+    if (queued > 0 || send > 0 || receive > 0) {
       return {
         action: 'reply',
-        text: `还有${queued}个代码要执行，不要再发新代码，回复继续即可`,
+        text: `还有${queued}个代码要执行，${send}个请求要发送，${receive}个结果要接收，不要再发新代码，回复继续即可`,
       };
     }
 

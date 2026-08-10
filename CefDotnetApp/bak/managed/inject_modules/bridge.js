@@ -93,17 +93,18 @@ class AgentBridge {
       this.logger.error('Error parsing response', { error: e.toString() });
     }
   }
-        
+
   // Send agent decision notification (encapsulated for reuse)
   // JS-side decider filters easy cases; 'trigger_decision' falls through to DSL.
-  dispatchAgentDecision(state, pageAdapter, queuedCount, force) {
+  dispatchAgentDecision(state, panel, force) {
+    let pageAdapter = panel.pageAdapter;
+    let metadslWorker = panel.metadslWorker;
     const data = {
       state: state,
       timestamp: Date.now(),
       lastFromLLM: pageAdapter ? pageAdapter.isLastMessageFromLLM() : false,
       lastScannedMessage: pageAdapter ? (pageAdapter.getLastScannedResponse() ?? '') : '',
       isLastResponse: pageAdapter ? pageAdapter.isLastResponseCurrent() : false,
-      queuedCount: queuedCount,
       pageType: pageAdapter ? pageAdapter.pageType : 'unknown',
       count: CONFIG.llmContextCountModuloForAlign,
       autoPlan: this.autoPlanEnabled,
@@ -114,19 +115,19 @@ class AgentBridge {
     if (!this._responseDecider && typeof ResponseDecider !== 'undefined') {
       this._responseDecider = new ResponseDecider(this.logger);
     }
-    
+
     let decision = { action: 'trigger_decision' };
     if (this._responseDecider) {
       try {
-        decision = this._responseDecider.decide(data) || { action: 'none' };
+        decision = this._responseDecider.decide(data, panel) || { action: 'none' };
       } catch (e) {
         this.logger.error('ResponseDecider.decide failed, fallback to trigger_decision', { error: e.toString() });
         decision = { action: 'trigger_decision' };
       }
     }
-    
+
     this.logger.info('Agent decision', { state, action: decision.action, reason: decision.reason });
-    
+
     switch (decision.action) {
       case 'skip':
       case 'none':

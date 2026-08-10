@@ -229,7 +229,6 @@ class MetaDSLMonitor {
       notificationType: 'llm_align_target',
       data: {
         pageType: this.pageAdapter.pageType,
-        queuedCount: this.operationQueue.length,
         count: count
       }
     };
@@ -262,7 +261,6 @@ class MetaDSLMonitor {
       notificationType: 'llm_context_count_down',
       data: {
         pageType: this.pageAdapter.pageType,
-        queuedCount: this.operationQueue.length,
         count: count
       }
     };
@@ -273,8 +271,7 @@ class MetaDSLMonitor {
       type: 'send_notification',
       notificationType: 'episodic_reflection',
       data: {
-        pageType: this.pageAdapter.pageType,
-        queuedCount: this.operationQueue.length
+        pageType: this.pageAdapter.pageType
       }
     };
     this.enqueueOperation(operation);
@@ -351,7 +348,7 @@ class MetaDSLMonitor {
       // Only send AGENT_INITIALIZED on first start, skip on restart
       if (!this.hasEverInitialized) {
         this.hasEverInitialized = true;
-        this.bridge.dispatchAgentDecision('AGENT_INITIALIZED', this.pageAdapter, this.operationQueue.length, false);
+        this.bridge.dispatchAgentDecision('AGENT_INITIALIZED', this.panel, false);
       } else {
         this.info('Restart detected - skipping AGENT_INITIALIZED notification');
       }
@@ -1339,8 +1336,11 @@ class MetaDSLMonitor {
       messageStr += String(message).trim();
     }
 
-    if (this.operationQueue.length > 0) {
-      messageStr += '\n\n特别注意：当前有' + this.operationQueue.length + '个操作在排队执行，你看到消息后只回复继续即可，不要再发新的metadsl代码块';
+    let operationCount = this.operationQueue.length;
+    let sendCount = this.metadslWorker.getSendQueueCount();
+    let receiveCount = this.metadslWorker.getReceiveQueueCount();
+    if (operationCount > 0 || sendCount > 0 || receiveCount > 0) {
+      messageStr += '\n\n特别注意：当前有' + operationCount + '个操作在排队执行，' + sendCount + '个请求在排队发送，' + receiveCount + '个结果在排队接收，你看到消息后只回复继续即可，不要再发新的metadsl代码块';
     }
 
     this.info('Sending result to LLM (noAgentMarker=' + noAgentMarker + ')', getStringInLength(messageStr, 100));

@@ -383,7 +383,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Execute command synchronously
     sealed class ExecuteCommandExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command(command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command(command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
@@ -425,7 +425,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Execute command asynchronously with callback via command_callback CEF message
     sealed class ExecuteCommandCallbackExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "execute_command_callback('command_callback', command[, arguments, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "execute_command_callback('command_callback', command[, args_str, workingDir, timeout_def_30000ms])[bindings($a,$b,...)delimiter(begin_chars,end_chars)]";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> bindingVals)
         {
@@ -458,7 +458,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     // Start a background process
     sealed class StartProcessExp : ProcessCommandExpBase
     {
-        protected override string UsageHint => "start_process(processId, command[, arguments, workingDir])[params($a,$b,...)delimiter(begin_chars,end_chars)]";
+        protected override string UsageHint => "start_process(processId, command[, args_str, workingDir])[params($a,$b,...)delimiter(begin_chars,end_chars)]";
 
         protected override BoxedValue OnCalc(IList<BoxedValue> operands, Dictionary<string, string> argVals)
         {

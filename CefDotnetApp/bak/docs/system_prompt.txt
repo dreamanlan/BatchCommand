@@ -117,8 +117,8 @@ __string_end__
 
 **命令执行**
 
-同步：`execute_command(command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
-异步：`execute_command_callback('command_callback', command[, arguments, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; - async exec, result via command_callback.`
+同步：`execute_command(command[, args_str, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
+异步：`execute_command_callback('command_callback', command[, args_str, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; - async exec, result via command_callback.`
 bindings与delimiter部分可省略，用法与脚本执行api相同。
 
 ```

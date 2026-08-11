@@ -28,7 +28,7 @@ namespace CefDotnetApp.AgentCore.Core
         // AGUI extended options
         private bool _enableWebSearch = false;
         private bool _enableThinking = false;
-        private string _reasoningEffort = ""; // empty = not set; typical values: low/medium/high
+        private string _reasoningEffort = ""; // empty = not set; values: low/medium/high/xhigh/max
         private int _maxContextTokens = 0; // 0 = do not send; AGUI chat_extra.max_context_tokens
         // system prompts per tag
         private readonly ConcurrentDictionary<string, string> _systemPrompts = new();

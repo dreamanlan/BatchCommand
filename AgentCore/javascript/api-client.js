@@ -38,7 +38,7 @@ class APIClient {
             stream: true, // Use streaming for auto_metadsl
             enableWebSearch: false, // AGUI: input.enable_web_search
             enableThinking: false, // AGUI: input.chat_extra.enable_thinking
-            reasoningEffort: '', // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | ...)
+            reasoningEffort: '', // AGUI: input.chat_extra.reasoning_effort ('' | low | medium | high | xhigh | max)
             maxContextTokens: 0 // AGUI: input.chat_extra.max_context_tokens (0 = do not send)
         };
     }

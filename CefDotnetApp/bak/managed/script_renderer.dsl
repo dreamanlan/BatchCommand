@@ -350,7 +350,7 @@ script(handle_llm_callback)params($providerId, $tag, $topic, $reply)
         if ($operationQueueCount > 0 || $workers > 0 || $sendQueueCount > 0 || $receiveQueueCount > 0) {
             $reply = format("{0}\n\n**还有{1}个代码在排队执行，{2}个请求在排队发送，{3}个结果在排队接收，当前有{4}个代码正在执行中**", $reply, $operationQueueCount, $sendQueueCount, $receiveQueueCount, $workers);
         };
-        if ($operationQueueCount > 0 || $workers > 0) {
+        if ($operationQueueCount > 0) {
             $reply = format("{0}\n**不要再发新代码，回复继续即可**", $reply);
         };
         send_command_to_inject("send_message", to_json({text: $reply}));

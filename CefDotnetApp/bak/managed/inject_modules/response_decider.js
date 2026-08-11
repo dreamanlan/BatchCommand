@@ -53,7 +53,7 @@ class ResponseDecider {
     }
 
     // 2. Still has queued operations -> remind LLM to wait
-    if (queued > 0 || send > 0 || receive > 0) {
+    if (queued > 0) {
       return {
         action: 'reply',
         text: `还有${queued}个代码要执行，${send}个请求要发送，${receive}个结果要接收，不要再发新代码，回复继续即可`,

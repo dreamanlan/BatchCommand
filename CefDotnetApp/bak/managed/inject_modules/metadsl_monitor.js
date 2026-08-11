@@ -1340,7 +1340,10 @@ class MetaDSLMonitor {
     let sendCount = this.metadslWorker.getSendQueueCount();
     let receiveCount = this.metadslWorker.getReceiveQueueCount();
     if (operationCount > 0 || sendCount > 0 || receiveCount > 0) {
-      messageStr += '\n\n特别注意：当前有' + operationCount + '个操作在排队执行，' + sendCount + '个请求在排队发送，' + receiveCount + '个结果在排队接收，你看到消息后只回复继续即可，不要再发新的metadsl代码块';
+      messageStr += '\n\n**当前有' + operationCount + '个操作在排队执行，' + sendCount + '个请求在排队发送，' + receiveCount + '个结果在排队接收**';
+    }
+    if (operationCount > 0) {
+      messageStr += '\n\n**特别注意：你看到消息后只回复继续即可，不要再发新的metadsl代码块**';
     }
 
     this.info('Sending result to LLM (noAgentMarker=' + noAgentMarker + ')', getStringInLength(messageStr, 100));

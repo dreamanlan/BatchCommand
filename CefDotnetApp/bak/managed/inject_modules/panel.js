@@ -1394,7 +1394,7 @@ class AgentPanel {
     if (!password) return;
     try {
       // Collect localStorage data
-      const lsKeys = ['inject_config', 'chat_panel_state', 'project_panel_configs'];
+      const lsKeys = ['inject_config', 'chat_panel_state', 'project_panel_configs', 'relay_panel_config'];
       const lsData = {};
       lsKeys.forEach(k => {
         const v = localStorage.getItem(k);

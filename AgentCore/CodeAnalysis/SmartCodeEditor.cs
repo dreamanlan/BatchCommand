@@ -67,7 +67,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -139,7 +139,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -213,7 +213,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -273,7 +273,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write back to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }
@@ -322,7 +322,7 @@ namespace AgentCore.CodeAnalysis
                     var workspace = new AdhocWorkspace();
                     var formattedRoot = Formatter.Format(newRoot, workspace);
                     // Preserve original BOM state when overwriting existing file.
-                    File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                    File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                 }
                 else {
                     // Check for file-scoped namespace
@@ -335,7 +335,7 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                     else {
                         // No namespace, add to root
@@ -345,7 +345,7 @@ namespace AgentCore.CodeAnalysis
                         var workspace = new AdhocWorkspace();
                         var formattedRoot = Formatter.Format(newRoot, workspace);
                         // Preserve original BOM state when overwriting existing file.
-                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                        File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
                     }
                 }
 
@@ -381,7 +381,7 @@ namespace AgentCore.CodeAnalysis
 
                 // Write to file
                 // Preserve original BOM state when overwriting existing file.
-                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(filePath, defaultBom: true));
+                File.WriteAllText(filePath, formattedRoot.ToFullString(), CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(filePath, defaultBom: true));
 
                 return true;
             }

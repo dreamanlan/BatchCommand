@@ -67,7 +67,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // When encoding is specified, use it directly.
                 // Otherwise, preserve original BOM state when overwriting existing file
                 // (defaults to with-BOM for new files to keep legacy behavior).
-                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 File.WriteAllText(fullPath, content, writeEncoding);
                 return true;
             }
@@ -115,7 +115,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // When encoding is specified, use it directly.
                 // Otherwise, preserve original BOM state when appending to existing file
                 // (defaults to with-BOM for new files to keep legacy behavior).
-                var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 File.AppendAllText(fullPath, content, writeEncoding);
                 return true;
             }
@@ -299,7 +299,7 @@ namespace CefDotnetApp.AgentCore.Core
             string content = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
-            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -380,7 +380,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
-            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
             File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }
@@ -396,7 +396,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
-            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -456,7 +456,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fileContent = SafeFileReader.ReadAllText(fullPath, encoding ?? Encoding.UTF8);
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
-            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
 
             // Level 1: Exact match (no modification to search string)
             if (allOccurrences) {
@@ -530,7 +530,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             // When encoding is specified, use it for write as well.
             // Otherwise, preserve original BOM state when overwriting existing file.
-            var writeEncoding = encoding ?? BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+            var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
             File.WriteAllLines(fullPath, result, writeEncoding);
             return true;
         }

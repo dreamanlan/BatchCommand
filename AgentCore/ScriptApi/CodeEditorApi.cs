@@ -109,7 +109,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, newContent ?? content, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -248,7 +248,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                System.IO.File.WriteAllText(fullPath, content, encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true));
+                System.IO.File.WriteAllText(fullPath, content, encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {
@@ -980,7 +980,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -1029,7 +1029,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string lineEnding = originalContent.Contains("\r\n") ? "\r\n" : "\n";
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(fullPath, defaultBom: true);
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(fullPath, defaultBom: true);
                 System.IO.File.WriteAllText(fullPath, string.Join(lineEnding, lines) + (originalContent.EndsWith("\n") ? lineEnding : ""), writeEncoding);
                 return BoxedValue.From(true);
             }

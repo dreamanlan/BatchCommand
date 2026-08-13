@@ -70,7 +70,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Write the result
                 // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                var writeEncoding = BomHelper.GetEncodingPreservingBom(fullTargetPath, defaultBom: true);
                 File.WriteAllLines(fullTargetPath, resultLines, writeEncoding);
 
                 return new DiffResult {
@@ -132,7 +132,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Write the result
                 // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                var writeEncoding = BomHelper.GetEncodingPreservingBom(fullTargetPath, defaultBom: true);
                 File.WriteAllLines(fullTargetPath, resultLines, writeEncoding);
 
                 return new DiffResult {
@@ -996,7 +996,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Write result back to file
                 // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                var writeEncoding = BomHelper.GetEncodingPreservingBom(fullTargetPath, defaultBom: true);
                 File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;
@@ -1293,7 +1293,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Write result back to file
                 // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                var writeEncoding = BomHelper.GetEncodingPreservingBom(fullTargetPath, defaultBom: true);
                 File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;
@@ -1336,7 +1336,7 @@ namespace CefDotnetApp.AgentCore.Core
 
                 // Write result back to file
                 // Preserve original BOM state when overwriting existing file.
-                var writeEncoding = BomHelper.GetUtf8EncodingPreservingBom(fullTargetPath, defaultBom: true);
+                var writeEncoding = BomHelper.GetEncodingPreservingBom(fullTargetPath, defaultBom: true);
                 File.WriteAllText(fullTargetPath, result.ResultContent, writeEncoding);
 
                 return true;

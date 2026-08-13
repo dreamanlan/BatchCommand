@@ -6985,7 +6985,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         path = Environment.ExpandEnvironmentVariables(path);
                         // When encoding parameter is omitted, preserve original BOM state
                         // for existing files (default to with-BOM for new files to keep legacy behavior).
-                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: true);
+                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
                             encoding = GetEncoding(v);
@@ -7052,7 +7052,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         path = Environment.ExpandEnvironmentVariables(path);
                         // When encoding parameter is omitted, preserve original BOM state
                         // for existing files (default to with-BOM for new files to keep legacy behavior).
-                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(path, defaultBom: true);
+                        Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
                             encoding = GetEncoding(v);

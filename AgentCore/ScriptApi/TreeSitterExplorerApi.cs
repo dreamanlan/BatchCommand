@@ -196,7 +196,7 @@ namespace AgentCore.ScriptApi
                     Directory.CreateDirectory(directory);
                 }
 
-                File.WriteAllText(outputPath, report, CefDotnetApp.AgentCore.Utils.BomHelper.GetUtf8EncodingPreservingBom(outputPath, defaultBom: false));
+                File.WriteAllText(outputPath, report, CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(outputPath, defaultBom: false));
                 return BoxedValue.From(true);
             }
             catch (Exception ex) {

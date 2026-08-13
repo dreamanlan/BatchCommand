@@ -118,7 +118,7 @@ namespace CefDotnetApp.AgentCore.Utils
 
         /// <summary>
         /// Parse encoding spec from BoxedValue (string name or int codepage), with optional
-        /// "-bom"/"-nobom" suffix on string names to control BOM emission.
+        /// "-bom"/"-nobom"/"-no-bom" suffix on string names to control BOM emission.
         /// For BOM-capable encodings (UTF8/Unicode/UTF32), when the file exists and no explicit
         /// BOM suffix is given, BOM state is detected from the existing file; if not detectable,
         /// defaults to emitting BOM.
@@ -130,19 +130,21 @@ namespace CefDotnetApp.AgentCore.Utils
             bool bomExplicit = false;
 
             if (asString != null) {
-                int idx = asString.LastIndexOf('-');
-                if (idx > 0) {
-                    string suffix = asString.Substring(idx + 1);
-                    if (suffix.Equals("bom", StringComparison.OrdinalIgnoreCase)) {
-                        emitBom = true;
-                        bomExplicit = true;
-                        asString = asString.Substring(0, idx);
-                    }
-                    else if (suffix.Equals("nobom", StringComparison.OrdinalIgnoreCase)) {
-                        emitBom = false;
-                        bomExplicit = true;
-                        asString = asString.Substring(0, idx);
-                    }
+                // Match longest suffix first: -no-bom / -nobom before -bom.
+                if (asString.EndsWith("-no-bom", StringComparison.OrdinalIgnoreCase)) {
+                    emitBom = false;
+                    bomExplicit = true;
+                    asString = asString.Substring(0, asString.Length - 7);
+                }
+                else if (asString.EndsWith("-nobom", StringComparison.OrdinalIgnoreCase)) {
+                    emitBom = false;
+                    bomExplicit = true;
+                    asString = asString.Substring(0, asString.Length - 6);
+                }
+                else if (asString.EndsWith("-bom", StringComparison.OrdinalIgnoreCase)) {
+                    emitBom = true;
+                    bomExplicit = true;
+                    asString = asString.Substring(0, asString.Length - 4);
                 }
             }
 

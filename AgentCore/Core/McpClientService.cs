@@ -142,7 +142,21 @@ namespace CefDotnetApp.AgentCore.Core
         private readonly ConcurrentDictionary<string, Dictionary<string, List<string>>> _pendingOptions = new();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _reconnectLocks = new();
 
-        private McpClientService() { }
+        // Busy-call tracking: records when each call became busy (for stuck detection)
+        private readonly ConcurrentDictionary<string, bool> _busyCalls = new();
+        private readonly ConcurrentDictionary<string, DateTime> _busySince = new();
+        // Active CancellationTokenSource per call (for external cancel)
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCts = new();
+        // Watchdog timer for auto-cancelling stuck calls
+        private readonly Timer _watchdogTimer;
+        private const int c_watchdogIntervalMs = 10000;
+        private const int c_defaultMaxBusySeconds = 600;
+        private static int s_syncCallId = 0;
+
+        private McpClientService()
+        {
+            _watchdogTimer = new Timer(WatchdogCallback, null, c_watchdogIntervalMs, c_watchdogIntervalMs);
+        }
 
         /// <summary>
         /// Sets a connection option for a server before calling Connect.
@@ -302,6 +316,16 @@ namespace CefDotnetApp.AgentCore.Core
         /// </summary>
         public void Disconnect(string serverId)
         {
+            // Cancel all active calls for this server
+            string prefix = $"{serverId}:";
+            foreach (var kv in _activeCts)
+            {
+                if (kv.Key.StartsWith(prefix))
+                {
+                    try { kv.Value.Cancel(); } catch (ObjectDisposedException) { }
+                }
+            }
+
             if (_servers.TryRemove(serverId, out var conn))
                 conn.Dispose();
         }
@@ -354,6 +378,15 @@ namespace CefDotnetApp.AgentCore.Core
             var nativeApi = AgentCore.Instance.GetNativeApi();
             if (nativeApi == null)
                 return "error: nativeApi not available";
+
+            string callKey = $"{serverId}:{tag}";
+            if (_busyCalls.TryGetValue(callKey, out var busy) && busy)
+                return "busy";
+
+            _busyCalls[callKey] = true;
+            _busySince[callKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[callKey] = cts;
 
             Task.Run(async () =>
             {
@@ -409,7 +442,13 @@ namespace CefDotnetApp.AgentCore.Core
                     }
 
 
-                    string resp = await conn.Transport.SendRequestAsync(req);
+                    cts.Token.ThrowIfCancellationRequested();
+                    var sendTask = conn.Transport.SendRequestAsync(req);
+                    var cancelTask = Task.Delay(Timeout.Infinite, cts.Token);
+                    var completed = await Task.WhenAny(sendTask, cancelTask);
+                    if (completed == cancelTask)
+                        throw new OperationCanceledException("MCP tool call cancelled");
+                    string resp = await sendTask;
                     string result = ExtractToolResult(resp);
                     nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, result });
                 }
@@ -417,6 +456,13 @@ namespace CefDotnetApp.AgentCore.Core
                 {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallTool error for '{serverId}/{toolName}': {ex.Message}");
                     nativeApi.EnqueueCefMessage("mcp_callback", new string[] { serverId, tag, $"[error] {ex.Message}" });
+                }
+                finally
+                {
+                    _busyCalls[callKey] = false;
+                    _busySince.TryRemove(callKey, out _);
+                    _activeCts.TryRemove(callKey, out var oldCts);
+                    oldCts?.Dispose();
                 }
             });
 
@@ -431,6 +477,12 @@ namespace CefDotnetApp.AgentCore.Core
         {
             if (!_servers.TryGetValue(serverId, out var conn))
                 return Task.FromResult($"error: server '{serverId}' not connected");
+
+            string callKey = $"{serverId}:sync{Interlocked.Increment(ref s_syncCallId)}";
+            _busyCalls[callKey] = true;
+            _busySince[callKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[callKey] = cts;
 
             return Task.Run(async () =>
             {
@@ -480,7 +532,13 @@ namespace CefDotnetApp.AgentCore.Core
                     }
 
 
-                    string resp = await conn.Transport.SendRequestAsync(req);
+                    cts.Token.ThrowIfCancellationRequested();
+                    var sendTask = conn.Transport.SendRequestAsync(req);
+                    var cancelTask = Task.Delay(Timeout.Infinite, cts.Token);
+                    var completed = await Task.WhenAny(sendTask, cancelTask);
+                    if (completed == cancelTask)
+                        throw new OperationCanceledException("MCP tool call cancelled");
+                    string resp = await sendTask;
                     return ExtractToolResult(resp);
                 }
                 catch (Exception ex)
@@ -488,7 +546,83 @@ namespace CefDotnetApp.AgentCore.Core
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[McpClientService] CallToolForScript error for '{serverId}/{toolName}': {ex.Message}");
                     return $"[error] {ex.Message}";
                 }
+                finally
+                {
+                    _busyCalls[callKey] = false;
+                    _busySince.TryRemove(callKey, out _);
+                    _activeCts.TryRemove(callKey, out var oldCts);
+                    oldCts?.Dispose();
+                }
             });
+        }
+
+        /// <summary>Returns how many seconds the call has been busy (0 if not busy).</summary>
+        public int GetBusyDuration(string serverId, string tag)
+        {
+            string callKey = $"{serverId}:{tag}";
+            if (_busySince.TryGetValue(callKey, out var since))
+                return (int)(DateTime.UtcNow - since).TotalSeconds;
+            return 0;
+        }
+
+        /// <summary>Cancels an active MCP tool call for the given session.</summary>
+        public string Cancel(string serverId, string tag)
+        {
+            string callKey = $"{serverId}:{tag}";
+            if (_activeCts.TryGetValue(callKey, out var cts))
+            {
+                try { cts.Cancel(); }
+                catch (ObjectDisposedException) { }
+                AgentFrameworkService.Instance.Log($"[McpClientService] Cancel requested for call '{callKey}'");
+                return "ok";
+            }
+            return "error: call not active";
+        }
+
+        /// <summary>Reads max_busy_seconds option for a server (default 600s).</summary>
+        private int GetMaxBusySeconds(string serverId)
+        {
+            if (_pendingOptions.TryGetValue(serverId, out var opts))
+            {
+                lock (opts)
+                {
+                    if (opts.TryGetValue("max_busy_seconds", out var list) && list.Count > 0 &&
+                        int.TryParse(list[list.Count - 1], out var seconds) && seconds > 0)
+                        return seconds;
+                }
+            }
+            return c_defaultMaxBusySeconds;
+        }
+
+        /// <summary>Watchdog callback: auto-cancel calls busy longer than max_busy_seconds.</summary>
+        private void WatchdogCallback(object? state)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                foreach (var kv in _busySince)
+                {
+                    string callKey = kv.Key;
+                    int duration = (int)(now - kv.Value).TotalSeconds;
+                    int colonIdx = callKey.IndexOf(':');
+                    if (colonIdx <= 0) continue;
+                    string serverId = callKey.Substring(0, colonIdx);
+                    int maxBusy = GetMaxBusySeconds(serverId);
+                    if (duration > maxBusy)
+                    {
+                        AgentFrameworkService.Instance.Log($"[McpClientService] Watchdog: call '{callKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
+                        if (_activeCts.TryGetValue(callKey, out var cts))
+                        {
+                            try { cts.Cancel(); }
+                            catch (ObjectDisposedException) { }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AgentFrameworkService.Instance.Log($"[McpClientService] Watchdog error: {ex.Message}");
+            }
         }
 
         // --- private helpers ---

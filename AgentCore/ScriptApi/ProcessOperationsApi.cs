@@ -600,4 +600,19 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             }
         }
     }
+
+    // Get active callback command status
+    sealed class GetCommandStatusExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            try {
+                return BoxedValue.FromString(Core.AgentCore.Instance.ProcessOps.GetActiveCommandStatus());
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"GetCommandStatus error: {ex.Message}");
+                return BoxedValue.FromString($"error: {ex.Message}");
+            }
+        }
+    }
 }

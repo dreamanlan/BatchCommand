@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,10 +15,19 @@ namespace CefDotnetApp.AgentCore.Core
     {
         private readonly Dictionary<string, Process> _processes;
         private readonly object _lockObject = new object();
+        // Active callback command tracking (for stuck detection / status query)
+        private readonly ConcurrentDictionary<long, (string command, DateTime startTime)> _activeCallbackCommands = new();
+        private long _callbackCommandIdCounter = 0;
+        // start_process tracking (for status query only, no watchdog alarm)
+        private readonly ConcurrentDictionary<string, DateTime> _processStartTimes = new();
+        private readonly Timer _watchdogTimer;
+        private const int c_watchdogIntervalMs = 30000;
+        private const int c_defaultCommandTimeoutLogSeconds = 300;
 
         public ProcessOperations()
         {
             _processes = new Dictionary<string, Process>();
+            _watchdogTimer = new Timer(WatchdogCallback, null, c_watchdogIntervalMs, c_watchdogIntervalMs);
         }
 
         public ProcessResult ExecuteCommand(string command, string? arguments = null, string? workingDirectory = null, int timeoutMs = 30000)
@@ -191,6 +201,9 @@ namespace CefDotnetApp.AgentCore.Core
             var nativeApi = Core.AgentCore.Instance.GetNativeApi();
             if (nativeApi == null) return;
 
+            long cmdId = Interlocked.Increment(ref _callbackCommandIdCounter);
+            _activeCallbackCommands[cmdId] = (command, DateTime.UtcNow);
+
             Task.Run(async () =>
             {
                 try
@@ -220,6 +233,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 finally
                 {
+                    _activeCallbackCommands.TryRemove(cmdId, out _);
                     if (cleanupFile != null)
                     {
                         try { File.Delete(cleanupFile); } catch { }
@@ -255,6 +269,7 @@ namespace CefDotnetApp.AgentCore.Core
                 process.Start();
 
                 _processes[processId] = process;
+                _processStartTimes[processId] = DateTime.UtcNow;
                 return processId;
             }
         }
@@ -275,6 +290,7 @@ namespace CefDotnetApp.AgentCore.Core
                     }
 
                     _processes.Remove(processId);
+                    _processStartTimes.TryRemove(processId, out _);
                     process.Dispose();
                     return true;
                 }
@@ -379,6 +395,7 @@ namespace CefDotnetApp.AgentCore.Core
                     }
                 }
                 _processes.Clear();
+                _processStartTimes.Clear();
             }
         }
 
@@ -392,6 +409,57 @@ namespace CefDotnetApp.AgentCore.Core
                     }
                 }
                 return runningIds;
+            }
+        }
+
+        /// <summary>
+        /// Returns a status string of all active callback commands and started processes.
+        /// </summary>
+        public string GetActiveCommandStatus()
+        {
+            var now = DateTime.UtcNow;
+            var sb = new StringBuilder();
+            int stuck = 0;
+            foreach (var kv in _activeCallbackCommands)
+            {
+                int duration = (int)(now - kv.Value.startTime).TotalSeconds;
+                sb.AppendLine($"cmd {kv.Key}: {duration}s - {kv.Value.command}");
+                if (duration > c_defaultCommandTimeoutLogSeconds) stuck++;
+            }
+            foreach (var kv in _processStartTimes)
+            {
+                int duration = (int)(now - kv.Value).TotalSeconds;
+                int? pid = null;
+                lock (_lockObject)
+                {
+                    if (_processes.TryGetValue(kv.Key, out var p) && !p.HasExited)
+                        pid = p.Id;
+                }
+                string pidStr = pid.HasValue ? $" pid={pid.Value}" : "";
+                sb.AppendLine($"proc {kv.Key}: {duration}s{pidStr}");
+            }
+            sb.AppendLine($"callback cmds: {_activeCallbackCommands.Count}, stuck(>{c_defaultCommandTimeoutLogSeconds}s): {stuck}, started procs: {_processStartTimes.Count}");
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>Watchdog callback: logs warnings for long-running callback commands.</summary>
+        private void WatchdogCallback(object? state)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                foreach (var kv in _activeCallbackCommands)
+                {
+                    int duration = (int)(now - kv.Value.startTime).TotalSeconds;
+                    if (duration > c_defaultCommandTimeoutLogSeconds)
+                    {
+                        AgentCore.Instance.Logger.Warning($"[ProcessOperations] Callback command {kv.Key} running for {duration}s: {kv.Value.command}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AgentCore.Instance.Logger.Warning($"[ProcessOperations] Watchdog error: {ex.Message}");
             }
         }
     }

@@ -61,17 +61,17 @@ namespace CefDotnetApp.AgentCore.Core
             _sendCounts.TryRemove(tag, out _);
         }
 
-        public Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>(), cancellationToken);
         }
 
-        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>(), cancellationToken);
         }
 
-        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
             var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
             lock (messages) { messages.Add(new ChatMessage("user", message)); }
@@ -131,11 +131,12 @@ namespace CefDotnetApp.AgentCore.Core
             };
             string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             string url = $"{_baseUrl}/api/chat";
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
             using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-            using var response = await s_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            using var response = await s_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token);
             await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(response);
 
             var sb = new StringBuilder();
@@ -144,6 +145,7 @@ namespace CefDotnetApp.AgentCore.Core
 
             while (!reader.EndOfStream)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 // Wrap ReadLineAsync with timeout to prevent indefinite blocking
                 var readTask = reader.ReadLineAsync();
                 using var delayCts = new CancellationTokenSource();

@@ -72,17 +72,17 @@ namespace CefDotnetApp.AgentCore.Core
             _sendCounts.TryRemove(tag, out _);
         }
 
-        public Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>(), cancellationToken);
         }
 
-        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>(), cancellationToken);
         }
 
-        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
             var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
             lock (messages) { messages.Add(new ChatMessage("user", message)); }
@@ -155,18 +155,19 @@ namespace CefDotnetApp.AgentCore.Core
 
             string reply = await HttpRetryHelper.RetryAsync(async () =>
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 // Resolve apiKey at request time; plaintext exists only during this call
                 string resolvedKey = _apiKeyResolver(_apiKeyTemplate);
                 using var req = new HttpRequestMessage(HttpMethod.Post, _url);
                 req.Headers.Add("x-api-key", resolvedKey);
                 req.Headers.Add("anthropic-version", c_apiVersion);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await s_http.SendAsync(req, cts.Token);
+                using var resp = await s_http.SendAsync(req, linkedCts.Token);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(resp);
                 string respJson = await resp.Content.ReadAsStringAsync();
                 return ParseClaudeReply(respJson);
-            }, _maxRetries, "ClaudeProvider");
+            }, _maxRetries, "ClaudeProvider", cancellationToken);
 
             lock (messages)
             {

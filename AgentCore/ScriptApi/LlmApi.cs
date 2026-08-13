@@ -194,6 +194,43 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// llm_get_busy_duration(provider_id, tag)
+    /// Returns how many seconds the session has been busy (0 if not busy).
+    /// </summary>
+    sealed class LlmGetBusyDurationExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_get_busy_duration requires (provider_id, tag)");
+                return BoxedValue.From(0);
+            }
+            string providerId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            return BoxedValue.From(Core.LlmClientService.Instance.GetBusyDuration(providerId, tag));
+        }
+    }
+
+    /// <summary>
+    /// llm_cancel(provider_id, tag)
+    /// Cancels an active LLM request for the given session.
+    /// Returns "ok" or an error string.
+    /// </summary>
+    sealed class LlmCancelExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("llm_cancel requires (provider_id, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string providerId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            return BoxedValue.FromString(Core.LlmClientService.Instance.Cancel(providerId, tag));
+        }
+    }
+
+    /// <summary>
     /// llm_get_providers_config()
     /// Returns a human-readable summary of all configured LLM providers.
     /// Excludes sensitive fields (token, api_key, username).
@@ -396,6 +433,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("llm_is_busy",
                 "llm_is_busy(provider_id, tag) - check if session is currently waiting for reply",
                 new ExpressionFactoryHelper<LlmIsBusyExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_get_busy_duration",
+                "llm_get_busy_duration(provider_id, tag) - returns seconds the session has been busy (0 if not busy)",
+                new ExpressionFactoryHelper<LlmGetBusyDurationExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("llm_cancel",
+                "llm_cancel(provider_id, tag) - cancel an active LLM request for the session",
+                new ExpressionFactoryHelper<LlmCancelExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("llm_get_providers_config",
                 "llm_get_providers_config() - return all configured providers config (excludes sensitive fields)",
                 new ExpressionFactoryHelper<LlmGetProvidersConfigExp>());

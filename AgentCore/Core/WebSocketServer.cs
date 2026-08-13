@@ -31,6 +31,12 @@ namespace CefDotnetApp.AgentCore.Core
         // Worker concurrency control
         private int _maxWorkerConcurrency = 16;
         private int _activeWorkers = 0;
+        // Worker start time tracking for stuck detection
+        private readonly ConcurrentDictionary<long, DateTime> _workerStartTimes = new();
+        private long _workerIdCounter = 0;
+        private DateTime _lastWorkerCheckTime = DateTime.UtcNow;
+        private int _workerTimeoutSeconds = 600;
+        private const int c_workerCheckIntervalSeconds = 30;
 
         /// <summary>
         /// Gets whether the server is currently running
@@ -350,6 +356,8 @@ namespace CefDotnetApp.AgentCore.Core
                         && _receiveQueue.TryDequeue(out var received))
                     {
                         Interlocked.Increment(ref _activeWorkers);
+                        long workerId = Interlocked.Increment(ref _workerIdCounter);
+                        _workerStartTimes[workerId] = DateTime.UtcNow;
                         var msg = received;
                         Task.Run(() =>
                         {
@@ -382,6 +390,7 @@ namespace CefDotnetApp.AgentCore.Core
                             }
                             finally
                             {
+                                _workerStartTimes.TryRemove(workerId, out _);
                                 Interlocked.Decrement(ref _activeWorkers);
                             }
                         }, cancellationToken);
@@ -392,6 +401,13 @@ namespace CefDotnetApp.AgentCore.Core
                     {
                         _lastPingTime = DateTime.UtcNow;
                         CleanupDeadClients();
+                    }
+
+                    // Check for stuck workers
+                    if ((int)(DateTime.UtcNow - _lastWorkerCheckTime).TotalSeconds >= c_workerCheckIntervalSeconds)
+                    {
+                        _lastWorkerCheckTime = DateTime.UtcNow;
+                        CheckStuckWorkers();
                     }
 
                     // Small delay to prevent CPU spinning (100ms = 10 ticks per second)
@@ -603,6 +619,49 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 AgentCore.Instance.Logger.Debug($"Cleaned up {deadClients.Count} dead WebSocket client(s)");
             }
+        }
+
+        /// <summary>
+        /// Checks for stuck workers and logs warnings.
+        /// </summary>
+        private void CheckStuckWorkers()
+        {
+            var now = DateTime.UtcNow;
+            foreach (var kv in _workerStartTimes)
+            {
+                int duration = (int)(now - kv.Value).TotalSeconds;
+                if (duration > _workerTimeoutSeconds)
+                {
+                    AgentCore.Instance.Logger.Warning($"WebSocket worker {kv.Key} has been running for {duration}s (limit {_workerTimeoutSeconds}s), may be stuck");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns a status string of all active workers.
+        /// </summary>
+        public string GetWorkerStatus()
+        {
+            var now = DateTime.UtcNow;
+            var sb = new StringBuilder();
+            int stuck = 0;
+            foreach (var kv in _workerStartTimes)
+            {
+                int duration = (int)(now - kv.Value).TotalSeconds;
+                sb.AppendLine($"worker {kv.Key}: {duration}s");
+                if (duration > _workerTimeoutSeconds) stuck++;
+            }
+            sb.AppendLine($"total: {_workerStartTimes.Count}, active: {_activeWorkers}/{_maxWorkerConcurrency}, stuck(>{_workerTimeoutSeconds}s): {stuck}");
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Gets or sets the worker timeout in seconds.
+        /// </summary>
+        public int WorkerTimeoutSeconds
+        {
+            get => _workerTimeoutSeconds;
+            set => _workerTimeoutSeconds = Math.Max(60, value);
         }
 
         /// <summary>

@@ -312,6 +312,14 @@ class RelayPanel {
       // Display server-push messages in chat log
       const msgText = data.content || data.text;
       if (data.type === 'message' && msgText) {
+        // Check for /stop command (possibly with sender prefix like "[name] /stop")
+        var trimmed = String(msgText).trim();
+        var isStopCmd = trimmed === '/stop' || /^\[[^\]]*\]\s*\/stop\s*$/.test(trimmed);
+        if (isStopCmd) {
+          this._chatLog('[stop] Received /stop command, clicking stop button');
+          this._clickStopButton();
+          return;
+        }
         this._chatLog('[server] ' + msgText);
         // Remote mode: forward relay message to LLM (no agent marker)
         if (this.remoteEnabled && this.metadslWorker) {
@@ -397,6 +405,19 @@ class RelayPanel {
     const ts = new Date().toLocaleTimeString();
     this.chatLog.value += '[' + ts + '] ' + msg + '\n';
     this.chatLog.scrollTop = this.chatLog.scrollHeight;
+  }
+
+  // Click the page stop button to abort LLM generation.
+  // local-agent and custom-llm share the same DOM structure.
+  _clickStopButton() {
+    const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
+      || document.querySelector('.vac-icon-textarea .vac-svg-button:not(.stop-disabled):not(.vac-send-disabled)');
+    if (stopBtn) {
+      stopBtn.click();
+      this._chatLog('[stop] Stop button clicked');
+    } else {
+      this._chatLog('[stop] Stop button not found or disabled');
+    }
   }
 
   // ---- Drag ----

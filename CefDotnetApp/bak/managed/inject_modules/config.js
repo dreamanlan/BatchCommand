@@ -19,7 +19,8 @@ class ConfigManager {
         hideMetaDslBlock: true,
         streamingPage: true,
         jsHotReload: false,
-        maxConversationRounds: 12
+        maxConversationRounds: 12,
+        llmResponseTimeoutMin: 5
       },
 
       // Timing settings
@@ -88,6 +89,7 @@ class ConfigManager {
       'panel.streamingPage',
       'panel.jsHotReload',
       'panel.maxConversationRounds',
+      'panel.llmResponseTimeoutMin',
 
       'relay.wsUrl'
     ];
@@ -271,6 +273,7 @@ class ConfigManager {
   get operationExecuteTimeout() { return this.config.timing.operationExecuteTimeout; }
   get userTypingDelay() { return this.config.timing.userTypingDelay; }
   get maxLogLines() { return this.config.panel.maxLogLines; }
+  get llmResponseTimeoutMin() { return this.config.panel.llmResponseTimeoutMin; }
 }
 
 // Create global config instance

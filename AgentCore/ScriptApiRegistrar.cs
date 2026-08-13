@@ -255,6 +255,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("write_process_input", "write_process_input(processId, input)", new ExpressionFactoryHelper<WriteProcessInputExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("read_process_output", "read_process_output(processId)", new ExpressionFactoryHelper<ReadProcessOutputExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("read_process_error", "read_process_error(processId)", new ExpressionFactoryHelper<ReadProcessErrorExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_command_status", "get_command_status() - returns status of all active callback commands (id, duration, command)", new ExpressionFactoryHelper<GetCommandStatusExp>());
 
             // DSL Context Management Operations
             AgentFrameworkService.Instance.DslEngine!.Register("set_context_var", "set_context_var(key, value[, scope])", new ExpressionFactoryHelper<SetContextVarExp>());

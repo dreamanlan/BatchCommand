@@ -70,17 +70,17 @@ namespace CefDotnetApp.AgentCore.Core
             _gatewaySessionIds.TryRemove(tag, out _);
         }
 
-        public Task<string> ChatAsync(string tag, string topic, string message)
+        public Task<string> ChatAsync(string tag, string topic, string message, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, Array.Empty<string>(), cancellationToken);
         }
 
-        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        public Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
-            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+            return ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>(), cancellationToken);
         }
 
-        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
             var messages = _sessions.GetOrAdd(tag, _ => new List<ChatMessage>());
             lock (messages) { messages.Add(new ChatMessage("user", message)); }
@@ -146,7 +146,8 @@ namespace CefDotnetApp.AgentCore.Core
 
             string reply = await HttpRetryHelper.RetryAsync(async () =>
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 string resolvedKey = _apiKeyResolver(_apiKeyTemplate);
                 string path = !string.IsNullOrEmpty(_requestPath) ? _requestPath : "/chat/completions";
                 using var req = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}{path}");
@@ -154,7 +155,7 @@ namespace CefDotnetApp.AgentCore.Core
                 if (_gatewayMode == "boxai")
                     AddBoxAiHeaders(req, tag);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await s_http.SendAsync(req, cts.Token);
+                using var resp = await s_http.SendAsync(req, linkedCts.Token);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(resp);
                 // capture session id from response header
                 if (_gatewayMode == "boxai" && _keepSession &&
@@ -168,7 +169,7 @@ namespace CefDotnetApp.AgentCore.Core
                 }
                 string respJson = await resp.Content.ReadAsStringAsync();
                 return ParseOpenAiReply(respJson);
-            }, _maxRetries, "OpenAiProvider");
+            }, _maxRetries, "OpenAiProvider", cancellationToken);
 
             lock (messages)
             {

@@ -15,13 +15,13 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Executes the action with exponential backoff retry on transient failures.
         /// </summary>
-        public static async Task<string> RetryAsync(Func<Task<string>> action, int maxRetries, string callerTag = "LlmProvider")
+        public static async Task<string> RetryAsync(Func<Task<string>> action, int maxRetries, string callerTag = "LlmProvider", CancellationToken cancellationToken = default)
         {
             int delay = 1000;
             for (int i = 0; i <= maxRetries; i++)
             {
                 try { return await action(); }
-                catch (Exception ex) when (i < maxRetries && IsRetryable(ex))
+                catch (Exception ex) when (i < maxRetries && IsRetryable(ex) && !cancellationToken.IsCancellationRequested)
                 {
                     int retryDelay = delay;
                     // Honor Retry-After header for 429 responses

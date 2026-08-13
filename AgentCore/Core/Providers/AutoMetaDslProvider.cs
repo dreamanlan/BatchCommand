@@ -94,17 +94,17 @@ namespace CefDotnetApp.AgentCore.Core
             _chatExtras.TryRemove(tag, out _);
         }
 
-        public async Task<string> ChatAsync(string tag, string topic, string message)
+        public async Task<string> ChatAsync(string tag, string topic, string message, CancellationToken cancellationToken)
         {
-            return await ChatInternalAsync(tag, topic, message, Array.Empty<string>());
+            return await ChatInternalAsync(tag, topic, message, Array.Empty<string>(), cancellationToken);
         }
 
-        public async Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
+        public async Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
-            return await ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>());
+            return await ChatInternalAsync(tag, topic, message, imageUrls ?? Array.Empty<string>(), cancellationToken);
         }
 
-        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls)
+        private async Task<string> ChatInternalAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
         {
             string convId = _keepSession ? _conversationIds.GetOrAdd(tag, _ => "") : "";
             bool useStream = _stream;
@@ -195,13 +195,14 @@ namespace CefDotnetApp.AgentCore.Core
 
             reply = await HttpRetryHelper.RetryAsync(async () =>
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 using var req = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
                 AddAuthHeaders(req);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // always use ResponseHeadersRead to support SSE line-by-line reading
-                using var resp = await s_http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                using var resp = await s_http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, linkedCts.Token);
                 await HttpResponseHelper.EnsureSuccessOrThrowDetailedAsync(resp);
 
                 var sb = new StringBuilder();
@@ -209,6 +210,7 @@ namespace CefDotnetApp.AgentCore.Core
                 using var reader = new System.IO.StreamReader(stream);
                 while (!reader.EndOfStream)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     // Wrap ReadLineAsync with timeout to prevent indefinite blocking
                     var readTask = reader.ReadLineAsync();
                     using var delayCts = new CancellationTokenSource();
@@ -252,7 +254,7 @@ namespace CefDotnetApp.AgentCore.Core
                 // out-of-band reasoning events; this catches anything the
                 // upstream agent embedded directly in the text payload.
                 return ThinkingFilter.StripThink(sb.ToString());
-            }, _maxRetries, "AutoMetaDslProvider");
+            }, _maxRetries, "AutoMetaDslProvider", cancellationToken);
 
             // persist updated conversation_id for history continuation
             if (_keepSession)

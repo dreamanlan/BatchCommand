@@ -13,7 +13,7 @@ namespace CefDotnetApp.AgentCore.Core
     internal interface ILlmProvider
     {
         /// <summary>Send a message and return the full reply string.</summary>
-        Task<string> ChatAsync(string tag, string topic, string message);
+        Task<string> ChatAsync(string tag, string topic, string message, CancellationToken cancellationToken);
         /// <summary>Clear conversation history for the given session tag.</summary>
         void ClearHistory(string tag);
         /// <summary>Returns true if the session is currently waiting for a reply.</summary>
@@ -24,8 +24,8 @@ namespace CefDotnetApp.AgentCore.Core
         void SetSystemPrompt(string tag, string prompt);
         /// <summary>Send a message with attached image URLs and return the full reply string.
         /// Default implementation ignores images and falls back to ChatAsync.</summary>
-        Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls)
-            => ChatAsync(tag, topic, message);
+        Task<string> ChatWithImagesAsync(string tag, string topic, string message, string[] imageUrls, CancellationToken cancellationToken)
+            => ChatAsync(tag, topic, message, cancellationToken);
         /// <summary>Add a chat_extra entry for the given session tag.
         /// key identifies the extra field (e.g. "agent_client_uuid", "extra_headers").
         /// values are the associated values. Default implementation is no-op.</summary>
@@ -58,7 +58,19 @@ namespace CefDotnetApp.AgentCore.Core
         private static readonly System.Collections.Generic.HashSet<string> s_sensitiveKeys =
             new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase) { "username", "token", "api_key" };
 
-        private LlmClientService() { }
+        // Busy-session tracking: records when each session became busy (for stuck detection)
+        private readonly ConcurrentDictionary<string, DateTime> _busySince = new();
+        // Active CancellationTokenSource per session (for external cancel)
+        private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCts = new();
+        // Watchdog timer for auto-cancelling stuck sessions
+        private readonly Timer _watchdogTimer;
+        private const int c_watchdogIntervalMs = 10000; // check every 10s
+        private const int c_defaultMaxBusySeconds = 600; // 10 min default limit
+
+        private LlmClientService()
+        {
+            _watchdogTimer = new Timer(WatchdogCallback, null, c_watchdogIntervalMs, c_watchdogIntervalMs);
+        }
 
         /// <summary>
         /// Registers a provider. type: "ollama", "openai", "claude", "auto_metadsl"
@@ -160,22 +172,31 @@ namespace CefDotnetApp.AgentCore.Core
                 return "error: nativeApi not available";
 
             _busySessions[sessionKey] = true;
+            _busySince[sessionKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[sessionKey] = cts;
 
             Task.Run(async () =>
             {
                 try
                 {
-                    string reply = await provider.ChatAsync(tag, topic, message);
+                    string reply = await provider.ChatAsync(tag, topic, message, cts.Token);
                     nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{providerId}/{tag}': {ex.Message}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {ex.Message}" });
+                    string errMsg = (ex is OperationCanceledException)
+                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
+                        : ex.Message;
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] Chat error for '{providerId}/{tag}': {errMsg}");
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {errMsg}" });
                 }
                 finally
                 {
                     _busySessions[sessionKey] = false;
+                    _busySince.TryRemove(sessionKey, out _);
+                    _activeCts.TryRemove(sessionKey, out var oldCts);
+                    oldCts?.Dispose();
                 }
             });
 
@@ -195,21 +216,30 @@ namespace CefDotnetApp.AgentCore.Core
                 return Task.FromResult("error: busy");
 
             _busySessions[sessionKey] = true;
+            _busySince[sessionKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[sessionKey] = cts;
 
             return Task.Run(async () =>
             {
                 try
                 {
-                    return await provider.ChatAsync(tag, topic, message);
+                    return await provider.ChatAsync(tag, topic, message, cts.Token);
                 }
                 catch (Exception ex)
                 {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatForScriptAsync error for '{providerId}/{tag}': {ex.Message}");
-                    return $"[error] {ex.Message}";
+                    string errMsg = (ex is OperationCanceledException)
+                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
+                        : ex.Message;
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatForScriptAsync error for '{providerId}/{tag}': {errMsg}");
+                    return $"[error] {errMsg}";
                 }
                 finally
                 {
                     _busySessions[sessionKey] = false;
+                    _busySince.TryRemove(sessionKey, out _);
+                    _activeCts.TryRemove(sessionKey, out var oldCts);
+                    oldCts?.Dispose();
                 }
             });
         }
@@ -234,22 +264,31 @@ namespace CefDotnetApp.AgentCore.Core
                 return "error: nativeApi not available";
 
             _busySessions[sessionKey] = true;
+            _busySince[sessionKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[sessionKey] = cts;
 
             Task.Run(async () =>
             {
                 try
                 {
-                    string reply = await provider.ChatWithImagesAsync(tag, topic, message, imageUrls);
+                    string reply = await provider.ChatWithImagesAsync(tag, topic, message, imageUrls, cts.Token);
                     nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, reply });
                 }
                 catch (Exception ex)
                 {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImages error for '{providerId}/{tag}': {ex.Message}");
-                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {ex.Message}" });
+                    string errMsg = (ex is OperationCanceledException)
+                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
+                        : ex.Message;
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImages error for '{providerId}/{tag}': {errMsg}");
+                    nativeApi.EnqueueCefMessage("llm_callback", new string[] { providerId, tag, topic, $"[error] {errMsg}" });
                 }
                 finally
                 {
                     _busySessions[sessionKey] = false;
+                    _busySince.TryRemove(sessionKey, out _);
+                    _activeCts.TryRemove(sessionKey, out var oldCts);
+                    oldCts?.Dispose();
                 }
             });
 
@@ -270,21 +309,30 @@ namespace CefDotnetApp.AgentCore.Core
                 return Task.FromResult("error: busy");
 
             _busySessions[sessionKey] = true;
+            _busySince[sessionKey] = DateTime.UtcNow;
+            var cts = new CancellationTokenSource();
+            _activeCts[sessionKey] = cts;
 
             return Task.Run(async () =>
             {
                 try
                 {
-                    return await provider.ChatWithImagesAsync(tag, topic, message, imageUrls);
+                    return await provider.ChatWithImagesAsync(tag, topic, message, imageUrls, cts.Token);
                 }
                 catch (Exception ex)
                 {
-                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImagesForScriptAsync error for '{providerId}/{tag}': {ex.Message}");
-                    return $"[error] {ex.Message}";
+                    string errMsg = (ex is OperationCanceledException)
+                        ? $"LLM request cancelled (busy for {GetBusyDuration(providerId, tag)}s)"
+                        : ex.Message;
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"[LlmClientService] ChatWithImagesForScriptAsync error for '{providerId}/{tag}': {errMsg}");
+                    return $"[error] {errMsg}";
                 }
                 finally
                 {
                     _busySessions[sessionKey] = false;
+                    _busySince.TryRemove(sessionKey, out _);
+                    _activeCts.TryRemove(sessionKey, out var oldCts);
+                    oldCts?.Dispose();
                 }
             });
         }
@@ -295,7 +343,11 @@ namespace CefDotnetApp.AgentCore.Core
             if (!_providers.TryGetValue(providerId, out var provider))
                 return $"error: provider '{providerId}' not configured";
             provider.ClearHistory(tag);
-            _busySessions.TryRemove($"{providerId}:{tag}", out _);
+            string sessionKey = $"{providerId}:{tag}";
+            _busySessions.TryRemove(sessionKey, out _);
+            _busySince.TryRemove(sessionKey, out _);
+            _activeCts.TryRemove(sessionKey, out var oldCts);
+            oldCts?.Dispose();
             return "ok";
         }
 
@@ -331,6 +383,70 @@ namespace CefDotnetApp.AgentCore.Core
                 return $"error: provider '{providerId}' not configured";
             provider.ClearChatExtras(tag);
             return "ok";
+        }
+
+        /// <summary>Returns how many seconds the session has been busy (0 if not busy).</summary>
+        public int GetBusyDuration(string providerId, string tag)
+        {
+            string sessionKey = $"{providerId}:{tag}";
+            if (_busySince.TryGetValue(sessionKey, out var since))
+                return (int)(DateTime.UtcNow - since).TotalSeconds;
+            return 0;
+        }
+
+        /// <summary>Cancels an active LLM request for the given session.</summary>
+        public string Cancel(string providerId, string tag)
+        {
+            string sessionKey = $"{providerId}:{tag}";
+            if (_activeCts.TryGetValue(sessionKey, out var cts))
+            {
+                try { cts.Cancel(); }
+                catch (ObjectDisposedException) { }
+                AgentFrameworkService.Instance.Log($"[LlmClientService] Cancel requested for session '{sessionKey}'");
+                return "ok";
+            }
+            return "error: session not active";
+        }
+
+        /// <summary>Reads max_busy_seconds option for a provider (default 600s).</summary>
+        private int GetMaxBusySeconds(string providerId)
+        {
+            if (_providerOptions.TryGetValue(providerId, out var opts) &&
+                opts.TryGetValue("max_busy_seconds", out var val) &&
+                int.TryParse(val, out var seconds) && seconds > 0)
+                return seconds;
+            return c_defaultMaxBusySeconds;
+        }
+
+        /// <summary>Watchdog callback: auto-cancel sessions busy longer than max_busy_seconds.</summary>
+        private void WatchdogCallback(object? state)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                foreach (var kv in _busySince)
+                {
+                    string sessionKey = kv.Key;
+                    int duration = (int)(now - kv.Value).TotalSeconds;
+                    int colonIdx = sessionKey.IndexOf(':');
+                    if (colonIdx <= 0) continue;
+                    string providerId = sessionKey.Substring(0, colonIdx);
+                    int maxBusy = GetMaxBusySeconds(providerId);
+                    if (duration > maxBusy)
+                    {
+                        AgentFrameworkService.Instance.Log($"[LlmClientService] Watchdog: session '{sessionKey}' busy for {duration}s (limit {maxBusy}s), auto-cancelling");
+                        if (_activeCts.TryGetValue(sessionKey, out var cts))
+                        {
+                            try { cts.Cancel(); }
+                            catch (ObjectDisposedException) { }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                AgentFrameworkService.Instance.Log($"[LlmClientService] Watchdog error: {ex.Message}");
+            }
         }
     }
 }

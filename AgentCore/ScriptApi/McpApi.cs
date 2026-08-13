@@ -101,8 +101,9 @@ namespace AgentCore.ScriptApi
 
     /// <summary>
     /// mcp_set_option(serverId, key, value)
-    /// Sets a connection option before calling mcp_connect.
-    /// key="timeout" (ms) or key="header" (Name:Value). Can be called multiple times for headers.
+    /// Sets a connection option. Can be called before or after mcp_connect.
+    /// key="timeout" (ms) or key="header" (Name:Value) or key="max_busy_seconds" (watchdog threshold).
+    /// Can be called multiple times for headers.
     /// Returns true.
     /// </summary>
     sealed class McpSetOptionExp : SimpleExpressionBase
@@ -167,6 +168,43 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
+    /// mcp_get_busy_duration(serverId, tag)
+    /// Returns how many seconds the call has been busy (0 if not busy).
+    /// </summary>
+    sealed class McpGetBusyDurationExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_get_busy_duration requires (serverId, tag)");
+                return BoxedValue.From(0);
+            }
+            string serverId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            return BoxedValue.From(CefDotnetApp.AgentCore.Core.McpClientService.Instance.GetBusyDuration(serverId, tag));
+        }
+    }
+
+    /// <summary>
+    /// mcp_cancel(serverId, tag)
+    /// Cancels an active MCP tool call for the given session.
+    /// Returns "ok" or an error string.
+    /// </summary>
+    sealed class McpCancelExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("mcp_cancel requires (serverId, tag)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            string serverId = operands[0].AsString;
+            string tag = operands[1].AsString;
+            return BoxedValue.FromString(CefDotnetApp.AgentCore.Core.McpClientService.Instance.Cancel(serverId, tag));
+        }
+    }
+
+    /// <summary>
     /// Registers all MCP DSL APIs
     /// </summary>
     public static class McpApi
@@ -189,7 +227,7 @@ namespace AgentCore.ScriptApi
                 "mcp_call_tool_callback(serverId, toolName, argsJson, tag) - call MCP tool async, result via mcp_callback CEF message",
                 new ExpressionFactoryHelper<McpCallToolCallbackExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_set_option",
-                "mcp_set_option(serverId, key, value) - set connection option before mcp_connect, key='timeout'(ms) or 'header'(Name:Value)",
+                "mcp_set_option(serverId, key, value) - set connection option, key='timeout'(ms)/'header'(Name:Value)/'max_busy_seconds'(watchdog threshold)",
                 new ExpressionFactoryHelper<McpSetOptionExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_clear_options",
                 "mcp_clear_options(serverId) - clear all pending connection options for a server",
@@ -197,6 +235,12 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("mcp_call_tool",
                 "mcp_call_tool(serverId, toolName, argsJson) - synchronous tool call, blocks until result is received and returns it directly",
                 new ExpressionFactoryHelper<McpCallToolExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mcp_get_busy_duration",
+                "mcp_get_busy_duration(serverId, tag) - returns seconds the call has been busy (0 if not busy)",
+                new ExpressionFactoryHelper<McpGetBusyDurationExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("mcp_cancel",
+                "mcp_cancel(serverId, tag) - cancel an active MCP tool call for the session",
+                new ExpressionFactoryHelper<McpCancelExp>());
 
         }
     }

@@ -702,6 +702,54 @@ class AgentPanel {
     optionBar.appendChild(this.lockAgentButton);
 
     this.panel.appendChild(optionBar);
+
+    // LLM response timeout slider bar
+    const timeoutBar = document.createElement('div');
+    timeoutBar.style.cssText = `
+        padding: 6px 8px;
+        background: #252525;
+        border-bottom: 1px solid #444;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: #ccc;
+      `;
+
+    const timeoutLabel = document.createElement('span');
+    timeoutLabel.textContent = 'LLM Timeout';
+    timeoutLabel.style.cssText = `white-space: nowrap;`;
+    timeoutBar.appendChild(timeoutLabel);
+
+    const timeoutSlider = document.createElement('input');
+    timeoutSlider.type = 'range';
+    timeoutSlider.min = '1';
+    timeoutSlider.max = '30';
+    timeoutSlider.step = '1';
+    timeoutSlider.value = String(CONFIG.config.panel.llmResponseTimeoutMin);
+    timeoutSlider.style.cssText = `
+        flex: 1;
+        cursor: pointer;
+        accent-color: #4caf50;
+      `;
+    timeoutBar.appendChild(timeoutSlider);
+
+    const timeoutValue = document.createElement('span');
+    timeoutValue.textContent = CONFIG.config.panel.llmResponseTimeoutMin + ' min';
+    timeoutValue.style.cssText = `min-width: 48px; text-align: right; white-space: nowrap;`;
+    timeoutBar.appendChild(timeoutValue);
+
+    timeoutSlider.addEventListener('input', () => {
+      timeoutValue.textContent = timeoutSlider.value + ' min';
+    });
+    timeoutSlider.addEventListener('change', () => {
+      const val = parseInt(timeoutSlider.value, 10);
+      CONFIG.set('panel.llmResponseTimeoutMin', val);
+      this.log('LLM response timeout set to ' + val + ' min');
+    });
+
+    this.panel.appendChild(timeoutBar);
+
     this.panel.appendChild(buttonBar);
 
     // Create MetaDSL input area

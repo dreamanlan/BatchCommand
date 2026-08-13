@@ -156,6 +156,8 @@ class LLMRespondingState extends State {
 
   enter() {
     this.info('Entering LLM responding state');
+    // Record start time for response timeout check
+    this.responseStartTime = Date.now();
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
@@ -214,9 +216,36 @@ class LLMRespondingState extends State {
         this.monitor.transitionTo('SCANNING_CODE_BLOCKS', 'LLM finished responding');
         break;
       }
+
+      // Check response timeout
+      if (this.responseStartTime) {
+        const elapsed = Date.now() - this.responseStartTime;
+        const timeoutMs = CONFIG.llmResponseTimeoutMin * 60000;
+        if (elapsed >= timeoutMs) {
+          this.warn(`[LLMRespondingState] LLM response timeout (${CONFIG.llmResponseTimeoutMin}min elapsed), stopping generation`);
+          this.stopLLMGeneration();
+          // Clear start time to avoid repeated stop clicks; let the next
+          // iteration detect LLM stopped via checkLLMResponding() for a
+          // clean state transition.
+          this.responseStartTime = null;
+        }
+      }
     }
 
     this.info('[LLMRespondingState] Run loop exited');
+  }
+
+  // Click the page stop button to abort LLM generation.
+  // local-agent and custom-llm share the same DOM structure.
+  stopLLMGeneration() {
+    const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
+      || document.querySelector('.vac-icon-textarea .vac-svg-button:not(.stop-disabled):not(.vac-send-disabled)');
+    if (stopBtn) {
+      this.info('[LLMRespondingState] Clicking stop button to abort generation');
+      stopBtn.click();
+      return;
+    }
+    this.warn('[LLMRespondingState] Stop button not found or disabled, cannot abort generation');
   }
 }
 

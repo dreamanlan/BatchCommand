@@ -1,5 +1,8 @@
+using System;
 using System.IO;
 using System.Text;
+using AgentPlugin.Abstractions;
+using ScriptableFramework;
 
 namespace CefDotnetApp.AgentCore.Utils
 {
@@ -87,6 +90,116 @@ namespace CefDotnetApp.AgentCore.Utils
             catch {
                 return new UTF8Encoding(defaultBom);
             }
+        }
+
+        /// <summary>
+        /// Detect whether the file at fullPath starts with any BOM (UTF-8/UTF-16/UTF-32).
+        /// Returns true if any BOM is found, false otherwise.
+        /// </summary>
+        private static bool HasAnyBom(string fullPath)
+        {
+            try {
+                using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                if (fs.Length < 2) return false;
+                int bomLen = (int)Math.Min(4, fs.Length);
+                byte[] head = new byte[bomLen];
+                int read = fs.Read(head, 0, bomLen);
+                if (read >= 4 && head[0] == 0x00 && head[1] == 0x00 && head[2] == 0xFE && head[3] == 0xFF) return true;
+                if (read >= 4 && head[0] == 0xFF && head[1] == 0xFE && head[2] == 0x00 && head[3] == 0x00) return true;
+                if (read >= 3 && head[0] == 0xEF && head[1] == 0xBB && head[2] == 0xBF) return true;
+                if (read >= 2 && head[0] == 0xFE && head[1] == 0xFF) return true;
+                if (read >= 2 && head[0] == 0xFF && head[1] == 0xFE) return true;
+                return false;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Parse encoding spec from BoxedValue (string name or int codepage), with optional
+        /// "-bom"/"-nobom" suffix on string names to control BOM emission.
+        /// For BOM-capable encodings (UTF8/Unicode/UTF32), when the file exists and no explicit
+        /// BOM suffix is given, BOM state is detected from the existing file; if not detectable,
+        /// defaults to emitting BOM.
+        /// </summary>
+        public static Encoding GetEncoding(BoxedValue v, string fullPath)
+        {
+            string? asString = v.AsString;
+            bool emitBom = true;
+            bool bomExplicit = false;
+
+            if (asString != null) {
+                int idx = asString.LastIndexOf('-');
+                if (idx > 0) {
+                    string suffix = asString.Substring(idx + 1);
+                    if (suffix.Equals("bom", StringComparison.OrdinalIgnoreCase)) {
+                        emitBom = true;
+                        bomExplicit = true;
+                        asString = asString.Substring(0, idx);
+                    }
+                    else if (suffix.Equals("nobom", StringComparison.OrdinalIgnoreCase)) {
+                        emitBom = false;
+                        bomExplicit = true;
+                        asString = asString.Substring(0, idx);
+                    }
+                }
+            }
+
+            Encoding baseEncoding;
+            try {
+                if (asString != null) {
+                    baseEncoding = Encoding.GetEncoding(asString);
+                }
+                else if (v.IsInteger) {
+                    int codepage = v.GetInt();
+                    baseEncoding = Encoding.GetEncoding(codepage);
+                }
+                else {
+                    baseEncoding = Encoding.UTF8;
+                }
+            }
+            catch {
+                baseEncoding = Encoding.UTF8;
+            }
+
+            return ApplyBomPolicy(baseEncoding, fullPath, emitBom, bomExplicit);
+        }
+
+        /// <summary>
+        /// Apply BOM policy to the base encoding based on file existence and explicit flag.
+        /// Only BOM-capable encodings (UTF8Encoding, UnicodeEncoding, UTF32Encoding) are adjusted.
+        /// </summary>
+        private static Encoding ApplyBomPolicy(Encoding baseEncoding, string fullPath, bool emitBom, bool bomExplicit)
+        {
+            if (baseEncoding is UTF8Encoding utf8) {
+                bool currentEmit = utf8.Preamble.Length > 0;
+                if (currentEmit == emitBom) return utf8;
+                if (!bomExplicit && File.Exists(fullPath)) {
+                    bool fileHasBom = HasAnyBom(fullPath);
+                    emitBom = fileHasBom;
+                }
+                return new UTF8Encoding(emitBom);
+            }
+            if (baseEncoding is UnicodeEncoding unicode) {
+                bool bigEndian = unicode.Preamble.Length >= 2 && unicode.Preamble[0] == 0xFE;
+                bool currentEmit = unicode.Preamble.Length > 0;
+                if (currentEmit == emitBom) return unicode;
+                if (!bomExplicit && File.Exists(fullPath)) {
+                    emitBom = HasAnyBom(fullPath);
+                }
+                return new UnicodeEncoding(bigEndian, emitBom);
+            }
+            if (baseEncoding is UTF32Encoding utf32) {
+                bool bigEndian = utf32.Preamble.Length >= 4 && utf32.Preamble[0] == 0x00;
+                bool currentEmit = utf32.Preamble.Length > 0;
+                if (currentEmit == emitBom) return utf32;
+                if (!bomExplicit && File.Exists(fullPath)) {
+                    emitBom = HasAnyBom(fullPath);
+                }
+                return new UTF32Encoding(bigEndian, emitBom);
+            }
+            return baseEncoding;
         }
     }
 }

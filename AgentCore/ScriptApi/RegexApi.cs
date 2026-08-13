@@ -281,7 +281,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string pattern = operands[1].AsString;
                 string replacement = operands[2].AsString;
                 bool ignoreCase = operands.Count > 3 ? operands[3].GetBool() || operands[3].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 4 ? GetEncoding(operands[4]) : null;
+                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");
@@ -328,7 +328,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
                 if (skipCount < 0) skipCount = 0;
                 bool ignoreCase = operands.Count > 5 ? operands[5].GetBool() || operands[5].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 6 ? GetEncoding(operands[6]) : null;
+                Encoding? encoding = operands.Count > 6 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[6], path) : null;
 
                 if (count <= 0) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"regex_replace_in_file_with_count: count must be > 0, got {count}");
@@ -380,7 +380,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string path = operands[0].AsString;
                 string pattern = operands[1].AsString;
                 bool ignoreCase = operands.Count > 2 ? operands[2].GetBool() || operands[2].ToString() == "i" : true;
-                Encoding? encoding = operands.Count > 3 ? GetEncoding(operands[3]) : null;
+                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
 
                 if (!System.IO.File.Exists(path)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"Error: File not found: {path}");

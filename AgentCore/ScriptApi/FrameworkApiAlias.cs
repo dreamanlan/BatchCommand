@@ -6962,7 +6962,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = Encoding.UTF8;
                         if (operands.Count >= 2) {
                             var v = operands[1];
-                            encoding = GetEncoding(v);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
                         }
                         return BoxedValue.FromObject(SafeFileReader.ReadAllLines(path, encoding));
                     }
@@ -6988,7 +6988,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = GetEncoding(v);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
                         }
                         var strs = new List<string>();
                         foreach (var line in lines) {
@@ -7029,7 +7029,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = Encoding.UTF8;
                         if (operands.Count >= 2) {
                             var v = operands[1];
-                            encoding = GetEncoding(v);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
                         }
                         return SafeFileReader.ReadAllText(path, encoding);
                     }
@@ -7055,7 +7055,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = GetEncoding(v);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
                         }
                         if (string.IsNullOrEmpty(text)) {
                             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");

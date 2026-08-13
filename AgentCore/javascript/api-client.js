@@ -885,6 +885,7 @@ class APIClient {
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code' },
                 { value: 'glm-5.2', label: 'GLM-5.2' },
                 { value: 'glm-5.1', label: 'GLM-5.1' },
+                { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro' },
                 { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash' },
                 { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' }
             ];

@@ -238,8 +238,10 @@ class LLMRespondingState extends State {
   // Click the page stop button to abort LLM generation.
   // local-agent and custom-llm share the same DOM structure.
   stopLLMGeneration() {
+    // local-agent: text button #stop-btn
+    // custom-llm: SVG icon button, stop = red el-icon (power-off)
     const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
-      || document.querySelector('.vac-icon-textarea .vac-svg-button:not(.stop-disabled):not(.vac-send-disabled)');
+      || document.querySelector('.vac-svg-button i.el-icon[style*="red"]');
     if (stopBtn) {
       this.info('[LLMRespondingState] Clicking stop button to abort generation');
       stopBtn.click();

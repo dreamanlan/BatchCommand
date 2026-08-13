@@ -410,8 +410,10 @@ class RelayPanel {
   // Click the page stop button to abort LLM generation.
   // local-agent and custom-llm share the same DOM structure.
   _clickStopButton() {
+    // local-agent: text button #stop-btn
+    // custom-llm: SVG icon button, stop = red el-icon (power-off)
     const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
-      || document.querySelector('.vac-icon-textarea .vac-svg-button:not(.stop-disabled):not(.vac-send-disabled)');
+      || document.querySelector('.vac-svg-button i.el-icon[style*="red"]');
     if (stopBtn) {
       stopBtn.click();
       this._chatLog('[stop] Stop button clicked');

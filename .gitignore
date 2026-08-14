@@ -75,3 +75,4 @@ x64/Debug/MonoBleedingEdge
 /CefDotnetApp/.codebuddy
 *.code-workspace
 /AbstractAgent/.codebuddy
+/AgentCore/tmp

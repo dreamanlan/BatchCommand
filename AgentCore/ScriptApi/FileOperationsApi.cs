@@ -46,8 +46,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string content = operands[1].AsString;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], path) : null;
+                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values to a file !!! To delete certain lines, use the 'delete_lines' function.");
                     return BoxedValue.From(false);
@@ -294,8 +295,9 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string content = operands[1].AsString;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], path) : null;
+                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
                 if (string.IsNullOrEmpty(content)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot append empty values to a file !!!");
                     return BoxedValue.From(false);

@@ -21,11 +21,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 bool replaceAll = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[5], path) : null;
+                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file: oldString cannot be empty");
@@ -57,13 +58,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string oldString = operands[1].AsString;
                 string newString = operands[2].AsString;
                 int count = operands[3].GetInt();
                 int skipCount = operands.Count > 4 ? operands[4].GetInt() : 0;
                 if (skipCount < 0) skipCount = 0;
                 bool exactMatch = operands.Count > 5 ? operands[5].GetBool() : false;
-                Encoding? encoding = operands.Count > 6 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[6], path) : null;
+                Encoding? encoding = operands.Count > 6 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[6], fullPath) : null;
 
                 if (string.IsNullOrEmpty(oldString)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("replace_in_file_with_count: oldString cannot be empty");
@@ -74,7 +76,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"replace_in_file_with_count: file not found: {path}");
                     return BoxedValue.From(false);
@@ -176,7 +177,8 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
-                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[2], path) : null;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
+                Encoding? encoding = operands.Count > 2 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[2], fullPath) : null;
 
                 var edits = ParseEdits(operands[1]);
                 if (edits == null || edits.Count == 0) {
@@ -184,7 +186,6 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     return BoxedValue.From(false);
                 }
 
-                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"multi_replace: file not found: {path}");
                     return BoxedValue.From(false);
@@ -381,10 +382,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
                 string newContent = operands[3].AsString;
-                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[4], path) : null;
+                Encoding? encoding = operands.Count > 4 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[4], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.ReplaceLines(path, startLine, endLine, newContent, encoding);
                 return BoxedValue.From(result);
@@ -408,11 +410,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[5], path) : null;
+                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
@@ -440,11 +443,12 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 string searchLiteralText = operands[1].AsString;
                 string content = operands[2].AsString;
                 bool allOccurrences = operands.Count > 3 ? operands[3].GetBool() : false;
                 bool exactMatch = operands.Count > 4 ? operands[4].GetBool() : false;
-                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[5], path) : null;
+                Encoding? encoding = operands.Count > 5 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[5], fullPath) : null;
 
                 if (string.IsNullOrEmpty(searchLiteralText)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("The search string cannot be empty !!!");
@@ -472,9 +476,10 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             try {
                 string path = operands[0].AsString;
+                string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
                 int startLine = operands[1].GetInt();
                 int endLine = operands[2].GetInt();
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], path) : null;
+                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 bool result = Core.AgentCore.Instance.FileOps.DeleteLines(path, startLine, endLine, encoding);
                 return BoxedValue.From(result);
@@ -958,7 +963,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string insertContent = operands[2].AsString;
 
                 string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_after_line: file not found: {path}");
@@ -1008,7 +1013,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string insertContent = operands[2].AsString;
 
                 string fullPath = CefDotnetApp.AgentCore.Utils.PathHelper.EnsureAbsolutePath(path, Core.AgentCore.Instance.BasePath);
-                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(operands[3], fullPath) : null;
+                Encoding? encoding = operands.Count > 3 ? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(operands[3], fullPath) : null;
 
                 if (!System.IO.File.Exists(fullPath)) {
                     AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"insert_before_line: file not found: {path}");

@@ -35,9 +35,10 @@ namespace CefDotnetApp.AgentCore.Utils
         /// Returns an Encoding that matches the existing file's encoding and BOM state.
         /// Detection order: BOM-based (UTF-32/UTF-16/UTF-8) first, then UTF-8 validity check.
         /// If the file does not exist, or the encoding cannot be determined, falls back to
-        /// UTF-8 with BOM controlled by defaultBom.
+        /// fallbackEncoding without BOM when supplied; otherwise UTF-8 with BOM controlled
+        /// by defaultBom.
         /// </summary>
-        public static Encoding GetEncodingPreservingBom(string fullPath, bool defaultBom = true)
+        public static Encoding GetEncodingPreservingBom(string fullPath, bool defaultBom = true, Encoding? fallbackEncoding = null)
         {
             if (!File.Exists(fullPath)) {
                 return new UTF8Encoding(defaultBom);
@@ -46,7 +47,7 @@ namespace CefDotnetApp.AgentCore.Utils
             try {
                 using var fs = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 if (fs.Length == 0) {
-                    return new UTF8Encoding(defaultBom);
+                    return new UTF8Encoding(false);
                 }
 
                 // Read up to 4 bytes for BOM detection.
@@ -84,12 +85,32 @@ namespace CefDotnetApp.AgentCore.Utils
                     return new UTF8Encoding(false);
                 }
                 catch {
-                    return new UTF8Encoding(defaultBom);
+                    return fallbackEncoding != null
+                        ? GetEncodingWithoutBom(fallbackEncoding)
+                        : new UTF8Encoding(defaultBom);
                 }
             }
             catch {
-                return new UTF8Encoding(defaultBom);
+                return fallbackEncoding != null
+                    ? GetEncodingWithoutBom(fallbackEncoding)
+                    : new UTF8Encoding(defaultBom);
             }
+        }
+
+        private static Encoding GetEncodingWithoutBom(Encoding encoding)
+        {
+            if (encoding is UTF8Encoding) {
+                return new UTF8Encoding(false);
+            }
+            if (encoding is UnicodeEncoding) {
+                bool bigEndian = encoding.CodePage == 1201;
+                return new UnicodeEncoding(bigEndian, false);
+            }
+            if (encoding is UTF32Encoding) {
+                bool bigEndian = encoding.CodePage == 12001;
+                return new UTF32Encoding(bigEndian, false);
+            }
+            return encoding;
         }
 
         /// <summary>
@@ -119,11 +140,24 @@ namespace CefDotnetApp.AgentCore.Utils
         /// <summary>
         /// Parse encoding spec from BoxedValue (string name or int codepage), with optional
         /// "-bom"/"-nobom"/"-no-bom" suffix on string names to control BOM emission.
-        /// For BOM-capable encodings (UTF8/Unicode/UTF32), when the file exists and no explicit
-        /// BOM suffix is given, BOM state is detected from the existing file; if not detectable,
-        /// defaults to emitting BOM.
         /// </summary>
         public static Encoding GetEncoding(BoxedValue v, string fullPath)
+        {
+            return GetEncoding(v, fullPath, preserveExistingFile: false);
+        }
+
+        /// <summary>
+        /// Parse an encoding for a write operation. Existing files preserve their detected
+        /// encoding and BOM state regardless of suffix. For an existing non-UTF-8 file without
+        /// BOM, the requested encoding is used as the fallback without adding a BOM. Suffixes
+        /// control BOM emission only for new files.
+        /// </summary>
+        public static Encoding GetEncodingForWrite(BoxedValue v, string fullPath)
+        {
+            return GetEncoding(v, fullPath, preserveExistingFile: true);
+        }
+
+        private static Encoding GetEncoding(BoxedValue v, string fullPath, bool preserveExistingFile)
         {
             string? asString = v.AsString;
             bool emitBom = true;
@@ -163,6 +197,10 @@ namespace CefDotnetApp.AgentCore.Utils
             }
             catch {
                 baseEncoding = Encoding.UTF8;
+            }
+
+            if (preserveExistingFile && File.Exists(fullPath)) {
+                return GetEncodingPreservingBom(fullPath, defaultBom: false, fallbackEncoding: baseEncoding);
             }
 
             return ApplyBomPolicy(baseEncoding, fullPath, emitBom, bomExplicit);

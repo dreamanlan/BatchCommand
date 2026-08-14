@@ -6988,7 +6988,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(v, path);
                         }
                         var strs = new List<string>();
                         foreach (var line in lines) {
@@ -7055,7 +7055,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                         Encoding encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: true);
                         if (operands.Count >= 3) {
                             var v = operands[2];
-                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncoding(v, path);
+                            encoding = CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingForWrite(v, path);
                         }
                         if (string.IsNullOrEmpty(text)) {
                             AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("You cannot write empty values 鈥嬧€媡o a file !!! To delete certain lines, use the 'delete_lines' function.");

@@ -76,3 +76,4 @@ x64/Debug/MonoBleedingEdge
 *.code-workspace
 /AbstractAgent/.codebuddy
 /AgentCore/tmp
+/.codebuddy

@@ -9,7 +9,7 @@ using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
-    // replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]) - replace string in file
+    // replace_in_file(path, oldString, newString[, replaceAll[, exactMatch[, encoding]]]) - replace string in file; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class ReplaceInFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -42,7 +42,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]])
+    // replace_in_file_with_count(path, oldString, newString, count[, skipCount[, exactMatch[, encoding]]]); encoding supports -bom/-no-bom/-nobom suffixes
     // Skip the first skipCount literal matches, then replace the next count literal occurrences.
     // count <= 0 does not modify the file and returns false. skipCount < 0 is treated as 0.
     // exactMatch=true: only exact literal match is attempted; when skipCount==0 && count==1 && !exactMatch,
@@ -154,7 +154,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // multi_replace(path, editsJsonOrList[, encoding]) - perform multiple replacements sequentially
+    // multi_replace(path, editsJsonOrList[, encoding]) - perform multiple replacements sequentially; encoding supports -bom/-no-bom/-nobom suffixes
     // editsJson: [{"old_string":"...","new_string":"...","replace_all":false,"exact_match":false}, ...]
     // editsList: DSL list of dicts, e.g. [{old_string:"...",new_string:"...",replace_all:false}]
     sealed class MultiReplaceExp : SimpleExpressionBase
@@ -370,7 +370,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // replace_range(path, startLine, endLine, newContent[, encoding]) - replace line range
+    // replace_range(path, startLine, endLine, newContent[, encoding]) - replace line range; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class ReplaceRangeExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -398,7 +398,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content after literal text
+    // insert_after_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content after literal text; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertAfterTextExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -431,7 +431,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content before literal text
+    // insert_before_text(path, searchLiteralText, content[, allOccurrences[, exactMatch[, encoding]]]) - insert content before literal text; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertBeforeTextExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -464,7 +464,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // delete_lines(path, startLine, endLine[, encoding]) - delete line range
+    // delete_lines(path, startLine, endLine[, encoding]) - delete line range; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class DeleteLinesExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -947,7 +947,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_after_line(path, line, insert_content[, encoding]) - insert content after specified line number (content starts on a new line)
+    // insert_after_line(path, line, insert_content[, encoding]) - insert content after specified line number (content starts on a new line); encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertAfterLineExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -997,7 +997,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // insert_before_line(path, line, insert_content[, encoding]) - insert content before specified line number (content starts on a new line)
+    // insert_before_line(path, line, insert_content[, encoding]) - insert content before specified line number (content starts on a new line); encoding supports -bom/-no-bom/-nobom suffixes
     sealed class InsertBeforeLineExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)

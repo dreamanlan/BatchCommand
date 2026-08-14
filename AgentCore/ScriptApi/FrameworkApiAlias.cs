@@ -415,13 +415,14 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("call_stack", "call_stack()", new ExpressionFactoryHelper<CallStackExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("file_echo", "file_echo(bool) or file_echo()", new ExpressionFactoryHelper<FileEchoExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("directory_exists", "directory_exists(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("directory_exist", "directory_exist(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("exist_directory", "exist_directory(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("exists_directory", "exists_directory(dir)", false, new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("is_directory", "is_directory(dir)", new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", false, new ExpressionFactoryHelper<DirectoryExistExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", false, new ExpressionFactoryHelper<FileExistExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("directory_exists", "directory_exists(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("directory_exist", "directory_exist(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("exist_directory", "exist_directory(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("exists_directory", "exists_directory(dir)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("is_directory", "is_directory(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", new ExpressionFactoryHelper<FileExistsExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("pathexists", "pathexists(file)", new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_dirs", "list_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListDirectoriesExp>()); AgentFrameworkService.Instance.DslEngine!.Register("list_dir", "list_dir(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", false, new ExpressionFactoryHelper<ListDirectoriesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_files", "list_files(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListFilesExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("list_all_dirs", "list_all_dirs(dir,glob_pattern_list_or_str_1,glob_pattern_list_or_str_2,...)", new ExpressionFactoryHelper<ListAllDirectoriesExp>());
@@ -6258,7 +6259,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return DslCalculator.FileEchoOn;
             }
         }
-        internal sealed class DirectoryExistExp : SimpleExpressionBase
+        internal sealed class DirectoryExistsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {
@@ -6275,7 +6276,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return ret;
             }
         }
-        internal sealed class FileExistExp : SimpleExpressionBase
+        internal sealed class FileExistsExp : SimpleExpressionBase
         {
             protected override BoxedValue OnCalc(IList<BoxedValue> operands)
             {

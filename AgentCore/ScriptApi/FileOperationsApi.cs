@@ -34,7 +34,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // write_file(path, content[, encoding]) - write file content
+    // write_file(path, content[, encoding]) - write file content; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class WriteFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -283,7 +283,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // append_file(path, content[, encoding]) - append to file
+    // append_file(path, content[, encoding]) - append to file; encoding supports -bom/-no-bom/-nobom suffixes
     sealed class AppendFileExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -404,7 +404,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // file_has_bom(path) - check if file has UTF-8 BOM
+    // file_has_bom(path) - check if file has BOM
     sealed class FileHasBomExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -426,7 +426,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // file_add_bom(path) - add UTF-8 BOM to file (skip if already has BOM)
+    // file_add_bom(path) - add BOM to file (skip if already has BOM)
     sealed class FileAddBomExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -448,7 +448,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
         }
     }
 
-    // file_remove_bom(path) - remove UTF-8 BOM from file (skip if no BOM)
+    // file_remove_bom(path) - remove BOM from file (skip if no BOM)
     sealed class FileRemoveBomExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)

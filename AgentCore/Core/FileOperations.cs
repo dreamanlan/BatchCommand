@@ -85,7 +85,8 @@ namespace CefDotnetApp.AgentCore.Core
             }
 
             if (!string.IsNullOrEmpty(content)) {
-                File.WriteAllText(fullPath, content, new UTF8Encoding(false));
+                Encoding writeEncoding = BomHelper.GetEncodingForWriteNoBom(fullPath);
+                File.WriteAllText(fullPath, content, writeEncoding);
                 return true;
             }
             return false;
@@ -186,7 +187,7 @@ namespace CefDotnetApp.AgentCore.Core
             string fullPath = PathHelper.EnsureAbsolutePath(path, _basePath);
             if (!File.Exists(fullPath))
                 return false;
-            return BomHelper.HasUtf8Bom(fullPath);
+            return BomHelper.HasBom(fullPath);
         }
 
         public bool FileAddBom(string path)
@@ -196,16 +197,15 @@ namespace CefDotnetApp.AgentCore.Core
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("file_add_bom: file not found");
                 return false;
             }
-            if (BomHelper.HasUtf8Bom(fullPath)) {
+            if (BomHelper.HasBom(fullPath)) {
                 // Already has BOM, no need to process.
                 return true;
             }
+            byte[] bom = BomHelper.GetBomToAdd(fullPath);
             byte[] original = SafeFileReader.ReadAllBytes(fullPath);
-            byte[] result = new byte[original.Length + 3];
-            result[0] = 0xEF;
-            result[1] = 0xBB;
-            result[2] = 0xBF;
-            Buffer.BlockCopy(original, 0, result, 3, original.Length);
+            byte[] result = new byte[original.Length + bom.Length];
+            Buffer.BlockCopy(bom, 0, result, 0, bom.Length);
+            Buffer.BlockCopy(original, 0, result, bom.Length, original.Length);
             File.WriteAllBytes(fullPath, result);
             return true;
         }
@@ -217,13 +217,14 @@ namespace CefDotnetApp.AgentCore.Core
                 AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("file_remove_bom: file not found");
                 return false;
             }
-            if (!BomHelper.HasUtf8Bom(fullPath)) {
+            byte[]? bom = BomHelper.GetBomBytes(fullPath);
+            if (bom == null) {
                 // No BOM, no need to process.
                 return true;
             }
             byte[] original = SafeFileReader.ReadAllBytes(fullPath);
-            byte[] result = new byte[original.Length - 3];
-            Buffer.BlockCopy(original, 3, result, 0, result.Length);
+            byte[] result = new byte[original.Length - bom.Length];
+            Buffer.BlockCopy(original, bom.Length, result, 0, result.Length);
             File.WriteAllBytes(fullPath, result);
             return true;
         }

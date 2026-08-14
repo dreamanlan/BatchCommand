@@ -158,6 +158,8 @@ class LLMRespondingState extends State {
     this.info('Entering LLM responding state');
     // Record start time for response timeout check
     this.responseStartTime = Date.now();
+    // Flag: stop button clicked due to timeout, force transition once LLM stops
+    this.timeoutStopTriggered = false;
     // User must have sent a message to trigger LLM response
     this.monitor.onUserSendMessage();
     // Record the last user message node after a short delay (wait for DOM render)
@@ -217,6 +219,16 @@ class LLMRespondingState extends State {
         break;
       }
 
+      // If stop was clicked due to timeout and LLM has stopped responding,
+      // force transition to SCANNING_CODE_BLOCKS even if no LLM reply arrived.
+      // Without this, the state machine gets stuck when LLM was stopped
+      // before producing any output (lastFromLLM would be false).
+      if (this.timeoutStopTriggered && !isResponding) {
+        this.info('[LLMRespondingState] Timeout stop confirmed, forcing transition to SCANNING_CODE_BLOCKS');
+        this.monitor.transitionTo('SCANNING_CODE_BLOCKS', 'LLM response timeout stopped');
+        break;
+      }
+
       // Check response timeout
       if (this.responseStartTime) {
         const elapsed = Date.now() - this.responseStartTime;
@@ -224,10 +236,10 @@ class LLMRespondingState extends State {
         if (elapsed >= timeoutMs) {
           this.warn(`[LLMRespondingState] LLM response timeout (${CONFIG.llmResponseTimeoutMin}min elapsed), stopping generation`);
           this.stopLLMGeneration();
-          // Clear start time to avoid repeated stop clicks; let the next
-          // iteration detect LLM stopped via checkLLMResponding() for a
-          // clean state transition.
+          // Clear start time and set flag so next iteration force-transitions
+          // once checkLLMResponding() returns false (stop took effect).
           this.responseStartTime = null;
+          this.timeoutStopTriggered = true;
         }
       }
     }

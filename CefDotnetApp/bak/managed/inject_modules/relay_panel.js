@@ -312,12 +312,18 @@ class RelayPanel {
       // Display server-push messages in chat log
       const msgText = data.content || data.text;
       if (data.type === 'message' && msgText) {
-        // Check for /stop command (possibly with sender prefix like "[name] /stop")
+        // Check for /stop, /clrhist, /clearhistory commands (possibly with sender prefix like "[name] /cmd")
         var trimmed = String(msgText).trim();
-        var isStopCmd = trimmed === '/stop' || /^\[[^\]]*\]\s*\/stop\s*$/.test(trimmed);
-        if (isStopCmd) {
+        var cmdMatch = /^\[[^\]]*\]\s*(\/\S+)\s*$/.exec(trimmed) || [null, trimmed];
+        var cmd = cmdMatch[1];
+        if (cmd === '/stop') {
           this._chatLog('[stop] Received /stop command, clicking stop button');
           this._clickStopButton();
+          return;
+        }
+        if (cmd === '/clrhist' || cmd === '/clearhistory') {
+          this._chatLog('[clrhist] Received ' + cmd + ' command, clicking clear history button');
+          this._clickClearHistoryButton();
           return;
         }
         this._chatLog('[server] ' + msgText);
@@ -408,10 +414,9 @@ class RelayPanel {
   }
 
   // Click the page stop button to abort LLM generation.
-  // local-agent and custom-llm share the same DOM structure.
+  // local-agent: text button #stop-btn
+  // custom-llm: SVG icon button, stop = red el-icon (power-off)
   _clickStopButton() {
-    // local-agent: text button #stop-btn
-    // custom-llm: SVG icon button, stop = red el-icon (power-off)
     const stopBtn = document.querySelector('#stop-btn:not(.stop-disabled)')
       || document.querySelector('.vac-svg-button i.el-icon[style*="red"]');
     if (stopBtn) {
@@ -419,6 +424,20 @@ class RelayPanel {
       this._chatLog('[stop] Stop button clicked');
     } else {
       this._chatLog('[stop] Stop button not found or disabled');
+    }
+  }
+
+  // Click the page clear history / clear context button.
+  // local-agent: #clear-history-btn
+  // custom-llm: SVG icon button, clear = blue el-icon (#409EFC)
+  _clickClearHistoryButton() {
+    const clearBtn = document.querySelector('#clear-history-btn')
+      || document.querySelector('.vac-svg-button i.el-icon[style*="409EFC"]');
+    if (clearBtn) {
+      clearBtn.click();
+      this._chatLog('[clrhist] Clear history button clicked');
+    } else {
+      this._chatLog('[clrhist] Clear history button not found');
     }
   }
 

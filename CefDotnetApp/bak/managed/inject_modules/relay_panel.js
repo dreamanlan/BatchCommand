@@ -428,13 +428,21 @@ class RelayPanel {
   }
 
   // Click the page clear history / clear context button.
-  // local-agent: #clear-history-btn
+  // local-agent: #clear-history-btn (has a confirm() dialog, suppressed below)
   // custom-llm: SVG icon button, clear = blue el-icon (#409EFC)
   _clickClearHistoryButton() {
     const clearBtn = document.querySelector('#clear-history-btn')
       || document.querySelector('.vac-svg-button i.el-icon[style*="409EFC"]');
     if (clearBtn) {
-      clearBtn.click();
+      // Suppress confirm() dialog during click (local-agent handleClearHistory
+      // calls confirm() synchronously in the click handler).
+      const origConfirm = window.confirm;
+      window.confirm = function() { return true; };
+      try {
+        clearBtn.click();
+      } finally {
+        window.confirm = origConfirm;
+      }
       this._chatLog('[clrhist] Clear history button clicked');
     } else {
       this._chatLog('[clrhist] Clear history button not found');

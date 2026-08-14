@@ -296,7 +296,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string newContent = StringHelper.ReplacePattern(content, pattern, replacement, ignoreCase);
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
                 System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }
@@ -353,7 +353,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 string newContent = RegexReplaceWithCountExp.ReplaceRange(regex, content, replacement, skipCount, count);
                 // When encoding is specified, use it for write as well.
                 // Otherwise, preserve original BOM state when overwriting existing file.
-                var writeEncoding = encoding ?? BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
+                var writeEncoding = encoding ?? CefDotnetApp.AgentCore.Utils.BomHelper.GetEncodingPreservingBom(path, defaultBom: false);
                 System.IO.File.WriteAllText(path, newContent, writeEncoding);
                 return BoxedValue.From(true);
             }

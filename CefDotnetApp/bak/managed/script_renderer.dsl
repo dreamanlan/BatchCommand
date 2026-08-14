@@ -902,7 +902,7 @@ script(handle_agent_notification)params($jsonData)
         $time1 = get_file_last_write_time($planFile);
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
-        if ($seconds > 900) {
+        if ($seconds > 1800) {
             $prompt = "可以将最新进展更新到plan.txt与todo.txt后再继续计划工作了（不要停agent!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };

@@ -178,7 +178,7 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 **其它工具**
 
 - `agent_get_project_identity(9527)` — 项目标识
-- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`todo.txt`/`context.txt`/`plan.txt`/`project_prompt.txt`等状态文件
+- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`project_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看行号与缩进信息
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容

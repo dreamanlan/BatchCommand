@@ -574,7 +574,7 @@ script(induction_info)params($batch, $infos, $session)
             append_line($induction, $infos[$j]);
         };
 
-        llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词", string_builder_to_string($induction)));
+        llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", string_builder_to_string($induction)));
     };
 };
 
@@ -606,7 +606,7 @@ script(induction_todo)params($count,$pageType)
         "【以下是最近对话历史】：\n{2}", $todoHistory, $contextHistory, $conversationHistory);
     $prompt = format("{0}\n\n根据以上信息，复述当前todo工作，只以事实为准更新完成状态，缺少相关信息默认未完成，" +
         "已完成内容使用简要描述条目并标记完成状态，当前工作保留详细信息（工作介绍与进展细节），未完成工作保留条目信息" +
-        "（一次回复输出完成,字数控制到300~500字左右）", $prompt);
+        "（一次回复输出完成,字数控制到300~500字左右）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
 
     if (@EnableLlmPM) {
         llm_chat_callback(@LlmProviderId, "llm_pm_align", "align_target", $prompt);
@@ -659,7 +659,7 @@ script(trigger_reflection)params()
     llm_set_system_prompt(@LlmProviderId, "reflection", $sysPrompt);
 
     // Send reflection request
-    $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。", $prompt);
+    $prompt = format("{0}\n\n请根据以上最近的工作对话，提取结构化的经验记录（300字以内）。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", $prompt);
     llm_chat_callback(@LlmProviderId, "reflection", "reflection", $prompt);
 
     nativelog("[dsl] trigger_reflection: reflection request sent");

@@ -45,6 +45,11 @@ class AgentPanel {
     // This ensures panel operations don't trigger external MutationObserver
     ['input', 'change', 'paste', 'cut', 'keydown', 'keyup', 'keypress', 'beforeinput'].forEach(eventType => {
       this.panel.addEventListener(eventType, (e) => {
+        // Do not block input/change on range sliders; they need the event
+        // to reach their own listeners (capturing here would prevent that).
+        if ((eventType === 'input' || eventType === 'change') && e.target && e.target.type === 'range') {
+          return;
+        }
         e.stopPropagation();
       }, true);
     });
@@ -740,7 +745,11 @@ class AgentPanel {
     timeoutBar.appendChild(timeoutValue);
 
     timeoutSlider.addEventListener('input', () => {
-      timeoutValue.textContent = timeoutSlider.value + ' min';
+      const v = parseInt(timeoutSlider.value, 10);
+      timeoutValue.textContent = v + ' min';
+      // Update config live so timeout takes effect immediately
+      CONFIG.config.panel.llmResponseTimeoutMin = v;
+      CONFIG.saveConfig();
     });
     timeoutSlider.addEventListener('change', () => {
       const val = parseInt(timeoutSlider.value, 10);

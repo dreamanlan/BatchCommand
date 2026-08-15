@@ -7,7 +7,7 @@ script(main)
 	echo("curdir: " + curdir);
 
 	if (stringcontainsany(stringtolower(curdir), "e:/github/", "e:\\github\\") && direxist("d:/GitHub")) {
-		foreach("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/bin/Debug/net8.0", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
+		foreachvalue("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/bin/Debug/net8.0", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
 			setenv("CopyTargetDir", $$);
 			copyfiles(".", "d:/GitHub/%CopyTargetDir%", "BatchCommand.*");
 			copyfiles(".", "d:/GitHub/%CopyTargetDir%", "Common.*");
@@ -21,7 +21,7 @@ script(main)
 		};
 	}
 	else{
-		foreach("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/bin/Debug/net8.0", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
+		foreachvalue("GameDemo", "CSharpGameFramework", "apkstudio/DotnetApp/bin/Debug/net8.0", "myuzu/tools/dbg_scp_compiler", "Hlsl2Python/gencode", "Hlsl2Numpy/gencode") {
 			setenv("CopyTargetDir", $$);
 			copyfiles(".", "../../../../%CopyTargetDir%", "BatchCommand.*");
 			copyfiles(".", "../../../../%CopyTargetDir%", "Common.*");

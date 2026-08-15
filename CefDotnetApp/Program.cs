@@ -4259,7 +4259,7 @@ namespace DotNetLib
             BatchCommand.BatchScript.AddUserApiDoc("while", "while(cond)func(args); or while(cond){...}; statement, iterator is $$");
             BatchCommand.BatchScript.AddUserApiDoc("loop", "loop(ct)func(args); or loop(ct){...}; statement, iterator is $$");
             BatchCommand.BatchScript.AddUserApiDoc("looplist", "looplist(list)func(args); or looplist(list){...}; statement, iterator is $$");
-            BatchCommand.BatchScript.AddUserApiDoc("foreach", "foreach(arg1,arg2,...)func(args); or foreach(arg1,arg2,...){...}; statement, iterator is $$");
+            BatchCommand.BatchScript.AddUserApiDoc("foreachvalue", "foreachvalue(arg1,arg2,...)func(args); or foreachvalue(arg1,arg2,...){...}; statement, iterator is $$");
             BatchCommand.BatchScript.AddUserApiDoc("return", "return([val]) api");
             BatchCommand.BatchScript.AddUserApiDoc("dotnetcall", "dotnetcall api, internal implementation, using csharp object syntax");
             BatchCommand.BatchScript.AddUserApiDoc("dotnetset", "dotnetset api, internal implementation, using csharp object syntax");

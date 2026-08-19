@@ -866,28 +866,33 @@ class APIClient {
                 { value: 'claude-opus-4-6', label: 'Claude-Opus-4.6' }
             ];
         } else if (apiType === 'auto_metadsl') {
+            // Model attributes (per capability matrix):
+            //   thinking: whether the model supports the enable_thinking toggle
+            //   reasoningEfforts: allowed chat_extra.reasoning_effort values ([] = unsupported)
+            //   contextWindows: allowed chat_extra.max_context_tokens values ([] = unsupported)
             return [
-                { value: 'claude-opus-5', label: 'Claude-Opus-5' },
-                { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet' },
-                { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus' },
-                { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus' },
-                { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet' },
-                { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus' },
-                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol' },
-                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra' },
-                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna' },
-                { value: 'gpt-5.4', label: 'GPT-5.4' },
-                { value: 'gpt-5.5', label: 'GPT-5.5' },
-                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)' },
-                { value: 'tokenhub_deepseek-v4-flash', label: 'DeepSeek-V4-Flash (Ext)' },
-                { value: 'ext-glm-5.2', label: 'GLM-5.2 (Ext)' },
-                { value: 'hy3', label: 'HY-3' },
-                { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code' },
-                { value: 'glm-5.2', label: 'GLM-5.2' },
-                { value: 'glm-5.1', label: 'GLM-5.1' },
-                { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro' },
-                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash' },
-                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1' }
+                { value: 'claude-opus-5', label: 'Claude-Opus-5', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-5-sonnet', label: 'Claude-5-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-4.8-opus', label: 'Claude-4.8-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-4.7-opus', label: 'Claude-4.7-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-4.6-sonnet', label: 'Claude-4.6-Sonnet', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'claude-4.6-opus', label: 'Claude-4.6-Opus', thinking: true, reasoningEfforts: ['low', 'medium', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'gpt-5.6-sol', label: 'GPT-5.6-Sol', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
+                { value: 'gpt-5.6-terra', label: 'GPT-5.6-Terra', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
+                { value: 'gpt-5.6-luna', label: 'GPT-5.6-Luna', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh', 'max'], contextWindows: [] },
+                { value: 'gpt-5.4', label: 'GPT-5.4', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh'], contextWindows: [] },
+                { value: 'gpt-5.5', label: 'GPT-5.5', thinking: false, reasoningEfforts: ['low', 'medium', 'high', 'xhigh'], contextWindows: [] },
+                { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)', thinking: false, reasoningEfforts: ['high', 'max'], contextWindows: [] },
+                { value: 'tokenhub_deepseek-v4-flash', label: 'DeepSeek-V4-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'ext-glm-5.3', label: 'GLM-5.3 (Ext)', thinking: false, reasoningEfforts: [], contextWindows: [200000, 1000000] },
+                { value: 'ext-glm-5.2', label: 'GLM-5.2 (Ext)', thinking: false, reasoningEfforts: [], contextWindows: [200000, 1000000] },
+                { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
+                { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'glm-5.2', label: 'GLM-5.2', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'glm-5.1', label: 'GLM-5.1', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1', thinking: false, reasoningEfforts: [], contextWindows: [] }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

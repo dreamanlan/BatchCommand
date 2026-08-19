@@ -41,7 +41,7 @@ class UIController {
             thinkingGroup: document.getElementById('thinking-group'),
             reasoningEffortSelect: document.getElementById('reasoning-effort'),
             reasoningEffortGroup: document.getElementById('reasoning-effort-group'),
-            maxContextTokensInput: document.getElementById('max-context-tokens'),
+            maxContextTokensSelect: document.getElementById('max-context-tokens'),
             maxContextTokensGroup: document.getElementById('max-context-tokens-group'),
             contextRoundsInput: document.getElementById('context-rounds'),
             maxContextCharsInput: document.getElementById('max-context-chars'),
@@ -291,6 +291,13 @@ class UIController {
         this.elements.configApiType.addEventListener('change', (e) => {
             this.updateModelOptions(e.target.value);
             this.updateAutoMetaDSLFields(e.target.value);
+            this.updateModelDependentOptions(
+                this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
+        });
+
+        // Model selection change (auto_metadsl model-dependent options)
+        this.elements.modelSelect.addEventListener('change', (e) => {
+            this.updateModelDependentOptions(e.target.value);
         });
 
         // Auth mode change
@@ -679,7 +686,6 @@ showConfigModal() {
         this.elements.enableWebSearchCheckbox.checked = !!config.enableWebSearch;
         this.elements.enableThinkingCheckbox.checked = !!config.enableThinking;
         this.elements.reasoningEffortSelect.value = config.reasoningEffort || '';
-        this.elements.maxContextTokensInput.value = (typeof config.maxContextTokens === 'number' ? config.maxContextTokens : 0);
         this.elements.apiEndpointInput.value = config.apiEndpoint || '';
 
     // Load context configuration
@@ -696,6 +702,10 @@ showConfigModal() {
     if (this._modelInputMode !== 'text') {
         this.elements.modelSelect.value = config.model || '';
     }
+    // Populate model-dependent dropdowns after the model select is ready
+    // (also restores saved maxContextTokens / reasoningEffort when valid).
+    this.updateModelDependentOptions(
+        this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
 
     this.elements.configModal.classList.add('active');
     this.hideError();
@@ -779,6 +789,61 @@ updateAutoMetaDSLFields(apiType) {
     }
 }
 
+// Update model-dependent fields (thinking toggle, reasoning effort options,
+// context window options) based on the selected auto_metadsl model.
+updateModelDependentOptions(modelValue) {
+    const config = this.apiClient.getConfig();
+    if (config.apiType !== 'auto_metadsl') return;
+    const models = this.apiClient.getAvailableModels('auto_metadsl');
+    const model = models.find(m => m.value === modelValue) || null;
+
+    // Thinking toggle: only models with thinking=true
+    const supportsThinking = !!(model && model.thinking);
+    this.elements.thinkingGroup.style.display = supportsThinking ? 'block' : 'none';
+
+    // Reasoning effort dropdown: rebuild options from model.reasoningEfforts
+    const efforts = (model && Array.isArray(model.reasoningEfforts)) ? model.reasoningEfforts : [];
+    if (efforts.length > 0) {
+        const prev = this.elements.reasoningEffortSelect.value;
+        this.elements.reasoningEffortSelect.innerHTML = '';
+        efforts.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level;
+            option.textContent = level;
+            this.elements.reasoningEffortSelect.appendChild(option);
+        });
+        // Restore previous selection when still valid, otherwise pick first
+        this.elements.reasoningEffortSelect.value = efforts.includes(prev) ? prev : efforts[0];
+        this.elements.reasoningEffortGroup.style.display = 'block';
+    } else {
+        this.elements.reasoningEffortGroup.style.display = 'none';
+    }
+
+    // Context window dropdown: rebuild options from model.contextWindows
+    const windows = (model && Array.isArray(model.contextWindows)) ? model.contextWindows : [];
+    if (windows.length > 0) {
+        const saved = (typeof config.maxContextTokens === 'number' && config.maxContextTokens > 0)
+            ? String(config.maxContextTokens) : '';
+        this.elements.maxContextTokensSelect.innerHTML = '';
+        const zeroOption = document.createElement('option');
+        zeroOption.value = '0';
+        zeroOption.textContent = '0 (do not send)';
+        this.elements.maxContextTokensSelect.appendChild(zeroOption);
+        windows.forEach(w => {
+            const option = document.createElement('option');
+            option.value = String(w);
+            option.textContent = String(w);
+            this.elements.maxContextTokensSelect.appendChild(option);
+        });
+        // Restore saved value when present in the list, otherwise default 0
+        this.elements.maxContextTokensSelect.value =
+            windows.some(w => String(w) === saved) ? saved : '0';
+        this.elements.maxContextTokensGroup.style.display = 'block';
+    } else {
+        this.elements.maxContextTokensGroup.style.display = 'none';
+    }
+}
+
 updateUsernameFieldVisibility(authMode) {
     // Update username field label and requirement based on auth mode
     const usernameLabel = this.elements.usernameGroup.querySelector('label');
@@ -842,7 +907,7 @@ saveConfiguration() {
     const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
     const enableThinking = this.elements.enableThinkingCheckbox.checked;
     const reasoningEffort = this.elements.reasoningEffortSelect.value;
-    const maxContextTokensRaw = parseInt(this.elements.maxContextTokensInput.value, 10);
+    const maxContextTokensRaw = parseInt(this.elements.maxContextTokensSelect.value, 10);
     const maxContextTokens = (isNaN(maxContextTokensRaw) || maxContextTokensRaw < 0) ? 0 : maxContextTokensRaw;
     const config = {
         apiType: apiType,

@@ -781,9 +781,11 @@
 
             <div class="config-group" id="max-context-tokens-group" style="display: none;">
                 <label for="max-context-tokens">Max Context Tokens:</label>
-                <input type="number" id="max-context-tokens" min="0" step="1000" value="0" placeholder="0 (do not send)">
+                <select id="max-context-tokens">
+                    <option value="0">0 (do not send)</option>
+                </select>
                 <small style="color: #7f8c8d; font-size: 12px;">AGUI chat_extra.max_context_tokens (model context
-                    window in tokens, 0 = do not send)</small>
+                    window in tokens, options depend on selected model)</small>
             </div>
 
             <div class="config-group">

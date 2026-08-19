@@ -631,10 +631,10 @@ script(trigger_plan)params($autoPlan,$lockAgent)
         nativelog("[dsl] plan triggered");
 
         if ($lockAgent) {
-            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt与todo.txt状态，然后选取计划工作更新todo.txt后继续";
+            $prompt = "没有识别到代码。长时间开发模式下不要等用户确认（用户不在线），请更新plan.txt状态，然后选取计划工作更新todo.txt后继续";
         }
         else {
-            $prompt = "没有识别到代码。请更新plan.txt与todo.txt状态。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
+            $prompt = "没有识别到代码。请更新plan.txt状态。如果计划工作尚未完成，请继续发MetaDSL代码执行；如果工作已完成，请停止agent以避免重复提醒";
         };
         send_command_to_inject("send_message", to_json({text: $prompt}));
     }
@@ -903,7 +903,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展更新到plan.txt与todo.txt后再继续计划工作了（不要停agent!）";
+            $prompt = "可以将最新进展更新到plan.txt后再继续计划工作了（不要停agent!）";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }

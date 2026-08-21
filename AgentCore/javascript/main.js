@@ -100,6 +100,11 @@ const mainLogger = window.logger ? window.logger.createLogger('Main') : null;
             if (mainLogger) mainLogger.info('Set dialog prompt via window.setDialogPrompt');
         };
 
+        // Get current LLM category (header API type dropdown value) for inject.js compatibility
+        window.getLLMCategory = function () {
+            return apiClient.getConfig().apiType;
+        };
+
         if (mainLogger) mainLogger.info('Initialization complete');
         if (mainLogger) mainLogger.info('Page type should be detected as: custom-llm');
         if (mainLogger) mainLogger.info('API available at: window.AgentLLM');

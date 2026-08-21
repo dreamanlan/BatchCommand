@@ -753,4 +753,27 @@ class LLMPageAdapter extends PageAdapter {
       return false;
     }
   }
+
+  getLLMCategory() {
+    try {
+      if (this.pageType === 'local-agent') {
+        // Read category from the agent page's window API
+        if (typeof window.getLLMCategory === 'function') {
+          const category = window.getLLMCategory();
+          this.logger.debug('LLM category from window.getLLMCategory', { category });
+          return category;
+        }
+        this.logger.warn('window.getLLMCategory not available on local-agent page');
+        return null;
+      }
+      if (this.pageType === 'custom-llm') {
+        return 'custom';
+      }
+      this.logger.warn('Unsupported page type for LLM category', { pageType: this.pageType });
+      return null;
+    } catch (e) {
+      this.logger.error('Failed to get LLM category', { error: e.toString() });
+      return null;
+    }
+  }
 }

@@ -163,6 +163,7 @@ window.AgentAPI = {
   sendToAgent: (cmd, params, callback) => bridge && bridge.sendCommand(cmd, params, callback),
   sendMessage: (text) => pageAdapter && pageAdapter.sendMessage(text),
   setSystemPrompt: (text) => pageAdapter && pageAdapter.setSystemPrompt(text),
+  getLLMCategory: () => pageAdapter && pageAdapter.getLLMCategory(),
   getResponse: () => pageAdapter && pageAdapter.getLastScannedResponse(),
   getHistory: (count) => pageAdapter && pageAdapter.getHistory(count || 5),
   isLastMessageFromLLM: () => pageAdapter && pageAdapter.isLastMessageFromLLM(),

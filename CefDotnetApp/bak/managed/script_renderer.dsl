@@ -755,11 +755,15 @@ script(UpdateSystemPrompt)params($pageType,$isFirst)
     nativelog("[dsl] Context length: {0}", $context.Length);
     nativelog("[dsl] History length: {0}", $history.Length);
 
+    $llmCategory = nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getLLMCategory",[]);
     //now we use dynamic system prompts
     if ($pageType == "local-agent") {
         $prompt = $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context;
         if ($isFirst) {
             $prompt = $prompt + "\n\n" + $history;
+        };
+        if ($llmCategory == "ollama" || $llmCategory == "local_openai") {
+            $prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $prompt;
         };
     } else {
         $prompt = $basePrompt + "\n\n" + $toplevelRules + "\n\n" + $emphasize + "\n\n" + $soul + "\n\n" + $projectPrompt + "\n\n" + $todo + "\n\n" + $context + "\n\n" + $history;

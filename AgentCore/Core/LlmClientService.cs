@@ -75,14 +75,14 @@ namespace CefDotnetApp.AgentCore.Core
         /// <summary>
         /// Registers a provider. type: "ollama", "openai", "claude", "auto_metadsl"
         /// Unified params: url, apiKey, model (same semantics for all types)
-        /// apiKey may contain %var% templates; actual values are resolved at HTTP request time
-        /// via the apiKeyResolver callback.
+        /// url/apiKey may contain %var% templates; actual values are resolved at HTTP request time
+        /// via the environResolver callback.
         /// Returns "ok" or an error string.
         /// </summary>
         public string SetProvider(string providerId, string type, string url, string apiKey, string model)
         {
             // Create a resolver that decrypts + expands env vars at call time
-            Func<string, string> apiKeyResolver = template =>
+            Func<string, string> keyEnvResolver = template =>
                 AgentCore.Instance.ResolveEnvironmentValue("llm", providerId, template);
 
             ILlmProvider provider;
@@ -92,13 +92,13 @@ namespace CefDotnetApp.AgentCore.Core
                     provider = new OllamaProvider(url, model);
                     break;
                 case "openai":
-                    provider = new OpenAiProvider(url, apiKey, model, apiKeyResolver);
+                    provider = new OpenAiProvider(url, apiKey, model, keyEnvResolver);
                     break;
                 case "claude":
-                    provider = new ClaudeProvider(url, apiKey, model, apiKeyResolver);
+                    provider = new ClaudeProvider(url, apiKey, model, keyEnvResolver);
                     break;
                 case "auto_metadsl":
-                    provider = new AutoMetaDslProvider(url, apiKey, model, apiKeyResolver);
+                    provider = new AutoMetaDslProvider(url, apiKey, model, keyEnvResolver);
                     break;
                 default:
                     return $"error: unknown provider type '{type}', use 'ollama', 'openai', 'claude', or 'auto_metadsl'";

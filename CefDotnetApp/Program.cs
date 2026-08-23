@@ -141,6 +141,8 @@ public struct HostApi
     public IntPtr ResponseSetUrl;
     // Heartbeat control
     public IntPtr SetHeartbeatInterval;
+    // Generic async callback completion (see native_callbacks.h on native side)
+    public IntPtr NativeCallbackComplete;
 }
 
 // delegate for native api
@@ -369,6 +371,13 @@ public delegate void HostResponseSetUrlDelegation(IntPtr response, [MarshalAs(Un
 // Heartbeat control
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void HostSetHeartbeatIntervalDelegation(int interval_ms);
+// Generic async callback completion. Callable from any managed thread: the
+// native side posts the pending CEF callback to the thread it belongs to.
+// |code| is an interface specific numeric result (0 when unused, e.g. the error
+// code of a failed cefQuery answer).
+// Returns 1 when the handle was found (0 = already completed or unknown).
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate int HostNativeCallbackCompleteDelegation(long handle, int ok, [MarshalAs(UnmanagedType.LPUTF8Str)] string? data, int code);
 
 namespace DotNetLib
 {
@@ -631,6 +640,98 @@ namespace DotNetLib
             }
             int intervalMs = operands[0].GetInt();
             bool r = Lib.SetHeartbeatInterval(intervalMs);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    sealed class SendJavascriptCodeExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: send_javascript_code(code)");
+                return BoxedValue.FromBool(false);
+            }
+            string code = operands[0].AsString ?? string.Empty;
+            if (string.IsNullOrEmpty(code)) {
+                return BoxedValue.FromBool(false);
+            }
+            // Posts the code to the renderer for the browser/frame of the
+            // current context; does not wait for a result.
+            bool r = Lib.SendJavascriptCodeToRenderer(code);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    sealed class SendJavascriptCallExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: send_javascript_call(func, arg1, arg2, ...)");
+                return BoxedValue.FromBool(false);
+            }
+            string func = operands[0].AsString ?? string.Empty;
+            if (string.IsNullOrEmpty(func)) {
+                return BoxedValue.FromBool(false);
+            }
+            var args = new List<BoxedValue>();
+            for (int i = 1; i < operands.Count; i++) {
+                args.Add(operands[i]);
+            }
+            // Posts the call to the renderer for the browser/frame of the
+            // current context; does not wait for a result.
+            bool r = Lib.SendJavascriptCallToRenderer(func, args);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    // Shows the in-page AgentDialog for a JS dialog taken over by the script.
+    // The payload is JSON-encoded here so message/default text cannot break the
+    // generated JavaScript (quotes, newlines, backslashes are all escaped).
+    sealed class ShowNativeJsDialogExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 3) {
+                NativeApi.AppendApiErrorInfoLine("Expected: show_native_js_dialog(handle, dialog_type, message[, default_text])");
+                return BoxedValue.FromBool(false);
+            }
+            long handle = operands[0].GetLong();
+            int dialogType = operands[1].GetInt();
+            string message = operands[2].AsString ?? string.Empty;
+            string defaultText = operands.Count >= 4 ? (operands[3].AsString ?? string.Empty) : string.Empty;
+            bool r = Lib.ShowNativeJsDialog(handle, dialogType, message, defaultText);
+            return BoxedValue.FromBool(r);
+        }
+    }
+    sealed class CompleteNativeCallbackExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                NativeApi.AppendApiErrorInfoLine("Expected: complete_native_callback(handle, ok[, data, code])");
+                return BoxedValue.FromBool(false);
+            }
+            // The handle travels through JavaScript as a string because a JS
+            // number only holds 53 bits, so accept both forms here.
+            long handle;
+            if (operands[0].IsString) {
+                if (!long.TryParse(operands[0].AsString, out handle)) {
+                    NativeApi.AppendApiErrorInfoLine("complete_native_callback: invalid handle string");
+                    return BoxedValue.FromBool(false);
+                }
+            }
+            else {
+                handle = operands[0].GetLong();
+            }
+            bool ok = operands[1].GetBool();
+            string? data = null;
+            if (operands.Count >= 3) {
+                data = operands[2].AsString;
+            }
+            // Interface specific numeric result, e.g. the error code passed to
+            // CefMessageRouterBrowserSide::Callback::Failure. Unused by the JS
+            // dialog and resource load entry points.
+            int code = operands.Count >= 4 ? operands[3].GetInt() : 0;
+            bool r = Lib.CompleteNativeCallback(handle, ok, data, code);
             return BoxedValue.FromBool(r);
         }
     }
@@ -970,6 +1071,8 @@ namespace DotNetLib
             m_ResponseSetUrlApi = Marshal.GetDelegateForFunctionPointer<HostResponseSetUrlDelegation>(hostApi.ResponseSetUrl);
             // Heartbeat control
             m_SetHeartbeatIntervalApi = Marshal.GetDelegateForFunctionPointer<HostSetHeartbeatIntervalDelegation>(hostApi.SetHeartbeatInterval);
+            // Generic async callback completion
+            m_NativeCallbackCompleteApi = Marshal.GetDelegateForFunctionPointer<HostNativeCallbackCompleteDelegation>(hostApi.NativeCallbackComplete);
         }
 
         public void NativeLog(string msg)
@@ -1908,6 +2011,14 @@ namespace DotNetLib
         {
             m_SetHeartbeatIntervalApi?.Invoke(intervalMs);
         }
+        // Completes a CEF async callback that managed code took over (JS dialog,
+        // deferred resource load, cefQuery, ...). Safe to call from any thread and
+        // safe to call twice: the native side ignores unknown handles.
+        public bool NativeCallbackComplete(long handle, bool ok, string? data, int code)
+        {
+            if (handle == 0 || m_NativeCallbackCompleteApi == null) return false;
+            return m_NativeCallbackCompleteApi(handle, ok ? 1 : 0, data, code) != 0;
+        }
         public void EnqueueCefMessage(string msgName, string[] args)
         {
             s_CefMessageQueue.Enqueue(new Tuple<string, string[]>(msgName, args));
@@ -2112,6 +2223,7 @@ namespace DotNetLib
         private HostResponseSetErrorDelegation? m_ResponseSetErrorApi;
         private HostResponseSetUrlDelegation? m_ResponseSetUrlApi;
         private HostSetHeartbeatIntervalDelegation? m_SetHeartbeatIntervalApi;
+        private HostNativeCallbackCompleteDelegation? m_NativeCallbackCompleteApi;
 
         [ThreadStatic]
         private static IntPtr s_Browser = IntPtr.Zero;
@@ -2461,7 +2573,8 @@ namespace DotNetLib
         public delegate bool OnBrowserHotReloadCopyFilesDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnBrowserHotReloadCompletedDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnBrowserCefQueryDelegation(IntPtr browser, IntPtr frame, long query_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string request, [MarshalAs(UnmanagedType.U1)] bool persistent, long handle, ref int out_result);
         public delegate void OnRendererInitDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url);
         public delegate void OnRendererFinalizeDelegation(IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2502,7 +2615,11 @@ namespace DotNetLib
         public delegate bool OnBeforeBrowseDelegation(IntPtr browser, IntPtr frame, IntPtr request, [MarshalAs(UnmanagedType.U1)] bool user_gesture, [MarshalAs(UnmanagedType.U1)] bool is_redirect, IntPtr out_return_value);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value);
+        public delegate bool OnBeforeResourceLoadDelegation(IntPtr browser, IntPtr frame, IntPtr request, long handle, ref int out_return_value);
+        // JS dialog hook (browser process UI thread). Returns the decision:
+        // 0=CEF default dialog, 1=custom dialog, 2=suppress, 3=script owned.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate int OnJsDialogDelegation(IntPtr browser, int dialog_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string message_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string default_prompt_text, long handle);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2884,10 +3001,11 @@ namespace DotNetLib
             }
         }
 
-        internal static int OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent)
+        //Note: this method will be called on the browser process main/UI thread.
+        internal static bool OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent, long handle, ref int out_result)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}", query_id, GetStringInLength(request), persistent));
+            NativeLogNoLock(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}, handle={3}", query_id, GetStringInLength(request), persistent, handle));
 
             try {
                 NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_cef_query"));
@@ -2895,18 +3013,44 @@ namespace DotNetLib
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
-                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_cef_query", query_id, request, persistent);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(query_id));
+                    vargs.Add(BoxedValue.FromString(request));
+                    vargs.Add(BoxedValue.FromBool(persistent));
+                    vargs.Add(BoxedValue.From(handle));
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_browser_cef_query", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
-                    if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
-                        return r.GetInt();
+                    // Return value convention: (handled, result_int)
+                    // handled == true  -> the script took the query over and must
+                    //   later call complete_native_callback($handle, ok, response
+                    //   [, error_code]); nothing reaches the page until then.
+                    // handled == false -> answered synchronously, out_result is the
+                    //   result code (0 = Success, non-zero = Failure with that code).
+                    // Returning false is also the degraded path on any failure, so
+                    // a broken script cannot leave the query hanging.
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool takenOver = tuple2.Item1.GetBool();
+                            if (!takenOver) {
+                                out_result = tuple2.Item2.GetInt();
+                            }
+                            return takenOver;
+                        }
                     }
                 }
             }
             catch (Exception e) {
                 NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
-            return -1;
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            // Nothing usable came back: answer synchronously with a failure so the
+            // page's onFailure runs instead of hanging.
+            out_result = -1;
+            return false;
         }
 
         internal static void OnRendererInit(IntPtr browser, IntPtr frame, string url)
@@ -2914,7 +3058,9 @@ namespace DotNetLib
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
             AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, frame);
-            s_StartupUrl = url;
+            if (string.IsNullOrEmpty(s_StartupUrl)) {
+                s_StartupUrl = url;
+            }
 
             // Track main-frame browser id for renderer process. Only the id
             // is stored; the native ref map holds the CefRefPtr and the main
@@ -2987,6 +3133,11 @@ namespace DotNetLib
         internal static void OnLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
         {
             NativeApi.SetContext(browser, frame);
+            if (string.IsNullOrEmpty(s_StartupUrl)) {
+                if (is_main) {
+                    s_StartupUrl = url;
+                }
+            }
             NativeLogNoLock($"[csharp] OnLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
 
             try {
@@ -3010,7 +3161,10 @@ namespace DotNetLib
         internal static bool OnLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size)
         {
             NativeApi.SetContext(browser, frame);
-            s_LoadedUrl = url;
+            if (is_main) {
+                s_LastLoadedMainUrl = url;
+            }
+            s_LastLoadedUrl = url;
             NativeLogNoLock($"[csharp] OnLoadEnd: url={url}, http_status_code={http_status_code}, inject_all_frame={inject_all_frame}, is_main={is_main}");
 
             try {
@@ -3138,6 +3292,10 @@ namespace DotNetLib
         internal static bool OnRendererLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool is_main, IntPtr js_code, ref int code_size)
         {
             NativeApi.SetContext(browser, frame);
+            if (is_main) {
+                s_LastLoadedMainUrl = url;
+            }
+            s_LastLoadedUrl = url;
             NativeLogNoLock($"[csharp] OnRendererLoadEnd: url={url}, http_status_code={http_status_code}, is_main={is_main}");
 
             try {
@@ -3411,7 +3569,7 @@ namespace DotNetLib
         }
 
         //Note: this method will be called on the browser process IO thread.
-        internal static bool OnBeforeResourceLoad(IntPtr browser, IntPtr frame, IntPtr request, ref int out_return_value)
+        internal static bool OnBeforeResourceLoad(IntPtr browser, IntPtr frame, IntPtr request, long handle, ref int out_return_value)
         {
             NativeApi.SetContext(browser, frame);
 
@@ -3422,12 +3580,16 @@ namespace DotNetLib
                     var requestProxy = new CefRequestProxy(request, s_NativeApi);
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
                     vargs.Add(BoxedValue.From(requestProxy));
+                    vargs.Add(BoxedValue.From(handle));
                     var r = BatchCommand.BatchScript.Call("on_before_resource_load", vargs);
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                     // Return value convention: (handled, return_value_int)
                     // If handled is true, out_return_value is set and we return true
                     // DSL returns raw cef_return_value_t enum (RV_CANCEL=0, RV_CONTINUE=1, RV_CONTINUE_ASYNC=2).
+                    // RV_CONTINUE_ASYNC is now genuinely supported: the script must
+                    // later call complete_native_callback($handle, ok) to resume or
+                    // cancel the request, otherwise it stays pending.
                     if (r.Type == (int)BoxedValue.c_Tuple2Type) {
                         var tuple2 = r.GetTuple2();
                         if (null != tuple2) {
@@ -3447,6 +3609,53 @@ namespace DotNetLib
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
             return false;
+        }
+
+        //Note: this method will be called on the browser process UI thread.
+        //DECISION ONLY: keep it fast and never wait for the page here. When the
+        //script takes over it should send the display JavaScript synchronously
+        //inside the DSL callback (send_javascript_code only posts to the
+        //renderer, it does not block) because the browser context is cleared
+        //when this method returns.
+        internal static int OnJsDialog(IntPtr browser, int dialog_type, string origin_url, string message_text, string default_prompt_text, long handle)
+        {
+            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeLogNoLock($"[csharp] OnJsDialog: type={dialog_type}, origin={origin_url}, handle={handle}");
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(dialog_type));
+                    vargs.Add(BoxedValue.FromString(origin_url));
+                    vargs.Add(BoxedValue.FromString(message_text));
+                    vargs.Add(BoxedValue.FromString(default_prompt_text));
+                    vargs.Add(BoxedValue.From(handle));
+                    var r = BatchCommand.BatchScript.Call("on_js_dialog", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // Return value convention: (handled, decision_int)
+                    // decision: 0=CEF default dialog, 1=custom dialog shown by the
+                    // script, 2=suppress, 3=script owned. Not handled -> 0.
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple2 = r.GetTuple2();
+                        if (null != tuple2) {
+                            bool handled = tuple2.Item1.GetBool();
+                            if (handled) {
+                                return tuple2.Item2.GetInt();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnJsDialog:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            return 0;
         }
 
         //Note: this method will be called on the browser process IO thread.
@@ -4037,6 +4246,57 @@ namespace DotNetLib
             s_NativeApi?.SetHeartbeatInterval(intervalMs);
             return null != s_NativeApi;
         }
+        // Sends JavaScript to the renderer for the current context's browser.
+        // Fire-and-forget: it only posts the code, it never waits for the page.
+        internal static bool SendJavascriptCodeToRenderer(string code)
+        {
+            if (null == s_NativeApi)
+                return false;
+            s_NativeApi.SendJavascriptCode(code);
+            return true;
+        }
+        // Calls a JavaScript function in the renderer for the current context's
+        // browser. Fire-and-forget, like SendJavascriptCodeToRenderer.
+        internal static bool SendJavascriptCallToRenderer(string func, IList<BoxedValue> args)
+        {
+            if (null == s_NativeApi)
+                return false;
+            s_NativeApi.SendJavascriptCallForDSL(func, args);
+            return true;
+        }
+        // Renders the in-page AgentDialog for a JS dialog taken over by the
+        // script. The payload is serialized with System.Text.Json so the message
+        // and default text can contain quotes, newlines or backslashes safely.
+        // The handle is passed as a string because a JS number only holds 53 bits.
+        internal static bool ShowNativeJsDialog(long handle, int dialogType, string message, string defaultText)
+        {
+            if (null == s_NativeApi)
+                return false;
+            var payload = new Dictionary<string, object?> {
+                { "dialogId", handle.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                { "type", dialogType },
+                { "message", message ?? string.Empty },
+                { "defaultText", defaultText ?? string.Empty },
+            };
+            string json = System.Text.Json.JsonSerializer.Serialize(payload);
+            // Falls back to reporting js_dialog_unavailable when the page has no
+            // AgentDialog module, so the pending dialog gets canceled instead of
+            // hanging.
+            string code = "(function(p){if(window.__agentDialogShow){window.__agentDialogShow(p);}"
+                + "else if(typeof window.cefQuery==='function'){window.cefQuery({request:JSON.stringify({action:'js_dialog_unavailable',handle:p.dialogId}),onSuccess:function(){},onFailure:function(){}});}})("
+                + json + ");";
+            s_NativeApi.SendJavascriptCode(code);
+            return true;
+        }
+        // Completes a CEF async callback previously taken over by the script
+        // (JS dialog, deferred resource load). Callable from any thread; the
+        // native side resumes the callback on the thread it belongs to.
+        internal static bool CompleteNativeCallback(long handle, bool ok, string? data, int code)
+        {
+            if (null == s_NativeApi)
+                return false;
+            return s_NativeApi.NativeCallbackComplete(handle, ok, data, code);
+        }
         internal static IntPtr GetBrowsersFirstValid()
         {
             if (s_NativeApi == null)
@@ -4218,8 +4478,9 @@ namespace DotNetLib
             BatchCommand.BatchScript.SetGlobalVariable("appdir", BoxedValue.FromString(s_AppDir));
             BatchCommand.BatchScript.SetGlobalVariable("ismac", BoxedValue.From(s_IsMac));
             BatchCommand.BatchScript.SetGlobalVariable("processtype", BoxedValue.From(s_ProcessType));
-            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.From(s_StartupUrl));
-            BatchCommand.BatchScript.SetGlobalVariable("loadedurl", BoxedValue.FromString(s_LoadedUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("startupurl", BoxedValue.FromString(s_StartupUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("lastloadedmainurl", BoxedValue.FromString(s_LastLoadedMainUrl));
+            BatchCommand.BatchScript.SetGlobalVariable("lastloadedurl", BoxedValue.FromString(s_LastLoadedUrl));
             BatchCommand.BatchScript.SetGlobalVariable("dslpath", BoxedValue.FromString(s_DslScriptPath));
             BatchCommand.BatchScript.SetGlobalVariable("dslfile", BoxedValue.FromString(s_DslScriptFile));
             BatchCommand.BatchScript.SetGlobalVariable("initialdslfile", BoxedValue.FromString(s_InitialDslScriptFile));
@@ -4535,6 +4796,10 @@ namespace DotNetLib
             // Only valid in MainThread
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
             BatchCommand.BatchScript.Register("set_heart_beat_interval", "set_heart_beat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
+            BatchCommand.BatchScript.Register("complete_native_callback", "complete_native_callback(handle, ok[, data, code]) - complete a CEF async callback taken over by the script (JS dialog, deferred resource load, cefQuery)", false, new ExpressionFactoryHelper<CompleteNativeCallbackExp>());
+            BatchCommand.BatchScript.Register("send_javascript_code", "send_javascript_code(code) - post JavaScript to the renderer of the current context browser", false, new ExpressionFactoryHelper<SendJavascriptCodeExp>());
+            BatchCommand.BatchScript.Register("send_javascript_call", "send_javascript_call(func, arg1, arg2, ...) - call a JavaScript function in the renderer of the current context browser", false, new ExpressionFactoryHelper<SendJavascriptCallExp>());
+            BatchCommand.BatchScript.Register("show_native_js_dialog", "show_native_js_dialog(handle, dialog_type, message[, default_text]) - show the in-page AgentDialog for a taken over JS dialog", false, new ExpressionFactoryHelper<ShowNativeJsDialogExp>());
             BatchCommand.BatchScript.Register("get_browser_ids", "get_browser_ids() - get all browser IDs in current process", false, new ExpressionFactoryHelper<GetBrowserIdsExp>());
             BatchCommand.BatchScript.Register("set_context_by_id", "set_context_by_id(browser_id) - set current context by browser ID, returns bool", false, new ExpressionFactoryHelper<SetContextByIdExp>());
             BatchCommand.BatchScript.Register("find_browser_id_by_url_key", "find_browser_id_by_url_key(url_key) - find browser ID by URL substring, returns -1 if not found", false, new ExpressionFactoryHelper<FindBrowserIdByUrlKeyExp>());
@@ -4574,7 +4839,8 @@ namespace DotNetLib
         // Browser process: tracked browser IDs (maintained by OnBrowserInit/OnBrowserFinalize)
         private static readonly HashSet<int> s_BrowserBrowserIds = new();
         private static string s_StartupUrl = string.Empty;
-        private static string s_LoadedUrl = string.Empty;
+        private static string s_LastLoadedMainUrl = string.Empty;
+        private static string s_LastLoadedUrl = string.Empty;
         private static string s_InitialDslScriptFile = string.Empty;
         private static string s_InitialProjectIdentity = string.Empty;
         private static int s_MainThreadId = 0;

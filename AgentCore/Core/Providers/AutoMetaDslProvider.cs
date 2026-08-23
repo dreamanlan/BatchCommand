@@ -15,7 +15,7 @@ namespace CefDotnetApp.AgentCore.Core
     {
         private readonly string _baseUrl;
         private readonly string _apiKeyTemplate;
-        private readonly Func<string, string> _apiKeyResolver;
+        private readonly Func<string, string> _keyEnvResolver;
         private readonly string _model;
         private readonly int _maxRetries;
         // auth_mode: "personal" uses x-knot-api-token; "agent" uses x-knot-token + X-Username
@@ -44,11 +44,11 @@ namespace CefDotnetApp.AgentCore.Core
         private int _timeoutSeconds = 600;
         private static readonly HttpClient s_http = CreateHttpClient();
 
-        public AutoMetaDslProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> apiKeyResolver, int maxRetries = 3)
+        public AutoMetaDslProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> keyEnvResolver, int maxRetries = 3)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _apiKeyTemplate = apiKeyTemplate;
-            _apiKeyResolver = apiKeyResolver;
+            _keyEnvResolver = keyEnvResolver;
             _model = model.ToLowerInvariant();
             _maxRetries = maxRetries;
         }
@@ -197,7 +197,7 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-                using var req = new HttpRequestMessage(HttpMethod.Post, _baseUrl);
+                using var req = new HttpRequestMessage(HttpMethod.Post, _keyEnvResolver(_baseUrl));
                 AddAuthHeaders(req);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -279,7 +279,7 @@ namespace CefDotnetApp.AgentCore.Core
         private void AddAuthHeaders(HttpRequestMessage req)
         {
             // Resolve apiKey at request time; plaintext exists only during this call
-            string resolvedKey = _apiKeyResolver(_apiKeyTemplate);
+            string resolvedKey = _keyEnvResolver(_apiKeyTemplate);
             if (_authMode == "agent")
             {
                 if (!string.IsNullOrEmpty(resolvedKey))

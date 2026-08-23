@@ -13,7 +13,7 @@
      Section 0  Config
      =========================================== */
   const CFG = {
-    WS_URL: null,         // set by DSL via ws_start command
+    WS_URL: null,         // set by DSL via ws_start_venus command
     RECONNECT_MS: 3000,
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
@@ -93,6 +93,8 @@
     panelCollapsed: false,
     panelEl: null,
     mergeNextFlush: false,
+    drainMode: false,
+    sentSigs: new Map(),
 
     // Recognition arming: when false, newly observed code blocks are
     // continuously absorbed into the processed sets as a rolling baseline
@@ -193,23 +195,23 @@
     }
   };
 
-  // DSL -> JS: proactive command (e.g. ws_start, send_message)
+  // DSL -> JS: proactive command (e.g. ws_start_venus, send_message)
   window.onAgentCommand = function (commandJson) {
     try {
       const cmd = JSON.parse(commandJson);
       log('[bridge] onAgentCommand:', cmd.command);
 
-      if (cmd.command === 'ws_start' && cmd.params && cmd.params.port) {
+      if (cmd.command === 'ws_start_venus' && cmd.params && cmd.params.port) {
         CFG.WS_URL = 'ws://localhost:' + cmd.params.port;
-        log(`[bridge] ws_start -> ${CFG.WS_URL}`);
+        log(`[bridge] ws_start_venus -> ${CFG.WS_URL}`);
         if (!ST.ws || ST.ws.readyState > 1) {
           ST.reconCnt = 0;
           ST.ws = wsCreate();
         }
         return;
       }
-      if (cmd.command === 'ws_stop') {
-        log('[bridge] ws_stop');
+      if (cmd.command === 'ws_stop_venus') {
+        log('[bridge] ws_stop_venus');
         if (ST.ws) {
           try { ST.ws.close(); } catch (_) { }
           ST.ws = null;
@@ -352,12 +354,9 @@
     }
 
     if (lines.length) {
-      if (ST.mergeNextFlush) {
-        ST.roundCount += 1;
-        ST.mergeNextFlush = false;
-      } else {
-        ST.roundCount += 1;
-      }
+      if (ST.mergeNextFlush) { ST.mergeNextFlush = false; }
+      if (!ST.drainMode) { ST.roundCount += 1; }
+
       ST.lastFlushTs = now;
 
       if (!ST.longRunMode && ST.roundCount >= CFG.MAX_ROUNDS) {
@@ -369,7 +368,12 @@
       log('[flush] send back:', text.slice(0, 120) + '...');
       ST.lastAutoSentText = text;
       chatSend(text);
+      if (ST.pendingResults.length > 0 && !ST.breakerOn && ST.armed) {
+        ST.drainMode = true;
+        scheduleFlush();
+      }
     }
+    if (ST.pendingResults.length === 0) { ST.drainMode = false; }
     updatePanel();
   }
 
@@ -378,12 +382,15 @@
      =========================================== */
   function manualBreak() {
     ST.breakerOn = true;
+    ST.drainMode = false;
     warn('[breaker] manual break');
     updatePanel();
   }
   function manualClear() {
     const n = ST.pendingResults.length;
     ST.pendingResults = [];
+    ST.drainMode = false;
+    ST.sentSigs.clear();
     log(`[breaker] queue cleared (${n})`);
     updatePanel();
   }
@@ -409,6 +416,8 @@
 
   function armNow() {
     if (ST.armed) { log('[arm] already armed'); return; }
+    ST.drainMode = false;
+    ST.sentSigs.clear();
     baselineCodeOnly();
     ST.armed = true;
     log('[arm] armed - new code blocks will be sent to WS');
@@ -546,30 +555,30 @@
   }
 
   function sendPrompt() {
-   let txt = '';
-   try { txt = callMetaDSL('get_venus_system_prompt', '') || ''; }
-   catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
-   if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
-   const ok = setSystemPrompt(String(txt));
-   log('[prompt] setSystemPrompt ' + (ok ? 'OK' : 'FAIL') + ' (' + String(txt).length + ' chars)');
+    let txt = '';
+    try { txt = callMetaDSL('get_venus_system_prompt', '') || ''; }
+    catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
+    const ok = setSystemPrompt(String(txt));
+    log('[prompt] setSystemPrompt ' + (ok ? 'OK' : 'FAIL') + ' (' + String(txt).length + ' chars)');
   }
 
   function setSystemPrompt(text) {
-   const ta = document.querySelector('.dialog-advanced-config .string-item textarea');
-   if (!ta) { log('[sysprompt] textarea not found'); return false; }
-   try {
-    const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-    desc.set.call(ta, text);
-    ta.dispatchEvent(new Event('input', { bubbles: true }));
-    ta.dispatchEvent(new Event('change', { bubbles: true }));
-   } catch (e) {
-    log('[sysprompt] write error: ' + (e && e.message));
-    return false;
-   }
-   const okBtn = document.querySelector('.dialog-advanced-config .footer .el-button--primary');
-   if (!okBtn) { log('[sysprompt] OK button not found'); return false; }
-   okBtn.click();
-   return true;
+    const ta = document.querySelector('.dialog-advanced-config .string-item textarea');
+    if (!ta) { log('[sysprompt] textarea not found'); return false; }
+    try {
+      const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+      desc.set.call(ta, text);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      ta.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {
+      log('[sysprompt] write error: ' + (e && e.message));
+      return false;
+    }
+    const okBtn = document.querySelector('.dialog-advanced-config .footer .el-button--primary');
+    if (!okBtn) { log('[sysprompt] OK button not found'); return false; }
+    okBtn.click();
+    return true;
   }
 
   function updatePanel() {
@@ -958,9 +967,18 @@
 
       // Send each code block to DSL via WebSocket.
       blocks.forEach(blk => {
+        const sig = String(blk.code).replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+        const sigTs = Date.now();
+        const sigPrev = ST.sentSigs.get(sig);
+        if (sigPrev !== undefined && sigTs - sigPrev < 60000) {
+          log('[dedupe] skip duplicate code: ' + blk.id);
+          return;
+        }
+        ST.sentSigs.set(sig, sigTs);
         markVisual(blk);
         const ok = wsSend(blk.code);
         if (!ok) {
+          ST.sentSigs.delete(sig);
           warn('[process] wsSend failed, block kept unprocessed: ' + blk.id);
         } else {
           log(`[process] sent ${blk.id} lang=${blk.lang} ${blk.code.length}B`);

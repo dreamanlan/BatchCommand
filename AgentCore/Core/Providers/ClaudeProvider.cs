@@ -17,7 +17,7 @@ namespace CefDotnetApp.AgentCore.Core
         private const int c_maxHistoryMessages = 64;
         private readonly string _url;
         private readonly string _apiKeyTemplate;
-        private readonly Func<string, string> _apiKeyResolver;
+        private readonly Func<string, string> _keyEnvResolver;
         private readonly string _model;
         private int _maxTokens = 4096;
         private readonly int _maxRetries;
@@ -30,11 +30,11 @@ namespace CefDotnetApp.AgentCore.Core
         private int _timeoutSeconds = 300;
         private static readonly HttpClient s_http = CreateHttpClient();
 
-        public ClaudeProvider(string url, string apiKeyTemplate, string model, Func<string, string> apiKeyResolver, int maxRetries = 3)
+        public ClaudeProvider(string url, string apiKeyTemplate, string model, Func<string, string> keyEnvResolver, int maxRetries = 3)
         {
             _url = string.IsNullOrEmpty(url) ? c_defaultUrl : url.TrimEnd('/');
             _apiKeyTemplate = apiKeyTemplate;
-            _apiKeyResolver = apiKeyResolver;
+            _keyEnvResolver = keyEnvResolver;
             _model = model;
             _maxRetries = maxRetries;
         }
@@ -158,8 +158,8 @@ namespace CefDotnetApp.AgentCore.Core
                 using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
                 // Resolve apiKey at request time; plaintext exists only during this call
-                string resolvedKey = _apiKeyResolver(_apiKeyTemplate);
-                using var req = new HttpRequestMessage(HttpMethod.Post, _url);
+                string resolvedKey = _keyEnvResolver(_apiKeyTemplate);
+                using var req = new HttpRequestMessage(HttpMethod.Post, _keyEnvResolver(_url));
                 req.Headers.Add("x-api-key", resolvedKey);
                 req.Headers.Add("anthropic-version", c_apiVersion);
                 req.Content = new StringContent(json, Encoding.UTF8, "application/json");

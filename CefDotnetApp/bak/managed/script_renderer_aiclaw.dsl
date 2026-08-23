@@ -5,7 +5,7 @@ script(init_global_consts)
 {
     setenv("PLAYWRIGHT_DRIVER_SEARCH_PATH", combinepath(basepath, "managed"));
 
-    @EnableLlmPM = true;
+    @EnableLlmPM = false;
     //@LlmProviderId = "ollama";
     @LlmProviderId = "auto_metadsl";
 
@@ -89,7 +89,7 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app", "https://chatgpt.com", "https://chat.openai.com")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", ".woa.com/", "https://gemini.google.com/app", "https://chatgpt.com", "https://chat.openai.com")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -120,13 +120,45 @@ script(on_renderer_load_start)params($url,$transitionType,$isMainFrame)
 script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
 {
     nativelog("[dsl] on_renderer_load_end:{0} {1} {2}", $url, $httpStatusCode, $isMainFrame);
+    if (string_contains_any($url, "https://hyarena.woa.com/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
+        $base = combine_path(basepath, "managed/inject_modules/");
+        $sb = new_string_builder();
+        append_line($sb, read_file(combine_path($base, "hyarena_opus.js")));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        return((true, $code));
+    };
+    if (string_contains_any($url, "https://ai.woa.com/#/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
+        $base = combine_path(basepath, "managed/inject_modules/");
+        $sb = new_string_builder();
+        append_line($sb, read_file(combine_path($base, "venus_llm.js")));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        return((true, $code));
+    };
+    if (string_contains_any($url, "https://imate.woa.com/chat") && ($isMainFrame == "True" || $isMainFrame == true)) {
+        $base = combine_path(basepath, "managed/inject_modules/");
+        $sb = new_string_builder();
+        append_line($sb, read_file(combine_path($base, "imate_llm.js")));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        return((true, $code));
+    };
+    if (string_contains_any($url, "https://with.woa.com/chats") && ($isMainFrame == "True" || $isMainFrame == true)) {
+        $base = combine_path(basepath, "managed/inject_modules/");
+        $sb = new_string_builder();
+        append_line($sb, read_file(combine_path($base, "with_llm.js")));
+        $code = string_builder_to_string($sb);
+        nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
+        return((true, $code));
+    };
     if (string_contains_any($url, "https://gemini.google.com/app") && ($isMainFrame == "True" || $isMainFrame == true)) {
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9530, 50*1024);
+        agent_set_max_result_size(9531, 30*1024);
         return((true, $code));
     };
     if (string_contains_any($url, "https://chatgpt.com", "https://chat.openai.com") && ($isMainFrame == "True" || $isMainFrame == true)) {
@@ -135,7 +167,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "openai_chat.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9530, 50*1024);
+        agent_set_max_result_size(9532, 30*1024);
         return((true, $code));
     };
     return((false, ""));
@@ -178,23 +210,33 @@ script(on_call_metadsl)params($func,$args)
 
 script(get_arena_system_prompt)params()
 {
-    $arenaPrompt = read_file("d:/AiClaw/docs/arena_prompt.txt");
+    $arenaPrompt = read_file(combine_path(basepath,"docs/arena_prompt.txt"));
     return(format("{0}",$arenaPrompt));
 };
 script(get_venus_system_prompt)params()
 {
-    $mergePrompt = read_file("d:/AiClaw/docs/venus_prompt.txt");
+    $mergePrompt = read_file(combine_path(basepath,"docs/venus_prompt.txt"));
     return(format("{0}",$mergePrompt));
 };
 script(get_google_prompt)params()
 {
-    $googlePrompt = read_file("d:/AiClaw/docs/google_prompt.txt");
+    $googlePrompt = read_file(combine_path(basepath,"docs/google_prompt.txt"));
     return(format("{0}",$googlePrompt));
 };
 script(get_openai_prompt)params()
 {
-    $openAiPrompt = read_file("d:/AiClaw/docs/openai_prompt.txt");
+    $openAiPrompt = read_file(combine_path(basepath,"docs/openai_prompt.txt"));
     return(format("{0}",$openAiPrompt));
+};
+script(get_imate_prompt)params()
+{
+    $imatePrompt = read_file(combine_path(basepath,"docs/imate_prompt.txt"));
+    return(format("{0}",$imatePrompt));
+};
+script(get_with_prompt)params()
+{
+    $withPrompt = read_file(combine_path(basepath,"docs/with_prompt.txt"));
+    return(format("{0}",$withPrompt));
 };
 
 // Handle nativelog batch
@@ -371,8 +413,8 @@ script(handle_update_agent_configs_command)params($id, $params)
     send_response_to_inject($response);
 
     // LLM providers configured here; apiKey uses %var% placeholders expanded via agent environment
-    llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.6:latest");
-    llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a", "%person_token%", "kimi-k2.7-code");
+    llm_set_provider("ollama", "ollama", "http://localhost:11434", "", "qwen3.8:27b");
+    llm_set_provider("auto_metadsl", "auto_metadsl", "https://knot.woa.com/apigw/api/v1/agents/agui/%agent_id%", "%person_token%", "kimi-k2.7-code");
 
     // Search services configured here; apiKey uses %var% placeholders
     //brave_set_api_key("%brave_api_key%");
@@ -391,7 +433,45 @@ script(handle_agent_notification)params($jsonData)
 
     nativelog("[dsl] Notification type: {0}", $type);
 
-    if ($type == "aiclaw_ready") {
+    if ($type == "hyarena_ready") {
+        nativelog("[dsl] Hyarena ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] Hyarena initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9528, 50*1024);
+        agent_enable_context_injection(9528, false);
+        agent_set_project_dir(9528, "d:/AiClaw");
+        agent_set_project_identity(9528, "hyarena");
+        // Start WebSocket server on port 9528 for hyarena bridge communication
+        ws_start_server(9528);
+
+        // Notify JS to connect multi-slot WS to port 9528
+        send_command_to_inject("ws_start_hyarena", to_json({port: 9528}));
+
+        nativelog("[dsl] Hyarena bridge WS server started on 9528");
+    }
+    elif ($type == "venus_ready") {
+        nativelog("[dsl] Venus ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] Venus initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9529, 40*1024);
+        agent_enable_context_injection(9529, false);
+        agent_set_project_dir(9529, "d:/AiClaw");
+        agent_set_project_identity(9529, "venus");
+        // Start WebSocket server on port 9529 for venus bridge communication
+        ws_start_server(9529);
+
+        // Notify JS to connect multi-slot WS to port 9529
+        send_command_to_inject("ws_start_venus", to_json({port: 9529}));
+
+        nativelog("[dsl] Venus bridge WS server started on 9529");
+    }
+    elif ($type == "aiclaw_ready") {
         nativelog("[dsl] AiClaw ready notification: {0}", getstringinlength($jsonData,100));
 
         $data = get_message_param($notif, "data");
@@ -405,9 +485,85 @@ script(handle_agent_notification)params($jsonData)
         ws_start_server(9530);
 
         // Notify JS to connect multi-slot WS to port 9530
-        send_command_to_inject("ws_start", to_json({port: 9530}));
+        send_command_to_inject("ws_start_aiclaw", to_json({port: 9530}));
 
         nativelog("[dsl] AiClaw bridge WS server started on 9530");
+    }
+    elif ($type == "google_ready") {
+        nativelog("[dsl] Google AI ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] Google AI initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9531, 40*1024);
+        agent_enable_context_injection(9531, false);
+        agent_set_project_dir(9531, "d:/AiClaw");
+        agent_set_project_identity(9531, "googleai");
+        // Start WebSocket server on port 9531 for venus bridge communication
+        ws_start_server(9531);
+
+        // Notify JS to connect multi-slot WS to port 9531
+        send_command_to_inject("ws_start_google", to_json({port: 9531}));
+
+        nativelog("[dsl] Google AI bridge WS server started on 9531");
+    }
+    elif ($type == "openai_ready") {
+        nativelog("[dsl] OpenAI ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] OpenAI initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9532, 40*1024);
+        agent_enable_context_injection(9532, false);
+        agent_set_project_dir(9532, "d:/AiClaw");
+        agent_set_project_identity(9532, "openai");
+        // Start WebSocket server on port 9532 for venus bridge communication
+        ws_start_server(9532);
+
+        // Notify JS to connect multi-slot WS to port 9532
+        send_command_to_inject("ws_start_openai", to_json({port: 9532}));
+
+        nativelog("[dsl] OpenAI bridge WS server started on 9532");
+    }
+    elif ($type == "imate_ready") {
+        nativelog("[dsl] IMate ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] IMate initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9533, 40*1024);
+        agent_enable_context_injection(9533, false);
+        agent_set_project_dir(9533, "d:/AiClaw");
+        agent_set_project_identity(9533, "imate");
+        // Start WebSocket server on port 9533 for venus bridge communication
+        ws_start_server(9533);
+
+        // Notify JS to connect multi-slot WS to port 9533
+        send_command_to_inject("ws_start_imate", to_json({port: 9533}));
+
+        nativelog("[dsl] IMate bridge WS server started on 9533");
+    }
+    elif ($type == "with_ready") {
+        nativelog("[dsl] With ready notification: {0}", getstringinlength($jsonData,100));
+
+        $data = get_message_param($notif, "data");
+        $url = get_message_param($data, "url");
+        nativelog("[dsl] With initialized, url: {0}", $url);
+
+        agent_set_max_result_size(9534, 40*1024);
+        agent_enable_context_injection(9534, false);
+        agent_set_project_dir(9534, "d:/AiClaw");
+        agent_set_project_identity(9534, "with");
+        // Start WebSocket server on port 9534 for venus bridge communication
+        ws_start_server(9534);
+
+        // Notify JS to connect multi-slot WS to port 9534
+        send_command_to_inject("ws_start_with", to_json({port: 9534}));
+
+        nativelog("[dsl] With bridge WS server started on 9534");
     }
     else {
         nativelog("[dsl] Unknown notification type: {0}", $type);

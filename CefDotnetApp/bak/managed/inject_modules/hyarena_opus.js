@@ -13,7 +13,7 @@
      Section 0  Config
      =========================================== */
   const CFG = {
-    WS_URL: null,         // set by DSL via ws_start command
+    WS_URL: null,         // set by DSL via ws_start_hyarena command
     RECONNECT_MS: 3000,
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
@@ -198,7 +198,7 @@
           ST.modelNames[id] = nm || id;
         }
       }
-      // WS connection deferred until DSL sends ws_start command
+      // WS connection deferred until DSL sends ws_start_hyarena command
       if (CFG.WS_URL) ST.ws[id] = wsCreate(id);
     }
     ST.slotCount = count;
@@ -262,15 +262,15 @@
     }
   };
 
-  // DSL -> JS: proactive command (e.g. ws_start, send_message)
+  // DSL -> JS: proactive command (e.g. ws_start_hyarena, send_message)
   window.onAgentCommand = function (commandJson) {
     try {
       const cmd = JSON.parse(commandJson);
       log('[bridge] onAgentCommand:', cmd.command);
 
-      if (cmd.command === 'ws_start' && cmd.params && cmd.params.port) {
+      if (cmd.command === 'ws_start_hyarena' && cmd.params && cmd.params.port) {
         CFG.WS_URL = 'ws://localhost:' + cmd.params.port;
-        log(`[bridge] ws_start -> ${CFG.WS_URL}`);
+        log(`[bridge] ws_start_hyarena -> ${CFG.WS_URL}`);
         // Connect all existing slots that have no active WS
         activeSlotIds().forEach(id => {
           if (!ST.ws[id] || ST.ws[id].readyState > 1) {
@@ -280,11 +280,11 @@
         });
         return;
       }
-      if (cmd.command === 'ws_stop') {
-        log('[bridge] ws_stop');
+      if (cmd.command === 'ws_stop_hyarena') {
+        log('[bridge] ws_stop_hyarena');
         activeSlotIds().forEach(id => {
           if (ST.ws[id]) {
-            try { ST.ws[id].close(); } catch (_) {}
+            try { ST.ws[id].close(); } catch (_) { }
             ST.ws[id] = null;
           }
         });
@@ -674,7 +674,7 @@
     const slots = activeSlotIds();
     const queueParts = slots.map(id => {
       const n = (ST.pendingResults[id] || []).length;
-        return `${shortName(id, 8)}(${n})`;
+      return `${shortName(id, 8)}(${n})`;
     });
     const queueText = queueParts.length ? queueParts.join(' &middot; ') : '(empty)';
     const stateText = (ST.armed ? 'armed' : 'idle') + ' / ' + (ST.breakerOn ? 'broken' : 'running');
@@ -1465,7 +1465,7 @@
     startObserver();
     createPanel();
 
-    // Notify DSL that hyarena page is ready; DSL will send back ws_start
+    // Notify DSL that hyarena page is ready; DSL will send back ws_start_hyarena
     // command with port number to trigger WS connections for all slots.
     bridgeSendNotification('hyarena_ready', {
       url: window.location.href,
@@ -1505,14 +1505,14 @@
     sendChat: chatSend,
 
     reconnect(key) {
-      if (!CFG.WS_URL) { warn('WS_URL not set, use ws_start first'); return; }
+      if (!CFG.WS_URL) { warn('WS_URL not set, use ws_start_hyarena first'); return; }
       const id = normalizeSlot(key);
       if (!id) { err('slot key invalid: ' + key); return; }
       const idx = slotIndexOf(id);
       if (idx < 0) return;
       if (idx >= ST.slotCount) ensureSlots(idx + 1);
       if (ST.ws[id]) {
-        try { ST.ws[id].close(); } catch (_) {}
+        try { ST.ws[id].close(); } catch (_) { }
       }
       ST.ws[id] = wsCreate(id);
     },

@@ -177,8 +177,8 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 **其它工具**
 
-- `agent_get_project_identity(9527)` — 项目标识
-- `agent_get_project_dir(9527)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`project_prompt.txt`等状态文件
+- `agent_get_project_identity(9533)` — 项目标识
+- `agent_get_project_dir(9533)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`xxx_prompt.txt`等状态文件
 - `count_lines(path[, encoding])` — 查看文件行数
 - `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
 - `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
@@ -192,20 +192,20 @@ playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭�
 
 **语义/关键词搜索**
 
-历史分5级：legionnaire（单条）、decurion（十条）、centurion（百条）、chiliarch（千条）、marquis（万条）。keyword_search 走 BM25，semantic_search 走语义。sqlite 结果可用 to_pretty_string 反转义。
+历史分5级：legionnaire（单条）、decurion（十条）、centurion（百条）、chiliarch（千条）、marquis（万条）。
 
 ```
 // @execute
-semantic_search(agent_get_project_identity(9527)+"_legionnaire_history", "问题描述", "空格分隔的关键字", 50);
+semantic_search(agent_get_project_identity(9533)+"_legionnaire_history", "问题描述", "空格分隔的关键词", 50);
+```
+
+认知记忆分3层【情景记忆（具体事件）-> 模式记忆（重复模式）-> 元认知记忆（决策原则）】：episodic_memory（情境）,只有情境记忆存数据库，模式与元认知存文档了
+```
+// @execute
+semantic_search(agent_get_project_identity(9533)+"_episodic_memory", "问题描述", "空格分隔的关键词", 50);
 ```
 
 将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
-
-认知记忆分3层：情景（具体事件，sqlite 表 `{project_identity}_episodic_memory`，按需 semantic_search/keyword_search 检索）→ 模式（重复问题及解法，见项目 docs/patterns.md）→ 元认知（决策原则，随项目人格文档 soul.md 拼接进 prompt）。
-```
-// @execute
-semantic_search(agent_get_project_identity(9527)+"_episodic_memory", "问题描述", "空格分隔的关键字", 50);
-```
 
 sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
 ```
@@ -214,34 +214,6 @@ $query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20
 to_pretty_string($query_result);
 ```
 
-**需要知道的目录或值**
-- 项目目录: agent_get_project_dir(9527)
-- 项目标识: agent_get_project_identity(9527)
-- cefclient: basepath
-- 当前应用目录: appdir
-- 是否Mac: ismac
-
-```
-// @execute
-format("{0} {1} {2} {3} {4}",agent_get_project_dir(9527),agent_get_project_identity(9527),appdir,basepath,ismac);
-```
-
-##特别关注
-
-停止agent的计划提醒
-```
-// @execute
-js_request:stop_agent
-```
-
-启动agent的计划提醒
-```
-// @execute
-js_request:start_agent
-```
-
-**切记：js_request请求代码也要放在 Markdown 代码块中, 同时要加上注释标记；js_request不是metadsl代码，不要与其它metadsl代码混在一起**
-
 ****强调****
 本智能体通过metadsl代码块执行文件读写、命令执行等操作，不要使用tool协议来完成这些功能。
-agent_xxx类api需要一个端口号作为参数时，请使用9527，这是主agent的websocket端口号。
+agent_xxx类api需要一个端口号作为参数，本页面使用9533端口（主agent使用9527端口，本页面不共用）。

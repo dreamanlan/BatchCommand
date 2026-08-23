@@ -31,6 +31,8 @@ class UIController {
             usernameInput: document.getElementById('username'),
             usernameGroup: document.getElementById('username-group'),
             apiEndpointInput: document.getElementById('api-endpoint'),
+            agentIdInput: document.getElementById('agent-id'),
+            agentIdGroup: document.getElementById('agent-id-group'),
             modelSelect: document.getElementById('model'),
             modelTextInput: document.getElementById('model-text'),
             streamCheckbox: document.getElementById('stream-enabled'),
@@ -550,186 +552,187 @@ class UIController {
     }
 
     createAssistantMessagePlaceholder() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'vac-message-wrapper';
-    wrapper.dataset.messageId = 'assistant-' + Date.now();
+        const wrapper = document.createElement('div');
+        wrapper.className = 'vac-message-wrapper';
+        wrapper.dataset.messageId = 'assistant-' + Date.now();
 
-    const box = document.createElement('div');
-    box.className = 'vac-message-box';
+        const box = document.createElement('div');
+        box.className = 'vac-message-box';
 
-    const messageContent = document.createElement('div');
-    messageContent.className = 'message-content';
-    messageContent.textContent = '';
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.textContent = '';
 
-    const messageTime = document.createElement('div');
-    messageTime.className = 'message-time';
-    messageTime.textContent = new Date().toLocaleTimeString();
+        const messageTime = document.createElement('div');
+        messageTime.className = 'message-time';
+        messageTime.textContent = new Date().toLocaleTimeString();
 
-    box.appendChild(messageContent);
-    box.appendChild(messageTime);
-    wrapper.appendChild(box);
+        box.appendChild(messageContent);
+        box.appendChild(messageTime);
+        wrapper.appendChild(box);
 
-    this.elements.messagesArea.appendChild(wrapper);
-    this.scrollToBottom();
+        this.elements.messagesArea.appendChild(wrapper);
+        this.scrollToBottom();
 
-    return wrapper.dataset.messageId;
-}
+        return wrapper.dataset.messageId;
+    }
 
-updateAssistantMessage(messageId, content) {
-    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-    if (wrapper) {
+    updateAssistantMessage(messageId, content) {
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (wrapper) {
+            const messageContent = wrapper.querySelector('.message-content');
+            if (messageContent) {
+                // Use lightweight text rendering during streaming to avoid
+                // expensive Markdown parsing on every single token chunk
+                messageContent.innerHTML = this.renderStreamingText(content);
+                this.scrollToBottom();
+            }
+            // First real answer chunk arrived — collapse the thinking block
+            this.finalizeAssistantReasoning(messageId);
+        }
+    }
+
+    /**
+     * Finalize an assistant message after streaming completes.
+     * Re-renders with full Markdown parsing and processes code blocks.
+     *
+     * IMPORTANT: rawText must be the original streamed text. We cannot recover
+     * it from DOM.textContent because the streaming renderer converted "\n"
+     * into "<br>" tags, and textContent does not turn <br> back into "\n".
+     */
+    finalizeAssistantMessage(messageId, rawText) {
+        if (!messageId) return;
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (!wrapper) return;
         const messageContent = wrapper.querySelector('.message-content');
-        if (messageContent) {
-            // Use lightweight text rendering during streaming to avoid
-            // expensive Markdown parsing on every single token chunk
-            messageContent.innerHTML = this.renderStreamingText(content);
-            this.scrollToBottom();
+        if (!messageContent) return;
+
+        // Re-render with full Markdown now that streaming is done.
+        // Fall back to empty string when rawText is missing (e.g. cancelled
+        // before any token arrived) so we don't feed undefined to marked.
+        const text = (typeof rawText === 'string') ? rawText : '';
+        messageContent.innerHTML = this.renderMarkdown(text);
+        this.scrollToBottom();
+
+        // Process code blocks (mermaid, svg, etc.)
+        try {
+            this.processCodeBlocks(messageContent);
+        } catch (e) {
+            if (uiLogger) uiLogger.error('Finalize codeblocks error:', e);
         }
-        // First real answer chunk arrived — collapse the thinking block
-        this.finalizeAssistantReasoning(messageId);
-    }
-}
-
-/**
- * Finalize an assistant message after streaming completes.
- * Re-renders with full Markdown parsing and processes code blocks.
- *
- * IMPORTANT: rawText must be the original streamed text. We cannot recover
- * it from DOM.textContent because the streaming renderer converted "\n"
- * into "<br>" tags, and textContent does not turn <br> back into "\n".
- */
-finalizeAssistantMessage(messageId, rawText) {
-    if (!messageId) return;
-    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-    if (!wrapper) return;
-    const messageContent = wrapper.querySelector('.message-content');
-    if (!messageContent) return;
-
-    // Re-render with full Markdown now that streaming is done.
-    // Fall back to empty string when rawText is missing (e.g. cancelled
-    // before any token arrived) so we don't feed undefined to marked.
-    const text = (typeof rawText === 'string') ? rawText : '';
-    messageContent.innerHTML = this.renderMarkdown(text);
-    this.scrollToBottom();
-
-    // Process code blocks (mermaid, svg, etc.)
-    try {
-        this.processCodeBlocks(messageContent);
-    } catch (e) {
-        if (uiLogger) uiLogger.error('Finalize codeblocks error:', e);
-    }
-}
-
-addMessageTag(messageId, timeText) {
-    // Add el-tag element to assistant message for block ID stability
-    const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
-    if (wrapper) {
-        this.addMessageTagToWrapper(wrapper, timeText);
-    }
-}
-
-addMessageTagToWrapper(wrapper, timeText) {
-    // Add el-tag element (same structure as custom-llm) for block ID computation
-    const box = wrapper.querySelector('.vac-message-box');
-    if (box && !box.querySelector('.el-tag')) {
-        const tag = document.createElement('span');
-        tag.className = 'el-tag';
-        const tagContent = document.createElement('span');
-        tagContent.className = 'el-tag__content';
-        tagContent.textContent = timeText;
-        tag.appendChild(tagContent);
-        tag.style.display = 'none'; // Hidden, only used for block ID
-        box.appendChild(tag);
-    }
-}
-
-showLoading() {
-    this.elements.loadingIndicator.classList.add('active');
-}
-
-hideLoading() {
-    this.elements.loadingIndicator.classList.remove('active');
-}
-
-scrollToBottom() {
-    this.elements.messagesArea.scrollTop = this.elements.messagesArea.scrollHeight;
-}
-
-loadExistingMessages() {
-    const messages = this.messageHandler.messages;
-    // Only display the last N rounds on the page
-    // Older messages are still stored in localStorage but not displayed
-    const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
-    const messagesToDisplay = messages.slice(-displayLimit);
-
-    if (messagesToDisplay.length < messages.length) {
-        if (uiLogger) uiLogger.info('Displaying last ' + messagesToDisplay.length + ' of ' + messages.length + ' messages');
     }
 
-    messagesToDisplay.forEach(msg => {
-        const wrapper = this.displayMessage(msg.role, msg.content);
-        // Add el-tag for assistant messages (history messages are already complete)
-        if (msg.role === 'assistant' && wrapper) {
-            const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-            this.addMessageTagToWrapper(wrapper, time);
+    addMessageTag(messageId, timeText) {
+        // Add el-tag element to assistant message for block ID stability
+        const wrapper = this.elements.messagesArea.querySelector(`[data-message-id="${messageId}"]`);
+        if (wrapper) {
+            this.addMessageTagToWrapper(wrapper, timeText);
         }
-    });
-}
+    }
 
-showConfigModal() {
-    const config = this.apiClient.getConfig();
-    this.elements.configApiType.value = config.apiType;
-    this.elements.apiKeyInput.value = config.apiKey || '';
-    this.elements.authModeSelect.value = config.authMode || 'personal';
-    this.elements.usernameInput.value = config.username || '';
+    addMessageTagToWrapper(wrapper, timeText) {
+        // Add el-tag element (same structure as custom-llm) for block ID computation
+        const box = wrapper.querySelector('.vac-message-box');
+        if (box && !box.querySelector('.el-tag')) {
+            const tag = document.createElement('span');
+            tag.className = 'el-tag';
+            const tagContent = document.createElement('span');
+            tagContent.className = 'el-tag__content';
+            tagContent.textContent = timeText;
+            tag.appendChild(tagContent);
+            tag.style.display = 'none'; // Hidden, only used for block ID
+            box.appendChild(tag);
+        }
+    }
+
+    showLoading() {
+        this.elements.loadingIndicator.classList.add('active');
+    }
+
+    hideLoading() {
+        this.elements.loadingIndicator.classList.remove('active');
+    }
+
+    scrollToBottom() {
+        this.elements.messagesArea.scrollTop = this.elements.messagesArea.scrollHeight;
+    }
+
+    loadExistingMessages() {
+        const messages = this.messageHandler.messages;
+        // Only display the last N rounds on the page
+        // Older messages are still stored in localStorage but not displayed
+        const displayLimit = this.messageHandler.getContextConfig().contextRounds * 2;
+        const messagesToDisplay = messages.slice(-displayLimit);
+
+        if (messagesToDisplay.length < messages.length) {
+            if (uiLogger) uiLogger.info('Displaying last ' + messagesToDisplay.length + ' of ' + messages.length + ' messages');
+        }
+
+        messagesToDisplay.forEach(msg => {
+            const wrapper = this.displayMessage(msg.role, msg.content);
+            // Add el-tag for assistant messages (history messages are already complete)
+            if (msg.role === 'assistant' && wrapper) {
+                const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
+                this.addMessageTagToWrapper(wrapper, time);
+            }
+        });
+    }
+
+    showConfigModal() {
+        const config = this.apiClient.getConfig();
+        this.elements.configApiType.value = config.apiType;
+        this.elements.apiKeyInput.value = config.apiKey || '';
+        this.elements.authModeSelect.value = config.authMode || 'personal';
+        this.elements.usernameInput.value = config.username || '';
         this.elements.streamCheckbox.checked = !!config.stream;
         this.elements.enableWebSearchCheckbox.checked = !!config.enableWebSearch;
         this.elements.enableThinkingCheckbox.checked = !!config.enableThinking;
         this.elements.reasoningEffortSelect.value = config.reasoningEffort || '';
         this.elements.apiEndpointInput.value = config.apiEndpoint || '';
+        this.elements.agentIdInput.value = config.agentId || '';
 
-    // Load context configuration
-    const contextConfig = this.messageHandler.getContextConfig();
-    this.elements.contextRoundsInput.value = contextConfig.contextRounds;
-    this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
-    this.elements.maxHistoryMessagesInput.value = contextConfig.maxHistoryMessages;
+        // Load context configuration
+        const contextConfig = this.messageHandler.getContextConfig();
+        this.elements.contextRoundsInput.value = contextConfig.contextRounds;
+        this.elements.maxContextCharsInput.value = contextConfig.maxContextChars;
+        this.elements.maxHistoryMessagesInput.value = contextConfig.maxHistoryMessages;
 
-    this.updateModelOptions(config.apiType);
-    this.updateAutoMetaDSLFields(config.apiType);
-    this.updateUsernameFieldVisibility(config.authMode || 'personal');
-    // Apply saved model only when a select is active; for free-text the
-    // value was already set inside updateModelOptions.
-    if (this._modelInputMode !== 'text') {
-        this.elements.modelSelect.value = config.model || '';
+        this.updateModelOptions(config.apiType);
+        this.updateAutoMetaDSLFields(config.apiType);
+        this.updateUsernameFieldVisibility(config.authMode || 'personal');
+        // Apply saved model only when a select is active; for free-text the
+        // value was already set inside updateModelOptions.
+        if (this._modelInputMode !== 'text') {
+            this.elements.modelSelect.value = config.model || '';
+        }
+        // Populate model-dependent dropdowns after the model select is ready
+        // (also restores saved maxContextTokens / reasoningEffort when valid).
+        this.updateModelDependentOptions(
+            this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
+
+        this.elements.configModal.classList.add('active');
+        this.hideError();
     }
-    // Populate model-dependent dropdowns after the model select is ready
-    // (also restores saved maxContextTokens / reasoningEffort when valid).
-    this.updateModelDependentOptions(
-        this._modelInputMode === 'select' ? this.elements.modelSelect.value : '');
 
-    this.elements.configModal.classList.add('active');
-    this.hideError();
-}
-
-hideConfigModal() {
-    this.elements.configModal.classList.remove('active');
-}
-
-handleClearHistory() {
-    // Confirm before clearing
-    if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
-        // Clear history from MessageHandler
-        this.messageHandler.clearHistory();
-
-        // Reset API client conversation state
-        this.apiClient.resetConversation();
-
-        // Clear displayed messages
-        this.elements.messagesArea.innerHTML = '';
-
-        if (uiLogger) uiLogger.info('Conversation history cleared');
+    hideConfigModal() {
+        this.elements.configModal.classList.remove('active');
     }
-}
+
+    handleClearHistory() {
+        // Confirm before clearing
+        if (confirm('Are you sure you want to clear all conversation history? This action cannot be undone.')) {
+            // Clear history from MessageHandler
+            this.messageHandler.clearHistory();
+
+            // Reset API client conversation state
+            this.apiClient.resetConversation();
+
+            // Clear displayed messages
+            this.elements.messagesArea.innerHTML = '';
+
+            if (uiLogger) uiLogger.info('Conversation history cleared');
+        }
+    }
 
     updateModelOptions(apiType) {
         const models = this.apiClient.getAvailableModels(apiType);
@@ -768,193 +771,203 @@ handleClearHistory() {
         }
     }
 
-updateAutoMetaDSLFields(apiType) {
-    // Show auth mode and username fields only for auto_metadsl
-    if (apiType === 'auto_metadsl') {
-        this.elements.authModeGroup.style.display = 'block';
-        this.elements.usernameGroup.style.display = 'block';
-        this.elements.streamGroup.style.display = 'block';
-        this.elements.webSearchGroup.style.display = 'block';
-        this.elements.thinkingGroup.style.display = 'block';
-        this.elements.reasoningEffortGroup.style.display = 'block';
-        this.elements.maxContextTokensGroup.style.display = 'block';
-    } else {
-        this.elements.authModeGroup.style.display = 'none';
-        this.elements.usernameGroup.style.display = 'none';
-        this.elements.streamGroup.style.display = 'none';
-        this.elements.webSearchGroup.style.display = 'none';
-        this.elements.thinkingGroup.style.display = 'none';
-        this.elements.reasoningEffortGroup.style.display = 'none';
-        this.elements.maxContextTokensGroup.style.display = 'none';
+    updateAutoMetaDSLFields(apiType) {
+        // Show auth mode and username fields only for auto_metadsl
+        if (apiType === 'auto_metadsl') {
+            this.elements.authModeGroup.style.display = 'block';
+            this.elements.usernameGroup.style.display = 'block';
+            this.elements.agentIdGroup.style.display = 'block';
+            this.elements.streamGroup.style.display = 'block';
+            this.elements.webSearchGroup.style.display = 'block';
+            this.elements.thinkingGroup.style.display = 'block';
+            this.elements.reasoningEffortGroup.style.display = 'block';
+            this.elements.maxContextTokensGroup.style.display = 'block';
+        } else {
+            this.elements.authModeGroup.style.display = 'none';
+            this.elements.usernameGroup.style.display = 'none';
+            this.elements.agentIdGroup.style.display = 'none';
+            this.elements.streamGroup.style.display = 'none';
+            this.elements.webSearchGroup.style.display = 'none';
+            this.elements.thinkingGroup.style.display = 'none';
+            this.elements.reasoningEffortGroup.style.display = 'none';
+            this.elements.maxContextTokensGroup.style.display = 'none';
+        }
     }
-}
 
-// Update model-dependent fields (thinking toggle, reasoning effort options,
-// context window options) based on the selected auto_metadsl model.
-updateModelDependentOptions(modelValue) {
-    const config = this.apiClient.getConfig();
-    if (config.apiType !== 'auto_metadsl') return;
-    const models = this.apiClient.getAvailableModels('auto_metadsl');
-    const model = models.find(m => m.value === modelValue) || null;
+    // Update model-dependent fields (thinking toggle, reasoning effort options,
+    // context window options) based on the selected auto_metadsl model.
+    updateModelDependentOptions(modelValue) {
+        const config = this.apiClient.getConfig();
+        if (config.apiType !== 'auto_metadsl') return;
+        const models = this.apiClient.getAvailableModels('auto_metadsl');
+        const model = models.find(m => m.value === modelValue) || null;
 
-    // Thinking toggle: only models with thinking=true
-    const supportsThinking = !!(model && model.thinking);
-    this.elements.thinkingGroup.style.display = supportsThinking ? 'block' : 'none';
+        // Thinking toggle: only models with thinking=true
+        const supportsThinking = !!(model && model.thinking);
+        this.elements.thinkingGroup.style.display = supportsThinking ? 'block' : 'none';
 
-    // Reasoning effort dropdown: rebuild options from model.reasoningEfforts
-    const efforts = (model && Array.isArray(model.reasoningEfforts)) ? model.reasoningEfforts : [];
-    if (efforts.length > 0) {
-        const prev = this.elements.reasoningEffortSelect.value;
-        this.elements.reasoningEffortSelect.innerHTML = '';
-        efforts.forEach(level => {
-            const option = document.createElement('option');
-            option.value = level;
-            option.textContent = level;
-            this.elements.reasoningEffortSelect.appendChild(option);
+        // Reasoning effort dropdown: rebuild options from model.reasoningEfforts
+        const efforts = (model && Array.isArray(model.reasoningEfforts)) ? model.reasoningEfforts : [];
+        if (efforts.length > 0) {
+            const prev = this.elements.reasoningEffortSelect.value;
+            this.elements.reasoningEffortSelect.innerHTML = '';
+            efforts.forEach(level => {
+                const option = document.createElement('option');
+                option.value = level;
+                option.textContent = level;
+                this.elements.reasoningEffortSelect.appendChild(option);
+            });
+            // Restore previous selection when still valid, otherwise pick first
+            this.elements.reasoningEffortSelect.value = efforts.includes(prev) ? prev : efforts[0];
+            this.elements.reasoningEffortGroup.style.display = 'block';
+        } else {
+            this.elements.reasoningEffortGroup.style.display = 'none';
+        }
+
+        // Context window dropdown: rebuild options from model.contextWindows
+        const windows = (model && Array.isArray(model.contextWindows)) ? model.contextWindows : [];
+        if (windows.length > 0) {
+            const saved = (typeof config.maxContextTokens === 'number' && config.maxContextTokens > 0)
+                ? String(config.maxContextTokens) : '';
+            this.elements.maxContextTokensSelect.innerHTML = '';
+            const zeroOption = document.createElement('option');
+            zeroOption.value = '0';
+            zeroOption.textContent = '0 (do not send)';
+            this.elements.maxContextTokensSelect.appendChild(zeroOption);
+            windows.forEach(w => {
+                const option = document.createElement('option');
+                option.value = String(w);
+                option.textContent = String(w);
+                this.elements.maxContextTokensSelect.appendChild(option);
+            });
+            // Restore saved value when present in the list, otherwise default 0
+            this.elements.maxContextTokensSelect.value =
+                windows.some(w => String(w) === saved) ? saved : '0';
+            this.elements.maxContextTokensGroup.style.display = 'block';
+        } else {
+            this.elements.maxContextTokensGroup.style.display = 'none';
+        }
+    }
+
+    updateUsernameFieldVisibility(authMode) {
+        // Update username field label and requirement based on auth mode
+        const usernameLabel = this.elements.usernameGroup.querySelector('label');
+        const usernameHint = this.elements.usernameGroup.querySelector('small');
+
+        if (authMode === 'agent') {
+            usernameLabel.textContent = 'Username (Required):';
+            usernameHint.textContent = 'Required for agent token mode.';
+        } else {
+            usernameLabel.textContent = 'Username (Optional):';
+            usernameHint.textContent = 'Optional for personal token mode.';
+        }
+    }
+
+    saveConfiguration() {
+        const apiType = this.elements.configApiType.value;
+        const apiKey = this.elements.apiKeyInput.value.trim();
+        const authMode = this.elements.authModeSelect.value;
+        const username = this.elements.usernameInput.value.trim();
+        const apiEndpoint = this.elements.apiEndpointInput.value.trim();
+        const agentId = this.elements.agentIdInput ? this.elements.agentIdInput.value.trim() : '';
+        // Read model from whichever control is currently active
+        const model = (this._modelInputMode === 'text')
+            ? this.elements.modelTextInput.value.trim()
+            : this.elements.modelSelect.value;
+        const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
+        const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
+        const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
+
+        // API key is optional for auto_metadsl, local_openai and ollama
+        if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && apiType !== 'ollama' && !apiKey) {
+            this.showError('API key is required');
+            return;
+        }
+
+        // local_openai/ollama endpoint is optional: defaults to http://localhost:11434
+        // and the proper suffix is appended automatically when missing.
+
+        // Username is required for agent token mode
+        if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {
+            this.showError('Username is required for agent token mode');
+            return;
+        }
+
+        // auto_metadsl requires either an endpoint or an agent id
+        if (apiType === 'auto_metadsl' && !apiEndpoint && !agentId) {
+            this.showError('For auto_metadsl, either API endpoint or agent id must be specified');
+            return;
+        }
+
+        // Validate context configuration
+        if (isNaN(contextRounds) || contextRounds < 1 || contextRounds > 50) {
+            this.showError('Context rounds must be between 1 and 50');
+            return;
+        }
+
+        if (isNaN(maxContextChars) || maxContextChars < 1024 || maxContextChars > 1048576) {
+            this.showError('Max context characters must be between 1024 and 1048576');
+            return;
+        }
+
+        if (isNaN(maxHistoryMessages) || maxHistoryMessages < 10 || maxHistoryMessages > 200) {
+            this.showError('Max history messages must be between 10 and 200');
+            return;
+        }
+
+        const stream = this.elements.streamCheckbox.checked;
+        const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
+        const enableThinking = this.elements.enableThinkingCheckbox.checked;
+        const reasoningEffort = this.elements.reasoningEffortSelect.value;
+        const maxContextTokensRaw = parseInt(this.elements.maxContextTokensSelect.value, 10);
+        const maxContextTokens = (isNaN(maxContextTokensRaw) || maxContextTokensRaw < 0) ? 0 : maxContextTokensRaw;
+        const config = {
+            apiType: apiType,
+            apiKey: apiKey,
+            authMode: authMode,
+            username: username,
+            stream: stream,
+            enableWebSearch: enableWebSearch,
+            enableThinking: enableThinking,
+            reasoningEffort: reasoningEffort,
+            maxContextTokens: maxContextTokens,
+            apiEndpoint: apiEndpoint,
+            agentId: agentId,
+            model: model
+        };
+
+        this.apiClient.saveConfig(config);
+        this.elements.apiTypeSelect.value = apiType;
+
+        // Save context configuration
+        this.messageHandler.setContextConfig({
+            contextRounds: contextRounds,
+            maxContextChars: maxContextChars,
+            maxHistoryMessages: maxHistoryMessages
         });
-        // Restore previous selection when still valid, otherwise pick first
-        this.elements.reasoningEffortSelect.value = efforts.includes(prev) ? prev : efforts[0];
-        this.elements.reasoningEffortGroup.style.display = 'block';
-    } else {
-        this.elements.reasoningEffortGroup.style.display = 'none';
-    }
 
-    // Context window dropdown: rebuild options from model.contextWindows
-    const windows = (model && Array.isArray(model.contextWindows)) ? model.contextWindows : [];
-    if (windows.length > 0) {
-        const saved = (typeof config.maxContextTokens === 'number' && config.maxContextTokens > 0)
-            ? String(config.maxContextTokens) : '';
-        this.elements.maxContextTokensSelect.innerHTML = '';
-        const zeroOption = document.createElement('option');
-        zeroOption.value = '0';
-        zeroOption.textContent = '0 (do not send)';
-        this.elements.maxContextTokensSelect.appendChild(zeroOption);
-        windows.forEach(w => {
-            const option = document.createElement('option');
-            option.value = String(w);
-            option.textContent = String(w);
-            this.elements.maxContextTokensSelect.appendChild(option);
+        if (uiLogger) uiLogger.info('Configuration saved:', {
+            api: config,
+            context: { contextRounds, maxContextChars, maxHistoryMessages }
         });
-        // Restore saved value when present in the list, otherwise default 0
-        this.elements.maxContextTokensSelect.value =
-            windows.some(w => String(w) === saved) ? saved : '0';
-        this.elements.maxContextTokensGroup.style.display = 'block';
-    } else {
-        this.elements.maxContextTokensGroup.style.display = 'none';
-    }
-}
 
-updateUsernameFieldVisibility(authMode) {
-    // Update username field label and requirement based on auth mode
-    const usernameLabel = this.elements.usernameGroup.querySelector('label');
-    const usernameHint = this.elements.usernameGroup.querySelector('small');
-
-    if (authMode === 'agent') {
-        usernameLabel.textContent = 'Username (Required):';
-        usernameHint.textContent = 'Required for agent token mode.';
-    } else {
-        usernameLabel.textContent = 'Username (Optional):';
-        usernameHint.textContent = 'Optional for personal token mode.';
-    }
-}
-
-saveConfiguration() {
-    const apiType = this.elements.configApiType.value;
-    const apiKey = this.elements.apiKeyInput.value.trim();
-    const authMode = this.elements.authModeSelect.value;
-    const username = this.elements.usernameInput.value.trim();
-    const apiEndpoint = this.elements.apiEndpointInput.value.trim();
-    // Read model from whichever control is currently active
-    const model = (this._modelInputMode === 'text')
-        ? this.elements.modelTextInput.value.trim()
-        : this.elements.modelSelect.value;
-    const contextRounds = parseInt(this.elements.contextRoundsInput.value, 10);
-    const maxContextChars = parseInt(this.elements.maxContextCharsInput.value, 10);
-    const maxHistoryMessages = parseInt(this.elements.maxHistoryMessagesInput.value, 10);
-
-    // API key is optional for auto_metadsl, local_openai and ollama
-    if (apiType !== 'auto_metadsl' && apiType !== 'local_openai' && apiType !== 'ollama' && !apiKey) {
-        this.showError('API key is required');
-        return;
+        this.hideConfigModal();
+        this.showSuccess('Configuration saved successfully');
     }
 
-    // local_openai/ollama endpoint is optional: defaults to http://localhost:11434
-    // and the proper suffix is appended automatically when missing.
-
-    // Username is required for agent token mode
-    if (apiType === 'auto_metadsl' && authMode === 'agent' && !username) {
-        this.showError('Username is required for agent token mode');
-        return;
+    showError(message) {
+        this.elements.errorMessage.textContent = message;
+        this.elements.errorMessage.classList.add('active');
     }
 
-    // Validate context configuration
-    if (isNaN(contextRounds) || contextRounds < 1 || contextRounds > 50) {
-        this.showError('Context rounds must be between 1 and 50');
-        return;
+    hideError() {
+        this.elements.errorMessage.classList.remove('active');
     }
 
-    if (isNaN(maxContextChars) || maxContextChars < 1024 || maxContextChars > 1048576) {
-        this.showError('Max context characters must be between 1024 and 1048576');
-        return;
+    showSuccess(message) {
+        // Could implement a success toast notification here
+        if (uiLogger) uiLogger.info('Success:', { message });
     }
-
-    if (isNaN(maxHistoryMessages) || maxHistoryMessages < 10 || maxHistoryMessages > 200) {
-        this.showError('Max history messages must be between 10 and 200');
-        return;
-    }
-
-    const stream = this.elements.streamCheckbox.checked;
-    const enableWebSearch = this.elements.enableWebSearchCheckbox.checked;
-    const enableThinking = this.elements.enableThinkingCheckbox.checked;
-    const reasoningEffort = this.elements.reasoningEffortSelect.value;
-    const maxContextTokensRaw = parseInt(this.elements.maxContextTokensSelect.value, 10);
-    const maxContextTokens = (isNaN(maxContextTokensRaw) || maxContextTokensRaw < 0) ? 0 : maxContextTokensRaw;
-    const config = {
-        apiType: apiType,
-        apiKey: apiKey,
-        authMode: authMode,
-        username: username,
-        stream: stream,
-        enableWebSearch: enableWebSearch,
-        enableThinking: enableThinking,
-        reasoningEffort: reasoningEffort,
-        maxContextTokens: maxContextTokens,
-        apiEndpoint: apiEndpoint,
-        model: model
-    };
-
-    this.apiClient.saveConfig(config);
-    this.elements.apiTypeSelect.value = apiType;
-
-    // Save context configuration
-    this.messageHandler.setContextConfig({
-        contextRounds: contextRounds,
-        maxContextChars: maxContextChars,
-        maxHistoryMessages: maxHistoryMessages
-    });
-
-    if (uiLogger) uiLogger.info('Configuration saved:', {
-        api: config,
-        context: { contextRounds, maxContextChars, maxHistoryMessages }
-    });
-
-    this.hideConfigModal();
-    this.showSuccess('Configuration saved successfully');
-}
-
-showError(message) {
-    this.elements.errorMessage.textContent = message;
-    this.elements.errorMessage.classList.add('active');
-}
-
-hideError() {
-    this.elements.errorMessage.classList.remove('active');
-}
-
-showSuccess(message) {
-    // Could implement a success toast notification here
-    if (uiLogger) uiLogger.info('Success:', { message });
-}
 }
 
 // Export for use in other modules

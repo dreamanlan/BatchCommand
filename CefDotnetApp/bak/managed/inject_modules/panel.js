@@ -560,12 +560,53 @@ class AgentPanel {
       `;
     openAiBtn.onclick = () => window.open('https://chatgpt.com');
 
+    // iMate button - open iMate chat in new window
+    const imateBtn = document.createElement('button');
+    imateBtn.textContent = 'iMate';
+    imateBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    imateBtn.onclick = () => window.open('https://imate.woa.com/chat');
+
+    // With button - open With chat in new window
+    const withBtn = document.createElement('button');
+    withBtn.textContent = 'With';
+    withBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #00897b;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    withBtn.onclick = () => window.open('https://with.woa.com/chats');
+
+    // Second button row for AI site entries
+    const aiBar = document.createElement('div');
+    aiBar.style.cssText = `
+        padding: 6px 8px;
+        background: #252525;
+        border-bottom: 1px solid #444;
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+      `;
+    aiBar.appendChild(hyarenaBtn);
+    aiBar.appendChild(venusBtn);
+    aiBar.appendChild(googleAiBtn);
+    aiBar.appendChild(openAiBtn);
+    aiBar.appendChild(imateBtn);
+    aiBar.appendChild(withBtn);
+
     buttonBar.appendChild(testBtn);
     buttonBar.appendChild(chatRoomBtn);
-    buttonBar.appendChild(hyarenaBtn);
-    buttonBar.appendChild(venusBtn);
-    buttonBar.appendChild(googleAiBtn);
-    buttonBar.appendChild(openAiBtn);
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);
@@ -760,6 +801,8 @@ class AgentPanel {
     this.panel.appendChild(timeoutBar);
 
     this.panel.appendChild(buttonBar);
+
+    this.panel.appendChild(aiBar);
 
     // Create MetaDSL input area
     this.scriptInput = document.createElement('textarea');

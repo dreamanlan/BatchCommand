@@ -112,10 +112,53 @@ script(on_before_browse)params($request,$userGesture,$isRedirect)
 };
 
 // Note: this function will be called on the browser process IO thread.
-script(on_before_resource_load)params($request)
+// $handle identifies the parked native CefCallback. It is only meaningful when
+// returning RV_CONTINUE_ASYNC(2): the script must then call
+// complete_native_callback($handle, true) to resume the request or
+// complete_native_callback($handle, false) to cancel it, otherwise the request
+// stays pending until the browser closes.
+// Return (handled, cef_return_value_t): RV_CANCEL=0, RV_CONTINUE=1, RV_CONTINUE_ASYNC=2.
+script(on_before_resource_load)params($request,$handle)
 {
     //nativelog("[dsl] on_before_resource_load: type={0} url={1} method={2}", $request.ResourceType, $request.Url, $request.Method);
     return((false, 1));
+};
+
+// Note: this function will be called on the browser process UI thread.
+// Called for JavaScript alert / confirm / prompt and beforeunload dialogs.
+// $dialogType: 0=alert, 1=confirm, 2=prompt, 3=beforeunload
+// Return (handled, decision):
+//   0 = not taken over, use the CEF default dialog (same as no handler)
+//   1 = taken over, this script shows a custom dialog in the page
+//   2 = suppress the message silently (ignored for beforeunload)
+//   3 = taken over, the script handles display and completion itself
+// When taking over (1 or 3) the script MUST eventually call
+// complete_native_callback($handle, ok[, text]) or the page hangs:
+//   confirm  -> ok is the true/false result
+//   prompt   -> text is the entered string
+//   beforeunload -> ok=true LEAVES the page, ok=false STAYS
+// The display JavaScript must be sent inside this callback: the browser context
+// is cleared when the callback returns (send_javascript_code only posts to the
+// renderer, so it does not block the UI thread).
+script(on_js_dialog)params($dialogType,$originUrl,$message,$defaultText,$handle)
+{
+    nativelog("[dsl] on_js_dialog: type={0} origin={1} handle={2}", $dialogType, $originUrl, $handle);
+
+    // Default: take nothing over, CEF shows its own dialogs (current behavior).
+    // To use the in-page AgentDialog component instead, uncomment the block
+    // below. Keep beforeunload ($dialogType == 3) on the CEF default: the page
+    // is already unloading and an injected dialog may never render.
+    // show_native_js_dialog escapes the payload, so any message content is safe.
+    // AgentDialog reports the result back through window.cefQuery, which lands
+    // in on_browser_cef_query below; if the page has no AgentDialog it reports
+    // js_dialog_unavailable instead and the dialog gets canceled.
+    //
+    // if ($dialogType != 3 && stringcontainsany($originUrl, "localhost:8080")) {
+    //     show_native_js_dialog($handle, $dialogType, $message, $defaultText);
+    //     return((true, 1));
+    // };
+
+    return((false, 0));
 };
 
 // Note: this function will be called on the browser process IO thread.
@@ -129,7 +172,7 @@ script(on_resource_redirect)params($request,$response,$new_url)
 // type, charset and response headers may be changed before CEF processes them.
 script(on_before_resource_response)params($request,$response)
 {
-    if (stringcontainsany($request.Url, "gemini.google.com")) {
+    if (stringcontainsany($request.Url, "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
         $response.RemoveHeaderByName("Content-Security-Policy");
     };
 };
@@ -234,14 +277,47 @@ script(on_browser_hot_reload_completed)params($url)
     // For example: reload configuration, reinitialize state, etc.
 };
 
-// Called when browser receives a CEF query
-script(on_browser_cef_query)params($query_id, $request, $persistent)
+// Called when browser receives a CEF query (browser process, main/UI thread).
+// This is also the return path for custom JS dialogs: window.cefQuery is the
+// only renderer -> browser channel available here (callMetaDSL is routed to the
+// renderer side DSL, which cannot see handles registered in this process).
+// $handle is the parked CefMessageRouterBrowserSide::Callback.
+// Return (taken_over, result):
+//   taken_over == false -> answered synchronously; result 0 sends Success("OK"),
+//                       any other value sends Failure(result, ...). This is also
+//                       the safe default, so a script error cannot hang a query.
+//   taken_over == true  -> the query is taken over; nothing reaches the page
+//                       until complete_native_callback($handle, ok, response
+//                       [, code]) is called. ok=true sends Success(response),
+//                       ok=false sends Failure(code, response).
+// Safety nets if a taken over query is never completed: CEF cancels it on
+// navigation / renderer termination / window.cefQueryCancel (the entry is then
+// discarded), the native registry expires it after 60s, and everything the
+// browser owns is released when it closes.
+script(on_browser_cef_query)params($query_id, $request, $persistent, $handle)
 {
-    nativelog("[dsl] on_browser_cef_query called - query_id: {0}, request: {1}, persistent: {2}", $query_id, $request, $persistent);
+    nativelog("[dsl] on_browser_cef_query called - query_id: {0}, request: {1}, persistent: {2}, handle: {3}", $query_id, $request, $persistent, $handle);
 
-    // Return 0 to indicate success
-    // Return non-zero error code to indicate failure
-    return(-1);
+    $msg = dev_tools_parse_bytes($request);
+    if ($msg != null) {
+        $action = $msg["action"];
+        if ($action == "js_dialog_result") {
+            // { action, handle (string), ok (bool), input (string) }
+            // Note: $msg["handle"] is the JS dialog handle, not $handle.
+            complete_native_callback($msg["handle"], $msg["ok"], $msg["input"]);
+            return((false, 0));
+        }
+        elif ($action == "js_dialog_unavailable") {
+            // The page has no AgentDialog implementation: cancel the dialog so
+            // the pending confirm() cannot hang.
+            nativelog("[dsl] js dialog UI unavailable, canceling handle {0}", $msg["handle"]);
+            complete_native_callback($msg["handle"], false, "");
+            return((false, 0));
+        };
+    };
+
+    // Not handled here: answer synchronously with a failure.
+    return((false, -1));
 };
 
 // DevTools observer callbacks (browser process only, fired on UI thread).

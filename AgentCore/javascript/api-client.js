@@ -32,6 +32,7 @@ class APIClient {
             apiType: 'openai',
             apiKey: '',
             apiEndpoint: '',
+            agentId: '', // For auto_metadsl: agent id -> knot agui endpoint
             model: 'gpt-4.1',
             username: '', // For auto_metadsl auth
             authMode: 'personal', // 'personal' or 'agent' for auto_metadsl
@@ -62,6 +63,12 @@ class APIClient {
         }
         // local_openai/ollama endpoints are optional: when empty we fall back to
         // http://localhost:11434 and append the proper suffix automatically.
+        // auto_metadsl requires either an explicit endpoint or an agent id
+        // (checked in validateConfig).
+        if (this.config.apiType === 'auto_metadsl' &&
+            !this.config.apiEndpoint && !this.config.agentId) {
+            throw new Error('For auto_metadsl, either API endpoint or agent id must be specified');
+        }
         return true;
     }
 
@@ -71,7 +78,11 @@ class APIClient {
         } else if (this.config.apiType === 'claude') {
             return 'https://api.anthropic.com/v1/messages';
         } else if (this.config.apiType === 'auto_metadsl') {
-            return 'https://knot.woa.com/apigw/api/v1/agents/agui/114631ca85184f639f69572bbcfcbe7a';
+            // Either an explicit endpoint or an agent id must be configured
+            // (checked in validateConfig).
+            return this.config.agentId
+                ? 'https://knot.woa.com/apigw/api/v1/agents/agui/' + this.config.agentId
+                : '';
         } else if (this.config.apiType === 'local_openai') {
             // Default to Ollama's standard local address. The OpenAI-compatible
             // suffix '/v1/chat/completions' will be appended automatically by

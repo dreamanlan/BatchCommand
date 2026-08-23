@@ -793,12 +793,19 @@
                 <input type="text" id="api-endpoint" placeholder="Leave empty for default">
             </div>
 
+            <div class="config-group" id="agent-id-group" style="display: none;">
+                <label for="agent-id">Agent ID:</label>
+                <input type="text" id="agent-id" placeholder="e.g. 114631ca85184f639f69572bbcfcbe7a">
+                <small style="color: #7f8c8d; font-size: 12px;">For auto_metadsl: either this or API Endpoint must be
+                    specified.</small>
+            </div>
+
             <div class="config-group" id="model-group">
                 <label for="model">Model:</label>
                 <select id="model">
                     <!-- Options will be populated by JavaScript -->
                 </select>
-                <input type="text" id="model-text" placeholder="e.g. qwen2.5:7b (Ollama) or any (LM Studio)"
+                <input type="text" id="model-text" placeholder="e.g. qwen3.8:27b (Ollama) or any (LM Studio)"
                     style="display: none;">
             </div>
 

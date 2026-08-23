@@ -17,7 +17,7 @@ namespace CefDotnetApp.AgentCore.Core
         private const int c_maxHistoryMessages = 64;
         private readonly string _baseUrl;
         private readonly string _apiKeyTemplate;
-        private readonly Func<string, string> _apiKeyResolver;
+        private readonly Func<string, string> _keyEnvResolver;
         private readonly string _model;
         private readonly int _maxRetries;
         private readonly ConcurrentDictionary<string, List<ChatMessage>> _sessions = new();
@@ -36,11 +36,11 @@ namespace CefDotnetApp.AgentCore.Core
         private int _timeoutSeconds = 300;
         private static readonly HttpClient s_http = CreateHttpClient();
 
-        public OpenAiProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> apiKeyResolver, int maxRetries = 3)
+        public OpenAiProvider(string baseUrl, string apiKeyTemplate, string model, Func<string, string> keyEnvResolver, int maxRetries = 3)
         {
             _baseUrl = baseUrl.TrimEnd('/');
             _apiKeyTemplate = apiKeyTemplate;
-            _apiKeyResolver = apiKeyResolver;
+            _keyEnvResolver = keyEnvResolver;
             _model = model;
             _maxRetries = maxRetries;
         }
@@ -148,9 +148,10 @@ namespace CefDotnetApp.AgentCore.Core
             {
                 using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-                string resolvedKey = _apiKeyResolver(_apiKeyTemplate);
+                string resolvedKey = _keyEnvResolver(_apiKeyTemplate);
                 string path = !string.IsNullOrEmpty(_requestPath) ? _requestPath : "/chat/completions";
-                using var req = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}{path}");
+                string baseUrl = _keyEnvResolver(_baseUrl);
+                using var req = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}{path}");
                 req.Headers.Add("Authorization", $"Bearer {resolvedKey}");
                 if (_gatewayMode == "boxai")
                     AddBoxAiHeaders(req, tag);

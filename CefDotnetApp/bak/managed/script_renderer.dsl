@@ -626,36 +626,68 @@ script(induction_info)params($batch, $infos, $session)
 {
     nativelog("[dsl] induction_info, batch: {0}, infos: {1}, session: {2}", $batch, count($infos), $session);
 
-    loop($batch) {
-        $i = $$;
-        $induction = new_string_builder();
-        loop(10){
-            $j = $i*10 + $$;
-            append_line($induction, $infos[$j]);
+    if (@EnableLlmPM) {
+        loop($batch) {
+            $i = $$;
+            $induction = new_string_builder();
+            loop(10){
+                $j = $i*10 + $$;
+                append_line($induction, $infos[$j]);
+            };
+
+            llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", string_builder_to_string($induction)));
+        };
+    }
+    else {
+        $operationQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getOperationQueueCount",[]));
+        $sendQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getSendQueueCount",[]));
+        $receiveQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.AgentAPI.getReceiveQueueCount",[]));
+        $ct = $operationQueueCount + $receiveQueueCount;
+
+        $histId = "_decurion_history";
+        if ($session == "llm_pm_marquis") {
+            $histId = "_marquis_history";
+        }
+        elif ($session == "llm_pm_chiliarch") {
+            $histId = "_chiliarch_history";
+        }
+        elif ($session == "llm_pm_centurion") {
+            $histId = "_centurion_history";
+        }
+        elif ($session == "llm_pm_decurion") {
+            $histId = "_decurion_history";
         };
 
-        if (@EnableLlmPM) {
-            llm_chat_callback(@LlmProviderId, $session, "induction", format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", string_builder_to_string($induction)));
-        }
-        else {
-            $histId = "_decurion_history";
-            if ($session == "llm_pm_marquis") {
-                $histId = "_marquis_history";
-            }
-            elif ($session == "llm_pm_chiliarch") {
-                $histId = "_chiliarch_history";
-            }
-            elif ($session == "llm_pm_centurion") {
-                $histId = "_centurion_history";
-            }
-            elif ($session == "llm_pm_decurion") {
-                $histId = "_decurion_history";
+        $induction = new_string_builder();
+        loop($batch) {
+            $i = $$;
+            loop(10){
+                $j = $i*10 + $$;
+                append_line($induction, $infos[$j]);
             };
-            $prompt = format("{0}\n\n以上是最近10次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", string_builder_to_string($induction),
-                format("semantic_add(agent_get_project_identity(9527)+'{0}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $histId)
-                );
-            // Fallback when PM is disabled: just send "continue" to keep LLM moving.
-            send_command_to_inject("send_message", to_json({text: $prompt}));
+
+            if ($i + 1 < $batch) {
+                $id = semantic_add(agent_get_project_identity(9527) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
+
+                nativelog("[dsl] induction_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
+            };
+        };
+
+        if ($batch > 0) {
+            if ($ct > 0) {
+                $id = semantic_add(agent_get_project_identity(9527) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
+
+                nativelog("[dsl] induction_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
+            }
+            else {
+                $prompt = format("{0}\n\n以上是最近若干次工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", string_builder_to_string($induction),
+                    format("semantic_add(agent_get_project_identity(9527)+'{0}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $histId)
+                    );
+                // Fallback when PM is disabled: just send "continue" to keep LLM moving.
+                send_command_to_inject("send_message", to_json({text: $prompt}));
+
+                nativelog("[dsl] induction_info, prompt: {0}, history id: {1}", get_string_in_length($prompt, 100), $histId);
+            };
         };
     };
 };

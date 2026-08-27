@@ -202,7 +202,7 @@ semantic_search(agent_get_project_identity(9534)+"_legionnaire_history", "问题
 认知记忆分3层【情景记忆（具体事件）-> 模式记忆（重复模式）-> 元认知记忆（决策原则）】：episodic_memory（情境）,只有情境记忆存数据库，模式与元认知存文档了
 ```
 // @execute
-semantic_search(agent_get_project_identity(9534)+"_episodic_memory", "问题描述", "空格分隔的关键词", 50);
+semantic_get_recent(agent_get_project_identity(9534)+"_episodic_memory", 30);
 ```
 
 将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。

@@ -201,10 +201,10 @@ semantic_search(agent_get_project_identity(9527)+"_legionnaire_history", "问题
 
 将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
 
-认知记忆分3层：情景（具体事件，sqlite 表 `{project_identity}_episodic_memory`，按需 semantic_search/keyword_search 检索）→ 模式（重复问题及解法，见项目 docs/patterns.md）→ 元认知（决策原则，随项目人格文档 soul.md 拼接进 prompt）。
+认知记忆分3层：情景（具体事件，sqlite 表 `{project_identity}_episodic_memory`，按需 semantic_get_recent(collection[, topN]) 分析提炼）→ 模式（重复问题及解法，见项目 docs/patterns.md）→ 元认知（决策原则，随项目人格文档 soul.md 拼接进 prompt）。
 ```
 // @execute
-semantic_search(agent_get_project_identity(9527)+"_episodic_memory", "问题描述", "空格分隔的关键字", 50);
+semantic_get_recent(agent_get_project_identity(9527)+"_episodic_memory", 30);
 ```
 
 sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读

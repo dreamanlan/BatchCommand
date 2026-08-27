@@ -8,7 +8,7 @@ script(init_global_consts)
     @AgentPorts = hashtable("webagent":9527,"hyarena":9528,"venus":9529,"aichat":9530,"gemini":9531,"openai":9532,"imate":9533,"with":9534,"google":9535);
     @AgentPort = hashtableget(@AgentPorts,"webagent");
 
-    @EnableLlmPM = false;
+    @EnableLlmPM = true;
     //@LlmProviderId = "ollama";
     @LlmProviderId = "auto_metadsl";
 

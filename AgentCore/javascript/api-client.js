@@ -685,16 +685,27 @@ class APIClient {
         // Check for HTTP errors
         if (!response.ok) {
             let errorMessage = `HTTP ${response.status}`;
+            let errorText = null;
             try {
-                const errorText = await response.text();
-                const errorJson = JSON.parse(errorText);
-                if (errorJson.msg) {
-                    errorMessage = `${errorJson.msg} (code: ${errorJson.code || 'unknown'})`;
-                } else {
+                errorText = await response.text();
+            } catch (e) {
+                // Body read failed; keep the HTTP status message.
+            }
+            if (apiLogger) apiLogger.debug('HTTP error response:', {
+                status: response.status,
+                body: errorText
+            });
+            if (errorText) {
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.msg) {
+                        errorMessage = `${errorJson.msg} (code: ${errorJson.code || 'unknown'})`;
+                    } else {
+                        errorMessage = errorText;
+                    }
+                } catch (e) {
                     errorMessage = errorText;
                 }
-            } catch (e) {
-                errorMessage = await response.text();
             }
             throw new Error(`Auto MetaDSL API error: ${errorMessage}`);
         }

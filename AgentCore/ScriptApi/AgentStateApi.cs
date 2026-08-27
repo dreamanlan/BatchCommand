@@ -74,35 +74,35 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_set_system_prompt(port, value) - set the system prompt text
+    /// agent_set_foundation_prompt(port, value) - set the system prompt text
     /// </summary>
-    sealed class AgentSetSystemPromptExp : SimpleExpressionBase
+    sealed class AgentSetFoundationPromptExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_system_prompt requires (port, value)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_foundation_prompt requires (port, value)");
                 return BoxedValue.FromString("error: missing parameters");
             }
             var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            inst.SystemPrompt = operands[1].AsString;
+            inst.FoundationPrompt = operands[1].AsString;
             return BoxedValue.FromString("ok");
         }
     }
 
     /// <summary>
-    /// agent_get_system_prompt(port) - get the system prompt text
+    /// agent_get_foundation_prompt(port) - get the system prompt text
     /// </summary>
-    sealed class AgentGetSystemPromptExp : SimpleExpressionBase
+    sealed class AgentGetFoundationPromptExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
             if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_system_prompt requires (port)");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_foundation_prompt requires (port)");
                 return BoxedValue.FromString(string.Empty);
             }
             var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            return BoxedValue.FromString(inst.SystemPrompt);
+            return BoxedValue.FromString(inst.FoundationPrompt);
         }
     }
 
@@ -140,39 +140,6 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_set_plan(port, value) - set the current plan text
-    /// </summary>
-    sealed class AgentSetPlanExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_plan requires (port, value)");
-                return BoxedValue.FromString("error: missing parameters");
-            }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            inst.Plan = operands[1].AsString;
-            return BoxedValue.FromString("ok");
-        }
-    }
-
-    /// <summary>
-    /// agent_get_plan(port) - get the current plan text
-    /// </summary>
-    sealed class AgentGetPlanExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_plan requires (port)");
-                return BoxedValue.FromString(string.Empty);
-            }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            return BoxedValue.FromString(inst.Plan);
-        }
-    }
-
-    /// <summary>
     /// agent_set_emphasize(port, value) - set the emphasize text
     /// </summary>
     sealed class AgentSetEmphasizeExp : SimpleExpressionBase
@@ -202,6 +169,72 @@ namespace AgentCore.ScriptApi
             }
             var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
             return BoxedValue.FromString(inst.Emphasize);
+        }
+    }
+
+    /// <summary>
+    /// agent_set_soul(port, value) - set the soul text
+    /// </summary>
+    sealed class AgentSetSoulExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_soul requires (port, value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            inst.Soul = operands[1].AsString;
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// agent_get_soul(port) - get the soul text
+    /// </summary>
+    sealed class AgentGetSoulExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_soul requires (port)");
+                return BoxedValue.FromString(string.Empty);
+            }
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            return BoxedValue.FromString(inst.Soul);
+        }
+    }
+
+    /// <summary>
+    /// agent_set_plan(port, value) - set the current plan text
+    /// </summary>
+    sealed class AgentSetPlanExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_plan requires (port, value)");
+                return BoxedValue.FromString("error: missing parameters");
+            }
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            inst.Plan = operands[1].AsString;
+            return BoxedValue.FromString("ok");
+        }
+    }
+
+    /// <summary>
+    /// agent_get_plan(port) - get the current plan text
+    /// </summary>
+    sealed class AgentGetPlanExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_plan requires (port)");
+                return BoxedValue.FromString(string.Empty);
+            }
+            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+            return BoxedValue.FromString(inst.Plan);
         }
     }
 
@@ -654,39 +687,6 @@ namespace AgentCore.ScriptApi
     }
 
     /// <summary>
-    /// agent_set_soul(port, value) - set the soul text
-    /// </summary>
-    sealed class AgentSetSoulExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_set_soul requires (port, value)");
-                return BoxedValue.FromString("error: missing parameters");
-            }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            inst.Soul = operands[1].AsString;
-            return BoxedValue.FromString("ok");
-        }
-    }
-
-    /// <summary>
-    /// agent_get_soul(port) - get the soul text
-    /// </summary>
-    sealed class AgentGetSoulExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            if (operands.Count != 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("agent_get_soul requires (port)");
-                return BoxedValue.FromString(string.Empty);
-            }
-            var inst = CefDotnetApp.AgentCore.Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
-            return BoxedValue.FromString(inst.Soul);
-        }
-    }
-
-    /// <summary>
     /// Registers all agent state DSL APIs
     /// </summary>
     public static class AgentStateApi
@@ -706,13 +706,13 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("agent_get_project_identity",
                 "agent_get_project_identity(port) - get the project identity string",
                 new ExpressionFactoryHelper<AgentGetProjectIdentityExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_system_prompt",
-                "agent_set_system_prompt(port, value) - set the system prompt text",
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_foundation_prompt",
+                "agent_set_foundation_prompt(port, value) - set the system prompt text",
                 false,
-                new ExpressionFactoryHelper<AgentSetSystemPromptExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_system_prompt",
-                "agent_get_system_prompt(port) - get the system prompt text",
-                new ExpressionFactoryHelper<AgentGetSystemPromptExp>());
+                new ExpressionFactoryHelper<AgentSetFoundationPromptExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_foundation_prompt",
+                "agent_get_foundation_prompt(port) - get the system prompt text",
+                new ExpressionFactoryHelper<AgentGetFoundationPromptExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_project_prompt",
                 "agent_set_project_prompt(port, value) - set the project prompt text",
                 false,
@@ -720,13 +720,6 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("agent_get_project_prompt",
                 "agent_get_project_prompt(port) - get the project prompt text",
                 new ExpressionFactoryHelper<AgentGetProjectPromptExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_plan",
-                "agent_set_plan(port, value) - set the current plan text",
-                false,
-                new ExpressionFactoryHelper<AgentSetPlanExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_plan",
-                "agent_get_plan(port) - get the current plan text",
-                new ExpressionFactoryHelper<AgentGetPlanExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_emphasize",
                 "agent_set_emphasize(port, value) - set the emphasize text",
                 false,
@@ -734,6 +727,20 @@ namespace AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("agent_get_emphasize",
                 "agent_get_emphasize(port) - get the emphasize text",
                 new ExpressionFactoryHelper<AgentGetEmphasizeExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_soul",
+                "agent_set_soul(port, value) - set the soul text",
+                false,
+                new ExpressionFactoryHelper<AgentSetSoulExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_soul",
+                "agent_get_soul(port) - get the soul text",
+                new ExpressionFactoryHelper<AgentGetSoulExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_plan",
+                "agent_set_plan(port, value) - set the current plan text",
+                false,
+                new ExpressionFactoryHelper<AgentSetPlanExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_plan",
+                "agent_get_plan(port) - get the current plan text",
+                new ExpressionFactoryHelper<AgentGetPlanExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_todo",
                 "agent_set_todo(port, value) - set the todo text",
                 false,
@@ -767,13 +774,6 @@ namespace AgentCore.ScriptApi
                 "agent_get_inject_js_code_size(port) - get the length of inject JavaScript code",
                 false,
                 new ExpressionFactoryHelper<AgentGetInjectJsCodeSizeExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_soul",
-                "agent_set_soul(port, value) - set the soul text",
-                false,
-                new ExpressionFactoryHelper<AgentSetSoulExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_soul",
-                "agent_get_soul(port) - get the soul text",
-                new ExpressionFactoryHelper<AgentGetSoulExp>());
 
             AgentFrameworkService.Instance.DslEngine!.Register("agent_set_max_context_rounds",
                 "agent_set_max_context_rounds(port, value) - set how often to append context in WebSocket responses (0=every round)",

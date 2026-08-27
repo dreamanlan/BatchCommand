@@ -435,6 +435,30 @@ namespace CefDotnetApp.AgentCore.Core
                 string result = AgentFrameworkService.Instance.DslEngine!.ExecuteMetaDslScript(message, (null != inst ? inst.MaxResultSize : 0), out var hasError);
                 AgentCore.Instance.Logger.Debug($"MetaDSL execution completed, result length: {(result?.Length ?? 0)}");
                 var sb = new StringBuilder();
+                if (appendContext) {
+                    if (inst != null) {
+                        if (!string.IsNullOrEmpty(inst.Emphasize)) {
+                            sb.AppendLine(inst.Emphasize);
+                            sb.AppendLine();
+                        }
+                        if (!string.IsNullOrEmpty(inst.Soul)) {
+                            sb.AppendLine(inst.Soul);
+                            sb.AppendLine();
+                        }
+                        if (!string.IsNullOrEmpty(inst.ToDo)) {
+                            sb.AppendLine(inst.ToDo);
+                            sb.AppendLine();
+                        }
+                        if (!string.IsNullOrEmpty(inst.Context)) {
+                            sb.AppendLine(inst.Context);
+                            sb.AppendLine();
+                        }
+                        if (!string.IsNullOrEmpty(inst.History)) {
+                            sb.AppendLine(inst.History);
+                            sb.AppendLine();
+                        }
+                    }
+                }
                 sb.AppendLine("MetaDSL {:");
                 sb.AppendLine(message);
                 sb.AppendLine(":};");
@@ -465,30 +489,6 @@ namespace CefDotnetApp.AgentCore.Core
                     AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
                 }
 
-                if (appendContext) {
-                    if (inst != null) {
-                        if (!string.IsNullOrEmpty(inst.ToDo)) {
-                            sb.AppendLine();
-                            sb.AppendLine(inst.ToDo);
-                        }
-                        if (!string.IsNullOrEmpty(inst.Context)) {
-                            sb.AppendLine();
-                            sb.AppendLine(inst.Context);
-                        }
-                        if (!string.IsNullOrEmpty(inst.History)) {
-                            sb.AppendLine();
-                            sb.AppendLine(inst.History);
-                        }
-                        if (!string.IsNullOrEmpty(inst.Soul)) {
-                            sb.AppendLine();
-                            sb.AppendLine(inst.Soul);
-                        }
-                        if (!string.IsNullOrEmpty(inst.Emphasize)) {
-                            sb.AppendLine();
-                            sb.AppendLine(inst.Emphasize);
-                        }
-                    }
-                }
                 return sb.ToString();
             }
             catch (Exception ex)

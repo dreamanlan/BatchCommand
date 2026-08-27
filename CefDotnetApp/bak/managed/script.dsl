@@ -66,7 +66,10 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
         $cmdLine.AppendSwitch("disable-web-security");
         $cmdLine.AppendSwitch("allow-file-access-from-files");
     }
-    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://gemini.google.com/app")) {
+    elif (stringcontainsany($url, "https://evaluation.woa.com/chat", "https://www.google.com/ai", "https://www.google.com/search", "https://gemini.google.com/app")) {
+        $cmdLine.AppendSwitch("disable-web-security");
+    }
+    elif (stringcontainsany($url, "gamexyz.net")) {
         $cmdLine.AppendSwitch("disable-web-security");
     };
     //$cmdLine.AppendSwitch("disable-web-security");
@@ -172,7 +175,7 @@ script(on_resource_redirect)params($request,$response,$new_url)
 // type, charset and response headers may be changed before CEF processes them.
 script(on_before_resource_response)params($request,$response)
 {
-    if (stringcontainsany($request.Url, "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
+    if (stringcontainsany($request.Url, "gamexyz.net:8080/proxysite/", "www.google.com/ai", "www.google.com/search", "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
         $response.RemoveHeaderByName("Content-Security-Policy");
     };
 };
@@ -244,6 +247,56 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
 {
     nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
     return((true, ""));
+};
+
+// Called on the browser process IO thread when a target host (or proxy)
+// requests HTTP authentication credentials.
+// Return (handled, user, pass):
+//   handled == false -> DSL declines; Chromium shows its native login prompt.
+//   handled == true  -> silently use the returned credentials.
+// The default implementation always declines so that the user is prompted.
+script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$originUrl)
+{
+    nativelog("[dsl] on_get_auth_credentials: isProxy={0}, host={1}, port={2}, realm={3}, scheme={4}, origin={5}", $isProxy, $host, $port, $realm, $scheme, $originUrl);
+    // Supply hard-coded credentials for the outbound proxy. Only apply to
+    // proxy challenges; leave target-server auth (e.g. site logins) alone so
+    // the user is still prompted for those.
+    if($isProxy){
+        //return((true, "dreaman", "nopasswd"));
+    };
+    return((false, "", ""));
+};
+
+// Called on the CEF UI thread when a page requests camera / microphone / etc.
+// $requested is a bitmask of CEF_MEDIA_PERMISSION_* values; $menuDisabled is
+// the current state of the "media handling disabled" menu switch.
+// Return (handled, allowedBits):
+//   handled == false -> DSL declines; C++ falls back to the menu switch, then
+//                       to Chromium's native permission prompt.
+//   handled == true  -> silently grant exactly the bits in allowedBits
+//                       (0 = deny everything).
+// Default implementation always declines so that the user is prompted.
+script(on_request_media_access_permission)params($origin,$requested,$menuDisabled)
+{
+    nativelog("[dsl] on_request_media_access_permission: origin={0}, requested={1}, menu_disabled={2}", $origin, $requested, $menuDisabled);
+    return((false, 0));
+};
+
+// Called on the CEF UI thread on any SSL / certificate error before the
+// interstitial page is shown. $certError is a Chromium net error code
+// (e.g. -200 = ERR_CERT_COMMON_NAME_INVALID, -201 = ERR_CERT_DATE_INVALID,
+// -202 = ERR_CERT_AUTHORITY_INVALID).
+// Return (handled, action):
+//   handled == false -> DSL declines; Chromium shows its default interstitial.
+//   handled == true  -> action selects the outcome:
+//                         0 = default (fall back to the interstitial),
+//                         1 = Continue (silently proceed despite the error),
+//                         2 = Cancel   (silently cancel without an interstitial).
+// Default implementation always declines so the user sees the standard UI.
+script(on_certificate_error)params($certError,$requestUrl)
+{
+    nativelog("[dsl] on_certificate_error: cert_error={0}, url={1}", $certError, $requestUrl);
+    return((false, 0));
 };
 
 script(on_receive_cef_message)params($msg,$args,$srcProcId)

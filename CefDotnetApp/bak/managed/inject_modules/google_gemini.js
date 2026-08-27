@@ -1,6 +1,6 @@
 ﻿// ==UserScript==
 // @name         MetaDSL Agent Bridge (Google AI Search)
-// @version      1.0
+// @version      1.1
 // @description  Google AI Search page <-> local WebSocket code execution loop (single model)
 // @match        *://*/*
 // @grant        none
@@ -13,7 +13,7 @@
      Section 0  Config
      =========================================== */
   const CFG = {
-    WS_URL: null,         // set by DSL via ws_start_venus command
+    WS_URL: null,         // set by DSL via ws_start_gemini command
     RECONNECT_MS: 3000,
     MAX_RECONNECT: 50,
     DEBOUNCE_MS: 1200,
@@ -30,21 +30,27 @@
     TEXT_STABLE_MS: 3000,
   };
 
-  // Selectors aligned with the Venus (ai.woa.com) chat page structure.
+  // Selectors aligned with the Google AI Search page structure.
   const SEL = {
     // Container for AI messages (cached at first detection - see ST.chatListEl).
     // Fallback root used by Observer until first AI message is found.
     chatListFallback: 'body',
-    // AI message anchor: venus chat bubble, excludes user messages (pre-text).
-    aiMsg: '.message-wrapper:not(:has(.vac-message-container.pre-text))',
-    // Code block container: pre inside markdown-body (AI reply content).
-    codeBlock: '.markdown-body pre',
+    // AI message anchor: each represents one round of AI reply.
+    aiMsg: 'model-response, .mZJni[data-xid="VpUvz"]',
+    // Code block container (also carries data-complete="true" when stream done).
+    codeBlock: '.r1PmQe',
+    geminiCodeBlock: 'pre',
+    allCodeBlock: 'model-response pre, .r1PmQe',
+
+    codeBlockComplete: '.r1PmQe[data-complete="true"]',
+    messageComplete: '.response-footer.complete, message-content[aria-busy="false"], .markdown-main-panel[aria-busy="false"]',
+
     // Code text inside the block.
-    codeText: 'code',
-    // Real textarea for chat input (venus room).
-    inputTA: '#roomTextarea',
-    // Send button - filtered by :not(vac-send-disabled) so disabled won't match.
-    sendBtn: '.vac-icon-textarea:not(.vac-send-disabled)',
+    codeText: 'pre code',
+    // Real textarea for chat input.
+    inputTA: 'div[contenteditable="true"][role="textbox"], textarea.ITIRGe[maxlength="8192"]',
+    // Send button - must be precise to avoid voice-send-button twin.
+    sendBtn: 'button[data-xid="input-plate-send-button"], button[aria-label], button[title], button[type="submit"], button[data-test-id]',
   };
 
   /** Pick the first visible (rect non-zero) element matching selector. */
@@ -68,10 +74,71 @@
     return out;
   }
 
+  /** Pick AI messages whose host or visible content has a non-zero rect. */
+  function pickAllVisibleMessages(root) {
+    const all = (root || document).querySelectorAll(SEL.aiMsg);
+    const out = [];
+    for (const el of all) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        out.push(el);
+        continue;
+      }
+      const content = el.querySelector('pre, code, message-content, .markdown-main-panel');
+      if (!content) continue;
+      const contentRect = content.getBoundingClientRect();
+      if (contentRect.width > 0 && contentRect.height > 0) out.push(el);
+    }
+    return out;
+  }
+
+  /** Return code blocks scoped to one AI message. */
+  function getMessageCodeBlocks(aiMsgEl) {
+    if (!aiMsgEl.matches('model-response')) {
+      return aiMsgEl.querySelectorAll(SEL.codeBlock);
+    }
+    const blocks = aiMsgEl.querySelectorAll(SEL.geminiCodeBlock);
+    if (blocks.length > 0) return blocks;
+    const messageContent = aiMsgEl.querySelector('message-content');
+    if (!messageContent) return [];
+    const content = messageContent.querySelector('.markdown-main-panel') || messageContent;
+    return hasExecuteMarker(readCodeText(content)) ? [content] : [];
+  }
+
+  /** Read plain text from textarea/input or a contenteditable textbox. */
+  function getInputText(el) {
+    if (!el) return '';
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+      return el.value || '';
+    }
+    return (el.innerText || el.textContent || '').replace(/\u00a0/g, ' ');
+  }
+
+  /** Pick a visible button whose metadata explicitly identifies send/submit. */
+  function pickSendButton() {
+    const candidates = pickAllVisible(SEL.sendBtn);
+    for (const btn of candidates) {
+      if (btn.getAttribute('data-xid') === 'input-plate-send-button') return btn;
+      if ((btn.getAttribute('type') || '').toLowerCase() === 'submit') return btn;
+      const label = (btn.getAttribute('aria-label') || btn.getAttribute('title') || '')
+        .trim().toLowerCase();
+      if (/^(send|send message|send prompt|submit|submit prompt)$/.test(label)) return btn;
+      const ident = [
+        btn.getAttribute('data-test-id') || '',
+        btn.id || '',
+        typeof btn.className === 'string' ? btn.className : '',
+      ].join(' ').toLowerCase();
+      if (/(^|[\s_-])(send|submit)([\s_-]|$)/.test(ident)) return btn;
+    }
+    return null;
+  }
+
   /* ===========================================
      Section 1  Global State (single model)
      =========================================== */
+
   const ST = {
+
     // Single WebSocket connection (no slot keying).
     ws: null,
     reconCnt: 0,
@@ -126,7 +193,7 @@
   /* ===========================================
      Section 2  Logging
      =========================================== */
-  const T = '[MetaDSL-Venus]';
+  const T = '[MetaDSL-GAI]';
   const log = (...a) => CFG.DEBUG && console.log(`%c${T}`, 'color:#00bcd4;font-weight:bold', ...a);
   const warn = (...a) => console.warn(`%c${T}`, 'color:#ff9800;font-weight:bold', ...a);
   const err = (...a) => console.error(`%c${T}`, 'color:#f44336;font-weight:bold', ...a);
@@ -174,7 +241,7 @@
   // Mirrors the main-window llm_* notifications (metadsl_monitor.js keepContext /
   // state_machine.js save_conversation_history) but keyed by agentId: each
   // single-page freebie agent reports with its fixed module identity.
-  const AGENT_ID = 'venus';
+  const AGENT_ID = 'gemini';
 
   function notifyContextCountDown() {
     bridgeSendNotification('freebie_context_count_down', {
@@ -196,7 +263,7 @@
     // so the round count drives it instead of the LLM asking.
     ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
     if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
-        ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+      ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
       notifyContextCountDown();
     }
   }
@@ -227,23 +294,23 @@
     }
   };
 
-  // DSL -> JS: proactive command (e.g. ws_start_venus, send_message)
+  // DSL -> JS: proactive command (e.g. ws_start_gemini, send_message)
   window.onAgentCommand = function (commandJson) {
     try {
       const cmd = JSON.parse(commandJson);
       log('[bridge] onAgentCommand:', cmd.command);
 
-      if (cmd.command === 'ws_start_venus' && cmd.params && cmd.params.port) {
+      if (cmd.command === 'ws_start_gemini' && cmd.params && cmd.params.port) {
         CFG.WS_URL = 'ws://localhost:' + cmd.params.port;
-        log(`[bridge] ws_start_venus -> ${CFG.WS_URL}`);
+        log(`[bridge] ws_start_gemini -> ${CFG.WS_URL}`);
         if (!ST.ws || ST.ws.readyState > 1) {
           ST.reconCnt = 0;
           ST.ws = wsCreate();
         }
         return;
       }
-      if (cmd.command === 'ws_stop_venus') {
-        log('[bridge] ws_stop_venus');
+      if (cmd.command === 'ws_stop_gemini') {
+        log('[bridge] ws_stop_gemini');
         if (ST.ws) {
           try { ST.ws.close(); } catch (_) { }
           ST.ws = null;
@@ -266,14 +333,32 @@
   /* ===========================================
      Section 4  WebSocket Management
      =========================================== */
+  function resolveWsCtor() {
+    // The proxy page may patch the iframe's window.WebSocket and redirect
+    // ws://localhost to a remote tunnel. Prefer the parent page's native
+    // constructor when reachable, otherwise fall back to our own.
+    try {
+      if (window.parent && window.parent !== window &&
+          typeof window.parent.WebSocket === 'function') {
+        return window.parent.WebSocket;
+      }
+    } catch (e) {
+      // cross-origin parent access denied, keep local constructor
+    }
+    return window.WebSocket;
+  }
+
   function wsCreate() {
     if (!CFG.WS_URL) {
       warn('[ws] WS_URL not set, skipping connect');
       return null;
     }
     log(`[ws] connecting -> ${CFG.WS_URL}`);
+    const WSCtor = resolveWsCtor();
+    ST.wsCtor = WSCtor;
+    log(`[ws] ctor from ${WSCtor === window.WebSocket ? 'self' : 'parent'}`);
     let ws;
-    try { ws = new WebSocket(CFG.WS_URL); } catch (e) {
+    try { ws = new WSCtor(CFG.WS_URL); } catch (e) {
       err('[ws] create failed', e);
       wsReconnect(); return null;
     }
@@ -301,7 +386,8 @@
 
   function wsSend(text) {
     const ws = ST.ws;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    const WSCtor = ST.wsCtor || window.WebSocket;
+    if (!ws || ws.readyState !== (WSCtor.OPEN || 1)) {
       warn('[ws] not connected'); return false;
     }
     ws.send(text);
@@ -350,8 +436,8 @@
     // NOT auto-write ourselves, the user is composing a message. Defer the
     // flush (keep queue intact) and retry in 2s.
     const taNow = pickVisible(SEL.inputTA);
-    const curVal = taNow ? taNow.value : '';
-    if (curVal && curVal !== ST.lastAutoSentText) {
+    const curVal = getInputText(taNow);
+    if (curVal.trim() && curVal !== ST.lastAutoSentText) {
       const nowTs = Date.now();
       if (nowTs - ST.deferLastLogTs > 1000) {
         ST.deferLastLogTs = nowTs;
@@ -441,8 +527,10 @@
   function baselineCodeOnly() {
     const root = getChatRoot();
     let n = 0;
-    root.querySelectorAll(SEL.codeBlock).forEach(el => {
-      if (!ST.processedCodes.has(el)) { ST.processedCodes.add(el); n++; }
+    pickAllVisibleMessages(root).forEach(msg => {
+      getMessageCodeBlocks(msg).forEach(el => {
+        if (!ST.processedCodes.has(el)) { ST.processedCodes.add(el); n++; }
+      });
     });
     log(`[baseline] absorbed ${n} existing code blocks`);
     return n;
@@ -487,7 +575,7 @@
       cursor:pointer; display:flex; justify-content:space-between; align-items:center;
     `;
     const title = document.createElement('span');
-    title.textContent = 'MetaDSL-Venus';
+    title.textContent = 'MetaDSL-GAI';
     title.style.cssText = 'font-weight:bold; color:#00bcd4;';
     const collapseBtn = document.createElement('span');
     collapseBtn.textContent = '[-]';
@@ -514,17 +602,14 @@
     const row1 = document.createElement('div');
     row1.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnArm = mkBtn('arm', () => { ST.armed ? disarmNow() : armNow(); });
-    btnArm.id = 'metadsl-gai-arm';
     const btnLong = mkBtn('long', () => {
       ST.longRunMode = !ST.longRunMode;
       log('[longrun] ' + ST.longRunMode);
       updatePanel();
     });
-    btnLong.id = 'metadsl-gai-long';
     const btnAuto = mkBtn('auto', () => {
       ST.autoSendOn ? stopAutoSend() : startAutoSend();
     });
-    btnAuto.id = 'metadsl-gai-auto';
     row1.appendChild(btnArm);
     row1.appendChild(btnLong);
     row1.appendChild(btnAuto);
@@ -563,11 +648,11 @@
     row3.appendChild(btnTrim);
     body.appendChild(row3);
 
-    // Button row 4: prompt
+    // Button row 4: prompts
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
-    const btnP = mkBtn('Prompt', () => sendPrompt());
-    row4.appendChild(btnP);
+    const btnPrompt = mkBtn('prompt', () => sendPrompt());
+    row4.appendChild(btnPrompt);
     body.appendChild(row4);
 
     panel.appendChild(header);
@@ -579,6 +664,7 @@
 
   function mkBtn(text, onClick) {
     const b = document.createElement('button');
+    b.dataset.action = text;
     b.textContent = text;
     b.style.cssText = `
       background:#3a4a6b; color:#fff; border:none; border-radius:3px;
@@ -590,29 +676,11 @@
 
   function sendPrompt() {
     let txt = '';
-    try { txt = callMetaDSL('get_venus_system_prompt', '') || ''; }
+    try { txt = callMetaDSL('get_google_prompt', '') || ''; }
     catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
     if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
-    const ok = setSystemPrompt(String(txt));
-    log('[prompt] setSystemPrompt ' + (ok ? 'OK' : 'FAIL') + ' (' + String(txt).length + ' chars)');
-  }
-
-  function setSystemPrompt(text) {
-    const ta = document.querySelector('.dialog-advanced-config .string-item textarea');
-    if (!ta) { log('[sysprompt] textarea not found'); return false; }
-    try {
-      const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
-      desc.set.call(ta, text);
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      ta.dispatchEvent(new Event('change', { bubbles: true }));
-    } catch (e) {
-      log('[sysprompt] write error: ' + (e && e.message));
-      return false;
-    }
-    const okBtn = document.querySelector('.dialog-advanced-config .footer .el-button--primary');
-    if (!okBtn) { log('[sysprompt] OK button not found'); return false; }
-    okBtn.click();
-    return true;
+    chatSend(String(txt));
+    log('[prompt] sent (' + String(txt).length + ' chars)');
   }
 
   function updatePanel() {
@@ -620,49 +688,28 @@
     const status = ST.panelEl.querySelector('#metadsl-gai-status');
     if (!status) return;
 
-    const armButton = ST.panelEl.querySelector('#metadsl-gai-arm');
-    const longButton = ST.panelEl.querySelector('#metadsl-gai-long');
-    const autoButton = ST.panelEl.querySelector('#metadsl-gai-auto');
-    if (armButton) {
-      armButton.textContent = ST.armed ? 'ARM ON' : 'ARM OFF';
-      armButton.style.background = ST.armed ? '#4caf50' : '#555';
-      armButton.style.color = ST.armed ? '#fff' : '#ccc';
-    }
-    if (longButton) {
-      longButton.textContent = ST.longRunMode ? 'LONG ON' : 'LONG OFF';
-      longButton.style.background = ST.longRunMode ? '#ff9800' : '#555';
-      longButton.style.color = ST.longRunMode ? '#fff' : '#ccc';
-    }
-    if (autoButton) {
-      autoButton.textContent = ST.autoSendOn ? 'AUTO ON' : 'AUTO OFF';
-      autoButton.style.background = ST.autoSendOn ? '#00bcd4' : '#555';
-      autoButton.style.color = ST.autoSendOn ? '#fff' : '#ccc';
-    }
-
-    const armTag = ST.armed
-      ? '<span style="color:#4caf50;font-weight:bold;">ARM</span>'
-      : '<span style="color:#999;">idle</span>';
-    const brkTag = ST.breakerOn
-      ? '<span style="color:#f44336;font-weight:bold;">BRK</span>'
-      : (ST.longRunMode
-        ? '<span style="color:#ff9800;">LONG</span>'
-        : '<span style="color:#4caf50;">run</span>');
-    const autoTag = ST.autoSendOn
-      ? '<span style="color:#00bcd4;">AUTO</span>'
-      : '';
     const queue = ST.pendingResults.length;
-    const queueTag = queue > 0
-      ? `<span style="color:#ff9800;">Q:${queue}</span>`
-      : '<span style="color:#666;">Q:0</span>';
-    const wsTag = (ST.ws && ST.ws.readyState === 1)
-      ? '<span style="color:#4caf50;">ws</span>'
-      : '<span style="color:#f44336;">ws-off</span>';
-    const failTag = ST.sendFailAt
-      ? `<span style="color:#f44336;" title="${ST.sendFailInfo}">FAIL</span>`
-      : '';
+    const wsText = (ST.ws && ST.ws.readyState === 1) ? 'ws' : 'ws-off';
+    const modeText = ST.breakerOn ? 'BREAK' : (ST.longRunMode ? 'LONG' : 'RUN');
+    const autoText = ST.autoSendOn ? 'AUTO' : 'MANUAL';
+    const failText = ST.sendFailAt ? ' | FAIL' : '';
+    status.style.whiteSpace = 'pre-line';
+    status.textContent =
+      `${ST.armed ? 'ARM' : 'IDLE'} | ${modeText} | ${autoText} | Q:${queue} | ${wsText}${failText}\n` +
+      `rounds: ${ST.roundCount}/${CFG.MAX_ROUNDS}`;
+    status.title = ST.sendFailAt ? ST.sendFailInfo : '';
 
-    status.innerHTML = `${armTag} ${brkTag} ${autoTag} ${queueTag} ${wsTag} ${failTag}
-      <br>rounds: ${ST.roundCount}/${CFG.MAX_ROUNDS}`;
+    const setButtonState = (action, active, activeColor) => {
+      const button = ST.panelEl.querySelector(`button[data-action="${action}"]`);
+      if (!button) return;
+      button.textContent = `${action}:${active ? 'on' : 'off'}`;
+      button.style.background = active ? activeColor : '#3a4a6b';
+      button.style.fontWeight = active ? 'bold' : 'normal';
+    };
+    setButtonState('arm', ST.armed, '#2e7d32');
+    setButtonState('break', ST.breakerOn, '#c62828');
+    setButtonState('long', ST.longRunMode, '#ef6c00');
+    setButtonState('auto', ST.autoSendOn, '#00838f');
   }
 
   /* ===========================================
@@ -714,9 +761,9 @@
     if (!ST.autoSendOn) return;
     const ta = pickVisible(SEL.inputTA);
     if (!ta) return;
-    const text = (ta.value || '').trim();
+    const text = getInputText(ta).trim();
     if (!text) return;
-    const btn = pickVisible(SEL.sendBtn);
+    const btn = pickSendButton();
     if (!btn) return;
     if (btn.disabled) return;
     // Don't click if currently generating (button shows stop icon).
@@ -752,16 +799,19 @@
     }
   }
 
-  /** Set textarea value through the browser editing path when possible. */
+  /** Set textarea/input or contenteditable text and notify the page. */
   function setReactValue(el, value) {
-    el.focus();
-    if (typeof el.select === 'function') el.select();
-    let inserted = false;
-    try {
-      inserted = document.execCommand('insertText', false, value);
-    } catch (_) { }
-    if (inserted && el.value === value) return;
-
+    if (el.isContentEditable) {
+      el.focus();
+      el.textContent = value;
+      el.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText',
+        data: value,
+      }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
     const proto = el.tagName === 'TEXTAREA'
       ? window.HTMLTextAreaElement.prototype
       : window.HTMLInputElement.prototype;
@@ -782,7 +832,7 @@
     // main agent's agentCollapsed handling in page_adapter.extractNewConversations.
     ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
-    if (!ta) { markSendFail('input textarea not found'); return; }
+    if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }
     catch (e) { markSendFail('setReactValue threw: ' + e.message); return; }
 
@@ -796,42 +846,14 @@
           const b = all[i];
           dump.push(`${i}:${(b.getAttribute('data-xid') || '').slice(0, 40)}|${(b.getAttribute('aria-label') || '').slice(0, 20)}|d=${b.disabled}`);
         }
-        markSendFail('send button never enabled. ta.val.len=' + (ta.value || '').length + ' btns=' + dump.join(';'));
+        markSendFail('send button never enabled. input.len=' + getInputText(ta).length + ' btns=' + dump.join(';'));
         return;
       }
-      const btn = pickVisible(SEL.sendBtn);
+      const btn = pickSendButton();
       const ta2 = pickVisible(SEL.inputTA);
-      // Wait until the framework has accepted the text.
-      if (!ta2 || ta2.value !== text) {
-        setTimeout(tick, 200);
-        return;
-      }
-      // Venus variants without a send button submit through Enter.
-      if (!btn) {
-        try {
-          ta2.focus();
-          ta2.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true,
-          }));
-          ta2.dispatchEvent(new KeyboardEvent('keyup', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-          }));
-          clearSendFail();
-        } catch (e) {
-          markSendFail('Enter dispatch threw: ' + e.message);
-        }
-        return;
-      }
-      if (btn.disabled) {
+      // Wait until: send btn visible & enabled, AND the page has retained our
+      // value in the visible input (defends against framework rollback).
+      if (!btn || btn.disabled || !ta2 || getInputText(ta2) !== text) {
         setTimeout(tick, 200);
         return;
       }
@@ -893,11 +915,22 @@
 
   /**
    * Determine whether the AI message has finished streaming.
-   * Venus uses text-stable window only (no data-complete attribute).
-   * Message considered complete when text length unchanged for TEXT_STABLE_MS.
+   * Decision beta (double-safety):
+   *   1. All code blocks inside the message carry data-complete="true"; AND
+   *   2. The message text has been stable for TEXT_STABLE_MS.
    */
   function isMessageComplete(aiMsgEl) {
-    // Text-stable window.
+    // 1) Require the page-specific completion marker.
+    if (aiMsgEl.matches('model-response')) {
+      if (!aiMsgEl.querySelector(SEL.messageComplete)) return false;
+    } else {
+      const allCb = getMessageCodeBlocks(aiMsgEl);
+      const completeCb = aiMsgEl.querySelectorAll(SEL.codeBlockComplete);
+      if (allCb.length > 0 && completeCb.length !== allCb.length) {
+        return false;
+      }
+    }
+    // 2) Text-stable window.
     const txt = aiMsgEl.textContent || '';
     const rec = ST.emptyAt.get(aiMsgEl);
     const now = Date.now();
@@ -920,10 +953,14 @@
    */
   function extractBlocks(aiMsgEl) {
     const out = [];
-    const blocks = aiMsgEl.querySelectorAll(SEL.codeBlock);
+    const blocks = getMessageCodeBlocks(aiMsgEl);
     blocks.forEach(blk => {
       if (ST.processedCodes.has(blk)) return;
-      const codeEl = blk.querySelector(SEL.codeText);
+      const codeEl = blk.matches('pre')
+        ? (blk.querySelector('code') || blk)
+        : (blk.matches('message-content, .markdown-main-panel')
+          ? blk
+          : blk.querySelector(SEL.codeText));
       if (!codeEl) return;
       const code = readCodeText(codeEl);
       if (!code || !code.trim()) return;
@@ -978,14 +1015,14 @@
     const root = getChatRoot();
     if (!root) return;
 
-    const aiMsgs = pickAllVisible(SEL.aiMsg, root);
+    const aiMsgs = pickAllVisibleMessages(root);
     if (aiMsgs.length === 0) return;
 
     // Disarmed mode: rolling baseline - absorb every visible code block as
     // already processed; do not mark messages, do not send to WS.
     if (!ST.armed) {
       aiMsgs.forEach(msg => {
-        const blocks = msg.querySelectorAll(SEL.codeBlock);
+        const blocks = getMessageCodeBlocks(msg);
         blocks.forEach(blk => {
           if (!ST.processedCodes.has(blk)) ST.processedCodes.add(blk);
         });
@@ -993,22 +1030,19 @@
       return;
     }
 
-    // Armed mode: keep scanning messages because streaming may append blocks.
+    // Armed mode: process each AI message that has not yet been finalized.
     aiMsgs.forEach(msg => {
       if (ST.processedMsgs.has(msg)) return;
       if (!isMessageComplete(msg)) return;
 
       // Persist every completed AI message with the prompt that produced it.
-      // This module never marks processedMsgs, so guard with a WeakSet to keep
-      // the notification one-shot per message element.
-      if (!ST.notifiedMsgs) ST.notifiedMsgs = new WeakSet();
-      if (!ST.notifiedMsgs.has(msg)) {
-        ST.notifiedMsgs.add(msg);
-        notifyConversationHistory(msg);
-      }
+      notifyConversationHistory(msg);
 
       const blocks = extractBlocks(msg);
       if (blocks.length === 0) {
+        // No code blocks found in a fully stable message -> mark final.
+        ST.processedMsgs.add(msg);
+        ST.emptyAt.delete(msg);
         return;
       }
 
@@ -1031,6 +1065,10 @@
           log(`[process] sent ${blk.id} lang=${blk.lang} ${blk.code.length}B`);
         }
       });
+
+      // Finalize this message so we don't re-extract on later mutations.
+      ST.processedMsgs.add(msg);
+      ST.emptyAt.delete(msg);
     });
   }
 
@@ -1041,9 +1079,9 @@
     const root = getChatRoot();
     if (!root) return;
     let nMsg = 0, nBlk = 0;
-    pickAllVisible(SEL.aiMsg, root).forEach(msg => {
+    pickAllVisibleMessages(root).forEach(msg => {
       ST.processedMsgs.add(msg); nMsg++;
-      msg.querySelectorAll(SEL.codeBlock).forEach(blk => {
+      getMessageCodeBlocks(msg).forEach(blk => {
         ST.processedCodes.add(blk); nBlk++;
       });
     });
@@ -1080,8 +1118,8 @@
     startObserver();
     createPanel();
     // Notify DSL side that the bridge is ready. Keep the legacy name
-    // 'venus_ready' to avoid touching the DSL handler (N1 decision).
-    bridgeSendNotification('venus_ready', { url: location.href });
+    // 'gemini_ready' to avoid touching the DSL handler (N1 decision).
+    bridgeSendNotification('gemini_ready', { url: location.href });
     log('[init] done');
   }
 

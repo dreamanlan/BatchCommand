@@ -23,6 +23,8 @@
     MAX_ROUNDS: 8,
     KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
+    // Fire freebie_context_count_down every N conversation rounds (0 disables).
+    LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
     // Stream completion: required idle window after last text change.
     TEXT_STABLE_MS: 3000,
@@ -34,7 +36,7 @@
     // Fallback root used by Observer until first AI message is found.
     chatListFallback: 'body',
     // AI message anchor: each represents one round of AI reply.
-    aiMsg: 'model-response, .mZJni[data-xid="VpUvz"]',
+    aiMsg: '.mZJni[data-xid="VpUvz"]',
     // Code block container (also carries data-complete="true" when stream done).
     codeBlock: '.r1PmQe',
     geminiCodeBlock: 'pre',
@@ -46,9 +48,9 @@
     // Code text inside the block.
     codeText: 'pre code',
     // Real textarea for chat input.
-    inputTA: 'div[contenteditable="true"][role="textbox"], textarea.ITIRGe[maxlength="8192"]',
+    inputTA: 'textarea.ITIRGe[maxlength="8192"]',
     // Send button - must be precise to avoid voice-send-button twin.
-    sendBtn: 'button[data-xid="input-plate-send-button"], button[aria-label], button[title], button[type="submit"], button[data-test-id]',
+    sendBtn: 'button[data-xid="input-plate-send-button"]',
   };
 
   /** Pick the first visible (rect non-zero) element matching selector. */
@@ -236,6 +238,36 @@
     return id;
   }
 
+  // Mirrors the main-window llm_* notifications (metadsl_monitor.js keepContext /
+  // state_machine.js save_conversation_history) but keyed by agentId: each
+  // single-page freebie agent reports with its fixed module identity.
+  const AGENT_ID = 'google';
+
+  function notifyContextCountDown() {
+    bridgeSendNotification('freebie_context_count_down', {
+      agentId: AGENT_ID,
+      count: CFG.LLM_CONTEXT_COUNT_MODULO
+    });
+  }
+
+  function notifyConversationHistory(aiMsgEl) {
+    if (!aiMsgEl) return;
+    const assistantText = (typeof readCodeText === 'function')
+      ? readCodeText(aiMsgEl) : (aiMsgEl.textContent || '');
+    bridgeSendNotification('freebie_save_conversation_history', {
+      agentId: AGENT_ID,
+      conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]
+    });
+    // Fire the count-down notification every N completed AI messages
+    // (conversation rounds). The single-page modules have no js_request channel,
+    // so the round count drives it instead of the LLM asking.
+    ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
+    if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
+      ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+      notifyContextCountDown();
+    }
+  }
+
   /**
    * Send a notification to DSL (fire-and-forget, no response expected).
    */
@@ -340,6 +372,7 @@
       warn('[ws] not connected'); return false;
     }
     ws.send(text);
+    ST.execInflight = (ST.execInflight || 0) + 1;
     return true;
   }
 
@@ -349,6 +382,7 @@
   function onWSMsg(text) {
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
+    if (ST.execInflight > 0) ST.execInflight--;
     ST.pendingResults.push(text);
     scheduleFlush();
   }
@@ -434,7 +468,7 @@
       const text = lines.join('\n');
       log('[flush] send back:', text.slice(0, 120) + '...');
       ST.lastAutoSentText = text;
-      chatSend(text);
+      chatSend(text, true);
       if (ST.pendingResults.length > 0 && !ST.breakerOn && ST.armed) {
         ST.drainMode = true;
         scheduleFlush();
@@ -598,8 +632,12 @@
     // Button row 4: prompts
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
-    const btnPrompt = mkBtn('prompt', () => sendPrompt());
-    row4.appendChild(btnPrompt);
+    const btnPrompt1 = mkBtn('prompt1', () => sendPrompt(1));
+    const btnPrompt2 = mkBtn('prompt2', () => sendPrompt(2));
+    const btnPrompt3 = mkBtn('prompt3', () => sendPrompt(3));
+    row4.appendChild(btnPrompt1);
+    row4.appendChild(btnPrompt2);
+    row4.appendChild(btnPrompt3);
     body.appendChild(row4);
 
     panel.appendChild(header);
@@ -621,9 +659,9 @@
     return b;
   }
 
-  function sendPrompt() {
+  function sendPrompt(id) {
     let txt = '';
-    try { txt = callMetaDSL('get_google_prompt', '') || ''; }
+    try { txt = callMetaDSL('get_google_prompt_' + id, '') || ''; }
     catch (e) { log('[prompt] callMetaDSL error: ' + (e && e.message)); return; }
     if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
     chatSend(String(txt));
@@ -773,7 +811,11 @@
    * Uses a tick loop with 30s deadline. Detects 'generating' state on the
    * button (stop-icon swap) to know when send finished.
    */
-  function chatSend(text) {
+  function chatSend(text, isAgentResult) {
+    // Remember the prompt for freebie_save_conversation_history.
+    // Agent-injected messages (exec results) keep an empty user, mirroring the
+    // main agent's agentCollapsed handling in page_adapter.extractNewConversations.
+    ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
     if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }
@@ -978,6 +1020,9 @@
       if (ST.processedMsgs.has(msg)) return;
       if (!isMessageComplete(msg)) return;
 
+      // Persist every completed AI message with the prompt that produced it.
+      notifyConversationHistory(msg);
+
       const blocks = extractBlocks(msg);
       if (blocks.length === 0) {
         // No code blocks found in a fully stable message -> mark final.
@@ -1083,12 +1128,21 @@
     disarm: disarmNow,
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+    // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
+    // Single-page modules scan and send immediately, so there is neither a
+    // pending-operation layer nor a to-send queue: both counters are always 0.
+    // Exec requests still in flight (sent, result not yet back) are tracked in
+    // ST.execInflight and exposed via status().execQueue instead.
+    getOperationQueueCount: () => 0,
+    getSendQueueCount: () => 0,
+    getReceiveQueueCount: () => ST.pendingResults.length,
     status: () => ({
       armed: ST.armed,
       breakerOn: ST.breakerOn,
       longRun: ST.longRunMode,
       autoSend: ST.autoSendOn,
       queue: ST.pendingResults.length,
+      execQueue: ST.execInflight || 0,
       rounds: ST.roundCount,
       wsReady: !!(ST.ws && ST.ws.readyState === 1),
       sendFail: !!ST.sendFailAt,

@@ -2597,6 +2597,15 @@ namespace DotNetLib
         [return: MarshalAs(UnmanagedType.U1)]
         public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool inject_all_frame, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnGetAuthCredentialsDelegation([MarshalAs(UnmanagedType.U1)] bool is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnRequestMediaAccessPermissionDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, [MarshalAs(UnmanagedType.U1)] bool menu_disabled, ref uint allowed_permissions);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnCertificateErrorDelegation(int cert_error, [MarshalAs(UnmanagedType.LPUTF8Str)] string request_url, ref int out_action);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -3216,6 +3225,165 @@ namespace DotNetLib
                 NativeLogNoLock("[csharp] Exception in OnLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
             code_size = 0;
+            return false;
+        }
+
+        internal static bool OnGetAuthCredentials(bool is_proxy, string host, int port, string realm, string scheme, string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt)
+        {
+            NativeLogNoLock($"[csharp] OnGetAuthCredentials: is_proxy={is_proxy}, host={host}, port={port}, realm={realm}, scheme={scheme}, origin={origin_url}, handle={handle}, attempt={attempt}");
+            try {
+                string user = string.Empty;
+                string pass = string.Empty;
+
+                // Ask the DSL layer synchronously (same pattern as
+                // OnExecuteMetaDSL: serialized by s_Lock, safe to call from
+                // the CEF IO thread).                lock (s_Lock) {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromBool(is_proxy));
+                    vargs.Add(BoxedValue.FromString(host ?? ""));
+                    vargs.Add(BoxedValue.From(port));
+                    vargs.Add(BoxedValue.FromString(realm ?? ""));
+                    vargs.Add(BoxedValue.FromString(scheme ?? ""));
+                    vargs.Add(BoxedValue.FromString(origin_url ?? ""));
+                    vargs.Add(BoxedValue.From(handle));
+                    vargs.Add(BoxedValue.From(attempt));
+                    var r = BatchCommand.BatchScript.Call("on_get_auth_credentials", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // Return value convention: (handled, username, password)
+                    //   handled=false                 -> DSL declines; C++ runs
+                    //                                    its credui fallback.
+                    //   handled=true,  user empty     -> DSL took ownership of
+                    //                                    |handle| and will
+                    //                                    complete it later.
+                    //   handled=true,  user non-empty -> DSL supplied
+                    //                                    credentials
+                    //                                    synchronously.
+                    if (r.Type == (int)BoxedValue.c_Tuple3Type) {
+                        var tuple = r.GetTuple3();
+                        if (null != tuple) {
+                            bool handled = tuple.Item1.GetBool();
+                            if (handled) {
+                                user = tuple.Item2.GetString();
+                                pass = tuple.Item3.GetString();
+                                if (string.IsNullOrEmpty(user)) {
+                                    // Async takeover: DSL will complete
+                                    // |handle| via native_callback_complete
+                                    // (see HostApi.native_callback_complete).
+                                    NativeLogNoLock($"[csharp] OnGetAuthCredentials: DSL took over handle={handle}");
+                                    username_size = 0;
+                                    password_size = 0;
+                                    return true;
+                                }
+                                NativeLogNoLock($"[csharp] OnGetAuthCredentials: DSL handled sync (user={user}, pass_len={pass?.Length ?? 0})");
+                            }
+                            else {
+                                NativeLogNoLock("[csharp] OnGetAuthCredentials: DSL declined (handled=false)");
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(user)) {
+                    NativeLogNoLock("[csharp] OnGetAuthCredentials: no credentials provided by DSL, falling back to credui");
+                    return false;
+                }
+
+                byte[] userBytes = System.Text.Encoding.UTF8.GetBytes(user);
+                byte[] passBytes = System.Text.Encoding.UTF8.GetBytes(pass ?? string.Empty);
+                if (userBytes.Length >= username_size || passBytes.Length >= password_size) {
+                    NativeLogNoLock($"[csharp] OnGetAuthCredentials: buffer too small (user={userBytes.Length}/{username_size}, pass={passBytes.Length}/{password_size})");
+                    return false;
+                }
+
+                Marshal.Copy(userBytes, 0, username, userBytes.Length);
+                Marshal.Copy(passBytes, 0, password, passBytes.Length);
+                username_size = userBytes.Length;
+                password_size = passBytes.Length;
+                return true;
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnGetAuthCredentials:" + e.Message + "\n" + e.StackTrace);
+                return false;
+            }
+        }
+
+        internal static bool OnRequestMediaAccessPermission(string requesting_origin, uint requested_permissions, bool menu_disabled, ref uint allowed_permissions)
+        {
+            NativeLogNoLock($"[csharp] OnRequestMediaAccessPermission: origin={requesting_origin}, requested=0x{requested_permissions:X}, menu_disabled={menu_disabled}");
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.FromString(requesting_origin ?? ""));
+                    vargs.Add(BoxedValue.From((int)requested_permissions));
+                    vargs.Add(BoxedValue.FromBool(menu_disabled));
+                    var r = BatchCommand.BatchScript.Call("on_request_media_access_permission", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // Return value convention: (handled, allowed_bits)
+                    // handled=false -> DSL declines, C# returns false so the C++
+                    // side falls back to the menu kill-switch / native prompt.
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple = r.GetTuple2();
+                        if (null != tuple) {
+                            bool handled = tuple.Item1.GetBool();
+                            if (handled) {
+                                int allowed = tuple.Item2.GetInt();
+                                allowed_permissions = (uint)allowed;
+                                NativeLogNoLock($"[csharp] OnRequestMediaAccessPermission: DSL handled (allowed=0x{allowed_permissions:X})");
+                                return true;
+                            }
+                            NativeLogNoLock("[csharp] OnRequestMediaAccessPermission: DSL declined (handled=false)");
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnRequestMediaAccessPermission:" + e.Message + "\n" + e.StackTrace);
+            }
+            return false;
+        }
+
+        internal static bool OnCertificateError(int cert_error, string request_url, ref int out_action)
+        {
+            NativeLogNoLock($"[csharp] OnCertificateError: cert_error={cert_error}, url={request_url}");
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From(cert_error));
+                    vargs.Add(BoxedValue.FromString(request_url ?? ""));
+                    var r = BatchCommand.BatchScript.Call("on_certificate_error", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    // Return value convention: (handled, action)
+                    // action = 0 default / 1 continue / 2 cancel.
+                    // handled=false -> DSL declines, C++ falls back to the
+                    // Chromium interstitial (return false on the C++ side).
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple = r.GetTuple2();
+                        if (null != tuple) {
+                            bool handled = tuple.Item1.GetBool();
+                            if (handled) {
+                                out_action = tuple.Item2.GetInt();
+                                NativeLogNoLock($"[csharp] OnCertificateError: DSL handled (action={out_action})");
+                                return true;
+                            }
+                            NativeLogNoLock("[csharp] OnCertificateError: DSL declined (handled=false)");
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLogNoLock("[csharp] Exception in OnCertificateError:" + e.Message + "\n" + e.StackTrace);
+            }
             return false;
         }
 

@@ -15,21 +15,21 @@ namespace CefDotnetApp.AgentCore.Core
         // Agent state properties - readable/writable by DSL scripts
         public string ProjectDir { get; set; } = string.Empty;
         public string ProjectIdentity { get; set; } = string.Empty;
-        public string SystemPrompt { get; set; } = string.Empty;
+        public string FoundationPrompt { get; set; } = string.Empty;
         public string ProjectPrompt { get; set; } = string.Empty;
-        public string Plan { get; set; } = string.Empty;
         public string Emphasize { get; set; } = string.Empty;
+        public string Soul { get; set; } = string.Empty;
+        public string Plan { get; set; } = string.Empty;
         public string ToDo { get; set; } = string.Empty;
         public string Context { get; set; } = string.Empty;
         public string History { get; set; } = string.Empty;
         public string InjectJsCode { get; set; } = string.Empty;
-        public string Soul { get; set; } = string.Empty;
         public int MaxResultSize { get; set; } = 0;
 
         // Whether to inject context info into MetaDSL results at specified rounds
         public bool ContextInjectionEnabled { get; set; } = false;
         // How often to append context info in WebSocket responses (0 = every round)
-        public int MaxContextRounds { get; set; } = 3;
+        public int MaxContextRounds { get; set; } = 6;
         // Current context round counter (atomic via Interlocked)
         private int _curContextRounds = 0;
         public int CurContextRounds

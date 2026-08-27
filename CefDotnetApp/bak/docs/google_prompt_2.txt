@@ -1,0 +1,146 @@
+**查询API**
+
+help参数为正则表达式，多参数间为或关系（有一个类似api helpall可查询包含基础语法与不适用于立即执行的框架层api）：
+
+```
+// @execute
+help("file","dir","process","command","diff");
+```
+
+**目录与文件操作**
+
+- `list_dirs`/`list_files(dir, filter...)` — 不递归
+- `list_all_dirs`/`list_all_files(dir, filter...)` — 递归
+- `list_dir_info(path, glob_pattern, recursive)` - 返回目录信息列表
+- 均返回list
+
+多目录输出示例：
+
+```
+// @execute
+$str = new_string_builder();
+append_format_line($str, "{0}", to_string(list_dirs(basepath)));
+append_format_line($str, "{0}", to_string(list_dirs(combine_path(basepath, "managed"))));
+return(string_builder_to_string($str));
+```
+
+**文本块语法**
+
+无转义文本块用`[[` `]]`包裹：
+
+```
+// @execute
+write_file(path, [[
+	text content
+]]);
+```
+
+若文本含`[[`或`]]`，自定义标记后结束时重置：
+
+```
+// @execute
+@@delimiter(string, "__string_begin__", "__string_end__");
+write_file(path,
+__string_begin__
+	text content
+__string_end__
+);
+@@delimiter(string, "[[", "]]");
+```
+
+**命令执行**
+
+同步：`execute_command(command[, args_str, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
+异步：`execute_command_callback('command_callback', command[, args_str, workingDir, timeout_def_30000ms])[bindings(...)delimiter(begin,end)]; - async exec, result via command_callback.`
+bindings与delimiter部分可省略，用法与脚本执行api相同。
+
+```
+// @execute
+set_env("ProjectDirectory", agent_get_project_dir(9527));
+execute_command("cmd", "/c cd /d %ProjectDirectory% && python tools/gen_tiles.py", "%ProjectDirectory%", 120000);
+```
+如果是多行命令可以考虑用[[与]]来包裹命令字符串，这样不用写转义符【更复杂命令可用`@@delimiter(string, "begin", "end")`自定义】
+
+**脚本执行**
+
+同步：`execute_script([language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; return Object(success/exitCode/output/error/executionTime), use 'to_string' to convert to a string.`
+异步：`execute_script_callback('command_callback'[, language, workingDir, timeout_def_30000ms, cmd_and_args_str])[bindings($a,$b,...)delimiter(begin_template_code_chars,end_template_code_chars)]{: script_code :}; - async exec, result via command_callback.`
+bindings与delimiter部分可省略。bindings指定脚本里通过模板语法引用的MetaDSL变量; delimiter指定脚本里模板语法的分隔符，每个分隔符约定2个字符，通常使用默认即可。
+默认的模板代码分隔符是 `{%` 和 `%}`; 其中可指定1或2组分隔符，每组2个字符, {% %} 是模板变量括弧, 另一组字符用于模板代码注释.
+
+```
+// @execute
+execute_script("python", "E:/tmp", 30000){:
+print("hello from python")
+:};
+```
+外部脚本默认用`{: :}`，冲突时用`@@delimiter(script, "begin", "end")`自定义。
+需要指明命令行选项时可以使用额外的cmd_and_args_str参数提供（以-或/开头时只有选项不含命令路径）：
+
+```
+// @execute
+$info = "hello from PowerShell 5.1 with arguments";
+$result = execute_script("powershell", "E:/tmp", 30000, "-NoProfile -ExecutionPolicy Bypass")bindings($info){:
+Write-Output "{% $info %}"
+:};
+return(to_string($result));
+```
+
+*注意*
+外部脚本括号分隔符专用于外部脚本，只有特定api支持，不像字符串引号分隔符可用在所有字符串能用的地方。
+
+**网络访问与搜索**
+有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search
+write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
+二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex、string_to_bytes、bytes_to_string、base64_to_bytes、bytes_to_base64
+
+**Playwright API**
+- playwright_is_running() - returns bool indicating whether playwright is started.
+- playwright_start([headless, user_data_dir]) - Launch Chromium; if `headless` is `true`, headless mode is used (default is `false`). If `user_data_dir` is empty (default), create a fresh context, or if it is not empty, use a persistent context.
+- playwright_cdp_start(cdp_endpoint) - Launch Chromium; connect via CDP (reusing a remote instance).
+- playwright_stop() - close all pages, context and browser.
+- playwright_tabs([refresh]) - list all pages as 'id|url' semicolon separated; refresh=true syncs pages from context (CDP-attach case).
+- playwright_cdp_list_targets() - list CDP targets via HTTP /json (attach mode); returns raw JSON.
+- playwright_frames(page_id) - list all frames of a page. Returns JSON array of {url, name, is_main}.
+- playwright_new_page(page_id) - create a new page with the given string handle.
+- playwright_close_page(page_id) - close a page.
+- playwright_goto(page_id, url) - navigate the page.
+- 使用help("playwright_")获取更多Playwright相关API：playwright_evaluate/playwright_frame_evaluate/playwright_cdp_new_tab/playwright_cdp_close_tab/playwright_cdp_evaluate等等
+playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭之前启动的playwright或者记得使用结束后stop
+
+**其它工具**
+
+- `agent_get_project_identity(9531)` — 项目标识
+- `agent_get_project_dir(9531)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`xxx_prompt.txt`等状态文件
+- `count_lines(path[, encoding])` — 查看文件行数
+- `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
+- `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
+- `grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])` - 搜索多个文件内容
+- `string_join(sep, list) - 将list中的元素用sep分隔符连接成字符串
+- `string_split(str, sep) - 将str按照sep分隔符分割成list`
+- `calc_md5(path)` - 计算文件的md5值
+- skill目录：`list_dirs(combine_path(basepath, "skills"))`
+
+**语义/关键词搜索**
+
+历史分5级：legionnaire（单条）、decurion（十条）、centurion（百条）、chiliarch（千条）、marquis（万条）。
+
+```
+// @execute
+semantic_search(agent_get_project_identity(9531)+"_legionnaire_history", "问题描述", "空格分隔的关键词", 50);
+```
+
+认知记忆分3层【情景记忆（具体事件）-> 模式记忆（重复模式）-> 元认知记忆（决策原则）】：episodic_memory（情境）,只有情境记忆存数据库，模式与元认知存文档了
+```
+// @execute
+semantic_search(agent_get_project_identity(9531)+"_episodic_memory", "问题描述", "空格分隔的关键词", 50);
+```
+
+将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
+
+sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
+```
+// @execute
+$query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
+to_pretty_string($query_result);
+```

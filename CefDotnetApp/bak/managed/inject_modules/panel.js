@@ -533,9 +533,23 @@ class AgentPanel {
     venusBtn.onclick = () => window.open('https://ai.woa.com/#/chat');
 
     // GoogleAi button - open Google AI in new window
-    const googleAiBtn = document.createElement('button');
-    googleAiBtn.textContent = 'GoogleAi';
-    googleAiBtn.style.cssText = `
+    const geminiBtn = document.createElement('button');
+    geminiBtn.textContent = 'Gemini';
+    geminiBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #6b807d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    geminiBtn.onclick = () => window.open('https://gemini.google.com/app');
+
+    // GeminiProxy button - open Gemini AI via a proxy in new window
+    const geminiProxyBtn = document.createElement('button');
+    geminiProxyBtn.textContent = 'Gemini(via proxy)';
+    geminiProxyBtn.style.cssText = `
         padding: 3px 7px;
         background: #00897b;
         color: white;
@@ -544,7 +558,7 @@ class AgentPanel {
         cursor: pointer;
         font-size: 11px;
       `;
-    googleAiBtn.onclick = () => window.open('https://gemini.google.com/app');
+    geminiProxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080/proxysite/');
 
     // OpenAi button - open OpenAi AI in new window
     const openAiBtn = document.createElement('button');
@@ -588,6 +602,20 @@ class AgentPanel {
       `;
     withBtn.onclick = () => window.open('https://with.woa.com/chats');
 
+    // GoogleAi button - open Google AI in new window
+    const googleAiBtn = document.createElement('button');
+    googleAiBtn.textContent = 'GoogleAi';
+    googleAiBtn.style.cssText = `
+        padding: 3px 7px;
+        background: #798886;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+      `;
+    googleAiBtn.onclick = () => window.open('https://www.google.com/ai');
+
     // Second button row for AI site entries
     const aiBar = document.createElement('div');
     aiBar.style.cssText = `
@@ -600,10 +628,11 @@ class AgentPanel {
       `;
     aiBar.appendChild(hyarenaBtn);
     aiBar.appendChild(venusBtn);
-    aiBar.appendChild(googleAiBtn);
+    aiBar.appendChild(geminiBtn);
     aiBar.appendChild(openAiBtn);
     aiBar.appendChild(imateBtn);
     aiBar.appendChild(withBtn);
+    aiBar.appendChild(googleAiBtn);
 
     buttonBar.appendChild(testBtn);
     buttonBar.appendChild(chatRoomBtn);

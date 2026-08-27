@@ -23,6 +23,8 @@
     MAX_ROUNDS: 8,
     KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
+    // Fire freebie_context_count_down every N conversation rounds (0 disables).
+    LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
     // Stream completion: required idle window after last text change.
     TEXT_STABLE_MS: 3000,
@@ -210,6 +212,36 @@
     return id;
   }
 
+  // Mirrors the main-window llm_* notifications (metadsl_monitor.js keepContext /
+  // state_machine.js save_conversation_history) but keyed by agentId: each
+  // single-page freebie agent reports with its fixed module identity.
+  const AGENT_ID = 'openai';
+
+  function notifyContextCountDown() {
+    bridgeSendNotification('freebie_context_count_down', {
+      agentId: AGENT_ID,
+      count: CFG.LLM_CONTEXT_COUNT_MODULO
+    });
+  }
+
+  function notifyConversationHistory(aiMsgEl) {
+    if (!aiMsgEl) return;
+    const assistantText = (typeof readCodeText === 'function')
+      ? readCodeText(aiMsgEl) : (aiMsgEl.textContent || '');
+    bridgeSendNotification('freebie_save_conversation_history', {
+      agentId: AGENT_ID,
+      conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]
+    });
+    // Fire the count-down notification every N completed AI messages
+    // (conversation rounds). The single-page modules have no js_request channel,
+    // so the round count drives it instead of the LLM asking.
+    ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
+    if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
+        ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+      notifyContextCountDown();
+    }
+  }
+
   /**
    * Send a notification to DSL (fire-and-forget, no response expected).
    */
@@ -314,6 +346,7 @@
       warn('[ws] not connected'); return false;
     }
     ws.send(text);
+    ST.execInflight = (ST.execInflight || 0) + 1;
     return true;
   }
 
@@ -323,6 +356,7 @@
   function onWSMsg(text) {
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
+    if (ST.execInflight > 0) ST.execInflight--;
     ST.pendingResults.push(text);
     scheduleFlush();
   }
@@ -407,7 +441,7 @@
       const text = lines.join('\n');
       log('[flush] send back:', text.slice(0, 120) + '...');
       ST.lastAutoSentText = text;
-      chatSend(text);
+      chatSend(text, true);
       if (ST.pendingResults.length > 0 && !ST.breakerOn && ST.armed) {
         ST.drainMode = true;
         scheduleFlush();
@@ -752,7 +786,11 @@
    * Uses a tick loop with 30s deadline. Detects 'generating' state on the
    * button (stop-icon swap) to know when send finished.
    */
-  function chatSend(text) {
+  function chatSend(text, isAgentResult) {
+    // Remember the prompt for freebie_save_conversation_history.
+    // Agent-injected messages (exec results) keep an empty user, mirroring the
+    // main agent's agentCollapsed handling in page_adapter.extractNewConversations.
+    ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
     if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }
@@ -949,6 +987,9 @@
       if (ST.processedMsgs.has(msg)) return;
       if (!isMessageComplete(msg)) return;
 
+      // Persist every completed AI message with the prompt that produced it.
+      notifyConversationHistory(msg);
+
       const blocks = extractBlocks(msg);
       if (blocks.length === 0) {
         // No code blocks found in a fully stable message -> mark final.
@@ -1054,12 +1095,21 @@
     disarm: disarmNow,
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+    // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
+    // Single-page modules scan and send immediately, so there is neither a
+    // pending-operation layer nor a to-send queue: both counters are always 0.
+    // Exec requests still in flight (sent, result not yet back) are tracked in
+    // ST.execInflight and exposed via status().execQueue instead.
+    getOperationQueueCount: () => 0,
+    getSendQueueCount: () => 0,
+    getReceiveQueueCount: () => ST.pendingResults.length,
     status: () => ({
       armed: ST.armed,
       breakerOn: ST.breakerOn,
       longRun: ST.longRunMode,
       autoSend: ST.autoSendOn,
       queue: ST.pendingResults.length,
+      execQueue: ST.execInflight || 0,
       rounds: ST.roundCount,
       wsReady: !!(ST.ws && ST.ws.readyState === 1),
       sendFail: !!ST.sendFailAt,

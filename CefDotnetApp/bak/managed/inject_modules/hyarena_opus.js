@@ -23,6 +23,8 @@
     MAX_ROUNDS: 8,
     KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
+    // Fire freebie_context_count_down every N conversation rounds (0 disables).
+    LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
     // Minimum slot count when page selectors are not yet available.
     DEFAULT_SLOT_COUNT: 2,
@@ -131,7 +133,7 @@
   /* ===========================================
      Section 2  Logging
      =========================================== */
-  const T = '[MetaDSL]';
+  const T = '[MetaDSL-HyArena]';
   const log = (...a) => CFG.DEBUG && console.log(`%c${T}`, 'color:#00bcd4;font-weight:bold', ...a);
   const warn = (...a) => console.warn(`%c${T}`, 'color:#ff9800;font-weight:bold', ...a);
   const err = (...a) => console.error(`%c${T}`, 'color:#f44336;font-weight:bold', ...a);
@@ -232,6 +234,36 @@
       if (cb) setTimeout(() => cb(false, null, 'native API unavailable'), 0);
     }
     return id;
+  }
+
+  // Mirrors the main-window llm_* notifications (metadsl_monitor.js keepContext /
+  // state_machine.js save_conversation_history) but keyed by agentId: each
+  // single-page freebie agent reports with its fixed module identity.
+  const AGENT_ID = 'hyarena';
+
+  function notifyContextCountDown() {
+    bridgeSendNotification('freebie_context_count_down', {
+      agentId: AGENT_ID,
+      count: CFG.LLM_CONTEXT_COUNT_MODULO
+    });
+  }
+
+  function notifyConversationHistory(aiMsgEl) {
+    if (!aiMsgEl) return;
+    const assistantText = (typeof readCodeText === 'function')
+      ? readCodeText(aiMsgEl) : (aiMsgEl.textContent || '');
+    bridgeSendNotification('freebie_save_conversation_history', {
+      agentId: AGENT_ID,
+      conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]
+    });
+    // Fire the count-down notification every N completed AI messages
+    // (conversation rounds). The single-page modules have no js_request channel,
+    // so the round count drives it instead of the LLM asking.
+    ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
+    if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
+        ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+      notifyContextCountDown();
+    }
   }
 
   /**
@@ -350,6 +382,8 @@
       warn(`[${slotId}] WS not connected`); return false;
     }
     ws.send(text);
+    if (!ST.execInflight) ST.execInflight = {};
+    ST.execInflight[slotId] = (ST.execInflight[slotId] || 0) + 1;
     return true;
   }
 
@@ -359,6 +393,7 @@
   function onWSMsg(slotId, text) {
     log(`[${slotId}] recv ${text.length}B`);
     if (!text) return;
+    if (ST.execInflight && ST.execInflight[slotId] > 0) ST.execInflight[slotId]--;
     if (!ST.pendingResults[slotId]) ST.pendingResults[slotId] = [];
     ST.pendingResults[slotId].push(text);
     scheduleFlush();
@@ -502,7 +537,7 @@
       const text = lines.join('\n');
       log('[flush] send back:', text.slice(0, 120) + '...');
       ST.lastAutoSentText = text;
-      chatSend(text);
+      chatSend(text, true);
     }
     trimHistory(CFG.KEEP_ROUNDS);
     updatePanel();
@@ -534,7 +569,7 @@
       return;
     }
     log('[identity] send');
-    chatSend(CFG.IDENTITY_PROMPT);
+    chatSend(CFG.IDENTITY_PROMPT, true);
   }
 
   function sendPromptToChat() {
@@ -562,7 +597,7 @@
       return;
     }
     log(`[prompt] send (${text.length} chars)`);
-    chatSend(text);
+    chatSend(text, true);
   }
 
   function manualResume() {
@@ -674,7 +709,8 @@
     const slots = activeSlotIds();
     const queueParts = slots.map(id => {
       const n = (ST.pendingResults[id] || []).length;
-      return `${shortName(id, 8)}(${n})`;
+      const e = (ST.execInflight || {})[id] || 0;
+      return `${shortName(id, 8)}(${e}/${n})`;
     });
     const queueText = queueParts.length ? queueParts.join(' &middot; ') : '(empty)';
     const stateText = (ST.armed ? 'armed' : 'idle') + ' / ' + (ST.breakerOn ? 'broken' : 'running');
@@ -847,7 +883,12 @@
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function chatSend(text) {
+  function chatSend(text, isAgentResult) {
+    // Remember the prompt for freebie_save_conversation_history.
+    // Agent-injected messages (exec results, identity/system prompt, discuss
+    // broadcasts) keep an empty user, mirroring the main agent's agentCollapsed
+    // handling in page_adapter.extractNewConversations.
+    ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
     const ta = document.querySelector(SEL.inputTA);
     if (!ta) { err('input textarea not found'); markSendFail('no textarea'); return; }
 
@@ -1229,6 +1270,8 @@
           return;
         }
         if (Date.now() - rec.startTime >= 5000) {
+          // Persist the finalized message (all slots complete, no code left).
+          notifyConversationHistory(aiMsg);
           ST.processedMsgs.add(aiMsg);
           ST.emptyAt.delete(aiMsg);
           log('[msg] confirmed no code, marked. slots=' + items.length + ' textLen=' + curLen);
@@ -1244,7 +1287,7 @@
               const discText = discLines.join('\n');
               log('[discuss] broadcast replies:', discText.slice(0, 120));
               ST.lastAutoSentText = discText;
-              chatSend(discText);
+              chatSend(discText, true);
             }
           }
           // If there are queued results waiting (e.g. after a "continue"
@@ -1532,6 +1575,15 @@
     // Bridge API
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+
+    // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
+    // Single-page modules scan and send immediately, so there is neither a
+    // pending-operation layer nor a to-send queue: both counters are always 0.
+    // Exec requests still in flight (sent, result not yet back) are tracked in
+    // ST.execInflight per slot and shown on the panel queue line instead.
+    getOperationQueueCount: () => 0,
+    getSendQueueCount: () => 0,
+    getReceiveQueueCount: () => totalPending(),
 
     status() {
       const chatList = document.querySelector(SEL.chatList);

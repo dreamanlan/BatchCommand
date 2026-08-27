@@ -23,6 +23,8 @@
     MAX_ROUNDS: 8,
     KEEP_ROUNDS: 6,
     RESET_TIMEOUT_MS: 30000,
+    // Fire freebie_context_count_down every N conversation rounds (0 disables).
+    LLM_CONTEXT_COUNT_MODULO: 16,
     DEBUG: true,
     // Stream completion: required idle window after last text change.
     TEXT_STABLE_MS: 3000,
@@ -89,7 +91,11 @@
     const blocks = aiMsgEl.querySelectorAll(SEL.codeBlock);
     if (blocks.length > 0) return blocks;
     const content = aiMsgEl.querySelector('.markdown, [class*="markdown"]') || aiMsgEl;
-    return hasExecuteMarker(readCodeText(content)) ? [content] : [];
+    // Tagged <metadsl> code rendered as plain text has no <pre>: the whole
+    // message content becomes the block when a tag or marker is present.
+    const raw = readCodeText(content);
+    return (extractTaggedBlocks(raw).length > 0 ||
+      hasExecuteMarker(normalizeCodeText(raw))) ? [content] : [];
   }
 
   /** Read plain text from textarea/input or a contenteditable textbox. */
@@ -209,6 +215,36 @@
     return id;
   }
 
+  // Mirrors the main-window llm_* notifications (metadsl_monitor.js keepContext /
+  // state_machine.js save_conversation_history) but keyed by agentId: each
+  // single-page freebie agent reports with its fixed module identity.
+  const AGENT_ID = 'with';
+
+  function notifyContextCountDown() {
+    bridgeSendNotification('freebie_context_count_down', {
+      agentId: AGENT_ID,
+      count: CFG.LLM_CONTEXT_COUNT_MODULO
+    });
+  }
+
+  function notifyConversationHistory(aiMsgEl) {
+    if (!aiMsgEl) return;
+    const assistantText = (typeof readCodeText === 'function')
+      ? readCodeText(aiMsgEl) : (aiMsgEl.textContent || '');
+    bridgeSendNotification('freebie_save_conversation_history', {
+      agentId: AGENT_ID,
+      conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]
+    });
+    // Fire the count-down notification every N completed AI messages
+    // (conversation rounds). The single-page modules have no js_request channel,
+    // so the round count drives it instead of the LLM asking.
+    ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
+    if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
+        ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+      notifyContextCountDown();
+    }
+  }
+
   /**
    * Send a notification to DSL (fire-and-forget, no response expected).
    */
@@ -313,6 +349,7 @@
       warn('[ws] not connected'); return false;
     }
     ws.send(text);
+    ST.execInflight = (ST.execInflight || 0) + 1;
     return true;
   }
 
@@ -322,6 +359,7 @@
   function onWSMsg(text) {
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
+    if (ST.execInflight > 0) ST.execInflight--;
     ST.pendingResults.push(text);
     scheduleFlush();
   }
@@ -407,7 +445,7 @@
       const text = lines.join('\n');
       log('[flush] send back:', text.slice(0, 120) + '...');
       ST.lastAutoSentText = text;
-      chatSend(text);
+      chatSend(text, true);
       if (ST.pendingResults.length > 0 && !ST.breakerOn && ST.armed) {
         ST.drainMode = true;
         scheduleFlush();
@@ -752,7 +790,11 @@
    * Uses a tick loop with 30s deadline. Detects 'generating' state on the
    * button (stop-icon swap) to know when send finished.
    */
-  function chatSend(text) {
+  function chatSend(text, isAgentResult) {
+    // Remember the prompt for freebie_save_conversation_history.
+    // Agent-injected messages (exec results) keep an empty user, mirroring the
+    // main agent's agentCollapsed handling in page_adapter.extractNewConversations.
+    ST.lastSentPrompt = isAgentResult ? '' : String(text || '');
     const ta = pickVisible(SEL.inputTA);
     if (!ta) { markSendFail('chat input not found'); return; }
     try { setReactValue(ta, text); }
@@ -817,7 +859,86 @@
       lineSpans.forEach(ls => parts.push(ls.textContent || ''));
       return parts.join('\n');
     }
-    return el.textContent || '';
+    // textContent drops <br> newlines: when a renderer treats <metadsl> as an
+    // HTML block, the inner fence is not parsed as markdown and lines end up
+    // joined by <br> (or block elements), which would flatten the code into
+    // one line and break every line-based check. Walk the DOM instead and
+    // emit a newline for <br> and block boundaries.
+    const BLOCK_TAGS = new Set(['P', 'DIV', 'LI', 'UL', 'OL', 'PRE', 'CODE',
+      'BLOCKQUOTE', 'TABLE', 'TR', 'SECTION', 'ARTICLE', 'METADSL']);
+    const parts = [];
+    (function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        parts.push(node.nodeValue || '');
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.tagName === 'BR') {
+        parts.push('\n');
+        return;
+      }
+      const isBlock = BLOCK_TAGS.has(node.tagName);
+      if (isBlock) parts.push('\n');
+      node.childNodes.forEach(walk);
+      if (isBlock) parts.push('\n');
+    })(el);
+    return parts.join('').replace(/\n{3,}/g, '\n\n');
+  }
+
+  const FENCE_OPEN_RE = /^\s*```/;
+  const FENCE_CLOSE_RE = /^\s*```\s*$/;
+  const TAG_OPEN_RE = /^\s*<metadsl[^>]*>\s*$/i;
+  const TAG_CLOSE_RE = /^\s*<\/metadsl\s*>\s*$/i;
+
+  /**
+   * Normalize extracted code text: drop markdown fence lines and
+   * <metadsl></metadsl> wrapper lines so the DSL engine only sees code.
+   */
+  function normalizeCodeText(code) {
+    if (!code) return code;
+    let lines = code.replace(/\r\n/g, '\n').split('\n');
+    const trimBlank = () => {
+      while (lines.length && !lines[0].trim()) lines.shift();
+      while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+    };
+    trimBlank();
+    // Strip wrapper pairs (fence or tag) from the outside in.
+    while (lines.length >= 2 &&
+      ((FENCE_OPEN_RE.test(lines[0]) && FENCE_CLOSE_RE.test(lines[lines.length - 1])) ||
+        (TAG_OPEN_RE.test(lines[0]) && TAG_CLOSE_RE.test(lines[lines.length - 1])))) {
+      lines.shift();
+      lines.pop();
+      trimBlank();
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * Extract the code inside every <metadsl>...</metadsl> tag block. Matches
+   * the chat room semantics (d:\AiClaw\js\metadsl_executor.js): tags are
+   * case-insensitive, may carry attributes, may sit anywhere on a line (text
+   * before the open tag / after the close tag is ignored), and the close tag
+   * tolerates inner spaces. Inner fence markers are removed by
+   * normalizeCodeText.
+   */
+  function extractTaggedBlocks(text) {
+    const out = [];
+    if (!text) return out;
+    const openG = /<metadsl\b[^>]*>/gi;
+    const closeG = /<\/metadsl\s*>/gi;
+    let openM;
+    while ((openM = openG.exec(text)) !== null) {
+      closeG.lastIndex = openM.index + openM[0].length;
+      const closeM = closeG.exec(text);
+      if (!closeM) {
+        break;  // unclosed tag: nothing more to extract
+      }
+      const body = text.slice(openM.index + openM[0].length, closeM.index);
+      const code = normalizeCodeText(body);
+      if (code && code.trim()) out.push(code);
+      openG.lastIndex = closeM.index + closeM[0].length;
+    }
+    return out;
   }
 
   /** Test if code starts with one of the execute markers. */
@@ -876,9 +997,15 @@
           ? blk
           : blk.querySelector(SEL.codeText));
       if (!codeEl) return;
-      const code = readCodeText(codeEl);
+      // <metadsl>...</metadsl> tagged code: extract the inner code directly.
+      // Handles both a tag wrapper inside a markdown fence and a bare tag in
+      // the message text.
+      const raw = readCodeText(codeEl);
+      const tagged = extractTaggedBlocks(raw);
+      const code = tagged.length > 0 ? tagged.join('\n\n') : normalizeCodeText(raw);
       if (!code || !code.trim()) return;
-      if (!hasExecuteMarker(code)) {
+      // A tag wrapper is itself the execute signal; @execute still works.
+      if (tagged.length === 0 && !hasExecuteMarker(code)) {
         // Diagnostic: log first non-empty line so user can spot missed markers.
         const firstLine = (code.split('\n').find(l => l.trim()) || '').slice(0, 80);
         log('[extract] no @execute marker, skip. first=' + firstLine);
@@ -948,6 +1075,9 @@
     aiMsgs.forEach(msg => {
       if (ST.processedMsgs.has(msg)) return;
       if (!isMessageComplete(msg)) return;
+
+      // Persist every completed AI message with the prompt that produced it.
+      notifyConversationHistory(msg);
 
       const blocks = extractBlocks(msg);
       if (blocks.length === 0) {
@@ -1054,12 +1184,21 @@
     disarm: disarmNow,
     sendCommand: bridgeSendCommand,
     sendNotification: bridgeSendNotification,
+    // Main-agent compatible queue counters (AgentAPI.getXXXQueueCount).
+    // Single-page modules scan and send immediately, so there is neither a
+    // pending-operation layer nor a to-send queue: both counters are always 0.
+    // Exec requests still in flight (sent, result not yet back) are tracked in
+    // ST.execInflight and exposed via status().execQueue instead.
+    getOperationQueueCount: () => 0,
+    getSendQueueCount: () => 0,
+    getReceiveQueueCount: () => ST.pendingResults.length,
     status: () => ({
       armed: ST.armed,
       breakerOn: ST.breakerOn,
       longRun: ST.longRunMode,
       autoSend: ST.autoSendOn,
       queue: ST.pendingResults.length,
+      execQueue: ST.execInflight || 0,
       rounds: ST.roundCount,
       wsReady: !!(ST.ws && ST.ws.readyState === 1),
       sendFail: !!ST.sendFailAt,

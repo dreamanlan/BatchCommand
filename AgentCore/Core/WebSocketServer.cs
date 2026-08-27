@@ -459,17 +459,17 @@ namespace CefDotnetApp.AgentCore.Core
                         }
                     }
                 }
-                sb.AppendLine("MetaDSL {:");
+                sb.AppendLine("MetaDSL <{:>");
                 sb.AppendLine(message);
-                sb.AppendLine(":};");
-                sb.AppendLine("Result {:");
+                sb.AppendLine("<:}>;");
+                sb.AppendLine("Result <{:>");
                 sb.AppendLine(result);
                 if (hasError) {
-                    sb.AppendLine(":}");
+                    sb.AppendLine("<:}>");
                     sb.AppendLine("HasError;");
                 }
                 else {
-                    sb.AppendLine(":};");
+                    sb.AppendLine("<:}>;");
                 }
 
                 var record = sb.ToString();

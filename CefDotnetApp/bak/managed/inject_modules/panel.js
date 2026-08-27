@@ -558,7 +558,7 @@ class AgentPanel {
         cursor: pointer;
         font-size: 11px;
       `;
-    geminiProxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080/proxysite/');
+    geminiProxyBtn.onclick = () => window.open('https://www.gamexyz.net:8080');
 
     // OpenAi button - open OpenAi AI in new window
     const openAiBtn = document.createElement('button');
@@ -629,6 +629,7 @@ class AgentPanel {
     aiBar.appendChild(hyarenaBtn);
     aiBar.appendChild(venusBtn);
     aiBar.appendChild(geminiBtn);
+    aiBar.appendChild(geminiProxyBtn);
     aiBar.appendChild(openAiBtn);
     aiBar.appendChild(imateBtn);
     aiBar.appendChild(withBtn);

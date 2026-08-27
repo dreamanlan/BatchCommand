@@ -80,6 +80,11 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
     $cmdLine.AppendSwitch("disable-renderer-backgrounding");
     $cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
 
+    //--disable-chrome-login-prompt --proxy-pac-url=http://www.gamexyz.net/google_proxy.pac --ignore-certificate-errors-spki-list=2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=
+    $cmdLine.AppendSwitch("disable-chrome-login-prompt");
+    $cmdLine.AppendSwitchWithValue("proxy-pac-url", "http://www.gamexyz.net/google_proxy.pac");
+    $cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
+
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
 
@@ -175,7 +180,7 @@ script(on_resource_redirect)params($request,$response,$new_url)
 // type, charset and response headers may be changed before CEF processes them.
 script(on_before_resource_response)params($request,$response)
 {
-    if (stringcontainsany($request.Url, "gamexyz.net:8080/proxysite/", "www.google.com/ai", "www.google.com/search", "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
+    if (stringcontainsany($request.Url, "gamexyz.net:8080", "www.google.com/ai", "www.google.com/search", "gemini.google.com", "chatgpt.com", "chat.openai.com")) {
         $response.RemoveHeaderByName("Content-Security-Policy");
     };
 };
@@ -252,12 +257,20 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
 // Called on the browser process IO thread when a target host (or proxy)
 // requests HTTP authentication credentials.
 // Return (handled, user, pass):
-//   handled == false -> DSL declines; Chromium shows its native login prompt.
-//   handled == true  -> silently use the returned credentials.
+//   handled == false                 -> DSL declines; the C++ side runs its
+//                                       CredUI fallback (Credential Manager on
+//                                       Windows, Keychain + NSAlert on mac).
+//   handled == true,  user non-empty -> silently use the returned credentials.
+//   handled == true,  user empty     -> DSL takes ownership of $handle and must
+//                                       complete it later via
+//                                       native_callback_complete.
+// $attempt is 0 for the first call on a given target within this process, 1
+// when a previously supplied credential was rejected (the fallback then purges
+// the stale saved entry before prompting again).
 // The default implementation always declines so that the user is prompted.
-script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$originUrl)
+script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$originUrl,$handle,$attempt)
 {
-    nativelog("[dsl] on_get_auth_credentials: isProxy={0}, host={1}, port={2}, realm={3}, scheme={4}, origin={5}", $isProxy, $host, $port, $realm, $scheme, $originUrl);
+    nativelog("[dsl] on_get_auth_credentials: isProxy={0}, host={1}, port={2}, realm={3}, scheme={4}, origin={5}, handle={6}, attempt={7}", $isProxy, $host, $port, $realm, $scheme, $originUrl, $handle, $attempt);
     // Supply hard-coded credentials for the outbound proxy. Only apply to
     // proxy challenges; leave target-server auth (e.g. site logins) alone so
     // the user is still prompted for those.
@@ -275,6 +288,14 @@ script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$origi
 //                       to Chromium's native permission prompt.
 //   handled == true  -> silently grant exactly the bits in allowedBits
 //                       (0 = deny everything).
+//
+// IMPORTANT: for getUserMedia requests (device audio/video capture) the grant
+// is all-or-nothing - allowedBits must equal $requested, otherwise the call
+// fails instead of being partially granted. Returning a strict subset is only
+// meaningful for getDisplayMedia (screen/desktop capture).
+//
+// Note: adding --enable-media-stream to the command line grants every request
+// and skips this handler entirely (media_access_query.cc CheckCommandLinePermission).
 // Default implementation always declines so that the user is prompted.
 script(on_request_media_access_permission)params($origin,$requested,$menuDisabled)
 {

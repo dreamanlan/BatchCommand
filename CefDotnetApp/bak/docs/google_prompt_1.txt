@@ -36,31 +36,3 @@
 11. 条件表达式使用`? :`三目运算符，或使用`if_expr(expr,a,b)`。
 12. 至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。
 13. 留意完整报错信息，中间语句报错不一定中断执行。
-
-**代码修改步骤**
-
-1. 使用`view_file_structure`或`read_file`了解实现
-2. 确定修改内容
-3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines(path, startLine, endLine[, encoding])`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）
-4. 多行用`apply_diff`（unified diff格式）；单行用`replace_in_file`或`regex_replace_in_file`（注意，`string_replace`或`regex_replace`是字符串替换，不用于文件）
-5. 修改后重新阅读确认
-6. 多行替换时建议exactMatch参数为false（默认值，apply_diff、replace_in_file等，此时空白字符不要求精确匹配，可缓解空格、tab、回车换行差异）
-
-**代码语法分析API**
-
-基于语法树精确分析，返回格式化文本。通用签名：`api(filePath, language, [nameRegexPattern])`，带`_in_code`后缀版本签名：`api(code, language, [nameRegexPattern], [fileName])`。
-
-| 类别 | API | 说明 |
-|------|-----|------|
-| 文件概览 | `view_file_structure`, `view_code_structure` | 查看整体结构 |
-| 函数查找 | `find_functions`[`_in_code`], `find_function`[`_in_code`] | 查找所有/指定函数 |
-| 类型查找 | `find_types`[`_in_code`], `find_type`[`_in_code`] | 查找所有/指定类型（类/接口/结构体） |
-| 变量查找 | `find_variables`, `find_variable`, `find_global_variables`, `find_parameters` | 及对应`_in_code`版本 |
-| 类成员 | `find_class_members(filePath, lang, classPattern)` | 查找类所有成员 |
-| 类成员细分 | `find_fields`, `find_properties`, `find_methods`, `find_constructors`, `find_events` | 签名：`(filePath, lang, classPattern, [memberPattern])`，events仅C# |
-| 接口/结构/枚举 | `find_interfaces`, `find_structs`, `find_enums` | 标准签名 |
-| 通用AST | `find_nodes`[`_in_code`], `find_node`[`_in_code`] | 支持html/css/json/toml等所有语言 |
-
-支持语言：C, Cpp, Javascript, CSharp, TypeScript, TSX, Bash, Python, Rust, Go, Java, Swift, PHP, Ruby, Scala, Haskell, Julia, OCaml, Agda, HTML, CSS, JSON, TOML（大小写不敏感，未知名自动转小写尝试加载）。
-
-使用场景：需要理解代码结构、查找定义、分析依赖时，优先使用这些API而非字符串搜索。

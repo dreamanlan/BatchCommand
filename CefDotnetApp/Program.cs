@@ -4896,6 +4896,7 @@ namespace DotNetLib
         {
             try {
                 hasError = false;
+                PrepareBatchScript();
                 // Execute the script directly using the DSL interpreter
                 RefreshGlobalVars();
                 NativeApi.ClearApiErrorInfo();

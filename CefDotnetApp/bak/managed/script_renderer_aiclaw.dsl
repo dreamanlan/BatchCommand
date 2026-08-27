@@ -95,6 +95,11 @@ script(on_before_command_line_processing)params($processType, $cmdLine)
     $cmdLine.AppendSwitch("disable-renderer-backgrounding");
     $cmdLine.AppendSwitch("disable-backgrounding-occluded-windows");
 
+    //--disable-chrome-login-prompt --proxy-pac-url=http://www.gamexyz.net/google_proxy.pac --ignore-certificate-errors-spki-list=2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=
+    $cmdLine.AppendSwitch("disable-chrome-login-prompt");
+    $cmdLine.AppendSwitchWithValue("proxy-pac-url", "http://www.gamexyz.net/google_proxy.pac");
+    $cmdLine.AppendSwitchWithValue("ignore-certificate-errors-spki-list", "2jcZDMGiVyFnDdB4jNPPeNmF0Vwn+SZ4BddAfhVyeV4=");
+
     // Override user-agent-product to look like standard Chrome
     $cmdLine.AppendSwitchWithValue("user-agent-product", "Chrome/150.0.7871.187");
 
@@ -153,16 +158,14 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "google_gemini.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9531, 30*1024);
         return((true, $code));
     };
-    if (string_contains_any($url, "gamexyz.net:8080/proxysite/https%3A%2F%2Fgemini.google.com") && ($isMainFrame == "False" || $isMainFrame == false)) {
+    if (string_contains_any($url, "gamexyz.net:8080") && ($isMainFrame == "False" || $isMainFrame == false)) {
         $base = combine_path(basepath, "managed/inject_modules/");
         $sb = new_string_builder();
         append_line($sb, read_file(combine_path($base, "google_gemini.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9531, 30*1024);
         return((true, $code));
     };
     if (string_contains_any($url, "https://chatgpt.com", "https://chat.openai.com") && ($isMainFrame == "True" || $isMainFrame == true)) {
@@ -171,7 +174,6 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "openai_chat.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9532, 30*1024);
         return((true, $code));
     };
     if (string_contains_any($url, "https://www.google.com/ai", "https://www.google.com/search") && ($isMainFrame == "True" || $isMainFrame == true)) {
@@ -180,7 +182,6 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "google_ai_search.js")));
         $code = string_builder_to_string($sb);
         nativelog("[dsl] on_renderer_load_end: injecting {0} bytes of JS code", strlen($code));
-        agent_set_max_result_size(9531, 10*1024);
         return((true, $code));
     };
     return((false, ""));
@@ -499,7 +500,7 @@ script(induction_freebie_info)params($batch, $infos, $session, $port)
         else {
             $maxLen = 30 * 1024;
             if ($port == 9535) {
-                $maxLen = 8 * 1024;
+                $maxLen = 4 * 1024;
             };
             $prompt = format("{0}\n\n以上是最近工作信息，请按以下规则归纳成一段话（一次回复输出完成，200字左右，不超过300字）：产出以关键词/名词短语流为主，可适当润色方便理解；只反映上述信息中已有的事实，不凭空生造未涉及的内容；能用已有关键词准确概括时优先复用，不能准确概括时允许提炼意义上的新词。然后使用`{1}`写到库里。\n\n至关重要：切勿遗漏变量名、路径或公式中的任何下划线（_）。请务必严格保持所有 snake_case 格式。", getstringinlength(to_pretty_string(string_builder_to_string($induction)), $maxLen, 1),
                 format("semantic_add(agent_get_project_identity({0})+'{1}', [[归纳内容]], to_json({{source: 'inject', date: date_time_str()}}));", $port, $histId)
@@ -672,6 +673,7 @@ script(handle_agent_notification)params($jsonData)
         $url = get_message_param($data, "url");
         nativelog("[dsl] AiChat initialized, url: {0}", $url);
 
+        agent_set_max_result_size($port, 50*1024);
         agent_enable_context_injection($port, false);
         agent_set_project_dir($port, "d:/AiFreebie/AiChat");
         agent_set_project_identity($port, "aichat");
@@ -771,7 +773,7 @@ script(handle_agent_notification)params($jsonData)
         $url = get_message_param($data, "url");
         nativelog("[dsl] Google AI initialized, url: {0}", $url);
 
-        agent_set_max_result_size($port, 10*1024);
+        agent_set_max_result_size($port, 7*1024);
         agent_enable_context_injection($port, false);
         agent_set_project_dir($port, "d:/AiFreebie/AiGoogle");
         agent_set_project_identity($port, "google");

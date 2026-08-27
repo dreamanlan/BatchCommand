@@ -1,3 +1,31 @@
+**代码修改步骤**
+
+1. 使用`view_file_structure`或`read_file`了解实现
+2. 确定修改内容
+3. 优先用`find_methods`（类方法）/`find_functions`（全局函数）结合`read_lines(path, startLine, endLine[, encoding])`获取精确上下文（注意，read_lines返回字符串列表，使用`to_string`转成字符串）
+4. 多行用`apply_diff`（unified diff格式）；单行用`replace_in_file`或`regex_replace_in_file`（注意，`string_replace`或`regex_replace`是字符串替换，不用于文件）
+5. 修改后重新阅读确认
+6. 多行替换时建议exactMatch参数为false（默认值，apply_diff、replace_in_file等，此时空白字符不要求精确匹配，可缓解空格、tab、回车换行差异）
+
+**代码语法分析API**
+
+基于语法树精确分析，返回格式化文本。通用签名：`api(filePath, language, [nameRegexPattern])`，带`_in_code`后缀版本签名：`api(code, language, [nameRegexPattern], [fileName])`。
+
+| 类别 | API | 说明 |
+|------|-----|------|
+| 文件概览 | `view_file_structure`, `view_code_structure` | 查看整体结构 |
+| 函数查找 | `find_functions`[`_in_code`], `find_function`[`_in_code`] | 查找所有/指定函数 |
+| 类型查找 | `find_types`[`_in_code`], `find_type`[`_in_code`] | 查找所有/指定类型（类/接口/结构体） |
+| 变量查找 | `find_variables`, `find_variable`, `find_global_variables`, `find_parameters` | 及对应`_in_code`版本 |
+| 类成员 | `find_class_members(filePath, lang, classPattern)` | 查找类所有成员 |
+| 类成员细分 | `find_fields`, `find_properties`, `find_methods`, `find_constructors`, `find_events` | 签名：`(filePath, lang, classPattern, [memberPattern])`，events仅C# |
+| 接口/结构/枚举 | `find_interfaces`, `find_structs`, `find_enums` | 标准签名 |
+| 通用AST | `find_nodes`[`_in_code`], `find_node`[`_in_code`] | 支持html/css/json/toml等所有语言 |
+
+支持语言：C, Cpp, Javascript, CSharp, TypeScript, TSX, Bash, Python, Rust, Go, Java, Swift, PHP, Ruby, Scala, Haskell, Julia, OCaml, Agda, HTML, CSS, JSON, TOML（大小写不敏感，未知名自动转小写尝试加载）。
+
+使用场景：需要理解代码结构、查找定义、分析依赖时，优先使用这些API而非字符串搜索。
+
 **查询API**
 
 help参数为正则表达式，多参数间为或关系（有一个类似api helpall可查询包含基础语法与不适用于立即执行的框架层api）：
@@ -88,59 +116,3 @@ return(to_string($result));
 
 *注意*
 外部脚本括号分隔符专用于外部脚本，只有特定api支持，不像字符串引号分隔符可用在所有字符串能用的地方。
-
-**网络访问与搜索**
-有几个api用来访问web或搜索web：fetch/http_get、http_post、donwload_file、web_search、everything_search
-write_file写入的文本文件会带BOM头，需要写入无BOM的文本文件使用write_file_no_bom
-二进制文件读写api：read_file_bytes、write_file_bytes、hex_to_bytes、bytes_to_hex、string_to_bytes、bytes_to_string、base64_to_bytes、bytes_to_base64
-
-**Playwright API**
-- playwright_is_running() - returns bool indicating whether playwright is started.
-- playwright_start([headless, user_data_dir]) - Launch Chromium; if `headless` is `true`, headless mode is used (default is `false`). If `user_data_dir` is empty (default), create a fresh context, or if it is not empty, use a persistent context.
-- playwright_cdp_start(cdp_endpoint) - Launch Chromium; connect via CDP (reusing a remote instance).
-- playwright_stop() - close all pages, context and browser.
-- playwright_tabs([refresh]) - list all pages as 'id|url' semicolon separated; refresh=true syncs pages from context (CDP-attach case).
-- playwright_cdp_list_targets() - list CDP targets via HTTP /json (attach mode); returns raw JSON.
-- playwright_frames(page_id) - list all frames of a page. Returns JSON array of {url, name, is_main}.
-- playwright_new_page(page_id) - create a new page with the given string handle.
-- playwright_close_page(page_id) - close a page.
-- playwright_goto(page_id, url) - navigate the page.
-- 使用help("playwright_")获取更多Playwright相关API：playwright_evaluate/playwright_frame_evaluate/playwright_cdp_new_tab/playwright_cdp_close_tab/playwright_cdp_evaluate等等
-playwright_start/playwright_cdp_start使用前记得先用playwright_stop关闭之前启动的playwright或者记得使用结束后stop
-
-**其它工具**
-
-- `agent_get_project_identity(9531)` — 项目标识
-- `agent_get_project_dir(9531)` — 项目工程目录，其`docs/`下有`history.txt`/`context.txt`/`todo.txt`/`plan.txt`/`xxx_prompt.txt`等状态文件
-- `count_lines(path[, encoding])` — 查看文件行数
-- `count_indentations(path[, startLine, endLine, encoding])` - 查看带行号与缩进信息的文件内容
-- `grep_file(path, regex_pattern[, context_lines_after, context_lines_before])` - 搜索文件内容
-- `grep_files(path, regex_pattern[, context_lines_after, context_lines_before, filter_list_or_str_1, ...])` - 搜索多个文件内容
-- `string_join(sep, list) - 将list中的元素用sep分隔符连接成字符串
-- `string_split(str, sep) - 将str按照sep分隔符分割成list`
-- `calc_md5(path)` - 计算文件的md5值
-- skill目录：`list_dirs(combine_path(basepath, "skills"))`
-
-**语义/关键词搜索**
-
-历史分5级：legionnaire（单条）、decurion（十条）、centurion（百条）、chiliarch（千条）、marquis（万条）。
-
-```
-// @execute
-semantic_search(agent_get_project_identity(9531)+"_legionnaire_history", "问题描述", "空格分隔的关键词", 50);
-```
-
-认知记忆分3层【情景记忆（具体事件）-> 模式记忆（重复模式）-> 元认知记忆（决策原则）】：episodic_memory（情境）,只有情境记忆存数据库，模式与元认知存文档了
-```
-// @execute
-semantic_search(agent_get_project_identity(9531)+"_episodic_memory", "问题描述", "空格分隔的关键词", 50);
-```
-
-将`semantic_search`换为`keyword_search`可进行BM25关键词搜索。级别替换`legionnaire`为对应级别名即可。
-
-sqlite的查询结果里可能有很多字符串转义符号，可以使用to_pretty_string来把它们转换成实际的字符，更便于阅读
-```
-// @execute
-$query_result = sqlite_search_between("metadsl_history","HasErro","20260301","20260415",20);
-to_pretty_string($query_result);
-```

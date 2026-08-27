@@ -74,9 +74,9 @@ class ResponseDecider {
 
       // MetaDSL Result
       const hasMetaDslResult =
-        this.containsAll(msg, 'MetaDSL', '{:', ':}') ||
-        this.containsAll(msg, 'MetaDsl', '{:', ':}') ||
-        this.containsAll(msg, 'metadsl', '{:', ':}');
+        this.containsAll(msg, 'MetaDSL', '<{:>', '<:}>') ||
+        this.containsAll(msg, 'MetaDsl', '<{:>', '<:}>') ||
+        this.containsAll(msg, 'metadsl', '<{:>', '<:}>');
       // @execute blocks
       const hasMetaDsl =
         this.containsAll(msg, '//', '@execute') ||
@@ -85,7 +85,7 @@ class ResponseDecider {
       if (hasMetaDslResult) {
         return {
           action: 'reply',
-          text: `ref{:\n${msg}\n:};\n\nmetadsl代码需要使用markdown代码块语法`,
+          text: `ref <{:>\n${msg}\n<:}>;\n\nmetadsl代码需要使用markdown代码块语法`,
         };
       }
       else if (hasMetaDsl) {
@@ -93,7 +93,7 @@ class ResponseDecider {
           if (this.enableLlmPM) {
             return {
               action: 'reply',
-              text: `ref{:\n${msg}\n:};\n\n已提交反思请求`,
+              text: `ref <{:>\n${msg}\n<:}>;\n\n已提交反思请求`,
             };
           }
           return { action: 'skip', reason: 'reflect without LlmPM' };
@@ -112,7 +112,7 @@ class ResponseDecider {
         if (fenceIdx >= 0 && execIdx >= 0 && fenceIdx < execIdx) {
           return {
             action: 'reply',
-            text: `ref{:\n${msg}\n:};\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
+            text: `ref <{:>\n${msg}\n<:}>;\n\n请检查metadsl代码是否正确使用了markdown代码块语法，如果没有请重新提交;确认正确请等待执行结果`,
           };
         }
         return { action: 'skip', reason: 'metadsl submitted' };

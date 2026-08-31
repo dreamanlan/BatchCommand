@@ -365,12 +365,16 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             //AgentFrameworkService.Instance.DslEngine!.Register("enqueue", "enqueue(queue,v)", new ExpressionFactoryHelper<EnqueueExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("dequeue", "dequeue(queue)", new ExpressionFactoryHelper<DequeueExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("queue_clear", "queue_clear(queue)", new ExpressionFactoryHelper<QueueClearExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("setenv", "setenv(k,v) api", new ExpressionFactoryHelper<SetEnvironmentExp>());
+            //AgentFrameworkService.Instance.DslEngine!.Register("getenv", "getenv(k) api", new ExpressionFactoryHelper<GetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_env", "set_env(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("set_environment", "set_environment(k,v)", new ExpressionFactoryHelper<SetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_env", "get_env(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_environment", "get_environment(k)", new ExpressionFactoryHelper<GetEnvironmentExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("environment", "environment(k)", false, new ExpressionFactoryHelper<GetEnvironmentExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("expand", "expand(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("expand_env", "expand_env(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("expand_environment", "expand_environment(str)", new ExpressionFactoryHelper<ExpandEnvironmentsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("envs", "envs()", new ExpressionFactoryHelper<EnvironmentsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("environments", "environments()", new ExpressionFactoryHelper<EnvironmentsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("cd", "cd(path)", new ExpressionFactoryHelper<SetCurrentDirectoryExp>());
@@ -1892,6 +1896,22 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 BoxedValue v3 = BoxedValue.NullObject;
                 BoxedValue v = v1.GetLong() != 0 ? v2 = m_Op2.Calc() : v3 = m_Op3.Calc();
                 return v;
+            }
+            protected override bool Load(Dsl.FunctionData funcData)
+            {
+                if (funcData.GetParamNum() >= 3) {
+                    Dsl.ISyntaxComponent cond = funcData.GetParam(0);
+                    Dsl.ISyntaxComponent op1 = funcData.GetParam(1);
+                    Dsl.ISyntaxComponent op2 = funcData.GetParam(2);
+                    m_Op1 = Calculator.Load(cond);
+                    m_Op2 = Calculator.Load(op1);
+                    m_Op3 = Calculator.Load(op2);
+                }
+                else {
+                    //error
+                    Calculator.Log("DslCalculator error, {0} line {1}", funcData.ToScriptString(false, Dsl.DelimiterInfo.Default), funcData.GetLine());
+                }
+                return true;
             }
             protected override bool Load(Dsl.StatementData statementData)
             {

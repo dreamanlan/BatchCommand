@@ -313,9 +313,9 @@ class RelayPanel {
       const msgText = data.content || data.text;
       if (data.type === 'message' && msgText) {
         // Check for /stop, /clrhist, /clearhistory commands (possibly with sender prefix like "[name] /cmd")
-        var trimmed = String(msgText).trim();
-        var cmdMatch = /^\[[^\]]*\]\s*(\/\S+)\s*$/.exec(trimmed) || [null, trimmed];
-        var cmd = cmdMatch[1];
+        const trimmed = String(msgText).trim();
+        const cmdMatch = /^\[[^\]]*\]\s*(\/\S+)\s*$/.exec(trimmed) || [null, trimmed];
+        const cmd = cmdMatch[1];
         if (cmd === '/stop') {
           this._chatLog('[stop] Received /stop command, clicking stop button');
           this._clickStopButton();

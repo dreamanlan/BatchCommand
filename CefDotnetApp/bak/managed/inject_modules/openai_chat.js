@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         MetaDSL Agent Bridge (OpenAI Chat)
 // @version      1.1
 // @description  ChatGPT page <-> local WebSocket code execution loop (single model)
@@ -232,14 +232,6 @@
       agentId: AGENT_ID,
       conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]
     });
-    // Fire the count-down notification every N completed AI messages
-    // (conversation rounds). The single-page modules have no js_request channel,
-    // so the round count drives it instead of the LLM asking.
-    ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
-    if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
-        ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
-      notifyContextCountDown();
-    }
   }
 
   /**
@@ -430,7 +422,17 @@
 
     if (lines.length) {
       if (ST.mergeNextFlush) { ST.mergeNextFlush = false; }
-      if (!ST.drainMode) { ST.roundCount += 1; }
+      if (!ST.drainMode) {
+        ST.roundCount += 1;
+        // Context count-down is driven by flush rounds (one exec-result
+        // round-trip), not by AI message elements: those depend on DOM
+        // visibility and can be detected repeatedly for a single reply.
+        ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
+        if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
+            ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+          notifyContextCountDown();
+        }
+      }
       ST.lastFlushTs = now;
 
       if (!ST.longRunMode && ST.roundCount >= CFG.MAX_ROUNDS) {

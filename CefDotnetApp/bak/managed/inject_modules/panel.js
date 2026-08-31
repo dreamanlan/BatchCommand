@@ -19,6 +19,8 @@ class AgentPanel {
   }
 
   createPanel() {
+    const userName = this.bridge.getUserName();
+    const itsMe = userName == "dreamanlan" || userName == "dreaman" || userName == "lanxiang";
     // Create panel element
     this.panel = document.createElement('div');
     this.panel.id = 'agent-control-panel';
@@ -504,9 +506,9 @@ class AgentPanel {
       `;
     chatRoomBtn.onclick = () => this.openChatRoom();
 
-    // HYArena button - open HYArena chat in new window
+    // Hyarena button - open Hyarena chat in new window
     const hyarenaBtn = document.createElement('button');
-    hyarenaBtn.textContent = 'HYArena';
+    hyarenaBtn.textContent = 'Hyarena';
     hyarenaBtn.style.cssText = `
         padding: 3px 7px;
         background: #00897b;
@@ -546,12 +548,12 @@ class AgentPanel {
       `;
     geminiBtn.onclick = () => window.open('https://gemini.google.com/app');
 
-    // GeminiProxy button - open Gemini AI via a proxy in new window
+    // GeminiProxy button - open Gemini AI via a web proxy in new window
     const geminiProxyBtn = document.createElement('button');
-    geminiProxyBtn.textContent = 'Gemini(via proxy)';
+    geminiProxyBtn.textContent = 'Gemini(can\'t login)';
     geminiProxyBtn.style.cssText = `
         padding: 3px 7px;
-        background: #00897b;
+        background: #636363;
         color: white;
         border: none;
         border-radius: 4px;
@@ -626,7 +628,9 @@ class AgentPanel {
         gap: 5px;
         flex-wrap: wrap;
       `;
-    aiBar.appendChild(hyarenaBtn);
+    if (itsMe) {
+      aiBar.appendChild(hyarenaBtn);
+    }
     aiBar.appendChild(venusBtn);
     aiBar.appendChild(geminiBtn);
     aiBar.appendChild(geminiProxyBtn);
@@ -636,7 +640,9 @@ class AgentPanel {
     aiBar.appendChild(googleAiBtn);
 
     buttonBar.appendChild(testBtn);
-    buttonBar.appendChild(chatRoomBtn);
+    if (itsMe) {
+      buttonBar.appendChild(chatRoomBtn);
+    }
     buttonBar.appendChild(this.metadslButton);
     buttonBar.appendChild(clearQueueBtn);
     buttonBar.appendChild(clearBtn);
@@ -730,7 +736,9 @@ class AgentPanel {
         font-size: 11px;
       `;
     this.toggleClawButton.onclick = () => this.toggleClawPanel();
-    optionBar.appendChild(this.toggleClawButton);
+    if (itsMe) {
+      optionBar.appendChild(this.toggleClawButton);
+    }
 
     // Toggle Project Panel button (default visible)
     this.toggleProjectButton = document.createElement('button');

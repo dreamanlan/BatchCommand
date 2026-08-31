@@ -907,12 +907,16 @@ class APIClient {
                 { value: 'tokenhub_deepseek-v4-pro', label: 'DeepSeek-V4-Pro (Ext)', thinking: false, reasoningEfforts: ['high', 'max'], contextWindows: [] },
                 { value: 'tokenhub_deepseek-v4-flash', label: 'DeepSeek-V4-Flash (Ext)', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
                 { value: 'ext-glm-5.3', label: 'GLM-5.3 (Ext)', thinking: false, reasoningEfforts: [], contextWindows: [200000, 1000000] },
+                { value: 'tokenhub_kimi-k3', label: 'Kimi-K3', thinking: false, reasoningEfforts: ['low', 'high', 'max'], contextWindows: [200000, 1000000] },
+                { value: 'hy4-preview', label: 'HY-4', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'hy3', label: 'HY-3', thinking: false, reasoningEfforts: ['high', 'no_think'], contextWindows: [] },
                 { value: 'kimi-k2.7-code', label: 'Kimi-K2.7-Code', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'glm-5.3-flash', label: 'GLM-5.3-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.2', label: 'GLM-5.2', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'glm-5.1', label: 'GLM-5.1', thinking: false, reasoningEfforts: [], contextWindows: [] },
                 { value: 'deepseek-v4-pro', label: 'DeepSeek-V4-Pro', thinking: false, reasoningEfforts: [], contextWindows: [] },
-                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] }
+                { value: 'deepseek-v4-flash', label: 'DeepSeek-V4-Flash', thinking: false, reasoningEfforts: [], contextWindows: [] },
+                { value: 'deepseek-v3.1', label: 'DeepSeek-V3.1', thinking: false, reasoningEfforts: [], contextWindows: [] }
             ];
         } else if (apiType === 'local_openai') {
             // Empty list signals UI to switch to a free-text model input,

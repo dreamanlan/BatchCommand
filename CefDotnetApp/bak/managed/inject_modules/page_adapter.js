@@ -112,7 +112,7 @@ class PageAdapter {
 
       // Format conversations as plain text
       const formatted = conversations.map((conv, index) => {
-        var userText = this.cleanText(conv.user);
+        const userText = this.cleanText(conv.user);
         const assistantText = this.cleanText(conv.assistant);
         return `[Conversation ${index + 1}]\nUser:\n${userText}\n\nAssistant:\n${assistantText}`;
       }).join('\n\n' + '='.repeat(80) + '\n\n');

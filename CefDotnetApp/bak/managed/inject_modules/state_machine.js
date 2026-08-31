@@ -416,8 +416,8 @@ class AgentExecutingState extends State {
           }
         }
         else {
-          var handled = false;
-          for (var ix = 0; ix < 10; ++ix) {
+          let handled = false;
+          for (let ix = 0; ix < 10; ++ix) {
             await this.sleep(CONFIG.stateCheckInterval);
             const hasInput2 = this.monitor.userInputMonitor.hasUserInput;
             const isTyping2 = this.monitor.userInputMonitor.isUserTyping;

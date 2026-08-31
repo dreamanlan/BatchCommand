@@ -28,6 +28,14 @@ class AgentBridge {
     }
   }
 
+  getUserName() {
+    if (this.nativeMode && typeof callMetaDSL !== 'undefined') {
+      return callMetaDSL('get_user_name');
+    } else {
+      return 'unknown';
+    }
+  }
+
   // Send command to C# backend
   sendCommand(cmd, params, callback) {
     this.logger.debug('sendCommand called', { cmd, params });

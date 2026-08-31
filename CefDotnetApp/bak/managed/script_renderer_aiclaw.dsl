@@ -1,4 +1,4 @@
-﻿// Note:The design philosophy behind these DSL scripts is to be stateless;
+// Note:The design philosophy behind these DSL scripts is to be stateless;
 // all state resides within C# or JS. The DSL's global variables are utilized
 // for configuring constants, and each hot-reload operation executes independently.
 script(init_global_consts)
@@ -38,20 +38,20 @@ script(on_heart_beat)params($processType,$deltaTime)
 {
     // Renderer process: ensure context points to the correct browser/frame
     if ($processType == 1) {
-        $targetBrowserId = get_context_var("TargetBrowserId", "session");
+        $targetBrowserId = get_context_var("TargetBrowserId");
         if (isnull($targetBrowserId) || $targetBrowserId <= 0) {
             $targetBrowserId = find_browser_id_by_url_key("evaluation.woa.com/chat");
             if ($targetBrowserId <= 0) {
                 $targetBrowserId = find_browser_id_by_url_key("localhost:8080");
             };
             if ($targetBrowserId > 0) {
-                set_context_var("TargetBrowserId", $targetBrowserId, "session");
+                set_context_var("TargetBrowserId", $targetBrowserId);
             };
         };
         if ($targetBrowserId > 0) {
             if (!set_context_by_id($targetBrowserId)) {
                 // Browser no longer valid, reset cache to re-search next heartbeat
-                set_context_var("TargetBrowserId", 0, "session");
+                set_context_var("TargetBrowserId", 0);
             };
         };
         handle_thread_queue();
@@ -222,6 +222,15 @@ script(on_call_metadsl)params($func,$args)
     nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
 };
 
+script(get_user_name)
+{
+    if (ismac) {
+        return(getenv("USER"));
+    }
+    else {
+        return(getenv("USERNAME"));
+    };
+};
 script(get_arena_system_prompt)params()
 {
     $arenaPrompt = read_file(combine_path(basepath,"docs/arena_prompt.txt"));
@@ -453,7 +462,7 @@ script(handle_update_agent_configs_command)params($id, $params)
 
 script(induction_freebie_info)params($batch, $infos, $session, $port)
 {
-    nativelog("[dsl] induction_freebie_info, batch: {0}, infos: {1}, session: {2}", $batch, count($infos), $session);
+    nativelog("[dsl] induction_freebie_info, batch: {0}, infos: {1}, session: {2}, port: {3}", $batch, count($infos), $session, $port);
 
     $operationQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.MetaDSLBridge.getOperationQueueCount",[]));
     $sendQueueCount = str_to_int(nativeapi.CallJavascriptFuncInRendererForDSL("window.MetaDSLBridge.getSendQueueCount",[]));
@@ -485,7 +494,7 @@ script(induction_freebie_info)params($batch, $infos, $session, $port)
         };
 
         if ($i + 1 < $batch) {
-            $id = semantic_add(agent_get_project_identity(@AgentPort) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
+            $id = semantic_add(agent_get_project_identity($port) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
             nativelog("[dsl] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $i, $id, $histId);
         };
@@ -493,7 +502,7 @@ script(induction_freebie_info)params($batch, $infos, $session, $port)
 
     if ($batch > 0) {
         if ($ct > 0) {
-            $id = semantic_add(agent_get_project_identity(@AgentPort) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
+            $id = semantic_add(agent_get_project_identity($port) + $histId, '.', to_json({source: 'inject', date: date_time_str()}));
 
             nativelog("[dsl] induction_freebie_info, order: {0}, skip: {1}, history id: {2}", $batch - 1, $id, $histId);
         }
@@ -551,7 +560,7 @@ script(save_freebie_context)params($count,$port)
     $decurionHistory = semantic_get_recent_as_list($decurionHistory, 5);
     $conversationHistory = semantic_get_recent_as_list($legionnaireHistory, $count);
 
-    set_context_var("FreebieLastHistoryCount", semantic_count($legionnaireHistory), "session");
+    agent_set_context_var($port, "FreebieLastHistoryCount", semantic_count($legionnaireHistory));
 
     $context = new_string_builder();
     looplist($marquisHistory) {
@@ -596,22 +605,24 @@ script(save_freebie_history)params($port)
     $legionnaireHistory = $projectIdentity + "_legionnaire_history";
 
     $conversationCount = semantic_count($legionnaireHistory);
-    $lastHistoryCount = get_context_var("FreebieLastHistoryCount", "session");
+    $lastHistoryCount = agent_get_context_var($port, "FreebieLastHistoryCount");
     if (isnull($lastHistoryCount) || $lastHistoryCount == 0) {
-        set_context_var("FreebieLastHistoryCount", $conversationCount, "session");
+        agent_set_context_var($port, "FreebieLastHistoryCount", $conversationCount);
         return;
     };
     $historyCount = $conversationCount - $lastHistoryCount;
-    $histories = semantic_get_recent_as_list($legionnaireHistory, $historyCount);
-    $history = new_string_builder();
-    looplist($histories) {
-        $rec = $$;
-        append_format_line($history, "{0} {1}", $rec.Content, $rec.Metadata);
+    if ($historyCount > 0) {
+        $histories = semantic_get_recent_as_list($legionnaireHistory, $historyCount);
+        $history = new_string_builder();
+        looplist($histories) {
+            $rec = $$;
+            append_format_line($history, "{0} {1}", $rec.Content, $rec.Metadata);
+        };
+        $historyFile = combine_path($projectDirectory, "docs/history.txt");
+        $historyStr = string_builder_to_string($history);
+        write_file($historyFile, $historyStr);
+        agent_set_history($port, $historyStr);
     };
-    $historyFile = combine_path($projectDirectory, "docs/history.txt");
-    $historyStr = string_builder_to_string($history);
-    write_file($historyFile, $historyStr);
-    agent_set_history($port, $historyStr);
 };
 
 // Handle agent notification
@@ -635,7 +646,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 50*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiArena");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiArena"));
         agent_set_project_identity($port, "hyarena");
         // Start WebSocket server on port $port for hyarena bridge communication
         ws_start_server($port);
@@ -655,7 +666,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 40*1024);
         agent_enable_context_injection($port, true);
-        agent_set_project_dir($port, "d:/AiFreebie/AiVenus");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiVenus"));
         agent_set_project_identity($port, "venus");
         // Start WebSocket server on port $port for venus bridge communication
         ws_start_server($port);
@@ -675,7 +686,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 50*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiChat");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiChat"));
         agent_set_project_identity($port, "aichat");
         // Start WebSocket server on port $port for aichat bridge communication
         ws_start_server($port);
@@ -695,7 +706,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 40*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiGemini");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiGemini"));
         agent_set_project_identity($port, "gemini");
         // Start WebSocket server on port $port for gemini bridge communication
         ws_start_server($port);
@@ -715,7 +726,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 40*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiOpenai");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiOpenai"));
         agent_set_project_identity($port, "openai");
         // Start WebSocket server on port $port for openai bridge communication
         ws_start_server($port);
@@ -735,7 +746,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 40*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiImate");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiImate"));
         agent_set_project_identity($port, "imate");
         // Start WebSocket server on port $port for imate bridge communication
         ws_start_server($port);
@@ -755,7 +766,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 40*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiWith");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiWith"));
         agent_set_project_identity($port, "with");
         // Start WebSocket server on port $port for venus bridge communication
         ws_start_server($port);
@@ -775,7 +786,7 @@ script(handle_agent_notification)params($jsonData)
 
         agent_set_max_result_size($port, 7*1024);
         agent_enable_context_injection($port, false);
-        agent_set_project_dir($port, "d:/AiFreebie/AiGoogle");
+        agent_set_project_dir($port, combinepath(basepath, "../AiFreebie/AiGoogle"));
         agent_set_project_identity($port, "google");
         // Start WebSocket server on port $port for google bridge communication
         ws_start_server($port);
@@ -806,7 +817,7 @@ script(handle_agent_notification)params($jsonData)
         $time2 = now();
         $seconds = get_diff_time_seconds($time1, $time2);
         if ($seconds > 1800) {
-            $prompt = "可以将最新进展更新到todo.txt后再继续工作了";
+            $prompt = "可以将最新进展使用MetaDSL更新到todo.txt（页面浏览器本地，非远端工作空间）后再继续工作了";
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }
@@ -846,7 +857,7 @@ script(handle_agent_notification)params($jsonData)
             nativelog("[dsl] Saved conversation {0}/{1}", $i + 1, $count);
         };
 
-        save_freebie_history();
+        save_freebie_history($port);
 
         $legionnaireCount = semantic_count($legionnaireHistory);
         $decurionCount = semantic_count($decurionHistory);
@@ -873,19 +884,19 @@ script(handle_agent_notification)params($jsonData)
 
         // Check episodic memory count and trigger pattern recognition
         $episodicCount = semantic_count($episodicMemory);
-        $lastPatternEpisodicCount = get_context_var("LastPatternEpisodicCount", "session");
+        $lastPatternEpisodicCount = agent_get_context_var($port, "LastFreebiePatternEpisodicCount");
         if (isnull($lastPatternEpisodicCount) || $lastPatternEpisodicCount == 0) {
             $lastPatternEpisodicCount = $episodicCount;
-            set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
+            agent_set_context_var($port, "LastFreebiePatternEpisodicCount", $episodicCount);
         };
         if ($episodicCount - $lastPatternEpisodicCount >= 30) {
-            set_context_var("LastPatternEpisodicCount", $episodicCount, "session");
+            agent_set_context_var($port, "LastFreebiePatternEpisodicCount", $episodicCount);
             nativelog("[dsl] Episodic memory count {0}, last pattern trigger at {1}, triggering pattern recognition", $episodicCount, $lastPatternEpisodicCount);
             $prompt = format("最近反思记录已超过30条，请基于反思数据总结新模式。先读 read_file(\"{0}/docs/patterns.md\") 了解已有模式，再用 semantic_get_recent(\"{1}_episodic_memory\",30) 拉最近反思，聚类归纳新增/修订模式后追加到 patterns.md（保持简洁，无空话套话）。", agent_get_project_dir($port), agent_get_project_identity($port));
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
         if (agent_is_context_injection_enabled($port) && agent_add_cur_context_rounds($port) == 0) {
-            $prompt = format("【最近会话】:{0}\n\n【todo】:{1}\n\n【上下文信息】:{2}", agent_get_history($port), agent_get_todo($port), agent_get_context($port));
+            $prompt = format("【todo】:{0}\n\n【上下文信息】:{1}\n\n【最近会话】:{2}", agent_get_todo($port), agent_get_context($port), agent_get_history($port));
             send_command_to_inject("send_message", to_json({text: $prompt}));
         };
     }

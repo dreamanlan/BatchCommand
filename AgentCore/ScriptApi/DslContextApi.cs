@@ -8,25 +8,25 @@ using CefDotnetApp.AgentCore.Core;
 
 namespace CefDotnetApp.AgentCore.ScriptApi
 {
-    // ========== Context Management APIs ==========
+    // ========== Global Context Variable APIs ==========
+    // Operate on the single global context store. No scope parameter:
+    // there is exactly one set of key/value pairs.
 
     // Set context variable
     sealed class SetContextVarExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 2 || operands.Count > 3) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_context_var(key, value[, scope])");
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: set_context_var(key, value)");
                 return BoxedValue.From(false);
             }
 
             try {
                 string key = operands[0].AsString;
                 object value = operands[1].GetObject();
-                string scopeStr = operands.Count > 2 ? operands[2].AsString : "session";
 
-                ContextScope scope = scopeStr.ToLower() == "workspace" ? ContextScope.Workspace : ContextScope.Session;
-                bool result = Core.AgentCore.Instance.DslContextManager.SetContextVariable(key, value, scope);
+                bool result = Core.AgentCore.Instance.DslContextManager.SetContextVariable(key, value);
                 return BoxedValue.From(result);
             }
             catch (Exception ex) {
@@ -41,17 +41,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_context_var(key[, scope])");
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: get_context_var(key)");
                 return BoxedValue.NullObject;
             }
 
             try {
                 string key = operands[0].AsString;
-                string scopeStr = operands.Count > 1 ? operands[1].AsString : "session";
 
-                ContextScope scope = scopeStr.ToLower() == "workspace" ? ContextScope.Workspace : ContextScope.Session;
-                object? value = Core.AgentCore.Instance.DslContextManager.GetContextVariable(key, scope);
+                object? value = Core.AgentCore.Instance.DslContextManager.GetContextVariable(key);
                 return value != null ? BoxedValue.FromObject(value) : BoxedValue.NullObject;
             }
             catch (Exception ex) {
@@ -66,17 +64,15 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count < 1 || operands.Count > 2) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: remove_context_var(key[, scope])");
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: remove_context_var(key)");
                 return BoxedValue.FromBool(false);
             }
 
             try {
                 string key = operands[0].AsString;
-                string scopeStr = operands.Count > 1 ? operands[1].AsString : "session";
 
-                ContextScope scope = scopeStr.ToLower() == "workspace" ? ContextScope.Workspace : ContextScope.Session;
-                bool r = Core.AgentCore.Instance.DslContextManager.RemoveContextVariable(key, scope);
+                bool r = Core.AgentCore.Instance.DslContextManager.RemoveContextVariable(key);
                 return r;
             }
             catch (Exception ex) {
@@ -91,46 +87,120 @@ namespace CefDotnetApp.AgentCore.ScriptApi
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
         {
-            if (operands.Count > 1) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: clear_context_vars([scope])");
+            if (operands.Count > 0) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: clear_context_vars()");
                 return BoxedValue.FromBool(false);
             }
 
             try {
-                string scopeStr = operands.Count > 0 ? operands[0].AsString : "session";
-
-                ContextScope scope = scopeStr.ToLower() == "workspace" ? ContextScope.Workspace : ContextScope.Session;
-                if (scope == ContextScope.Session) {
-                    Core.AgentCore.Instance.DslContextManager.ClearSessionVariables();
-                    return true;
-                }
-                else if (scope == ContextScope.Workspace) {
-                    Core.AgentCore.Instance.DslContextManager.ClearWorkspaceVariables();
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"RemoveContextVar error: {ex.Message}");
-                return BoxedValue.FromBool(false);
-            }
-        }
-    }
-
-    // Clear all context variables
-    sealed class ClearAllContextVarsExp : SimpleExpressionBase
-    {
-        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
-        {
-            try {
-                Core.AgentCore.Instance.DslContextManager.ClearSessionVariables();
-                Core.AgentCore.Instance.DslContextManager.ClearWorkspaceVariables();
+                Core.AgentCore.Instance.DslContextManager.ClearVariables();
                 return true;
             }
             catch (Exception ex) {
-                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"RemoveContextVar error: {ex.Message}");
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"ClearContextVars error: {ex.Message}");
                 return BoxedValue.FromBool(false);
             }
         }
     }
+
+    // ========== Agent Instance Context Variable APIs ==========
+    // Same implementation class, but the store lives on the AgentInstance
+    // identified by port, which is always the first parameter. Each instance
+    // has its own single set of key/value pairs.
+
+    // Set context variable on an agent instance
+    sealed class AgentSetContextVarExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 3) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: agent_set_context_var(port, key, value)");
+                return BoxedValue.From(false);
+            }
+
+            try {
+                var inst = Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+                string key = operands[1].AsString;
+                object value = operands[2].GetObject();
+
+                bool result = inst.DslContextManager.SetContextVariable(key, value);
+                return BoxedValue.From(result);
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"AgentSetContextVar error: {ex.Message}");
+                return BoxedValue.From(false);
+            }
+        }
+    }
+
+    // Get context variable from an agent instance
+    sealed class AgentGetContextVarExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: agent_get_context_var(port, key)");
+                return BoxedValue.NullObject;
+            }
+
+            try {
+                var inst = Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+                string key = operands[1].AsString;
+
+                object? value = inst.DslContextManager.GetContextVariable(key);
+                return value != null ? BoxedValue.FromObject(value) : BoxedValue.NullObject;
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"AgentGetContextVar error: {ex.Message}");
+                return BoxedValue.NullObject;
+            }
+        }
+    }
+
+    // Remove context variable from an agent instance
+    sealed class AgentRemoveContextVarExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 2) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: agent_remove_context_var(port, key)");
+                return BoxedValue.FromBool(false);
+            }
+
+            try {
+                var inst = Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+                string key = operands[1].AsString;
+
+                bool r = inst.DslContextManager.RemoveContextVariable(key);
+                return r;
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"AgentRemoveContextVar error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
+    // Clear context variables on an agent instance
+    sealed class AgentClearContextVarsExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count != 1) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("Expected: agent_clear_context_vars(port)");
+                return BoxedValue.FromBool(false);
+            }
+
+            try {
+                var inst = Core.AgentCore.Instance.GetOrCreateInstance(operands[0].GetInt());
+                inst.DslContextManager.ClearVariables();
+                return true;
+            }
+            catch (Exception ex) {
+                AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine($"AgentClearContextVars error: {ex.Message}");
+                return BoxedValue.FromBool(false);
+            }
+        }
+    }
+
 }

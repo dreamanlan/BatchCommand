@@ -38,12 +38,10 @@ namespace CefDotnetApp.AgentCore.Core
                 string formattedMessage = args.Length > 0 ? string.Format(message, args) : message;
                 string logEntry = FormatLogEntry(level, formattedMessage);
 
-                if (_nativeLogAction != null)
-                {
+                if (_nativeLogAction != null) {
                     _nativeLogAction.Invoke(logEntry);
                 }
-                else
-                {
+                else {
                     // Fallback to file logging when NativeApi is not yet set
                     // This allows logging during early initialization (e.g., NativeLibraryLoader)
                     WriteToFallbackLog(logEntry);
@@ -52,12 +50,10 @@ namespace CefDotnetApp.AgentCore.Core
             catch (Exception ex) {
                 string errorMsg = $"[LogError] Failed to log message: {ex.Message}";
                 try {
-                    if (_nativeLogAction != null)
-                    {
+                    if (_nativeLogAction != null) {
                         _nativeLogAction.Invoke(errorMsg);
                     }
-                    else
-                    {
+                    else {
                         WriteToFallbackLog(errorMsg);
                     }
                 }
@@ -73,8 +69,7 @@ namespace CefDotnetApp.AgentCore.Core
             try {
                 // Write to a fallback log file in the current directory
                 string logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agentcore_early.log");
-                lock (_fallbackLogLock)
-                {
+                lock (_fallbackLogLock) {
                     System.IO.File.AppendAllText(logPath, message + Environment.NewLine);
                 }
             }

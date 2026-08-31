@@ -25,6 +25,13 @@ script(on_browser_init)
     if (!isnull($browser)) {
         $browser.SetCspBypass(true);
     };
+    $notFirst = get_context_var("notFirst");
+    if (isnull($notFirst)) {
+        set_context_var("notFirst", 1);
+        deletefile(combinepath(basepath, "agentcore_early.log"));
+        deletefile(combinepath(basepath, "debug.log"));
+        deletefile(combinepath(basepath, "cefclient_cache/chrome_debug.log"));
+    };
 };
 script(on_browser_finalize)
 {
@@ -275,7 +282,7 @@ script(on_get_auth_credentials)params($isProxy,$host,$port,$realm,$scheme,$origi
     // proxy challenges; leave target-server auth (e.g. site logins) alone so
     // the user is still prompted for those.
     if($isProxy){
-        //return((true, "dreaman", "nopasswd"));
+        return((true, "dreaman", "nopasswd"));
     };
     return((false, "", ""));
 };
@@ -429,4 +436,14 @@ script(on_dev_tools_agent_attached)
 script(on_dev_tools_agent_detached)
 {
     nativelog("[dsl] on_dev_tools_agent_detached");
+};
+
+script(get_user_name)
+{
+    if (ismac) {
+        return(getenv("USER"));
+    }
+    else {
+        return(getenv("USERNAME"));
+    };
 };

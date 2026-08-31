@@ -257,12 +257,17 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("read_process_error", "read_process_error(processId)", new ExpressionFactoryHelper<ReadProcessErrorExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("get_command_status", "get_command_status() - returns status of all active callback commands (id, duration, command)", new ExpressionFactoryHelper<GetCommandStatusExp>());
 
-            // DSL Context Management Operations
-            AgentFrameworkService.Instance.DslEngine!.Register("set_context_var", "set_context_var(key, value[, scope])", new ExpressionFactoryHelper<SetContextVarExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("get_context_var", "get_context_var(key[, scope])", new ExpressionFactoryHelper<GetContextVarExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("remove_context_var", "remove_context_var(key[, scope])", new ExpressionFactoryHelper<RemoveContextVarExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("clear_context_vars", "clear_context_vars([scope])", new ExpressionFactoryHelper<ClearContextVarsExp>());
-            AgentFrameworkService.Instance.DslEngine!.Register("clear_all_context_var", "clear_all_context_var()", new ExpressionFactoryHelper<ClearAllContextVarsExp>());
+            // DSL Context Management Operations (global store)
+            AgentFrameworkService.Instance.DslEngine!.Register("set_context_var", "set_context_var(key, value)", new ExpressionFactoryHelper<SetContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("get_context_var", "get_context_var(key)", new ExpressionFactoryHelper<GetContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("remove_context_var", "remove_context_var(key)", new ExpressionFactoryHelper<RemoveContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("clear_context_vars", "clear_context_vars()", new ExpressionFactoryHelper<ClearContextVarsExp>());
+
+            // DSL Context Management Operations (per agent instance, keyed by port)
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_set_context_var", "agent_set_context_var(port, key, value)", new ExpressionFactoryHelper<AgentSetContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_get_context_var", "agent_get_context_var(port, key)", new ExpressionFactoryHelper<AgentGetContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_remove_context_var", "agent_remove_context_var(port, key)", new ExpressionFactoryHelper<AgentRemoveContextVarExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("agent_clear_context_vars", "agent_clear_context_vars(port)", new ExpressionFactoryHelper<AgentClearContextVarsExp>());
 
             // Browser Interaction Operations
             AgentFrameworkService.Instance.DslEngine!.Register("build_query_selector", "build_query_selector(selector)", new ExpressionFactoryHelper<BuildQuerySelectorExp>());

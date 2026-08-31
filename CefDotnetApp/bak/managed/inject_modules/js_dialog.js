@@ -20,13 +20,13 @@
     return;
   }
 
-  var TYPE_ALERT = 0;
-  var TYPE_CONFIRM = 1;
-  var TYPE_PROMPT = 2;
-  var TYPE_BEFORE_UNLOAD = 3;
+  const TYPE_ALERT = 0;
+  const TYPE_CONFIRM = 1;
+  const TYPE_PROMPT = 2;
+  const TYPE_BEFORE_UNLOAD = 3;
 
   // dialogId -> { overlay, input }
-  var active = {};
+  const active = {};
 
   function log(msg) {
     try {
@@ -41,7 +41,7 @@
    * a no-op on the native side, so a duplicate report is harmless.
    */
   function report(dialogId, ok, input) {
-    var payload = JSON.stringify({
+    const payload = JSON.stringify({
       action: 'js_dialog_result',
       handle: String(dialogId),
       ok: !!ok,
@@ -61,7 +61,7 @@
   }
 
   function close(dialogId) {
-    var entry = active[dialogId];
+    const entry = active[dialogId];
     if (!entry) {
       return;
     }
@@ -75,8 +75,8 @@
   }
 
   function finish(dialogId, ok) {
-    var entry = active[dialogId];
-    var input = '';
+    const entry = active[dialogId];
+    let input = '';
     if (entry && entry.input) {
       input = entry.input.value || '';
     }
@@ -136,8 +136,8 @@
       log('show called without a dialogId');
       return false;
     }
-    var dialogId = String(opts.dialogId);
-    var type = typeof opts.type === 'number' ? opts.type : TYPE_CONFIRM;
+    const dialogId = String(opts.dialogId);
+    const type = typeof opts.type === 'number' ? opts.type : TYPE_CONFIRM;
 
     // A browser only runs one JS dialog at a time, but be defensive: replace
     // any stale dialog carrying the same id.
@@ -150,23 +150,23 @@
       return false;
     }
 
-    var overlay = document.createElement('div');
+    const overlay = document.createElement('div');
     styleOverlay(overlay);
 
-    var box = document.createElement('div');
+    const box = document.createElement('div');
     styleBox(box);
 
-    var title = document.createElement('div');
+    const title = document.createElement('div');
     title.textContent = titleFor(type);
     title.style.cssText = 'font-weight:600;margin-bottom:10px;font-size:15px';
     box.appendChild(title);
 
-    var text = document.createElement('div');
+    const text = document.createElement('div');
     text.textContent = opts.message || '';
     text.style.cssText = 'white-space:pre-wrap;line-height:1.5;margin-bottom:14px;max-height:40vh;overflow:auto';
     box.appendChild(text);
 
-    var input = null;
+    let input = null;
     if (type === TYPE_PROMPT) {
       input = document.createElement('input');
       input.type = 'text';
@@ -175,20 +175,20 @@
       box.appendChild(input);
     }
 
-    var buttons = document.createElement('div');
+    const buttons = document.createElement('div');
     buttons.style.cssText = 'display:flex;justify-content:flex-end';
 
     // alert has a single button; every other type is accept/cancel. For
     // beforeunload, accept means "leave the page".
     if (type !== TYPE_ALERT) {
-      var cancelBtn = document.createElement('button');
+      const cancelBtn = document.createElement('button');
       cancelBtn.textContent = (type === TYPE_BEFORE_UNLOAD) ? 'Stay' : 'Cancel';
       styleButton(cancelBtn, false);
       cancelBtn.addEventListener('click', function () { finish(dialogId, false); });
       buttons.appendChild(cancelBtn);
     }
 
-    var okBtn = document.createElement('button');
+    const okBtn = document.createElement('button');
     okBtn.textContent = (type === TYPE_BEFORE_UNLOAD) ? 'Leave' : 'OK';
     styleButton(okBtn, true);
     okBtn.addEventListener('click', function () { finish(dialogId, true); });
@@ -198,7 +198,7 @@
     overlay.appendChild(box);
 
     // Esc cancels (accepts for alert, which has no cancel state).
-    var keyHandler = function (ev) {
+    const keyHandler = function (ev) {
       if (ev.key === 'Escape') {
         ev.preventDefault();
         ev.stopPropagation();
@@ -230,7 +230,7 @@
    */
   function forceClose(dialogId) {
     if (dialogId === undefined || dialogId === null) {
-      for (var id in active) {
+      for (const id in active) {
         if (Object.prototype.hasOwnProperty.call(active, id)) {
           close(id);
         }

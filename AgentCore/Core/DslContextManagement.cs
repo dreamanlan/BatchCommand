@@ -1,109 +1,58 @@
 using System;
 using System.Collections.Generic;
 
-using AgentPlugin.Abstractions;
-
 namespace CefDotnetApp.AgentCore.Core
 {
     /// <summary>
-    /// Simplified context management that only handles variable storage
+    /// Simplified context management that only handles variable storage.
+    /// One instance holds exactly one set of key/value pairs. The global
+    /// context is a single shared instance, and every AgentInstance owns
+    /// a private one, so there is no scope parameter anymore.
     /// </summary>
     public class DslContextManagement
     {
-        private readonly Dictionary<string, object> _sessionVariables;
-        private readonly Dictionary<string, object> _workspaceVariables;
+        private readonly Dictionary<string, object> _variables;
         private readonly object _lockObject = new object();
 
         public DslContextManagement()
         {
-            _sessionVariables = new Dictionary<string, object>();
-            _workspaceVariables = new Dictionary<string, object>();
+            _variables = new Dictionary<string, object>();
         }
 
-        public bool SetContextVariable(string key, object value, ContextScope scope = ContextScope.Session)
+        public bool SetContextVariable(string key, object value)
         {
             lock (_lockObject) {
-                if (scope == ContextScope.Session) {
-                    _sessionVariables[key] = value;
-                    return true;
-                }
-                else if (scope == ContextScope.Workspace) {
-                    _workspaceVariables[key] = value;
-                    return true;
-                }
-
-                return false;
+                _variables[key] = value;
+                return true;
             }
         }
 
-        public object? GetContextVariable(string key, ContextScope scope = ContextScope.Session)
+        public object? GetContextVariable(string key)
         {
             lock (_lockObject) {
-                if (scope == ContextScope.Session) {
-                    return _sessionVariables.ContainsKey(key) ? _sessionVariables[key] : null;
-                }
-                else if (scope == ContextScope.Workspace) {
-                    return _workspaceVariables.ContainsKey(key) ? _workspaceVariables[key] : null;
-                }
-
-                return null;
+                return _variables.TryGetValue(key, out var value) ? value : null;
             }
         }
 
-        public bool RemoveContextVariable(string key, ContextScope scope = ContextScope.Session)
+        public bool RemoveContextVariable(string key)
         {
             lock (_lockObject) {
-                if (scope == ContextScope.Session) {
-                    return _sessionVariables.Remove(key);
-                }
-                else if (scope == ContextScope.Workspace) {
-                    return _workspaceVariables.Remove(key);
-                }
-
-                return false;
+                return _variables.Remove(key);
             }
         }
 
-        public void ClearSessionVariables()
+        public void ClearVariables()
         {
             lock (_lockObject) {
-                _sessionVariables.Clear();
+                _variables.Clear();
             }
         }
 
-        public void ClearWorkspaceVariables()
+        public Dictionary<string, object> GetAllVariables()
         {
             lock (_lockObject) {
-                _workspaceVariables.Clear();
+                return new Dictionary<string, object>(_variables);
             }
         }
-
-        public void ClearAllVariables()
-        {
-            lock (_lockObject) {
-                _sessionVariables.Clear();
-                _workspaceVariables.Clear();
-            }
-        }
-
-        public Dictionary<string, object> GetAllSessionVariables()
-        {
-            lock (_lockObject) {
-                return new Dictionary<string, object>(_sessionVariables);
-            }
-        }
-
-        public Dictionary<string, object> GetAllWorkspaceVariables()
-        {
-            lock (_lockObject) {
-                return new Dictionary<string, object>(_workspaceVariables);
-            }
-        }
-    }
-
-    public enum ContextScope
-    {
-        Session,
-        Workspace
     }
 }

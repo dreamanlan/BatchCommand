@@ -26,6 +26,9 @@ namespace CefDotnetApp.AgentCore.Core
         public string InjectJsCode { get; set; } = string.Empty;
         public int MaxResultSize { get; set; } = 0;
 
+        // Per-instance DSL context variables (key/value store), independent from the global one
+        public DslContextManagement DslContextManager { get; }
+
         // Whether to inject context info into MetaDSL results at specified rounds
         public bool ContextInjectionEnabled { get; set; } = false;
         // How often to append context info in WebSocket responses (0 = every round)
@@ -59,6 +62,7 @@ namespace CefDotnetApp.AgentCore.Core
         public AgentInstance(int port)
         {
             Port = port;
+            DslContextManager = new DslContextManagement();
         }
     }
 }

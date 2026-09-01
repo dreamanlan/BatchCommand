@@ -96,9 +96,31 @@ namespace CefDotnetApp.AgentCore.ScriptApi
 
             {
                 try {
-                    string collection = operands[0].AsString;
-                    string content = operands[1].AsString;
-                    string? metadata = operands.Count > 2 ? operands[2].AsString : null;
+                    string? collection = operands[0].AsString;
+                    string? content = operands[1].AsString;
+                    // metadata: only read when explicitly provided. A null returned by
+                    // AsString on a provided operand indicates a broken MetaDSL argument
+                    // (e.g. an undefined variable), NOT the caller's intent to omit it.
+                    // Empty string IS allowed.
+                    string? metadata = null;
+                    if (operands.Count > 2) {
+                        metadata = operands[2].AsString;
+                        if (metadata == null) {
+                            const string hint = "metadata is null (likely a bad MetaDSL argument, e.g. an undefined variable). To explicitly pass no metadata, omit the argument or pass an empty string \"\".";
+                            AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: " + hint);
+                            return BoxedValue.FromString("[error] " + hint);
+                        }
+                    }
+
+                    // Explicit null/empty checks: AsString may return null.
+                    if (string.IsNullOrWhiteSpace(collection)) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: collection is null or empty");
+                        return BoxedValue.FromString("[error] collection is null or empty");
+                    }
+                    if (string.IsNullOrWhiteSpace(content)) {
+                        AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("semantic_add error: content is null or empty");
+                        return BoxedValue.FromString("[error] content is null or empty");
+                    }
 
                     var embedding = Core.AgentCore.Instance.EmbeddingService;
                     if (!embedding.IsReady) {
@@ -107,7 +129,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                     }
 
                     float[]? vector = embedding.Encode(content);
-                    if (vector == null)
+                    if (vector == null || vector.Length == 0)
                         return BoxedValue.FromString("[error] encode failed");
 
                     string id = Core.AgentCore.Instance.SemanticIndex.Add(collection, content, vector, metadata);
@@ -703,7 +725,11 @@ namespace CefDotnetApp.AgentCore.ScriptApi
                 return BoxedValue.From(-1);
             }
             try {
-                string sql = operands[0].AsString;
+                string? sql = operands[0].AsString;
+                if (string.IsNullOrWhiteSpace(sql)) {
+                    AgentFrameworkService.Instance.ErrorReporter!.AppendApiErrorInfoLine("sqlite_execute error: sql is null or empty");
+                    return BoxedValue.From(-1);
+                }
                 int affected = Core.AgentCore.Instance.SemanticIndex.ExecuteSql(sql);
                 return BoxedValue.From(affected);
             }

@@ -479,6 +479,53 @@ namespace DotNetLib
             return BoxedValue.From(Tuple.Create(BoxedValue.FromBool(hasError), BoxedValue.FromString(res)));
         }
     }
+    sealed class CallMetaDslTaskExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 2) {
+                NativeApi.AppendApiErrorInfoLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...)");
+                return BoxedValue.From(false);
+            }
+            int taskIndex = operands[0].GetInt();
+            string funcName = operands[1].AsString;
+            if (string.IsNullOrEmpty(funcName)) {
+                NativeApi.AppendApiErrorInfoLine("Expected: call_metadsl_task(task_index, func_name, arg1, arg2, ...), func_name is empty");
+                return BoxedValue.From(false);
+            }
+            // Build the args on the calling thread; the list is handed to the worker and
+            // never touched again here, so no synchronization is needed on it.
+            // The values keep their BoxedValue type: unlike the C++ entry points, nothing
+            // here forces a string round trip, so numbers stay numbers and lists stay lists.
+            // Strings and numbers are immutable, so they are safe to share; a mutable
+            // collection must not be modified by the caller after this point.
+            var args = new List<BoxedValue>();
+            for (int ix = 2; ix < operands.Count; ix++) {
+                args.Add(operands[ix]);
+            }
+            // Fire-and-forget: queue to a worker thread so slow work such as sqlite
+            // writes cannot block the caller (the UI thread or an IO callback thread).
+            return BoxedValue.From(Lib.EnqueueMetaDslTask(taskIndex, funcName, args));
+        }
+    }
+    sealed class SetMetaDslTaskNumExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            if (operands.Count < 1) {
+                NativeApi.AppendApiErrorInfoLine("Expected: set_metadsl_task_num(num)");
+                return BoxedValue.From(0);
+            }
+            return BoxedValue.From(Lib.SetMetaDslTaskNum(operands[0].GetInt()));
+        }
+    }
+    sealed class GetMetaDslTaskNumExp : SimpleExpressionBase
+    {
+        protected override BoxedValue OnCalc(IList<BoxedValue> operands)
+        {
+            return BoxedValue.From(Lib.GetMetaDslTaskNum());
+        }
+    }
     sealed class NativeLogExp : SimpleExpressionBase
     {
         protected override BoxedValue OnCalc(IList<BoxedValue> operands)
@@ -2035,7 +2082,7 @@ namespace DotNetLib
                 s_Frame = BrowserGetMainFrame(s_Browser);
             }
             if (s_Browser == IntPtr.Zero) {
-                Lib.NativeLogNoLock($"[csharp] Error HandleAllQueues, browser is null");
+                Lib.NativeLog($"[csharp] Error HandleAllQueues, browser is null");
                 return;
             }
 
@@ -2062,7 +2109,7 @@ namespace DotNetLib
                         --codeCountdown;
                     }
                     catch (Exception ex) {
-                        Lib.NativeLogNoLock($"[csharp] Error processing JavascriptCode queue: {ex.Message}");
+                        Lib.NativeLog($"[csharp] Error processing JavascriptCode queue: {ex.Message}");
                     }
                 }
             }
@@ -2076,7 +2123,7 @@ namespace DotNetLib
                         --funcCountdown;
                     }
                     catch (Exception ex) {
-                        Lib.NativeLogNoLock($"[csharp] Error processing JavascriptFunc queue: {ex.Message}");
+                        Lib.NativeLog($"[csharp] Error processing JavascriptFunc queue: {ex.Message}");
                     }
                 }
             }
@@ -2088,7 +2135,7 @@ namespace DotNetLib
                         SendCefMessage(cefItem.Item1, cefItem.Item2, 0);
                     }
                     catch (Exception ex) {
-                        Lib.NativeLogNoLock($"[csharp] Error processing CefMessage queue ({cefItem.Item1}): {ex.Message}");
+                        Lib.NativeLog($"[csharp] Error processing CefMessage queue ({cefItem.Item1}): {ex.Message}");
                     }
                 }
             }
@@ -2554,11 +2601,13 @@ namespace DotNetLib
         [UnmanagedCallersOnly]
         internal static int RegisterApi(IntPtr apis)
         {
+            s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
             s_NativeApi = new NativeApi(apis);
             // Initialize the AgentFrameworkService singleton with concrete implementations
             AgentFrameworkService.Instance.SetNativeApi(s_NativeApi);
             AgentFrameworkService.Instance.SetErrorReporter(s_NativeApi);
             AgentFrameworkService.Instance.SetDslEngine(s_NativeApi);
+            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             //We must load AgentCore's dependencies before loading AgentCore itself.
             PrepareBatchScript();
             return 0;
@@ -2691,12 +2740,10 @@ namespace DotNetLib
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
-            s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
-            AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
-            NativeLogNoLock("[csharp] Init CommandLine: " + cmd_line);
-            NativeLogNoLock("[csharp] Init BasePath: " + path);
-            NativeLogNoLock("[csharp] Init AppDir: " + app_dir);
-            NativeLogNoLock("[csharp] Init IsMac: " + is_mac);
+            NativeLog("[csharp] Init CommandLine: " + cmd_line);
+            NativeLog("[csharp] Init BasePath: " + path);
+            NativeLog("[csharp] Init AppDir: " + app_dir);
+            NativeLog("[csharp] Init IsMac: " + is_mac);
             s_CmdLine = cmd_line;
             s_BasePath = path;
             s_AppDir = app_dir;
@@ -2706,7 +2753,7 @@ namespace DotNetLib
             Console.SetError(s_StringWriter);
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_init"));
+                NativeLog(string.Format("[csharp] Call dsl on_init"));
 
                 if (null != s_NativeApi) {
                     if ((int)CefProcessType.RendererProcess == process_type) {
@@ -2716,10 +2763,10 @@ namespace DotNetLib
                         // Load AgentCore and hot reload manager in renderer process
                         bool loadSuccess = framework.LoadAgentPlugin(s_BasePath, s_AppDir, s_IsMac);
                         if (loadSuccess) {
-                            NativeLogNoLock("[csharp] AgentPlugin loaded successfully");
+                            NativeLog("[csharp] AgentPlugin loaded successfully");
                         }
                         else {
-                            NativeLogNoLock("[csharp] Warning: AgentPlugin loading failed, agent features will not be available");
+                            NativeLog("[csharp] Warning: AgentPlugin loading failed, agent features will not be available");
                         }
                     }
 
@@ -2735,7 +2782,7 @@ namespace DotNetLib
                         var vals = switchValue.Split(",", StringSplitOptions.RemoveEmptyEntries);
                         if (vals.Length == 2) {
                             s_MetaDslSwitch = switchValue;
-                            NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0}", s_MetaDslSwitch));
+                            NativeLog(string.Format("[csharp] parse --metadsl:{0}", s_MetaDslSwitch));
 
                             if ((int)CefProcessType.RendererProcess == process_type) {
                                 s_InitialDslScriptFile = vals[1];
@@ -2745,12 +2792,12 @@ namespace DotNetLib
                             }
                         }
                         else {
-                            NativeLogNoLock(string.Format("[csharp] parse --metadsl:{0} error, the value must adhere to the format 'xxx.dsl,xxx_renderer.dsl'", switchValue));
+                            NativeLog(string.Format("[csharp] parse --metadsl:{0} error, the value must adhere to the format 'xxx.dsl,xxx_renderer.dsl'", switchValue));
                         }
                     }
                     if (TryGetSwitchValueFromRawCommandLine(cmd_line, "projectidentity", out string prjSwitchValue)) {
                         s_ProjectSwitch = prjSwitchValue;
-                        NativeLogNoLock(string.Format("[csharp] parse --projectidentity:{0}", s_ProjectSwitch));
+                        NativeLog(string.Format("[csharp] parse --projectidentity:{0}", s_ProjectSwitch));
 
                         s_InitialProjectIdentity = s_ProjectSwitch;
                     }
@@ -2759,22 +2806,22 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_init");
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                     return r.GetBool();
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             return false;  // default: no_sandbox=false (sandbox enabled)
         }
         internal static void OnFinalize()
         {
-            NativeLogNoLock("[csharp] Finalize");
+            NativeLog("[csharp] Finalize");
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_finalize"));
+                NativeLog(string.Format("[csharp] Call dsl on_finalize"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -2782,12 +2829,12 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_finalize");
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 AgentFrameworkService.Instance.ShutdownPlugin();
@@ -2802,19 +2849,19 @@ namespace DotNetLib
             s_MainThreadId = Thread.CurrentThread.ManagedThreadId;
             AgentFrameworkService.Instance.SetMainThreadId(s_MainThreadId);
             NativeApi.SetContext(browser, IntPtr.Zero);
-            NativeLogNoLock("[csharp] Browser Init");
+            NativeLog("[csharp] Browser Init");
 
             // Track browser id in C# side
             if (s_NativeApi != null) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
                     s_BrowserBrowserIds.Add(browserId);
-                    NativeLogNoLock($"[csharp] Browser tracked: id={browserId}");
+                    NativeLog($"[csharp] Browser tracked: id={browserId}");
                 }
             }
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_init"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_init"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -2822,22 +2869,22 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_init");
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnBrowserFinalize(IntPtr browser)
         {
             NativeApi.SetContext(browser, IntPtr.Zero);
-            NativeLogNoLock("[csharp] Browser Finalize");
+            NativeLog("[csharp] Browser Finalize");
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_finalize"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_finalize"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -2845,12 +2892,12 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_finalize");
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 // Untrack browser id in C# side
@@ -2858,7 +2905,7 @@ namespace DotNetLib
                     int browserId = s_NativeApi.BrowserGetId(browser);
                     if (browserId > 0) {
                         s_BrowserBrowserIds.Remove(browserId);
-                        NativeLogNoLock($"[csharp] Browser untracked: id={browserId}");
+                        NativeLog($"[csharp] Browser untracked: id={browserId}");
                     }
                 }
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -2884,7 +2931,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnDevToolsMessage Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnDevToolsMessage Exception:" + e.Message + "\n" + e.StackTrace);
             }
             return 0;
         }
@@ -2904,7 +2951,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnDevToolsMethodResult Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnDevToolsMethodResult Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -2922,7 +2969,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnDevToolsEvent Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnDevToolsEvent Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -2937,7 +2984,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnDevToolsAgentAttached Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnDevToolsAgentAttached Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -2952,7 +2999,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnDevToolsAgentDetached Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnDevToolsAgentDetached Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -2966,23 +3013,23 @@ namespace DotNetLib
 
         internal static bool OnBrowserHotReloadCopyFiles(string url)
         {
-            NativeLogNoLock("[csharp] Browser Hot Reload Copy Files, url: " + url);
+            NativeLog("[csharp] Browser Hot Reload Copy Files, url: " + url);
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_hot_reload_copyfiles"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_hot_reload_copyfiles"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_copyfiles", url);
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                         return r.GetBool();
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }
@@ -2990,10 +3037,10 @@ namespace DotNetLib
         internal static void OnBrowserHotReloadCompleted(IntPtr browser, IntPtr frame, string url)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock("[csharp] Browser Hot Reload Completed, url: " + url);
+            NativeLog("[csharp] Browser Hot Reload Completed, url: " + url);
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_hot_reload_completed"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_hot_reload_completed"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3001,12 +3048,12 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_browser_hot_reload_completed", url);
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -3014,10 +3061,10 @@ namespace DotNetLib
         internal static bool OnBrowserCefQuery(IntPtr browser, IntPtr frame, long query_id, string request, bool persistent, long handle, ref int out_result)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}, handle={3}", query_id, GetStringInLength(request), persistent, handle));
+            NativeLog(string.Format("[csharp] Browser Cef Query: query_id={0}, request={1}, persistent={2}, handle={3}", query_id, GetStringInLength(request), persistent, handle));
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_browser_cef_query"));
+                NativeLog(string.Format("[csharp] Call dsl on_browser_cef_query"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3051,7 +3098,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3078,14 +3125,14 @@ namespace DotNetLib
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0) {
                     s_RendererBrowserIds.Add(browserId);
-                    NativeLogNoLock($"[csharp] Renderer browser tracked: id={browserId}");
+                    NativeLog($"[csharp] Renderer browser tracked: id={browserId}");
                 }
             }
 
-            NativeLogNoLock($"[csharp] Renderer Init, url={url}");
+            NativeLog($"[csharp] Renderer Init, url={url}");
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_renderer_init"));
+                NativeLog(string.Format("[csharp] Call dsl on_renderer_init"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3098,14 +3145,14 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnRendererFinalize(IntPtr browser, IntPtr frame)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock("[csharp] Renderer Finalize");
+            NativeLog("[csharp] Renderer Finalize");
 
             // Untrack main-frame browser id for renderer process. Only untrack when
             // the finalized frame is the main frame; navigation-driven sub frame
@@ -3113,12 +3160,12 @@ namespace DotNetLib
             if (s_NativeApi != null && s_NativeApi.FrameIsMain(frame)) {
                 int browserId = s_NativeApi.BrowserGetId(browser);
                 if (browserId > 0 && s_RendererBrowserIds.Remove(browserId)) {
-                    NativeLogNoLock($"[csharp] Renderer browser untracked: id={browserId}");
+                    NativeLog($"[csharp] Renderer browser untracked: id={browserId}");
                 }
             }
 
             try {
-                NativeLogNoLock(string.Format("[csharp] Call dsl on_renderer_finalize"));
+                NativeLog(string.Format("[csharp] Call dsl on_renderer_finalize"));
 
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3126,12 +3173,12 @@ namespace DotNetLib
                     BoxedValue r = BatchCommand.BatchScript.Call("on_renderer_finalize");
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3147,7 +3194,7 @@ namespace DotNetLib
                     s_StartupUrl = url;
                 }
             }
-            NativeLogNoLock($"[csharp] OnLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
+            NativeLog($"[csharp] OnLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3163,7 +3210,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnLoadStart:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnLoadStart:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -3174,7 +3221,7 @@ namespace DotNetLib
                 s_LastLoadedMainUrl = url;
             }
             s_LastLoadedUrl = url;
-            NativeLogNoLock($"[csharp] OnLoadEnd: url={url}, http_status_code={http_status_code}, inject_all_frame={inject_all_frame}, is_main={is_main}");
+            NativeLog($"[csharp] OnLoadEnd: url={url}, http_status_code={http_status_code}, inject_all_frame={inject_all_frame}, is_main={is_main}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3189,7 +3236,7 @@ namespace DotNetLib
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock($"[csharp] on_load_end result type: {r.Type}");
+                        NativeLog($"[csharp] on_load_end result type: {r.Type}");
 
                         if (r.Type == (int)BoxedValue.c_Tuple2Type) {
                             var tuple = r.GetTuple2();
@@ -3197,7 +3244,7 @@ namespace DotNetLib
                                 bool useCustomCode = tuple.Item1.GetBool();
                                 string jsCode = tuple.Item2.GetString();
 
-                                NativeLogNoLock($"[csharp] on_load_end returned: useCustomCode={useCustomCode}, jsCode.Length={jsCode?.Length ?? 0}");
+                                NativeLog($"[csharp] on_load_end returned: useCustomCode={useCustomCode}, jsCode.Length={jsCode?.Length ?? 0}");
 
                                 if (useCustomCode) {
                                     if (string.IsNullOrEmpty(jsCode)) {
@@ -3212,7 +3259,7 @@ namespace DotNetLib
                                             return true;
                                         }
                                         else {
-                                            NativeLogNoLock($"[csharp] JS code too large: {bytes.Length} >= {code_size}");
+                                            NativeLog($"[csharp] JS code too large: {bytes.Length} >= {code_size}");
                                         }
                                     }
                                 }
@@ -3222,7 +3269,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnLoadEnd:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
             code_size = 0;
             return false;
@@ -3230,14 +3277,13 @@ namespace DotNetLib
 
         internal static bool OnGetAuthCredentials(bool is_proxy, string host, int port, string realm, string scheme, string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt)
         {
-            NativeLogNoLock($"[csharp] OnGetAuthCredentials: is_proxy={is_proxy}, host={host}, port={port}, realm={realm}, scheme={scheme}, origin={origin_url}, handle={handle}, attempt={attempt}");
+            NativeLog($"[csharp] OnGetAuthCredentials: is_proxy={is_proxy}, host={host}, port={port}, realm={realm}, scheme={scheme}, origin={origin_url}, handle={handle}, attempt={attempt}");
             try {
                 string user = string.Empty;
                 string pass = string.Empty;
 
-                // Ask the DSL layer synchronously (same pattern as
-                // OnExecuteMetaDSL: serialized by s_Lock, safe to call from
-                // the CEF IO thread).                lock (s_Lock) {
+                // Ask the DSL layer synchronously (same pattern as OnExecuteMetaDSL:
+                // safe to call from the CEF IO thread).
                 if (null != s_NativeApi) {
                     TryLoadDSL();
 
@@ -3273,15 +3319,15 @@ namespace DotNetLib
                                     // Async takeover: DSL will complete
                                     // |handle| via native_callback_complete
                                     // (see HostApi.native_callback_complete).
-                                    NativeLogNoLock($"[csharp] OnGetAuthCredentials: DSL took over handle={handle}");
+                                    NativeLog($"[csharp] OnGetAuthCredentials: DSL took over handle={handle}");
                                     username_size = 0;
                                     password_size = 0;
                                     return true;
                                 }
-                                NativeLogNoLock($"[csharp] OnGetAuthCredentials: DSL handled sync (user={user}, pass_len={pass?.Length ?? 0})");
+                                NativeLog($"[csharp] OnGetAuthCredentials: DSL handled sync (user={user}, pass_len={pass?.Length ?? 0})");
                             }
                             else {
-                                NativeLogNoLock("[csharp] OnGetAuthCredentials: DSL declined (handled=false)");
+                                NativeLog("[csharp] OnGetAuthCredentials: DSL declined (handled=false)");
                                 return false;
                             }
                         }
@@ -3289,14 +3335,14 @@ namespace DotNetLib
                 }
 
                 if (string.IsNullOrEmpty(user)) {
-                    NativeLogNoLock("[csharp] OnGetAuthCredentials: no credentials provided by DSL, falling back to credui");
+                    NativeLog("[csharp] OnGetAuthCredentials: no credentials provided by DSL, falling back to credui");
                     return false;
                 }
 
                 byte[] userBytes = System.Text.Encoding.UTF8.GetBytes(user);
                 byte[] passBytes = System.Text.Encoding.UTF8.GetBytes(pass ?? string.Empty);
                 if (userBytes.Length >= username_size || passBytes.Length >= password_size) {
-                    NativeLogNoLock($"[csharp] OnGetAuthCredentials: buffer too small (user={userBytes.Length}/{username_size}, pass={passBytes.Length}/{password_size})");
+                    NativeLog($"[csharp] OnGetAuthCredentials: buffer too small (user={userBytes.Length}/{username_size}, pass={passBytes.Length}/{password_size})");
                     return false;
                 }
 
@@ -3307,14 +3353,14 @@ namespace DotNetLib
                 return true;
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnGetAuthCredentials:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnGetAuthCredentials:" + e.Message + "\n" + e.StackTrace);
                 return false;
             }
         }
 
         internal static bool OnRequestMediaAccessPermission(string requesting_origin, uint requested_permissions, bool menu_disabled, ref uint allowed_permissions)
         {
-            NativeLogNoLock($"[csharp] OnRequestMediaAccessPermission: origin={requesting_origin}, requested=0x{requested_permissions:X}, menu_disabled={menu_disabled}");
+            NativeLog($"[csharp] OnRequestMediaAccessPermission: origin={requesting_origin}, requested=0x{requested_permissions:X}, menu_disabled={menu_disabled}");
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3336,23 +3382,23 @@ namespace DotNetLib
                             if (handled) {
                                 int allowed = tuple.Item2.GetInt();
                                 allowed_permissions = (uint)allowed;
-                                NativeLogNoLock($"[csharp] OnRequestMediaAccessPermission: DSL handled (allowed=0x{allowed_permissions:X})");
+                                NativeLog($"[csharp] OnRequestMediaAccessPermission: DSL handled (allowed=0x{allowed_permissions:X})");
                                 return true;
                             }
-                            NativeLogNoLock("[csharp] OnRequestMediaAccessPermission: DSL declined (handled=false)");
+                            NativeLog("[csharp] OnRequestMediaAccessPermission: DSL declined (handled=false)");
                         }
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRequestMediaAccessPermission:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRequestMediaAccessPermission:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }
 
         internal static bool OnCertificateError(int cert_error, string request_url, ref int out_action)
         {
-            NativeLogNoLock($"[csharp] OnCertificateError: cert_error={cert_error}, url={request_url}");
+            NativeLog($"[csharp] OnCertificateError: cert_error={cert_error}, url={request_url}");
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -3373,16 +3419,16 @@ namespace DotNetLib
                             bool handled = tuple.Item1.GetBool();
                             if (handled) {
                                 out_action = tuple.Item2.GetInt();
-                                NativeLogNoLock($"[csharp] OnCertificateError: DSL handled (action={out_action})");
+                                NativeLog($"[csharp] OnCertificateError: DSL handled (action={out_action})");
                                 return true;
                             }
-                            NativeLogNoLock("[csharp] OnCertificateError: DSL declined (handled=false)");
+                            NativeLog("[csharp] OnCertificateError: DSL declined (handled=false)");
                         }
                     }
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnCertificateError:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnCertificateError:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }
@@ -3390,7 +3436,7 @@ namespace DotNetLib
         internal static void OnLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
+            NativeLog($"[csharp] OnLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3407,14 +3453,14 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
+            NativeLog($"[csharp] OnLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3430,14 +3476,14 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnLoadError:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnLoadError:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnRendererLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnRendererLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
+            NativeLog($"[csharp] OnRendererLoadStart: url={url}, transition_type={transition_type}, is_main={is_main}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3453,7 +3499,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRendererLoadStart:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRendererLoadStart:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -3464,7 +3510,7 @@ namespace DotNetLib
                 s_LastLoadedMainUrl = url;
             }
             s_LastLoadedUrl = url;
-            NativeLogNoLock($"[csharp] OnRendererLoadEnd: url={url}, http_status_code={http_status_code}, is_main={is_main}");
+            NativeLog($"[csharp] OnRendererLoadEnd: url={url}, http_status_code={http_status_code}, is_main={is_main}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3478,7 +3524,7 @@ namespace DotNetLib
                     BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
                     CheckDslError();
                     if (!r.IsNullObject) {
-                        NativeLogNoLock($"[csharp] on_renderer_load_end result type: {r.Type}");
+                        NativeLog($"[csharp] on_renderer_load_end result type: {r.Type}");
 
                         if (r.Type == (int)BoxedValue.c_Tuple2Type) {
                             var tuple = r.GetTuple2();
@@ -3486,7 +3532,7 @@ namespace DotNetLib
                                 bool useCustomCode = tuple.Item1.GetBool();
                                 string jsCode = tuple.Item2.GetString();
 
-                                NativeLogNoLock($"[csharp] on_renderer_load_end returned: useCustomCode={useCustomCode}, jsCode.Length={jsCode?.Length ?? 0}");
+                                NativeLog($"[csharp] on_renderer_load_end returned: useCustomCode={useCustomCode}, jsCode.Length={jsCode?.Length ?? 0}");
 
                                 if (useCustomCode) {
                                     if (string.IsNullOrEmpty(jsCode)) {
@@ -3501,7 +3547,7 @@ namespace DotNetLib
                                             return true;
                                         }
                                         else {
-                                            NativeLogNoLock($"[csharp] Renderer JS code too large: {bytes.Length} >= {code_size}");
+                                            NativeLog($"[csharp] Renderer JS code too large: {bytes.Length} >= {code_size}");
                                         }
                                     }
                                 }
@@ -3511,7 +3557,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRendererLoadEnd:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRendererLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
             code_size = 0;
             return false;
@@ -3520,7 +3566,7 @@ namespace DotNetLib
         internal static void OnRendererLoadingStateChange(IntPtr browser, IntPtr frame, string url, bool is_loading, bool can_go_back, bool can_go_forward)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnRendererLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
+            NativeLog($"[csharp] OnRendererLoadingStateChange: url={url}, is_loading={is_loading}, can_go_back={can_go_back}, can_go_forward={can_go_forward}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3537,14 +3583,14 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRendererLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRendererLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnRendererLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnRendererLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
+            NativeLog($"[csharp] OnRendererLoadError: error_code={error_code}, error_text={error_text}, failed_url={failed_url}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3560,14 +3606,14 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRendererLoadError:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRendererLoadError:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static bool OnRenderProcessTerminated(IntPtr browser, IntPtr frame, string startup_url, string url, int status, int error_code, string error_string, IntPtr reload_url, ref int reload_url_size)
         {
             NativeApi.SetContext(browser, frame);
-            NativeLogNoLock($"[csharp] OnRenderProcessTerminated: startup_url={startup_url}, url={url}, status={status}, error_code={error_code}, error_string={error_string}");
+            NativeLog($"[csharp] OnRenderProcessTerminated: startup_url={startup_url}, url={url}, status={status}, error_code={error_code}, error_string={error_string}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3602,7 +3648,7 @@ namespace DotNetLib
                                             return true;
                                         }
                                         else {
-                                            NativeLogNoLock($"[csharp] reload_url buffer too small: needed={bytes.Length}, provided={reload_url_size}");
+                                            NativeLog($"[csharp] reload_url buffer too small: needed={bytes.Length}, provided={reload_url_size}");
                                             // Report required size to caller; caller will fallback.
                                             reload_url_size = bytes.Length;
                                             return true;
@@ -3615,7 +3661,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnRenderProcessTerminated:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnRenderProcessTerminated:" + e.Message + "\n" + e.StackTrace);
             }
             reload_url_size = 0;
             return false;
@@ -3623,7 +3669,7 @@ namespace DotNetLib
 
         internal static void OnBeforeCommandLineProcessing(int process_type, IntPtr command_line)
         {
-            NativeLogNoLock($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
+            NativeLog($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3639,13 +3685,13 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnBeforeCommandLineProcessing:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnBeforeCommandLineProcessing:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static void OnBeforeChildProcessLaunch(int process_type, IntPtr command_line)
         {
-            NativeLogNoLock($"[csharp] OnBeforeChildProcessLaunch process_type={process_type}");
+            NativeLog($"[csharp] OnBeforeChildProcessLaunch process_type={process_type}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3654,11 +3700,11 @@ namespace DotNetLib
                     var cmdLineProxy = new CommandLineProxy(command_line, s_NativeApi);
                     if (!string.IsNullOrEmpty(s_MetaDslSwitch)) {
                         cmdLineProxy.AppendSwitchWithValue("metadsl", s_MetaDslSwitch);
-                        NativeLogNoLock($"[dsl] on_before_child_process_launch: copied --metadsl={s_MetaDslSwitch} to child process");
+                        NativeLog($"[dsl] on_before_child_process_launch: copied --metadsl={s_MetaDslSwitch} to child process");
                     }
                     if (!string.IsNullOrEmpty(s_ProjectSwitch)) {
                         cmdLineProxy.AppendSwitchWithValue("projectidentity", s_ProjectSwitch);
-                        NativeLogNoLock($"[dsl] on_before_child_process_launch: copied --projectidentity={s_ProjectSwitch} to child process");
+                        NativeLog($"[dsl] on_before_child_process_launch: copied --projectidentity={s_ProjectSwitch} to child process");
                     }
 
                     var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
@@ -3670,13 +3716,13 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnBeforeChildProcessLaunch:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnBeforeChildProcessLaunch:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
         internal static bool OnAlreadyRunningAppRelaunch(IntPtr command_line, string current_directory)
         {
-            NativeLogNoLock($"[csharp] OnAlreadyRunningAppRelaunch current_directory={current_directory}");
+            NativeLog($"[csharp] OnAlreadyRunningAppRelaunch current_directory={current_directory}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3693,7 +3739,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnAlreadyRunningAppRelaunch:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnAlreadyRunningAppRelaunch:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }
@@ -3730,7 +3776,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnBeforeBrowse:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnBeforeBrowse:" + e.Message + "\n" + e.StackTrace);
             }
             if (out_return_value != IntPtr.Zero) Marshal.WriteByte(out_return_value, (byte)0);
             return false;
@@ -3771,7 +3817,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnBeforeResourceLoad:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3788,7 +3834,7 @@ namespace DotNetLib
         internal static int OnJsDialog(IntPtr browser, int dialog_type, string origin_url, string message_text, string default_prompt_text, long handle)
         {
             NativeApi.SetContext(browser, IntPtr.Zero);
-            NativeLogNoLock($"[csharp] OnJsDialog: type={dialog_type}, origin={origin_url}, handle={handle}");
+            NativeLog($"[csharp] OnJsDialog: type={dialog_type}, origin={origin_url}, handle={handle}");
 
             try {
                 if (null != s_NativeApi) {
@@ -3818,7 +3864,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnJsDialog:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnJsDialog:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3844,7 +3890,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnBeforeResourceResponse Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnBeforeResourceResponse Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3884,7 +3930,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnResourceResponseFilter Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnResourceResponseFilter Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -3953,7 +3999,7 @@ namespace DotNetLib
                         // byte[] would lose its tail after the input is
                         // consumed, so reject it explicitly instead.
                         if (outputBuf != null && outputBuf.Length > data_out_size) {
-                            NativeLogNoLock("[csharp] OnResponseContentFilter output exceeds native buffer: " + outputBuf.Length + ">" + data_out_size);
+                            NativeLog("[csharp] OnResponseContentFilter output exceeds native buffer: " + outputBuf.Length + ">" + data_out_size);
                             out_status = 2;  // RESPONSE_FILTER_ERROR
                             out_data_in_read = 0;
                             out_data_out_written = 0;
@@ -3977,7 +4023,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnResponseContentFilter Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnResponseContentFilter Exception:" + e.Message + "\n" + e.StackTrace);
             }
             // Not handled: native falls back to pass-through.
             return false;
@@ -4003,7 +4049,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnResourceLoadComplete Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnResourceLoadComplete Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -4037,7 +4083,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] OnProtocolExecution Exception:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] OnProtocolExecution Exception:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -4078,7 +4124,7 @@ namespace DotNetLib
                                     return true;
                                 }
                                 else {
-                                    NativeLogNoLock($"[csharp] OnResourceRedirect: out_url buffer too small: needed={bytes.Length}, available={out_url_size}");
+                                    NativeLog($"[csharp] OnResourceRedirect: out_url buffer too small: needed={bytes.Length}, available={out_url_size}");
                                 }
                             }
                         }
@@ -4086,7 +4132,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnResourceRedirect:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnResourceRedirect:" + e.Message + "\n" + e.StackTrace);
             }
             finally {
                 NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
@@ -4128,7 +4174,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnConsoleLog:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnConsoleLog:" + e.Message + "\n" + e.StackTrace);
             }
             return false;
         }
@@ -4148,7 +4194,7 @@ namespace DotNetLib
                 }
             }
             catch (Exception e) {
-                NativeLogNoLock("[csharp] Exception in OnHeartBeat:" + e.Message + "\n" + e.StackTrace);
+                NativeLog("[csharp] Exception in OnHeartBeat:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -4180,37 +4226,226 @@ namespace DotNetLib
 
         internal static string OnCallMetaDSL(string func_name, List<string> args, IntPtr browser, IntPtr frame)
         {
-            lock (s_Lock) {
-                NativeApi.SetContext(browser, frame);
+            // No lock is taken here. Every C++ -> C# entry used to be serialized by
+            // s_Lock, but the bodies only touch state that is already thread safe
+            // (native logging queues to a ConcurrentQueue off the main thread, and the
+            // DSL interpreter is thread local), so the lock only added a serialization
+            // point where a slow call would block the UI thread's next callback.
+            NativeApi.SetContext(browser, frame);
 
-                try {
-                    if (null != s_NativeApi) {
-                        TryLoadDSL();
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
 
-                        bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
-                        var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                        foreach (var arg in args) {
-                            vargs.Add(BoxedValue.FromString(arg));
-                        }
-                        BoxedValue r;
-                        if (funcExists) {
-                            r = BatchCommand.BatchScript.Call(func_name, vargs);
-                        }
-                        else {
-                            r = BatchCommand.BatchScript.Call("on_call_metadsl", BoxedValue.FromString(func_name), BoxedValue.FromObject(vargs));
-                        }
-                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                        CheckDslError();
-                        if (!r.IsNullObject) {
-                            return r.ToString();
-                        }
+                    bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    foreach (var arg in args) {
+                        vargs.Add(BoxedValue.FromString(arg));
+                    }
+                    BoxedValue r;
+                    if (funcExists) {
+                        r = BatchCommand.BatchScript.Call(func_name, vargs);
+                    }
+                    else {
+                        r = BatchCommand.BatchScript.Call("on_call_metadsl", BoxedValue.FromString(func_name), BoxedValue.FromObject(vargs));
+                    }
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (!r.IsNullObject) {
+                        return r.ToString();
                     }
                 }
-                catch (Exception e) {
-                    NativeLogNoLock("[csharp] Exception in OnCallMetaDSL:" + e.Message + "\n" + e.StackTrace);
-                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in OnCallMetaDSL:" + e.Message + "\n" + e.StackTrace);
             }
             return string.Empty;
+        }
+
+        // A worker thread of the call_metadsl_task pool. Long lived on purpose: BatchScript
+        // state is [ThreadStatic], so TryLoadDSL builds a full interpreter (Init + Load +
+        // init_global_consts) the first time any thread runs a task. Reusing a fixed set of
+        // threads pays that cost once per worker instead of once per task, and serializing
+        // the work queued to a worker keeps several tasks from fighting over sqlite's
+        // single writer lock.
+        private sealed class MetaDslTaskWorker
+        {
+            public readonly System.Collections.Concurrent.BlockingCollection<Tuple<string, List<BoxedValue>>> Queue
+                = new System.Collections.Concurrent.BlockingCollection<Tuple<string, List<BoxedValue>>>();
+        }
+        // Guards s_MetaDslTaskWorkers and s_MetaDslTaskNum only. This is deliberately NOT a
+        // general purpose lock like the removed s_Lock: it is never held while running dsl.
+        private static readonly object s_MetaDslTaskLock = new object();
+        private static readonly List<MetaDslTaskWorker> s_MetaDslTaskWorkers = new List<MetaDslTaskWorker>();
+        private static int s_MetaDslTaskNum = 2;
+        // How long a worker waits for work before checking whether it should retire.
+        private const int c_MetaDslTaskIdleMs = 30000;
+        // How far past the default num an index may reach in one call. Growing is meant for
+        // giving one slow job its own thread, so a jump larger than this is almost always a
+        // typo, and acting on it would spawn that many permanent threads.
+        private const int c_MetaDslTaskIndexSlack = 10;
+
+        // Caller must hold s_MetaDslTaskLock. Grows the pool to at least num workers.
+        private static int EnsureMetaDslTaskWorkers(int num)
+        {
+            while (s_MetaDslTaskWorkers.Count < num) {
+                int index = s_MetaDslTaskWorkers.Count;
+                var worker = new MetaDslTaskWorker();
+                var thread = new Thread(() => MetaDslTaskLoop(worker));
+                // Background so a worker waiting on its queue cannot keep the process alive.
+                thread.IsBackground = true;
+                thread.Name = "metadsl_task_" + index;
+                s_MetaDslTaskWorkers.Add(worker);
+                thread.Start();
+            }
+            return s_MetaDslTaskWorkers.Count;
+        }
+        // Worker loop. Waits for work, and once it has been idle for a while it retires
+        // itself if set_metadsl_task_num has since lowered the default below the live count.
+        //
+        // Only the LAST worker may retire, which is what keeps task_index meaningful: an
+        // index IS a position in s_MetaDslTaskWorkers, so removing from the middle would
+        // silently renumber every worker above it. Shrinking therefore peels off the tail,
+        // and an idle worker in the middle retires once the ones after it are gone.
+        private static void MetaDslTaskLoop(MetaDslTaskWorker worker)
+        {
+            while (true) {
+                if (worker.Queue.TryTake(out var item, c_MetaDslTaskIdleMs)) {
+                    OnCallMetaDslTask(item.Item1, item.Item2);
+                    continue;
+                }
+                // Idle. Decide under the lock so this cannot interleave with a producer
+                // picking this worker and queueing to it (see EnqueueMetaDslTask). The queue
+                // is re-checked here because work may have arrived since TryTake gave up.
+                lock (s_MetaDslTaskLock) {
+                    int last = s_MetaDslTaskWorkers.Count - 1;
+                    if (s_MetaDslTaskWorkers.Count > s_MetaDslTaskNum
+                        && last >= 0
+                        && s_MetaDslTaskWorkers[last] == worker
+                        && worker.Queue.Count == 0) {
+                        s_MetaDslTaskWorkers.RemoveAt(last);
+                        // Nothing can reach this worker any more: producers only read the
+                        // list while holding the lock this thread is holding right now.
+                        worker.Queue.Dispose();
+                        return;
+                    }
+                }
+            }
+        }
+        // Queues func_name to worker task_index. An index at or past the default count
+        // raises the default to task_index + 1, so a script can give a slow job its own
+        // thread just by picking a fresh index. Raising the default (rather than only
+        // growing the list) is what makes that thread stick around: a worker above the
+        // default retires when it goes idle, which would otherwise throw away the
+        // interpreter this index just paid to build. An index more than
+        // c_MetaDslTaskIndexSlack past the default is rejected as a typo.
+        internal static bool EnqueueMetaDslTask(int task_index, string func_name, List<BoxedValue> args)
+        {
+            if (task_index < 0) {
+                task_index = 0;
+            }
+            try {
+                // Add INSIDE the lock: a retiring worker checks its queue under this same
+                // lock, so adding outside it would let an item land in the queue of a worker
+                // that just exited, where it would never run. This is cheap - the collection
+                // is unbounded so Add never blocks, and no dsl code runs here.
+                lock (s_MetaDslTaskLock) {
+                    if (task_index >= s_MetaDslTaskNum + c_MetaDslTaskIndexSlack) {
+                        string err = string.Format("call_metadsl_task: task_index {0} is more than {1} past the current task num {2}, looks like a typo, func:{3}", task_index, c_MetaDslTaskIndexSlack, s_MetaDslTaskNum, func_name);
+                        NativeApi.AppendApiErrorInfoLine(err);
+                        NativeLog("[csharp] " + err);
+                        return false;
+                    }
+                    if (task_index + 1 > s_MetaDslTaskNum) {
+                        s_MetaDslTaskNum = task_index + 1;
+                    }
+                    EnsureMetaDslTaskWorkers(s_MetaDslTaskNum);
+                    s_MetaDslTaskWorkers[task_index].Queue.Add(Tuple.Create(func_name, args));
+                }
+                return true;
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in EnqueueMetaDslTask:" + e.Message);
+                return false;
+            }
+        }
+        // Sets the default worker count and returns the live count afterwards. Raising it
+        // creates the missing workers at once. Lowering it kills nothing immediately: each
+        // worker above the new default retires on its own once it has been idle for
+        // c_MetaDslTaskIdleMs, tail first, so queued work always still runs. That means the
+        // returned count can be larger than num until the extra workers go idle.
+        internal static int SetMetaDslTaskNum(int num)
+        {
+            if (num < 1) {
+                num = 1;
+            }
+            lock (s_MetaDslTaskLock) {
+                s_MetaDslTaskNum = num;
+                return EnsureMetaDslTaskWorkers(num);
+            }
+        }
+        internal static int GetMetaDslTaskNum()
+        {
+            lock (s_MetaDslTaskLock) {
+                return s_MetaDslTaskWorkers.Count;
+            }
+        }
+
+        // Body of a call_metadsl_task job. Runs on a pool worker thread, so slow work here
+        // (sqlite writes and the like) cannot block the UI thread or an IO callback thread.
+        //
+        // There is no browser/frame in a task, so the dsl code running here must not use
+        // browser functionality. Queued side effects still work (nativelog, javascriptlog,
+        // send_javascript_code/call all fall back to their queues off the main thread, and
+        // HandleAllQueues falls back to a valid browser), but directed sends have no target.
+        //
+        // Note the interpreter is per thread, so a task only sees globals set up by
+        // init_global_consts, NOT variables assigned at runtime on the main thread.
+        // Shared C# state (AgentCore statics) is of course still shared.
+        // The args are passed as BoxedValue, not string. OnCallMetaDSL takes strings only
+        // because C++ marshalling cannot carry anything else; this api is called from dsl
+        // directly, so flattening to string here would silently turn a number into "123",
+        // a list into its text form, and so on.
+        //
+        // Caveat that follows from that: the values are handed to the worker by reference.
+        // Strings and numbers are immutable so they are safe, but if a caller passes a
+        // collection it must not mutate it after queueing, because the task may be reading
+        // it on another thread. Pass a copy in that case.
+        internal static void OnCallMetaDslTask(string func_name, List<BoxedValue> args)
+        {
+            // NativeApi's context is [ThreadStatic] and a worker runs many jobs, so a
+            // context left by an earlier job on this thread would otherwise still be
+            // visible here. Reset it the same way the native callbacks do when they finish.
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            NativeApi.LastSourceProcessId = -1;
+
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    bool funcExists = BatchScript.Calculator.TryGetFuncInfo(func_name, out var finfo);
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    try {
+                        foreach (var arg in args) {
+                            vargs.Add(arg);
+                        }
+                        if (funcExists) {
+                            BatchCommand.BatchScript.Call(func_name, vargs);
+                        }
+                        else {
+                            BatchCommand.BatchScript.Call("on_call_metadsl_task", BoxedValue.FromString(func_name), BoxedValue.FromObject(vargs));
+                        }
+                        CheckDslError();
+                    }
+                    finally {
+                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    }
+                }
+            }
+            catch (Exception e) {
+                // Nothing above us can observe this failure, so never swallow it.
+                NativeLog("[csharp] Exception in OnCallMetaDslTask:" + e.Message + "\n" + e.StackTrace);
+            }
         }
 
         internal static void OnReceiveCefMessage(string msg, IntPtr args, int argCount, IntPtr browser, IntPtr frame, int source_process_id)
@@ -4251,61 +4486,57 @@ namespace DotNetLib
 
         internal static string OnExecuteMetaDSL(List<string> args, IntPtr browser, IntPtr frame)
         {
-            lock (s_Lock) {
-                NativeApi.SetContext(browser, frame);
+            NativeApi.SetContext(browser, frame);
 
-                try {
-                    if (args.Count == 1) {
-                        return ExecuteMetaDslScript(args[0]);
-                    }
-                    else {
-                        var sb = new StringBuilder();
-                        foreach (var arg in args) {
-                            sb.Append(arg);
-                            sb.Append(';');
-                            sb.AppendLine();
-                        }
-                        return ExecuteMetaDslScript(sb.ToString());
-                    }
+            try {
+                if (args.Count == 1) {
+                    return ExecuteMetaDslScript(args[0]);
                 }
-                catch (Exception e) {
-                    NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+                else {
+                    var sb = new StringBuilder();
+                    foreach (var arg in args) {
+                        sb.Append(arg);
+                        sb.Append(';');
+                        sb.AppendLine();
+                    }
+                    return ExecuteMetaDslScript(sb.ToString());
                 }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
             return string.Empty;
         }
 
         internal static void OnReceiveCefMessage(string msg, List<string> args, IntPtr browser, IntPtr frame, int source_process_id)
         {
-            lock (s_Lock) {
-                NativeApi.SetContext(browser, frame);
-                NativeApi.LastSourceProcessId = source_process_id;
+            NativeApi.SetContext(browser, frame);
+            NativeApi.LastSourceProcessId = source_process_id;
 
-                try {
-                    NativeLogNoLock(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, GetStringInLength(args), source_process_id, s_ProcessType));
+            try {
+                NativeLog(string.Format("[csharp] Call csharp OnReceiveCefMessage, msg:{0} arg:{1} from process:{2} process type:{3}", msg, GetStringInLength(args), source_process_id, s_ProcessType));
 
-                    if (null != s_NativeApi) {
-                        TryLoadDSL();
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
 
-                        var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
-                        foreach (var arg in args) {
-                            vargs.Add(BoxedValue.FromString(arg));
-                        }
-                        // In C#, we do not directly invoke `msg` as a function, because `cef_message` may be received
-                        // in either the browser process or the renderer process—and is typically forwarded internally
-                        // within the browser process. Instead, we can utilize the `redirectcall` directive within the
-                        // DSL to invoke `msg` as a function.
-                        BoxedValue r = BatchCommand.BatchScript.Call("on_receive_cef_message", BoxedValue.FromString(msg), BoxedValue.FromObject(vargs), BoxedValue.From(source_process_id));
-                        BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
-                        CheckDslError();
-                        if (!r.IsNullObject) {
-                            NativeLogNoLock(string.Format("[csharp] result:{0}", r.ToString()));
-                        }
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    foreach (var arg in args) {
+                        vargs.Add(BoxedValue.FromString(arg));
+                    }
+                    // In C#, we do not directly invoke `msg` as a function, because `cef_message` may be received
+                    // in either the browser process or the renderer process—and is typically forwarded internally
+                    // within the browser process. Instead, we can utilize the `redirectcall` directive within the
+                    // DSL to invoke `msg` as a function.
+                    BoxedValue r = BatchCommand.BatchScript.Call("on_receive_cef_message", BoxedValue.FromString(msg), BoxedValue.FromObject(vargs), BoxedValue.From(source_process_id));
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (!r.IsNullObject) {
+                        NativeLog(string.Format("[csharp] result:{0}", r.ToString()));
                     }
                 }
-                catch (Exception e) {
-                    NativeLogNoLock("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
-                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
         }
 
@@ -4379,18 +4610,6 @@ namespace DotNetLib
             int spaceIdx = cmdLine.IndexOf(' ', start);
             switchValue = spaceIdx > start ? cmdLine.Substring(start, spaceIdx - start) : cmdLine.Substring(start);
             return true;
-        }
-        internal static void NativeLog(string msg)
-        {
-            lock (s_Lock) {
-                NativeLogNoLock(msg);
-            }
-        }
-        internal static void JsLog(string msg)
-        {
-            lock (s_Lock) {
-                JsLogNoLock(msg);
-            }
         }
         internal static bool EnqueueCefMessage(string msg, params string[] args)
         {
@@ -4609,13 +4828,18 @@ namespace DotNetLib
             }
             return -1;
         }
-        internal static void NativeLogNoLock(string msg)
+        // Safe to call from any thread: s_NativeApi.NativeLog checks the thread itself
+        // and queues to a ConcurrentQueue when off the main thread (drained by
+        // handle_thread_queue on the heartbeat). This used to be named NativeLogNoLock
+        // to distinguish it from a locking wrapper; the lock was redundant and has been
+        // removed, so both paths are now this single method.
+        internal static void NativeLog(string msg)
         {
             if (null != s_NativeApi) {
                 s_NativeApi.NativeLog(msg);
             }
         }
-        internal static void JsLogNoLock(string msg)
+        internal static void JsLog(string msg)
         {
             if (null != s_NativeApi) {
                 s_NativeApi.JavascriptLog(msg);
@@ -4869,16 +5093,16 @@ namespace DotNetLib
                         loaded = true;
                         BatchCommand.BatchScript.Load(fi.FullName);
                         CheckDslError();
-                        NativeLogNoLock("[csharp] Load dsl script: " + fi.FullName);
+                        NativeLog("[csharp] Load dsl script: " + fi.FullName);
                     }
                     else {
                         errorMsg = "DSL script file does not exist";
-                        NativeLogNoLock("[csharp] " + errorMsg + ": " + fi.FullName);
+                        NativeLog("[csharp] " + errorMsg + ": " + fi.FullName);
                     }
                 }
             }
             else {
-                NativeLogNoLock("[csharp] Can't find dsl script: " + fi.FullName);
+                NativeLog("[csharp] Can't find dsl script: " + fi.FullName);
             }
             RefreshGlobalVars();
             NativeApi.ClearApiErrorInfo();
@@ -4931,7 +5155,7 @@ namespace DotNetLib
             }
             catch (Exception ex) {
                 hasError = true;
-                NativeLogNoLock($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
+                NativeLog($"[AgentCommand] Error executing MetaDSL script: {ex.Message}");
                 return $"Error: {ex.Message}";
             }
         }
@@ -4940,11 +5164,13 @@ namespace DotNetLib
         {
             AddCommonApiDocs();
             // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name,args,...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
             BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
+            BatchCommand.BatchScript.Register("call_metadsl_task", "call_metadsl_task(task_index,func_name,arg1,arg2,...) - queue a dsl func to worker thread task_index, an index at or past the default num raises the default to task_index+1 (an index more than 10 past it is rejected as a typo), for slow non-ui work such as sqlite writes, fire-and-forget, returns bool", new ExpressionFactoryHelper<CallMetaDslTaskExp>());
+            BatchCommand.BatchScript.Register("set_metadsl_task_num", "set_metadsl_task_num(num) - set the default worker thread num of call_metadsl_task, extra workers retire after being idle, returns the live num", new ExpressionFactoryHelper<SetMetaDslTaskNumExp>());
+            BatchCommand.BatchScript.Register("get_metadsl_task_num", "get_metadsl_task_num() - returns the live worker thread num of call_metadsl_task", new ExpressionFactoryHelper<GetMetaDslTaskNumExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());
@@ -4960,9 +5186,18 @@ namespace DotNetLib
             BatchCommand.BatchScript.Register("help", "help(pattern, ...), agent api help", new ExpressionFactoryHelper<HelpExp>());
             BatchCommand.BatchScript.Register("helpall", "helpall(pattern, ...), agent and framework api help", new ExpressionFactoryHelper<HelpAllExp>());
 
-            // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
+            if (MainThreadId == Thread.CurrentThread.ManagedThreadId) {
+                // The MainThread API calls LoadAgentPlugin in the OnInit function to register.
+            }
+            else {
+                // Agent-related APIs are registered by AgentCore plugin via LoadAgentPlugin()
+                if (null != AgentPlugin) {
+                    AgentPlugin.RegisterScriptApis();
+                }
+            }
 
             // Only valid in MainThread
+            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("handle_thread_queue", "handle_thread_queue([max_native_logs,max_js_logs,max_code_count,max_func_count]), only valid in main thread", false, new ExpressionFactoryHelper<HandleThreadQueueExp>());
             BatchCommand.BatchScript.Register("set_heart_beat_interval", "set_heart_beat_interval(interval_ms), set heartbeat interval in ms (10-60000)", false, new ExpressionFactoryHelper<SetHeartBeatIntervalExp>());
             BatchCommand.BatchScript.Register("complete_native_callback", "complete_native_callback(handle, ok[, data, code]) - complete a CEF async callback taken over by the script (JS dialog, deferred resource load, cefQuery)", false, new ExpressionFactoryHelper<CompleteNativeCallbackExp>());
@@ -4985,7 +5220,7 @@ namespace DotNetLib
         private static void CheckDslError()
         {
             if (BatchCommand.BatchScript.HasDslErrors) {
-                NativeLogNoLock("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
+                NativeLog("[csharp] Dsl error: " + BatchCommand.BatchScript.GetDslErrors());
             }
         }
 
@@ -5013,7 +5248,6 @@ namespace DotNetLib
         private static string s_InitialDslScriptFile = string.Empty;
         private static string s_InitialProjectIdentity = string.Empty;
         private static int s_MainThreadId = 0;
-        private static object s_Lock = new object();
 
         private static string s_MetaDslSwitch = string.Empty;
         private static string s_ProjectSwitch = string.Empty;
@@ -5089,11 +5323,13 @@ namespace DotNetLib
             Lib.AddCommonApiDocs();
 
             // Basic framework APIs (defined in Program.cs)
-            BatchCommand.BatchScript.Register("setdslfile", "setdslfile(dsl_file,...)", false, new ExpressionFactoryHelper<SetDslFileExp>());
             BatchCommand.BatchScript.Register("import", "import(dsl_file,...)", false, new ExpressionFactoryHelper<ImportExp>());
             BatchCommand.BatchScript.Register("redirectcall", "redirectcall(func_name) or redirectcall(func_name,args) or redirectcall(func_name, args, ...)", false, new ExpressionFactoryHelper<RedirectCallExp>());
             BatchCommand.BatchScript.Register("executemetadsl", "executemetadsl(dsl_code), return (bool, result)", false, new ExpressionFactoryHelper<ExecuteMetaDslExp>());
             BatchCommand.BatchScript.Register("execute_metadsl", "execute_metadsl(dsl_code), return (bool, result)", new ExpressionFactoryHelper<ExecuteMetaDslExp>());
+            BatchCommand.BatchScript.Register("call_metadsl_task", "call_metadsl_task(task_index,func_name,arg1,arg2,...) - queue a dsl func to worker thread task_index, an index at or past the default num raises the default to task_index+1 (an index more than 10 past it is rejected as a typo), for slow non-ui work such as sqlite writes, fire-and-forget, returns bool", new ExpressionFactoryHelper<CallMetaDslTaskExp>());
+            BatchCommand.BatchScript.Register("set_metadsl_task_num", "set_metadsl_task_num(num) - set the default worker thread num of call_metadsl_task, extra workers retire after being idle, returns the live num", new ExpressionFactoryHelper<SetMetaDslTaskNumExp>());
+            BatchCommand.BatchScript.Register("get_metadsl_task_num", "get_metadsl_task_num() - returns the live worker thread num of call_metadsl_task", new ExpressionFactoryHelper<GetMetaDslTaskNumExp>());
             BatchCommand.BatchScript.Register("nativelog", "nativelog(fmt, ...)", new ExpressionFactoryHelper<NativeLogExp>());
             BatchCommand.BatchScript.Register("javascriptlog", "javascriptlog(fmt, ...)", new ExpressionFactoryHelper<JavascriptLogExp>());
             BatchCommand.BatchScript.Register("quotestring", "quotestring(str)", false, new ExpressionFactoryHelper<QuoteStringExp>());

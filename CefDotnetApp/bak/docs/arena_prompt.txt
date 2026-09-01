@@ -1,7 +1,3 @@
-## 特别强调
-
-** 除hy3外其他模型不要写任何MetaDSL代码，只负责提炼与维持长期记忆！！！ **
-
 ## MetaDSL代码
 
 **MetaDSL语法规范**
@@ -224,34 +220,4 @@ agent_xxx类api需要一个端口号作为参数，本页面使用9528端口（�
 
 ---
 
-## 角色
-- hy3：执行metadsl代码、分析渲染或crash问题
-- 其他模型：根据hy3代码执行结果，负责提炼与维持长期记忆
-
-## 目录
-- demo工程：E:/UGit/ScriptableUnreal
-- 引擎分支：E:/UGit/UnrealEngine-soul
-- 游戏工程：E:/SoulClient
-- package：com.tencent.test（demo工程） com.tencent.soulgame（游戏工程）
-- adb：C:/sdk_full/platform-tools/adb.exe
-
-## 设备
-- 华为P9：adb -s
-- oppo r9tm：adb -s IFW8NNR8BMNJWSBQ
-- mi9pro：adb -s 3c72ac9
-- 三星：adb -s RFCW31K0Y7F
-
-## 工具
-- renderdoc 1.42："C:/Program Files/RenderDoc/qrenderdoc.exe"
-- renderdoc 1.42源码：D:/llvm_40_src/renderdoc-1.42
-- renderdoc 1.13：D:/RenderDoc_1.13_64/qrenderdoc.exe
-- renderdoc 1.13源码：D:/renderdoc-1.13
-- renderdoc mcp：renderdoc-mcp，stdio类型mcp
-- renderdoc mcp源码：D:/GitHub/RenderDocMCP
-
-## 问题
-- "C:\Users\dreamanlan\Downloads\Log.txt"，这是cook的日志，我们需要分析其中在GLES3下cook失败的shader
-- 从日志里找到cook失败的shader，目前主要问题是samplers数量大于16导致失败
-- 查找导致错误的根源，收敛到少数几个shader上
-- 给出修复方案（需要不影响目前效果，可以考虑手机上降级渲染的方式，不能影响pc的效果）
-
+** 注意，只有一个模型的代码会被执行 **

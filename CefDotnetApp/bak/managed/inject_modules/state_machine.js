@@ -462,20 +462,29 @@ class AgentExecutingState extends State {
     const operation = this.monitor.operationQueue.shift();
     this.info(`Executing operation: ${operation.type}`);
 
+    // A merged command may span several fences, so every block it covers must
+    // be marked, annotated and hidden, not just the first one.
+    const blocks = (operation.blocks && operation.blocks.length > 0)
+      ? operation.blocks
+      : [operation.block];
+
     try {
       if (operation.type === 'execute') {
         // Mark as executed
-        operation.block.dataset.metadslStatus = 'executed';
+        blocks.forEach((block) => {
+          block.dataset.metadslStatus = 'executed';
+        });
 
         // Execute the code
         this.info('Executing MetaDSL code block...');
         this.monitor.executeCommand(operation.code);
 
-        // Add visual indicator
-        this.monitor.addVisualIndicator(operation.block, 'executed');
-
-        // Schedule hiding the container after 3 seconds
-        this.monitor.scheduleHideContainer(operation.block);
+        blocks.forEach((block) => {
+          // Add visual indicator
+          this.monitor.addVisualIndicator(block, 'executed');
+          // Schedule hiding the container after 3 seconds
+          this.monitor.scheduleHideContainer(block);
+        });
 
         this.info('✓ Executed code block:', operation.blockId);
 
@@ -488,13 +497,15 @@ class AgentExecutingState extends State {
         return true;
       } else if (operation.type === 'mark_history') {
         // Mark as history
-        operation.block.dataset.metadslStatus = 'history';
+        blocks.forEach((block) => {
+          block.dataset.metadslStatus = 'history';
 
-        // Add visual indicator
-        this.monitor.addVisualIndicator(operation.block, 'history');
+          // Add visual indicator
+          this.monitor.addVisualIndicator(block, 'history');
 
-        // Schedule hiding the container after 3 seconds
-        this.monitor.scheduleHideContainer(operation.block);
+          // Schedule hiding the container after 3 seconds
+          this.monitor.scheduleHideContainer(block);
+        });
 
         this.info('✓ Marked as history:', operation.blockId);
 

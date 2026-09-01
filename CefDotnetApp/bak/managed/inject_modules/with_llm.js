@@ -612,7 +612,9 @@
     const row4 = document.createElement('div');
     row4.style.cssText = 'display:flex; gap:4px; margin-bottom:4px; flex-wrap:wrap;';
     const btnPrompt = mkBtn('prompt', () => sendPrompt());
+    const btnTodo = mkBtn('todo', () => sendTodo());
     row4.appendChild(btnPrompt);
+    row4.appendChild(btnTodo);
     body.appendChild(row4);
 
     panel.appendChild(header);
@@ -641,6 +643,15 @@
     if (!txt || !String(txt).trim()) { log('[prompt] empty, skip'); return; }
     chatSend(String(txt));
     log('[prompt] sent (' + String(txt).length + ' chars)');
+  }
+
+  function sendTodo() {
+    let txt = '';
+    try { txt = callMetaDSL('get_todo', AGENT_ID) || ''; }
+    catch (e) { log('[todo] callMetaDSL error: ' + (e && e.message)); return; }
+    if (!txt || !String(txt).trim()) { log('[todo] empty, skip'); return; }
+    chatSend(String(txt));
+    log('[todo] sent (' + String(txt).length + ' chars)');
   }
 
   function updatePanel() {
@@ -985,13 +996,93 @@
   }
 
   /**
+   * True when nothing but whitespace separates the end of block a from the
+   * start of block b inside root, i.e. the two fences are rendered back to
+   * back. Climbs out of each block's own wrapper first, so page chrome (copy
+   * button, language label) rendered next to a code block is not mistaken for
+   * LLM content sitting in the gap.
+   */
+  function isBlankGap(root, a, b) {
+    if (a === b || a.contains(b) || b.contains(a)) return false;
+    let n = a, m = b;
+    while (n.parentElement && n.parentElement !== root && !n.parentElement.contains(b)) {
+      n = n.parentElement;
+    }
+    while (m.parentElement && m.parentElement !== root && !m.parentElement.contains(a)) {
+      m = m.parentElement;
+    }
+    if (!n.parentElement || n.parentElement !== m.parentElement) return false;
+    let cur = n.nextSibling;
+    while (cur && cur !== m) {
+      if (cur.nodeType === Node.TEXT_NODE) {
+        if ((cur.nodeValue || '').trim()) return false;
+      } else if (cur.nodeType === Node.ELEMENT_NODE) {
+        // img/video/hr/table carry no text but are visible content.
+        if (cur.matches('img, video, hr, table')) return false;
+        if ((cur.textContent || '').trim()) return false;
+      }
+      cur = cur.nextSibling;
+    }
+    return true;
+  }
+
+  /**
+   * Stage 1 of code block recognition: absorb continuations.
+   * A block carrying an execute marker or a <metadsl> tag opens a command
+   * unit. A block without one continues the preceding unit ONLY when nothing
+   * but whitespace separates it from the previous block; otherwise it belongs
+   * to no command (a leading plain fence, or one separated from the unit by
+   * visible text).
+   * Returns { units, dropped }. The units are NOT required to be adjacent to
+   * each other - joining them is stage 2.
+   */
+  function groupCommandUnits(root, items) {
+    const units = [];
+    const dropped = [];
+    let cur = null, prev = null;
+    items.forEach(it => {
+      if (it.starts) {
+        cur = [it];
+        units.push(cur);
+      } else if (cur && prev && isBlankGap(root, prev.blk, it.blk)) {
+        cur.push(it);
+      } else {
+        dropped.push(it);
+      }
+      prev = it;
+    });
+    return { units: units, dropped: dropped };
+  }
+
+  /**
+   * Stage 2 of code block recognition: join the commands.
+   * The protocol asks for one MetaDSL block per reply, but when the model
+   * sends several they are concatenated and run as a single command; fixing
+   * whatever that breaks is the model's job. Stage 1 units are joined here,
+   * with no adjacency requirement between them.
+   */
+  function mergeCommandUnits(units) {
+    const merged = [];
+    units.forEach(u => u.forEach(it => merged.push(it)));
+    return merged;
+  }
+
+  /** Diagnostics for a recognized command: how many fences were merged. */
+  function blockLog(cmdBlocks) {
+    const n = cmdBlocks.length;
+    return 'merged ' + n + ' code block' + (n > 1 ? 's' : '') + ' into one command';
+  }
+
+  /**
    * Extract new code blocks from an AI message element.
-   * Returns array of { el, code, lang, id }.
+   * Consecutive fences with nothing but whitespace between them are merged
+   * into one script; several MetaDSL fences in one reply run as one command.
+   * Returns array of { el, els, code, lang, id }.
    */
   function extractBlocks(aiMsgEl) {
     const out = [];
-    const blocks = getMessageCodeBlocks(aiMsgEl);
-    blocks.forEach(blk => {
+    const items = [];
+    getMessageCodeBlocks(aiMsgEl).forEach(blk => {
       if (ST.processedCodes.has(blk)) return;
       const codeEl = blk.matches('pre')
         ? (blk.querySelector('code') || blk)
@@ -1007,28 +1098,48 @@
       const code = tagged.length > 0 ? tagged.join('\n\n') : normalizeCodeText(raw);
       if (!code || !code.trim()) return;
       // A tag wrapper is itself the execute signal; @execute still works.
-      if (tagged.length === 0 && !hasExecuteMarker(code)) {
+      items.push({
+        blk: blk,
+        codeEl: codeEl,
+        code: code,
+        starts: tagged.length > 0 || hasExecuteMarker(code),
+      });
+    });
+    const scan = groupCommandUnits(aiMsgEl, items);
+
+    // Plain blocks that continue no command are never executed, but are still
+    // recorded so later scans do not revisit them.
+    scan.dropped.forEach(it => ST.processedCodes.add(it.blk));
+
+    const cmdBlocks = mergeCommandUnits(scan.units);
+    if (cmdBlocks.length === 0) {
+      if (items.length > 0) {
         // Diagnostic: log first non-empty line so user can spot missed markers.
+        const code = items.map(it => it.code).join('\n');
         const firstLine = (code.split('\n').find(l => l.trim()) || '').slice(0, 80);
         log('[extract] no @execute marker, skip. first=' + firstLine);
-        ST.processedCodes.add(blk);
-        return;
       }
-      const lang = getLang(codeEl);
-      // Optional language filter from CFG.LANG_FILTER (empty = no filter).
-      if (CFG.LANG_FILTER.length > 0 && CFG.LANG_FILTER.indexOf(lang) < 0) {
-        log('[extract] lang filtered: ' + lang);
-        ST.processedCodes.add(blk);
-        return;
-      }
-      ST.processedCodes.add(blk);
-      ST.blockSeq += 1;
-      out.push({
-        el: blk,
-        code,
-        lang,
-        id: 'blk' + ST.blockSeq,
-      });
+      return out;
+    }
+
+    const codeEl = cmdBlocks[0].codeEl;
+    const code = cmdBlocks.map(it => it.code).join('\n');
+    const lang = getLang(codeEl);
+    // Optional language filter from CFG.LANG_FILTER (empty = no filter).
+    if (CFG.LANG_FILTER.length > 0 && CFG.LANG_FILTER.indexOf(lang) < 0) {
+      log('[extract] lang filtered: ' + lang);
+      cmdBlocks.forEach(it => ST.processedCodes.add(it.blk));
+      return out;
+    }
+    cmdBlocks.forEach(it => ST.processedCodes.add(it.blk));
+    ST.blockSeq += 1;
+    log('[extract] ' + blockLog(cmdBlocks));
+    out.push({
+      el: cmdBlocks[0].blk,
+      els: cmdBlocks.map(it => it.blk),
+      code,
+      lang,
+      id: 'blk' + ST.blockSeq,
     });
     return out;
   }
@@ -1038,12 +1149,17 @@
      =========================================== */
   function markVisual(block) {
     try {
-      block.el.style.borderLeft = '4px solid #00bcd4';
-      const badge = document.createElement('span');
-      badge.textContent = ' [' + block.id + '] ';
-      badge.style.cssText = 'background:#00bcd4;color:#fff;font-size:10px;padding:1px 4px;margin-left:4px;border-radius:2px;';
-      const parent = block.el.parentElement;
-      if (parent) parent.insertBefore(badge, block.el);
+      // A merged group marks every block it spans, so it is visible which
+      // fences were treated as one snippet.
+      const els = (block.els && block.els.length > 0) ? block.els : [block.el];
+      els.forEach(el => {
+        el.style.borderLeft = '4px solid #00bcd4';
+        const badge = document.createElement('span');
+        badge.textContent = ' [' + block.id + '] ';
+        badge.style.cssText = 'background:#00bcd4;color:#fff;font-size:10px;padding:1px 4px;margin-left:4px;border-radius:2px;';
+        const parent = el.parentElement;
+        if (parent) parent.insertBefore(badge, el);
+      });
     } catch (_) { }
   }
 

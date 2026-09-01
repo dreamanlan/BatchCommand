@@ -199,6 +199,7 @@ script(on_render_process_terminated)params($startupUrl,$url,$status,$errorCode,$
     nativelog("[dsl] on_render_process_terminated: startup_url={0}, url={1}, status={2}, error_code={3}, error_string={4}", $startupUrl, $url, $status, $errorCode, $errorString);
 };
 
+//$args is a string list
 script(on_receive_cef_message)params($msg,$args,$srcProcId)
 {
     nativelog("[dsl] on_receive_cef_message:{0} argnum:{1} from:{2} processtype:{3}",$msg,listsize($args),$srcProcId,processtype);
@@ -217,6 +218,7 @@ script(on_receive_cef_message)params($msg,$args,$srcProcId)
     };
 };
 
+//$args is a string list
 script(on_call_metadsl)params($func,$args)
 {
     nativelog("[dsl] on_call_metadsl: func={0}, args={1}", $func, to_json($args));
@@ -275,6 +277,17 @@ script(get_with_prompt)params()
 {
     $withPrompt = read_file(combine_path(basepath,"docs/with_prompt.txt"));
     return(format("{0}",$withPrompt));
+};
+script(get_todo)params($agentId)
+{
+    // $agentId is a key of @AgentPorts (see init_global_consts), e.g. "imate".
+    // Unlike the prompt files under basepath/docs, todo.txt lives in the
+    // per-agent project directory set by agent_set_project_dir.
+    $port = hashtableget(@AgentPorts, $agentId);
+    $dir = agent_get_project_dir($port);
+    $soulPrompt = read_file(combine_path($dir, "docs/soul.md"));
+    $todoPrompt = read_file(combine_path($dir, "docs/todo.txt"));
+    return(format("{0}\n\n{1}", $soulPrompt, $todoPrompt));
 };
 
 // Handle nativelog batch
@@ -625,6 +638,39 @@ script(save_freebie_history)params($port)
     };
 };
 
+// Body of the task queued by the freebie_save_conversation_history notification: the
+// semantic adds and the history file update, which are the slow part and need no browser
+// context. The counts and the induction stay on the main thread because
+// induction_freebie_info calls into the renderer.
+// $jsonData is the raw notification so the task re-parses its own copy of the
+// conversations. Parsed message params are JSON backed mutable state owned by the
+// caller, and handing those to another thread would share them; re-parsing the string
+// is cheap and gives the task a structure nobody else can see.
+script(save_freebie_conversations_task)params($port, $jsonData)
+{
+    $notif = parse_agent_notification($jsonData);
+    $data = get_message_param($notif, "data");
+    $conversations = get_message_param($data, "conversations");
+    $count = size($conversations);
+
+    $projectIdentity = agent_get_project_identity($port);
+    $legionnaireHistory = $projectIdentity + "_legionnaire_history";
+
+    nativelog("[dsl] Saving {0} new conversation(s) to history (task, port:{1})", $count, $port);
+
+    loop($count) {
+        $i = $$;
+        $conv = $conversations[$i];
+        $user = get_message_param($conv, "user");
+        $assistant = get_message_param($conv, "assistant");
+        $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
+        semantic_add($legionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
+        nativelog("[dsl] Saved conversation {0}/{1}", $i + 1, $count);
+    };
+
+    save_freebie_history($port);
+};
+
 // Handle agent notification
 script(handle_agent_notification)params($jsonData)
 {
@@ -845,19 +891,13 @@ script(handle_agent_notification)params($jsonData)
         agent_set_todo($port, read_file(combine_path($projectDirectory, "docs/todo.txt")));
         agent_set_context($port, read_file(combine_path($projectDirectory, "docs/context.txt")));
 
-        nativelog("[dsl] Saving {0} new conversation(s) to history", $count);
-
-        loop($count) {
-            $i = $$;
-            $conv = $conversations[$i];
-            $user = get_message_param($conv, "user");
-            $assistant = get_message_param($conv, "assistant");
-            $content = format("User:\n{0}\n\nAssistant:\n{1}", $user, $assistant);
-            semantic_add($legionnaireHistory, $content, to_json({source: "inject", index: $i, date: date_time_str()}));
-            nativelog("[dsl] Saved conversation {0}/{1}", $i + 1, $count);
-        };
-
-        save_freebie_history($port);
+        // The sqlite writes and the history file update are handed to a background worker.
+        // They are the slow part and need no browser, while the counts and the induction
+        // below must stay on the main thread because induction_freebie_info calls into the
+        // renderer. Consequence: this round's counts may not yet include the conversations
+        // being saved now. The batches are cumulative, so an induction they would have
+        // triggered happens on a later round instead of being lost.
+        call_metadsl_task(0, "save_freebie_conversations_task", $port, $jsonData);
 
         $legionnaireCount = semantic_count($legionnaireHistory);
         $decurionCount = semantic_count($decurionHistory);

@@ -472,21 +472,31 @@ namespace CefDotnetApp.AgentCore.Core
                     sb.AppendLine("<:}>;");
                 }
 
-                var record = sb.ToString();
-                var embedding = Core.AgentCore.Instance.EmbeddingService;
-                if (embedding.IsReady) {
-                    if (AgentCore.Instance.SemanticIndex.IsReady("metadsl_history")) {
-                        float[]? vector = embedding.Encode(record);
-                        if (null != vector) {
-                            AgentCore.Instance.SemanticIndex.Add("metadsl_history", record, vector, string.Format("{{source: \"metadsl\", date: \"{0}\"}}", DateTime.Now.ToString()));
+                // Archiving to the semantic index is a side channel: the MetaDSL code
+                // has already run at this point. A failure here (e.g. SQLITE_BUSY when
+                // several agent processes write concurrently) must NOT discard the
+                // result, otherwise the caller sees an empty string and never sends it
+                // back to the client.
+                try {
+                    var record = sb.ToString();
+                    var embedding = Core.AgentCore.Instance.EmbeddingService;
+                    if (embedding.IsReady) {
+                        if (AgentCore.Instance.SemanticIndex.IsReady("metadsl_history")) {
+                            float[]? vector = embedding.Encode(record);
+                            if (null != vector) {
+                                AgentCore.Instance.SemanticIndex.Add("metadsl_history", record, vector, string.Format("{{source: \"metadsl\", date: \"{0}\"}}", DateTime.Now.ToString()));
+                            }
+                        }
+                        else {
+                            AgentCore.Instance.SemanticIndex.InitCollection("metadsl_history");
                         }
                     }
                     else {
-                        AgentCore.Instance.SemanticIndex.InitCollection("metadsl_history");
+                        AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
                     }
                 }
-                else {
-                    AgentCore.Instance.Logger.Error($"EmbeddingService not ready !");
+                catch (Exception ex) {
+                    AgentCore.Instance.Logger.Error($"Failed to archive MetaDSL history (result is still returned): {ex.Message}\nStack: {ex.StackTrace}");
                 }
 
                 return sb.ToString();

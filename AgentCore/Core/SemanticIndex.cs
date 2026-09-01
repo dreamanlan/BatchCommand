@@ -102,12 +102,32 @@ namespace CefDotnetApp.AgentCore.Core
 
         /// <summary>
         /// Add a record to SQLite. Returns the new record id.
+        /// Rejects null/empty collection/content/vector to avoid writing invalid rows.
+        /// Whitespace-only metadata is normalized to NULL.
         /// </summary>
         public string Add(string collection, string content, float[] vector, string? metadata = null)
         {
+            if (string.IsNullOrWhiteSpace(collection))
+                throw new ArgumentException("collection is null or empty", nameof(collection));
+            if (string.IsNullOrWhiteSpace(content))
+                throw new ArgumentException("content is null or empty", nameof(content));
+            if (vector == null || vector.Length == 0)
+                throw new ArgumentException("vector is null or empty", nameof(vector));
+            // metadata: nullable column. Treat empty string as an explicit "null" from
+            // the caller (saves space; semantically identical for our queries).
+            string? metaNormalized = string.IsNullOrEmpty(metadata) ? null : metadata;
+
             var guid = Guid.NewGuid();
             string id = guid.ToString("N");
             long createdAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+            // Segment BEFORE opening the write transaction. Segmentation runs over the
+            // whole record and is far more expensive than the two INSERTs; doing it
+            // after BeginTransaction() would hold the single global write lock for its
+            // entire duration and starve the other agent processes.
+            string ftsContent = SegmentForFts(content);
+            string ftsMeta = _schemaVersion >= 2 ? SegmentForFts(metaNormalized ?? "") : string.Empty;
+            byte[] vecBytes = VectorToBytes(vector);
 
             // 1. persist to SQLite
             using var conn = OpenConnection();
@@ -118,22 +138,21 @@ namespace CefDotnetApp.AgentCore.Core
             cmd.Parameters.AddWithValue("@id", id);
             cmd.Parameters.AddWithValue("@col", collection);
             cmd.Parameters.AddWithValue("@content", content);
-            cmd.Parameters.AddWithValue("@meta", (object?)metadata ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@vec", VectorToBytes(vector));
+            cmd.Parameters.AddWithValue("@meta", (object?)metaNormalized ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@vec", vecBytes);
             cmd.Parameters.AddWithValue("@ts", createdAt);
             cmd.ExecuteNonQuery();
             using var ftsCmd = conn.CreateCommand();
             ftsCmd.Transaction = txn;
             if (_schemaVersion >= 2) {
                 ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
-                ftsCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata ?? ""));
+                ftsCmd.Parameters.AddWithValue("@meta", ftsMeta);
             }
             else {
                 ftsCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
             }
             ftsCmd.Parameters.AddWithValue("@id", id);
-            // Use segmenter for FTS5 content if available, so BM25 works well with Chinese
-            string ftsContent = SegmentForFts(content);
+            // Segmenter output is used for FTS5 content so BM25 works well with Chinese
             ftsCmd.Parameters.AddWithValue("@content", ftsContent);
             ftsCmd.Parameters.AddWithValue("@col", collection);
             ftsCmd.ExecuteNonQuery();
@@ -396,8 +415,22 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
             var conn = new SqliteConnection($"Data Source={_dbPath}");
             conn.Open();
             using (var cmd = conn.CreateCommand()) {
-                // WAL mode allows concurrent reads while writing; busy_timeout avoids immediate SQLITE_BUSY errors
-                cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+                // WAL mode allows concurrent reads while writing, but SQLite still permits
+                // only ONE writer at a time for the whole database. Several agent processes
+                // share this file, so a writer can be queued behind another one and needs
+                // some timeout to wait it out instead of failing with SQLITE_BUSY.
+                //
+                // Keep it MODERATE. The common write (Add) costs O(log N + content length)
+                // and does NOT slow down as the database grows, so queuing behind another
+                // process is a matter of milliseconds and 10000 is already a huge margin.
+                // The timeout does NOT help against an indefinite holder (e.g. a GUI tool
+                // with an uncommitted transaction): that fails either way, so a larger
+                // value only buys a longer stall -- and conversation history is archived
+                // from the renderer MAIN thread (script_renderer.dsl save_conversation_
+                // history -> semantic_add), where waiting freezes the page.
+                // Timing out is now harmless: WebSocketServer wraps the archive call in its
+                // own try/catch, so a failed archive no longer discards the MetaDSL result.
+                cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=10000;";
                 cmd.ExecuteNonQuery();
             }
             return conn;
@@ -488,36 +521,63 @@ CREATE TABLE IF NOT EXISTS semantic_schema_version (id INTEGER PRIMARY KEY, vers
         {
             int count = 0;
             using var conn = OpenConnection();
-            // Delete existing FTS entries for this collection
+            // Read every record first, then tokenize BEFORE taking the write lock.
+            // SegmentForFts walks the full content of each record and is by far the
+            // most expensive part of a rebuild; doing it inside the transaction held
+            // SQLite's single global write lock for the whole O(N) pass and starved
+            // the other agent processes. This is the same fix applied to Add.
+            using var selCmd = conn.CreateCommand();
+            selCmd.CommandText = "SELECT id, content, metadata FROM semantic_records WHERE collection=@col";
+            selCmd.Parameters.AddWithValue("@col", collection);
+            var rows = new List<(string id, string content, string metadata)>();
+            using (var reader = selCmd.ExecuteReader()) {
+                while (reader.Read()) {
+                    rows.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? "" : reader.GetString(2)));
+                }
+            }
+            var prepared = new List<(string id, string content, string metadata)>(rows.Count);
+            foreach (var (id, content, metadata) in rows) {
+                prepared.Add((id, SegmentForFts(content), _schemaVersion >= 2 ? SegmentForFts(metadata) : string.Empty));
+            }
+            // Delete and re-insert as a single transaction: SQLite has one writer at a
+            // time, so the lock is now held only for the DELETE + INSERT pass (DELETE is
+            // fast, INSERT is the remaining cost), and a failure can no longer leave the
+            // collection with an empty or partial FTS index.
+            using var txn = conn.BeginTransaction();
             using (var delCmd = conn.CreateCommand()) {
+                delCmd.Transaction = txn;
                 delCmd.CommandText = "DELETE FROM semantic_fts WHERE collection=@col";
                 delCmd.Parameters.AddWithValue("@col", collection);
                 delCmd.ExecuteNonQuery();
             }
-            // Re-insert with segmented content (and metadata for V2)
-            using var selCmd = conn.CreateCommand();
-            selCmd.CommandText = "SELECT id, content, metadata FROM semantic_records WHERE collection=@col";
-            selCmd.Parameters.AddWithValue("@col", collection);
-            using var reader = selCmd.ExecuteReader();
-            var rows = new List<(string id, string content, string metadata)>();
-            while (reader.Read()) {
-                rows.Add((reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? "" : reader.GetString(2)));
+            // Reuse one prepared statement instead of building a command per row.
+            // Microsoft.Data.Sqlite caches the prepared statement on the SqliteCommand
+            // instance, so creating a command inside the loop re-parses the SQL for
+            // every row. Now that segmentation no longer runs inside the transaction,
+            // this INSERT pass is the dominant cost of holding the write lock.
+            // Same pattern as ScanHybridOnCandidates.
+            using var insCmd = conn.CreateCommand();
+            insCmd.Transaction = txn;
+            bool v2 = _schemaVersion >= 2;
+            insCmd.CommandText = v2
+                ? "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)"
+                : "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
+            var pId = insCmd.CreateParameter(); pId.ParameterName = "@id";
+            var pContent = insCmd.CreateParameter(); pContent.ParameterName = "@content";
+            var pCol = insCmd.CreateParameter(); pCol.ParameterName = "@col";
+            pCol.Value = collection; // loop-invariant
+            insCmd.Parameters.Add(pId);
+            insCmd.Parameters.Add(pContent);
+            insCmd.Parameters.Add(pCol);
+            var pMeta = v2 ? insCmd.CreateParameter() : null;
+            if (pMeta != null) {
+                pMeta.ParameterName = "@meta";
+                insCmd.Parameters.Add(pMeta);
             }
-            reader.Close();
-            using var txn = conn.BeginTransaction();
-            foreach (var (id, content, metadata) in rows) {
-                using var insCmd = conn.CreateCommand();
-                insCmd.Transaction = txn;
-                if (_schemaVersion >= 2) {
-                    insCmd.CommandText = "INSERT INTO semantic_fts(id,content,metadata,collection) VALUES(@id,@content,@meta,@col)";
-                    insCmd.Parameters.AddWithValue("@meta", SegmentForFts(metadata));
-                }
-                else {
-                    insCmd.CommandText = "INSERT INTO semantic_fts(id,content,collection) VALUES(@id,@content,@col)";
-                }
-                insCmd.Parameters.AddWithValue("@id", id);
-                insCmd.Parameters.AddWithValue("@content", SegmentForFts(content));
-                insCmd.Parameters.AddWithValue("@col", collection);
+            foreach (var (id, content, metadata) in prepared) {
+                pId.Value = id;
+                pContent.Value = content;
+                if (pMeta != null) pMeta.Value = metadata;
                 insCmd.ExecuteNonQuery();
                 count++;
             }

@@ -600,6 +600,28 @@
     chatSend(text, true);
   }
 
+  // Unlike sendPromptToChat, todo is always sent as a chat message, never
+  // routed through the settings dialog, and is recorded as a user prompt.
+  function sendTodo() {
+    if (typeof callMetaDSL !== 'function') {
+      warn('[todo] callMetaDSL unavailable, skip');
+      return;
+    }
+    let text = '';
+    try {
+      text = callMetaDSL('get_todo', AGENT_ID);
+    } catch (e) {
+      err('[todo] call get_todo failed', e);
+      return;
+    }
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      warn('[todo] get_todo returned empty, skip');
+      return;
+    }
+    log(`[todo] send (${text.length} chars)`);
+    chatSend(text);
+  }
+
   function manualResume() {
     ST.breakerOn = false;
     ST.roundCount = 0;
@@ -749,6 +771,7 @@
       <div style="display:flex; gap:4px;">
         <button data-act="identity" style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#1976d2; color:#fff; border:none; border-radius:3px;" ${blind ? '' : 'disabled'}>identity</button>
         <button data-act="prompt"   style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#7b1fa2; color:#fff; border:none; border-radius:3px;">prompt</button>
+        <button data-act="todo"     style="flex:1; padding:4px 8px; font-size:11px; cursor:pointer; background:#00695c; color:#fff; border:none; border-radius:3px;">todo</button>
       </div>
     `;
     body.querySelectorAll('button[disabled]').forEach(b => {
@@ -778,6 +801,7 @@
         else if (act === 'resume') manualResume();
         else if (act === 'identity') sendIdentity();
         else if (act === 'prompt') sendPromptToChat();
+        else if (act === 'todo') sendTodo();
         else if (act === 'longrun') {
           ST.longRunMode = !ST.longRunMode;
           log(`[longrun] ${ST.longRunMode ? 'enabled' : 'disabled'}`);
@@ -1123,11 +1147,88 @@
     return true;
   }
 
-  /** Extract un-processed exec-marked code blocks from one slot's content item. */
+  /**
+   * True when nothing but whitespace separates the end of block a from the
+   * start of block b inside root, i.e. the two fences are rendered back to
+   * back. Climbs out of each block's own wrapper first, so page chrome (copy
+   * button, language label) rendered next to a code block is not mistaken for
+   * LLM content sitting in the gap.
+   */
+  function isBlankGap(root, a, b) {
+    if (a === b || a.contains(b) || b.contains(a)) return false;
+    let n = a, m = b;
+    while (n.parentElement && n.parentElement !== root && !n.parentElement.contains(b)) {
+      n = n.parentElement;
+    }
+    while (m.parentElement && m.parentElement !== root && !m.parentElement.contains(a)) {
+      m = m.parentElement;
+    }
+    if (!n.parentElement || n.parentElement !== m.parentElement) return false;
+    let cur = n.nextSibling;
+    while (cur && cur !== m) {
+      if (cur.nodeType === Node.TEXT_NODE) {
+        if ((cur.nodeValue || '').trim()) return false;
+      } else if (cur.nodeType === Node.ELEMENT_NODE) {
+        // img/video/hr/table carry no text but are visible content.
+        if (cur.matches('img, video, hr, table')) return false;
+        if ((cur.textContent || '').trim()) return false;
+      }
+      cur = cur.nextSibling;
+    }
+    return true;
+  }
+
+  /**
+   * Stage 1 of code block recognition: absorb continuations.
+   * A block carrying an execute marker opens a command unit. A block without
+   * one continues the preceding unit ONLY when nothing but whitespace
+   * separates it from the previous block; otherwise it belongs to no command
+   * (a leading plain fence, or one separated from the unit by visible text).
+   * Returns { units, dropped }. The units are NOT required to be adjacent to
+   * each other - joining them is stage 2.
+   */
+  function groupCommandUnits(root, items) {
+    const units = [];
+    const dropped = [];
+    let cur = null, prev = null;
+    items.forEach(it => {
+      if (it.starts) {
+        cur = [it];
+        units.push(cur);
+      } else if (cur && prev && isBlankGap(root, prev.el, it.el)) {
+        cur.push(it);
+      } else {
+        dropped.push(it);
+      }
+      prev = it;
+    });
+    return { units: units, dropped: dropped };
+  }
+
+  /**
+   * Stage 2 of code block recognition: join the commands.
+   * The protocol asks for one MetaDSL block per reply, but when the model
+   * sends several they are concatenated and run as a single command; fixing
+   * whatever that breaks is the model's job. Stage 1 units are joined here,
+   * with no adjacency requirement between them.
+   */
+  function mergeCommandUnits(units) {
+    const merged = [];
+    units.forEach(u => u.forEach(it => merged.push(it)));
+    return merged;
+  }
+
+  /**
+   * Extract un-processed exec-marked code blocks from one slot's content item.
+   * Consecutive fences with nothing but whitespace between them are absorbed
+   * into the preceding command, and all commands of the slot are joined into
+   * a single entry.
+   */
   function extractBlocks(contentItem, slotId) {
     const out = [];
     let scanned = 0, skippedProcessed = 0, skippedEmpty = 0, skippedNoMarker = 0;
     const firstLines = [];
+    const items = [];
     contentItem.querySelectorAll(SEL.codeBlock).forEach(el => {
       // Skip cherry-markdown indent-code blocks. These are produced by the
       // LLM's indented prose (thought dumps, bullet drafts) which are never
@@ -1146,16 +1247,29 @@
       if (ST.processedCodes.has(el)) { skippedProcessed++; return; }
       const code = readCodeText(el).trim();
       if (!code) { skippedEmpty++; return; }
-      if (!hasExecuteMarker(code)) {
-        skippedNoMarker++;
-        // Capture first non-empty line (up to 60 chars) for diagnosis.
-        const firstLine = (code.split('\n').find(l => l.trim() !== '') || '').trim().slice(0, 60);
-        firstLines.push(firstLine);
-        return;
-      }
-      const lang = getLang(el);
-      out.push({ el, code, lang, slotId, id: `${slotId}-${++ST.blockSeq}` });
+      items.push({ el: el, code: code, starts: hasExecuteMarker(code) });
     });
+    const scan = groupCommandUnits(contentItem, items);
+
+    // Plain blocks that continue no command are reported only in diagnostics.
+    skippedNoMarker += scan.dropped.length;
+    scan.dropped.forEach(it => {
+      // Capture first non-empty line (up to 60 chars) for diagnosis.
+      const firstLine = (it.code.split('\n').find(l => l.trim() !== '') || '').trim().slice(0, 60);
+      firstLines.push(firstLine);
+    });
+
+    const cmdBlocks = mergeCommandUnits(scan.units);
+    if (cmdBlocks.length > 0) {
+      out.push({
+        el: cmdBlocks[0].el,
+        els: cmdBlocks.map(it => it.el),
+        code: cmdBlocks.map(it => it.code).join('\n'),
+        lang: getLang(cmdBlocks[0].el),
+        slotId,
+        id: `${slotId}-${++ST.blockSeq}`,
+      });
+    }
     if (out.length === 0 && (scanned > 0 || skippedProcessed > 0)) {
       log(`[extract] [${slotId}] scanned=${scanned} processed=${skippedProcessed} empty=${skippedEmpty} noMarker=${skippedNoMarker} firstLines=`, firstLines);
     }
@@ -1174,29 +1288,35 @@
      Section 7  Visual Marking
      =========================================== */
   function markVisual(block, dropped) {
-    ST.processedCodes.add(block.el);
+    // A merged command may span several fences: mark and record all of them,
+    // so it is visible which fences were treated as one command and none of
+    // them is picked up again by a later scan.
+    const els = (block.els && block.els.length > 0) ? block.els : [block.el];
+    els.forEach(el => {
+      ST.processedCodes.add(el);
 
-    const pre = block.el.closest('pre') || block.el;
-    const idx = slotIndexOf(block.slotId);
-    // Dropped (non-executor) slot blocks use red to indicate 'recognized
-    // but discarded before WS send'. Executor slot blocks use slot color.
-    const color = dropped ? '#f44336' : slotColor(idx >= 0 ? idx : 0);
+      const pre = el.closest('pre') || el;
+      const idx = slotIndexOf(block.slotId);
+      // Dropped (non-executor) slot blocks use red to indicate 'recognized
+      // but discarded before WS send'. Executor slot blocks use slot color.
+      const color = dropped ? '#f44336' : slotColor(idx >= 0 ? idx : 0);
 
-    pre.style.borderLeft = `4px solid ${color}`;
-    pre.style.position = 'relative';
-    pre.dataset.metadslId = block.id;
+      pre.style.borderLeft = `4px solid ${color}`;
+      pre.style.position = 'relative';
+      pre.dataset.metadslId = block.id;
 
-    const label = dropped
-      ? `${block.id} [${block.lang}] (drop)`
-      : `${block.id} [${block.lang}]`;
-    const badge = document.createElement('span');
-    badge.textContent = label;
-    badge.style.cssText = `
+      const label = dropped
+        ? `${block.id} [${block.lang}] (drop)`
+        : `${block.id} [${block.lang}]`;
+      const badge = document.createElement('span');
+      badge.textContent = label;
+      badge.style.cssText = `
       position:absolute; top:2px; right:8px; z-index:10;
       font-size:10px; line-height:1.4; padding:1px 6px; border-radius:3px;
       background:${color}; color:#fff; pointer-events:none;
     `;
-    pre.appendChild(badge);
+      pre.appendChild(badge);
+    });
   }
 
   /* ===========================================

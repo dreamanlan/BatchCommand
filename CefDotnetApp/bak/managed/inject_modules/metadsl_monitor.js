@@ -17,6 +17,9 @@ class MetaDSLMonitor {
     this.maxProcessedBlocks = CONFIG.maxProcessedBlocks;
     this.isMarkingHistory = false; // Flag to prevent observer from triggering during history marking
     this.isInitializing = true; // Flag to indicate initialization phase, prevents queueing history blocks
+    // Format warning for the current reply, reported to the LLM after the
+    // merged command has been queued (null when there is nothing to report).
+    this.pendingValidationWarning = null;
     this.hasEverInitialized = false; // Track if first initialization has completed, survives stop/start
 
     // Operation queue mechanism
@@ -763,6 +766,11 @@ class MetaDSLMonitor {
     // Validate MetaDSL formatting in the latest LLM response before scanning code blocks.
     // On failure, feedback is sent to LLM and code block scan is skipped for this round
     // to avoid executing partially rendered or split code.
+    // A warning (e.g. several MetaDSL blocks in one reply) does NOT skip the
+    // scan: the blocks are merged and executed, and the model is told after
+    // the command has been queued. Held on the instance rather than in a local
+    // because an unstable scan reschedules this method, and by then
+    // `metadslValidated` short-circuits validation so the warning would be lost.
     if (CONFIG.get('metadsl.strictValidation') && !this.isInitializing) {
       const allMsgBoxesForValidate = document.querySelectorAll('.vac-message-box:not(.vac-offset-current)');
       const lastMsgBoxForValidate = allMsgBoxesForValidate.length > 0
@@ -806,6 +814,10 @@ class MetaDSLMonitor {
         }
         // Mark as validated to skip future re-validation on the same message
         lastMsgBoxForValidate.dataset.metadslValidated = '1';
+        if (validation.warning) {
+          this.warn('MetaDSL validation warning: ' + validation.warning);
+          this.pendingValidationWarning = validation.warning;
+        }
       }
     }
 
@@ -852,6 +864,24 @@ class MetaDSLMonitor {
       this.scanComplete = true;
     }
 
+    // Report a format warning only once the command is queued: sendResultToLLM
+    // then appends the "operations are queued / just reply 继续" note, which
+    // stops the model from sending new code while the merged command runs.
+    // Held back while blocks are unstable, because nothing is queued yet and
+    // this method will run again.
+    if (this.pendingValidationWarning && !hasUnstableBlocks) {
+      const warning = this.pendingValidationWarning;
+      // Cleared either way, so a warning never leaks into a later reply.
+      this.pendingValidationWarning = null;
+      if (this.canExecuteNewCommands) {
+        this.sendResultToLLM('MetaDSL format warning: ' + warning);
+      } else {
+        // Blocks were marked as history instead of executed, so telling the
+        // model they ran would be wrong.
+        this.info('Format warning dropped, blocks were not executed: ' + warning);
+      }
+    }
+
     // Trigger state machine to process queue
     // If in AGENT_EXECUTING state, the loop will pick up new operations
     // If in other states, wait for state transition
@@ -888,6 +918,9 @@ class MetaDSLMonitor {
     let metadslBlocksCount = 0;
     let unstableBlocksCount = 0;
 
+    // Phase 1: collect every unprocessed block that has content.
+    const items = [];
+
     codeBlocks.forEach((block) => {
       const blockId = this.getBlockId(block);
 
@@ -915,46 +948,82 @@ class MetaDSLMonitor {
       newBlocksCount++;
 
       const rawCode = block.textContent || '';
+      if (!rawCode.trim()) {
+        return;
+      }
 
-      // Check if this block's content is still changing
-      const lastContent = this.lastBlockContent.get(blockId);
-      if (lastContent !== undefined && lastContent !== rawCode) {
+      // A MetaDSL marker opens a command unit; a marker-less block continues
+      // the preceding unit when only whitespace separates them (stage 1).
+      items.push({
+        block,
+        blockId,
+        rawCode,
+        root: this.findMessageContainer(block),
+        starts: this.stripMetaDSLMarker(rawCode) !== null,
+      });
+    });
+
+    // Phase 2: build the command per message (stage 1 + stage 2), then gate on
+    // the whole command. Gating per block instead would enqueue the leading
+    // fragment on its own whenever a later fence was still streaming.
+    this.groupCommandUnitsByMessage(items).forEach(entry => {
+      // Plain blocks that continue no command are left alone: they are not
+      // recorded as processed, matching the pre-existing behaviour that only
+      // executed blocks are consumed.
+      const cmdBlocks = this.mergeCommandUnits(entry.units);
+      if (cmdBlocks.length === 0) {
+        return;
+      }
+      const head = cmdBlocks[0];
+
+      const changing = cmdBlocks.filter(it => {
+        const lastContent = this.lastBlockContent.get(it.blockId);
+        return lastContent !== undefined && lastContent !== it.rawCode;
+      });
+      if (changing.length > 0) {
         // Content is still changing, update cache but skip processing
-        this.lastBlockContent.set(blockId, rawCode);
+        cmdBlocks.forEach(it => this.lastBlockContent.set(it.blockId, it.rawCode));
         unstableBlocksCount++;
-        this.debug(`Block ${blockId} content still changing, skipping (length: ${lastContent.length} -> ${rawCode.length})`);
+        this.debug(`Command of ${cmdBlocks.length} block(s) still changing, skipping (${changing.length} unstable)`);
         return;
       }
 
       // Content is stable (first time or unchanged), record it
-      this.lastBlockContent.set(blockId, rawCode);
+      cmdBlocks.forEach(it => this.lastBlockContent.set(it.blockId, it.rawCode));
 
-      const metadslCode = this.extractMetaDSLCode(rawCode);
+      // The marker line is stripped from every fence that carries one; the
+      // remaining fences hold plain code and are appended verbatim.
+      const metadslCode = cmdBlocks.map(it => {
+        const stripped = this.stripMetaDSLMarker(it.rawCode);
+        return stripped !== null ? stripped : it.rawCode;
+      }).join('\n').trim();
 
       if (metadslCode) {
+        if (cmdBlocks.length > 1) {
+          this.info(`Merged ${cmdBlocks.length} code blocks into one MetaDSL command`);
+        }
         metadslBlocksCount++;
 
-        // Mark as processed immediately
-        this.processedBlocks.add(blockId);
+        // Mark as processed immediately.
+        cmdBlocks.forEach(it => this.processedBlocks.add(it.blockId));
 
         // Check if this block is inside a history message container
         let isHistoryBlock = this.isInitializing;
         if (!isHistoryBlock) {
-          let msgContainer = block.parentElement;
-          while (msgContainer && !msgContainer.classList.contains('vac-message-box')) {
-            msgContainer = msgContainer.parentElement;
-          }
+          const msgContainer = this.findMessageContainer(head.block);
           if (msgContainer && this.isHistoryNode(msgContainer)) {
             isHistoryBlock = true;
           }
         }
 
         if (isHistoryBlock) {
-          block.dataset.metadslStatus = 'history';
-          block.style.borderLeft = '3px solid #9E9E9E';
-          block.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
-          this.scheduleHideContainer(block);
-          this.debug(`✓ Marked late-arriving history block: ${blockId}`);
+          cmdBlocks.forEach(it => {
+            it.block.dataset.metadslStatus = 'history';
+            it.block.style.borderLeft = '3px solid #9E9E9E';
+            it.block.style.backgroundColor = 'rgba(158, 158, 158, 0.05)';
+            this.scheduleHideContainer(it.block);
+          });
+          this.debug(`✓ Marked late-arriving history block: ${head.blockId} (command of ${cmdBlocks.length})`);
           return;
         }
 
@@ -962,16 +1031,19 @@ class MetaDSLMonitor {
         this.debug(`📌 canExecuteNewCommands = ${this.canExecuteNewCommands}`);
         const operationType = this.canExecuteNewCommands ? 'execute' : 'mark_history';
 
-        // Add to operation queue
+        // Add to operation queue. `blocks` carries every merged block so the
+        // state machine can mark, annotate and hide the whole snippet rather
+        // than only its first fence.
         this.enqueueOperation({
           type: operationType,
-          block: block,
+          block: head.block,
+          blocks: cmdBlocks.map(it => it.block),
           code: metadslCode,
-          blockId: blockId,
+          blockId: head.blockId,
           timestamp: Date.now()
         });
 
-        this.debug(`✓ Queued ${operationType} operation for block: ${blockId}`);
+        this.debug(`✓ Queued ${operationType} operation for block: ${head.blockId}`);
       }
     });
 
@@ -1152,6 +1224,144 @@ class MetaDSLMonitor {
     return CONFIG.metadslMarkers.some(marker => trimmedLine.startsWith(marker));
   }
 
+  /**
+   * Nearest ancestor message container (.vac-message-box) of a code block.
+   * Used both to decide whether a block belongs to a history message and to
+   * scope the whitespace-only gap check to a single reply.
+   */
+  findMessageContainer(block) {
+    let node = block ? block.parentElement : null;
+    while (node && !(node.classList && node.classList.contains('vac-message-box'))) {
+      node = node.parentElement;
+    }
+    return node || null;
+  }
+
+  /**
+   * True when nothing but whitespace separates the end of block a from the
+   * start of block b inside root, i.e. the two fences are rendered back to
+   * back. Climbs out of each block's own wrapper first, so page chrome (copy
+   * button, language label) rendered next to a code block is not mistaken for
+   * LLM content sitting in the gap.
+   */
+  isBlankGap(root, a, b) {
+    if (a === b || a.contains(b) || b.contains(a)) return false;
+    let n = a, m = b;
+    while (n.parentElement && n.parentElement !== root && !n.parentElement.contains(b)) {
+      n = n.parentElement;
+    }
+    while (m.parentElement && m.parentElement !== root && !m.parentElement.contains(a)) {
+      m = m.parentElement;
+    }
+    if (!n.parentElement || n.parentElement !== m.parentElement) return false;
+    let cur = n.nextSibling;
+    while (cur && cur !== m) {
+      if (cur.nodeType === Node.TEXT_NODE) {
+        if ((cur.nodeValue || '').trim()) return false;
+      } else if (cur.nodeType === Node.ELEMENT_NODE) {
+        // img/video/hr/table carry no text but are visible content.
+        if (cur.matches('img, video, hr, table')) return false;
+        if ((cur.textContent || '').trim()) return false;
+      }
+      cur = cur.nextSibling;
+    }
+    return true;
+  }
+
+  /**
+   * Stage 1 of code block recognition: absorb continuations.
+   * A block carrying a MetaDSL marker opens a command unit. A block without
+   * one continues the preceding unit ONLY when nothing but whitespace
+   * separates it from the previous block; otherwise it belongs to no command
+   * (a leading plain fence, or one separated from the unit by visible text).
+   * Returns { units, dropped }. The units are NOT required to be adjacent to
+   * each other - joining them is stage 2.
+   */
+  groupCommandUnits(root, items) {
+    const units = [];
+    const dropped = [];
+    let cur = null, prev = null;
+    items.forEach(it => {
+      if (it.starts) {
+        cur = [it];
+        units.push(cur);
+      } else if (cur && prev && this.isBlankGap(root, prev.block, it.block)) {
+        cur.push(it);
+      } else {
+        dropped.push(it);
+      }
+      prev = it;
+    });
+    return { units: units, dropped: dropped };
+  }
+
+  /**
+   * Stage 2 of code block recognition: join the commands.
+   * The protocol asks for one MetaDSL block per reply, but when the model
+   * sends several they are concatenated and run as a single command; fixing
+   * whatever that breaks is the model's job. Stage 1 units are joined here,
+   * with no adjacency requirement between them.
+   */
+  mergeCommandUnits(units) {
+    const merged = [];
+    units.forEach(u => u.forEach(it => merged.push(it)));
+    return merged;
+  }
+
+  /**
+   * Same as groupCommandUnits, but splits the items by their message container
+   * first. This scan is document-wide, so without this a marker block ending
+   * one reply would merge with a plain block starting the next reply when no
+   * text separates the two messages.
+   */
+  /**
+   * Same as groupCommandUnits, but partitions by message container first.
+   * This scan is document-wide, so stage 1 must not let a command at the end
+   * of one reply absorb a plain block starting the next reply. Stage 2 then
+   * joins only the units of the SAME message: blocks belonging to different
+   * replies are separate commands.
+   * Returns [{ units, dropped }, ...] - one entry per message container.
+   */
+  groupCommandUnitsByMessage(items) {
+    const byMessage = new Map();
+    const roots = new Map();
+    let orphanSeq = 0;
+    items.forEach(it => {
+      // A block outside any message container gets a unique key, so it can
+      // never merge with an unrelated block elsewhere in the document.
+      const key = it.root || ('orphan:' + (orphanSeq++));
+      if (!byMessage.has(key)) {
+        byMessage.set(key, []);
+        roots.set(key, it.root);
+      }
+      byMessage.get(key).push(it);
+    });
+    const entries = [];
+    byMessage.forEach((list, key) => {
+      entries.push(this.groupCommandUnits(roots.get(key), list));
+    });
+    return entries;
+  }
+
+  /**
+   * Strip the marker line from a code block.
+   * Returns null when the block is NOT MetaDSL at all, and '' when it carries a
+   * marker but no code. extractMetaDSLCode collapses both cases to null, which
+   * makes it unusable as an "is this MetaDSL" predicate: a marker-only block
+   * would look like plain text and its formatting error would go unreported.
+   */
+  stripMetaDSLMarker(code) {
+    const sourceCode = String(code || '').replace(/^\uFEFF/, '');
+    const firstNewline = sourceCode.indexOf('\n');
+    const firstLine = firstNewline === -1
+      ? sourceCode
+      : sourceCode.substring(0, firstNewline);
+    if (!this.isMetaDSLMarkerLine(firstLine)) {
+      return null;
+    }
+    return firstNewline === -1 ? '' : sourceCode.substring(firstNewline + 1).trim();
+  }
+
   extractMetaDSLCode(code) {
     if (!code) return null;
 
@@ -1192,7 +1402,9 @@ class MetaDSLMonitor {
 
   // Validate actual rendered code blocks in the latest LLM message.
   // A MetaDSL block must be a code block whose first line starts with a configured marker.
-  // Returns { ok: boolean, reason?: string }.
+  // Returns { ok: boolean, reason?: string, warning?: string }.
+  // `reason` rejects the reply; `warning` is reported to the model but the
+  // command still runs.
   validateLatestResponseMetaDSL(messageElement) {
     if (!messageElement || typeof messageElement.querySelectorAll !== 'function') {
       return { ok: true };
@@ -1200,37 +1412,48 @@ class MetaDSLMonitor {
 
     const codeBlocks = messageElement.querySelectorAll(
       'code.code-block-body, code[class*="language-"], pre code');
-    const markerBlocks = [];
 
+    // One MetaDSL command may be split over several fences, so validate the
+    // assembled command, not each block on its own.
+    const items = [];
     codeBlocks.forEach((block) => {
       const code = (block.textContent || '').replace(/^\uFEFF/, '');
-      const firstNewline = code.indexOf('\n');
-      const firstLine = firstNewline === -1
-        ? code
-        : code.substring(0, firstNewline);
-
-      if (this.isMetaDSLMarkerLine(firstLine)) {
-        markerBlocks.push({ code: code, firstNewline: firstNewline });
-      }
+      if (!code.trim()) return;
+      items.push({ block, code, starts: this.stripMetaDSLMarker(code) !== null });
     });
 
-    if (markerBlocks.length > 1) {
-      return {
-        ok: false,
-        reason: 'Detected ' + markerBlocks.length
-          + ' MetaDSL code blocks, but only 1 is allowed per reply.'
-      };
-    }
+    // Stage 1 opens one unit per MetaDSL block, so the unit count is the
+    // number of MetaDSL blocks the model sent.
+    const units = this.groupCommandUnits(messageElement, items).units;
+    const cmdBlocks = this.mergeCommandUnits(units);
 
-    if (markerBlocks.length === 1) {
-      const target = markerBlocks[0];
-      if (target.firstNewline === -1
-        || target.code.substring(target.firstNewline + 1).trim().length === 0) {
+    // Only reject when the merged command holds nothing but marker lines.
+    if (cmdBlocks.length > 0) {
+      const merged = cmdBlocks.map(it => {
+        const stripped = this.stripMetaDSLMarker(it.code);
+        return stripped !== null ? stripped : it.code;
+      }).join('\n');
+      if (merged.trim().length === 0) {
         return {
           ok: false,
           reason: 'MetaDSL block contains only the marker line, no actual code.'
         };
       }
+    }
+
+    // Several MetaDSL blocks in one reply are NOT rejected: they are merged
+    // and run as a single command. The protocol rule stays "send one block",
+    // so the model is told about the violation and is expected to fix it
+    // itself; execution proceeds regardless.
+    if (units.length > 1) {
+      return {
+        ok: true,
+        warning: 'Detected ' + units.length
+          + ' MetaDSL code blocks in one reply, but only 1 is allowed.'
+          + ' They were merged in order and executed as a single command.'
+          + ' Beware that a `return` in an earlier block ends the merged'
+          + ' script early. Send exactly one MetaDSL block next time.'
+      };
     }
 
     return { ok: true };

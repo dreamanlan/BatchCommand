@@ -424,6 +424,7 @@ namespace CefDotnetApp.AgentCore.ScriptApi
             AgentFrameworkService.Instance.DslEngine!.Register("exist_directory", "exist_directory(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exists_directory", "exists_directory(dir)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_directory", "is_directory(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("isdirectory", "isdirectory(path)", false, new ExpressionFactoryHelper<DirectoryExistsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("direxists", "direxists(dir)", new ExpressionFactoryHelper<DirectoryExistsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("fileexists", "fileexists(file)", new ExpressionFactoryHelper<FileExistsExp>());
             //AgentFrameworkService.Instance.DslEngine!.Register("pathexists", "pathexists(file)", new ExpressionFactoryHelper<PathExistsExp>());

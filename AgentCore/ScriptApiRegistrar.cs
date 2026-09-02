@@ -52,6 +52,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("exist_file", "exist_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exists_file", "exists_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_file", "is_file(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("isfile", "isfile(path)", false, new ExpressionFactoryHelper<FileExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_not_exists", "file_not_exists(path)", new ExpressionFactoryHelper<FileNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("file_not_exist", "file_not_exist(path)", false, new ExpressionFactoryHelper<FileNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("not_exist_file", "not_exist_file(path)", false, new ExpressionFactoryHelper<FileNotExistsExp>());
@@ -64,6 +65,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("exist_dir", "exist_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exists_dir", "exists_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_dir", "is_dir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("isdir", "isdir(path)", false, new ExpressionFactoryHelper<DirExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_not_exists", "dir_not_exists(path)", new ExpressionFactoryHelper<DirNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("dir_not_exist", "dir_not_exist(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("not_exist_dir", "not_exist_dir(path)", false, new ExpressionFactoryHelper<DirNotExistsExp>());
@@ -79,6 +81,7 @@ namespace CefDotnetApp.AgentCore
             AgentFrameworkService.Instance.DslEngine!.Register("exist", "exist(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("exists", "exists(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("is_path", "is_path(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
+            AgentFrameworkService.Instance.DslEngine!.Register("ispath", "ispath(path)", false, new ExpressionFactoryHelper<PathExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_not_exists", "path_not_exists(path)", new ExpressionFactoryHelper<PathNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("path_not_exist", "path_not_exist(path)", false, new ExpressionFactoryHelper<PathNotExistsExp>());
             AgentFrameworkService.Instance.DslEngine!.Register("not_exist_path", "not_exist_path(path)", false, new ExpressionFactoryHelper<PathNotExistsExp>());

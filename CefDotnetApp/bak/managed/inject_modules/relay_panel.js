@@ -403,7 +403,7 @@ class RelayPanel {
     
   async _testStatus() {
     const ws = window.Relay && window.Relay.ws;
-    const connected = ws && ws.isConnected && ws.isConnected();
+    const connected = !!(ws && ws.connected);
     this._chatLog('[status] WebSocket ' + (connected ? 'connected' : 'disconnected'));
   }
 

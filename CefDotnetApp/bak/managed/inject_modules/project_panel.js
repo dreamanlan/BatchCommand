@@ -309,11 +309,12 @@ class ProjectPanel {
     const projectUrl = this.cfgProjectUrl.value.trim();
     if (!projectDir || !projectIdentity) return;
 
-    // Check if this project already exists (match by projectIdentity)
+    // Match by projectIdentity: existing entry gets updated in place, otherwise
+    // add a new one. To rename a project's identity, delete it first then Save.
     let idx = this.data.projects.findIndex(p => p.projectIdentity === projectIdentity);
     if (idx >= 0) {
-      // Update existing
-      this.data.projects[idx].projectIdentity = projectIdentity;
+      // Update existing (write back all mutable fields)
+      this.data.projects[idx].projectDir = projectDir;
       this.data.projects[idx].projectUrl = projectUrl;
       this.data.projects[idx].lastUsed = new Date().toISOString();
     } else {
@@ -470,6 +471,23 @@ class ProjectPanel {
   // ---- Show / hide ----
 
   _browseDirectory() {
+    // Prefer the native folder picker via NativeApi (Chromium's platform
+    // dialog through CEF). Falls back to the hidden <input type=file> hack
+    // when NativeApi is not loaded yet (e.g. an older injection bundle).
+    if (typeof NativeApi !== 'undefined' && NativeApi && NativeApi.pickDirectory) {
+      NativeApi.pickDirectory({
+        title: 'Select project directory',
+        defaultPath: this.cfgProjectDir ? this.cfgProjectDir.value : '',
+      }).then((dir) => {
+        if (dir && this.cfgProjectDir) {
+          this.cfgProjectDir.value = dir;
+        }
+      }).catch((e) => {
+        console.warn('[ProjectPanel] pickDirectory failed:', e);
+        if (this._dirInput) this._dirInput.click();
+      });
+      return;
+    }
     if (this._dirInput) {
       this._dirInput.click();
     }

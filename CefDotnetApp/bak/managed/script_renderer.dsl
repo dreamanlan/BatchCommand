@@ -169,6 +169,7 @@ script(on_renderer_load_end)params($url,$httpStatusCode,$isMainFrame)
         append_line($sb, read_file(combine_path($base, "secret_store.js")));
         append_line($sb, read_file(combine_path($base, "ws_worker.js")));
         append_line($sb, read_file(combine_path($base, "bridge.js")));
+        append_line($sb, read_file(combine_path($base, "native_api.js")));
         append_line($sb, read_file(combine_path($base, "response_decider.js")));
         append_line($sb, read_file(combine_path($base, "input_monitor.js")));
         append_line($sb, read_file(combine_path($base, "state_machine.js")));

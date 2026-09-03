@@ -310,6 +310,38 @@ script(on_request_media_access_permission)params($origin,$requested,$menuDisable
     return((false, 0));
 };
 
+// Called on the CEF UI thread when Chromium raises a permission bubble
+// (notifications / geolocation / clipboard / storage-access / ...). This
+// covers BOTH alloy-style and chrome-style windows -- every window flavor
+// (main window, chrome-style popup, --use-default-popup, Views overlay)
+// funnels through BaseClientHandler::MaybeHandlePermissionPromptViaDSL.
+// $requested is a bitmask of CEF_PERMISSION_TYPE_* values from cef_types.h:
+//   NOTIFICATIONS = 1 << 15, GEOLOCATION = 1 << 8, CLIPBOARD = 1 << 3,
+//   MEDIASTREAM_MIC = 1 << 12, MEDIASTREAM_CAMERA = 1 << 11, ... (see cef).
+// $promptId is CEF's opaque prompt id (unique within this browser).
+// Return (handled, action):
+//   handled == false -> DSL declines; C++ falls back to CEF default handling
+//                       (chrome-style: native bubble; alloy-style: IGNORE,
+//                        which means the JS Promise never resolves).
+//   handled == true  -> action selects the outcome:
+//                         0 = default (equivalent to handled=false),
+//                         1 = accept (silently grant),
+//                         2 = deny   (silently deny).
+// Default: silently accept Notifications so alloy windows can toast without
+// UI prompts (Chromium's platform bridge still delivers the OS toast); every
+// other permission is declined so the standard Chromium bubble shows in
+// chrome-style windows (alloy will IGNORE, which is the pre-existing
+// behaviour before this handler existed).
+script(on_show_permission_prompt)params($promptId,$origin,$requested)
+{
+    nativelog("[dsl] on_show_permission_prompt: prompt_id={0}, origin={1}, requested={2}", $promptId, $origin, $requested);
+    // CEF_PERMISSION_TYPE_NOTIFICATIONS = 1 << 15 = 0x8000 = 32768
+    if($requested == 32768){
+        return((true, 1));
+    };
+    return((false, 0));
+};
+
 // Called on the CEF UI thread on any SSL / certificate error before the
 // interstitial page is shown. $certError is a Chromium net error code
 // (e.g. -200 = ERR_CERT_COMMON_NAME_INVALID, -201 = ERR_CERT_DATE_INVALID,

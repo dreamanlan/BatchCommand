@@ -2647,13 +2647,16 @@ namespace DotNetLib
         public delegate bool OnLoadEndDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int http_status_code, [MarshalAs(UnmanagedType.U1)] bool inject_all_frame, [MarshalAs(UnmanagedType.U1)] bool is_main, IntPtr js_code, ref int code_size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnGetAuthCredentialsDelegation([MarshalAs(UnmanagedType.U1)] bool is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt);
+        public delegate bool OnGetAuthCredentialsDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.U1)] bool is_proxy, [MarshalAs(UnmanagedType.LPUTF8Str)] string host, int port, [MarshalAs(UnmanagedType.LPUTF8Str)] string realm, [MarshalAs(UnmanagedType.LPUTF8Str)] string scheme, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnRequestMediaAccessPermissionDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, [MarshalAs(UnmanagedType.U1)] bool menu_disabled, ref uint allowed_permissions);
+        public delegate bool OnRequestMediaAccessPermissionDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, [MarshalAs(UnmanagedType.U1)] bool menu_disabled, ref uint allowed_permissions);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnCertificateErrorDelegation(int cert_error, [MarshalAs(UnmanagedType.LPUTF8Str)] string request_url, ref int out_action);
+        public delegate bool OnShowPermissionPromptDelegation(IntPtr browser, IntPtr frame, ulong prompt_id, [MarshalAs(UnmanagedType.LPUTF8Str)] string requesting_origin, uint requested_permissions, ref int action);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool OnCertificateErrorDelegation(IntPtr browser, IntPtr frame, int cert_error, [MarshalAs(UnmanagedType.LPUTF8Str)] string request_url, ref int out_action);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnRendererLoadStartDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string url, int transition_type, [MarshalAs(UnmanagedType.U1)] bool is_main);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2677,7 +2680,7 @@ namespace DotNetLib
         // JS dialog hook (browser process UI thread). Returns the decision:
         // 0=CEF default dialog, 1=custom dialog, 2=suppress, 3=script owned.
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int OnJsDialogDelegation(IntPtr browser, int dialog_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string message_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string default_prompt_text, long handle);
+        public delegate int OnJsDialogDelegation(IntPtr browser, IntPtr frame, int dialog_type, [MarshalAs(UnmanagedType.LPUTF8Str)] string origin_url, [MarshalAs(UnmanagedType.LPUTF8Str)] string message_text, [MarshalAs(UnmanagedType.LPUTF8Str)] string default_prompt_text, long handle);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void OnHeartBeatDelegation(int process_type, float delta_time);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -2685,7 +2688,7 @@ namespace DotNetLib
         public delegate bool OnCallMetaDSLDelegation([MarshalAs(UnmanagedType.LPUTF8Str)] string func_name, IntPtr args, int argCount, IntPtr resultStr, ref int resultSize, IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public delegate bool OnConsoleLogDelegation(IntPtr browser, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
+        public delegate bool OnConsoleLogDelegation(IntPtr browser, IntPtr frame, int level, [MarshalAs(UnmanagedType.LPUTF8Str)] string message, [MarshalAs(UnmanagedType.LPUTF8Str)] string source, int line, ref int maxLogSize);
 
         // Resource interception callbacks (invoked on browser process IO thread).
         // OnResourceResponseFilter: inspection point (GetResourceResponseFilter).
@@ -2728,18 +2731,19 @@ namespace DotNetLib
 
         // DevTools observer callbacks (invoked on browser process UI thread).
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate int OnDevToolsMessageDelegation(IntPtr browser, IntPtr msg, int size);
+        public delegate int OnDevToolsMessageDelegation(IntPtr browser, IntPtr frame, IntPtr msg, int size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnDevToolsMethodResultDelegation(IntPtr browser, int message_id, int success, IntPtr result, int size);
+        public delegate void OnDevToolsMethodResultDelegation(IntPtr browser, IntPtr frame, int message_id, int success, IntPtr result, int size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnDevToolsEventDelegation(IntPtr browser, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, IntPtr @params, int size);
+        public delegate void OnDevToolsEventDelegation(IntPtr browser, IntPtr frame, [MarshalAs(UnmanagedType.LPUTF8Str)] string method, IntPtr @params, int size);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnDevToolsAgentAttachedDelegation(IntPtr browser);
+        public delegate void OnDevToolsAgentAttachedDelegation(IntPtr browser, IntPtr frame);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void OnDevToolsAgentDetachedDelegation(IntPtr browser);
+        public delegate void OnDevToolsAgentDetachedDelegation(IntPtr browser, IntPtr frame);
 
         internal static bool OnInit(string cmd_line, string path, int process_type, string app_dir, bool is_mac)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog("[csharp] Init CommandLine: " + cmd_line);
             NativeLog("[csharp] Init BasePath: " + path);
             NativeLog("[csharp] Init AppDir: " + app_dir);
@@ -2818,6 +2822,7 @@ namespace DotNetLib
         }
         internal static void OnFinalize()
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog("[csharp] Finalize");
 
             try {
@@ -2876,6 +2881,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static void OnBrowserFinalize(IntPtr browser)
@@ -2917,9 +2925,9 @@ namespace DotNetLib
         // All callbacks dispatch directly to DSL (no C# event layer).
         // Keep handlers fast; heavy work should be dispatched off-thread by DSL side.
 
-        internal static int OnDevToolsMessage(IntPtr browser, IntPtr msg, int size)
+        internal static int OnDevToolsMessage(IntPtr browser, IntPtr frame, IntPtr msg, int size)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
@@ -2933,12 +2941,15 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] OnDevToolsMessage Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return 0;
         }
 
-        internal static void OnDevToolsMethodResult(IntPtr browser, int message_id, int success, IntPtr result, int size)
+        internal static void OnDevToolsMethodResult(IntPtr browser, IntPtr frame, int message_id, int success, IntPtr result, int size)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
@@ -2953,11 +2964,14 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] OnDevToolsMethodResult Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
-        internal static void OnDevToolsEvent(IntPtr browser, string method, IntPtr @params, int size)
+        internal static void OnDevToolsEvent(IntPtr browser, IntPtr frame, string method, IntPtr @params, int size)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
@@ -2971,11 +2985,14 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] OnDevToolsEvent Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
-        internal static void OnDevToolsAgentAttached(IntPtr browser)
+        internal static void OnDevToolsAgentAttached(IntPtr browser, IntPtr frame)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
@@ -2986,11 +3003,14 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] OnDevToolsAgentAttached Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
-        internal static void OnDevToolsAgentDetached(IntPtr browser)
+        internal static void OnDevToolsAgentDetached(IntPtr browser, IntPtr frame)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             try {
                 if (s_NativeApi != null) {
                     TryLoadDSL();
@@ -3000,6 +3020,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] OnDevToolsAgentDetached Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
         }
 
@@ -3013,6 +3036,7 @@ namespace DotNetLib
 
         internal static bool OnBrowserHotReloadCopyFiles(string url)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog("[csharp] Browser Hot Reload Copy Files, url: " + url);
 
             try {
@@ -3054,6 +3078,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
         }
 
@@ -3147,6 +3174,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static void OnRendererFinalize(IntPtr browser, IntPtr frame)
@@ -3212,6 +3242,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnLoadStart:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static bool OnLoadEnd(IntPtr browser, IntPtr frame, string url, int http_status_code, bool inject_all_frame, bool is_main, IntPtr js_code, ref int code_size)
@@ -3271,12 +3304,16 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             code_size = 0;
             return false;
         }
 
-        internal static bool OnGetAuthCredentials(bool is_proxy, string host, int port, string realm, string scheme, string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt)
+        internal static bool OnGetAuthCredentials(IntPtr browser, IntPtr frame, bool is_proxy, string host, int port, string realm, string scheme, string origin_url, IntPtr username, ref int username_size, IntPtr password, ref int password_size, long handle, int attempt)
         {
+            NativeApi.SetContext(browser, frame);
             NativeLog($"[csharp] OnGetAuthCredentials: is_proxy={is_proxy}, host={host}, port={port}, realm={realm}, scheme={scheme}, origin={origin_url}, handle={handle}, attempt={attempt}");
             try {
                 string user = string.Empty;
@@ -3356,10 +3393,14 @@ namespace DotNetLib
                 NativeLog("[csharp] Exception in OnGetAuthCredentials:" + e.Message + "\n" + e.StackTrace);
                 return false;
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
-        internal static bool OnRequestMediaAccessPermission(string requesting_origin, uint requested_permissions, bool menu_disabled, ref uint allowed_permissions)
+        internal static bool OnRequestMediaAccessPermission(IntPtr browser, IntPtr frame, string requesting_origin, uint requested_permissions, bool menu_disabled, ref uint allowed_permissions)
         {
+            NativeApi.SetContext(browser, frame);
             NativeLog($"[csharp] OnRequestMediaAccessPermission: origin={requesting_origin}, requested=0x{requested_permissions:X}, menu_disabled={menu_disabled}");
             try {
                 if (null != s_NativeApi) {
@@ -3393,11 +3434,65 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRequestMediaAccessPermission:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return false;
         }
 
-        internal static bool OnCertificateError(int cert_error, string request_url, ref int out_action)
+        // Called on the CEF UI thread from BaseClientHandler::MaybeHandlePermissionPromptViaDSL
+        // (both alloy-style ClientHandler and chrome-style / overlay / default-popup
+        // DefaultClientHandler dispatch here). Browser is valid only for the
+        // synchronous duration of this call - do NOT retain past return.
+        // Return (handled, action):
+        //   handled == false -> DSL declines; C++ falls back to CEF default
+        //                       (chrome-style shows the native bubble; alloy-style
+        //                       IGNOREs -> JS Promise never resolves).
+        //   handled == true  -> action selects the outcome:
+        //                         0 = default (equivalent to handled=false),
+        //                         1 = accept (Continue(ACCEPT)),
+        //                         2 = deny   (Continue(DENY)).
+        internal static bool OnShowPermissionPrompt(IntPtr browser, IntPtr frame, ulong prompt_id, string requesting_origin, uint requested_permissions, ref int action)
         {
+            NativeApi.SetContext(browser, frame);
+            NativeLog($"[csharp] OnShowPermissionPrompt: prompt_id={prompt_id}, origin={requesting_origin}, requested=0x{requested_permissions:X}");
+            try {
+                if (null != s_NativeApi) {
+                    TryLoadDSL();
+
+                    var vargs = BatchCommand.BatchScript.NewCalculatorValueList();
+                    vargs.Add(BoxedValue.From((long)prompt_id));
+                    vargs.Add(BoxedValue.FromString(requesting_origin ?? ""));
+                    vargs.Add(BoxedValue.From((int)requested_permissions));
+                    var r = BatchCommand.BatchScript.Call("on_show_permission_prompt", vargs);
+                    BatchCommand.BatchScript.RecycleCalculatorValueList(vargs);
+                    CheckDslError();
+                    if (r.Type == (int)BoxedValue.c_Tuple2Type) {
+                        var tuple = r.GetTuple2();
+                        if (null != tuple) {
+                            bool handled = tuple.Item1.GetBool();
+                            if (handled) {
+                                action = tuple.Item2.GetInt();
+                                NativeLog($"[csharp] OnShowPermissionPrompt: DSL handled (action={action})");
+                                return true;
+                            }
+                            NativeLog("[csharp] OnShowPermissionPrompt: DSL declined (handled=false)");
+                        }
+                    }
+                }
+            }
+            catch (Exception e) {
+                NativeLog("[csharp] Exception in OnShowPermissionPrompt:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
+            return false;
+        }
+
+        internal static bool OnCertificateError(IntPtr browser, IntPtr frame, int cert_error, string request_url, ref int out_action)
+        {
+            NativeApi.SetContext(browser, frame);
             NativeLog($"[csharp] OnCertificateError: cert_error={cert_error}, url={request_url}");
             try {
                 if (null != s_NativeApi) {
@@ -3430,6 +3525,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnCertificateError:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return false;
         }
 
@@ -3455,6 +3553,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static void OnLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
@@ -3478,6 +3579,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnLoadError:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static void OnRendererLoadStart(IntPtr browser, IntPtr frame, string url, int transition_type, bool is_main)
@@ -3500,6 +3604,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRendererLoadStart:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
         }
 
@@ -3559,6 +3666,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRendererLoadEnd:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             code_size = 0;
             return false;
         }
@@ -3585,6 +3695,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRendererLoadingStateChange:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
         }
 
         internal static void OnRendererLoadError(IntPtr browser, IntPtr frame, int error_code, string error_text, string failed_url)
@@ -3607,6 +3720,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRendererLoadError:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
         }
 
@@ -3663,12 +3779,16 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnRenderProcessTerminated:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             reload_url_size = 0;
             return false;
         }
 
         internal static void OnBeforeCommandLineProcessing(int process_type, IntPtr command_line)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog($"[csharp] OnBeforeCommandLineProcessing: process_type={process_type}");
 
             try {
@@ -3691,6 +3811,7 @@ namespace DotNetLib
 
         internal static void OnBeforeChildProcessLaunch(int process_type, IntPtr command_line)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog($"[csharp] OnBeforeChildProcessLaunch process_type={process_type}");
 
             try {
@@ -3722,6 +3843,7 @@ namespace DotNetLib
 
         internal static bool OnAlreadyRunningAppRelaunch(IntPtr command_line, string current_directory)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             NativeLog($"[csharp] OnAlreadyRunningAppRelaunch current_directory={current_directory}");
 
             try {
@@ -3778,6 +3900,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnBeforeBrowse:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             if (out_return_value != IntPtr.Zero) Marshal.WriteByte(out_return_value, (byte)0);
             return false;
         }
@@ -3831,9 +3956,9 @@ namespace DotNetLib
         //inside the DSL callback (send_javascript_code only posts to the
         //renderer, it does not block) because the browser context is cleared
         //when this method returns.
-        internal static int OnJsDialog(IntPtr browser, int dialog_type, string origin_url, string message_text, string default_prompt_text, long handle)
+        internal static int OnJsDialog(IntPtr browser, IntPtr frame, int dialog_type, string origin_url, string message_text, string default_prompt_text, long handle)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
             NativeLog($"[csharp] OnJsDialog: type={dialog_type}, origin={origin_url}, handle={handle}");
 
             try {
@@ -3942,6 +4067,7 @@ namespace DotNetLib
         //Note: this method will be called on the browser process IO thread.
         internal static bool OnResponseContentFilter(IntPtr data_in, int data_in_size, IntPtr data_out, int data_out_size, ref int out_data_in_read, ref int out_data_out_written, ref int out_status)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             // Default: not handled (native will pass through unchanged).
             // DSL return value: (handled, status, output_bytes, bytes_read).
             //   handled: true = use DSL's outputs, false = pass through.
@@ -4141,9 +4267,9 @@ namespace DotNetLib
             return false;
         }
 
-        internal static bool OnConsoleLog(IntPtr browser, int level, string message, string source, int line, ref int maxLogSize)
+        internal static bool OnConsoleLog(IntPtr browser, IntPtr frame, int level, string message, string source, int line, ref int maxLogSize)
         {
-            NativeApi.SetContext(browser, IntPtr.Zero);
+            NativeApi.SetContext(browser, frame);
 
             try {
                 if (null != s_NativeApi) {
@@ -4176,11 +4302,15 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnConsoleLog:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return false;
         }
 
         internal static void OnHeartBeat(int process_type, float delta_time)
         {
+            NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             try {
                 if (null != s_NativeApi) {
                     TryLoadDSL();
@@ -4258,6 +4388,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] Exception in OnCallMetaDSL:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
             return string.Empty;
         }
@@ -4505,6 +4638,9 @@ namespace DotNetLib
             catch (Exception e) {
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
             }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
+            }
             return string.Empty;
         }
 
@@ -4537,6 +4673,9 @@ namespace DotNetLib
             }
             catch (Exception e) {
                 NativeLog("[csharp] Exception:" + e.Message + "\n" + e.StackTrace);
+            }
+            finally {
+                NativeApi.SetContext(IntPtr.Zero, IntPtr.Zero);
             }
         }
 

@@ -327,7 +327,8 @@
     log(`[ws] recv ${text.length}B`);
     if (!text) return;
     if (ST.execInflight > 0) ST.execInflight--;
-    ST.pendingResults.push(text);
+    ST.pendingResults.push(text + "\n\nMetaDSL代码与结果不会存入历史，请简要复述本次执行要点以留存。
+");
     scheduleFlush();
   }
 
@@ -407,7 +408,7 @@
         // visibility and can be detected repeatedly for a single reply.
         ST.historyRoundCount = (ST.historyRoundCount || 0) + 1;
         if (CFG.LLM_CONTEXT_COUNT_MODULO > 0 &&
-            ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
+          ST.historyRoundCount % CFG.LLM_CONTEXT_COUNT_MODULO === 0) {
           notifyContextCountDown();
         }
       }

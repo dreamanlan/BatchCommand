@@ -1,152 +1,154 @@
-﻿  // ============================================================================
-  // MetaDSLWorkerManager - Dual queue communication with WebSocket for MetaDSL
-  // ============================================================================
-  class MetaDSLWorkerManager {
-    constructor() {
-      this.logger = logger.createLogger('MetaDSLWorker');
-      this.worker = null;
-      this.isRunning = false;
-      this.port = CONFIG.websocketPort;
-      // Main thread queues
-      this.toWorkerQueue = [];      // Messages to send to worker
-      this.fromWorkerQueue = [];    // Messages received from worker
-      this.tickInterval = null;
-      // Auto-reconnect
-      this.autoReconnect = true;
-      this.isConnected = false;
-      this.firstStart = true;       // Track first start for auto-connect
+﻿// ============================================================================
+// MetaDSLWorkerManager - Dual queue communication with WebSocket for MetaDSL
+// ============================================================================
+class MetaDSLWorkerManager {
+  constructor() {
+    this.logger = logger.createLogger('MetaDSLWorker');
+    this.worker = null;
+    this.isRunning = false;
+    this.port = CONFIG.websocketPort;
+    // Main thread queues
+    this.toWorkerQueue = [];      // Messages to send to worker
+    this.fromWorkerQueue = [];    // Messages received from worker
+    this.tickInterval = null;
+    // Auto-reconnect
+    this.autoReconnect = true;
+    this.isConnected = false;
+    this.firstStart = true;       // Track first start for auto-connect
+  }
+
+  // Start WebSocket Worker
+  start(port) {
+    if (port) {
+      this.port = port;
     }
 
-    // Start WebSocket Worker
-    start(port) {
-      if (port) {
-        this.port = port;
+    if (this.isRunning) {
+      this.logger.warn('MetaDSL Worker is already running');
+      return false;
+    }
+
+    try {
+      // Create worker using externalized code constant
+      // const blob = new Blob([WEBSOCKET_WORKER_CODE], { type: 'application/javascript' });
+      // const workerUrl = URL.createObjectURL(blob);
+
+      // Blob URL doesn't work with file:// protocol due to security restrictions
+      const workerUrl = 'data:application/javascript;charset=utf-8,' + encodeURIComponent(WEBSOCKET_WORKER_CODE);
+      // Create worker using Data URL (compatible with file:// protocol)
+      this.worker = new Worker(workerUrl);
+
+      // Set up message handler
+      this.worker.onmessage = (event) => {
+        this.handleWorkerMessage(event.data);
+      };
+
+      // Start worker with port
+      this.worker.postMessage({ type: 'start', port: this.port });
+
+      // Start main thread tick processing
+      this.startTick();
+
+      this.isRunning = true;
+      this.firstStart = false;
+      this.logger.info('MetaDSL Worker started on port ' + this.port);
+      return true;
+    } catch (e) {
+      this.logger.error('Failed to start MetaDSL Worker: ' + e.message);
+      // Schedule reconnect if autoReconnect is enabled
+      if (this.autoReconnect) {
+        this.scheduleReconnect();
       }
+      return false;
+    }
+  }
 
-      if (this.isRunning) {
-        this.logger.warn('MetaDSL Worker is already running');
-        return false;
-      }
+  // Stop WebSocket Worker
+  stop() {
+    if (!this.isRunning) {
+      return;
+    }
 
-      try {
-        // Create worker using externalized code constant
-        // const blob = new Blob([WEBSOCKET_WORKER_CODE], { type: 'application/javascript' });
-        // const workerUrl = URL.createObjectURL(blob);
+    this.stopTick();
 
-        // Blob URL doesn't work with file:// protocol due to security restrictions
-        const workerUrl = 'data:application/javascript;charset=utf-8,' + encodeURIComponent(WEBSOCKET_WORKER_CODE);
-        // Create worker using Data URL (compatible with file:// protocol)
-        this.worker = new Worker(workerUrl);
-
-        // Set up message handler
-        this.worker.onmessage = (event) => {
-          this.handleWorkerMessage(event.data);
-        };
-
-        // Start worker with port
-        this.worker.postMessage({ type: 'start', port: this.port });
-
-        // Start main thread tick processing
-        this.startTick();
-
-        this.isRunning = true;
-        this.firstStart = false;
-        this.logger.info('MetaDSL Worker started on port ' + this.port);
-        return true;
-      } catch (e) {
-        this.logger.error('Failed to start MetaDSL Worker: ' + e.message);
-        // Schedule reconnect if autoReconnect is enabled
-        if (this.autoReconnect) {
-          this.scheduleReconnect();
+    if (this.worker) {
+      this.worker.postMessage({ type: 'stop' });
+      setTimeout(() => {
+        if (this.worker) {
+          this.worker.terminate();
+          this.worker = null;
         }
-        return false;
-      }
+      }, 500);
     }
 
-    // Stop WebSocket Worker
-    stop() {
-      if (!this.isRunning) {
-        return;
-      }
+    // Clear queues
+    this.toWorkerQueue = [];
+    this.fromWorkerQueue = [];
 
-      this.stopTick();
+    this.isRunning = false;
+    this.logger.info('WebSocket Worker stopped');
+  }
 
-      if (this.worker) {
-        this.worker.postMessage({ type: 'stop' });
-        setTimeout(() => {
-          if (this.worker) {
-            this.worker.terminate();
-            this.worker = null;
-          }
-        }, 500);
-      }
+  // Start main thread tick processing
+  startTick() {
+    this.tickInterval = setInterval(() => {
+      this.processQueues();
+    }, CONFIG.sendMessageDelay);
+  }
 
-      // Clear queues
-      this.toWorkerQueue = [];
-      this.fromWorkerQueue = [];
+  // Stop main thread tick processing
+  stopTick() {
+    if (this.tickInterval) {
+      clearInterval(this.tickInterval);
+      this.tickInterval = null;
+    }
+  }
 
-      this.isRunning = false;
-      this.logger.info('WebSocket Worker stopped');
+  // Schedule automatic reconnect
+  scheduleReconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+    this.logger.info('Scheduling reconnect in 3 seconds...');
+    this.reconnectTimeout = setTimeout(() => {
+      this.logger.info('Attempting automatic reconnect...');
+      this.stopInternal();
+      this.start();
+    }, 3000);
+  }
+
+  // Stop internal state without logging
+  stopInternal() {
+    this.stopTick();
+
+    if (this.worker) {
+      this.worker.postMessage({ type: 'stop' });
+      this.worker.terminate();
+      this.worker = null;
     }
 
-    // Start main thread tick processing
-    startTick() {
-      this.tickInterval = setInterval(() => {
-        this.processQueues();
-      }, CONFIG.sendMessageDelay);
+    this.isRunning = false;
+    this.isConnected = false;
+  }
+
+  // Process main thread queues
+  processQueues() {
+    // Send one message per tick to worker
+    if (this.toWorkerQueue.length > 0 && this.worker) {
+      const msg = this.toWorkerQueue.shift();
+      this.logger.info('Sending message to worker (length: ' + msg.length + '): ' + msg.substring(0, 100) + '...');
+      this.worker.postMessage({ type: 'send', message: msg });
     }
+  }
 
-    // Stop main thread tick processing
-    stopTick() {
-      if (this.tickInterval) {
-        clearInterval(this.tickInterval);
-        this.tickInterval = null;
-      }
-    }
-
-    // Schedule automatic reconnect
-    scheduleReconnect() {
-      if (this.reconnectTimeout) {
-        clearTimeout(this.reconnectTimeout);
-      }
-      this.logger.info('Scheduling reconnect in 3 seconds...');
-      this.reconnectTimeout = setTimeout(() => {
-        this.logger.info('Attempting automatic reconnect...');
-        this.stopInternal();
-        this.start();
-      }, 3000);
-    }
-
-    // Stop internal state without logging
-    stopInternal() {
-      this.stopTick();
-
-      if (this.worker) {
-        this.worker.postMessage({ type: 'stop' });
-        this.worker.terminate();
-        this.worker = null;
-      }
-
-      this.isRunning = false;
-      this.isConnected = false;
-    }
-
-    // Process main thread queues
-    processQueues() {
-      // Send one message per tick to worker
-      if (this.toWorkerQueue.length > 0 && this.worker) {
-        const msg = this.toWorkerQueue.shift();
-        this.logger.info('Sending message to worker (length: ' + msg.length + '): ' + msg.substring(0, 100) + '...');
-        this.worker.postMessage({ type: 'send', message: msg });
-      }
-    }
-
-    // Handle messages from worker
-    handleWorkerMessage(data) {
-      if (data.type === 'message') {
+  // Handle messages from worker
+  handleWorkerMessage(data) {
+    if (data.type === 'message') {
       // Queue message from worker (WebSocket messages default to noAgentMarker=false)
-        this.fromWorkerQueue.push({ message: data.data, noAgentMarker: false });
-        this.logger.info('Message from worker queued (length: ' + data.data.length + '): ' + data.data.substring(0, 100) + '...');
+      this.fromWorkerQueue.push({
+        message: data.data + "\n\nMetaDSL代码与结果不会存入历史，请简要复述本次执行要点以留存。
+", noAgentMarker: false });
+      this.logger.info('Message from worker queued (length: ' + data.data.length + '): ' + data.data.substring(0, 100) + '...');
       } else if (data.type === 'connected') {
         this.isConnected = true;
         this.logger.info('MetaDSL Worker connected to server');
@@ -218,10 +220,10 @@
   // Create global MetaDSL Worker manager instance
   const metadslWorker = new MetaDSLWorkerManager();
 
-  // Listen for postMessage and queue string messages as replies to LLM
-  window.addEventListener('message', (event) => {
-    if (typeof event.data === 'string' && event.data.length > 0) {
-      metadslWorker.queueReply(event.data);
-    }
-  });
+// Listen for postMessage and queue string messages as replies to LLM
+window.addEventListener('message', (event) => {
+  if (typeof event.data === 'string' && event.data.length > 0) {
+    metadslWorker.queueReply(event.data);
+  }
+});
 

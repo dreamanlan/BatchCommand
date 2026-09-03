@@ -102,15 +102,26 @@ class MessageHandler {
         // Frontend controls all context to avoid MetaDSL execution result accumulation
         const limit = maxMessages || this.config.contextRounds * 2;
 
-        // Get last N messages and clean content for context
-        // Skip cleaning for the last message only if it is a user message (current request)
+        // Get last N messages and clean content for context.
+        // Preserve two entries uncleaned:
+        //   1) the last message (typically the current user request)
+        //   2) the most recent assistant message
+        // The LLM needs to see the executing round's raw MetaDSL code and,
+        // when applicable, its execution result echoed by the agent.
         const sliced = this.messages.slice(-limit);
         const lastIdx = sliced.length - 1;
         const skipLastClean = lastIdx >= 0 && sliced[lastIdx].role === 'user';
-        const messages = sliced.map((m, idx) => ({
-            role: m.role,
-            content: (skipLastClean && idx === lastIdx) ? m.content : this.cleanContentForContext(m.role, m.content)
-        }));
+        let lastAssistantIdx = -1;
+        for (let i = lastIdx; i >= 0; i--) {
+            if (sliced[i].role === 'assistant') { lastAssistantIdx = i; break; }
+        }
+        const messages = sliced.map((m, idx) => {
+            const preserve = (idx === lastIdx) || (idx === lastAssistantIdx);
+            return {
+                role: m.role,
+                content: preserve ? m.content : this.cleanContentForContext(m.role, m.content)
+            };
+        });
 
         // Apply maxContextChars limit on history messages (exclude the last/current user message)
         // When total history chars exceed the limit, keep only the most recent messages that fit
@@ -162,10 +173,28 @@ class MessageHandler {
             if (content.startsWith(agentReplyMarker)) {
                 return '...';
             }
+            return content;
         }
 
-        // Note: assistant messages (including MetaDSL code blocks) are kept intact
-        // so the model can see what code it previously generated
+        if (role === 'assistant') {
+            // Historical assistant messages: strip MetaDSL code bodies to
+            // avoid stale code accumulating in context. The most recent
+            // assistant message is preserved uncleaned by getConversationContext,
+            // so the LLM still sees the currently executing round's code.
+            const placeholder = '[metadsl]\n...\n[/metadsl]';
+            return content
+                .replace(/<metadsl\b[^>]*>[\s\S]*?<\/metadsl\s*>/gi, placeholder)
+                .replace(/```[ \t]*metadsl\b[^\n]*\n[\s\S]*?```/gi, placeholder)
+                // Bare fenced code block whose FIRST content line is the MetaDSL
+                // execute marker (// @execute or # @execute). This is the form
+                // foundation_prompt.txt teaches the LLM to use, so it dominates
+                // in the wild. Backreference \1 lets the outer fence be 4+
+                // backticks OR tildes when the body itself contains ``` (see
+                // foundation_prompt.txt point 4: "different or more characters").
+                // The character class [`~] combined with the backreference
+                // guarantees the opening and closing fences use the same char.
+                .replace(/([`~]{3,})[^\n]*\n[ \t]*(?:\/\/|#)[ \t]*@execute\b[\s\S]*?\1/gi, placeholder);
+        }
 
         return content;
     }

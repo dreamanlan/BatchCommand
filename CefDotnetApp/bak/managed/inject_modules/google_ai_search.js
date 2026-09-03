@@ -250,10 +250,29 @@
     });
   }
 
+  // Build the assistant text used for SQLite history persistence: like
+  // aiMsgEl.textContent, but every MetaDSL code block is collapsed into a
+  // fixed "[metadsl]\n...\n[/metadsl]" placeholder. Detection uses the
+  // existing hasExecuteMarker heuristic on the raw code text, so non-MetaDSL
+  // fenced snippets (rare in agent mode) are preserved verbatim.
+  function readAssistantHistoryText(aiMsgEl) {
+    if (!aiMsgEl) return '';
+    const clone = aiMsgEl.cloneNode(true);
+    clone.querySelectorAll(SEL.codeBlock).forEach(blk => {
+      const codeEl = (SEL.codeText ? blk.querySelector(SEL.codeText) : null) || blk;
+      const raw = readCodeText(codeEl);
+      if (!hasExecuteMarker(raw)) return;
+      const parent = blk.parentNode;
+      if (!parent) return;
+      const placeholder = document.createTextNode('\n[metadsl]\n...\n[/metadsl]\n');
+      parent.replaceChild(placeholder, blk);
+    });
+    return clone.textContent || '';
+  }
+
   function notifyConversationHistory(aiMsgEl) {
     if (!aiMsgEl) return;
-    const assistantText = (typeof readCodeText === 'function')
-      ? readCodeText(aiMsgEl) : (aiMsgEl.textContent || '');
+    const assistantText = readAssistantHistoryText(aiMsgEl);
     bridgeSendNotification('freebie_save_conversation_history', {
       agentId: AGENT_ID,
       conversations: [{ user: ST.lastSentPrompt || '', assistant: assistantText }]

@@ -124,17 +124,34 @@ class PageAdapter {
     }
   }
 
-  getVisibleText(el) {
-    // Collect text from visible nodes only (skip display:none elements)
+  // Collect visible text from an element subtree (skip display:none /
+  // visibility:hidden), collapsing every MetaDSL code block into a fixed
+  // placeholder "[metadsl]\n...\n[/metadsl]". Used when building conversation
+  // snapshots destined for SQLite history storage AND for the "recent
+  // conversations" section injected into the main LLM prompt via
+  // agent_get_history(port), so the persisted / re-injected prose does not
+  // accumulate stale generated code.
+  // Detection: <code data-metadsl-status="..."> (attached synchronously by
+  // metadsl_monitor); a <pre> that contains such a code element is also
+  // treated as a whole block.
+  getVisibleTextForHistory(el) {
     let text = '';
     for (const node of el.childNodes) {
       if (node.nodeType === Node.TEXT_NODE) {
         text += node.textContent;
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.style && node.style.display === 'none') continue;
-        if (node.style && node.style.visibility === 'hidden') continue;
-        text += this.getVisibleText(node);
+        continue;
       }
+      if (node.nodeType !== Node.ELEMENT_NODE) continue;
+      if (node.style && node.style.display === 'none') continue;
+      if (node.style && node.style.visibility === 'hidden') continue;
+      const tag = node.tagName;
+      const isMetadslCode = tag === 'CODE' && node.dataset && node.dataset.metadslStatus;
+      const isMetadslPre = tag === 'PRE' && node.querySelector('code[data-metadsl-status]');
+      if (isMetadslCode || isMetadslPre) {
+        text += '\n[metadsl]\n...\n[/metadsl]\n';
+        continue;
+      }
+      text += this.getVisibleTextForHistory(node);
     }
     return text;
   }
@@ -176,13 +193,15 @@ class PageAdapter {
           currentUserWrapper.dataset.agentSaved = '1';
           currentAssistantWrapper.dataset.agentSaved = '1';
         }
-        // Use empty string for agent-injected messages, real text for human user messages
-        const userText = messageBox.dataset.agentCollapsed ? '' : this.cleanText(this.getVisibleText(wrapper));
+        // Use empty string for agent-injected messages, real text for human user messages.
+        // getVisibleTextForHistory collapses MetaDSL code bodies into a fixed
+        // "[metadsl]...[/metadsl]" placeholder so SQLite history stays lean.
+        const userText = messageBox.dataset.agentCollapsed ? '' : this.cleanText(this.getVisibleTextForHistory(wrapper));
         currentPair = { user: userText, assistant: '' };
         currentUserWrapper = wrapper;
         currentAssistantWrapper = null;
       } else if (currentPair) {
-        currentPair.assistant = this.cleanText(this.getVisibleText(wrapper));
+        currentPair.assistant = this.cleanText(this.getVisibleTextForHistory(wrapper));
         currentAssistantWrapper = wrapper;
       }
     }
@@ -220,12 +239,15 @@ class PageAdapter {
         if (currentPair && currentPair.user && currentPair.assistant) {
           conversations.push(currentPair);
         }
-        // Use placeholder for agent-injected messages, real text for human user messages
-        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleText(wrapper);
+        // Use placeholder for agent-injected messages, real text for human user messages.
+        // Use getVisibleTextForHistory so MetaDSL bodies are collapsed to a fixed
+        // "[metadsl]...[/metadsl]" placeholder; this is the same data source that
+        // feeds SQLite history via extractNewConversations, so both must match.
+        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleTextForHistory(wrapper);
         currentPair = { user: userText, assistant: '' };
       } else if (currentPair) {
-        // Assistant message - LLM reply, read visible text
-        currentPair.assistant = this.getVisibleText(wrapper);
+        // Assistant message - LLM reply, read visible text (MetaDSL collapsed)
+        currentPair.assistant = this.getVisibleTextForHistory(wrapper);
       }
     }
 
@@ -259,12 +281,15 @@ class PageAdapter {
         if (currentPair && currentPair.user && currentPair.assistant) {
           conversations.push(currentPair);
         }
-        // Use placeholder for agent-injected messages, real text for human user messages
-        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleText(wrapper);
+        // Use placeholder for agent-injected messages, real text for human user messages.
+        // Use getVisibleTextForHistory so MetaDSL bodies are collapsed to a fixed
+        // "[metadsl]...[/metadsl]" placeholder; this is the same data source that
+        // feeds SQLite history via extractNewConversations, so both must match.
+        const userText = messageBox.dataset.agentCollapsed ? '...' : this.getVisibleTextForHistory(wrapper);
         currentPair = { user: userText, assistant: '' };
       } else if (currentPair) {
-        // Assistant message - LLM reply, read visible text
-        currentPair.assistant = this.getVisibleText(wrapper);
+        // Assistant message - LLM reply, read visible text (MetaDSL collapsed)
+        currentPair.assistant = this.getVisibleTextForHistory(wrapper);
       }
     }
 

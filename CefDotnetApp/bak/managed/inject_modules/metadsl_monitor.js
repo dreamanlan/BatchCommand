@@ -719,6 +719,26 @@ class MetaDSLMonitor {
     });
     const outsideText = clone.textContent || '';
     // Match a run of 3+ backticks (covers variable-length fences too).
+    //
+    // Intentionally BACKTICK-ONLY: we do NOT extend this to tilde (`~~~`)
+    // fences, even though CommonMark allows them and other MetaDSL cleanup
+    // paths (message-handler.js A-path, freebie FENCE_*_RE) do accept tilde.
+    // Rationale:
+    //   * This function is only a heuristic that DELAYS `onPageStable` until
+    //     markdown rendering settles. It is NOT part of the correctness
+    //     path -- the actual MetaDSL scan looks at rendered <code> elements
+    //     via MutationObserver and is fence-character agnostic.
+    //   * If we matched `~~~` here and the host chat UI's markdown renderer
+    //     does not treat tilde as a fence (renderer support varies), any
+    //     stray `~~~` in prose (decorative separators, ASCII art, quoted
+    //     code, etc.) would linger in `outsideText` forever -> this method
+    //     would return true forever -> `onPageStable` would never fire ->
+    //     hard deadlock with no self-heal.
+    //   * The worst case of leaving tilde out is a few extra empty scan
+    //     passes when the LLM streams a `~~~` fence mid-flight; the next
+    //     mutation self-heals. No correctness impact.
+    // If we ever confirm the renderer supports tilde fences AND add a
+    // timeout fallback for `onPageStable`, revisit this decision.
     const fenceMatches = outsideText.match(/`{3,}/g);
     if (fenceMatches && fenceMatches.length > 0) {
       this.info(`Detected ${fenceMatches.length} unrendered fence marker(s) outside rendered code blocks (rendered=${codeElements.length})`);
@@ -1030,6 +1050,20 @@ class MetaDSLMonitor {
         // After initialization, determine operation type based on canExecuteNewCommands
         this.debug(`📌 canExecuteNewCommands = ${this.canExecuteNewCommands}`);
         const operationType = this.canExecuteNewCommands ? 'execute' : 'mark_history';
+
+        // Pre-tag: attach data-metadsl-status='pending' synchronously BEFORE
+        // enqueue, so a concurrent archive scan (extractNewConversations ->
+        // getVisibleTextForHistory) can already recognize this block as
+        // MetaDSL and collapse it to the [metadsl]...[/metadsl] placeholder,
+        // instead of racing with the state machine and capturing raw code
+        // into SQLite. The state machine overwrites this to 'executed' or
+        // 'history' once the operation runs; only the existence of the
+        // attribute matters to page_adapter.getVisibleTextForHistory.
+        cmdBlocks.forEach(it => {
+          if (!it.block.dataset.metadslStatus) {
+            it.block.dataset.metadslStatus = 'pending';
+          }
+        });
 
         // Add to operation queue. `blocks` carries every merged block so the
         // state machine can mark, annotate and hide the whole snippet rather

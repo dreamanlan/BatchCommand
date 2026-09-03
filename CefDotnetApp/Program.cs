@@ -4828,15 +4828,15 @@ namespace DotNetLib
             if (s_NativeApi == null)
                 return IntPtr.Zero;
             if (s_ProcessType == (int)CefProcessType.RendererProcess) {
-                foreach (var id in s_BrowserBrowserIds) {
+                foreach (var id in s_RendererBrowserIds) {
                     var pair = s_NativeApi.GetRendererBrowserFrameById(id);
                     if (pair.browser != IntPtr.Zero) {
                         return pair.browser;
                     }
                 }
             }
-            else if (s_ProcessType == (int)CefProcessType.BrowserProcess) {
-                foreach (var id in s_RendererBrowserIds) {
+            else if(s_ProcessType == (int)CefProcessType.BrowserProcess) {
+                foreach (var id in s_BrowserBrowserIds) {
                     IntPtr browser = s_NativeApi.GetBrowserById(id);
                     if (browser != IntPtr.Zero) {
                         return browser;
